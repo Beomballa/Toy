@@ -25,7 +25,6 @@ subprojects {
 		mavenCentral()
 	}
 
-	// 모든 하위 모듈이 공통으로 사용하는 의존성을 여기에 추가할 수 있습니다.
 	dependencies {
 		compileOnly 'org.projectlombok:lombok'
 		annotationProcessor 'org.projectlombok:lombok'

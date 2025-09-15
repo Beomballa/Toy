@@ -7,7 +7,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class NormalListReqDto {
+public class ContentListReqDto {
 
     @NotEmpty
     @Pattern(regexp = "EN|KO")

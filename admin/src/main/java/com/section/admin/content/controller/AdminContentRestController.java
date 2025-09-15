@@ -1,7 +1,9 @@
 package com.section.admin.content.controller;
 
+import com.section.admin.base.res.BaseListResDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -9,9 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/content")
-public class AdminNormalRestController {
+public class AdminContentRestController {
 
-    public void listNormal() {
-        log.info("listNormal");
+    public ResponseEntity<BaseListResDto> saveContent() {
+
+        return null;
     }
 }

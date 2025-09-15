@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "ct_document_detail_info")
+@Table(name = "CT_DOCUMENT_DETAIL_INFO")
 public class DocumentDetailInfo {
 
     @Id

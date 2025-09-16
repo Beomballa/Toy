@@ -25,7 +25,7 @@ public class ApprovalDocumentService {
     @Transactional
     public ApprovalDocument createApprovalDocument(Document document) {
         ApprovalDocument approvalDocument = new ApprovalDocument();
-        return null;
+        return approvalDocumentRepository.save(approvalDocument);
     }
 
 //    private String getDocumentTitle(Document document) {
@@ -33,7 +33,7 @@ public class ApprovalDocumentService {
 //        if(StringUtils.hasText(document.getTitle())) {
 //            title = document.getTitle();
 //        } else {
-//            Optional<>
+//            Optional<ContentT>
 //        }
 //    }
 }

@@ -1,21 +1,81 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Title</title>
-</head>
-<body>
-<p class="btn btn-primary">확인</p>
-<button class="btn btn-danger">취소</button>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
 
-</body>
+<div layout:fragment="content">
+    <main class="container mt-4">
+        <h2 class="mb-4">게시물 관리</h2>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
-<script src="/js/view/content-list.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        ContentListJS.init();
-    })
-</script>
+        <div class="card mb-4">
+            <div class="card-body">
+                <form class="row g-3" id="searchForm">
+                    <div class="col-md-3">
+                        <select class="form-select">
+                            <option selected>검색 조건</option>
+                            <option value="title">제목</option>
+                            <option value="content">내용</option>
+                        </select>
+                    </div>
+                    <div class="col-md-7">
+                        <input type="text" class="form-control" placeholder="검색어를 입력하세요">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">검색</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-3">
+            <a href="/posts/new" class="btn btn-success">새 글 등록</a>
+        </div>
+
+        <table class="table table-hover text-center">
+            <thead class="table-dark">
+            <tr>
+                <th scope="col" style="width: 10%;">번호</th>
+                <th scope="col" style="width: 45%;">제목</th>
+                <th scope="col" style="width: 25%;">내용</th>
+                <th scope="col" style="width: 20%;">등록날짜</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="post, stat : ${posts}">
+                <td th:text="${stat.count}">1</td>
+                <td class="text-start" th:text="${post.title}">게시물 제목이 여기에 표시됩니다.</td>
+                <td class="text-start" th:text="${post.content}">게시물 내용이 여기에 표시됩니다.</td>
+                <td th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2025-09-21 15:30</td>
+            </tr>
+
+            <tr th:if="${#lists.isEmpty(posts)}">
+                <td colspan="4" class="py-5">등록된 게시물이 없습니다.</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <nav aria-label="Page navigation" class="d-flex justify-content-center">
+            <ul class="pagination">
+                <li class="page-item"><a class="page-link" href="#">이전</a></li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item"><a class="page-link" href="#">다음</a></li>
+            </ul>
+        </nav>
+    </main>
+</div>
+
+
+<th:block layout:fragment="script">
+    <script src="/js/view/content-list.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // ContentListJS.init();
+            console.log("콘텐츠 리스트 페이지 스크립트 초기화 완료");
+        });
+    </script>
+</th:block>
+
 </html>

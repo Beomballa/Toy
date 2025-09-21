@@ -12,8 +12,15 @@ import org.springframework.web.servlet.ModelAndView;
 public class AdminContentController {
 
     @RequestMapping("/list")
-    public ModelAndView list(ContentListReqDto reqDto){
+    public ModelAndView contentList(ContentListReqDto reqDto){
         ModelAndView mav = new ModelAndView("views/content-list");
+        mav.addObject("reqDto",reqDto);
+        return mav;
+    }
+
+    @RequestMapping("/edit")
+    public ModelAndView editList(ContentListReqDto reqDto){
+        ModelAndView mav = new ModelAndView("views/content-set");
         mav.addObject("reqDto",reqDto);
         return mav;
     }

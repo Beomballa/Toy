@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class AdminContentService {
 
-//    private ApprovalDocumentService approvalDocumentService;
+    private ApprovalDocumentService approvalDocumentService;
 
     private final DocumentRepository documentRepository;
 

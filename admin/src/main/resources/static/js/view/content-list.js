@@ -1,4 +1,4 @@
-var NormalListJS = {
+var ContentListJS = {
     pagerKo : undefined,
     pagerEn : undefined,
 

@@ -8,12 +8,12 @@ import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
 @Controller
-@RequestMapping("/content/normal")
+@RequestMapping("/content")
 public class AdminContentController {
 
     @RequestMapping("/list")
     public ModelAndView list(ContentListReqDto reqDto){
-        ModelAndView mav = new ModelAndView("views/normal-list");
+        ModelAndView mav = new ModelAndView("views/content-list");
         mav.addObject("reqDto",reqDto);
         return mav;
     }

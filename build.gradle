@@ -28,6 +28,8 @@ subprojects {
 	dependencies {
 		compileOnly 'org.projectlombok:lombok'
 		annotationProcessor 'org.projectlombok:lombok'
+
+		implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect'
 	}
 }
 

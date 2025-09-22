@@ -12,6 +12,9 @@
 <div layout:fragment="content">
   <div class="notion-editor-container">
     <form id="documentForm">
+      <div class="d-flex justify-content-end mb-3">
+        <input class="btn btn-primary" id="submitBtn" type="submit" value="Submit">
+      </div>
       <div>
         <input type="text" id="title" name="title" class="form-control notion-title" placeholder="제목 없는 페이지">
       </div>
@@ -25,9 +28,11 @@
 
 
 <th:block layout:fragment="script">
+  <script src="/js/view/content-set.js"></script>
   <script>
     console.log("Notion editor page loaded.");
     // 나중에 자동 저장 로직을 여기에 추가합니다.
+    ContentSetJS.init();
   </script>
 </th:block>
 

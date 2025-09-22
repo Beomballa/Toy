@@ -20,8 +20,8 @@ public class ContentSetReqDto implements SyDocument {
 
     private String contentTypeCode;
 
-    @NotBlank(message = "해당 게시글의 공개여부를 선택해주세요.")
-    @Pattern(regexp = "^(RE|PR|NT)$", message = "공개여부는 필수 선택 값입니다.")
+//    @NotBlank(message = "해당 게시글의 공개여부를 선택해주세요.")
+//    @Pattern(regexp = "^(RE|PR|NT)$", message = "공개여부는 필수 선택 값입니다.")
     private String status;
     private String reserveYn;
     private String reserveDtm;
@@ -31,10 +31,13 @@ public class ContentSetReqDto implements SyDocument {
         Document document = new Document();
         document.setTitle(title);
         document.setContent(content);
-        document.setStatus(status);
-        document.setReserveYn(YN.valueOf(reserveYn));
+        document.setStatus("PR");
+//        document.setStatus(status);
+        document.setReserveYn(YN.N);
+//        document.setReserveYn(YN.valueOf(reserveYn));
         document.setReserveDtm(LocalDateTime.now());
-        document.setViewYn(YN.valueOf(viewYn));
+//        document.setViewYn(YN.valueOf(viewYn));
+        document.setViewYn(YN.N);
         return document;
     }
 
@@ -42,16 +45,18 @@ public class ContentSetReqDto implements SyDocument {
         Document document = new Document();
         document.setTitle(title);
         document.setContent(content);
-        document.setStatus(status);
-        document.setReserveYn(YN.valueOf(reserveYn));
+        document.setStatus("PR");
+//        document.setStatus(status);
+        document.setReserveYn(YN.N);
+//        document.setReserveYn(YN.valueOf(reserveYn));
         document.setReserveDtm(LocalDateTime.now());
-        document.setViewYn(YN.valueOf(viewYn));
+//        document.setViewYn(YN.valueOf(viewYn));
         return document;
     }
 
     @Override
     public String getLang() {
-        return "";
+        return "KO";
     }
 
     @Override

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+
+<th:block layout:fragment="css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+</th:block>
+
+<div layout:fragment="content">
+    <div class="main-container">
+        <nav id="sidebar">
+            <h5 class="mb-4"> Botion </h5>
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#"><i class="bi bi-search me-2"></i> 검색</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="#"><i class="bi bi-bell me-2"></i> 업데이트</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="#"><i class="bi bi-gear me-2"></i> 설정</a>
+                </li>
+            </ul>
+
+            <hr>
+            <h6 class="text-muted small">Projects</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="#">📝 토이 프로젝트</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="#">📚 [JAVA] 스터디</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-dark" href="#">💻 스프링 부트</a>
+                </li>
+            </ul>
+        </nav>
+
+        <main id="main-content">
+            <h1 class="mb-5">안녕하세요.</h1>
+
+            <div class="card mb-5">
+                <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="card-title">Botion AI를 사용해 보세요</h5>
+                        <p class="card-text text-muted">사이드바에서 전체 페이지 Botion AI 사용해 보기</p>
+                        <a href="#" class="btn btn-primary">사용해 보기</a>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="mb-3">최근 방문</h5>
+            <div class="row g-4 mb-5">
+                <div class="col-md-6 col-lg-4" th:each="project : ${recentProjects}">
+                    <a href="#" class="card-link">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title" th:text="${project.name}">📝 토이 프로젝트</h6>
+                                <p class="card-text text-muted small" th:text="${project.lastVisited}">1일 전</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <a href="#" class="card-link">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">💻 스프링 부트</h6>
+                                <p class="card-text text-muted small">11분 전</p>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <h5 class="mb-3">예정된 이벤트</h5>
+            <div class="list-group">
+                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                    <span class="badge bg-primary rounded-pill date-badge">오늘 오후 10시</span>
+                    <span class="fw-bold">카카오뱅크 - 프로젝트</span>
+                </a>
+                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center">
+                    <span class="badge bg-secondary rounded-pill date-badge">내일 오전 9시</span>
+                    <span>[연차]</span>
+                </a>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<th:block layout:fragment="script">
+    <script>
+        console.log("대시보드 페이지 로드 완료");
+    </script>
+</th:block>
+
+</html>

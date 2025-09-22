@@ -1,0 +1,36 @@
+/* 전체 레이아웃을 위한 커스텀 스타일 */
+.main-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+#sidebar {
+    width: 260px;
+    background-color: #f8f9fa; /* 밝은 회색 배경 */
+    padding: 1.5rem;
+    flex-shrink: 0; /* 사이드바 너비 고정 */
+}
+
+#main-content {
+    flex-grow: 1; /* 남은 공간 모두 차지 */
+    padding: 2.5rem;
+    background-color: #ffffff;
+}
+
+/* 카드 링크 스타일 */
+.card-link {
+    text-decoration: none;
+    color: inherit;
+}
+.card-link:hover .card {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+/* 리스트 그룹 아이템 스타일 */
+.list-group-item .date-badge {
+    font-size: 0.8rem;
+    padding: 0.3em 0.6em;
+    margin-right: 1rem;
+}

@@ -29,7 +29,7 @@
         </div>
 
         <div class="d-flex justify-content-end mb-3">
-            <a href="/posts/new" class="btn btn-success">새 글 등록</a>
+            <button id="newContentBtn" class="btn btn-success">새 글 등록</button>
         </div>
 
         <table class="table table-hover text-center">
@@ -71,10 +71,7 @@
 <th:block layout:fragment="script">
     <script src="/js/view/content-list.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // ContentListJS.init();
-            console.log("콘텐츠 리스트 페이지 스크립트 초기화 완료");
-        });
+        ContentListJS.init();
     </script>
 </th:block>
 

@@ -3,6 +3,22 @@ var ContentListJS = {
     pagerEn : undefined,
 
     init : function () {
-        alert("경고창 띄어주기");
-    }
+        document.getElementById("newContentBtn").addEventListener("click", function (el){
+            ContentListJS.setNewContent();
+        })
+    },
+
+    setNewContent : function () {
+        axios.post('/api/content/set')
+            .then(res => {
+                if(res.resultCode === "200") {
+                    Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
+                }
+            })
+            .catch(error => {
+                console.error('저장 중 에러 발생:', error);
+                Swal.fire('오류 발생', '문서 생성중 문제가 발생했습니다.', 'error');
+            });
+    },
+
 }

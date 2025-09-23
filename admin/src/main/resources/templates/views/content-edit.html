@@ -11,15 +11,16 @@
 
 <div layout:fragment="content">
   <div class="notion-editor-container">
-    <form id="documentForm">
+    <form id="documentEditForm">
+      <input type="hidden" id="docNo" name="docNo" th:value="${docNo}">
       <div class="d-flex justify-content-end mb-3">
         <input class="btn btn-primary" id="submitBtn" type="submit" value="Submit">
       </div>
       <div>
-        <input type="text" id="title" name="title" class="form-control notion-title" placeholder="제목 없는 페이지">
+        <input type="text" id="title" name="title" class="form-control notion-title" placeholder="제목 없는 페이지" th:value="${result.title}">
       </div>
       <div>
-        <textarea id="content" name="content" class="form-control notion-content" rows="20" placeholder="여기에 내용을 입력하세요..."></textarea>
+        <textarea id="content" name="content" class="form-control notion-content" rows="20" placeholder="여기에 내용을 입력하세요..." th:text="${result.content}"></textarea>
       </div>
     </form>
   </div>
@@ -28,11 +29,9 @@
 
 
 <th:block layout:fragment="script">
-  <script src="/js/view/content-set.js"></script>
+  <script src="/js/view/content-edit.js"></script>
   <script>
-    console.log("Notion editor page loaded.");
-    // 나중에 자동 저장 로직을 여기에 추가합니다.
-    ContentSetJS.init();
+    ContentEditJS.init();
   </script>
 </th:block>
 

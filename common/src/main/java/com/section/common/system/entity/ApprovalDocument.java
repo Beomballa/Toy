@@ -18,6 +18,7 @@ public class ApprovalDocument extends BaseEntity {
 
     @Id
     @Column(name = "DOC_NO")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long docNo;
 
     @Column(name = "TITLE")

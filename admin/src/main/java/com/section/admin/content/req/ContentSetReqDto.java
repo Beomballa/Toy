@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @Setter
 public class ContentSetReqDto implements SyDocument {
 
+    private String docNo;
     private String title;
     private String content;
 
@@ -27,17 +28,15 @@ public class ContentSetReqDto implements SyDocument {
     private String reserveDtm;
     private String viewYn;
 
-    public Document toDocument(ApprovalDocument approvalDocument) {
-        Document document = new Document();
-        document.setTitle(title);
-        document.setContent(content);
+    public Document toDocument(ApprovalDocument approvalDocument, Document document, ContentSetReqDto dto) {
+        document.setApprovalDocument(approvalDocument);
+        document.setTitle(dto.getTitle());
+        document.setContent(dto.getContent());
         document.setStatus("PR");
-//        document.setStatus(status);
         document.setReserveYn(YN.N);
 //        document.setReserveYn(YN.valueOf(reserveYn));
         document.setReserveDtm(LocalDateTime.now());
 //        document.setViewYn(YN.valueOf(viewYn));
-        document.setViewYn(YN.N);
         return document;
     }
 
@@ -46,7 +45,7 @@ public class ContentSetReqDto implements SyDocument {
         document.setTitle(title);
         document.setContent(content);
         document.setStatus("PR");
-//        document.setStatus(status);
+        document.setStatus(status);
         document.setReserveYn(YN.N);
 //        document.setReserveYn(YN.valueOf(reserveYn));
         document.setReserveDtm(LocalDateTime.now());

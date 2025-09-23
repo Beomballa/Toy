@@ -19,13 +19,16 @@ public class ApprovalDocumentService {
 
     /**
      * 결재 문서 생성
-     * @param document
+//     * @param document
      * @return
      */
     @Transactional
-    public ApprovalDocument createApprovalDocument(Document document) {
+    public ApprovalDocument createApprovalDocument() {
         ApprovalDocument approvalDocument = new ApprovalDocument();
-        return approvalDocumentRepository.save(approvalDocument);
+        approvalDocument.setTitle("관리자 테이블에 저장되는 문서 제목");
+        approvalDocument.setStatus("PR");
+        approvalDocument = approvalDocumentRepository.save(approvalDocument);
+        return approvalDocument;
     }
 
 //    private String getDocumentTitle(Document document) {

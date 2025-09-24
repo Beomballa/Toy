@@ -2,7 +2,10 @@ package com.section.admin.content.service;
 
 import com.section.admin.content.req.ContentSetReqDto;
 import com.section.admin.content.res.ContentGetResDto;
+import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
+import com.section.common.system.entity.Account;
+import com.section.common.system.service.AdminAccountService;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.content.service.DocumentService;
@@ -14,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +26,16 @@ public class AdminContentService {
 
     private final ApprovalDocumentService approvalDocumentService;
     private final DocumentService documentService;
+    private final AdminAccountService adminAccountService;
 
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
+
+    public ContentMyDocResDto listDocument() {
+        Account account = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234");
+        List<Document> document = documentService.findDocumentInfo(account.getCrtNo());
+        return ContentMyDocResDto.fromEntity(document);
+    }
 
 
     @Transactional

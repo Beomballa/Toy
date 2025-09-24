@@ -8,11 +8,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DocumentService {
     private final DocumentRepository documentRepository;
+
+    public List<Document> findDocumentInfo(String adminNo) {
+        return documentRepository.findByDocumentInfo(adminNo);
+    }
 
     public Document createDocument(ApprovalDocument approvalDocument) {
         Document document = new Document();

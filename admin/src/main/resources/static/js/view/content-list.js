@@ -8,6 +8,10 @@ var ContentListJS = {
         })
     },
 
+    getListInfo : function () {
+
+    },
+
     setNewContent : function () {
         axios.post('/api/content/set')
             .then(res => {

@@ -3,16 +3,17 @@ package com.section.admin.content.controller;
 import com.section.admin.base.res.BaseListResDto;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.content.req.ContentSetReqDto;
+import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.admin.content.service.AdminContentService;
+import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -21,6 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminContentRestController {
 
     private final AdminContentService adminContentService;
+
+    @GetMapping("/list")
+    public ResponseEntity<BaseSimpleResDto> listDocument() {
+        ContentMyDocResDto documentList = adminContentService.listDocument();
+        return new ResponseEntity<>(new BaseListResDto(documentList.getDocuments(), documentList.getDocuments().size()), HttpStatus.OK);
+    }
 
     @PostMapping("/set")
     public ResponseEntity<BaseSimpleResDto> setDocument() {

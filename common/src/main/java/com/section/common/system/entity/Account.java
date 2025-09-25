@@ -18,7 +18,7 @@ public class Account extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "NO")
+    @Column(name = "ID")
     private Long id;
 
     @Column(name = "EMAIL")
@@ -33,9 +33,11 @@ public class Account extends BaseEntity {
     @Column(name = "NICKNAME")
     private String nickname;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "MASTER_YN")
     private YN masterYn;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "INIT_YN")
     private YN initYn;
 
@@ -45,6 +47,7 @@ public class Account extends BaseEntity {
     @Column(name = "PROFILE_IMG_NAME")
     private String profileImgName;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "DEL_YN")
     private YN delYn;
 

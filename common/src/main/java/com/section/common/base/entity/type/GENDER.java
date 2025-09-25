@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum GENDER {
-    M("남자"), G("여자");
+    M("남자"), F("여자"), UNKNOWN("알수없음");
 
     private final String desc;
 

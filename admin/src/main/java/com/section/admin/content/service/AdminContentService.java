@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,9 +36,21 @@ public class AdminContentService {
     private final DocumentRepository documentRepository;
 
     public ContentMyDocResDto listDocument() {
-        Account account = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234");
-        List<Document> document = documentService.findDocumentInfo(account.getCrtNo());
-        return ContentMyDocResDto.fromEntity(document);
+        Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
+                .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
+        List<Document> document = documentService.findDocumentInfo(currentAccount.getCrtNo());
+        List<Long> ids = document.stream()
+                .map(Document::getApprovalDocument)
+                .filter(Objects::nonNull)
+                .map(ApprovalDocument::getDocNo)
+                .toList();
+
+        List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findAllDocumentInfo(ids);
+        // ApprovalDocument를 Map으로 변환 (빠른 조회를 위해)
+//        Map<Long, ApprovalDocument> approvalDocumentMap = approvalDocuments.stream()
+//                .collect(Collectors.toMap(ApprovalDocument::getDocNo, Function.identity()));
+
+        return ContentMyDocResDto.fromEntity(document, approvalDocuments);
     }
 
 

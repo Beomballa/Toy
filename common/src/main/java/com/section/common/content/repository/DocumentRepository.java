@@ -12,6 +12,6 @@ public interface DocumentRepository extends JpaRepository<Document,Long> {
     @Query("SELECT d FROM Document d where d.approvalDocument.docNo =:docNo")
     Optional<Document> findByDocNo(Long docNo);
 
-    @Query("SELECT d FROM Document d where d.crtNo =:adminNo")
+    @Query("SELECT d FROM Document d LEFT JOIN FETCH d.approvalDocument where d.crtNo =:adminNo")
     List<Document> findByDocumentInfo(String adminNo);
 }

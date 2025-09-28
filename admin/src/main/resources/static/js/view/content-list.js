@@ -9,7 +9,10 @@ var ContentListJS = {
     },
 
     getListInfo : function () {
+        axios.get('/api/content/list')
+            .then(res => {
 
+            })
     },
 
     setNewContent : function () {

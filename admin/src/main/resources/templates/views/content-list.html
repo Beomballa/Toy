@@ -32,30 +32,23 @@
             <button id="newContentBtn" class="btn btn-success">새 글 등록</button>
         </div>
 
-        <table class="table table-hover text-center">
-            <thead class="table-dark">
-            <tr>
-                <th scope="col" style="width: 10%;">번호</th>
-                <th scope="col" style="width: 45%;">제목</th>
-                <th scope="col" style="width: 25%;">내용</th>
-                <th scope="col" style="width: 20%;">등록날짜</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="post, stat : ${posts}">
-                <td th:text="${stat.count}">1</td>
-                <td class="text-start" th:text="${post.title}">게시물 제목이 여기에 표시됩니다.</td>
-                <td class="text-start" th:text="${post.content}">게시물 내용이 여기에 표시됩니다.</td>
-                <td th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">2025-09-21 15:30</td>
-            </tr>
+        <div class="list-group">
+            <a th:each="post : ${posts}"
+               th:href="@{/content/edit(docNo=${post.docNo})}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
 
-            <tr th:if="${#lists.isEmpty(posts)}">
-                <td colspan="4" class="py-5">등록된 게시물이 없습니다.</td>
-            </tr>
-            </tbody>
-        </table>
+                <span th:text="${post.title != null ? post.title : '제목 없음'}">게시물 제목이 여기에 표시됩니다.</span>
 
-        <nav aria-label="Page navigation" class="d-flex justify-content-center">
+                <small class="text-muted" th:text="${post.uptDtm}">2025.09.27 23:09</small>
+            </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(posts)}" class="alert alert-info mt-3" role="alert">
+            등록된 게시물이 없습니다.
+        </div>
+
+
+        <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4">
             <ul class="pagination">
                 <li class="page-item"><a class="page-link" href="#">이전</a></li>
                 <li class="page-item active"><a class="page-link" href="#">1</a></li>

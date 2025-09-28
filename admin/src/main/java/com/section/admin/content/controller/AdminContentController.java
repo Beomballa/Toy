@@ -2,6 +2,7 @@ package com.section.admin.content.controller;
 
 import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.res.ContentGetResDto;
+import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.service.AdminContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,9 @@ public class AdminContentController {
     @RequestMapping("/list")
     public ModelAndView contentList(ContentListReqDto reqDto){
         ModelAndView mav = new ModelAndView("views/content-list");
-        mav.addObject("reqDto",reqDto);
+        ContentMyDocResDto posts = adminContentService.listDocument();
+//        mav.addObject("reqDto",reqDto);
+        mav.addObject("posts",posts);
         return mav;
     }
 

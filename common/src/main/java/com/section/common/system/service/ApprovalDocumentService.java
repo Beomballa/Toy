@@ -27,6 +27,7 @@ public class ApprovalDocumentService {
         ApprovalDocument approvalDocument = new ApprovalDocument();
         approvalDocument.setTitle("관리자 테이블에 저장되는 문서 제목");
         approvalDocument.setStatus("PR");
+        approvalDocument.setCrtNo("A001");
         approvalDocument = approvalDocumentRepository.save(approvalDocument);
         return approvalDocument;
     }

@@ -5,20 +5,13 @@ var ContentListJS = {
     init : function () {
         document.getElementById("newContentBtn").addEventListener("click", function (el){
             ContentListJS.setNewContent();
-        })
-    },
-
-    getListInfo : function () {
-        axios.get('/api/content/list')
-            .then(res => {
-
-            })
+        });
     },
 
     setNewContent : function () {
         axios.post('/api/content/set')
             .then(res => {
-                if(res.resultCode === "200") {
+                if(res.data.resultCode === "200") {
                     Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
                 }
             })

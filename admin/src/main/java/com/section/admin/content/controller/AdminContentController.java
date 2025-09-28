@@ -1,6 +1,5 @@
 package com.section.admin.content.controller;
 
-import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.service.AdminContentService;
@@ -20,14 +19,13 @@ public class AdminContentController {
     private final AdminContentService adminContentService;
 
     /**
-     * 등록한 데이터
+     * 본인 작성 문서 조회
      * */
     @RequestMapping("/list")
-    public ModelAndView contentList(ContentListReqDto reqDto){
+    public ModelAndView contentList(){
         ModelAndView mav = new ModelAndView("views/content-list");
         ContentMyDocResDto posts = adminContentService.listDocument();
-//        mav.addObject("reqDto",reqDto);
-        mav.addObject("posts",posts);
+        mav.addObject("posts",posts.getDocuments());
         return mav;
     }
 

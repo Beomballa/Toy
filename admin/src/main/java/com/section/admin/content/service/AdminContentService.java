@@ -54,6 +54,9 @@ public class AdminContentService {
     }
 
 
+    /**
+     * 문서 생성
+     * */
     @Transactional
     public CreateDocumentDefaultInfoResDto setDocument() {
         ApprovalDocument approvalDocument = approvalDocumentService.createApprovalDocument();
@@ -61,6 +64,9 @@ public class AdminContentService {
         return CreateDocumentDefaultInfoResDto.fromDefaultInfo(document);
     }
 
+    /**
+     * 문서 작성
+     * */
     @Transactional
     public void setContent(ContentSetReqDto reqDto) {
         ApprovalDocument approvalDocument = approvalDocumentRepository.findById(Long.valueOf(reqDto.getDocNo()))

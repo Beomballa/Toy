@@ -26,6 +26,7 @@ public class DocumentService {
             document.setApprovalDocument(approvalDocument);
             document.setStatus("PR");
             document.setViewYn(YN.N);
+            document.setCrtNo(approvalDocument.getCrtNo());
             documentRepository.save(document);
         }
         return document;

@@ -12,7 +12,10 @@ var ContentListJS = {
         axios.post('/api/content/set')
             .then(res => {
                 if(res.data.resultCode === "200") {
-                    Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
+                    Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success')
+                        .then(() => {
+                            location.reload();
+                        });
                 }
             })
             .catch(error => {

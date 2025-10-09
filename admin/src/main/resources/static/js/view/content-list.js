@@ -25,7 +25,7 @@ var ContentListJS = {
     },
 
     testFunction : function () {
-
+        alert("테스트");
     }
 
 }

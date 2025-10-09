@@ -24,4 +24,8 @@ var ContentListJS = {
             });
     },
 
+    testFunction : function () {
+
+    }
+
 }

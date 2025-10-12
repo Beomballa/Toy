@@ -24,8 +24,16 @@ var ContentListJS = {
             });
     },
 
-    testFunction : function () {
-        alert("테스트");
-    }
+    getListInfo : function () {
+        axios.get('/api/content/list')
+            .then(res => {
+                if(res.data.resultCode === "200") {
 
+                }
+            })
+            .catch(error => {
+                console.error('리스트 조회 중 에러 발생:', error);
+                Swal.fire('오류 발생', '리스트 조회 간 문제가 발생했습니다.', 'error');
+            });
+    }
 }

@@ -20,4 +20,6 @@ public class ContentListReqDto {
     @NotEmpty
     @Pattern(regexp = "\\d*")
     private String pageEN="1";
+
+    private String searchKeyword;
 }

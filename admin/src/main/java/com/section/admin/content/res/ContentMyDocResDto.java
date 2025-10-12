@@ -31,7 +31,7 @@ public class ContentMyDocResDto {
         List<DocumentInfo> documentInfos = documents.stream()
                 .map(document -> DocumentInfo.builder()
                         .docNo(document.getApprovalDocument().getDocNo())
-                        .title(document.getTitle())
+                        .title(Boolean.parseBoolean(document.getTitle()) ? document.getTitle() : "제목없음")
                         .content(document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))
                         .viewYn(document.getViewYn().toString())

@@ -20,7 +20,7 @@
                         </select>
                     </div>
                     <div class="col-md-7">
-                        <input type="text" class="form-control" placeholder="검색어를 입력하세요">
+                        <input type="text" id="search-keyword" name="searchKeyword" class="form-control" placeholder="검색어를 입력하세요">
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">검색</button>
@@ -37,33 +37,34 @@
         </div>
 
         <!-- 게시물 리스트 -->
-        <div class="row row-cols-1 g-3">
-            <div class="col" th:each="post : ${posts}">
-                <div class="card shadow-sm h-100">
-                    <div class="card-body position-relative"> <!-- position-relative 필수 -->
-                        <h5 class="card-title mb-2">
-                            <a th:href="@{/content/edit(docNo=${post.docNo})}"
-                               class="stretched-link text-decoration-none text-dark fw-semibold"
-                               th:text="${post.title != null ? post.title : '제목 없음'}">
-                                게시물 제목
-                            </a>
-                        </h5>
-                        <p class="card-text text-truncate text-muted" style="max-width: 90%;">
-                            <span th:text="${post.content}">게시물 내용 미리보기...</span>
-                        </p>
-                    </div>
-                    <div class="card-footer d-flex justify-content-between align-items-center small text-muted">
-                        <span th:text="${post.uptDtm}">2025.09.27 23:09</span>
-                        <span th:text="${post.viewYn == 'Y' ? '공개' : '비공개'}"
-                              class="badge bg-secondary">공개</span>
+        <div id="document-list">
+            <div class="row row-cols-1 g-3">
+                <div class="col" th:each="post : ${posts}">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body position-relative"> <!-- position-relative 필수 -->
+                            <h5 class="card-title mb-2">
+                                <a th:href="@{/content/edit(docNo=${post.docNo})}"
+                                   class="stretched-link text-decoration-none text-dark fw-semibold"
+                                   th:text="${post.title != null ? post.title : '제목 없음'}">
+                                </a>
+                            </h5>
+                            <p class="card-text text-truncate text-muted" style="max-width: 90%;">
+                                <span th:text="${post.content}">게시물 내용 미리보기...</span>
+                            </p>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center small text-muted">
+                            <span th:text="${post.uptDtm}"></span>
+                            <span th:text="${post.viewYn == 'Y' ? '공개' : '비공개'}"
+                                  class="badge bg-secondary">공개</span>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 게시물이 없을 때 -->
-        <div th:if="${#lists.isEmpty(posts)}" class="alert alert-info mt-4 text-center" role="alert">
-            등록된 게시물이 없습니다.
+            <!-- 게시물이 없을 때 -->
+            <div th:if="${#lists.isEmpty(posts)}" class="alert alert-info mt-4 text-center" role="alert">
+                등록된 게시물이 없습니다.
+            </div>
         </div>
 
         <!-- 페이지네이션 -->

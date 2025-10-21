@@ -8,6 +8,10 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 //	implementation 'org.springframework.boot:spring-boot-starter-security'
 
+	implementation 'io.github.openfeign.querydsl:querydsl-core:6.11'
+	implementation 'io.github.openfeign.querydsl:querydsl-jpa:6.11'
+	annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:6.11:jpa'
+
 //	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 

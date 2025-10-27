@@ -1,14 +1,10 @@
 package com.section.common.system.service;
 
-import com.section.common.content.entity.Document;
 import com.section.common.system.entity.ApprovalDocument;
 import com.section.common.system.repository.ApprovalDocumentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
-
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor

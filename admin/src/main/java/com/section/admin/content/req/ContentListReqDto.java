@@ -1,5 +1,7 @@
 package com.section.admin.content.req;
 
+import com.section.common.content.dto.ContentListItemDto;
+import com.section.common.system.entity.Account;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
@@ -22,4 +24,11 @@ public class ContentListReqDto {
     private String pageEN="1";
 
     private String searchKeyword;
+
+    public ContentListItemDto toContentListItemDto(Account account) {
+        ContentListItemDto dto = new ContentListItemDto();
+        dto.setSearchKeyword(this.searchKeyword == null ? "" : this.searchKeyword);
+        dto.setAdminNo(account.getCrtNo());
+        return dto;
+    }
 }

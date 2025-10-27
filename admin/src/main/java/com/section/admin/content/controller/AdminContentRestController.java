@@ -2,18 +2,16 @@ package com.section.admin.content.controller;
 
 import com.section.admin.base.res.BaseListResDto;
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.req.ContentSetReqDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.admin.content.service.AdminContentService;
-import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -23,9 +21,9 @@ public class AdminContentRestController {
 
     private final AdminContentService adminContentService;
 
-    @GetMapping("/list")
-    public ResponseEntity<BaseSimpleResDto> listDocument() {
-        ContentMyDocResDto documentList = adminContentService.listDocument();
+    @PostMapping("/list")
+    public ResponseEntity<BaseSimpleResDto> listDocument(@RequestBody ContentListReqDto reqDto) {
+        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
         return new ResponseEntity<>(new BaseListResDto(documentList.getDocuments(), documentList.getDocuments().size()), HttpStatus.OK);
     }
 

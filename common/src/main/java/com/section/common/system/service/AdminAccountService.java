@@ -18,7 +18,7 @@ public class AdminAccountService {
 
     public Optional<Account> findAccountInfo(String email, String password) {
         if(StringUtils.hasText(email) && StringUtils.hasText(password)){
-            return accountRepository.findByAdminInfo(email,  password);
+            return accountRepository.findByAdminInfo(email, password);
         }else {
             return Optional.empty();
         }

@@ -1,5 +1,6 @@
 package com.section.admin.content.service;
 
+import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.req.ContentSetReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
@@ -32,10 +33,10 @@ public class AdminContentService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
 
-    public ContentMyDocResDto listDocument() {
+    public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
         Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
                 .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
-        List<Document> document = documentService.findDocumentInfo(currentAccount.getCrtNo());
+        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount));
         List<Long> ids = document.stream()
                 .map(Document::getApprovalDocument)
                 .filter(Objects::nonNull)

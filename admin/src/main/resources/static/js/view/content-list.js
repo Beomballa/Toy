@@ -6,6 +6,11 @@ var ContentListJS = {
         document.getElementById("newContentBtn").addEventListener("click", function (el){
             ContentListJS.setNewContent();
         });
+
+        document.getElementById("searchForm").addEventListener("submit", function (e){
+            e.preventDefault();
+            ContentListJS.getListInfo();
+        })
     },
 
     setNewContent : function () {
@@ -25,7 +30,13 @@ var ContentListJS = {
     },
 
     getListInfo : function () {
-        axios.get('/api/content/list')
+        const reqData = {
+            langCode: "KO",
+            pageKO: "1",
+            pageEN: "1",
+            searchKeyword : document.getElementById("searchKeyword").value,
+        }
+        axios.post('/api/content/list', reqData)
             .then(res => {
                 if(res.data.resultCode === "200") {
 

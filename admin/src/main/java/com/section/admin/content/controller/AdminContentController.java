@@ -1,8 +1,10 @@
 package com.section.admin.content.controller;
 
+import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.service.AdminContentService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -22,9 +24,9 @@ public class AdminContentController {
      * 본인 작성 문서 조회
      * */
     @RequestMapping("/list")
-    public ModelAndView contentList(){
+    public ModelAndView contentList(HttpServletRequest req, ContentListReqDto reqDto){
         ModelAndView mav = new ModelAndView("views/content-list");
-        ContentMyDocResDto posts = adminContentService.listDocument();
+        ContentMyDocResDto posts = adminContentService.listDocument(reqDto);
         mav.addObject("posts",posts.getDocuments());
         return mav;
     }

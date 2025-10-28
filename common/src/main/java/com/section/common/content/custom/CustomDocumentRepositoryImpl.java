@@ -1,12 +1,62 @@
 package com.section.common.content.custom;
 
+import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.content.dto.ContentListItemDto;
+import com.section.common.content.dto.DocumentListItemDto;
+import com.section.common.system.entity.QApprovalDocument;
 import jakarta.persistence.EntityManager;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.util.StringUtils;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.section.common.content.entity.QDocument.document;
+import static com.section.common.system.entity.QApprovalDocument.approvalDocument;
 
 public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
     private final JPAQueryFactory queryFactory;
 
     public CustomDocumentRepositoryImpl(EntityManager em) {
         this.queryFactory = new JPAQueryFactory(em);
+    }
+
+    @Override
+    public Page<DocumentListItemDto> findAllDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
+        List<DocumentListItemDto> result = queryFactory
+                .select(
+                        Projections.bean(
+                                DocumentListItemDto.class,
+                                document.approvalDocument.docNo.as("title"),
+                                document.title.as("title"),
+                                document.content.as("content"),
+                                document.uptDtm.as("uptDtm"),
+                                document.viewYn.as("viewYn")
+                        )
+                )
+                .from(document)
+                .join(document.approvalDocument, approvalDocument)
+                .where(isSearchKeywordCondition(reqDto.getSearchKeyword()))
+                .orderBy(document.reserveDtm.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = Optional.ofNullable(queryFactory
+                .select(document.count())
+                .from(document)
+                .join(document.approvalDocument, approvalDocument)
+                .where(isSearchKeywordCondition(reqDto.getSearchKeyword()))
+                .fetchOne()).orElse(0L);
+
+        return new PageImpl<>(result, pageable, total);
+    }
+
+    private BooleanExpression isSearchKeywordCondition(String searchKeyword) {
+        return StringUtils.hasText(searchKeyword) ? document.title.containsIgnoreCase(searchKeyword) : null;
     }
 }

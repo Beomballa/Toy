@@ -15,6 +15,7 @@ import com.section.common.system.repository.ApprovalDocumentRepository;
 import com.section.common.system.service.ApprovalDocumentService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,10 +34,10 @@ public class AdminContentService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
 
-    public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
+    public ContentMyDocResDto listDocument(ContentListReqDto reqDto, Pageable pageable) {
         Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
                 .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
-        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount));
+        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), pageable);
         List<Long> ids = document.stream()
                 .map(Document::getApprovalDocument)
                 .filter(Objects::nonNull)

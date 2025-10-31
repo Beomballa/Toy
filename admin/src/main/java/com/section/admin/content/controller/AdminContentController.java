@@ -26,6 +26,8 @@ public class AdminContentController {
     @RequestMapping("/list")
     public ModelAndView contentList(HttpServletRequest req, ContentListReqDto reqDto){
         ModelAndView mav = new ModelAndView("views/content-list");
+        reqDto.setPage(0);
+        reqDto.setPageSize(10);
         ContentMyDocResDto posts = adminContentService.listDocument(reqDto);
         mav.addObject("posts",posts.getDocuments());
         return mav;

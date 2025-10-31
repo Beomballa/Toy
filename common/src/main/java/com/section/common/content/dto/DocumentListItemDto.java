@@ -1,14 +1,17 @@
 package com.section.common.content.dto;
 
+import com.section.common.base.entity.type.YN;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 public class DocumentListItemDto {
-    private String docNo;
+    private Long docNo;
     private String title;
     private String content;
-    private String uptDtm;
-    private String viewYn;
+    private LocalDateTime uptDtm;
+    private YN viewYn;
 }

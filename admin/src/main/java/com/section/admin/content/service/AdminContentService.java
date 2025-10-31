@@ -5,6 +5,7 @@ import com.section.admin.content.req.ContentSetReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
+import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.system.entity.Account;
 import com.section.common.system.service.AdminAccountService;
 import com.section.common.content.entity.Document;
@@ -15,6 +16,8 @@ import com.section.common.system.repository.ApprovalDocumentRepository;
 import com.section.common.system.service.ApprovalDocumentService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,22 +37,23 @@ public class AdminContentService {
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
 
-    public ContentMyDocResDto listDocument(ContentListReqDto reqDto, Pageable pageable) {
+    public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
         Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
                 .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
-        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), pageable);
-        List<Long> ids = document.stream()
-                .map(Document::getApprovalDocument)
-                .filter(Objects::nonNull)
-                .map(ApprovalDocument::getDocNo)
+//        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), pageable);
+        Page<DocumentListItemDto> result = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), PageRequest.of(reqDto.getPage(), reqDto.getPageSize()));
+
+        List<Long> ids = result.stream()
+                .map(DocumentListItemDto::getDocNo)
                 .toList();
+
 
         List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findAllDocumentInfo(ids);
         // ApprovalDocument를 Map으로 변환 (빠른 조회를 위해)
 //        Map<Long, ApprovalDocument> approvalDocumentMap = approvalDocuments.stream()
 //                .collect(Collectors.toMap(ApprovalDocument::getDocNo, Function.identity()));
 
-        return ContentMyDocResDto.fromEntity(document, approvalDocuments);
+        return ContentMyDocResDto.fromEntity(result, approvalDocuments);
     }
 
 

@@ -5,7 +5,6 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.content.dto.ContentListItemDto;
 import com.section.common.content.dto.DocumentListItemDto;
-import com.section.common.system.entity.QApprovalDocument;
 import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,7 +30,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .select(
                         Projections.bean(
                                 DocumentListItemDto.class,
-                                document.approvalDocument.docNo.as("title"),
+                                document.approvalDocument.docNo.as("docNo"),
                                 document.title.as("title"),
                                 document.content.as("content"),
                                 document.uptDtm.as("uptDtm"),

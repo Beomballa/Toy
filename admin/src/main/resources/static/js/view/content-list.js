@@ -32,8 +32,8 @@ var ContentListJS = {
     getListInfo : function () {
         const reqData = {
             langCode: "KO",
-            pageKO: "1",
-            pageEN: "1",
+            page: 0,
+            pageSize: 10,
             searchKeyword : document.getElementById("searchKeyword").value,
         }
         axios.post('/api/content/list', reqData)

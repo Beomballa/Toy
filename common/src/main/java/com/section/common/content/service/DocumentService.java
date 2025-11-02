@@ -22,9 +22,7 @@ public class DocumentService {
     private final DocumentRepository documentRepository;
 
     public Page<DocumentListItemDto> findDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
-//        return documentRepository.findByDocumentInfo(reqDto.getSearchKeyword(), reqDto.getAdminNo());
-        return documentRepository.findAllDocumentInfo(reqDto, pageable);
-
+        return documentRepository.findDocumentInfo(reqDto, pageable);
     }
 
     public Document createDocument(ApprovalDocument approvalDocument) {

@@ -1,5 +1,6 @@
 package com.section.admin.content.res;
 
+import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.entity.Document;
 import com.section.common.system.entity.ApprovalDocument;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ContentMyDocResDto {
     private List<DocumentInfo> documents;
+    private long totalCount;
 
     @Getter
     @Builder
@@ -36,12 +38,13 @@ public class ContentMyDocResDto {
                         .title(document.getTitle() == null ? "제목없음" : document.getTitle())
                         .content(document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))
-                        .viewYn(document.getViewYn().toString())
+                        .viewYn(document.getViewYn() == YN.Y ? "공개" : "비공개")
                         .build())
                 .collect(Collectors.toList());
 
         return ContentMyDocResDto.builder()
                 .documents(documentInfos)
+                .totalCount(documents.getTotalElements())
                 .build();
     }
 }

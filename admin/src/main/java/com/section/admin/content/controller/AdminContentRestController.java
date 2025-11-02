@@ -22,9 +22,12 @@ public class AdminContentRestController {
     private final AdminContentService adminContentService;
 
     @PostMapping("/list")
-    public ResponseEntity<BaseSimpleResDto> listDocument(@RequestBody ContentListReqDto reqDto) {
+    public ResponseEntity<BaseSimpleResDto> getListDocument(@RequestBody ContentListReqDto reqDto) {
         ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
-        return new ResponseEntity<>(new BaseListResDto(documentList.getDocuments(), documentList.getDocuments().size()), HttpStatus.OK);
+        return new ResponseEntity<>(
+                new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount()),
+                HttpStatus.OK
+        );
     }
 
     @PostMapping("/set")

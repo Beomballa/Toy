@@ -25,7 +25,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
     }
 
     @Override
-    public Page<DocumentListItemDto> findAllDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
+    public Page<DocumentListItemDto> findDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
         List<DocumentListItemDto> result = queryFactory
                 .select(
                         Projections.bean(

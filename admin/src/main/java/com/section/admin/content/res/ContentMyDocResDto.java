@@ -22,7 +22,7 @@ public class ContentMyDocResDto {
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class DocumentInfo {
-        private String docNo;
+        private Long docNo;
         private String title;
         private String content;
         private String uptDtm;
@@ -32,7 +32,7 @@ public class ContentMyDocResDto {
     public static ContentMyDocResDto fromEntity(Page<DocumentListItemDto> documents, List<ApprovalDocument> approvalDocuments) {
         List<DocumentInfo> documentInfos = documents.stream()
                 .map(document -> DocumentInfo.builder()
-                        .docNo(approvalDocuments.stream().map(ApprovalDocument::getDocNo).toString())
+                        .docNo(document.getDocNo())
                         .title(document.getTitle() == null ? "제목없음" : document.getTitle())
                         .content(document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))

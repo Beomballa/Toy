@@ -18,12 +18,10 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -40,18 +38,20 @@ public class AdminContentService {
     public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
         Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
                 .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
-//        List<Document> document = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), pageable);
+
+        if(reqDto.getSearchKeyword() != null) {
+
+        }
+        // 조회 대상이 되는 리스트 조회
         Page<DocumentListItemDto> result = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), PageRequest.of(reqDto.getPage(), reqDto.getPageSize()));
 
+        // 해당 테이블에 저장된
         List<Long> ids = result.stream()
                 .map(DocumentListItemDto::getDocNo)
                 .toList();
 
-
-        List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findAllDocumentInfo(ids);
-        // ApprovalDocument를 Map으로 변환 (빠른 조회를 위해)
-//        Map<Long, ApprovalDocument> approvalDocumentMap = approvalDocuments.stream()
-//                .collect(Collectors.toMap(ApprovalDocument::getDocNo, Function.identity()));
+        // 원본 문서에 저장된 정보 조회
+        List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findApprovalDocumentInfo(ids);
 
         return ContentMyDocResDto.fromEntity(result, approvalDocuments);
     }

@@ -19,7 +19,7 @@ var ContentListJS = {
                 if(res.data.resultCode === "200") {
                     Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success')
                         .then(() => {
-                            location.reload();
+                            // location.reload();
                         });
                 }
             })
@@ -39,7 +39,6 @@ var ContentListJS = {
         axios.post('/api/content/list', reqData)
             .then(res => {
                 if(res.data.resultCode === "200") {
-
                 }
             })
             .catch(error => {

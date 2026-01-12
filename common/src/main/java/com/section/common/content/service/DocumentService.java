@@ -23,7 +23,10 @@ public class DocumentService {
 
     public Page<DocumentListItemDto> findDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
 //        return documentRepository.findByDocumentInfo(reqDto.getSearchKeyword(), reqDto.getAdminNo());
-        return documentRepository.findAllDocumentInfo(reqDto, pageable);
+//        if(reqDto.getSearchKeyword() != null){
+//            reqDto.setSearchKeyword("%" + reqDto.getSearchKeyword() + "%");
+//        }
+        return documentRepository.findDocumentInfo(reqDto, pageable);
 
     }
 

@@ -32,7 +32,7 @@ public class ContentMyDocResDto {
     public static ContentMyDocResDto fromEntity(Page<DocumentListItemDto> documents, List<ApprovalDocument> approvalDocuments) {
         List<DocumentInfo> documentInfos = documents.stream()
                 .map(document -> DocumentInfo.builder()
-                        .docNo(document.getDocNo().toString())
+                        .docNo(approvalDocuments.stream().map(ApprovalDocument::getDocNo).toString())
                         .title(document.getTitle() == null ? "제목없음" : document.getTitle())
                         .content(document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))

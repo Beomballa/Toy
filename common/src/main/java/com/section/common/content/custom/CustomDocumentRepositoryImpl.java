@@ -25,7 +25,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
     }
 
     @Override
-    public Page<DocumentListItemDto> findAllDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
+    public Page<DocumentListItemDto> findDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
         List<DocumentListItemDto> result = queryFactory
                 .select(
                         Projections.bean(
@@ -56,6 +56,6 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
     }
 
     private BooleanExpression isSearchKeywordCondition(String searchKeyword) {
-        return StringUtils.hasText(searchKeyword) ? document.title.containsIgnoreCase(searchKeyword) : null;
+        return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
     }
 }

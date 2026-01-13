@@ -39,7 +39,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 )
                 .from(document)
                 .join(document.approvalDocument, approvalDocument)
-                .where(isSearchKeywordCondition(reqDto.getSearchKeyword()))
+                .where(isSearchKeywordCondition(reqDto.getSearchKeyword(), reqDto.getSearchKeywordType()))
                 .orderBy(document.reserveDtm.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -49,13 +49,21 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .select(document.count())
                 .from(document)
                 .join(document.approvalDocument, approvalDocument)
-                .where(isSearchKeywordCondition(reqDto.getSearchKeyword()))
+                .where(isSearchKeywordCondition(reqDto.getSearchKeyword(), reqDto.getSearchKeywordType()))
                 .fetchOne()).orElse(0L);
 
         return new PageImpl<>(result, pageable, total);
     }
 
-    private BooleanExpression isSearchKeywordCondition(String searchKeyword) {
-        return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
+    private BooleanExpression isSearchKeywordCondition(String searchKeyword, String searchKeywordType) {
+        if(!StringUtils.hasText(searchKeyword) ){
+            return null;
+        }
+        if(searchKeywordType.equals("T")) {
+            return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
+        }else if(searchKeywordType.equals("C")) {
+            return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
+        }
+        return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword).or(document.content.contains(searchKeyword))  : null;
     }
 }

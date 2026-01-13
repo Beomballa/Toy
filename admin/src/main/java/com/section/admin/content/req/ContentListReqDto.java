@@ -18,9 +18,13 @@ public class ContentListReqDto extends PagingReqDto {
 
     private String searchKeyword;
 
+    // T : 제목,  C : 내용
+    private String searchKeywordType;
+
     public ContentListItemDto toContentListItemDto(Account account) {
         ContentListItemDto dto = new ContentListItemDto();
         dto.setSearchKeyword(this.searchKeyword == null ? "" : this.searchKeyword);
+        dto.setSearchKeywordType(this.searchKeywordType == null ? "" : this.searchKeywordType);
         dto.setAdminNo(account.getCrtNo());
         return dto;
     }

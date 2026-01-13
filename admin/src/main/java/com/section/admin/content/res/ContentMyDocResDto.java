@@ -1,5 +1,6 @@
 package com.section.admin.content.res;
 
+import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.entity.Document;
 import com.section.common.system.entity.ApprovalDocument;
@@ -33,10 +34,10 @@ public class ContentMyDocResDto {
         List<DocumentInfo> documentInfos = documents.stream()
                 .map(document -> DocumentInfo.builder()
                         .docNo(document.getDocNo())
-                        .title(document.getTitle() == null ? "제목없음" : document.getTitle())
-                        .content(document.getContent())
+                        .title(document.getTitle() == null ? "" : document.getTitle())
+                        .content(document.getContent() == null ? "" : document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))
-                        .viewYn(document.getViewYn().toString())
+                        .viewYn(document.getViewYn().equals(YN.Y) ? "공개" : "비공개")
                         .build())
                 .collect(Collectors.toList());
 

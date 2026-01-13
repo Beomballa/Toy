@@ -7,5 +7,6 @@ import lombok.Setter;
 @Setter
 public class ContentListItemDto {
     private String searchKeyword;
+    private String searchKeywordType;
     private String adminNo;
 }

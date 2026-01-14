@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ContentMyDocResDto {
     private List<DocumentInfo> documents;
+    private Long totalCount;
 
     @Getter
     @Builder
@@ -43,6 +44,7 @@ public class ContentMyDocResDto {
 
         return ContentMyDocResDto.builder()
                 .documents(documentInfos)
+                .totalCount(documents.getTotalElements())
                 .build();
     }
 }

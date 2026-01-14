@@ -119,10 +119,26 @@ var ContentListJS = {
 
         let html = `<ul class="pagination pagination-sm">`;
 
-        const preDisabled = self.currentPage === 0 ? 'disabled' : '';
-        html += `<li class="page-item ${preDisabled}">
-                    <a class="page-link" href="javascript:void(0)" onclick="ContentListJS.getListInfo(${self.currentPage - 1})">&laquo;</a>
+        // 이전
+        const prevDisabled = self.currentPage === 0 ? 'disabled' : '';
+        html += `<li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="javascript:void(0)" onclick="ContentListJS.movePage(${self.currentPage - 1}); return false;">이전</a>
                  </li>`;
+
+        // 페이지 번호(전체 출력)
+        for(let i=0; i<totalPage; i++) {
+            const activeClass = self.currentPage === i ? 'active' : '';
+            html += `<li class="page-item ${activeClass}">
+                        <a class="page-link" href="javascript:void(0)" onclick="ContentListJS.movePage(${i}); return false;">${i+1}</a>
+                     </li>`;
+        }
+
+        const nextDisabled = self.currentPage === totalPage - 1 ? 'disabled' : '';
+        html += `<li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="javascript:void(0)" onclick="ContentListJS.movePage(${self.currentPage + 1}); return false;">다음</a>
+                 </li>`
+        html += `</ul>`;
+        pageWrapper.innerHTML = html;
 
     },
 

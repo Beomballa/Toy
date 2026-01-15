@@ -62,7 +62,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
         if(searchKeywordType.equals("T")) {
             return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
         }else if(searchKeywordType.equals("C")) {
-            return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword) : null;
+            return StringUtils.hasText(searchKeyword) ? document.content.contains(searchKeyword) : null;
         }
         return StringUtils.hasText(searchKeyword) ? document.title.contains(searchKeyword).or(document.content.contains(searchKeyword))  : null;
     }

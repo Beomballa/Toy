@@ -39,6 +39,15 @@ public class ContentSetReqDto implements SyDocument {
 //        document.setViewYn(YN.valueOf(viewYn));
         return document;
     }
+    // 메서드 명 변경 및 파라미터 간소화
+    public void updateDocument(Document document, ApprovalDocument approvalDocument) {
+        document.setApprovalDocument(approvalDocument);
+        document.setTitle(this.title);       // this 사용
+        document.setContent(this.content);   // this 사용
+        document.setStatus("PR");
+        document.setReserveYn(YN.N);
+        document.setReserveDtm(LocalDateTime.now());
+    }
 
     public Document toDocument() {
         Document document = new Document();

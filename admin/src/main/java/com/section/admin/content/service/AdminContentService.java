@@ -39,9 +39,6 @@ public class AdminContentService {
         Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
                 .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
 
-        if(reqDto.getSearchKeyword() != null) {
-
-        }
         // 조회 대상이 되는 리스트 조회
         Page<DocumentListItemDto> result = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), PageRequest.of(reqDto.getPage(), reqDto.getPageSize()));
 
@@ -77,7 +74,7 @@ public class AdminContentService {
 
         Document document = documentRepository.findByDocNo(Long.valueOf(reqDto.getDocNo()))
                         .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
-        documentRepository.save(reqDto.toDocument(approvalDocument, document, reqDto));
+        reqDto.updateDocument(document, approvalDocument);
     }
 
     /**

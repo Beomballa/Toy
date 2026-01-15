@@ -24,18 +24,31 @@ var ContentEditJS = {
                     this.saveContent(true); // 자동 저장
                 }, 5000)
             })
-        })
+        });
+
+        // Title에서 엔터 키 방지 및 저장 실행
+        this.titleEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault(); // 1. 폼 제출(새로고침)을 막습니다. (가장 중요!)
+                // showConfirmAlert(
+                //         '등록하시겠습니까?',
+                //         '작성한 내용이 서버에 저장됩니다.',
+                //         () => {
+                //             ContentEditJS.saveContent(false); // 수동 저장
+                //         }
+                //     );
+            }
+        });
+
+        // 폼 자체의 submit 이벤트 방지
+        document.getElementById("documentEditForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+        });
         
         // document.getElementById("submitBtn").addEventListener("click", function (el) {
         //     el.preventDefault();
-        //     // 바로 saveContent를 호출하는 대신, 공통 확인 창 함수를 먼저 호출합니다.
-        //     showConfirmAlert(
-        //         '등록하시겠습니까?',
-        //         '작성한 내용이 서버에 저장됩니다.',
-        //         () => {
-        //             ContentEditJS.saveContent(false); // 수동 저장
-        //         }
-        //     );
+        //     // 바로 saveContent를 호출하는 대신, 공통 확인 창 함수를 먼저 호출
+        //
         // })
     },
 

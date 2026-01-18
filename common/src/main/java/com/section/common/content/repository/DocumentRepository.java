@@ -3,10 +3,11 @@ package com.section.common.content.repository;
 import com.section.common.content.custom.CustomDocumentRepository;
 import com.section.common.content.entity.Document;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<Document,Long>, CustomDocumentRepository {
@@ -14,11 +15,9 @@ public interface DocumentRepository extends JpaRepository<Document,Long>, Custom
     @Query("SELECT d FROM Document d where d.approvalDocument.docNo =:docNo")
     Optional<Document> findByDocNo(Long docNo);
 
-//    @Query("SELECT d FROM Document d LEFT JOIN FETCH d.approvalDocument " +
-//            "where d.crtNo =:adminNo OR " +
-//            "   d.title LIKE CONCAT('%', :searchKeyword, '%')")
-//    List<Document> findByDocumentInfo(
-//            @Param("adminNo") String adminNo,
-//            @Param("searchKeyword") String searchKeyword
-//    );
+    @Modifying(clearAutomatically = true) // 벌크 연산 후 영속성 컨텍스트 초기화 (필수)
+    @Transactional
+    @Query("UPDATE Document d SET d.viewCnt = d.viewCnt + :quantity WHERE d.id = :id")
+    int addViewCnt(@Param("id") Long id, @Param("quantity") int quantity);
+
 }

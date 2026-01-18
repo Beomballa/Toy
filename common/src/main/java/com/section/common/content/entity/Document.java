@@ -40,6 +40,9 @@ public class Document extends BaseEntity {
     @Column(name = "RESERVE_DTM")
     private LocalDateTime reserveDtm;
 
+    @Column(name = "VIEW_CNT")
+    private int viewCnt;
+
     @Column(name = "VIEW_YN")
     @Enumerated(EnumType.STRING)
     private YN viewYn;

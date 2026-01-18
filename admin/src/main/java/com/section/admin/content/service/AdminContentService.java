@@ -2,6 +2,7 @@ package com.section.admin.content.service;
 
 import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.req.ContentSetReqDto;
+import com.section.admin.content.req.UpdateViewCountReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
@@ -16,6 +17,7 @@ import com.section.common.system.repository.ApprovalDocumentRepository;
 import com.section.common.system.service.ApprovalDocumentService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -36,21 +39,29 @@ public class AdminContentService {
     private final DocumentRepository documentRepository;
 
     public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
-        Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
-                .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
+        try{
+            Account currentAccount = adminAccountService.findAccountInfo("wjdqjatnwkd@gmail.com", "1234")
+                    .orElseThrow(() -> new EntityNotFoundException("계정 정보를 찾을 수 없습니다."));
 
-        // 조회 대상이 되는 리스트 조회
-        Page<DocumentListItemDto> result = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), PageRequest.of(reqDto.getPage(), reqDto.getPageSize()));
+            // 조회 대상이 되는 리스트 조회
+            Page<DocumentListItemDto> result = documentService.findDocumentInfo(reqDto.toContentListItemDto(currentAccount), PageRequest.of(reqDto.getPage(), reqDto.getPageSize()));
 
-        // 해당 테이블에 저장된
-        List<Long> ids = result.stream()
-                .map(DocumentListItemDto::getDocNo)
-                .toList();
+            // 해당 테이블에 저장된
+            List<Long> ids = result.stream()
+                    .map(DocumentListItemDto::getDocNo)
+                    .toList();
 
-        // 원본 문서에 저장된 정보 조회
-        List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findApprovalDocumentInfo(ids);
+            // 원본 문서에 저장된 정보 조회
+            List<ApprovalDocument> approvalDocuments = approvalDocumentRepository.findApprovalDocumentInfo(ids);
 
-        return ContentMyDocResDto.fromEntity(result, approvalDocuments);
+            return ContentMyDocResDto.fromEntity(result, approvalDocuments);
+        }catch (EntityNotFoundException e) {
+            log.warn("문서 목록 조회 실패 - 계정 없음 또는 데이터 누락: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("문서 목록 조회 중 시스템 오류 발생", e);
+            throw new RuntimeException("문서 목록을 불러오는 중 오류가 발생했습니다.", e);
+        }
     }
 
 
@@ -59,9 +70,14 @@ public class AdminContentService {
      * */
     @Transactional
     public CreateDocumentDefaultInfoResDto setDocument() {
-        ApprovalDocument approvalDocument = approvalDocumentService.createApprovalDocument();
-        Document document = documentService.createDocument(approvalDocument);
-        return CreateDocumentDefaultInfoResDto.fromDefaultInfo(document);
+        try{
+            ApprovalDocument approvalDocument = approvalDocumentService.createApprovalDocument();
+            Document document = documentService.createDocument(approvalDocument);
+            return CreateDocumentDefaultInfoResDto.fromDefaultInfo(document);
+        }catch (Exception e) {
+            log.error("문서 생성(초기화) 중 오류 발생", e);
+            throw new RuntimeException("새 문서를 생성하는 데 실패했습니다.", e);
+        }
     }
 
     /**
@@ -69,12 +85,25 @@ public class AdminContentService {
      * */
     @Transactional
     public void setContent(ContentSetReqDto reqDto) {
-        ApprovalDocument approvalDocument = approvalDocumentRepository.findById(Long.valueOf(reqDto.getDocNo()))
-                .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
+        try{
+            Long docNo = Long.valueOf(reqDto.getDocNo());
+            ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
-        Document document = documentRepository.findByDocNo(Long.valueOf(reqDto.getDocNo()))
-                        .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
-        reqDto.updateDocument(document, approvalDocument);
+            Document document = documentRepository.findByDocNo(docNo)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
+            reqDto.updateDocument(document, approvalDocument);
+        }catch (NumberFormatException e) {
+            log.error("문서 저장 실패 - 잘못된 문서 번호 형식: {}", reqDto.getDocNo());
+            throw new IllegalArgumentException("유효하지 않은 문서 번호입니다.", e);
+        } catch (EntityNotFoundException e) {
+            log.warn("문서 저장 실패 - 대상 없음: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("문서 저장 중 예기치 않은 오류 발생. DocNo={}", reqDto.getDocNo(), e);
+            throw new RuntimeException("문서 저장 중 시스템 오류가 발생했습니다.", e);
+        }
+
     }
 
     /**
@@ -84,11 +113,32 @@ public class AdminContentService {
     public ContentGetResDto getDocumentInfo(String docNoStr) {
         Long docNo = Long.valueOf(docNoStr);
         ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
-                .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
+                .orElseThrow(() -> new EntityNotFoundException("해당 원본 문서를 찾을 수 없습니다."));
 
         Document document = documentRepository.findByDocNo(docNo)
                 .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
         return ContentGetResDto.fromEntity(document, approvalDocument);
+    }
+
+    /**
+     * 문서 조회수 업데이트
+     * @param reqDto
+     * */
+    @Transactional
+    public void UpdateViewCountReqDto(UpdateViewCountReqDto reqDto) {
+        try{
+            Long id = Long.valueOf(reqDto.getDocNo());
+            approvalDocumentRepository.findById(id)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 원본 문서를 찾을 수 없습니다."));
+
+            documentRepository.findByDocNo(id)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
+
+            documentRepository.addViewCnt(id, 1);
+
+        }catch (Exception e){
+
+        }
     }
 }

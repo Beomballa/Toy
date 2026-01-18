@@ -49,19 +49,6 @@ public class ContentSetReqDto implements SyDocument {
         document.setReserveDtm(LocalDateTime.now());
     }
 
-    public Document toDocument() {
-        Document document = new Document();
-        document.setTitle(title);
-        document.setContent(content);
-        document.setStatus("PR");
-        document.setStatus(status);
-        document.setReserveYn(YN.N);
-//        document.setReserveYn(YN.valueOf(reserveYn));
-        document.setReserveDtm(LocalDateTime.now());
-//        document.setViewYn(YN.valueOf(viewYn));
-        return document;
-    }
-
     @Override
     public String getLang() {
         return "KO";

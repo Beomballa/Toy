@@ -4,6 +4,7 @@ import com.section.admin.base.res.BaseListResDto;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.content.req.ContentListReqDto;
 import com.section.admin.content.req.ContentSetReqDto;
+import com.section.admin.content.req.UpdateViewCountReqDto;
 import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.admin.content.service.AdminContentService;
@@ -40,6 +41,12 @@ public class AdminContentRestController {
     @PostMapping("/save")
     public ResponseEntity<BaseSimpleResDto> saveContent(@RequestBody ContentSetReqDto reqDto) {
         adminContentService.setContent(reqDto);
+        return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
+    }
+
+    @PostMapping("/update/cnt")
+    public ResponseEntity<BaseSimpleResDto> updateViewCount(@RequestBody UpdateViewCountReqDto reqDto) {
+
         return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
     }
 }

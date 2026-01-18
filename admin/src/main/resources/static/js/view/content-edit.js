@@ -29,7 +29,7 @@ var ContentEditJS = {
         // Title에서 엔터 키 방지 및 저장 실행
         this.titleEl.addEventListener("keydown", (e) => {
             if (e.key === "Enter") {
-                e.preventDefault(); // 1. 폼 제출(새로고침)을 막습니다. (가장 중요!)
+                e.preventDefault(); // 1. 폼 제출(새로고침)을 방지
                 // showConfirmAlert(
                 //         '등록하시겠습니까?',
                 //         '작성한 내용이 서버에 저장됩니다.',

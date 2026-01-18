@@ -31,6 +31,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         Projections.bean(
                                 DocumentListItemDto.class,
                                 document.approvalDocument.docNo.as("docNo"),
+                                document.id.as("no"),
                                 document.title.as("title"),
                                 document.content.as("content"),
                                 document.uptDtm.as("uptDtm"),

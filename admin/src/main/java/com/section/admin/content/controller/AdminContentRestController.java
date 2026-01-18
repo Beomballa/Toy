@@ -46,7 +46,7 @@ public class AdminContentRestController {
 
     @PostMapping("/update/cnt")
     public ResponseEntity<BaseSimpleResDto> updateViewCount(@RequestBody UpdateViewCountReqDto reqDto) {
-
+        adminContentService.updateViewCount(reqDto);
         return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
     }
 }

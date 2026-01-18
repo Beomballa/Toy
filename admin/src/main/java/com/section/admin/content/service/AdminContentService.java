@@ -111,14 +111,27 @@ public class AdminContentService {
      * @param docNoStr
      * */
     public ContentGetResDto getDocumentInfo(String docNoStr) {
-        Long docNo = Long.valueOf(docNoStr);
-        ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
-                .orElseThrow(() -> new EntityNotFoundException("해당 원본 문서를 찾을 수 없습니다."));
+        try {
+            Long docNo = Long.valueOf(docNoStr);
 
-        Document document = documentRepository.findByDocNo(docNo)
-                .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
+            ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 결재 문서를 찾을 수 없습니다."));
 
-        return ContentGetResDto.fromEntity(document, approvalDocument);
+            Document document = documentRepository.findByDocNo(docNo)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
+
+            return ContentGetResDto.fromEntity(document, approvalDocument);
+
+        } catch (NumberFormatException e) {
+            log.error("상세 조회 실패 - 잘못된 ID 형식: {}", docNoStr);
+            throw new IllegalArgumentException("문서 번호가 올바르지 않습니다.");
+        } catch (EntityNotFoundException e) {
+            log.warn("상세 조회 실패 - 데이터 없음: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("상세 조회 중 시스템 오류 발생. ID={}", docNoStr, e);
+            throw new RuntimeException("문서 정보를 불러오는 중 오류가 발생했습니다.", e);
+        }
     }
 
     /**
@@ -126,19 +139,25 @@ public class AdminContentService {
      * @param reqDto
      * */
     @Transactional
-    public void UpdateViewCountReqDto(UpdateViewCountReqDto reqDto) {
+    public void updateViewCount(UpdateViewCountReqDto reqDto) {
         try{
             Long id = Long.valueOf(reqDto.getDocNo());
-            approvalDocumentRepository.findById(id)
-                    .orElseThrow(() -> new EntityNotFoundException("해당 원본 문서를 찾을 수 없습니다."));
 
             documentRepository.findByDocNo(id)
                     .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
             documentRepository.addViewCnt(id, 1);
 
-        }catch (Exception e){
-
+        }catch (NumberFormatException e) {
+            log.error("조회수 증가 실패 - 잘못된 ID: {}", reqDto.getDocNo());
+            throw new IllegalArgumentException("잘못된 문서 번호입니다.");
+        } catch (EntityNotFoundException e) {
+            log.warn("조회수 증가 실패 - 문서 없음: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("조회수 증가 업데이트 중 오류 발생", e);
+            // 롤백을 위해 예외 전파
+            throw new RuntimeException("조회수 업데이트 실패", e);
         }
     }
 }

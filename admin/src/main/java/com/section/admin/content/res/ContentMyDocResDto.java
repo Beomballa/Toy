@@ -25,6 +25,7 @@ public class ContentMyDocResDto {
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     public static class DocumentInfo {
         private Long docNo;
+        private Long no;
         private String title;
         private String content;
         private String uptDtm;
@@ -35,6 +36,7 @@ public class ContentMyDocResDto {
         List<DocumentInfo> documentInfos = documents.stream()
                 .map(document -> DocumentInfo.builder()
                         .docNo(document.getDocNo())
+                        .no(document.getNo())
                         .title(document.getTitle() == null ? "" : document.getTitle())
                         .content(document.getContent() == null ? "" : document.getContent())
                         .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))

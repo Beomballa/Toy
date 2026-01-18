@@ -16,8 +16,7 @@ public interface DocumentRepository extends JpaRepository<Document,Long>, Custom
     Optional<Document> findByDocNo(Long docNo);
 
     @Modifying(clearAutomatically = true) // 벌크 연산 후 영속성 컨텍스트 초기화 (필수)
-    @Transactional
     @Query("UPDATE Document d SET d.viewCnt = d.viewCnt + :quantity WHERE d.id = :id")
-    int addViewCnt(@Param("id") Long id, @Param("quantity") int quantity);
+    void addViewCnt(@Param("id") Long id, @Param("quantity") int quantity);
 
 }

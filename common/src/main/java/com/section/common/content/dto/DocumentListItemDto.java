@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Setter
 public class DocumentListItemDto {
     private Long docNo;
+    private Long no;
     private String title;
     private String content;
     private LocalDateTime uptDtm;

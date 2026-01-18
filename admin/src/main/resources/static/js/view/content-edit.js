@@ -44,6 +44,8 @@ var ContentEditJS = {
         document.getElementById("documentEditForm").addEventListener("submit", function(e) {
             e.preventDefault();
         });
+
+        ContentEditJS.updateViewCnt();
         
         // document.getElementById("submitBtn").addEventListener("click", function (el) {
         //     el.preventDefault();
@@ -85,6 +87,32 @@ var ContentEditJS = {
             .catch(error => {
                 console.error('저장 중 에러 발생:', error);
                 Swal.fire('오류 발생', '등록 중 문제가 발생했습니다.', 'error');
+            });
+    },
+
+    updateViewCnt : function () {
+        const docNo = document.getElementById("docNo").value;
+
+        const reqData = {
+            docNo : docNo,
+        };
+
+        axios.post('/api/content/update/cnt', reqData)
+            .then(response => {
+                console.log('저장 성공!', response.data);
+                // this.initialTitle = currentTitle;
+                // this.initialContent = currentContent;
+                //
+                // const saveStatus = document.getElementById("saveStatus");
+                // setTimeout(() => { saveStatus.textContent = '';}, 2000);
+                //
+                // if(!isAutoSave) {
+                //     Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
+                // }
+            })
+            .catch(error => {
+                console.error('조회수 증가중 에러 발생:', error);
+                Swal.fire('오류 발생', '조회수 증가중 문제가 발생했습니다.', 'error');
             });
     }
 }

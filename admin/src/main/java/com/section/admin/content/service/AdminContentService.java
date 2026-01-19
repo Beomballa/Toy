@@ -90,7 +90,7 @@ public class AdminContentService {
             ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
                     .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
-            Document document = documentRepository.findByDocNo(docNo)
+            Document document = documentRepository.findByNo(docNo)
                     .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
             reqDto.updateDocument(document, approvalDocument);
         }catch (NumberFormatException e) {
@@ -108,28 +108,29 @@ public class AdminContentService {
 
     /**
      * 문서 상세조회
-     * @param docNoStr
+     * @param no
      * */
-    public ContentGetResDto getDocumentInfo(String docNoStr) {
+    public ContentGetResDto getDocumentInfo(String no) {
         try {
-            Long docNo = Long.valueOf(docNoStr);
+            Long id = Long.valueOf(no);
 
-            ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
-                    .orElseThrow(() -> new EntityNotFoundException("해당 결재 문서를 찾을 수 없습니다."));
+//            ApprovalDocument approvalDocument = approvalDocumentRepository.findById(docNo)
+//                    .orElseThrow(() -> new EntityNotFoundException("해당 결재 문서를 찾을 수 없습니다."));
 
-            Document document = documentRepository.findByDocNo(docNo)
+            Document document = documentRepository.findByNo(id)
                     .orElseThrow(() -> new EntityNotFoundException("해당 콘텐츠 문서를 찾을 수 없습니다."));
 
-            return ContentGetResDto.fromEntity(document, approvalDocument);
+//            return ContentGetResDto.fromEntity(document, approvalDocument);
+            return ContentGetResDto.fromEntity(document);
 
         } catch (NumberFormatException e) {
-            log.error("상세 조회 실패 - 잘못된 ID 형식: {}", docNoStr);
+            log.error("상세 조회 실패 - 잘못된 ID 형식: {}", no);
             throw new IllegalArgumentException("문서 번호가 올바르지 않습니다.");
         } catch (EntityNotFoundException e) {
             log.warn("상세 조회 실패 - 데이터 없음: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("상세 조회 중 시스템 오류 발생. ID={}", docNoStr, e);
+            log.error("상세 조회 중 시스템 오류 발생. ID={}", no, e);
             throw new RuntimeException("문서 정보를 불러오는 중 오류가 발생했습니다.", e);
         }
     }
@@ -143,7 +144,7 @@ public class AdminContentService {
         try{
             Long id = Long.valueOf(reqDto.getDocNo());
 
-            documentRepository.findByDocNo(id)
+            documentRepository.findByNo(id)
                     .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
             documentRepository.addViewCnt(id, 1);

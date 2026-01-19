@@ -11,6 +11,7 @@ import lombok.*;
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // 빌더를 위한 전체 생성자 추가
 public class ContentGetResDto {
     private String docNo;
+    private Long no;
     private String title;
     private String content;
     private String uptDtm;
@@ -19,6 +20,16 @@ public class ContentGetResDto {
     public static ContentGetResDto fromEntity(Document document, ApprovalDocument approvalDocument) {
         return ContentGetResDto.builder()
                 .docNo(String.valueOf(approvalDocument.getDocNo()))
+                .title(document.getTitle())
+                .content(document.getContent())
+                .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))
+                .viewYn(document.getViewYn().toString())
+                .build();
+    }
+
+    public static ContentGetResDto fromEntity(Document document) {
+        return ContentGetResDto.builder()
+                .no(document.getId())
                 .title(document.getTitle())
                 .content(document.getContent())
                 .uptDtm(DateUtil.localDateTimeToStr(document.getUptDtm()))

@@ -94,7 +94,7 @@ var ContentListJS = {
                             <div class="card shadow-sm h-100">
                                 <div class="card-body position-relative"> <!-- position-relative 필수 -->
                                 <h5 class="card-title mb-2">
-                                    <a href="/content/edit?docNo=${item.docNo}" class="stretched-link text-decoration-none text-dark fw-semibold">${item.title}</a>
+                                    <a href="/content/edit?no=${item.no}" class="stretched-link text-decoration-none text-dark fw-semibold">${item.title}</a>
                                 </h5>
                                 <p class="card-text text-truncate text-muted" style="max-width: 90%;">
                                     <span>${item.content}</span>

@@ -32,11 +32,11 @@ public class AdminContentController {
      * 상세 조회
      * */
     @RequestMapping("/edit")
-    public ModelAndView contentEdit(@RequestParam(name = "docNo", required = false) String docNo){
+    public ModelAndView contentEdit(@RequestParam(name = "no", required = false) String no){
         ModelAndView mav = new ModelAndView("views/content-edit");
-        if(docNo != null && !docNo.isEmpty()){
-            ContentGetResDto result = adminContentService.getDocumentInfo(docNo);
-            mav.addObject("docNo",docNo);
+        if(no != null && !no.isEmpty()){
+            ContentGetResDto result = adminContentService.getDocumentInfo(no);
+            mav.addObject("docNo",no);
             mav.addObject("result", result);
         }
         return mav;

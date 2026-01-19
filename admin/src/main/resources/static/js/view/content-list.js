@@ -56,7 +56,7 @@ var ContentListJS = {
                 const res = r.data
 
                 if(res.resultCode === "200") {
-                    self.renderList(res.data);       // 리스트 그리기 분리
+                    self.renderList(res);       // 리스트 그리기 분리
                     self.renderPagination(res.totalCount); // 페이징 그리기
                 }
 
@@ -66,14 +66,22 @@ var ContentListJS = {
                 Swal.fire('오류 발생', '리스트 조회 간 문제가 발생했습니다.', 'error');
             });
     },
-    renderList : function (data) {
+    renderList : function (res) {
         const listContainer = document.getElementById("document-list");
 
         // 1. 기존 내용을 비우고, Bootstrap의 'row' 구조 생성
         listContainer.innerHTML = '<div class="row row-cols-1 g-3" id="document-grid"></div>';
         const grid = document.getElementById("document-grid");
 
-        // 2. 검색 결과가 없을 경우 처리
+        const data = res.data;
+
+        // 2. 등록된 게시글이 없을 경우
+        if(res.resultMsg === 'N') {
+            grid.innerHTML = '<div class="col text-center py-5 text-muted">작성한 문서가 없습니다.</div>';
+            return;
+        }
+
+        // 3. 검색 결과가 없을 경우 처리
         if (!data || data.length === 0) {
             grid.innerHTML = '<div class="col text-center py-5 text-muted">검색 결과가 없습니다.</div>';
             return;

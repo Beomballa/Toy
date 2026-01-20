@@ -5,6 +5,7 @@ import com.section.admin.content.req.ContentSetReqDto;
 import com.section.admin.content.req.UpdateViewCountReqDto;
 import com.section.admin.content.res.ContentGetResDto;
 import com.section.admin.content.res.ContentMyDocResDto;
+import com.section.admin.content.res.ContentRecentListResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.system.entity.Account;
@@ -23,6 +24,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -160,5 +163,14 @@ public class AdminContentService {
             // 롤백을 위해 예외 전파
             throw new RuntimeException("조회수 업데이트 실패", e);
         }
+    }
+
+    public ContentRecentListResDto getRecent7DaysDocumentList() {
+        // 1. 리포지토리에서 List<DocumentListItemDto>를 가져옴
+        LocalDateTime now = LocalDateTime.now();
+        List<Document> recentDocs = documentRepository.getRecent7DaysDocumentList(now.minusDays(7), now);
+
+        // 2. 이제 fromEntity가 List를 받을 수 있으므로 에러가 사라짐!
+        return new ContentRecentListResDto(recentDocs);
     }
 }

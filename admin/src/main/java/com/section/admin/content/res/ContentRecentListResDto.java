@@ -1,7 +1,6 @@
 package com.section.admin.content.res;
 
 import com.section.common.base.entity.type.YN;
-import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.entity.Document;
 import com.section.common.util.DateUtil;
 import lombok.Getter;
@@ -28,8 +27,6 @@ public class ContentRecentListResDto {
         private String content;
         private String uptDtm;
         private String viewYn;
-
-        private List<ContentRecentResDto> recentDocs;
 
         public ContentRecentResDto(Document item) {
             this.docNo = item.getApprovalDocument().getDocNo();

@@ -38,3 +38,9 @@ project(':admin') {
 		implementation project(':common')
 	}
 }
+
+project(':batch') {
+	dependencies {
+		implementation project(':common')
+	}
+}

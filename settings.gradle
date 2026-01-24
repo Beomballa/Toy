@@ -1,4 +1,5 @@
 rootProject.name = 'Toy'
 
 include 'admin'
+include 'batch'
 include 'common'

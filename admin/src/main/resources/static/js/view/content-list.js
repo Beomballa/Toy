@@ -17,19 +17,6 @@ var ContentListJS = {
             ContentListJS.getListInfo(0);
         })
 
-        document.getElementById("testBtn").addEventListener("click", function () {
-            axios.post('/api/content/recent/list')
-                .then(res => {
-                    if(res.data.resultCode === "200") {
-                        Swal.fire('조회성공!', 'success')
-                    }
-                })
-                .catch(error => {
-                    console.error('저장 중 에러 발생:', error);
-                    Swal.fire('오류 발생', '문서 생성중 문제가 발생했습니다.', 'error');
-                });
-        })
-
         self.getListInfo(0);
     },
 

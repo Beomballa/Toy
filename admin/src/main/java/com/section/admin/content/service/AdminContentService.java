@@ -8,6 +8,7 @@ import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.ContentRecentListResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.common.content.dto.DocumentListItemDto;
+import com.section.common.content.repository.DocumentStatsRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.service.AdminAccountService;
 import com.section.common.content.entity.Document;
@@ -40,6 +41,7 @@ public class AdminContentService {
 
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
+    private final DocumentStatsRepository documentStatsRepository;
 
     public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
         try{
@@ -150,6 +152,9 @@ public class AdminContentService {
             documentRepository.findByNo(id)
                     .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
 
+            documentStatsRepository.insertCheck(id)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 문서에 대한 통계 데이터를 찾을 수 없습니다."));
+
             documentRepository.addViewCnt(id, 1);
 
         }catch (NumberFormatException e) {
@@ -166,11 +171,9 @@ public class AdminContentService {
     }
 
     public ContentRecentListResDto getRecent7DaysDocumentList() {
-        // 1. 리포지토리에서 List<DocumentListItemDto>를 가져옴
         LocalDateTime now = LocalDateTime.now();
         List<Document> recentDocs = documentRepository.getRecent7DaysDocumentList(now.minusDays(7), now);
 
-        // 2. 이제 fromEntity가 List를 받을 수 있으므로 에러가 사라짐!
         return new ContentRecentListResDto(recentDocs);
     }
 }

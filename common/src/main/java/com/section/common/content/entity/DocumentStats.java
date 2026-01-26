@@ -29,7 +29,7 @@ public class DocumentStats extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "NO")
+    @JoinColumn(name = "doc_no", referencedColumnName = "NO")
     private Document document;
 
     @Column(name = "STD_DT")

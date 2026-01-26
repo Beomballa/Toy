@@ -155,7 +155,8 @@ public class AdminContentService {
             documentStatsRepository.insertCheck(id)
                     .orElseThrow(() -> new EntityNotFoundException("해당 문서에 대한 통계 데이터를 찾을 수 없습니다."));
 
-            documentRepository.addViewCnt(id, 1);
+//            documentRepository.addViewCnt(id, 1);
+            documentStatsRepository.addViewCnt(id, 1);
 
         }catch (NumberFormatException e) {
             log.error("조회수 증가 실패 - 잘못된 ID: {}", reqDto.getDocNo());

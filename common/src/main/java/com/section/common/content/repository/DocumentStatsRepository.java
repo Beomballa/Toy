@@ -15,7 +15,9 @@ public interface DocumentStatsRepository extends JpaRepository<DocumentStats, Lo
     Optional<DocumentStats> insertCheck(@Param("no") Long no);
 
 
-//    @Modifying(clearAutomatically = true)
-//    @Query("UPDATE DocumentStats d SET d.viewCnt = d.viewCnt + :quantity, d.stdDt = CURRENT_TIMESTAMP WHERE d.document.id = :id")
-//    void addViewCnt(@Param("id") Long id, @Param("quantity") int quantity);
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE DocumentStats d " +
+            "SET d.viewCnt = d.viewCnt + :quantity " +
+            "WHERE d.document.id = :id and d.stdDt = CURRENT_DATE")
+    void addViewCnt(@Param("id") Long id, @Param("quantity") int quantity);
 }

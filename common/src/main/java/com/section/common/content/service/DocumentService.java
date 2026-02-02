@@ -1,7 +1,9 @@
 package com.section.common.content.service;
 
 import com.section.common.base.entity.type.YN;
+import com.section.common.content.dto.ContentDateListItemDto;
 import com.section.common.content.dto.ContentListItemDto;
+import com.section.common.content.dto.DocumentDateListItemDto;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
@@ -23,7 +25,11 @@ public class DocumentService {
 
     public Page<DocumentListItemDto> findDocumentInfo(ContentListItemDto reqDto, Pageable pageable) {
         return documentRepository.findDocumentInfo(reqDto, pageable);
+    }
 
+    // 특정 기간 내 리스트 조회
+    public List<DocumentDateListItemDto> findDocumentDateInfo(ContentDateListItemDto reqDto) {
+        return documentRepository.findDocumentDateInfo(reqDto.getStartDt(), reqDto.getEndDt());
     }
 
     public Document createDocument(ApprovalDocument approvalDocument) {

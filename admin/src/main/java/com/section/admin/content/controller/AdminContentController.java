@@ -20,8 +20,16 @@ public class AdminContentController {
      * 본인 작성 문서 조회
      * */
     @RequestMapping("/list")
-    public ModelAndView contentList(HttpServletRequest req){
-        return new ModelAndView("views/index");
+    public ModelAndView productList(HttpServletRequest req){
+        return new ModelAndView("views/product-list");
+    }
+
+    /**
+     * 본인 작성 문서 조회
+     * */
+    @RequestMapping("/set")
+    public ModelAndView productSet(HttpServletRequest req){
+        return new ModelAndView("views/product-set");
     }
 
 }

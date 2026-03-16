@@ -14,31 +14,46 @@ import java.time.LocalDate;
 @Table(name = "product")
 public class Product extends BaseEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "product_no")
-    private Long id;
+    private Long id; // 보통 PK는 관례상 id로 쓰고 컬럼명만 지정합니다.
 
-    @Column(name = "category_no", nullable = false)
+    // ✅ 연관 객체 대신 ID 컬럼만 직접 관리
+    @Column(name = "category_no")
     private Long categoryNo;
 
-    @Column(name = "brand_no", nullable = false)
+    @Column(name = "brand_no")
     private Long brandNo;
 
-    @Column(name = "name_ko", nullable = false)
+    @Column(name = "name_ko", nullable = false, length = 200)
     private String nameKo;
 
-    @Column(name = "model_num")
+    @Column(name = "model_num", length = 100)
     private String modelNum;
 
-    private int releasePrice;
+    @Column(name = "release_price")
+    private Integer releasePrice;
+
+    @Column(name = "release_dt")
     private LocalDate releaseDt;
+
+    @Column(name = "thumbnail_url", length = 500)
     private String thumbnailUrl;
 
-    @Enumerated(EnumType.STRING)
-    private ProductStatus status;
+    @Column(name = "status", length = 20)
+    private String status;
 
     @Column(name = "crt_admin_no")
     private Long crtAdminNo;
 
-    public enum ProductStatus { ACTIVE, HIDDEN, SOLD_OUT }
+    public void updateBasicInfo(String nameKo, String modelNum, Integer releasePrice) {
+        this.nameKo = nameKo;
+        this.modelNum = modelNum;
+        this.releasePrice = releasePrice;
+    }
+
+    public void changeStatus(String status) {
+        this.status = status;
+    }
 }

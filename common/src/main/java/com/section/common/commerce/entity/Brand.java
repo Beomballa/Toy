@@ -14,16 +14,17 @@ import lombok.NoArgsConstructor;
 @Table(name = "BRAND")
 public class Brand {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "BRAND_NO")
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "brand_no")
+    private Long brandNo;
 
-    @Column(name = "name_ko", nullable = false)
+    @Column(name = "name_ko", nullable = false, length = 100)
     private String nameKo;
 
-    @Column(name = "name_en")
+    @Column(name = "name_en", length = 100)
     private String nameEn;
 
-    @Column(name = "logo_url")
+    @Column(name = "logo_url", length = 500)
     private String logoUrl;
 }

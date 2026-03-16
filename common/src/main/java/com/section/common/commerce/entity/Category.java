@@ -13,19 +13,22 @@ import lombok.NoArgsConstructor;
 @Builder
 @Table(name = "CATEGORY")
 public class Category {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_no")
-    private Long id;
+    private Long categoryNo;
 
     @Column(name = "parent_no")
     private Long parentNo;
 
-    @Column(name = "name", nullable = false)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
 
-    private int depth;
+    @Column(name = "depth", nullable = false)
+    private Integer depth;
 
-    @Column(name = "is_active")
-    @Builder.Default
-    private String isActive = "Y";
+    @Column(name = "is_active", length = 1)
+    private String isActive;
+
 }

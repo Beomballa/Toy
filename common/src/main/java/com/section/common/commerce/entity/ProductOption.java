@@ -10,6 +10,7 @@ import lombok.*;
 @Builder
 @Table(name = "product_option")
 public class ProductOption {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "option_no")
     private Long id;

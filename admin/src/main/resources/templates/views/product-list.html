@@ -83,7 +83,7 @@
     </nav>
     <div class="page-title-wrapper">
       <h1 class="page-title">상품 마스터 관리</h1>
-      <button class="btn btn-primary">
+      <button class="btn btn-primary" id="new-product" type="button" >
         <i class="fas fa-plus"></i>
         새 상품 등록
       </button>
@@ -301,6 +301,12 @@
             }, 100);
         });
     });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('new-product').addEventListener('click', function () {
+            window.location.href = '/content/set';
+        })
+    })
 </script>
 </body>
 </html>

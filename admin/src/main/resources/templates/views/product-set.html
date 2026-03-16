@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 등록 | Grade-Stock Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/product.css">
+
+  <script src="/js/view/product-set.js"></script>
+</head>
+<body>
+
+<!-- 사이드바 -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-icon">GS</div>
+    <div class="sidebar-brand-text">Grade Stock</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Main Menu</div>
+    <a class="nav-link" href="/admin/dashboard">
+      <i class="fas fa-chart-line"></i>
+      대시보드
+    </a>
+    <a class="nav-link active" href="/admin/products">
+      <i class="fas fa-box"></i>
+      상품 관리
+    </a>
+    <a class="nav-link" href="/admin/market">
+      <i class="fas fa-chart-bar"></i>
+      실시간 시세
+    </a>
+    <a class="nav-link" href="/admin/orders">
+      <i class="fas fa-shopping-cart"></i>
+      주문 관리
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Community</div>
+    <a class="nav-link" href="/admin/discuss">
+      <i class="fas fa-comments"></i>
+      종목 토론방
+    </a>
+    <a class="nav-link" href="/admin/style">
+      <i class="fas fa-camera"></i>
+      스타일 피드
+    </a>
+    <a class="nav-link" href="/admin/members">
+      <i class="fas fa-users"></i>
+      회원 관리
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">System</div>
+    <a class="nav-link" href="/admin/permissions">
+      <i class="fas fa-shield-alt"></i>
+      권한 관리
+    </a>
+    <a class="nav-link" href="/admin/settings">
+      <i class="fas fa-cog"></i>
+      시스템 설정
+    </a>
+  </div>
+</nav>
+
+<!-- 메인 콘텐츠 -->
+<main class="main-content">
+  <!-- 페이지 헤더 -->
+  <div class="page-header">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+        <li class="breadcrumb-item"><a href="/admin/products">상품 관리</a></li>
+        <li class="breadcrumb-item active">상품 등록</li>
+      </ol>
+    </nav>
+    <div class="page-title-wrapper">
+      <h1 class="page-title">새 상품 등록</h1>
+      <div>
+        <button type="button" class="btn btn-secondary me-2" onclick="history.back()">
+          <i class="fas fa-arrow-left me-2"></i>취소
+        </button>
+        <button type="button" class="btn btn-primary" id="btnSubmit">
+          <i class="fas fa-check me-2"></i>등록하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 등록 폼 -->
+  <form id="productCreateForm">
+    <div class="row">
+      <!-- 왼쪽: 기본 정보 -->
+      <div class="col-lg-8">
+        <div class="card animate-in">
+          <div class="card-header">
+            <span class="card-title">기본 정보</span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <!-- 카테고리 -->
+              <div class="col-md-6">
+                <label class="form-label">카테고리 <span class="text-danger">*</span></label>
+                <select class="form-select" id="categoryNo" name="categoryNo" required>
+                  <option value="">카테고리를 선택하세요</option>
+                  <!-- JavaScript로 동적 로드 -->
+                </select>
+              </div>
+
+              <!-- 브랜드 -->
+              <div class="col-md-6">
+                <label class="form-label">브랜드 <span class="text-danger">*</span></label>
+                <select class="form-select" id="brandNo" name="brandNo" required>
+                  <option value="">브랜드를 선택하세요</option>
+                  <!-- JavaScript로 동적 로드 -->
+                </select>
+              </div>
+
+              <!-- 상품명 -->
+              <div class="col-12">
+                <label class="form-label">상품명 <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="nameKo" name="nameKo"
+                       placeholder="예: Nike Air Force 1 '07 Low White" required>
+                <small class="text-muted">브랜드명과 상품 설명을 포함하여 입력해주세요</small>
+              </div>
+
+              <!-- 모델번호 -->
+              <div class="col-md-6">
+                <label class="form-label">모델번호</label>
+                <input type="text" class="form-control" id="modelNum" name="modelNum"
+                       placeholder="예: CW2288-111">
+                <small class="text-muted">선택사항</small>
+              </div>
+
+              <!-- 발매가 -->
+              <div class="col-md-6">
+                <label class="form-label">발매가 (원) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="releasePrice" name="releasePrice"
+                       placeholder="139000" min="0" required>
+              </div>
+
+              <!-- 발매일 -->
+              <div class="col-md-6">
+                <label class="form-label">발매일</label>
+                <input type="date" class="form-control" id="releaseDt" name="releaseDt">
+              </div>
+
+              <!-- 썸네일 URL -->
+              <div class="col-12">
+                <label class="form-label">썸네일 이미지 URL</label>
+                <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl"
+                       placeholder="https://example.com/image.jpg">
+                <small class="text-muted">이미지 URL을 입력하거나 비워두세요</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 상품 옵션 -->
+        <div class="card animate-in">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="card-title">상품 옵션 (사이즈)</span>
+            <button type="button" class="btn btn-sm btn-primary" id="btnAddOption">
+              <i class="fas fa-plus me-1"></i>옵션 추가
+            </button>
+          </div>
+          <div class="card-body">
+            <div id="optionList">
+              <!-- 옵션이 동적으로 추가됩니다 -->
+              <div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                상품 사이즈 옵션을 추가해주세요. 예: 250, 255, 260, M, L, XL 등
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오른쪽: 미리보기 -->
+      <div class="col-lg-4">
+        <div class="card animate-in" style="position: sticky; top: 2rem;">
+          <div class="card-header">
+            <span class="card-title">미리보기</span>
+          </div>
+          <div class="card-body">
+            <!-- 썸네일 미리보기 -->
+            <div class="text-center mb-4">
+              <img id="previewImage"
+                   src="https://via.placeholder.com/300x300?text=No+Image"
+                   class="img-fluid rounded"
+                   style="max-height: 300px; object-fit: contain; border: 1px solid #E5E7EB;"
+                   alt="상품 미리보기">
+            </div>
+
+            <!-- 상품 정보 미리보기 -->
+            <div class="preview-info">
+              <div class="mb-3">
+                <label class="small text-muted">카테고리</label>
+                <div id="previewCategory" class="fw-bold">-</div>
+              </div>
+              <div class="mb-3">
+                <label class="small text-muted">브랜드</label>
+                <div id="previewBrand" class="fw-bold">-</div>
+              </div>
+              <div class="mb-3">
+                <label class="small text-muted">상품명</label>
+                <div id="previewName" class="fw-bold">-</div>
+              </div>
+              <div class="mb-3">
+                <label class="small text-muted">모델번호</label>
+                <div id="previewModel" class="text-secondary">-</div>
+              </div>
+              <div class="mb-3">
+                <label class="small text-muted">발매가</label>
+                <div id="previewPrice" class="fw-bold text-primary fs-5">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+<script>
+    $(document).ready(() => {
+        ProductCreate.init();
+    });
+</script>
+</body>
+</html>

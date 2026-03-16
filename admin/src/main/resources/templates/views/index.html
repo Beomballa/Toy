@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade-Stock Admin | Premium Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/product.css">
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-icon">GS</div>
+    <div class="sidebar-brand-text">Grade Stock</div>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Main Menu</div>
+    <a class="nav-link" href="#">
+      <i class="fas fa-chart-line"></i>
+      대시보드
+    </a>
+    <a class="nav-link active" href="#">
+      <i class="fas fa-box"></i>
+      상품 관리
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-chart-bar"></i>
+      실시간 시세
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-shopping-cart"></i>
+      주문 관리
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">Community</div>
+    <a class="nav-link" href="#">
+      <i class="fas fa-comments"></i>
+      종목 토론방
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-camera"></i>
+      스타일 피드
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-users"></i>
+      회원 관리
+    </a>
+  </div>
+
+  <div class="nav-section">
+    <div class="nav-section-title">System</div>
+    <a class="nav-link" href="#">
+      <i class="fas fa-shield-alt"></i>
+      권한 관리
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-bell"></i>
+      알림 설정
+    </a>
+    <a class="nav-link" href="#">
+      <i class="fas fa-cog"></i>
+      시스템 설정
+    </a>
+  </div>
+</nav>
+
+<!-- 메인 콘텐츠 -->
+<main class="main-content">
+  <!-- 페이지 헤더 -->
+  <div class="page-header">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="#">Home</a></li>
+        <li class="breadcrumb-item"><a href="#">Commerce</a></li>
+        <li class="breadcrumb-item active">Product Master</li>
+      </ol>
+    </nav>
+    <div class="page-title-wrapper">
+      <h1 class="page-title">상품 마스터 관리</h1>
+      <button class="btn btn-primary">
+        <i class="fas fa-plus"></i>
+        새 상품 등록
+      </button>
+    </div>
+  </div>
+
+  <!-- 통계 카드 -->
+  <div class="stats-grid animate-in">
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <i class="fas fa-box"></i>
+      </div>
+      <div class="stat-label">전체 상품</div>
+      <div class="stat-value">1,240</div>
+      <div class="stat-change positive">
+        <i class="fas fa-arrow-up"></i> +12.5%
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon green">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-label">활성 상품</div>
+      <div class="stat-value">1,108</div>
+      <div class="stat-change positive">
+        <i class="fas fa-arrow-up"></i> +8.2%
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon orange">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-label">재고 부족</div>
+      <div class="stat-value">42</div>
+      <div class="stat-change negative">
+        <i class="fas fa-arrow-down"></i> -3.1%
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon purple">
+        <i class="fas fa-fire"></i>
+      </div>
+      <div class="stat-label">인기 상품</div>
+      <div class="stat-value">89</div>
+      <div class="stat-change positive">
+        <i class="fas fa-arrow-up"></i> +24.8%
+      </div>
+    </div>
+  </div>
+
+  <!-- 필터 카드 -->
+  <div class="card animate-in">
+    <div class="card-body">
+      <form class="filter-form">
+        <div class="form-group">
+          <label class="form-label">브랜드</label>
+          <select class="form-select">
+            <option value="">전체 브랜드</option>
+            <option>Nike</option>
+            <option>Jordan</option>
+            <option>Adidas</option>
+            <option>Supreme</option>
+            <option>Lego</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">카테고리</label>
+          <select class="form-select">
+            <option value="">전체 카테고리</option>
+            <option>스니커즈</option>
+            <option>의류</option>
+            <option>액세서리</option>
+            <option>피규어</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">상태</label>
+          <select class="form-select">
+            <option value="">전체 상태</option>
+            <option>활성</option>
+            <option>비활성</option>
+            <option>품절</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="grid-column: span 2;">
+          <label class="form-label">검색</label>
+          <input type="text" class="form-control" placeholder="상품명 또는 모델번호로 검색 (예: CW2288-111)">
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 상품 목록 카드 -->
+  <div class="card animate-in">
+    <div class="card-header">
+      <div>
+        <span class="card-title">상품 목록</span>
+        <span class="card-subtitle">전체 1,240개</span>
+      </div>
+      <div class="dropdown">
+        <button class="dropdown-toggle" type="button" data-bs-toggle="dropdown">
+          최신순 <i class="fas fa-chevron-down ms-1"></i>
+        </button>
+        <ul class="dropdown-menu">
+          <li><a class="dropdown-item" href="#">거래량순</a></li>
+          <li><a class="dropdown-item" href="#">발매가순</a></li>
+          <li><a class="dropdown-item" href="#">인기순</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-wrapper">
+        <table class="table">
+          <thead>
+          <tr>
+            <th>상품 정보</th>
+            <th>모델번호</th>
+            <th>브랜드</th>
+            <th>발매가</th>
+            <th>재고</th>
+            <th>상태</th>
+            <th>등록일</th>
+            <th class="text-end">관리</th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td>
+              <div class="product-info">
+                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&h=200&fit=crop"
+                     class="product-thumb" alt="Nike Air Force 1">
+                <div class="product-details">
+                  <div class="product-name">Nike Air Force 1 '07 Low</div>
+                  <div class="product-subtitle">나이키 에어포스 1 '07 로우 화이트</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge badge-model">CW2288-111</span></td>
+            <td><strong>Nike</strong></td>
+            <td><strong>139,000원</strong></td>
+            <td>245개</td>
+            <td><span class="badge badge-active">ACTIVE</span></td>
+            <td>2026.03.15</td>
+            <td class="text-end">
+              <button class="btn btn-icon btn-secondary me-1"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-secondary"><i class="fas fa-trash text-danger"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-info">
+                <img src="https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=200&h=200&fit=crop"
+                     class="product-thumb" alt="Jordan 1">
+                <div class="product-details">
+                  <div class="product-name">Air Jordan 1 Retro High OG</div>
+                  <div class="product-subtitle">에어 조던 1 레트로 하이 시카고</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge badge-model">555088-101</span></td>
+            <td><strong>Jordan</strong></td>
+            <td><strong>229,000원</strong></td>
+            <td>89개</td>
+            <td><span class="badge badge-active">ACTIVE</span></td>
+            <td>2026.03.14</td>
+            <td class="text-end">
+              <button class="btn btn-icon btn-secondary me-1"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-secondary"><i class="fas fa-trash text-danger"></i></button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="product-info">
+                <img src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=200&h=200&fit=crop"
+                     class="product-thumb" alt="Adidas">
+                <div class="product-details">
+                  <div class="product-name">Adidas Yeezy Boost 350 V2</div>
+                  <div class="product-subtitle">아디다스 이지 부스트 350 V2 제브라</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="badge badge-model">CP9654</span></td>
+            <td><strong>Adidas</strong></td>
+            <td><strong>299,000원</strong></td>
+            <td>12개</td>
+            <td><span class="badge badge-active">ACTIVE</span></td>
+            <td>2026.03.13</td>
+            <td class="text-end">
+              <button class="btn btn-icon btn-secondary me-1"><i class="fas fa-edit"></i></button>
+              <button class="btn btn-icon btn-secondary"><i class="fas fa-trash text-danger"></i></button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // 애니메이션 효과
+    document.addEventListener('DOMContentLoaded', function () {
+        const animateElements = document.querySelectorAll('.animate-in');
+        animateElements.forEach((el, index) => {
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.animation = `fadeInUp 0.6s ease forwards ${index * 0.1}s`;
+            }, 100);
+        });
+    });
+</script>
+</body>
+</html>

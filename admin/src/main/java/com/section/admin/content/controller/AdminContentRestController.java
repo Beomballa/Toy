@@ -3,11 +3,6 @@ package com.section.admin.content.controller;
 import com.section.admin.base.res.BaseListResDto;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.content.req.ContentListReqDto;
-import com.section.admin.content.req.ContentSetReqDto;
-import com.section.admin.content.req.UpdateViewCountReqDto;
-import com.section.admin.content.res.ContentMyDocResDto;
-import com.section.admin.content.res.ContentRecentListResDto;
-import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.admin.content.service.AdminContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,42 +20,15 @@ public class AdminContentRestController {
 
     @PostMapping("/list")
     public ResponseEntity<BaseSimpleResDto> listDocument(@RequestBody ContentListReqDto reqDto) {
-        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
-        BaseListResDto resDto = new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount());
-        if (documentList.getTotalCount() > 0) {
-            resDto.setResultMsg("Y");
-        } else {
-            resDto.setResultMsg("N");
-        }
-        return new ResponseEntity<>(resDto, HttpStatus.OK);
+//        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
+//        BaseListResDto resDto = new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount());
+//        if (documentList.getTotalCount() > 0) {
+//            resDto.setResultMsg("Y");
+//        } else {
+//            resDto.setResultMsg("N");
+//        }
+//        return new ResponseEntity<>(resDto, HttpStatus.OK);
+        return null;
     }
 
-    @PostMapping("/set")
-    public ResponseEntity<BaseSimpleResDto> setDocument() {
-        CreateDocumentDefaultInfoResDto result = adminContentService.setDocument();
-        if(result != null) {
-            return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
-        }else {
-            return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @PostMapping("/save")
-    public ResponseEntity<BaseSimpleResDto> saveContent(@RequestBody ContentSetReqDto reqDto) {
-        adminContentService.setContent(reqDto);
-        return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
-    }
-
-    @PostMapping("/update/cnt")
-    public ResponseEntity<BaseSimpleResDto> updateViewCount(@RequestBody UpdateViewCountReqDto reqDto) {
-        adminContentService.updateViewCount(reqDto);
-        return new ResponseEntity<>(new BaseSimpleResDto(), HttpStatus.OK);
-    }
-
-    @PostMapping("/recent/list")
-    public ResponseEntity<BaseSimpleResDto> getRecent7DaysDocumentList() {
-        ContentRecentListResDto result = adminContentService.getRecent7DaysDocumentList();
-        BaseListResDto resDto = new BaseListResDto(result.getList(), result.getList().size());
-        return new  ResponseEntity<>(resDto, HttpStatus.OK);
-    }
 }

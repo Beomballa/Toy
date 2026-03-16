@@ -24,7 +24,7 @@ public class BaseEntity {
     protected LocalDateTime crtDtm;
 
     @CreatedBy
-    @Column(name = "CRT_ADMIN_NO")
+    @Column(name = "CRT_NO")
     protected String crtNo;
 
     @LastModifiedDate
@@ -32,6 +32,6 @@ public class BaseEntity {
     protected LocalDateTime uptDtm;
 
     @LastModifiedBy
-    @Column(name = "UPT_ADMIN_NO")
+    @Column(name = "UPT_NO")
     protected String uptNo;
 }

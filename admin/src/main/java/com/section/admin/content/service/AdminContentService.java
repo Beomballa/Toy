@@ -8,7 +8,6 @@ import com.section.admin.content.res.ContentMyDocResDto;
 import com.section.admin.content.res.ContentRecentListResDto;
 import com.section.admin.content.res.CreateDocumentDefaultInfoResDto;
 import com.section.common.content.dto.DocumentListItemDto;
-import com.section.common.content.repository.DocumentStatsRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.service.AdminAccountService;
 import com.section.common.content.entity.Document;
@@ -25,7 +24,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -41,7 +39,6 @@ public class AdminContentService {
 
     private final ApprovalDocumentRepository approvalDocumentRepository;
     private final DocumentRepository documentRepository;
-    private final DocumentStatsRepository documentStatsRepository;
 
     public ContentMyDocResDto listDocument(ContentListReqDto reqDto) {
         try{
@@ -70,20 +67,19 @@ public class AdminContentService {
     }
 
 
-    /**
-     * 문서 생성
-     * */
-    @Transactional
-    public CreateDocumentDefaultInfoResDto setDocument() {
-        try{
-            ApprovalDocument approvalDocument = approvalDocumentService.createApprovalDocument();
-            Document document = documentService.createDocument(approvalDocument);
-            return CreateDocumentDefaultInfoResDto.fromDefaultInfo(document);
-        }catch (Exception e) {
-            log.error("문서 생성(초기화) 중 오류 발생", e);
-            throw new RuntimeException("새 문서를 생성하는 데 실패했습니다.", e);
-        }
-    }
+//    /**
+//     * 문서 생성
+//     * */
+//    @Transactional
+//    public CreateDocumentDefaultInfoResDto setDocument() {
+//        try{
+//            ApprovalDocument approvalDocument = approvalDocumentService.createApprovalDocument();
+//            return CreateDocumentDefaultInfoResDto.fromDefaultInfo(document);
+//        }catch (Exception e) {
+//            log.error("문서 생성(초기화) 중 오류 발생", e);
+//            throw new RuntimeException("새 문서를 생성하는 데 실패했습니다.", e);
+//        }
+//    }
 
     /**
      * 문서 작성
@@ -140,41 +136,41 @@ public class AdminContentService {
         }
     }
 
-    /**
-     * 문서 조회수 업데이트
-     * @param reqDto
-     * */
-    @Transactional
-    public void updateViewCount(UpdateViewCountReqDto reqDto) {
-        try{
-            Long id = Long.valueOf(reqDto.getDocNo());
-
-            documentRepository.findByNo(id)
-                    .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
-
-            documentStatsRepository.insertCheck(id)
-                    .orElseThrow(() -> new EntityNotFoundException("해당 문서에 대한 통계 데이터를 찾을 수 없습니다."));
-
-//            documentRepository.addViewCnt(id, 1);
-            documentStatsRepository.addViewCnt(id, 1);
-
-        }catch (NumberFormatException e) {
-            log.error("조회수 증가 실패 - 잘못된 ID: {}", reqDto.getDocNo());
-            throw new IllegalArgumentException("잘못된 문서 번호입니다.");
-        } catch (EntityNotFoundException e) {
-            log.warn("조회수 증가 실패 - 문서 없음: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            log.error("조회수 증가 업데이트 중 오류 발생", e);
-            // 롤백을 위해 예외 전파
-            throw new RuntimeException("조회수 업데이트 실패", e);
-        }
-    }
-
-    public ContentRecentListResDto getRecent7DaysDocumentList() {
-        LocalDateTime now = LocalDateTime.now();
-        List<Document> recentDocs = documentRepository.getRecent7DaysDocumentList(now.minusDays(7), now);
-
-        return new ContentRecentListResDto(recentDocs);
-    }
+//    /**
+//     * 문서 조회수 업데이트
+//     * @param reqDto
+//     * */
+//    @Transactional
+//    public void updateViewCount(UpdateViewCountReqDto reqDto) {
+//        try{
+//            Long id = Long.valueOf(reqDto.getDocNo());
+//
+//            documentRepository.findByNo(id)
+//                    .orElseThrow(() -> new EntityNotFoundException("해당 문서를 찾을 수 없습니다."));
+//
+//            documentStatsRepository.insertCheck(id)
+//                    .orElseThrow(() -> new EntityNotFoundException("해당 문서에 대한 통계 데이터를 찾을 수 없습니다."));
+//
+////            documentRepository.addViewCnt(id, 1);
+//            documentStatsRepository.addViewCnt(id, 1);
+//
+//        }catch (NumberFormatException e) {
+//            log.error("조회수 증가 실패 - 잘못된 ID: {}", reqDto.getDocNo());
+//            throw new IllegalArgumentException("잘못된 문서 번호입니다.");
+//        } catch (EntityNotFoundException e) {
+//            log.warn("조회수 증가 실패 - 문서 없음: {}", e.getMessage());
+//            throw e;
+//        } catch (Exception e) {
+//            log.error("조회수 증가 업데이트 중 오류 발생", e);
+//            // 롤백을 위해 예외 전파
+//            throw new RuntimeException("조회수 업데이트 실패", e);
+//        }
+//    }
+//
+//    public ContentRecentListResDto getRecent7DaysDocumentList() {
+//        LocalDateTime now = LocalDateTime.now();
+//        List<Document> recentDocs = documentRepository.getRecent7DaysDocumentList(now.minusDays(7), now);
+//
+//        return new ContentRecentListResDto(recentDocs);
+//    }
 }

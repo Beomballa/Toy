@@ -15,36 +15,20 @@ import java.time.LocalDateTime;
 @Table(name = "CT_DOCUMENT")
 public class Document extends BaseEntity {
 
-    @Id
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "NO")
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DOC_NO")
-    private ApprovalDocument approvalDocument;
+    @Column(name = "product_no")
+    private Long productNo;
 
-    @Column(name = "TITLE")
-    private String title;
-
-    @Column(name = "CONTENT")
-    private String content;
-
-    @Column(name = "STATUS")
-    private String status;
-
-    @Column(name = "RESERVE_YN")
     @Enumerated(EnumType.STRING)
-    private YN reserveYn;
+    @Column(name = "board_type")
+    private BoardType boardType;
 
-    @Column(name = "RESERVE_DTM")
-    private LocalDateTime reserveDtm;
-
-    @Column(name = "VIEW_CNT")
+    private String title;
+    private String content;
     private int viewCnt;
 
-    @Column(name = "VIEW_YN")
-    @Enumerated(EnumType.STRING)
-    private YN viewYn;
-
+    public enum BoardType { NOTICE, STYLE, DISCUSS, QNA }
 }

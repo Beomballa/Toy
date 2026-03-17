@@ -4,7 +4,7 @@ const ProductList = {
         ProductList.bindEvents();
 
         document.getElementById('new-product').addEventListener('click', function () {
-            window.location.href = '/content/set';
+            window.location.href = '/product/set';
         })
     },
 

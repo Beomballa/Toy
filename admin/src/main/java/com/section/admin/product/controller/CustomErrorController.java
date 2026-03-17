@@ -19,6 +19,6 @@ public class CustomErrorController implements ErrorController {
         }
 
         // 그 외(404 등)는 전부 메인으로
-        return "redirect:/main";
+        return "redirect:/product/list";
     }
 }

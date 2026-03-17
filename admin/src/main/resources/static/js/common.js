@@ -3,7 +3,7 @@ let CommonJS = {
 
     init: function () {
         document.getElementById("main-logo").addEventListener("click", function (el){
-            window.location.href = "/main";
+            window.location.href = "/product/list";
         });
     },
 

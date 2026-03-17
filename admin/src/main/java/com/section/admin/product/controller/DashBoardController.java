@@ -1,6 +1,5 @@
-package com.section.admin.content.controller;
+package com.section.admin.product.controller;
 
-import com.section.admin.content.req.ContentListReqDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,13 +12,11 @@ public class DashBoardController {
 
     @GetMapping("/")
     public String redirectMain() {
-        return "redirect:/main";
+        return "redirect:/product/list";
     }
 
     @RequestMapping("/main")
-    public ModelAndView dashBoardList(ContentListReqDto reqDto){
-        ModelAndView mav = new ModelAndView("views/dashboard");
-        mav.addObject("reqDto",reqDto);
-        return mav;
+    public ModelAndView dashBoardList(){
+        return new ModelAndView("views/dashboard");
     }
 }

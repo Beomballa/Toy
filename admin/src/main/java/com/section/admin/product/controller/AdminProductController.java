@@ -1,6 +1,6 @@
-package com.section.admin.content.controller;
+package com.section.admin.product.controller;
 
-import com.section.admin.content.service.AdminContentService;
+import com.section.admin.product.service.AdminProductService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,10 +11,10 @@ import org.springframework.web.servlet.ModelAndView;
 @Slf4j
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/content")
-public class AdminContentController {
+@RequestMapping("/product")
+public class AdminProductController {
 
-    private final AdminContentService adminContentService;
+    private final AdminProductService adminProductService;
 
     /**
      * 본인 작성 문서 조회

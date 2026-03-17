@@ -1,4 +1,4 @@
-package com.section.admin.content.controller;
+package com.section.admin.product.controller;
 
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;

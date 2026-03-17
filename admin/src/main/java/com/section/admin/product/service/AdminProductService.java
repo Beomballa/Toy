@@ -1,4 +1,4 @@
-package com.section.admin.content.service;
+package com.section.admin.product.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AdminContentService {
+public class AdminProductService {
+
+    public void defaultProductSetInfo() {
+
+    }
 
 }

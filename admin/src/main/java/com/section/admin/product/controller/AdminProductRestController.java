@@ -1,25 +1,23 @@
-package com.section.admin.content.controller;
+package com.section.admin.product.controller;
 
-import com.section.admin.base.res.BaseListResDto;
 import com.section.admin.base.res.BaseSimpleResDto;
-import com.section.admin.content.req.ContentListReqDto;
-import com.section.admin.content.service.AdminContentService;
+import com.section.admin.product.service.AdminProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/content")
-public class AdminContentRestController {
+@RequestMapping("/api/admin")
+public class AdminProductRestController {
 
-    private final AdminContentService adminContentService;
+    private final AdminProductService adminProductService;
 
-    @PostMapping("/list")
-    public ResponseEntity<BaseSimpleResDto> listDocument(@RequestBody ContentListReqDto reqDto) {
+    @PostMapping("/set/info")
+    public ResponseEntity<BaseSimpleResDto> defaultProductSetInfo() {
+
 //        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
 //        BaseListResDto resDto = new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount());
 //        if (documentList.getTotalCount() > 0) {

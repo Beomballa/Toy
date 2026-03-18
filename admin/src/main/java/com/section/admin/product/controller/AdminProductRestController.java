@@ -17,6 +17,7 @@ public class AdminProductRestController {
 
     @PostMapping("/set/info")
     public ResponseEntity<BaseSimpleResDto> defaultProductSetInfo() {
+        log.info("test");
 
 //        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
 //        BaseListResDto resDto = new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount());

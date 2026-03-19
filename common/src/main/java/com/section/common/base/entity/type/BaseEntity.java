@@ -25,7 +25,7 @@ public class BaseEntity {
 
     @CreatedBy
     @Column(name = "CRT_NO")
-    protected String crtNo;
+    protected Long crtNo;
 
     @LastModifiedDate
     @Column(name = "UPT_DTM")
@@ -33,5 +33,5 @@ public class BaseEntity {
 
     @LastModifiedBy
     @Column(name = "UPT_NO")
-    protected String uptNo;
+    protected Long uptNo;
 }

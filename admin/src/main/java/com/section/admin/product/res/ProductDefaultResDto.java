@@ -8,19 +8,12 @@ import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 @Builder
 @AllArgsConstructor
 public class ProductDefaultResDto {
     private List<BrandSimpleDto> brands;
     private List<CategorySimpleDto> categories;
-
-    public List<BrandSimpleDto> getBrands() {
-        return brands;
-    }
-
-    public List<CategorySimpleDto> getCategories() {
-        return categories;
-    }
 
     // ============================================================
     // 내부 DTO - 브랜드 간단 정보

@@ -200,7 +200,7 @@ const ProductCreate = {
         console.log('전송 데이터:', data);
 
         try {
-            const response = await fetch('/api/admin/products', {
+            const response = await fetch('/api/admin/product/set', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -222,5 +222,3 @@ const ProductCreate = {
         }
     }
 };
-
-// 초기화는 HTML에서 DOMContentLoaded 이벤트로 호출

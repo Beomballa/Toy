@@ -1,7 +1,9 @@
 package com.section.admin.product.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.service.AdminProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,19 +17,12 @@ public class AdminProductRestController {
 
     private final AdminProductService adminProductService;
 
-    @PostMapping("/set/info")
-    public ResponseEntity<BaseSimpleResDto> defaultProductSetInfo() {
-        log.info("test2");
+    @PostMapping("/product/set")
+    public ResponseEntity<BaseSimpleResDto> defaultProductSetInfo(@Valid @RequestBody ProductCreateReqDto reqDto) {
+        log.info("상품 등록 요청 : {}", reqDto);
 
-//        ContentMyDocResDto documentList = adminContentService.listDocument(reqDto);
-//        BaseListResDto resDto = new BaseListResDto(documentList.getDocuments(), documentList.getTotalCount());
-//        if (documentList.getTotalCount() > 0) {
-//            resDto.setResultMsg("Y");
-//        } else {
-//            resDto.setResultMsg("N");
-//        }
-//        return new ResponseEntity<>(resDto, HttpStatus.OK);
-        return null;
+        adminProductService.createProductInfo(reqDto);
+
+        return ResponseEntity.ok(new BaseSimpleResDto());
     }
-
 }

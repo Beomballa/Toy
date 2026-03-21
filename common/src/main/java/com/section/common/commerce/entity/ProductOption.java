@@ -20,4 +20,7 @@ public class ProductOption {
 
     @Column(name = "option_name", nullable = false)
     private String optionName;
+
+    @Column(name = "stock_cnt", nullable = false)
+    private Integer stockCnt;
 }

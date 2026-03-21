@@ -1,5 +1,6 @@
-package com.section.common.commerce.dto;
+package com.section.admin.product.req;
 
+import com.section.common.commerce.dto.ProductCreateReqDto;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,8 +13,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ProductCreateReqDto {
-
+public class ProductCreateRequest {
     @NotNull(message = "카테고리를 선택해주세요")
     private Long categoryNo;
 
@@ -36,11 +36,22 @@ public class ProductCreateReqDto {
     @Size(max = 500, message = "썸네일 URL은 500자 이내로 입력해주세요")
     private String thumbnailUrl;
 
-    private List<ProductOptionDto> optionNames;
+    private List<ProductOptionRequest> options;
 
+    public ProductCreateReqDto toProductCreateReqDto() {
+        ProductCreateReqDto reqDto = new ProductCreateReqDto();
+        reqDto.setCategoryNo(categoryNo);
+        reqDto.setBrandNo(brandNo);
+        reqDto.setNameKo(nameKo);
+        reqDto.setModelNum(modelNum);
+        reqDto.setReleasePrice(releasePrice);
+        reqDto.setReleaseDt(releaseDt);
+        reqDto.setThumbnailUrl(thumbnailUrl);
+        return reqDto;
+    }
     @Getter
     @Setter
-    public static class ProductOptionDto {
+    public static class ProductOptionRequest {
         @NotBlank(message = "옵션명을 입력해주세요")
         private String optionName;
 

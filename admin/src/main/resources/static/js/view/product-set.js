@@ -102,13 +102,28 @@ const ProductCreate = {
         this.optionCount++;
         const optionId = this.optionCount;
 
+        // ✅ 수정된 부분: 옵션명과 수량을 나란히 입력하도록 Grid(row/col) 적용
         const optionHtml = `
             <div class="option-item mb-2" data-option-id="${optionId}">
-                <div class="input-group">
-                    <input type="text" class="form-control option-name" placeholder="예: 250, M, L" required>
-                    <button type="button" class="btn btn-outline-danger btn-remove-option" data-option-id="${optionId}">
-                        <i class="fas fa-times"></i>
-                    </button>
+                <div class="row g-2 align-items-center">
+                    <div class="col-sm-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted small">사이즈</span>
+                            <input type="text" class="form-control option-name" placeholder="예: 250, M, OS" required>
+                        </div>
+                    </div>
+                    <div class="col-sm-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-muted small">수량</span>
+                            <input type="number" class="form-control option-cnt" placeholder="0" min="0" value="0" required>
+                            <span class="input-group-text bg-light text-muted small">개</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-1 text-end">
+                        <button type="button" class="btn btn-outline-danger btn-remove-option w-100" data-option-id="${optionId}" title="삭제">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -136,7 +151,7 @@ const ProductCreate = {
                 document.getElementById('optionList').innerHTML = `
                     <div class="alert alert-info mb-0">
                         <i class="fas fa-info-circle me-2"></i>
-                        상품 사이즈 옵션을 추가해주세요. 예: 250, 255, 260, M, L, XL 등
+                        상품 사이즈 옵션과 수량을 추가해주세요.
                     </div>
                 `;
                 this.optionCount = 0;
@@ -176,12 +191,16 @@ const ProductCreate = {
         }
 
         // 옵션 수집
-        const optionNames = [];
-        const optionInputs = document.querySelectorAll('.option-name');
-        optionInputs.forEach(input => {
-            const value = input.value.trim();
-            if (value) {
-                optionNames.push(value);
+        const options = [];
+        const optionItems = document.querySelectorAll('.option-item');
+        optionItems.forEach(input => {
+            const nameInput = input.querySelector('.option-name').value.trim();
+            const cntInput = parseInt(input.querySelector('.option-cnt').value);
+            if(nameInput){
+                options.push({
+                    optionName: nameInput,
+                    stockCnt: cntInput === 0 ? 0 : cntInput,
+                })
             }
         });
 
@@ -194,8 +213,9 @@ const ProductCreate = {
             releasePrice: parseInt(releasePrice.value),
             releaseDt: document.getElementById('releaseDt').value || null,
             thumbnailUrl: document.getElementById('thumbnailUrl').value || null,
-            optionNames: optionNames.length > 0 ? optionNames : null
+            options: options.length > 0 ? options : []
         };
+        debugger
 
         console.log('전송 데이터:', data);
 

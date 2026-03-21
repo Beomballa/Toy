@@ -1,12 +1,15 @@
 package com.section.admin.product.service;
 
+import com.section.admin.product.req.ProductCreateRequest;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 public class AdminProductService {
 
     private final ProductRepository productRepository;
+    private final ProductOptionRepository productOptionRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
 
@@ -52,7 +56,7 @@ public class AdminProductService {
     }
 
     @Transactional
-    public void createProductInfo(ProductCreateReqDto reqDto) {
+    public void createProductInfo(ProductCreateRequest reqDto) {
 
         if(!brandRepository.existsById(reqDto.getBrandNo())){
             throw new IllegalArgumentException("존재하지 않는 브랜드입니다. brandNo : " + reqDto.getBrandNo());
@@ -60,8 +64,22 @@ public class AdminProductService {
         if(!categoryRepository.existsById(reqDto.getCategoryNo())){
             throw new IllegalArgumentException("존재하지 않는 카테고리입니다. categoryNo : " + reqDto.getCategoryNo());
         }
-        Product product = Product.createProduct(reqDto);
-        productRepository.save(product);
+        // 상품 정보 저장
+        Product product = Product.createProduct(reqDto.toProductCreateReqDto());
+        Product savedProduct = productRepository.save(product);
+
+        // 상품 옵션(ProductOption) 저장
+        if (reqDto.getOptions() != null && !reqDto.getOptions().isEmpty()) {
+            List<ProductOption> productOptions = reqDto.getOptions().stream()
+                    .map(optDto -> ProductOption.builder()
+                            .productNo(savedProduct.getId())
+                            .optionName(optDto.getOptionName())
+                            .stockCnt(optDto.getStockCnt())
+                            .build())
+                    .collect(Collectors.toList());
+
+            productOptionRepository.saveAll(productOptions);
+        }
     }
 
     /**

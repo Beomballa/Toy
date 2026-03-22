@@ -1,0 +1,24 @@
+package com.section.admin.product.req;
+
+import com.section.common.commerce.dto.ProductListReqDto;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ProductListRequest {
+//    브랜드, 카테고리, 상태, 검색 조건 = 상품명, 모델
+    private Long categoryNo;
+    private Long brandNo;
+    private String isActive;
+    private String searchKeyword;
+
+    public ProductListReqDto toProductListReqDto() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setCategoryNo(categoryNo);
+        reqDto.setBrandNo(brandNo);
+        reqDto.setIsActive(isActive);
+        reqDto.setSearchKeyword(searchKeyword);
+        return reqDto;
+    }
+}

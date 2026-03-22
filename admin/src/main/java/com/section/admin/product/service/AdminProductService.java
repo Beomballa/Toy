@@ -1,8 +1,11 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.res.ProductListResponse;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.res.ProductDefaultResDto;
+import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
@@ -11,8 +14,11 @@ import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.commerce.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +37,21 @@ public class AdminProductService {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
 
+    private final ProductService productService;
+
+    /**
+     * 등록된 카테고리, 브랜드 조회 용도
+     * @return ProductDefaultResDto
+     * */
+    public Page<ProductListResponse.ProductListItem> getProductList(ProductListRequest req, Pageable pageable) {
+        Page<ProductListResDto> resDto = productService.getProductList(req.toProductListReqDto(), pageable);
+        return resDto.map(ProductListResponse.ProductListItem::from);
+    }
+
+    /**
+     * 등록된 카테고리, 브랜드 조회 용도
+     * @return ProductDefaultResDto
+     * */
     public ProductDefaultResDto getProductDefaultInfo() {
 
         // 1. 모든 브랜드 조회

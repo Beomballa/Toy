@@ -495,3 +495,7 @@ body {
 .animate-in {
     animation: fadeInUp 0.5s ease forwards;
 }
+
+.decoration {
+    text-decoration: underline;
+}

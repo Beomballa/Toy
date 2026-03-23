@@ -86,7 +86,7 @@ const ProductList = {
                         <img src="${item.thumbnailUrl || 'https://via.placeholder.com/200'}" 
                              class="product-thumb" alt="${item.productName}">
                         <div class="product-details">
-                            <div class="product-name">${item.productName}</div>
+                            <div class="product-name decoration">${item.productName}</div>
                             <div class="product-subtitle">${item.productModel || '-'}</div>
                         </div>
                     </div>
@@ -107,5 +107,11 @@ const ProductList = {
                 </td>
             </tr>
         `).join('');
+
+        document.querySelectorAll('.product-name').forEach((i) => {
+            i.addEventListener('click', () => {
+                window.location.href = '/product/set'
+            })
+        })
     }
 };

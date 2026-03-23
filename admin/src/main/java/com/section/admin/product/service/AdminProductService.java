@@ -76,6 +76,10 @@ public class AdminProductService {
                 .build();
     }
 
+    /**
+     * 새로운 상품 등록
+     * @Param reqDto
+     * */
     @Transactional
     public void createProductInfo(ProductCreateRequest reqDto) {
 
@@ -121,6 +125,13 @@ public class AdminProductService {
                 .filter(category -> "Y".equals(category.getIsActive()))
                 .map(ProductDefaultResDto.CategorySimpleDto::from)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 상품 상세정보 조회
+     * */
+    public void getProductDetail(Long productNo) {
+
     }
 
 }

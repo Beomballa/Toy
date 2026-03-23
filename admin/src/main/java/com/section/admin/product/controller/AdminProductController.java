@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.ModelAndView;
 
 @Slf4j
@@ -32,6 +33,19 @@ public class AdminProductController {
     @RequestMapping("/set")
     public String productSet(HttpServletRequest req, Model model){
         // 브랜드, 카테고리 데이터 조회
+        ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
+
+        // Model에 담아서 Thymeleaf로 전달
+        model.addAttribute("brands", defaultInfo.getBrands());
+        model.addAttribute("categories", defaultInfo.getCategories());
+        return "views/product-set";
+    }
+
+    /**
+     * 본인 작성 문서 조회
+     * */
+    @RequestMapping("/get")
+    public String productGet(@RequestParam("no") String productNo, Model model, HttpServletRequest req){
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
 
         // Model에 담아서 Thymeleaf로 전달

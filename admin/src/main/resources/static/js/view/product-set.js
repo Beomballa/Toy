@@ -215,7 +215,6 @@ const ProductCreate = {
             thumbnailUrl: document.getElementById('thumbnailUrl').value || null,
             options: options.length > 0 ? options : []
         };
-        debugger
 
         console.log('전송 데이터:', data);
 

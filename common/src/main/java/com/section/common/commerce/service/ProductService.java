@@ -1,5 +1,6 @@
 package com.section.common.commerce.service;
 
+import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListReqDto;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.entity.Product;
@@ -18,5 +19,9 @@ public class ProductService {
 
     public Page<ProductListResDto> getProductList(ProductListReqDto reqDto, Pageable pageable) {
         return productRepository.getProductList(reqDto, pageable);
+    }
+
+    public ProductDetailResDto getProductDetail(Long productNo) {
+        return productRepository.findProductDetail(productNo);
     }
 }

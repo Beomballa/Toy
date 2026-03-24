@@ -2,9 +2,11 @@ package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.res.ProductDefaultResDto;
+import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
@@ -130,8 +132,9 @@ public class AdminProductService {
     /**
      * 상품 상세정보 조회
      * */
-    public void getProductDetail(Long productNo) {
-
+    public ProductDetailResponse getProductDetail(Long productNo) {
+        ProductDetailResDto resDto = productService.getProductDetail(productNo);
+        List<ProductOption> option = productOptionRepository.findByProductId(productNo);
+        return new ProductDetailResponse(resDto, option);
     }
-
 }

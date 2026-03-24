@@ -1,6 +1,7 @@
 package com.section.admin.product.controller;
 
 import com.section.admin.product.res.ProductDefaultResDto;
+import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.service.AdminProductService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -46,12 +47,16 @@ public class AdminProductController {
      * */
     @RequestMapping("/get")
     public String productGet(@RequestParam("no") String productNo, Model model, HttpServletRequest req){
+        ProductDetailResponse response = adminProductService.getProductDetail(Long.parseLong(productNo));
+
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
 
-        // Model에 담아서 Thymeleaf로 전달
+        // 3. 화면으로 데이터 전달
+        model.addAttribute("product", response);
         model.addAttribute("brands", defaultInfo.getBrands());
         model.addAttribute("categories", defaultInfo.getCategories());
-        return "views/product-set";
+
+        return "views/product-get";
     }
 
 }

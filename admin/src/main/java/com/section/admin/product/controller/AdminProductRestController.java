@@ -3,6 +3,7 @@ package com.section.admin.product.controller;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.service.AdminProductService;
@@ -39,5 +40,10 @@ public class AdminProductRestController {
         adminProductService.createProductInfo(reqDto);
 
         return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
+    @GetMapping("/product/get")
+    public ResponseEntity<ProductDetailResponse> getProductDetail(@RequestParam("no") Long productNo) {
+        return ResponseEntity.ok(adminProductService.getProductDetail(productNo));
     }
 }

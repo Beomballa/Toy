@@ -1,17 +1,34 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>상품 상세 | Grade-Stock Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
   <link rel="stylesheet" href="/css/product.css">
+  <style>
+      .badge-active {
+          background-color: #dcfce7;
+          color: #166534;
+      }
+
+      .badge-model {
+          background-color: #f3f4f6;
+          color: #374151;
+          font-weight: 500;
+      }
+
+      .stat-label {
+          font-size: 0.85rem;
+          margin-bottom: 5px;
+      }
+  </style>
 </head>
 <body>
 
-<!-- 사이드바 -->
 <nav class="sidebar">
   <div class="sidebar-brand">
     <div class="sidebar-brand-icon">GS</div>
@@ -21,55 +38,41 @@
   <div class="nav-section">
     <div class="nav-section-title">Main Menu</div>
     <a class="nav-link" href="/admin/dashboard">
-      <i class="fas fa-chart-line"></i>
-      대시보드
+      <i class="fas fa-chart-line"></i> 대시보드
     </a>
     <a class="nav-link active" href="/admin/products">
-      <i class="fas fa-box"></i>
-      상품 관리
+      <i class="fas fa-box"></i> 상품 관리
     </a>
     <a class="nav-link" href="/admin/market">
-      <i class="fas fa-chart-bar"></i>
-      실시간 시세
+      <i class="fas fa-chart-bar"></i> 실시간 시세
     </a>
     <a class="nav-link" href="/admin/orders">
-      <i class="fas fa-shopping-cart"></i>
-      주문 관리
+      <i class="fas fa-shopping-cart"></i> 주문 관리
     </a>
   </div>
 
   <div class="nav-section">
     <div class="nav-section-title">Community</div>
     <a class="nav-link" href="/admin/discuss">
-      <i class="fas fa-comments"></i>
-      종목 토론방
+      <i class="fas fa-comments"></i> 종목 토론방
     </a>
     <a class="nav-link" href="/admin/style">
-      <i class="fas fa-camera"></i>
-      스타일 피드
+      <i class="fas fa-camera"></i> 스타일 피드
     </a>
     <a class="nav-link" href="/admin/members">
-      <i class="fas fa-users"></i>
-      회원 관리
+      <i class="fas fa-users"></i> 회원 관리
     </a>
   </div>
 
   <div class="nav-section">
     <div class="nav-section-title">System</div>
-    <a class="nav-link" href="/admin/permissions">
-      <i class="fas fa-shield-alt"></i>
-      권한 관리
-    </a>
     <a class="nav-link" href="/admin/settings">
-      <i class="fas fa-cog"></i>
-      시스템 설정
+      <i class="fas fa-cog"></i> 시스템 설정
     </a>
   </div>
 </nav>
 
-<!-- 메인 콘텐츠 -->
 <main class="main-content">
-  <!-- 페이지 헤더 -->
   <div class="page-header">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -98,41 +101,29 @@
   </div>
 
   <div class="row">
-    <!-- 왼쪽: 상품 이미지 -->
     <div class="col-lg-5">
-      <div class="card animate-in">
-        <div class="card-body p-4">
-          <div class="text-center">
-            <img id="productImage"
-                 src="https://via.placeholder.com/500x500?text=No+Image"
-                 class="img-fluid rounded"
-                 style="max-height: 500px; object-fit: contain; border: 1px solid #E5E7EB;"
-                 alt="상품 이미지">
-          </div>
+      <div class="card animate-in mb-4">
+        <div class="card-body p-4 text-center">
+          <img id="productImage" src="https://via.placeholder.com/500x500?text=Loading..."
+               class="img-fluid rounded" style="max-height: 500px; object-fit: contain; border: 1px solid #E5E7EB;">
         </div>
       </div>
 
-      <!-- 상품 옵션 -->
       <div class="card animate-in">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between">
           <span class="card-title">상품 옵션 (사이즈)</span>
-          <span class="card-subtitle" id="optionCount"></span>
+          <span class="badge bg-primary rounded-pill" id="optionCount">0</span>
         </div>
         <div class="card-body">
           <div id="optionList" class="d-flex flex-wrap gap-2">
-            <!-- JavaScript로 동적 로드 -->
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 오른쪽: 상품 정보 -->
     <div class="col-lg-7">
-      <!-- 기본 정보 -->
-      <div class="card animate-in">
-        <div class="card-header">
-          <span class="card-title">기본 정보</span>
-        </div>
+      <div class="card animate-in mb-4">
+        <div class="card-header"><span class="card-title">기본 정보</span></div>
         <div class="card-body">
           <table class="table table-borderless">
             <colgroup>
@@ -158,9 +149,7 @@
             </tr>
             <tr>
               <th class="text-muted">모델번호</th>
-              <td>
-                <span id="modelNum" class="badge badge-model">-</span>
-              </td>
+              <td><span id="modelNum" class="badge badge-model">-</span></td>
             </tr>
             <tr>
               <th class="text-muted">발매가</th>
@@ -175,11 +164,8 @@
         </div>
       </div>
 
-      <!-- 관리 정보 -->
-      <div class="card animate-in">
-        <div class="card-header">
-          <span class="card-title">관리 정보</span>
-        </div>
+      <div class="card animate-in mb-4">
+        <div class="card-header"><span class="card-title">관리 정보</span></div>
         <div class="card-body">
           <table class="table table-borderless">
             <colgroup>
@@ -187,10 +173,6 @@
               <col>
             </colgroup>
             <tbody>
-            <tr>
-              <th class="text-muted">등록 관리자</th>
-              <td id="crtAdminNo">-</td>
-            </tr>
             <tr>
               <th class="text-muted">등록일시</th>
               <td id="crtDtm">-</td>
@@ -201,10 +183,8 @@
             </tr>
             <tr>
               <th class="text-muted">썸네일 URL</th>
-              <td>
-                <a id="thumbnailUrl" href="#" target="_blank" class="text-primary text-decoration-none">
-                  <i class="fas fa-external-link-alt me-1"></i>이미지 보기
-                </a>
+              <td><a id="thumbnailUrlLink" href="#" target="_blank" class="text-primary text-decoration-none small">
+                <i class="fas fa-external-link-alt me-1"></i>이미지 새창 열기</a>
               </td>
             </tr>
             </tbody>
@@ -212,24 +192,17 @@
         </div>
       </div>
 
-      <!-- 통계 정보 (추후 확장용) -->
       <div class="card animate-in">
-        <div class="card-header">
-          <span class="card-title">거래 통계</span>
-        </div>
-        <div class="card-body">
+        <div class="card-header"><span class="card-title">실시간 현황</span></div>
+        <div class="card-body py-4">
           <div class="row text-center">
-            <div class="col-4">
-              <div class="stat-label text-muted small">총 거래량</div>
-              <div class="stat-value fs-4 fw-bold text-primary">-</div>
+            <div class="col-6 border-end">
+              <div class="stat-label text-muted">총 재고량</div>
+              <div class="stat-value fs-4 fw-bold" id="totalStockValue">0</div>
             </div>
-            <div class="col-4">
-              <div class="stat-label text-muted small">현재 시세</div>
-              <div class="stat-value fs-4 fw-bold text-success">-</div>
-            </div>
-            <div class="col-4">
-              <div class="stat-label text-muted small">변동률</div>
-              <div class="stat-value fs-4 fw-bold text-danger">-</div>
+            <div class="col-6">
+              <div class="stat-label text-muted">상태</div>
+              <div class="stat-value fs-4 fw-bold text-success" id="statusTextValue">-</div>
             </div>
           </div>
         </div>
@@ -241,11 +214,10 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="/js/view/product-get.js"></script>
-
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         ProductDetail.init();
-    })
+    });
 </script>
 </body>
 </html>

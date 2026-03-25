@@ -95,6 +95,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     public BooleanExpression isActiveEq() {
-        return product.status.eq(ProductStatus.ACTIVE.name());
+        return product.status.ne(ProductStatus.DELETE.name());
     }
 }

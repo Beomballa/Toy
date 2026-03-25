@@ -4,6 +4,7 @@ import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.dto.ProductDetailResDto;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -136,5 +138,15 @@ public class AdminProductService {
         ProductDetailResDto resDto = productService.getProductDetail(productNo);
         List<ProductOption> option = productOptionRepository.findByProductId(productNo);
         return new ProductDetailResponse(resDto, option);
+    }
+
+    @Transactional
+    public void deleteProduct(Long productNo) {
+        productRepository.findById(productNo)
+                .filter(p -> !ProductStatus.DELETE.name().equals(p.getStatus()))
+                .ifPresent(product -> {
+                    product.deleteProduct();
+                    log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
+                });
     }
 }

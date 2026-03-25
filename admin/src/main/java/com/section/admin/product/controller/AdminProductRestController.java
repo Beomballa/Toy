@@ -5,7 +5,6 @@ import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
-import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.service.AdminProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,5 +44,11 @@ public class AdminProductRestController {
     @GetMapping("/product/get")
     public ResponseEntity<ProductDetailResponse> getProductDetail(@RequestParam("no") Long productNo) {
         return ResponseEntity.ok(adminProductService.getProductDetail(productNo));
+    }
+
+    @PatchMapping("/product/delete/{no}")
+    public ResponseEntity<Void> deleteProduct(@PathVariable("no") Long productNo) {
+        adminProductService.deleteProduct(productNo);
+        return ResponseEntity.ok().build();
     }
 }

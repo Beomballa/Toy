@@ -52,7 +52,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq(reqDto.getIsActive())
+                        isActiveEq()
                 )
                 .orderBy(product.releaseDt.desc())
                 .offset(pageable.getOffset())
@@ -69,7 +69,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq(reqDto.getIsActive())
+                        isActiveEq()
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
@@ -94,7 +94,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return product.brandNo.eq(brandNo);
     }
 
-    public BooleanExpression isActiveEq(String isActive) {
+    public BooleanExpression isActiveEq() {
         return product.status.eq(ProductStatus.ACTIVE.name());
     }
 }

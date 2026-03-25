@@ -125,8 +125,8 @@ const ProductDetail = {
         if (!confirm('정말로 이 상품을 삭제하시겠습니까?')) return;
 
         try {
-            const response = await fetch(`/api/admin/product/${this.productNo}`, {
-                method: 'DELETE'
+            const response = await fetch(`/api/admin/product/delete/${this.productNo}`, {
+                method: 'PATCH'
             });
 
             if (response.ok) {
@@ -145,7 +145,3 @@ const ProductDetail = {
         return price.toLocaleString() + '원';
     }
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-    ProductDetail.init();
-});

@@ -132,4 +132,8 @@ public class Product extends BaseEntity {
     public boolean isSoldOut() {
         return ProductStatus.SOLD_OUT.name().equals(this.status);
     }
+
+    public void deleteProduct() {
+        this.status = ProductStatus.DELETE.name();
+    }
 }

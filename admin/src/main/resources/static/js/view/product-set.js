@@ -16,6 +16,10 @@ const ProductCreate = {
 
         // 이벤트 바인딩
         this.bindEvents();
+
+        document.getElementById("main-logo").addEventListener("click", () => {
+            window.location.href = "/admin/products";
+        });
     },
 
     // 브랜드 & 카테고리 선택박스 렌더링 (하나의 함수로 통합)

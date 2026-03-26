@@ -11,6 +11,10 @@ const ProductEdit = {
         this.loadBrands();
         this.loadProductDetail();
         this.bindEvents();
+
+        document.getElementById("main-logo").addEventListener("click", () => {
+            window.location.href = "/admin/products";
+        });
     },
 
     bindEvents() {

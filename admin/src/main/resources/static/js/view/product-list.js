@@ -16,6 +16,10 @@ const ProductList = {
                 window.location.href = '/product/set';
             });
         }
+
+        document.getElementById("main-logo").addEventListener("click", () => {
+            window.location.href = "/admin/products";
+        });
     },
 
     bindEvents() {

@@ -173,9 +173,22 @@ const ProductList = {
             `Showing ${data.numberOfElements === 0 ? 0 : (data.number * data.size) + 1} to ${(data.number * data.size) + data.numberOfElements} of ${data.totalElements} entries`;
     },
 
-    deleteProduct(no) {
-        if (confirm('정말로 이 상품을 삭제하시겠습니까?')) {
-            console.log('삭제 요청:', no);
+    async deleteProduct(no) {
+        if (!confirm('정말로 이 상품을 삭제하시겠습니까?')) return;
+
+        try {
+            const response = await fetch(`/api/admin/product/delete/${no}`, {
+                method: 'PATCH'
+            });
+
+            if (response.ok) {
+                alert('삭제되었습니다.');
+                window.location.href = '/admin/products';
+            } else {
+                alert('삭제에 실패했습니다.');
+            }
+        } catch (error) {
+            console.error('Delete Error:', error);
         }
-    }
+    },
 };

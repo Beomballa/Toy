@@ -26,7 +26,6 @@ public class AdminProductRestController {
     public ResponseEntity<Page<ProductListResponse.ProductListItem>> getProductList(
             @ModelAttribute ProductListRequest req, Pageable pageable
     ) {
-
         log.info("상품 목록 조회 요청 : {}, 페이징 : {}", req, pageable);
         Page<ProductListResponse.ProductListItem> result = adminProductService.getProductList(req, pageable);
         return ResponseEntity.ok(result);

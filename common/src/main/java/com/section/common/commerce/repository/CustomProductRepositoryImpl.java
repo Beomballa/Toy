@@ -60,7 +60,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .fetch();
 
         JPAQuery<Long> countQuery = queryFactory
-                .select(product.count())
+                .select(product.countDistinct())
                 .from(product)
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))

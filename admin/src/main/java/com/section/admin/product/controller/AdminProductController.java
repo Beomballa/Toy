@@ -24,7 +24,12 @@ public class AdminProductController {
      * 본인 작성 문서 조회
      * */
     @RequestMapping("/list")
-    public ModelAndView productList(HttpServletRequest req){
+    public ModelAndView productList(HttpServletRequest req, Model model){
+        ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
+
+        model.addAttribute("brands", defaultInfo.getBrands());
+        model.addAttribute("categories", defaultInfo.getCategories());
+
         return new ModelAndView("views/product-list");
     }
 
@@ -36,7 +41,6 @@ public class AdminProductController {
         // 브랜드, 카테고리 데이터 조회
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
 
-        // Model에 담아서 Thymeleaf로 전달
         model.addAttribute("brands", defaultInfo.getBrands());
         model.addAttribute("categories", defaultInfo.getCategories());
         return "views/product-set";

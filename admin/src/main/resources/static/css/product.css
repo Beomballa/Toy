@@ -499,3 +499,24 @@ body {
 .decoration {
     text-decoration: underline;
 }
+
+.filter-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+.filter-item {
+    flex: 1 1 180px;
+    min-width: 160px;
+}
+.filter-item-search {
+    flex: 2 1 280px;
+    min-width: 220px;
+}
+.filter-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 4px;
+}

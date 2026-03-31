@@ -7,11 +7,13 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.commerce.dto.ProductListReqDto;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QBrand.brand;
@@ -39,6 +41,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                                 brand.nameKo.as("brandName"),
                                 product.releasePrice.as("releasePrice"),
                                 productOption.stockCnt.sumLong().as("totalStock"),
+
+//        private Long activeCount;
+//        private Long soldOutSoonCount;
+//        private Long todayCount;
                                 product.status.as("status"),
                                 product.crtDtm.as("crtDtm")
                         )
@@ -73,6 +79,74 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
+        LocalDateTime today = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+
+        ProductStatsDto stats = new ProductStatsDto();
+
+        // 전체 개수
+        Long totalCount = queryFactory
+                .select(product.countDistinct())
+                .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .where(
+                        searchKeywordLike(reqDto.getSearchKeyword()),
+                        categoryNoEq(reqDto.getCategoryNo()),
+                        brandNoEq(reqDto.getBrandNo()),
+                        isActiveEq()
+                )
+                .fetchOne();
+        stats.setTotalCount(totalCount != null ? totalCount : 0L);
+
+        // 활성 상품 개수
+        Long activeCount = queryFactory
+                .select(product.countDistinct())
+                .from(product)
+                .where(
+                        searchKeywordLike(reqDto.getSearchKeyword()),
+                        categoryNoEq(reqDto.getCategoryNo()),
+                        brandNoEq(reqDto.getBrandNo()),
+                        isActiveEq(),
+                        product.status.eq(ProductStatus.ACTIVE.name())
+                )
+                .fetchOne();
+        stats.setActiveCount(activeCount != null ? activeCount : 0L);
+
+        // 재고 부족 상품 개수 (예: 100개 미만)
+        Long lowStockCount = queryFactory
+                .select(product.countDistinct())
+                .from(product)
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                .where(
+                        searchKeywordLike(reqDto.getSearchKeyword()),
+                        categoryNoEq(reqDto.getCategoryNo()),
+                        brandNoEq(reqDto.getBrandNo()),
+                        isActiveEq()
+                )
+                .groupBy(product.id)
+                .having(productOption.stockCnt.sumLong().lt(100L))
+                .fetchCount();
+        stats.setLowStockCount(lowStockCount);
+
+        // 오늘 등록된 상품 개수
+        Long todayCount = queryFactory
+                .select(product.countDistinct())
+                .from(product)
+                .where(
+                        searchKeywordLike(reqDto.getSearchKeyword()),
+                        categoryNoEq(reqDto.getCategoryNo()),
+                        brandNoEq(reqDto.getBrandNo()),
+                        isActiveEq(),
+                        product.crtDtm.goe(today)
+                )
+                .fetchOne();
+        stats.setTodayCount(todayCount != null ? todayCount : 0L);
+
+        return stats;
     }
 
     public BooleanExpression searchKeywordLike(String searchKeyword) {

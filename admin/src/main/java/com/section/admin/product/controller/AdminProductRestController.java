@@ -9,7 +9,6 @@ import com.section.admin.product.service.AdminProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,11 +22,11 @@ public class AdminProductRestController {
     private final AdminProductService adminProductService;
 
     @GetMapping("/product/list")
-    public ResponseEntity<Page<ProductListResponse.ProductListItem>> getProductList(
+    public ResponseEntity<ProductListResponse> getProductList(
             @ModelAttribute ProductListRequest req, Pageable pageable
     ) {
         log.info("상품 목록 조회 요청 : {}, 페이징 : {}", req, pageable);
-        Page<ProductListResponse.ProductListItem> result = adminProductService.getProductList(req, pageable);
+        ProductListResponse result = adminProductService.getProductList(req, pageable);
         return ResponseEntity.ok(result);
     }
 

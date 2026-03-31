@@ -3,6 +3,7 @@ package com.section.common.commerce.service;
 import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListReqDto;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,10 @@ public class ProductService {
 
     public Page<ProductListResDto> getProductList(ProductListReqDto reqDto, Pageable pageable) {
         return productRepository.getProductList(reqDto, pageable);
+    }
+
+    public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
+        return productRepository.getProductStats(reqDto);
     }
 
     public ProductDetailResDto getProductDetail(Long productNo) {

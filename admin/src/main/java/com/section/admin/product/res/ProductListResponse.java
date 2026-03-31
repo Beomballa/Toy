@@ -1,17 +1,28 @@
 package com.section.admin.product.res;
 
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.util.DateUtil;
 import lombok.*;
+import org.springframework.data.domain.Page;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Getter
 @Setter
+@Builder
 public class ProductListResponse {
-    private List<ProductListResponse> productList;
 
+    private Page<ProductListItem> products;
+    private ProductStatsItem productStats;
+
+    public static ProductListResponse of(Page<ProductListItem> products, ProductStatsItem stats){
+        return ProductListResponse.builder()
+                .products(products)
+                .productStats(stats)
+                .build();
+    }
 
     @Getter @Setter
     @Builder
@@ -39,6 +50,27 @@ public class ProductListResponse {
                     .totalStock(resDto.getTotalStock() != null ? resDto.getTotalStock() : 0L)
                     .status(resDto.getStatus())
                     .crtDtm(resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "")
+                    .build();
+        }
+    }
+
+    @Getter @Setter
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ProductStatsItem{
+        private Long totalCount;
+        private Long activeCount;
+        private Long lowStockCount;
+        private Long todayCount;
+
+        public static ProductStatsItem from(ProductStatsDto resDto){
+            if(resDto == null) return new ProductStatsItem();
+            return ProductStatsItem.builder()
+                    .totalCount(resDto.getTotalCount())
+                    .activeCount(resDto.getActiveCount())
+                    .lowStockCount(resDto.getLowStockCount())
+                    .todayCount(resDto.getTodayCount())
                     .build();
         }
     }

@@ -9,6 +9,7 @@ import com.section.common.commerce.dto.ProductCreateReqDto;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
@@ -47,9 +48,13 @@ public class AdminProductService {
      * 등록된 카테고리, 브랜드 조회 용도
      * @return ProductDefaultResDto
      * */
-    public Page<ProductListResponse.ProductListItem> getProductList(ProductListRequest req, Pageable pageable) {
+    public ProductListResponse getProductList(ProductListRequest req, Pageable pageable) {
         Page<ProductListResDto> resDto = productService.getProductList(req.toProductListReqDto(), pageable);
-        return resDto.map(ProductListResponse.ProductListItem::from);
+        ProductStatsDto statsDto = productService.getProductStats(req.toProductListReqDto());
+
+        Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
+        ProductListResponse.ProductStatsItem stats = ProductListResponse.ProductStatsItem.from(statsDto);
+        return ProductListResponse.of(result, stats);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.common.base.entity.type.ProductStatus;
@@ -107,6 +108,44 @@ public class AdminProductService {
             List<ProductOption> productOptions = reqDto.getOptions().stream()
                     .map(optDto -> ProductOption.builder()
                             .productNo(savedProduct.getId())
+                            .optionName(optDto.getOptionName())
+                            .stockCnt(optDto.getStockCnt())
+                            .build())
+                    .collect(Collectors.toList());
+
+            productOptionRepository.saveAll(productOptions);
+        }
+    }
+
+    /**
+     * 상품 정보 수정
+     * */
+    @Transactional
+    public void updateProductInfo(ProductUpdateRequest reqDto) {
+        Product product = productRepository.findById(reqDto.getProductNo())
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품입니다. id : " + reqDto.getProductNo()));
+
+        // 기본 정보 수정
+        product.updateBasicInfo(
+                reqDto.getNameKo(),
+                reqDto.getModelNum(),
+                reqDto.getReleasePrice(),
+                reqDto.getReleaseDt(),
+                reqDto.getThumbnailUrl()
+        );
+        product.changeCategory(reqDto.getCategoryNo());
+        product.changeBrand(reqDto.getBrandNo());
+        if (reqDto.getStatus() != null) {
+            product.changeStatus(ProductStatus.valueOf(reqDto.getStatus()));
+        }
+
+        // 옵션 수정: 기존 옵션 삭제 후 재등록
+        productOptionRepository.deleteByProductNo(product.getId());
+
+        if (reqDto.getOptions() != null && !reqDto.getOptions().isEmpty()) {
+            List<ProductOption> productOptions = reqDto.getOptions().stream()
+                    .map(optDto -> ProductOption.builder()
+                            .productNo(product.getId())
                             .optionName(optDto.getOptionName())
                             .stockCnt(optDto.getStockCnt())
                             .build())

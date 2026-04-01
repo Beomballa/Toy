@@ -24,7 +24,7 @@ const ProductDetail = {
         if (btnEdit) {
             btnEdit.addEventListener('click', () => {
                 // 수정 페이지 이동
-                window.location.href = `/admin/product/set?no=${this.productNo}`;
+                window.location.href = `/product/update?no=${this.productNo}`;
             });
         }
 

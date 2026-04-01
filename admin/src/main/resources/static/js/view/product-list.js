@@ -124,7 +124,7 @@ const ProductList = {
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-icon btn-secondary me-1" onclick="location.href='/product/set?no=${item.productNo}'">
+                    <button class="btn btn-icon btn-secondary me-1" onclick="location.href='/product/update?no=${item.productNo}'">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">

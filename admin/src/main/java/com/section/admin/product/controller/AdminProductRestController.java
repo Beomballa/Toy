@@ -3,6 +3,7 @@ package com.section.admin.product.controller;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
@@ -35,6 +36,15 @@ public class AdminProductRestController {
         log.info("상품 등록 요청 : {}", reqDto);
 
         adminProductService.createProductInfo(reqDto);
+
+        return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
+    @PostMapping("/product/update")
+    public ResponseEntity<BaseSimpleResDto> updateProductInfo(@Valid @RequestBody ProductUpdateRequest reqDto) {
+        log.info("상품 수정 요청 : {}", reqDto);
+
+        adminProductService.updateProductInfo(reqDto);
 
         return ResponseEntity.ok(new BaseSimpleResDto());
     }

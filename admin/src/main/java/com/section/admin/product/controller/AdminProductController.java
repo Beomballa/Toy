@@ -63,4 +63,17 @@ public class AdminProductController {
         return "views/product-get";
     }
 
+    /**
+     * 상품 수정 화면 이동
+     * */
+    @RequestMapping("/update")
+    public String productUpdate(@RequestParam("no") String productNo, Model model, HttpServletRequest req){
+        ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
+
+        model.addAttribute("brands", defaultInfo.getBrands());
+        model.addAttribute("categories", defaultInfo.getCategories());
+
+        return "views/product-update";
+    }
+
 }

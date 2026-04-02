@@ -8,22 +8,19 @@ const ProductUpdate = {
         this.brands = brands || [];
         this.categories = categories || [];
 
-        // URL에서 상품 번호(no) 추출
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
 
         if (!this.productNo) {
-            alert('상품 번호가 유효하지 않습니다.');
-            history.back();
+            CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error').then(() => history.back());
             return;
         }
 
-        // 초기 렌더링 및 데이터 로드
         this.renderSelects();
         this.loadProductData();
         this.bindEvents();
 
-        document.getElementById("main-logo").addEventListener("click", () => {
+        document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = "/admin/products";
         });
     },
@@ -50,7 +47,6 @@ const ProductUpdate = {
         document.getElementById('btnUpdate').addEventListener('click', () => this.updateForm());
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
 
-        // 실시간 미리보기 이벤트 바인딩 (product-set.js와 유사)
         const previewIds = ['categoryNo', 'brandNo', 'nameKo', 'modelNum', 'releasePrice', 'thumbnailUrl'];
         previewIds.forEach(id => {
             const el = document.getElementById(id);
@@ -70,7 +66,7 @@ const ProductUpdate = {
             this.updatePreview();
         } catch (error) {
             console.error('Data Load Error:', error);
-            alert('데이터 로드 중 오류가 발생했습니다.');
+            await CommonJS.alert('데이터 로드 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -85,7 +81,6 @@ const ProductUpdate = {
         document.getElementById('thumbnailUrl').value = data.thumbnailUrl || '';
         document.getElementById('status').value = data.status || 'ACTIVE';
 
-        // 옵션 데이터 렌더링
         if (data.options && data.options.length > 0) {
             const optionList = document.getElementById('optionList');
             optionList.innerHTML = '';
@@ -128,7 +123,6 @@ const ProductUpdate = {
 
         const optionList = document.getElementById('optionList');
         if (this.optionCount === 1 && !name) {
-             // 수동 추가 시 첫 번째면 비우기
              optionList.innerHTML = '';
         } else if (optionList.querySelector('.alert-info')) {
              optionList.innerHTML = '';
@@ -180,9 +174,12 @@ const ProductUpdate = {
         const releasePrice = document.getElementById('releasePrice').value;
 
         if (!categoryNo || !brandNo || !nameKo || !releasePrice) {
-            alert('필수 항목을 모두 입력해주세요.');
+            await CommonJS.alert('필수 항목을 모두 입력해주세요.', '알림', 'warning');
             return;
         }
+
+        const isConfirm = await CommonJS.confirm('상품 정보를 수정하시겠습니까?', '상품 수정 확인');
+        if (!isConfirm) return;
 
         const options = [];
         document.querySelectorAll('.option-item').forEach(item => {
@@ -207,7 +204,6 @@ const ProductUpdate = {
         };
 
         try {
-            // 수정 API 호출 (POST /product/update 가 있다고 가정하거나 새로 만들어야 함)
             const response = await fetch('/api/admin/product/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -215,15 +211,15 @@ const ProductUpdate = {
             });
 
             if (response.ok) {
-                alert('상품 정보가 수정되었습니다.');
+                await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
                 window.location.href = `/product/get?no=${this.productNo}`;
             } else {
                 const err = await response.json();
-                alert('수정 실패: ' + (err.message || '알 수 없는 오류'));
+                await CommonJS.alert('수정 실패: ' + (err.message || '알 수 없는 오류'), '오류', 'error');
             }
         } catch (error) {
             console.error('Update Error:', error);
-            alert('수정 중 오류가 발생했습니다.');
+            await CommonJS.alert('수정 중 오류가 발생했습니다.', '오류', 'error');
         }
     }
 };

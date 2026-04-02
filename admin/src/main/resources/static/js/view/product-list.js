@@ -60,9 +60,6 @@ const ProductList = {
         });
     },
 
-    // ─────────────────────────────────────────
-    // ✅ API 호출 (구조 분해 할당 적용)
-    // ─────────────────────────────────────────
     async getList() {
         const params = new URLSearchParams({
             page: this.state.page,
@@ -79,11 +76,8 @@ const ProductList = {
 
             const data = await res.json();
 
-            // ✅ 데이터 구조에 따라 products 내부의 정보를 전달
             this._renderList(data.products.content);
             this._renderPagination(data.products);
-
-            // ✅ 서버가 준 진짜 통계 데이터를 전달
             this._updateStats(data.productStats);
 
         } catch (err) {
@@ -124,10 +118,10 @@ const ProductList = {
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-icon btn-secondary me-1" onclick="location.href='/product/update?no=${item.productNo}'">
+                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/product/update?no=${item.productNo}'">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">
                         <i class="fas fa-trash text-danger"></i>
                     </button>
                 </td>
@@ -140,7 +134,6 @@ const ProductList = {
         const pagination = document.getElementById('pagination');
 
         let html = '';
-        // 간단한 페이지네이션 생성 로직
         for (let i = 0; i < totalPages; i++) {
             html += `
                 <li class="page-item ${i === curr ? 'active' : ''}">
@@ -154,9 +147,6 @@ const ProductList = {
             `Showing ${numberOfElements === 0 ? 0 : curr * size + 1} to ${curr * size + numberOfElements} of ${totalElements} entries`;
     },
 
-    // ─────────────────────────────────────────
-    // ✅ 통계 카드 업데이트 (서버 응답값 기반)
-    // ─────────────────────────────────────────
     _updateStats(stats) {
         if (!stats) return;
 
@@ -184,7 +174,23 @@ const ProductList = {
     },
 
     async deleteProduct(no) {
-        if (!confirm('정말로 삭제하시겠습니까?')) return;
-        // 삭제 로직 생략 (기존 유지)
+        const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');
+        if (!isConfirm) return;
+
+        try {
+            const response = await fetch(`/api/admin/product/delete/${no}`, {
+                method: 'PATCH'
+            });
+
+            if (response.ok) {
+                await CommonJS.alert('삭제되었습니다.', '성공', 'success');
+                this.getList();
+            } else {
+                await CommonJS.alert('삭제에 실패했습니다.', '오류', 'error');
+            }
+        } catch (error) {
+            console.error('Delete Error:', error);
+            await CommonJS.alert('삭제 처리 중 오류가 발생했습니다.', '오류', 'error');
+        }
     }
 };

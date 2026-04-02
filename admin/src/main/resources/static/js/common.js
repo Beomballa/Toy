@@ -2,37 +2,122 @@
 let CommonJS = {
 
     init: function () {
-        document.getElementById("main-logo").addEventListener("click", function (el){
+        document.getElementById("main-logo")?.addEventListener("click", function (el){
             window.location.href = "/product/list";
         });
     },
 
     /**
-     * SweetAlert2 확인 창을 띄우는 공통 함수
-     * @param {string} title - 확인 창의 제목
-     * @param {string} text - 확인 창의 내용
-     * @param {function} onConfirm - '예' 버튼을 눌렀을 때 실행될 콜백 함수
+     * 커스텀 알림창 (Alert)
      */
-    showConfirmAlert: function (title, text, onConfirm) {
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'question',
+    alert: function(message, title = '알림', type = 'info') {
+        console.log('CommonJS.alert 호출:', message);
+        return new Promise((resolve) => {
+            const icons = {
+                info: '<i class="fas fa-info-circle"></i>',
+                success: '<i class="fas fa-check-circle"></i>',
+                error: '<i class="fas fa-times-circle"></i>',
+                warning: '<i class="fas fa-exclamation-triangle"></i>'
+            };
 
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: '예',
-            cancelButtonText: '아니요',
+            const modalHtml = `
+                <div class="custom-modal-overlay" id="customAlertOverlay">
+                    <div class="custom-modal">
+                        <div class="custom-modal-header">
+                            <div class="custom-modal-icon ${type}">${icons[type] || icons.info}</div>
+                            <div class="custom-modal-title">${title}</div>
+                        </div>
+                        <div class="custom-modal-body">${message}</div>
+                        <div class="custom-modal-footer">
+                            <button type="button" class="custom-btn custom-btn-primary" id="customAlertBtn">확인</button>
+                        </div>
+                    </div>
+                </div>
+            `;
 
-        }).then((result) => {
-            // '예' 버튼을 눌렀을 경우, 전달받은 콜백 함수를 실행
-            if (result.isConfirmed) {
-                onConfirm();
-            }
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const overlay = document.getElementById('customAlertOverlay');
+            
+            // display: flex 먼저 적용 후 opacity 애니메이션
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('show'), 10);
+
+            const btn = document.getElementById('customAlertBtn');
+            btn.focus({ preventScroll: true });
+
+            const handleClose = () => {
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve();
+                }, 200);
+            };
+
+            btn.addEventListener('click', handleClose);
+            overlay.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') handleClose();
+            });
+        });
+    },
+
+    /**
+     * 커스텀 확인창 (Confirm)
+     */
+    confirm: function(message, title = '확인', type = 'warning') {
+        return new Promise((resolve) => {
+            const icons = {
+                info: '<i class="fas fa-info-circle"></i>',
+                success: '<i class="fas fa-check-circle"></i>',
+                error: '<i class="fas fa-times-circle"></i>',
+                warning: '<i class="fas fa-question-circle"></i>'
+            };
+
+            const modalHtml = `
+                <div class="custom-modal-overlay" id="customConfirmOverlay">
+                    <div class="custom-modal">
+                        <div class="custom-modal-header">
+                            <div class="custom-modal-icon ${type}">${icons[type] || icons.info}</div>
+                            <div class="custom-modal-title">${title}</div>
+                        </div>
+                        <div class="custom-modal-body">${message}</div>
+                        <div class="custom-modal-footer">
+                            <button type="button" class="custom-btn custom-btn-secondary" id="customConfirmCancelBtn">취소</button>
+                            <button type="button" class="custom-btn custom-btn-primary" id="customConfirmOkBtn">확인</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            const overlay = document.getElementById('customConfirmOverlay');
+            
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.classList.add('show'), 10);
+
+            const okBtn = document.getElementById('customConfirmOkBtn');
+            const cancelBtn = document.getElementById('customConfirmCancelBtn');
+            
+            okBtn.focus({ preventScroll: true });
+
+            const close = (result) => {
+                overlay.classList.remove('show');
+                setTimeout(() => {
+                    overlay.remove();
+                    resolve(result);
+                }, 200);
+            };
+
+            okBtn.addEventListener('click', () => close(true));
+            cancelBtn.addEventListener('click', () => close(false));
+
+            overlay.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') okBtn.click();
+                if (e.key === 'Escape') cancelBtn.click();
+            });
         });
     }
 }
+
 document.addEventListener('DOMContentLoaded', function () {
     if (typeof CommonJS !== 'undefined' && CommonJS && typeof CommonJS.init === 'function') {
         CommonJS.init();

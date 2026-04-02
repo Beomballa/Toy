@@ -76,8 +76,8 @@ const ProductList = {
 
             const data = await res.json();
 
-            this._renderList(data.products.content);
-            this._renderPagination(data.products);
+            this._renderList(data.products);
+            this._renderPagination(data);
             this._updateStats(data.productStats);
 
         } catch (err) {
@@ -129,22 +129,19 @@ const ProductList = {
         `).join('');
     },
 
-    _renderPagination(pageData) {
-        const { totalPages, number: curr, totalElements, numberOfElements, size } = pageData;
+    _renderPagination(data) {
+        const { totalPages, currentPage: curr, totalElements } = data;
         const pagination = document.getElementById('pagination');
-
         let html = '';
         for (let i = 0; i < totalPages; i++) {
             html += `
-                <li class="page-item ${i === curr ? 'active' : ''}">
-                    <a class="page-link" href="javascript:void(0);" onclick="ProductList.goPage(${i})">${i + 1}</a>
-                </li>`;
+            <li class="page-item ${i === curr ? 'active' : ''}">
+                <a class="page-link" href="javascript:void(0);" onclick="ProductList.goPage(${i})">${i + 1}</a>
+            </li>`;
         }
         pagination.innerHTML = html;
-
         document.getElementById('totalElementsCount').textContent = `전체 ${totalElements.toLocaleString()}개`;
-        document.getElementById('pageInfoText').textContent =
-            `Showing ${numberOfElements === 0 ? 0 : curr * size + 1} to ${curr * size + numberOfElements} of ${totalElements} entries`;
+        document.getElementById('pageInfoText').textContent = `전체 ${totalElements.toLocaleString()}개 중 ${totalPages}페이지`;
     },
 
     _updateStats(stats) {

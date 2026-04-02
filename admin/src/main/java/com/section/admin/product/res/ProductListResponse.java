@@ -8,70 +8,75 @@ import org.springframework.data.domain.Page;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
-@Getter
-@Setter
-@Builder
-public class ProductListResponse {
+public record ProductListResponse(
+        List<ProductListItem> products,
+        int currentPage,
+        int totalPages,
+        Long totalElements,
+        ProductStatsItem productStats
+) {
 
-    private Page<ProductListItem> products;
-    private ProductStatsItem productStats;
 
-    public static ProductListResponse of(Page<ProductListItem> products, ProductStatsItem stats){
-        return ProductListResponse.builder()
-                .products(products)
-                .productStats(stats)
-                .build();
+    public static ProductListResponse of(Page<ProductListItem> page, ProductStatsItem stats){
+        return new ProductListResponse(
+                page.getContent(),
+                page.getNumber(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                stats
+        );
     }
 
-    @Getter @Setter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ProductListItem { // 개별 상품 정보 아이템
-        private Long productNo;
-        private String productName;
-        private String thumbnailUrl;
-        private String productModel;
-        private String brandName;
-        private String releasePrice;
-        private Long totalStock;
-        private String status;
-        private String crtDtm;
-
+    // ──────────────────────────────────────────
+    // 개별 상품 아이템
+    // ──────────────────────────────────────────
+    public record ProductListItem(
+            Long productNo,
+            String productName,
+            String thumbnailUrl,
+            String productModel,
+            String brandName,
+            String releasePrice,
+            Long totalStock,
+            String status,
+            String crtDtm
+    ){
         public static ProductListItem from(ProductListResDto resDto) {
-            return ProductListItem.builder()
-                    .productNo(resDto.getProductNo())
-                    .productName(resDto.getProductName())
-                    .thumbnailUrl(resDto.getThumbnailUrl())
-                    .productModel(resDto.getProductModel())
-                    .brandName(resDto.getBrandName())
-                    .releasePrice(String.format("%,d원", resDto.getReleasePrice()))
-                    .totalStock(resDto.getTotalStock() != null ? resDto.getTotalStock() : 0L)
-                    .status(resDto.getStatus())
-                    .crtDtm(resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "")
-                    .build();
+            return new ProductListItem(
+                    resDto.getProductNo(),
+                    resDto.getProductName(),
+                    resDto.getThumbnailUrl(),
+                    resDto.getProductModel(),
+                    resDto.getBrandName(),
+                    String.format("%,d원", resDto.getReleasePrice()),
+                    resDto.getTotalStock(),
+                    resDto.getStatus(),
+                    resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : ""
+            );
         }
     }
 
-    @Getter @Setter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ProductStatsItem{
-        private Long totalCount;
-        private Long activeCount;
-        private Long lowStockCount;
-        private Long todayCount;
+    public record ProductStatsItem(
+            Long totalCount,
+            Long activeCount,
+            Long lowStockCount,
+            Long todayCount
+    ){
+        public static ProductStatsItem empty() {
+            return new ProductStatsItem(0L, 0L, 0L, 0L);
+        }
 
         public static ProductStatsItem from(ProductStatsDto resDto){
-            if(resDto == null) return new ProductStatsItem();
-            return ProductStatsItem.builder()
-                    .totalCount(resDto.getTotalCount())
-                    .activeCount(resDto.getActiveCount())
-                    .lowStockCount(resDto.getLowStockCount())
-                    .todayCount(resDto.getTodayCount())
-                    .build();
+            return Optional.ofNullable(resDto)
+                    .map(dto -> new ProductStatsItem(
+                            dto.getTotalCount(),
+                            dto.getActiveCount(),
+                            dto.getLowStockCount(),
+                            dto.getTodayCount()
+                    ))
+                    .orElseGet(ProductStatsItem::empty);
         }
     }
 }

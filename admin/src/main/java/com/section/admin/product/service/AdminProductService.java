@@ -80,10 +80,7 @@ public class AdminProductService {
                 .collect(Collectors.toList());
 
         // 3. DTO 생성 및 반환
-        return ProductDefaultResDto.builder()
-                .brands(brandDtos)
-                .categories(categoryDtos)
-                .build();
+        return new ProductDefaultResDto(brandDtos, categoryDtos);
     }
 
     /**
@@ -181,7 +178,7 @@ public class AdminProductService {
     public ProductDetailResponse getProductDetail(Long productNo) {
         ProductDetailResDto resDto = productService.getProductDetail(productNo);
         List<ProductOption> option = productOptionRepository.findByProductId(productNo);
-        return new ProductDetailResponse(resDto, option);
+        return ProductDetailResponse.from(resDto, option);
     }
 
     @Transactional

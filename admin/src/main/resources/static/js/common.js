@@ -11,7 +11,6 @@ let CommonJS = {
      * 커스텀 알림창 (Alert)
      */
     alert: function(message, title = '알림', type = 'info') {
-        console.log('CommonJS.alert 호출:', message);
         return new Promise((resolve) => {
             const icons = {
                 info: '<i class="fas fa-info-circle"></i>',

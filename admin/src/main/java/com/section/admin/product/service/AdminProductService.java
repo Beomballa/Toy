@@ -141,12 +141,13 @@ public class AdminProductService {
 
         if (reqDto.getOptions() != null && !reqDto.getOptions().isEmpty()) {
             List<ProductOption> productOptions = reqDto.getOptions().stream()
+                    .filter(opt -> opt.getOptionName() != null && !opt.getOptionName().isBlank())
                     .map(optDto -> ProductOption.builder()
                             .productNo(product.getId())
                             .optionName(optDto.getOptionName())
                             .stockCnt(optDto.getStockCnt())
                             .build())
-                    .collect(Collectors.toList());
+                    .toList();
 
             productOptionRepository.saveAll(productOptions);
         }

@@ -73,7 +73,6 @@ var ContentEditJS = {
 
         axios.post('/api/content/save', reqData)
             .then(response => {
-                console.log('저장 성공!', response.data);
                 this.initialTitle = currentTitle;
                 this.initialContent = currentContent;
 
@@ -99,7 +98,6 @@ var ContentEditJS = {
 
         axios.post('/api/content/update/cnt', reqData)
             .then(response => {
-                console.log('저장 성공!', response.data);
                 // this.initialTitle = currentTitle;
                 // this.initialContent = currentContent;
                 //
@@ -111,7 +109,6 @@ var ContentEditJS = {
                 // }
             })
             .catch(error => {
-                console.error('조회수 증가중 에러 발생:', error);
                 Swal.fire('오류 발생', '조회수 증가중 문제가 발생했습니다.', 'error');
             });
     }

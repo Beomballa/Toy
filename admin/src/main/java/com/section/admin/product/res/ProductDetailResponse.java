@@ -22,7 +22,6 @@ public record ProductDetailResponse(
         String thumbnailUrl,
         String crtDtm,
         String uptDtm,
-        String status,
         List<OptionInfo> options
 ) {
 
@@ -40,7 +39,6 @@ public record ProductDetailResponse(
                 resDto.getThumbnailUrl(),
                 resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "",
                 resDto.getUptDtm() != null ? DateUtil.localDateTimeToStr(resDto.getUptDtm()) : "",
-                resDto.getStatus(),
                 Optional.ofNullable(options)
                         .map(list -> list.stream().map(OptionInfo::from).collect(Collectors.toList()))
                         .orElse(List.of())

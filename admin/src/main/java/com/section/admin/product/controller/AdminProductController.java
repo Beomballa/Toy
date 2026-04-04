@@ -26,10 +26,8 @@ public class AdminProductController {
     @RequestMapping("/list")
     public ModelAndView productList(HttpServletRequest req, Model model){
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
-
-        model.addAttribute("brands", defaultInfo.getBrands());
-        model.addAttribute("categories", defaultInfo.getCategories());
-
+        model.addAttribute("brands", defaultInfo.brands());
+        model.addAttribute("categories", defaultInfo.categories());
         return new ModelAndView("views/product-list");
     }
 
@@ -40,9 +38,8 @@ public class AdminProductController {
     public String productSet(HttpServletRequest req, Model model){
         // 브랜드, 카테고리 데이터 조회
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
-
-        model.addAttribute("brands", defaultInfo.getBrands());
-        model.addAttribute("categories", defaultInfo.getCategories());
+        model.addAttribute("brands", defaultInfo.brands());
+        model.addAttribute("categories", defaultInfo.categories());
         return "views/product-set";
     }
 
@@ -52,14 +49,10 @@ public class AdminProductController {
     @RequestMapping("/get")
     public String productGet(@RequestParam("no") String productNo, Model model, HttpServletRequest req){
         ProductDetailResponse response = adminProductService.getProductDetail(Long.parseLong(productNo));
-
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
-
-        // 3. 화면으로 데이터 전달
         model.addAttribute("product", response);
-        model.addAttribute("brands", defaultInfo.getBrands());
-        model.addAttribute("categories", defaultInfo.getCategories());
-
+        model.addAttribute("brands", defaultInfo.brands());
+        model.addAttribute("categories", defaultInfo.categories());
         return "views/product-get";
     }
 
@@ -69,10 +62,8 @@ public class AdminProductController {
     @RequestMapping("/update")
     public String productUpdate(@RequestParam("no") String productNo, Model model, HttpServletRequest req){
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
-
-        model.addAttribute("brands", defaultInfo.getBrands());
-        model.addAttribute("categories", defaultInfo.getCategories());
-
+        model.addAttribute("brands", defaultInfo.brands());
+        model.addAttribute("categories", defaultInfo.categories());
         return "views/product-update";
     }
 

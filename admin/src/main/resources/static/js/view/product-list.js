@@ -32,7 +32,7 @@ const ProductList = {
     },
 
     _bindEvents() {
-        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'searchKeyword'];
+        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'searchKeyword', 'orderType'];
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -51,6 +51,23 @@ const ProductList = {
                 location.href = `/product/get?no=${productNo}`;
             }
         });
+
+        document.querySelectorAll('.dropdown-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                const val = e.target.getAttribute('data-value');
+                const text = e.target.textContent;
+
+                const btn = document.getElementById('orderType');
+                btn.setAttribute('data-current-value', val); // data-value 하나로 계속 쓰는 방식
+                btn.textContent = text;
+
+                // 2. 즉시 조회 실행
+                this.state.page = 0;
+                this.getList();
+            });
+        });
     },
 
     _initAnimations() {
@@ -68,6 +85,7 @@ const ProductList = {
             categoryNo: document.getElementById('categoryNo').value,
             isActive: document.getElementById('statusFilter').value,
             searchKeyword: document.getElementById('searchKeyword').value,
+            orderType: document.getElementById('orderType').getAttribute('data-current-value'),
         });
 
         try {

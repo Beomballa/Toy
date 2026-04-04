@@ -1,5 +1,6 @@
 package com.section.common.commerce.repository;
 
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -41,10 +42,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                                 brand.nameKo.as("brandName"),
                                 product.releasePrice.as("releasePrice"),
                                 productOption.stockCnt.sumLong().as("totalStock"),
-
-//        private Long activeCount;
-//        private Long soldOutSoonCount;
-//        private Long todayCount;
                                 product.status.as("status"),
                                 product.crtDtm.as("crtDtm")
                         )
@@ -60,7 +57,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         brandNoEq(reqDto.getBrandNo()),
                         isActiveEq()
                 )
-                .orderBy(product.releaseDt.desc())
+                .orderBy(orderTypeEq(reqDto.getOrderType()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -150,19 +147,22 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     public BooleanExpression searchKeywordLike(String searchKeyword) {
+        if (searchKeyword == null || searchKeyword.isBlank()) {
+            return null;
+        }
         return product.nameKo.containsIgnoreCase(searchKeyword)
                 .or(product.modelNum.containsIgnoreCase(searchKeyword));
     }
 
     public BooleanExpression categoryNoEq(Long categoryNo) {
-        if(categoryNo == null) {
+        if (categoryNo == null || categoryNo == 0) {
             return null;
         }
         return product.categoryNo.eq(categoryNo);
     }
 
     public BooleanExpression brandNoEq(Long brandNo) {
-        if(brandNo == null) {
+        if (brandNo == null || brandNo == 0) {
             return null;
         }
         return product.brandNo.eq(brandNo);
@@ -170,5 +170,21 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
     public BooleanExpression isActiveEq() {
         return product.status.ne(ProductStatus.DELETE.name());
+    }
+
+    public OrderSpecifier<?> orderTypeEq(String orderType) {
+        if (orderType == null || orderType.isBlank()) {
+            return product.releaseDt.desc();
+        }
+        switch (orderType) {
+            case "r":
+                return product.crtDtm.desc();
+            case "p":
+                return product.releasePrice.desc();
+            case "c":
+                return productOption.stockCnt.sumLong().desc();
+            default:
+                return product.releaseDt.desc();
+        }
     }
 }

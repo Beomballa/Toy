@@ -10,4 +10,5 @@ public class ProductListReqDto {
     private Long brandNo;
     private String isActive;
     private String searchKeyword;
+    private String orderType;
 }

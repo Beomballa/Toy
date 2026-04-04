@@ -12,6 +12,7 @@ public class ProductListRequest {
     private Long brandNo;
     private String isActive;
     private String searchKeyword;
+    private String orderType;
 
     public ProductListReqDto toProductListReqDto() {
         ProductListReqDto reqDto = new ProductListReqDto();
@@ -19,6 +20,7 @@ public class ProductListRequest {
         reqDto.setBrandNo(brandNo);
         reqDto.setIsActive(isActive);
         reqDto.setSearchKeyword(searchKeyword);
+        reqDto.setOrderType(orderType);
         return reqDto;
     }
 }

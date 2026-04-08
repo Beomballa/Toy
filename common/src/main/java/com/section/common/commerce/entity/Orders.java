@@ -5,11 +5,14 @@ import com.section.common.base.entity.type.OrderStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(access = AccessLevel.PRIVATE)
 @Table(name = "orders")
 public class Orders extends BaseEntity {
 
@@ -30,11 +33,34 @@ public class Orders extends BaseEntity {
     @Column(name = "total_amount", nullable = false)
     private Integer totalAmount;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
-    private OrderStatus status;
+    @Column(name = "status", length = 20)
+    private String status;
 
+    /**
+     * 주문 생성 (정적 팩토리 메서드)
+     */
+    public static Orders createOrder(String orderNum, String buyerName, String buyerPhone, Integer totalAmount) {
+        return Orders.builder()
+                .orderNum(orderNum)
+                .buyerName(buyerName)
+                .buyerPhone(buyerPhone)
+                .totalAmount(totalAmount)
+                .status(OrderStatus.ORDERED.name())
+                .build();
+    }
+
+    /**
+     * 상태 변경 비즈니스 메서드
+     */
     public void changeStatus(OrderStatus newStatus) {
-        this.status = newStatus;
+        this.status = newStatus.name();
+    }
+
+    public void cancel() {
+        this.status = OrderStatus.CANCELLED.name();
+    }
+
+    public void pay() {
+        this.status = OrderStatus.PAID.name();
     }
 }

@@ -15,4 +15,9 @@ public class AdminOrderController {
     public String orderList() {
         return "views/order-list";
     }
+
+    @RequestMapping("/get")
+    public String orderDetail() {
+        return "views/order-get";
+    }
 }

@@ -1,15 +1,15 @@
 package com.section.admin.product.controller;
 
+import com.section.admin.product.res.OrderDetailResponse;
 import com.section.admin.product.res.OrderListResponse;
 import com.section.admin.product.service.AdminOrderService;
 import com.section.common.commerce.dto.OrderListReqDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -22,5 +22,18 @@ public class AdminOrderRestController {
             @ModelAttribute OrderListReqDto reqDto, Pageable pageable
     ) {
         return ResponseEntity.ok(adminOrderService.getOrderList(reqDto, pageable));
+    }
+
+    @GetMapping("/get")
+    public ResponseEntity<OrderDetailResponse> getOrderDetail(@RequestParam("no") Long orderNo) {
+        return ResponseEntity.ok(adminOrderService.getOrderDetail(orderNo));
+    }
+
+    @PatchMapping("/status")
+    public ResponseEntity<Void> updateStatus(@RequestBody Map<String, Object> params) {
+        Long orderNo = Long.parseLong(params.get("orderNo").toString());
+        String status = (String) params.get("status");
+        adminOrderService.updateOrderStatus(orderNo, status);
+        return ResponseEntity.ok().build();
     }
 }

@@ -6,7 +6,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
-import lombok.RequiredArgsConstructor;
+import com.section.common.commerce.dto.OrderItemResDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -15,12 +15,17 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QOrders.orders;
+import static com.section.common.commerce.entity.QOrderItem.orderItem;
+import static com.section.common.commerce.entity.QProduct.product;
 
 @Repository
-@RequiredArgsConstructor
 public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     
     private final JPAQueryFactory jpaQueryFactory;
+
+    public CustomOrderRepositoryImpl(JPAQueryFactory jpaQueryFactory) {
+        this.jpaQueryFactory = jpaQueryFactory;
+    }
 
     @Override
     public Page<OrderListResDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
@@ -56,6 +61,40 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public OrderListResDto getOrderDetail(Long orderNo) {
+        return jpaQueryFactory
+                .select(Projections.bean(OrderListResDto.class,
+                        orders.id.as("orderNo"),
+                        orders.orderNum.as("orderNum"),
+                        orders.buyerName.as("buyerName"),
+                        orders.buyerPhone.as("buyerPhone"),
+                        orders.totalAmount.as("totalAmount"),
+                        orders.status.as("status"),
+                        orders.crtDtm.as("crtDtm")
+                ))
+                .from(orders)
+                .where(orders.id.eq(orderNo))
+                .fetchOne();
+    }
+
+    @Override
+    public List<OrderItemResDto> getOrderItems(Long orderNo) {
+        return jpaQueryFactory
+                .select(Projections.bean(OrderItemResDto.class,
+                        orderItem.id.as("orderItemNo"),
+                        orderItem.productNo.as("productNo"),
+                        orderItem.productName.as("productName"),
+                        orderItem.orderPrice.as("orderPrice"),
+                        orderItem.count.as("count"),
+                        product.thumbnailUrl.as("thumbnailUrl")
+                ))
+                .from(orderItem)
+                .leftJoin(product).on(product.id.eq(orderItem.productNo))
+                .where(orderItem.orderNo.eq(orderNo))
+                .fetch();
     }
 
     private BooleanExpression searchKeywordLike(String searchKeyword) {

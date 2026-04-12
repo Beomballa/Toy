@@ -5,9 +5,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
-@SpringBootApplication(scanBasePackages = "com.section")
-@EntityScan(basePackages = "com.section.common")
-@EnableJpaRepositories(basePackages = "com.section.common")
+@SpringBootApplication(scanBasePackages = {"com.section.admin", "com.section.common"})
+@EntityScan(basePackages = {"com.section.common"})
+@EnableJpaRepositories(basePackages = {"com.section.admin", "com.section.common"})
 public class AdminToyApplication {
 
 	public static void main(String[] args) {

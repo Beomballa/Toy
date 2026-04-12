@@ -1,86 +1,137 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{fragments/layout}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운영 현황 대시보드 | Grade-Stock Admin</title>
 
-<th:block layout:fragment="css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
     <style>
-        /* 카드 호버 효과 추가 */
-        .hover-card {
-            transition: transform 0.2s, box-shadow 0.2s;
-            cursor: pointer;
-        }
-        .hover-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-        }
-        /* 내용 두 줄 이상 넘어가면 ... 처리 */
-        .text-line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        .summary-card { border: none; border-radius: 12px; transition: transform 0.2s; }
+        .summary-card:hover { transform: translateY(-5px); }
+        .stat-label { font-size: 0.9rem; font-weight: 500; color: #64748b; }
+        .stat-value { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
+        .order-id { font-family: 'Monaco', monospace; color: #2563eb; }
+        .low-stock-badge { background-color: #fee2e2; color: #ef4444; font-weight: 600; }
     </style>
-</th:block>
+</head>
+<body>
 
-<div layout:fragment="content">
-    <div class="main-container">
-        <main id="main-content">
-            <h1 class="mb-5 fw-bold">대시보드</h1>
+<div class="main-container">
+    <!-- 공통 사이드바 -->
+    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-            <div class="card mb-5 border-0 shadow-sm bg-light">
-                <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                    <div>
-                        <h5 class="card-title fw-bold">🚀 Botion AI를 사용해 보세요</h5>
-                        <p class="card-text text-muted mb-0">사이드바에서 전체 페이지 Botion AI 사용해 보기</p>
+    <!-- 메인 콘텐츠 -->
+    <main id="main-content">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </nav>
+            <div class="page-title-wrapper">
+                <h1 class="page-title">운영 현황 대시보드</h1>
+            </div>
+        </div>
+
+        <!-- 상단 요약 카드 -->
+        <div class="row g-4 mb-5 animate-in">
+            <div class="col-md-3">
+                <div class="card summary-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="stat-label mb-2"><i class="fas fa-shopping-bag me-2 text-primary"></i>오늘의 주문</div>
+                        <div class="stat-value" id="todayOrderCount">0</div>
                     </div>
-                    <a href="#" class="btn btn-primary px-4">사용해 보기</a>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="stat-label mb-2"><i class="fas fa-won-sign me-2 text-success"></i>오늘의 매출</div>
+                        <div class="stat-value" id="todayTotalAmount">0원</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="stat-label mb-2"><i class="fas fa-truck me-2 text-warning"></i>배송 준비중</div>
+                        <div class="stat-value" id="preparingCount">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card summary-card shadow-sm h-100">
+                    <div class="card-body">
+                        <div class="stat-label mb-2"><i class="fas fa-ban me-2 text-danger"></i>취소 요청</div>
+                        <div class="stat-value" id="cancelledCount">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 animate-in">
+            <!-- 최근 주문 내역 -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <span class="card-title h6 mb-0 fw-bold">최근 주문 내역</span>
+                        <a href="/admin/orders/list" class="btn btn-sm btn-outline-primary">전체보기</a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">주문번호</th>
+                                        <th>주문자</th>
+                                        <th>금액</th>
+                                        <th>상태</th>
+                                        <th class="text-end pe-4">일시</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recentOrderTableBody">
+                                    <tr><td colspan="5" class="text-center py-4 text-muted">데이터를 불러오는 중...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="fw-bold mb-0">🔥 이번 주 인기 게시물</h5>
-                <small class="text-muted">최근 7일 조회수 기준</small>
+            <!-- 재고 부족 상품 -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-white py-3">
+                        <span class="card-title h6 mb-0 fw-bold text-danger">재고 부족 상품 (10개 미만)</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush" id="lowStockListBody">
+                            <div class="p-4 text-center text-muted">데이터를 불러오는 중...</div>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white text-center py-3">
+                        <a href="/admin/products" class="text-decoration-none small fw-bold">상품 관리 이동 <i class="fas fa-arrow-right ms-1"></i></a>
+                    </div>
+                </div>
             </div>
-
-            <div id="popular-post-list" class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4 mb-5">
-            </div>
-
-            <div id="no-data-message" class="text-center py-5 mb-5 d-none bg-white rounded shadow-sm border">
-                <i class="bi bi-journal-x text-muted" style="font-size: 3rem;"></i>
-                <p class="mt-3 text-muted">최근 7일간 조회된 게시물이 없습니다.<br>새로운 글을 작성해 보세요!</p>
-                <a href="/content/list" class="btn btn-outline-primary btn-sm mt-2">글 쓰러 가기</a>
-            </div>
-
-            <h5 class="mb-3 fw-bold">📅 예정된 이벤트</h5>
-            <div class="list-group shadow-sm">
-                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center p-3 border-0 border-bottom">
-                    <span class="badge bg-primary rounded-pill me-3">오늘 22:00</span>
-                    <span class="fw-semibold">카카오뱅크 - 프로젝트 마감</span>
-                </a>
-                <a href="#" class="list-group-item list-group-item-action d-flex align-items-center p-3 border-0">
-                    <span class="badge bg-secondary rounded-pill me-3">내일 09:00</span>
-                    <span>[휴가] 개인 연차</span>
-                </a>
-            </div>
-
-        </main>
-    </div>
+        </div>
+    </main>
 </div>
 
-<th:block layout:fragment="script">
-    <script src="/js/view/dashboard/dashboard-list.js"></script>
-    <script>
-        window.addEventListener('pageshow', function(event) {
-            DashBoardListJS.init();
-        });
-    </script>
-    </script>
-</th:block>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/dashboard/dashboard-list.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => DashBoardListJS.init());
+</script>
+</body>
 </html>

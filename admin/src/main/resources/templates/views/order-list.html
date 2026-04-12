@@ -4,183 +4,129 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문 관리 | Grade-Stock Admin</title>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
-
     <style>
         .badge-ordered { background-color: #ebf5ff; color: #1e429f; }
         .badge-paid { background-color: #def7ec; color: #03543f; }
         .badge-shipped { background-color: #fef3c7; color: #92400e; }
         .badge-delivered { background-color: #e1effe; color: #1e429f; }
         .badge-cancelled { background-color: #fde8e8; color: #9b1c1c; }
-        
         .order-id { font-family: 'Monaco', monospace; font-weight: 600; color: #2563eb; }
         .buyer-info { font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-<!-- 공통 사이드바 사용 -->
-<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+<div class="main-container">
+    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
-
-    <div class="page-header">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                <li class="breadcrumb-item"><a href="#">Sales</a></li>
-                <li class="breadcrumb-item active">Order Management</li>
-            </ol>
-        </nav>
-        <div class="page-title-wrapper">
-            <h1 class="page-title">주문 관리</h1>
-            <div class="btn-group">
-                <button class="btn btn-secondary" type="button">
-                    <i class="fas fa-download me-2"></i>엑셀 다운로드
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 통계 카드 영역 (더미) -->
-    <div class="stats-grid animate-in">
-        <div class="stat-card">
-            <div class="stat-icon blue"><i class="fas fa-shopping-cart"></i></div>
-            <div class="stat-label">신규 주문</div>
-            <div class="stat-value">24</div>
-            <div class="stat-change positive"><i class="fas fa-arrow-up me-1"></i>12%</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon orange"><i class="fas fa-box"></i></div>
-            <div class="stat-label">배송 준비중</div>
-            <div class="stat-value">15</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
-            <div class="stat-label">오늘 완료</div>
-            <div class="stat-value">128</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon purple"><i class="fas fa-won-sign"></i></div>
-            <div class="stat-label">오늘 매출</div>
-            <div class="stat-value">4,250,000</div>
-        </div>
-    </div>
-
-    <!-- 필터 영역 -->
-    <div class="card animate-in mb-4">
-        <div class="card-body">
-            <div class="filter-row">
-                <div class="filter-item">
-                    <div class="filter-label">주문 상태</div>
-                    <select class="form-select" id="orderStatus">
-                        <option value="">전체 상태</option>
-                        <option value="ORDERED">주문완료</option>
-                        <option value="PAID">결제완료</option>
-                        <option value="PREPARING">배송준비</option>
-                        <option value="SHIPPED">배송중</option>
-                        <option value="DELIVERED">배송완료</option>
-                        <option value="CANCELLED">주문취소</option>
-                    </select>
-                </div>
-
-                <div class="filter-item">
-                    <div class="filter-label">기간 설정</div>
-                    <div class="input-group">
-                        <input type="date" class="form-control" id="startDate">
-                        <span class="input-group-text">~</span>
-                        <input type="date" class="form-control" id="endDate">
-                    </div>
-                </div>
-
-                <div class="filter-item filter-item-search">
-                    <div class="filter-label">주문 검색</div>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" id="searchKeyword" class="form-control"
-                               placeholder="주문번호, 주문자명, 연락처 검색">
-                    </div>
-                </div>
-                
-                <div class="filter-item" style="flex: 0 0 auto;">
-                    <button class="btn btn-primary w-100" type="button" id="btnFilter">
-                        <i class="fas fa-filter me-2"></i>필터 적용
+    <main id="main-content">
+        <div class="page-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                    <li class="breadcrumb-item"><a href="#">Sales</a></li>
+                    <li class="breadcrumb-item active">Order Management</li>
+                </ol>
+            </nav>
+            <div class="page-title-wrapper">
+                <h1 class="page-title">주문 관리</h1>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" type="button">
+                        <i class="fas fa-download me-2"></i>엑셀 다운로드
                     </button>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- 주문 목록 테이블 -->
-    <div class="card animate-in">
-        <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
-            <div>
-                <span class="card-title h6 mb-0">주문 내역</span>
-                <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0건</span>
-            </div>
-        </div>
-
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                    <tr>
-                        <th class="ps-4">주문번호</th>
-                        <th>주문일시</th>
-                        <th>주문자 정보</th>
-                        <th>상품명</th>
-                        <th>결제금액</th>
-                        <th>상태</th>
-                        <th class="text-end pe-4">관리</th>
-                    </tr>
-                    </thead>
-                    <tbody id="orderListTableBody">
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <div class="spinner-border spinner-border-sm text-primary me-2"></div>
-                            데이터를 불러오는 중입니다...
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="card-footer bg-white border-top-0 py-3">
-            <div class="row align-items-center">
-                <div class="col-sm-6 text-center text-sm-start mb-3 mb-sm-0">
-                    <span class="small text-muted" id="pageInfoText"></span>
-                </div>
-                <div class="col-sm-6">
-                    <nav aria-label="Page navigation">
-                        <ul class="pagination pagination-sm justify-content-center justify-content-sm-end mb-0" id="pagination"></ul>
-                    </nav>
+        <div class="card animate-in mb-4">
+            <div class="card-body">
+                <div class="filter-row">
+                    <div class="filter-item">
+                        <div class="filter-label">주문 상태</div>
+                        <select class="form-select" id="orderStatus">
+                            <option value="">전체 상태</option>
+                            <option value="ORDERED">주문완료</option>
+                            <option value="PAID">결제완료</option>
+                            <option value="PREPARING">배송준비</option>
+                            <option value="SHIPPED">배송중</option>
+                            <option value="DELIVERED">배송완료</option>
+                            <option value="CANCELLED">주문취소</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <div class="filter-label">기간 설정</div>
+                        <div class="input-group">
+                            <input type="date" class="form-control" id="startDate">
+                            <span class="input-group-text">~</span>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                    </div>
+                    <div class="filter-item filter-item-search">
+                        <div class="filter-label">주문 검색</div>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                            <input type="text" id="searchKeyword" class="form-control" placeholder="주문번호, 주문자명, 연락처 검색">
+                        </div>
+                    </div>
+                    <div class="filter-item" style="flex: 0 0 auto;">
+                        <button class="btn btn-primary w-100" type="button" id="btnFilter">
+                            <i class="fas fa-filter me-2"></i>필터 적용
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-</main>
+        <div class="card animate-in">
+            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
+                <div>
+                    <span class="card-title h6 mb-0">주문 내역</span>
+                    <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0건</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">주문번호</th>
+                            <th>주문일시</th>
+                            <th>주문자 정보</th>
+                            <th>상품명</th>
+                            <th>결제금액</th>
+                            <th>상태</th>
+                            <th class="text-end pe-4">관리</th>
+                        </tr>
+                        </thead>
+                        <tbody id="orderListTableBody">
+                        <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-top-0 py-3">
+                <div class="row align-items-center">
+                    <div class="col-sm-6 text-center text-sm-start mb-3 mb-sm-0">
+                        <span class="small text-muted" id="pageInfoText"></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <nav aria-label="Page navigation">
+                            <ul class="pagination pagination-sm justify-content-center justify-content-sm-end mb-0" id="pagination"></ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/order-list.js"></script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // 애니메이션 효과
-        document.querySelectorAll('.animate-in').forEach((el, i) => {
-            el.style.opacity = '0';
-            el.style.animation = `fadeInUp 0.6s ease forwards ${i * 0.1}s`;
-        });
-    });
-</script>
-
 </body>
 </html>

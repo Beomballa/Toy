@@ -19,7 +19,7 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('market') ? 'active' : ''}" href="/admin/market">
             <i class="fas fa-chart-bar"></i> 실시간 시세
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders/list">
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders">
             <i class="fas fa-shopping-cart"></i> 주문 관리
         </a>
     </div>

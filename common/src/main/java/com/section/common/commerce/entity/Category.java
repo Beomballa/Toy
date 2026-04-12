@@ -31,4 +31,12 @@ public class Category {
     @Column(name = "is_active", length = 1)
     private String isActive;
 
+    public void update(String name, String isActive) {
+        this.name = name;
+        this.isActive = isActive;
+    }
+
+    public void changeStatus(String isActive) {
+        this.isActive = isActive;
+    }
 }

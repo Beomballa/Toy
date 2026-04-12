@@ -1,115 +1,133 @@
-var ContentEditJS = {
-    
-    debounceTimer : null,
-    
-    initialTitle : "",
-    initialContent : "",
-
-    titleEl : null,
-    contentEl : null,
-    
-    init : function() {
-
-        this.titleEl = document.getElementById("title");
-        this.contentEl = document.getElementById("content");
-
-        this.initialTitle = this.titleEl.value;
-        this.initialContent = this.contentEl.value;
-        
-        [this.titleEl, this.contentEl].forEach(input => {
-            input.addEventListener("keyup", () => {
-                clearTimeout(this.debounceTimer);
-                
-                this.debounceTimer = setTimeout(() => {
-                    this.saveContent(true); // 자동 저장
-                }, 5000)
-            })
-        });
-
-        // Title에서 엔터 키 방지 및 저장 실행
-        this.titleEl.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault(); // 1. 폼 제출(새로고침)을 방지
-                // showConfirmAlert(
-                //         '등록하시겠습니까?',
-                //         '작성한 내용이 서버에 저장됩니다.',
-                //         () => {
-                //             ContentEditJS.saveContent(false); // 수동 저장
-                //         }
-                //     );
-            }
-        });
-
-        // 폼 자체의 submit 이벤트 방지
-        document.getElementById("documentEditForm").addEventListener("submit", function(e) {
-            e.preventDefault();
-        });
-
-        ContentEditJS.updateViewCnt();
-        
-        // document.getElementById("submitBtn").addEventListener("click", function (el) {
-        //     el.preventDefault();
-        //     // 바로 saveContent를 호출하는 대신, 공통 확인 창 함수를 먼저 호출
-        //
-        // })
+const ContentEdit = {
+    debounceTimer: null,
+    initialData: {
+        title: '',
+        content: '',
+        boardType: ''
     },
 
-    saveContent : function (isAutoSave) {
+    init() {
+        this.id = document.getElementById('contentId').value;
+        this.bindEvents();
+        
+        if (this.id) {
+            this.getDetail();
+        }
+    },
 
-        const currentTitle = this.titleEl.value;
-        const currentContent = this.contentEl.value;
-        const docNo = document.getElementById("docNo").value;
+    bindEvents() {
+        // 수동 저장 버튼
+        document.getElementById('btnSave')?.addEventListener('click', () => {
+            this.saveContent(false);
+        });
 
-        if (isAutoSave && currentTitle === this.initialTitle && currentContent === this.initialContent) {
-            console.log("변경된 내용이 없어 자동저장을 하지 않습니다.");
+        // 삭제 버튼
+        document.getElementById('btnDelete')?.addEventListener('click', () => {
+            this.deleteContent();
+        });
+
+        // 자동 저장 (입력 시)
+        const inputs = [document.getElementById('title'), document.getElementById('content'), document.getElementById('boardType')];
+        inputs.forEach(el => {
+            el?.addEventListener('input', () => {
+                clearTimeout(this.debounceTimer);
+                this.debounceTimer = setTimeout(() => {
+                    this.saveContent(true);
+                }, 5000); // 5초간 입력 없으면 자동 저장
+            });
+        });
+    },
+
+    async getDetail() {
+        try {
+            const res = await fetch(`/api/admin/content/get?id=${this.id}`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const data = await res.json();
+            document.getElementById('title').value = data.title || '';
+            document.getElementById('content').value = data.content || '';
+            document.getElementById('boardType').value = data.boardType || 'NOTICE';
+            
+            this.initialData = {
+                title: data.title,
+                content: data.content,
+                boardType: data.boardType
+            };
+        } catch (err) {
+            console.error('콘텐츠 로드 실패:', err);
+            CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+        }
+    },
+
+    async saveContent(isAutoSave) {
+        const title = document.getElementById('title').value;
+        const content = document.getElementById('content').value;
+        const boardType = document.getElementById('boardType').value;
+
+        if (!title.trim()) {
+            if (!isAutoSave) CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
             return;
         }
 
-        const reqData = {
-            docNo : docNo,
-            title : currentTitle,
-            content : currentContent
-        };
+        // 변경 사항 확인
+        if (isAutoSave && 
+            title === this.initialData.title && 
+            content === this.initialData.content && 
+            boardType === this.initialData.boardType) {
+            return;
+        }
 
-        axios.post('/api/content/save', reqData)
-            .then(response => {
-                this.initialTitle = currentTitle;
-                this.initialContent = currentContent;
+        const statusEl = document.getElementById('saveStatus');
+        if (statusEl) statusEl.textContent = isAutoSave ? '자동 저장 중...' : '저장 중...';
 
-                const saveStatus = document.getElementById("saveStatus");
-                setTimeout(() => { saveStatus.textContent = '';}, 2000);
-
-                if(!isAutoSave) {
-                    Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
-                }
-            })
-            .catch(error => {
-                console.error('저장 중 에러 발생:', error);
-                Swal.fire('오류 발생', '등록 중 문제가 발생했습니다.', 'error');
+        try {
+            const res = await fetch('/api/admin/content/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: this.id || null,
+                    title: title,
+                    content: content,
+                    boardType: boardType
+                })
             });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            this.initialData = { title, content, boardType };
+            if (statusEl) {
+                statusEl.textContent = '모든 변경 사항이 저장되었습니다.';
+                setTimeout(() => statusEl.textContent = '', 3000);
+            }
+
+            if (!isAutoSave) {
+                CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success', () => {
+                    location.href = '/admin/content/list';
+                });
+            }
+        } catch (err) {
+            console.error('저장 실패:', err);
+            if (!isAutoSave) CommonJS.alert('저장 중 오류가 발생했습니다.', '오류', 'error');
+        }
     },
 
-    updateViewCnt : function () {
-        const docNo = document.getElementById("docNo").value;
+    async deleteContent() {
+        const confirm = await CommonJS.confirm('정말 삭제하시겠습니까?');
+        if (!confirm) return;
 
-        const reqData = {
-            docNo : docNo,
-        };
-
-        axios.post('/api/content/update/cnt', reqData)
-            .then(response => {
-                // this.initialTitle = currentTitle;
-                // this.initialContent = currentContent;
-                //
-                // const saveStatus = document.getElementById("saveStatus");
-                // setTimeout(() => { saveStatus.textContent = '';}, 2000);
-                //
-                // if(!isAutoSave) {
-                //     Swal.fire('등록 완료!', '성공적으로 등록되었습니다.', 'success');
-                // }
-            })
-            .catch(error => {
-                Swal.fire('오류 발생', '조회수 증가중 문제가 발생했습니다.', 'error');
+        try {
+            const res = await fetch(`/api/admin/content/delete?id=${this.id}`, {
+                method: 'DELETE'
             });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            CommonJS.alert('삭제되었습니다.', '성공', 'success', () => {
+                location.href = '/admin/content/list';
+            });
+        } catch (err) {
+            console.error('삭제 실패:', err);
+            CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
+        }
     }
-}
+};

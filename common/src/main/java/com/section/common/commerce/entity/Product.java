@@ -12,7 +12,7 @@ import java.time.LocalDate;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder(access = AccessLevel.PRIVATE)
+@Builder
 @Table(name = "product")
 public class Product extends BaseEntity {
 

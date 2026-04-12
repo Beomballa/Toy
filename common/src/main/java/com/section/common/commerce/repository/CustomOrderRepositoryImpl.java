@@ -12,7 +12,12 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.section.common.commerce.entity.QOrders.orders;
 import static com.section.common.commerce.entity.QOrderItem.orderItem;
@@ -45,7 +50,8 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .where(
                         searchKeywordLike(reqDto.getSearchKeyword()),
-                        statusEq(reqDto.getStatus())
+                        statusEq(reqDto.getStatus()),
+                        crtDtmBetween(reqDto.getStartDate(), reqDto.getEndDate())
                 )
                 .orderBy(orders.id.desc())
                 .offset(pageable.getOffset())
@@ -57,7 +63,8 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .where(
                         searchKeywordLike(reqDto.getSearchKeyword()),
-                        statusEq(reqDto.getStatus())
+                        statusEq(reqDto.getStatus()),
+                        crtDtmBetween(reqDto.getStartDate(), reqDto.getEndDate())
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
@@ -97,6 +104,65 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .fetch();
     }
 
+    @Override
+    public Map<String, Object> getTodaySummary() {
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+
+        Map<String, Object> summary = new HashMap<>();
+
+        // 오늘 주문 건수 (전체)
+        Long count = jpaQueryFactory
+                .select(orders.count())
+                .from(orders)
+                .where(orders.crtDtm.between(startOfDay, endOfDay))
+                .fetchOne();
+        summary.put("todayOrderCount", count != null ? count : 0L);
+
+        // 오늘 매출 합계 (결제완료 이상)
+        Long sum = jpaQueryFactory
+                .select(orders.totalAmount.sumLong())
+                .from(orders)
+                .where(
+                        orders.crtDtm.between(startOfDay, endOfDay),
+                        orders.status.ne("CANCELLED")
+                )
+                .fetchOne();
+        summary.put("todayTotalAmount", sum != null ? sum : 0);
+
+        // 상태별 주문 건수 (전체 기간 기준)
+        summary.put("preparingCount", getCountByStatus("PREPARING"));
+        summary.put("shippingCount", getCountByStatus("SHIPPED"));
+        summary.put("cancelledCount", getCountByStatus("CANCELLED"));
+
+        return summary;
+    }
+
+    private Long getCountByStatus(String status) {
+        return jpaQueryFactory
+                .select(orders.count())
+                .from(orders)
+                .where(orders.status.eq(status))
+                .fetchOne();
+    }
+
+    @Override
+    public List<OrderListResDto> getRecentOrders(int limit) {
+        return jpaQueryFactory
+                .select(Projections.bean(OrderListResDto.class,
+                        orders.id.as("orderNo"),
+                        orders.orderNum.as("orderNum"),
+                        orders.buyerName.as("buyerName"),
+                        orders.totalAmount.as("totalAmount"),
+                        orders.status.as("status"),
+                        orders.crtDtm.as("crtDtm")
+                ))
+                .from(orders)
+                .orderBy(orders.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
     private BooleanExpression searchKeywordLike(String searchKeyword) {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;
@@ -111,5 +177,35 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
             return null;
         }
         return orders.status.stringValue().eq(statusVal);
+    }
+
+    private BooleanExpression crtDtmBetween(String startDate, String endDate) {
+        if ((startDate == null || startDate.isBlank()) && (endDate == null || endDate.isBlank())) {
+            return null;
+        }
+
+        LocalDateTime start = null;
+        LocalDateTime end = null;
+
+        try {
+            if (startDate != null && !startDate.isBlank()) {
+                start = LocalDate.parse(startDate).atStartOfDay();
+            }
+            if (endDate != null && !endDate.isBlank()) {
+                end = LocalDate.parse(endDate).atTime(LocalTime.MAX);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+
+        if (start != null && end != null) {
+            return orders.crtDtm.between(start, end);
+        } else if (start != null) {
+            return orders.crtDtm.goe(start);
+        } else if (end != null) {
+            return orders.crtDtm.loe(end);
+        }
+
+        return null;
     }
 }

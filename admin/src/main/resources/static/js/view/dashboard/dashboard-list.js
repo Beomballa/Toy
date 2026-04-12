@@ -1,100 +1,69 @@
-var DashBoardListJS = {
-    init: function () {
-        this.get7DaysPopularContent();
+const DashBoardListJS = {
+    init() {
+        this.getStats();
     },
 
-    get7DaysPopularContent: function () {
-        const self = this;
+    async getStats() {
+        try {
+            const res = await fetch('/api/admin/dashboard/stats');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        axios.post('/api/content/recent/list')
-            .then(res => {
-                const response = res.data; // 전체 JSON 응답
-
-                // resultCode 확인 및 데이터 존재 여부 체크
-                // JSON 구조상 실제 리스트는 response.data 에 들어있음
-                if (response.resultCode === "200" && response.data && response.data.length > 0) {
-                    self.renderPopularList(response.data);
-                } else {
-                    self.renderEmptyState();
-                }
-            })
-            .catch(error => {
-                console.error('인기 게시물 조회 실패:', error);
-                self.renderEmptyState();
-            });
+            const data = await res.json();
+            this.renderSummary(data.summary);
+            this.renderRecentOrders(data.recentOrders);
+            this.renderLowStockProducts(data.lowStockProducts);
+        } catch (err) {
+            console.error('대시보드 데이터 로드 실패:', err);
+        }
     },
 
-    renderPopularList: function (dataList) {
-        const listContainer = document.getElementById("popular-post-list");
-        const noDataMsg = document.getElementById("no-data-message");
+    renderSummary(summary) {
+        document.getElementById('todayOrderCount').innerText = summary.todayOrderCount.toLocaleString();
+        document.getElementById('todayTotalAmount').innerText = summary.todayTotalAmount;
+        document.getElementById('preparingCount').innerText = summary.preparingCount.toLocaleString();
+        document.getElementById('cancelledCount').innerText = summary.cancelledCount.toLocaleString();
+    },
 
-        // 화면 전환: 리스트 보이기, 빈 화면 메시지 숨기기
-        if (noDataMsg) noDataMsg.classList.add("d-none");
-        if (listContainer) {
-            listContainer.classList.remove("d-none");
-            listContainer.innerHTML = ''; // 초기화
+    renderRecentOrders(orders) {
+        const tbody = document.getElementById('recentOrderTableBody');
+        if (!orders || orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">최근 주문 데이터가 없습니다.</td></tr>';
+            return;
         }
 
-        let htmlContent = '';
-
-        dataList.forEach(item => {
-            // 1. 내용 미리보기 처리 (HTML 태그 제거 및 줄바꿈을 공백으로)
-            // item.content가 null이면 빈 문자열 처리
-            const rawContent = item.content || '';
-            const contentPreview = rawContent.replace(/<[^>]*>?/g, '').replace(/\n/g, ' ');
-
-            // 2. 공개/비공개 배지 스타일 결정
-            // 데이터가 '공개' 또는 '비공개' 텍스트로 옴
-            const isPublic = item.viewYn === '공개';
-            const badgeClass = isPublic ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary';
-
-            // 3. 카드 HTML 생성
-            htmlContent += `
-                <div class="col">
-                    <div class="card h-100 border-0 shadow-sm hover-card" onclick="location.href='/content/edit?no=${item.no}'" style="cursor: pointer; transition: transform 0.2s;">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <h6 class="card-title fw-bold text-truncate mb-0" style="max-width: 75%;" title="${item.title}">
-                                    ${item.title || '제목 없음'}
-                                </h6>
-                                <span class="badge ${badgeClass} rounded-pill" style="font-size: 0.75rem;">
-                                    ${item.viewYn}
-                                </span>
-                            </div>
-                            
-                            <p class="card-text text-muted small mb-3" style="
-                                display: -webkit-box;
-                                -webkit-line-clamp: 2;
-                                -webkit-box-orient: vertical;
-                                overflow: hidden;
-                                height: 2.8em;
-                                line-height: 1.4em;
-                            ">
-                                ${contentPreview || '작성된 내용이 없습니다.'}
-                            </p>
-                            
-                            <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-auto">
-                                <small class="text-muted">
-                                    <i class="bi bi-calendar-check me-1"></i> ${item.uptDtm ? item.uptDtm.split(' ')[0] : '-'}
-                                </small>
-                                <small class="text-primary fw-semibold" style="font-size: 0.8rem;">
-                                    자세히 보기 <i class="bi bi-chevron-right"></i>
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        listContainer.innerHTML = htmlContent;
+        tbody.innerHTML = orders.map(order => `
+            <tr>
+                <td class="ps-4"><span class="order-id">${order.orderNum}</span></td>
+                <td><span class="fw-bold text-dark">${order.buyerName}</span></td>
+                <td><span class="fw-medium">${order.totalAmount}</span></td>
+                <td><span class="badge ${this.getStatusClass(order.statusDesc)}">${order.statusDesc}</span></td>
+                <td class="text-end pe-4 small text-muted">${order.orderDt}</td>
+            </tr>
+        `).join('');
     },
 
-    renderEmptyState: function () {
-        const listContainer = document.getElementById("popular-post-list");
-        const noDataMsg = document.getElementById("no-data-message");
+    renderLowStockProducts(products) {
+        const body = document.getElementById('lowStockListBody');
+        if (!products || products.length === 0) {
+            body.innerHTML = '<div class="p-4 text-center text-muted">재고 부족 상품이 없습니다.</div>';
+            return;
+        }
 
-        if (listContainer) listContainer.classList.add("d-none");
-        if (noDataMsg) noDataMsg.classList.remove("d-none");
+        body.innerHTML = products.map(product => `
+            <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-0 border-bottom">
+                <div>
+                    <div class="fw-bold small">${product.productName}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">${product.brandName}</div>
+                </div>
+                <span class="badge low-stock-badge rounded-pill">${product.stockCnt}개</span>
+            </div>
+        `).join('');
+    },
+
+    getStatusClass(desc) {
+        if (desc === '주문취소') return 'bg-danger-subtle text-danger';
+        if (desc === '결제완료') return 'bg-success-subtle text-success';
+        if (desc === '배송중') return 'bg-warning-subtle text-warning';
+        return 'bg-primary-subtle text-primary';
     }
 };

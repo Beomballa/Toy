@@ -1,58 +1,54 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{fragments/layout}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>콘텐츠 관리 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/content-list.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .hover-card { transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; border: none; }
+        .hover-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        .text-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+    </style>
+</head>
+<body>
 
-<div layout:fragment="content">
-    <main class="container mt-4">
-        <h2 class="mb-4 fw-bold">게시물 관리</h2>
+<div class="main-container">
+    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-        <!-- 검색 폼 -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
-                <form class="row g-3" id="searchForm">
-                    <div class="col-md-3">
-                        <select class="form-select" id="searchKeywordType">
-                            <option selected>검색 조건</option>
-                            <option value="T">제목</option>
-                            <option value="C">내용</option>
-                        </select>
-                    </div>
-                    <div class="col-md-7">
-                        <input type="text" id="searchKeyword" name="searchKeyword" class="form-control" placeholder="검색어를 입력하세요">
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" id="submit-btn" class="btn btn-primary w-100">검색</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- 새 글 등록 버튼 -->
-        <div class="d-flex justify-content-end mb-3">
-            <button id="newContentBtn" class="btn btn-success">
-                <i class="bi bi-pencil-square me-1"></i> 새 글 등록
+    <main id="main-content">
+        <div class="page-header d-flex justify-content-between align-items-center mb-4">
+            <h1 class="page-title mb-0">콘텐츠 관리</h1>
+            <button class="btn btn-primary" id="btnNewContent">
+                <i class="fas fa-plus me-2"></i>새 콘텐츠 작성
             </button>
         </div>
 
-        <!-- 게시물 리스트 -->
-        <div id="document-list">
+        <ul class="nav nav-tabs mb-4" id="contentTabs">
+            <li class="nav-item"><a class="nav-link active" href="#" data-board-type="NOTICE">공지사항</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-board-type="STYLE">스타일 가이드</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-board-type="DISCUSS">커뮤니티</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-board-type="QNA">문의사항</a></li>
+        </ul>
 
+        <div class="row" id="contentGrid">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            </div>
         </div>
 
-        <!-- 페이지네이션 -->
-        <nav aria-label="Page navigation" class="d-flex justify-content-center mt-4" id="pagination-wrapper">
-
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center" id="pagination"></ul>
         </nav>
     </main>
 </div>
 
-<th:block layout:fragment="script">
-    <script src="/js/view/content-list.js"></script>
-    <script>
-        ContentListJS.init();
-    </script>
-</th:block>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/content-list.js"></script>
+</body>
 </html>

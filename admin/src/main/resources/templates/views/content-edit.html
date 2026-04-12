@@ -1,40 +1,60 @@
 <!DOCTYPE html>
-<html lang="ko"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{fragments/layout}">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>콘텐츠 편집 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/content-set.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <style>
+        .editor-header { border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 2rem; }
+        .notion-title { border: none; font-size: 2.5rem; font-weight: 700; padding: 0; margin-bottom: 1rem; }
+        .notion-title:focus { box-shadow: none; }
+        .notion-content { border: none; font-size: 1.1rem; line-height: 1.6; padding: 0; resize: none; }
+        .notion-content:focus { box-shadow: none; }
+        .save-status { font-size: 0.85rem; color: #666; margin-left: 1rem; }
+    </style>
+</head>
+<body>
 
-<th:block layout:fragment="css">
-  <link rel="stylesheet" href="/css/content-set.css">
-</th:block>
+<div class="main-container">
+    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
+    <main id="main-content">
+        <div class="notion-editor-container animate-in">
+            <form id="contentEditForm">
+                <input type="hidden" id="contentId" th:value="${id}">
+                
+                <div class="editor-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <select id="boardType" class="form-select form-select-sm" style="width: auto;">
+                            <option th:each="type : ${boardTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                        <span id="saveStatus" class="save-status"></span>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="location.href='/admin/content/list'">목록</button>
+                        <button type="button" class="btn btn-primary" id="btnSave">저장</button>
+                        <button type="button" class="btn btn-danger" id="btnDelete" th:if="${id != null}">삭제</button>
+                    </div>
+                </div>
 
-<div layout:fragment="content">
-  <div class="notion-editor-container">
-    <form id="documentEditForm">
-      <input type="hidden" id="docNo" name="docNo" th:value="${docNo}">
-<!--      <input type="hidden" id="no" name="no" th:value="${no}">-->
-<!--      <input type="hidden" id="no" name="no" th:value="${no}">-->
-      <div class="d-flex justify-content-end mb-3">
-<!--        <input class="btn btn-primary" id="submitBtn" type="submit" value="Submit">-->
-      </div>
-      <div>
-        <input type="text" id="title" name="title" class="form-control notion-title" placeholder="제목 없는 페이지" th:value="${result.title}">
-      </div>
-      <div>
-        <textarea id="content" name="content" class="form-control notion-content" rows="20" placeholder="여기에 내용을 입력하세요..." th:text="${result.content}"></textarea>
-      </div>
-    </form>
-  </div>
-  <div id="saveStatus"></div>
+                <div class="mb-3">
+                    <input type="text" id="title" class="form-control notion-title" placeholder="제목을 입력하세요">
+                </div>
+                <div class="mb-3">
+                    <textarea id="content" class="form-control notion-content" rows="15" placeholder="내용을 입력하세요..."></textarea>
+                </div>
+            </form>
+        </div>
+    </main>
 </div>
 
-
-<th:block layout:fragment="script">
-  <script src="/js/view/content-edit.js"></script>
-  <script>
-    ContentEditJS.init();
-  </script>
-</th:block>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/content-edit.js"></script>
+</body>
 </html>

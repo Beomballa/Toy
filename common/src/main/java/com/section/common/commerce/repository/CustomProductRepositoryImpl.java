@@ -146,6 +146,26 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return stats;
     }
 
+    @Override
+    public List<ProductListResDto> getLowStockProducts(int threshold, int limit) {
+        return queryFactory
+                .select(Projections.bean(ProductListResDto.class,
+                        product.id.as("productNo"),
+                        product.nameKo.as("productName"),
+                        brand.nameKo.as("brandName"),
+                        productOption.stockCnt.sumLong().as("totalStock")
+                ))
+                .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                .where(product.status.ne(ProductStatus.DELETE.name()))
+                .groupBy(product.id, product.nameKo, brand.nameKo)
+                .having(productOption.stockCnt.sumLong().lt((long) threshold))
+                .orderBy(productOption.stockCnt.sumLong().asc())
+                .limit(limit)
+                .fetch();
+    }
+
     public BooleanExpression searchKeywordLike(String searchKeyword) {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;

@@ -10,89 +10,53 @@
     <link rel="stylesheet" href="/css/common.css">
     <style>
         .brand-logo-img { width: 50px; height: 50px; object-fit: contain; border: 1px solid #eee; border-radius: 4px; padding: 2px; }
-        .badge-y { background-color: #def7ec; color: #03543f; }
-        .badge-n { background-color: #fde8e8; color: #9b1c1c; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-    <main id="main-content">
-        <div class="page-header">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                    <li class="breadcrumb-item active">브랜드 관리</li>
-                </ol>
-            </nav>
-            <div class="page-title-wrapper">
-                <h1 class="page-title">브랜드 관리</h1>
-                <button type="button" class="btn btn-primary" id="btnNewBrand">
-                    <i class="fas fa-plus me-2"></i>신규 브랜드 등록
-                </button>
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item active">브랜드 관리</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">브랜드 관리</h1>
+            <button type="button" class="btn btn-primary" id="btnNewBrand"><i class="fas fa-plus me-2"></i>신규 브랜드 등록</button>
+        </div>
+    </div>
+
+    <div class="card animate-in">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th class="ps-4">No</th><th>로고</th><th>브랜드명(한글)</th><th>브랜드명(영문)</th><th class="text-end pe-4">관리</th></tr>
+                    </thead>
+                    <tbody id="brandListBody"></tbody>
+                </table>
             </div>
         </div>
+    </div>
+</main>
 
-        <div class="card animate-in">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="ps-4" style="width: 80px;">No</th>
-                                <th style="width: 100px;">로고</th>
-                                <th>브랜드명(한글)</th>
-                                <th>브랜드명(영문)</th>
-                                <th class="text-center">상태</th>
-                                <th class="text-end pe-4">관리</th>
-                            </tr>
-                        </thead>
-                        <tbody id="brandListBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
-<!-- 모달 생략 (동일) -->
 <div class="modal fade" id="brandModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="brandModalTitle">브랜드 등록</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-4">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title fw-bold" id="brandModalTitle">브랜드 등록</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
                 <form id="brandForm">
                     <input type="hidden" id="brandNo">
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">브랜드명 (한글)</label>
-                        <input type="text" id="nameKo" class="form-control" placeholder="예: 나이키" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">브랜드명 (영문)</label>
-                        <input type="text" id="nameEn" class="form-control" placeholder="예: Nike">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">로고 URL</label>
-                        <input type="text" id="logoUrl" class="form-control" placeholder="이미지 주소를 입력하세요">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">사용 여부</label>
-                        <select id="isActive" class="form-select">
-                            <option value="Y">활성화 (Y)</option>
-                            <option value="N">비활성화 (N)</option>
-                        </select>
-                    </div>
+                    <div class="mb-3"><label class="form-label fw-bold">브랜드명 (한글)</label><input type="text" id="nameKo" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label fw-bold">브랜드명 (영문)</label><input type="text" id="nameEn" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label fw-bold">로고 URL</label><input type="text" id="logoUrl" class="form-control"></div>
                 </form>
             </div>
-            <div class="modal-footer border-top-0 px-4 pb-4">
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">취소</button>
-                <button type="button" class="btn btn-primary px-4" id="btnSaveBrand">저장</button>
-            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button><button type="button" class="btn btn-primary" id="btnSaveBrand">저장</button></div>
         </div>
     </div>
 </div>

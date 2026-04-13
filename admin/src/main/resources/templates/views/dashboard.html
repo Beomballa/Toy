@@ -4,134 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>운영 현황 대시보드 | Grade-Stock Admin</title>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/dashboard.css">
-
     <style>
-        .summary-card { border: none; border-radius: 12px; transition: transform 0.2s; }
-        .summary-card:hover { transform: translateY(-5px); }
-        .stat-label { font-size: 0.9rem; font-weight: 500; color: #64748b; }
+        .summary-card { border: none; border-radius: 12px; }
         .stat-value { font-size: 1.75rem; font-weight: 700; color: #1e293b; }
-        .order-id { font-family: 'Monaco', monospace; color: #2563eb; }
-        .low-stock-badge { background-color: #fee2e2; color: #ef4444; font-weight: 600; }
     </style>
 </head>
 <body>
 
-<div class="main-container">
-    <!-- 공통 사이드바 -->
-    <nav th:replace="~{fragments/layout :: sidebar}"></nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-    <!-- 메인 콘텐츠 -->
-    <main id="main-content">
-        <div class="page-header">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                    <li class="breadcrumb-item active">Dashboard</li>
-                </ol>
-            </nav>
-            <div class="page-title-wrapper">
-                <h1 class="page-title">운영 현황 대시보드</h1>
-            </div>
-        </div>
+<main class="main-content">
+    <h1 class="page-title mb-4">운영 현황 대시보드</h1>
 
-        <!-- 상단 요약 카드 -->
-        <div class="row g-4 mb-5 animate-in">
-            <div class="col-md-3">
-                <div class="card summary-card shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="stat-label mb-2"><i class="fas fa-shopping-bag me-2 text-primary"></i>오늘의 주문</div>
-                        <div class="stat-value" id="todayOrderCount">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card summary-card shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="stat-label mb-2"><i class="fas fa-won-sign me-2 text-success"></i>오늘의 매출</div>
-                        <div class="stat-value" id="todayTotalAmount">0원</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card summary-card shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="stat-label mb-2"><i class="fas fa-truck me-2 text-warning"></i>배송 준비중</div>
-                        <div class="stat-value" id="preparingCount">0</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card summary-card shadow-sm h-100">
-                    <div class="card-body">
-                        <div class="stat-label mb-2"><i class="fas fa-ban me-2 text-danger"></i>취소 요청</div>
-                        <div class="stat-value" id="cancelledCount">0</div>
+    <div class="row g-4 mb-5">
+        <div class="col-md-3"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">오늘의 주문</div><div class="stat-value" id="todayOrderCount">0</div></div></div></div>
+        <div class="col-md-3"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">오늘의 매출</div><div class="stat-value" id="todayTotalAmount">0원</div></div></div></div>
+        <div class="col-md-3"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">배송 준비중</div><div class="stat-value" id="preparingCount">0</div></div></div></div>
+        <div class="col-md-3"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">취소 요청</div><div class="stat-value" id="cancelledCount">0</div></div></div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center"><h6 class="fw-bold mb-0">최근 주문 내역</h6><a href="/admin/orders/list" class="btn btn-sm btn-outline-primary">전체보기</a></div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light"><tr><th class="ps-4">주문번호</th><th>주문자</th><th>금액</th><th>상태</th><th class="text-end pe-4">일시</th></tr></thead>
+                            <tbody id="recentOrderTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
-
-        <div class="row g-4 animate-in">
-            <!-- 최근 주문 내역 -->
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                        <span class="card-title h6 mb-0 fw-bold">최근 주문 내역</span>
-                        <a href="/admin/orders/list" class="btn btn-sm btn-outline-primary">전체보기</a>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th class="ps-4">주문번호</th>
-                                        <th>주문자</th>
-                                        <th>금액</th>
-                                        <th>상태</th>
-                                        <th class="text-end pe-4">일시</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="recentOrderTableBody">
-                                    <tr><td colspan="5" class="text-center py-4 text-muted">데이터를 불러오는 중...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 재고 부족 상품 -->
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-white py-3">
-                        <span class="card-title h6 mb-0 fw-bold text-danger">재고 부족 상품 (10개 미만)</span>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush" id="lowStockListBody">
-                            <div class="p-4 text-center text-muted">데이터를 불러오는 중...</div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-white text-center py-3">
-                        <a href="/admin/products" class="text-decoration-none small fw-bold">상품 관리 이동 <i class="fas fa-arrow-right ms-1"></i></a>
-                    </div>
-                </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0 text-danger">재고 부족 상품 (10개 미만)</h6></div>
+                <div class="card-body p-0"><div class="list-group list-group-flush" id="lowStockListBody"></div></div>
             </div>
         </div>
-    </main>
-</div>
+    </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/dashboard/dashboard-list.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => DashBoardListJS.init());
-</script>
+<script>document.addEventListener('DOMContentLoaded', () => DashBoardListJS.init());</script>
 </body>
 </html>

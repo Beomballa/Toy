@@ -15,8 +15,8 @@ public class DashBoardController {
         return "redirect:/product/list";
     }
 
-//    @RequestMapping("/product/list")
-//    public ModelAndView dashBoardList(){
-//        return new ModelAndView("views/product-list");
-//    }
+    @GetMapping("/admin/dashboard")
+    public String dashboard() {
+        return "views/dashboard";
+    }
 }

@@ -13,20 +13,27 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('dashboard') ? 'active' : ''}" href="/admin/dashboard">
             <i class="fas fa-chart-line"></i> 대시보드
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('product') ? 'active' : ''}" href="/admin/products">
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('product') ? 'active' : ''}" href="/product/list">
             <i class="fas fa-box"></i> 상품 관리
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('market') ? 'active' : ''}" href="/admin/market">
-            <i class="fas fa-chart-bar"></i> 실시간 시세
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('brands') ? 'active' : ''}" href="/admin/brands">
+            <i class="fas fa-tag"></i> 브랜드 관리
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders">
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('categories') ? 'active' : ''}" href="/admin/categories">
+            <i class="fas fa-sitemap"></i> 카테고리 관리
+        </a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders/list">
             <i class="fas fa-shopping-cart"></i> 주문 관리
         </a>
     </div>
 
     <div class="nav-section">
         <div class="nav-section-title">Community</div>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('content') ? 'active' : ''}" href="/admin/content/list">
+            <i class="fas fa-edit"></i> 콘텐츠 관리
+        </a>
         <a class="nav-link" href="/admin/discuss"><i class="fas fa-comments"></i> 종목 토론방</a>
+
         <a class="nav-link" href="/admin/style"><i class="fas fa-camera"></i> 스타일 피드</a>
         <a class="nav-link" href="/admin/members"><i class="fas fa-users"></i> 회원 관리</a>
     </div>

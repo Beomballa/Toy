@@ -27,4 +27,15 @@ public class Brand {
 
     @Column(name = "logo_url", length = 500)
     private String logoUrl;
+
+    @Builder.Default
+    @Column(name = "is_active", length = 1, nullable = false)
+    private String isActive = "Y";
+
+    public void update(String nameKo, String nameEn, String logoUrl, String isActive) {
+        this.nameKo = nameKo;
+        this.nameEn = nameEn;
+        this.logoUrl = logoUrl;
+        this.isActive = isActive;
+    }
 }

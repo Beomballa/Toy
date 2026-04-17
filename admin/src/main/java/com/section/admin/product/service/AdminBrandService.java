@@ -29,13 +29,13 @@ public class AdminBrandService {
     public void saveBrand(BrandSaveRequest req) {
         if (req.brandNo() != null) {
             Brand brand = getBrand(req.brandNo());
-            // 엔티티에 update 메서드가 사라졌으므로 직접 필드 수정이 불가능할 수 있음
-            // 필요하다면 다시 메서드를 만들되 isActive만 빼야 함
+            brand.update(req.nameKo(), req.nameEn(), req.logoUrl(), req.isActive());
         } else {
             brandRepository.save(Brand.builder()
                     .nameKo(req.nameKo())
                     .nameEn(req.nameEn())
                     .logoUrl(req.logoUrl())
+                    .isActive(req.isActive() != null ? req.isActive() : "Y")
                     .build());
         }
     }

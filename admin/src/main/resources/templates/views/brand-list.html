@@ -54,6 +54,13 @@
                     <div class="mb-3"><label class="form-label fw-bold">브랜드명 (한글)</label><input type="text" id="nameKo" class="form-control" required></div>
                     <div class="mb-3"><label class="form-label fw-bold">브랜드명 (영문)</label><input type="text" id="nameEn" class="form-control"></div>
                     <div class="mb-3"><label class="form-label fw-bold">로고 URL</label><input type="text" id="logoUrl" class="form-control"></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">사용 여부</label>
+                        <select id="isActive" class="form-select">
+                            <option value="Y">사용중</option>
+                            <option value="N">중지</option>
+                        </select>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button><button type="button" class="btn btn-primary" id="btnSaveBrand">저장</button></div>

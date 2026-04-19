@@ -59,7 +59,9 @@ const CategoryList = {
                  onclick="CategoryList.getDepth2List(${item.categoryNo}, '${item.name}')">
                 <span>${item.name}</span>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">${item.isActive}</span>
+                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
+                        ${item.isActive === 'Y' ? '사용중' : '중지'}
+                    </span>
                     <button class="btn btn-xs btn-link p-0 text-muted" onclick="event.stopPropagation(); CategoryList.openModal(1, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
                         <i class="fas fa-edit"></i>
                     </button>

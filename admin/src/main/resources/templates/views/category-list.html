@@ -62,6 +62,13 @@
                     <input type="hidden" id="categoryNo"><input type="hidden" id="parentNo"><input type="hidden" id="depth">
                     <div class="mb-3" id="parentNameWrapper" style="display: none;"><label class="form-label text-muted small">상위 카테고리</label><div id="parentDisplay" class="fw-bold"></div></div>
                     <div class="mb-3"><label class="form-label fw-bold">카테고리명</label><input type="text" id="categoryName" class="form-control" required></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">사용 여부</label>
+                        <select id="isCategoryActive" class="form-select">
+                            <option value="Y">사용중</option>
+                            <option value="N">중지</option>
+                        </select>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button><button type="button" class="btn btn-primary" id="btnSaveCategory">저장</button></div>

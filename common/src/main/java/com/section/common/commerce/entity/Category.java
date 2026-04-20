@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "CATEGORY")
+@Table(name = "category")
 public class Category {
 
     @Id

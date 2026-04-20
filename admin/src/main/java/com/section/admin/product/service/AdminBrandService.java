@@ -1,6 +1,8 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.BrandSaveRequest;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class AdminBrandService {
 
     public Brand getBrand(Long brandNo) {
         return brandRepository.findById(brandNo)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 브랜드입니다. ID: " + brandNo));
+                .orElseThrow(() -> new BusinessException(ErrorCode.BRAND_NOT_FOUND));
     }
 
     @Transactional

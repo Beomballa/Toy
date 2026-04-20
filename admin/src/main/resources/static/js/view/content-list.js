@@ -120,13 +120,3 @@ const ContentList = {
 };
 
 document.addEventListener('DOMContentLoaded', () => ContentList.init());
-agination.innerHTML = html;
-    },
-
-    goPage(page) {
-        this.state.page = page;
-        this.getList();
-    }
-};
-
-document.addEventListener('DOMContentLoaded', () => ContentList.init());

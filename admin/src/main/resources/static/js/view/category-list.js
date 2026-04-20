@@ -8,7 +8,12 @@ const CategoryList = {
     },
 
     init() {
-        this.modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+        const modalEl = document.getElementById('categoryModal');
+        if (modalEl) {
+            this.modal = new bootstrap.Modal(modalEl);
+        } else {
+            console.error('카테고리 모달 엘리먼트를 찾을 수 없습니다.');
+        }
         this.bindEvents();
         this.getDepth1List();
     },
@@ -180,3 +185,5 @@ const CategoryList = {
         }
     }
 };
+
+document.addEventListener('DOMContentLoaded', () => CategoryList.init());

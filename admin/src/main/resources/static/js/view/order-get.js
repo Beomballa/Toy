@@ -58,8 +58,11 @@ const OrderDetail = {
         tbody.innerHTML = data.items.map(item => `
             <tr class="item-row">
                 <td class="ps-4">
-                    <img src="${item.thumbnailUrl || 'https://via.placeholder.com/100'}" 
-                         alt="${item.productName}" class="product-img">
+                    <div style="width:64px; height:64px;">
+                        <img src="${item.thumbnailUrl || ''}" 
+                             alt="${item.productName}" class="product-img"
+                             onerror="CommonJS.handleImageError(this)">
+                    </div>
                 </td>
                 <td>
                     <div class="fw-bold text-dark">${item.productName}</div>

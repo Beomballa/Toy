@@ -1,5 +1,7 @@
 package com.section.common.content.service;
 
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +24,7 @@ public class DocumentService {
 
     public Document getDocument(Long id) {
         return documentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 게시물입니다. ID: " + id));
+                .orElseThrow(() -> new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND));
     }
 
     @Transactional

@@ -3,6 +3,8 @@ package com.section.admin.product.service;
 import com.section.admin.product.res.OrderDetailResponse;
 import com.section.admin.product.res.OrderListResponse;
 import com.section.common.base.entity.type.OrderStatus;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
@@ -117,7 +119,7 @@ public class AdminOrderService {
      */
     public OrderDetailResponse getOrderDetail(Long orderNo) {
         OrderListResDto master = orderService.getOrderDetail(orderNo);
-        if (master == null) throw new IllegalArgumentException("존재하지 않는 주문입니다.");
+        if (master == null) throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         
         List<OrderItemResDto> items = orderService.getOrderItems(orderNo);
         return OrderDetailResponse.from(master, items);

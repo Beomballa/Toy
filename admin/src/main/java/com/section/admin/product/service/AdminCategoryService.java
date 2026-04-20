@@ -1,6 +1,8 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.CategorySaveRequest;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,7 @@ public class AdminCategoryService {
 
     public Category getCategory(Long categoryNo) {
         return categoryRepository.findById(categoryNo)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다. ID: " + categoryNo));
+                .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
     }
 
     @Transactional

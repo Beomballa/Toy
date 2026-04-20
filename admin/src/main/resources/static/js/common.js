@@ -114,6 +114,23 @@ let CommonJS = {
                 if (e.key === 'Escape') cancelBtn.click();
             });
         });
+    },
+
+    /**
+     * 이미지 로드 실패 시 대체 처리
+     */
+    handleImageError: function(img, fallbackText = '') {
+        img.onerror = null; // 무한 루프 방지
+        img.style.display = 'none';
+        
+        // 부모 요소에 대체 텍스트/아이콘 추가
+        const parent = img.parentElement;
+        if (parent && !parent.querySelector('.img-fallback')) {
+            const fallback = document.createElement('div');
+            fallback.className = 'img-fallback';
+            fallback.innerHTML = fallbackText ? `<span>${fallbackText.substring(0,1)}</span>` : '<i class="fas fa-image"></i>';
+            parent.appendChild(fallback);
+        }
     }
 }
 

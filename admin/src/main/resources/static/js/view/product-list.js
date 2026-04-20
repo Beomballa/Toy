@@ -115,8 +115,11 @@ const ProductList = {
             <tr>
                 <td class="ps-4">
                     <div class="product-info">
-                        <img src="${item.thumbnailUrl || 'https://via.placeholder.com/200'}"
-                             class="product-thumb" alt="thumb">
+                        <div class="product-thumb-container" style="width:56px; height:56px;">
+                            <img src="${item.thumbnailUrl || ''}"
+                                 class="product-thumb" alt="thumb"
+                                 onerror="CommonJS.handleImageError(this)">
+                        </div>
                         <div class="product-details">
                             <div class="product-name decoration" data-id="${item.productNo}" style="cursor:pointer;">
                                 ${item.productName}

@@ -20,18 +20,18 @@ import java.time.LocalDateTime;
 public class BaseEntity {
 
     @CreatedDate
-    @Column(name = "CRT_DTM", updatable = false)
+    @Column(name = "crt_dtm", updatable = false)
     protected LocalDateTime crtDtm;
 
     @CreatedBy
-    @Column(name = "CRT_NO")
+    @Column(name = "crt_no")
     protected Long crtNo;
 
     @LastModifiedDate
-    @Column(name = "UPT_DTM")
+    @Column(name = "upt_dtm")
     protected LocalDateTime uptDtm;
 
     @LastModifiedBy
-    @Column(name = "UPT_NO")
+    @Column(name = "upt_no")
     protected Long uptNo;
 }

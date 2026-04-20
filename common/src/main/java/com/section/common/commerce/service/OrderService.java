@@ -1,6 +1,8 @@
 package com.section.common.commerce.service;
 
 import com.section.common.base.entity.type.OrderStatus;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
@@ -47,7 +49,7 @@ public class OrderService {
     @Transactional
     public void updateOrderStatus(Long orderNo, OrderStatus status) {
         Orders order = orderRepository.findById(orderNo)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 주문입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         order.changeStatus(status);
     }
 }

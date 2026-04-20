@@ -41,7 +41,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                                 product.modelNum.as("productModel"),
                                 brand.nameKo.as("brandName"),
                                 product.releasePrice.as("releasePrice"),
-                                productOption.stockCnt.sumLong().as("totalStock"),
+                                productOption.stockCnt.sumLong().coalesce(0L).as("totalStock"),
                                 product.status.as("status"),
                                 product.crtDtm.as("crtDtm")
                         )

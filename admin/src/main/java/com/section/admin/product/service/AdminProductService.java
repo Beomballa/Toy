@@ -6,7 +6,8 @@ import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.common.base.entity.type.ProductStatus;
-import com.section.common.commerce.dto.ProductCreateReqDto;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListResDto;
@@ -120,7 +121,7 @@ public class AdminProductService {
     @Transactional
     public void updateProductInfo(ProductUpdateRequest reqDto) {
         Product product = productRepository.findById(reqDto.getProductNo())
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품입니다. id : " + reqDto.getProductNo()));
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
         // 기본 정보 수정
         product.updateBasicInfo(

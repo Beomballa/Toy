@@ -2,7 +2,12 @@ const BrandList = {
     modal: null,
 
     init() {
-        this.modal = new bootstrap.Modal(document.getElementById('brandModal'));
+        const modalEl = document.getElementById('brandModal');
+        if (modalEl) {
+            this.modal = new bootstrap.Modal(modalEl);
+        } else {
+            console.error('브랜드 모달 엘리먼트를 찾을 수 없습니다.');
+        }
         this.bindEvents();
         this.getList();
     },
@@ -41,7 +46,10 @@ const BrandList = {
             <tr>
                 <td class="ps-4 text-muted">${item.brandNo}</td>
                 <td>
-                    <img src="${item.logoUrl || 'https://via.placeholder.com/50'}" class="brand-logo-img" alt="logo">
+                    <div class="brand-logo-wrapper">
+                        <img src="${item.logoUrl || ''}" class="brand-logo-img" alt="${item.nameKo}" 
+                             onerror="CommonJS.handleImageError(this, '${item.nameKo}')">
+                    </div>
                 </td>
                 <td class="fw-bold text-dark">${item.nameKo}</td>
                 <td class="text-muted">${item.nameEn || '-'}</td>
@@ -128,3 +136,5 @@ const BrandList = {
         }
     }
 };
+
+document.addEventListener('DOMContentLoaded', () => BrandList.init());

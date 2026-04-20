@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "BRAND")
+@Table(name = "brand")
 public class Brand {
 
     @Id

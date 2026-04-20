@@ -2,12 +2,23 @@ const ContentList = {
     state: {
         page: 0,
         size: 9,
-        boardType: 'NOTICE'
+        boardType: new URLSearchParams(window.location.search).get('boardType') || 'NOTICE'
     },
 
     init() {
+        this.setInitialTab();
         this.bindEvents();
         this.getList();
+    },
+
+    setInitialTab() {
+        document.querySelectorAll('.nav-link[data-board-type]').forEach(el => {
+            if (el.dataset.boardType === this.state.boardType) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
     },
 
     bindEvents() {
@@ -19,13 +30,18 @@ const ContentList = {
                 el.classList.add('active');
                 this.state.boardType = el.dataset.boardType;
                 this.state.page = 0;
+                
+                // URL 파라미터 업데이트 (새로고침 없이)
+                const newUrl = `${window.location.pathname}?boardType=${this.state.boardType}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
+                
                 this.getList();
             });
         });
 
         // 새 글 작성 버튼
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
-            location.href = '/admin/content/edit';
+            location.href = `/admin/content/edit?boardType=${this.state.boardType}`;
         });
     },
 
@@ -41,7 +57,7 @@ const ContentList = {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
-            this.renderList(data.contents);
+            this.renderList(data.items);
             this.renderPagination(data);
         } catch (err) {
             console.error('콘텐츠 목록 로드 실패:', err);
@@ -54,7 +70,11 @@ const ContentList = {
         if (!grid) return;
 
         if (!items || items.length === 0) {
-            grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">등록된 게시물이 없습니다.</div>';
+            grid.innerHTML = `
+                <div class="col-12 text-center py-5">
+                    <div class="mb-3 text-muted"><i class="fas fa-folder-open fa-3x opacity-25"></i></div>
+                    <div class="text-muted">등록된 콘텐츠가 없습니다.</div>
+                </div>`;
             return;
         }
 
@@ -91,6 +111,16 @@ const ContentList = {
                 </li>`;
         }
         pagination.innerHTML = html;
+    },
+
+    goPage(page) {
+        this.state.page = page;
+        this.getList();
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => ContentList.init());
+agination.innerHTML = html;
     },
 
     goPage(page) {

@@ -32,9 +32,13 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('content') ? 'active' : ''}" href="/admin/content/list">
             <i class="fas fa-edit"></i> 콘텐츠 관리
         </a>
-        <a class="nav-link" href="/admin/discuss"><i class="fas fa-comments"></i> 종목 토론방</a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('discuss') ? 'active' : ''}" href="/admin/content/list?boardType=DISCUSS">
+            <i class="fas fa-comments"></i> 종목 토론방
+        </a>
 
-        <a class="nav-link" href="/admin/style"><i class="fas fa-camera"></i> 스타일 피드</a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('style') ? 'active' : ''}" href="/admin/content/list?boardType=STYLE">
+            <i class="fas fa-camera"></i> 스타일 피드
+        </a>
         <a class="nav-link" href="/admin/members"><i class="fas fa-users"></i> 회원 관리</a>
     </div>
 

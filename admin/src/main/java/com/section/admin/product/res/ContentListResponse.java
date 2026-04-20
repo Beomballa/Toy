@@ -1,41 +1,40 @@
 package com.section.admin.product.res;
 
 import com.section.common.content.entity.Document;
-import com.section.common.util.DateUtil;
 import org.springframework.data.domain.Page;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public record ContentListResponse(
-        List<ContentItem> contents,
-        int currentPage,
-        int totalPages,
-        long totalElements
+    List<ContentItem> items,
+    long totalElements,
+    int totalPages,
+    int currentPage
 ) {
-    public static ContentListResponse of(Page<Document> page) {
-        return new ContentListResponse(
-                page.getContent().stream().map(ContentItem::from).toList(),
-                page.getNumber(),
-                page.getTotalPages(),
-                page.getTotalElements()
-        );
-    }
-
     public record ContentItem(
-            Long id,
-            String boardType,
-            String title,
-            int viewCnt,
-            String crtDtm
-    ) {
-        public static ContentItem from(Document doc) {
-            return new ContentItem(
-                    doc.getId(),
-                    doc.getBoardType().name(),
-                    doc.getTitle(),
-                    doc.getViewCnt(),
-                    doc.getCrtDtm() != null ? DateUtil.localDateTimeToStr(doc.getCrtDtm()) : ""
-            );
-        }
+        Long id,
+        String boardType,
+        String title,
+        int viewCnt,
+        String crtDtm
+    ) {}
+
+    public static ContentListResponse of(Page<Document> page) {
+        List<ContentItem> items = page.getContent().stream()
+            .map(d -> new ContentItem(
+                d.getId(),
+                d.getBoardType().name(),
+                d.getTitle(),
+                d.getViewCnt(),
+                d.getCrtDtm() != null ? d.getCrtDtm().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : ""
+            )).toList();
+        
+        return new ContentListResponse(
+            items,
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.getNumber()
+        );
     }
 }

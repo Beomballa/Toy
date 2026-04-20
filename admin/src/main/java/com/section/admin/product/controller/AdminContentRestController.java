@@ -19,11 +19,16 @@ public class AdminContentRestController {
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
             @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
-            Pageable pageable
+            @org.springframework.data.web.PageableDefault(size = 9) org.springframework.data.domain.Pageable pageable
     ) {
-        return ResponseEntity.ok(ContentListResponse.of(
-                documentService.getDocumentList(Document.BoardType.valueOf(boardType), pageable)
-        ));
+        try {
+            return ResponseEntity.ok(ContentListResponse.of(
+                    documentService.getDocumentList(Document.BoardType.valueOf(boardType), pageable)
+            ));
+        } catch (Exception e) {
+            e.printStackTrace(); // 서버 로그에서 확인 가능하도록
+            throw e;
+        }
     }
 
     @GetMapping("/get")

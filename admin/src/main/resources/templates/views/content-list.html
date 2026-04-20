@@ -7,10 +7,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
     <style>
-        .hover-card { transition: transform 0.2s; cursor: pointer; }
-        .hover-card:hover { transform: translateY(-5px); }
+        .hover-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid #e5e7eb; }
+        .hover-card:hover { transform: translateY(-8px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border-color: #3b82f6; }
+        .nav-tabs { border-bottom: 2px solid #e5e7eb; }
+        .nav-tabs .nav-link { border: none; color: #6b7280; font-weight: 600; padding: 1rem 1.5rem; }
+        .nav-tabs .nav-link.active { color: #2563eb; border-bottom: 2px solid #2563eb; background: none; }
+        .text-line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 <body>
@@ -19,20 +24,32 @@
 
 <main class="main-content">
     <div class="page-header">
-        <h1 class="page-title">콘텐츠 관리</h1>
-        <button class="btn btn-primary" id="btnNewContent"><i class="fas fa-plus me-2"></i>새 콘텐츠 작성</button>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item active">콘텐츠 관리</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">콘텐츠 관리</h1>
+            <button class="btn btn-primary" id="btnNewContent"><i class="fas fa-plus me-2"></i>새 콘텐츠 작성</button>
+        </div>
     </div>
 
     <ul class="nav nav-tabs mb-4" id="contentTabs">
         <li class="nav-item"><a class="nav-link active" href="#" data-board-type="NOTICE">공지사항</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-board-type="STYLE">스타일 가이드</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-board-type="DISCUSS">커뮤니티</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-board-type="STYLE">스타일 피드</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-board-type="DISCUSS">종목 토론방</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-board-type="QNA">문의사항</a></li>
     </ul>
 
-    <div class="row" id="contentGrid"></div>
+    <div class="row g-4" id="contentGrid">
+        <div class="col-12 text-center py-5 text-muted">데이터를 불러오는 중입니다...</div>
+    </div>
 
-    <nav aria-label="Page navigation" class="mt-4"><ul class="pagination justify-content-center" id="pagination"></ul></nav>
+    <div class="d-flex justify-content-center mt-5">
+        <nav aria-label="Page navigation"><ul class="pagination pagination-sm" id="pagination"></ul></nav>
+    </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

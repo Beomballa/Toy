@@ -12,9 +12,46 @@ const DashBoardListJS = {
             this.renderSummary(data.summary);
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
+            this.renderSalesChart(data.salesChart);
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
         }
+    },
+
+    renderSalesChart(chartData) {
+        const ctx = document.getElementById('salesChart');
+        if (!ctx || !chartData) return;
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.map(d => d.label),
+                datasets: [{
+                    label: '매출액 (원)',
+                    data: chartData.map(d => d.value),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => value.toLocaleString() + '원'
+                        }
+                    }
+                }
+            }
+        });
     },
 
     renderSummary(summary) {

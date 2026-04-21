@@ -68,6 +68,13 @@ public class AdminDashBoardService {
                         p.getTotalStock()
                 )).toList();
 
-        return new DashboardResponse(summary, recentOrders, lowStockProducts);
+        // 4. 최근 7일 매출 차트
+        List<DashboardResponse.ChartData> salesChart = orderRepository.getSalesLast7Days().stream()
+                .map(m -> new DashboardResponse.ChartData(
+                        (String) m.get("date"),
+                        ((Number) m.get("amount")).longValue()
+                )).toList();
+
+        return new DashboardResponse(summary, recentOrders, lowStockProducts, salesChart);
     }
 }

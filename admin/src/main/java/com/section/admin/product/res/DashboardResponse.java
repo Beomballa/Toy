@@ -5,7 +5,8 @@ import java.util.List;
 public record DashboardResponse(
         SummaryCounts summary,
         List<RecentOrder> recentOrders,
-        List<LowStockProduct> lowStockProducts
+        List<LowStockProduct> lowStockProducts,
+        List<ChartData> salesChart
 ) {
     public record SummaryCounts(
             long todayOrderCount,
@@ -29,5 +30,10 @@ public record DashboardResponse(
             String productName,
             String brandName,
             long stockCnt
+    ) {}
+
+    public record ChartData(
+            String label,
+            long value
     ) {}
 }

@@ -20,5 +20,6 @@ public interface CustomOrderRepository {
     // 대시보드용
     Map<String, Object> getTodaySummary();
     List<OrderListResDto> getRecentOrders(int limit);
+    List<Map<String, Object>> getSalesLast7Days();
 }
 

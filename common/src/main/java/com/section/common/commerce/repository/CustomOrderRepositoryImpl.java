@@ -138,6 +138,27 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         return summary;
     }
 
+    @Override
+    public List<Map<String, Object>> getSalesLast7Days() {
+        LocalDateTime sevenDaysAgo = LocalDate.now().minusDays(6).atStartOfDay();
+
+        // Querydsl로 날짜별 합계 구하기 (상태가 CANCELLED가 아닌 주문만)
+        return jpaQueryFactory
+                .select(orders.crtDtm, orders.totalAmount.sumLong())
+                .from(orders)
+                .where(orders.crtDtm.goe(sevenDaysAgo), orders.status.ne("CANCELLED"))
+                .groupBy(orders.crtDtm)
+                .orderBy(orders.crtDtm.asc())
+                .fetch()
+                .stream()
+                .map(tuple -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("date", tuple.get(orders.crtDtm).toLocalDate().toString());
+                    map.put("amount", tuple.get(orders.totalAmount.sumLong()));
+                    return map;
+                }).toList();
+    }
+
     private Long getCountByStatus(String status) {
         return jpaQueryFactory
                 .select(orders.count())

@@ -36,4 +36,13 @@ public class AdminOrderRestController {
         adminOrderService.updateOrderStatus(orderNo, status);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/delivery")
+    public ResponseEntity<Void> startDelivery(@RequestBody Map<String, String> params) {
+        Long orderNo = Long.parseLong(params.get("orderNo"));
+        String company = params.get("deliveryCompany");
+        String trackingNum = params.get("trackingNum");
+        adminOrderService.startDelivery(orderNo, company, trackingNum);
+        return ResponseEntity.ok().build();
+    }
 }

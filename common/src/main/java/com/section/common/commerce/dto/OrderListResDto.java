@@ -15,6 +15,8 @@ public class OrderListResDto {
     private String buyerName;
     private String buyerPhone;
     private Integer totalAmount;
-    private String status; // OrderStatus Enum이 아닌 String으로 변경
+    private String status; 
     private LocalDateTime crtDtm;
+    private String deliveryCompany;
+    private String trackingNum;
 }

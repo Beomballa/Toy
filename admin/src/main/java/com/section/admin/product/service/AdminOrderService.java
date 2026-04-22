@@ -132,4 +132,11 @@ public class AdminOrderService {
     public void updateOrderStatus(Long orderNo, String status) {
         orderService.updateOrderStatus(orderNo, OrderStatus.valueOf(status));
     }
+
+    @Transactional
+    public void startDelivery(Long orderNo, String deliveryCompany, String trackingNum) {
+        Orders order = orderRepository.findById(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.startDelivery(deliveryCompany, trackingNum);
+    }
 }

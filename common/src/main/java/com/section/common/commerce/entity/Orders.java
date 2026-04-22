@@ -36,6 +36,12 @@ public class Orders extends BaseEntity {
     @Column(name = "status", length = 20)
     private String status;
 
+    @Column(name = "delivery_company", length = 50)
+    private String deliveryCompany;
+
+    @Column(name = "tracking_num", length = 50)
+    private String trackingNum;
+
     /**
      * 주문 생성 (정적 팩토리 메서드)
      */
@@ -62,5 +68,14 @@ public class Orders extends BaseEntity {
 
     public void pay() {
         this.status = OrderStatus.PAID.name();
+    }
+
+    /**
+     * 배송 시작 처리
+     */
+    public void startDelivery(String deliveryCompany, String trackingNum) {
+        this.deliveryCompany = deliveryCompany;
+        this.trackingNum = trackingNum;
+        this.status = OrderStatus.SHIPPED.name();
     }
 }

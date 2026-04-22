@@ -44,7 +44,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                                 orders.buyerPhone.as("buyerPhone"),
                                 orders.totalAmount.as("totalAmount"),
                                 orders.status.as("status"),
-                                orders.crtDtm.as("crtDtm")
+                                orders.crtDtm.as("crtDtm"),
+                                orders.deliveryCompany.as("deliveryCompany"),
+                                orders.trackingNum.as("trackingNum")
                         )
                 )
                 .from(orders)
@@ -80,7 +82,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         orders.buyerPhone.as("buyerPhone"),
                         orders.totalAmount.as("totalAmount"),
                         orders.status.as("status"),
-                        orders.crtDtm.as("crtDtm")
+                        orders.crtDtm.as("crtDtm"),
+                        orders.deliveryCompany.as("deliveryCompany"),
+                        orders.trackingNum.as("trackingNum")
                 ))
                 .from(orders)
                 .where(orders.id.eq(orderNo))
@@ -176,7 +180,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         orders.buyerName.as("buyerName"),
                         orders.totalAmount.as("totalAmount"),
                         orders.status.as("status"),
-                        orders.crtDtm.as("crtDtm")
+                        orders.crtDtm.as("crtDtm"),
+                        orders.deliveryCompany.as("deliveryCompany"),
+                        orders.trackingNum.as("trackingNum")
                 ))
                 .from(orders)
                 .orderBy(orders.id.desc())

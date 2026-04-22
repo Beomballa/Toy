@@ -69,7 +69,7 @@
             </div>
         </div>
         <div class="col-lg-8">
-            <div class="card animate-in">
+            <div class="card animate-in mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="card-title">주문 상품 목록</span>
                     <span id="itemCount" class="badge bg-secondary rounded-pill">0</span>
@@ -82,6 +82,49 @@
                             </thead>
                             <tbody id="orderItemsTableBody"></tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 배송 정보 입력 (결제완료 상태일 때 노출) -->
+            <div class="card animate-in mb-4" id="deliveryInputCard" style="display: none;">
+                <div class="card-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
+                <div class="card-body">
+                    <form id="deliveryForm" class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">택배사</label>
+                            <select id="deliveryCompany" class="form-select">
+                                <option value="">택배사 선택</option>
+                                <option value="CJ대한통운">CJ대한통운</option>
+                                <option value="한진택배">한진택배</option>
+                                <option value="롯데택배">롯데택배</option>
+                                <option value="우체국택배">우체국택배</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold">운송장 번호</label>
+                            <input type="text" id="trackingNum" class="form-control" placeholder="숫자만 입력">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="button" class="btn btn-primary w-100" id="btnSaveDelivery">발송</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 배송 정보 표시 (이미 배송 중이거나 완료된 경우) -->
+            <div class="card animate-in mb-4" id="deliveryInfoCard" style="display: none;">
+                <div class="card-header"><span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span></div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <label class="text-muted small d-block">택배사</label>
+                            <div id="displayCompany" class="fw-bold fs-5">-</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="text-muted small d-block">운송장 번호</label>
+                            <div id="displayTracking" class="fw-bold fs-5 text-primary">-</div>
+                        </div>
                     </div>
                 </div>
             </div>

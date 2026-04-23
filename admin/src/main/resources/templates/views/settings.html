@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>시스템 설정 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item active">시스템 설정</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">시스템 설정</h1>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- 관리자 계정 관리 -->
+        <div class="col-lg-12">
+            <div class="card animate-in">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">관리자 계정 관리</h6>
+                    <button class="btn btn-sm btn-primary" id="btnNewAdmin"><i class="fas fa-user-plus me-1"></i>계정 추가</button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">No</th>
+                                    <th>로그인 ID</th>
+                                    <th>관리자 이름</th>
+                                    <th>권한</th>
+                                    <th>상태</th>
+                                    <th>마지막 로그인</th>
+                                    <th class="text-end pe-4">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminListBody">
+                                <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- 관리자 추가/수정 모달 -->
+<div class="modal fade" id="adminModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="adminModalTitle">관리자 계정 설정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adminForm">
+                    <input type="hidden" id="adminNo">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">로그인 ID</label>
+                        <input type="text" id="loginId" class="form-control" required>
+                    </div>
+                    <div class="mb-3" id="passwordWrapper">
+                        <label class="form-label fw-bold">비밀번호</label>
+                        <input type="password" id="password" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">이름</label>
+                        <input type="text" id="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">권한</label>
+                        <select id="role" class="form-select">
+                            <option value="ROLE_ADMIN">일반 관리자</option>
+                            <option value="ROLE_SUPER">최고 관리자</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">상태</label>
+                        <select id="status" class="form-select">
+                            <option value="ACTIVE">활성</option>
+                            <option value="SUSPENDED">정지</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="btnSaveAdmin">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script>
+    const AdminUser = {
+        modal: null,
+        init() {
+            this.modal = new bootstrap.Modal(document.getElementById('adminModal'));
+            this.bindEvents();
+            this.getList();
+        },
+        bindEvents() {
+            document.getElementById('btnNewAdmin').addEventListener('click', () => this.openModal());
+            document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
+        },
+        async getList() {
+            try {
+                const res = await fetch('/api/admin/users/list');
+                const data = await res.json();
+                this.renderList(data);
+            } catch (err) {
+                console.error('관리자 목록 로드 실패:', err);
+            }
+        },
+        renderList(items) {
+            const tbody = document.getElementById('adminListBody');
+            if (!items || items.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5">등록된 관리자가 없습니다.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td class="ps-4 text-muted small">${item.adminNo}</td>
+                    <td class="fw-bold">${item.loginId}</td>
+                    <td>${item.name}</td>
+                    <td><span class="badge ${item.role === 'ROLE_SUPER' ? 'bg-danger' : 'bg-primary'}">${item.role}</span></td>
+                    <td><span class="badge ${item.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
+                    <td class="text-muted small">${item.lastLoginDtm ? item.lastLoginDtm.replace('T', ' ') : '-'}</td>
+                    <td class="text-end pe-4">
+                        <button class="btn btn-sm btn-outline-primary" onclick='AdminUser.openModal(${JSON.stringify(item)})'>수정</button>
+                    </td>
+                </tr>
+            `).join('');
+        },
+        openModal(item) {
+            document.getElementById('adminForm').reset();
+            document.getElementById('adminNo').value = '';
+            document.getElementById('passwordWrapper').style.display = 'block';
+            document.getElementById('loginId').readOnly = false;
+
+            if (item) {
+                document.getElementById('adminNo').value = item.adminNo;
+                document.getElementById('loginId').value = item.loginId;
+                document.getElementById('loginId').readOnly = true;
+                document.getElementById('name').value = item.name;
+                document.getElementById('role').value = item.role;
+                document.getElementById('status').value = item.status;
+                document.getElementById('passwordWrapper').style.display = 'none';
+                document.getElementById('adminModalTitle').innerText = '관리자 정보 수정';
+            } else {
+                document.getElementById('adminModalTitle').innerText = '신규 관리자 등록';
+            }
+            this.modal.show();
+        },
+        async saveAdmin() {
+            const formData = {
+                adminNo: document.getElementById('adminNo').value || null,
+                loginId: document.getElementById('loginId').value,
+                name: document.getElementById('name').value,
+                role: document.getElementById('role').value,
+                status: document.getElementById('status').value
+            };
+
+            if (!formData.adminNo) {
+                formData.password = document.getElementById('password').value;
+                if (!formData.password) {
+                    CommonJS.alert('비밀번호를 입력하세요.', '알림', 'warning');
+                    return;
+                }
+            }
+
+            try {
+                const res = await fetch('/api/admin/users/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || '저장 실패');
+                }
+
+                CommonJS.alert('저장되었습니다.', '성공', 'success', () => {
+                    this.modal.hide();
+                    this.getList();
+                });
+            } catch (err) {
+                CommonJS.alert(err.message, '오류', 'error');
+            }
+        }
+    };
+    document.addEventListener('DOMContentLoaded', () => AdminUser.init());
+</script>
+</body>
+</html>

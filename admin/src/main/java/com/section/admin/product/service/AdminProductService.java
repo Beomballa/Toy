@@ -108,6 +108,7 @@ public class AdminProductService {
                             .productNo(savedProduct.getId())
                             .optionName(optDto.getOptionName())
                             .stockCnt(optDto.getStockCnt())
+                            .additionalPrice(optDto.getAdditionalPrice())
                             .build())
                     .collect(Collectors.toList());
 
@@ -147,6 +148,7 @@ public class AdminProductService {
                             .productNo(product.getId())
                             .optionName(optDto.getOptionName())
                             .stockCnt(optDto.getStockCnt())
+                            .additionalPrice(optDto.getAdditionalPrice())
                             .build())
                     .toList();
 

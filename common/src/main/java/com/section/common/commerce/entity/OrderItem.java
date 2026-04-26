@@ -22,6 +22,9 @@ public class OrderItem {
     @Column(name = "product_no", nullable = false)
     private Long productNo;
 
+    @Column(name = "option_no")
+    private Long optionNo;
+
     @Column(name = "product_name", nullable = false, length = 200)
     private String productName;
 

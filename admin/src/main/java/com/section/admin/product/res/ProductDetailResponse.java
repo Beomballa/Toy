@@ -51,13 +51,15 @@ public record ProductDetailResponse(
     public record OptionInfo(
             Long optionNo,
             String optionName,
-            Integer stockQty
+            Integer stockQty,
+            Integer additionalPrice
     ) {
         public static OptionInfo from(ProductOption entity) {
             return new OptionInfo(
                     entity.getId(),
                     entity.getOptionName(),
-                    entity.getStockCnt()
+                    entity.getStockCnt(),
+                    entity.getAdditionalPrice()
             );
         }
     }

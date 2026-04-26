@@ -13,11 +13,7 @@ import com.section.common.commerce.entity.OrderItem;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
-import com.section.common.commerce.repository.OrderRepository;
-import com.section.common.commerce.repository.OrderItemRepository;
-import com.section.common.commerce.repository.ProductRepository;
-import com.section.common.commerce.repository.BrandRepository;
-import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.*;
 import com.section.common.commerce.service.OrderService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +34,7 @@ public class AdminOrderService {
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductOptionRepository productOptionRepository;
     private final OrderService orderService;
 
     /**
@@ -151,6 +148,18 @@ public class AdminOrderService {
     public void cancelOrder(Long orderNo) {
         Orders order = orderRepository.findById(orderNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        
+        // 주문 상태 변경 (상태 전이 유효성 검사는 엔티티 내에서 수행)
         order.cancel();
+
+        // 재고 복구 로직 연동
+        List<OrderItem> items = orderItemRepository.findByOrderNo(orderNo);
+        for (OrderItem item : items) {
+            if (item.getOptionNo() != null) {
+                productOptionRepository.findById(item.getOptionNo()).ifPresent(option -> {
+                    option.addStock(item.getCount());
+                });
+            }
+        }
     }
 }

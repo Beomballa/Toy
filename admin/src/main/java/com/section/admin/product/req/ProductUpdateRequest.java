@@ -52,5 +52,9 @@ public class ProductUpdateRequest {
         @NotNull(message = "수량을 입력해주세요")
         @Min(value = 0, message = "수량은 0개 이상이어야 합니다.")
         private Integer stockCnt;
+
+        @NotNull(message = "추가 금액을 입력해주세요")
+        @Min(value = 0, message = "추가 금액은 0원 이상이어야 합니다.")
+        private Integer additionalPrice;
     }
 }

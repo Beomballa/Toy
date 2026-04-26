@@ -163,6 +163,45 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 }).toList();
     }
 
+    @Override
+    public List<Map<String, Object>> getTopSellingProducts(int limit) {
+        return jpaQueryFactory
+                .select(orderItem.productName, orderItem.count.sum())
+                .from(orderItem)
+                .groupBy(orderItem.productName)
+                .orderBy(orderItem.count.sum().desc())
+                .limit(limit)
+                .fetch()
+                .stream()
+                .map(tuple -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("name", tuple.get(orderItem.productName));
+                    map.put("count", tuple.get(orderItem.count.sum()));
+                    return map;
+                }).toList();
+    }
+
+    @Override
+    public List<Map<String, Object>> getTopBrandsBySales(int limit) {
+        return jpaQueryFactory
+                .select(product.brandNo, orders.totalAmount.sumLong())
+                .from(orders)
+                .join(orderItem).on(orderItem.orderNo.eq(orders.id))
+                .join(product).on(product.id.eq(orderItem.productNo))
+                .where(orders.status.ne("CANCELLED"))
+                .groupBy(product.brandNo)
+                .orderBy(orders.totalAmount.sumLong().desc())
+                .limit(limit)
+                .fetch()
+                .stream()
+                .map(tuple -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("brandNo", tuple.get(product.brandNo));
+                    map.put("amount", tuple.get(orders.totalAmount.sumLong()));
+                    return map;
+                }).toList();
+    }
+
     private Long getCountByStatus(String status) {
         return jpaQueryFactory
                 .select(orders.count())

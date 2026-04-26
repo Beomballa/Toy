@@ -6,7 +6,9 @@ public record DashboardResponse(
         SummaryCounts summary,
         List<RecentOrder> recentOrders,
         List<LowStockProduct> lowStockProducts,
-        List<ChartData> salesChart
+        List<ChartData> salesChart,
+        List<ChartData> topProducts,
+        List<ChartData> topBrands
 ) {
     public record SummaryCounts(
             long todayOrderCount,

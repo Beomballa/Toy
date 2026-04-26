@@ -13,6 +13,8 @@ const DashBoardListJS = {
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
             this.renderSalesChart(data.salesChart);
+            this.renderTopProductsChart(data.topProducts);
+            this.renderTopBrandsChart(data.topBrands);
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
         }
@@ -50,6 +52,57 @@ const DashBoardListJS = {
                         }
                     }
                 }
+            }
+        });
+    },
+
+    renderTopProductsChart(chartData) {
+        const ctx = document.getElementById('topProductsChart');
+        if (!ctx || !chartData) return;
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: chartData.map(d => d.label),
+                datasets: [{
+                    label: '판매량',
+                    data: chartData.map(d => d.value),
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y', // 가로 막대 차트
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    },
+
+    renderTopBrandsChart(chartData) {
+        const ctx = document.getElementById('topBrandsChart');
+        if (!ctx || !chartData) return;
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.map(d => d.label),
+                datasets: [{
+                    data: chartData.map(d => d.value),
+                    backgroundColor: [
+                        '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                },
+                cutout: '60%' // 도넛 두께
             }
         });
     },

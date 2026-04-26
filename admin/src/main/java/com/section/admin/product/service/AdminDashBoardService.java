@@ -3,6 +3,7 @@ package com.section.admin.product.service;
 import com.section.admin.product.res.DashboardResponse;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.util.DateUtil;
@@ -20,6 +21,7 @@ public class AdminDashBoardService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final BrandRepository brandRepository;
 
     public DashboardResponse getDashboardData() {
         // 1. 오늘 요약 정보
@@ -75,6 +77,22 @@ public class AdminDashBoardService {
                         ((Number) m.get("amount")).longValue()
                 )).toList();
 
-        return new DashboardResponse(summary, recentOrders, lowStockProducts, salesChart);
+        // 5. 인기 상품 Top 5
+        List<DashboardResponse.ChartData> topProducts = orderRepository.getTopSellingProducts(5).stream()
+                .map(m -> new DashboardResponse.ChartData(
+                        (String) m.get("name"),
+                        ((Number) m.get("count")).longValue()
+                )).toList();
+
+        // 6. 인기 브랜드 Top 5 (이름 매핑 포함)
+        List<Map<String, Object>> brandSales = orderRepository.getTopBrandsBySales(5);
+        List<DashboardResponse.ChartData> topBrands = brandSales.stream()
+                .map(m -> {
+                    Long brandNo = (Long) m.get("brandNo");
+                    String brandName = brandRepository.findById(brandNo).map(com.section.common.commerce.entity.Brand::getNameKo).orElse("Unknown");
+                    return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
+                }).toList();
+
+        return new DashboardResponse(summary, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 }

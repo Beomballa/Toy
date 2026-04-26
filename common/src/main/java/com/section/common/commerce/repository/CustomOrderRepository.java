@@ -21,5 +21,7 @@ public interface CustomOrderRepository {
     Map<String, Object> getTodaySummary();
     List<OrderListResDto> getRecentOrders(int limit);
     List<Map<String, Object>> getSalesLast7Days();
+    List<Map<String, Object>> getTopSellingProducts(int limit);
+    List<Map<String, Object>> getTopBrandsBySales(int limit);
 }
 

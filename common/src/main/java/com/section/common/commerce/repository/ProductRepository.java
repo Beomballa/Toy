@@ -11,7 +11,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, CustomP
 
     @Query("SELECT new com.section.common.commerce.dto.ProductDetailResDto(" +
             "p.id, c.categoryNo, c.name, b.brandNo, b.nameKo, " +
-            "p.nameKo, p.modelNum, p.releasePrice, p.releaseDt, p.thumbnailUrl, p.crtDtm, p.uptDtm) " +
+            "p.nameKo, p.modelNum, p.releasePrice, p.releaseDt, p.thumbnailUrl, p.status, p.crtDtm, p.uptDtm) " +
             "FROM Product p " +
             "LEFT JOIN Category c ON p.categoryNo = c.categoryNo " +
             "LEFT JOIN Brand b ON p.brandNo = b.brandNo " +

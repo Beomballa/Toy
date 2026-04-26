@@ -8,7 +8,7 @@ import lombok.Setter;
 public class ProductListReqDto {
     private Long categoryNo;
     private Long brandNo;
-    private String isActive;
+    private String status;
     private String searchKeyword;
     private String orderType;
 }

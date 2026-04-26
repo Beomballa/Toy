@@ -107,15 +107,41 @@
 
                 <div class="col-lg-4">
                     <div class="card animate-in mb-4">
-                        <div class="card-header"><span class="card-title">대표 이미지</span></div>
+                        <div class="card-header"><span class="card-title">미리보기</span></div>
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">이미지 URL</label>
                                 <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl">
                             </div>
                             <div id="imagePreview" class="bg-light rounded d-flex align-items-center justify-content-center border" style="height: 300px;">
-                                <img src="" id="previewImg" class="img-fluid d-none" style="max-height: 100%;">
+                                <img src="" id="previewImage" class="img-fluid d-none" style="max-height: 100%;" alt="상품 미리보기">
                                 <span id="previewText" class="text-muted">이미지 미리보기</span>
+                            </div>
+                            <div class="preview-info mt-4">
+                                <div class="mb-3">
+                                    <label class="small text-muted">카테고리</label>
+                                    <div id="previewCategory" class="fw-bold">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small text-muted">브랜드</label>
+                                    <div id="previewBrand" class="fw-bold">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small text-muted">상품명</label>
+                                    <div id="previewName" class="fw-bold">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small text-muted">모델 번호</label>
+                                    <div id="previewModel" class="text-secondary">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="small text-muted">발매가</label>
+                                    <div id="previewPrice" class="fw-bold text-primary fs-5">-</div>
+                                </div>
+                                <div>
+                                    <label class="small text-muted">판매 상태</label>
+                                    <div id="previewStatus" class="fw-bold">ACTIVE</div>
+                                </div>
                             </div>
                         </div>
                     </div>

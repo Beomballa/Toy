@@ -1,13 +1,8 @@
 const ProductUpdate = {
     optionCount: 0,
     productNo: null,
-    brands: [],
-    categories: [],
 
-    init(brands, categories) {
-        this.brands = brands || [];
-        this.categories = categories || [];
-
+    init() {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
 
@@ -16,30 +11,11 @@ const ProductUpdate = {
             return;
         }
 
-        this.renderSelects();
         this.loadProductData();
         this.bindEvents();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = "/admin/products";
-        });
-    },
-
-    renderSelects() {
-        const brandSelect = document.getElementById('brandNo');
-        this.brands.forEach(brand => {
-            const option = document.createElement('option');
-            option.value = brand.brandNo;
-            option.textContent = brand.nameKo;
-            brandSelect.appendChild(option);
-        });
-
-        const categorySelect = document.getElementById('categoryNo');
-        this.categories.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category.categoryNo;
-            option.textContent = category.name;
-            categorySelect.appendChild(option);
         });
     },
 
@@ -58,7 +34,7 @@ const ProductUpdate = {
 
     async loadProductData() {
         try {
-            const response = await fetch(`/api/admin/admin/products/get?no=${this.productNo}`);
+            const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
             if (!response.ok) throw new Error('상품 정보를 불러오는데 실패했습니다.');
 
             const data = await response.json();
@@ -151,19 +127,28 @@ const ProductUpdate = {
 
     updatePreview() {
         const categorySelect = document.getElementById('categoryNo');
-        document.getElementById('previewCategory').textContent = categorySelect.options[categorySelect.selectedIndex]?.text || '-';
-
         const brandSelect = document.getElementById('brandNo');
-        document.getElementById('previewBrand').textContent = brandSelect.options[brandSelect.selectedIndex]?.text || '-';
-
-        document.getElementById('previewName').textContent = document.getElementById('nameKo').value || '-';
-        document.getElementById('previewModel').textContent = document.getElementById('modelNum').value || '-';
-
         const price = document.getElementById('releasePrice').value;
         document.getElementById('previewPrice').textContent = price ? parseInt(price).toLocaleString() + '원' : '-';
+        document.getElementById('previewCategory').textContent = categorySelect.options[categorySelect.selectedIndex]?.text || '-';
+        document.getElementById('previewBrand').textContent = brandSelect.options[brandSelect.selectedIndex]?.text || '-';
+        document.getElementById('previewName').textContent = document.getElementById('nameKo').value || '-';
+        document.getElementById('previewModel').textContent = document.getElementById('modelNum').value || '-';
+        document.getElementById('previewStatus').textContent = document.getElementById('productStatus').value || 'ACTIVE';
 
         const url = document.getElementById('thumbnailUrl').value;
-        document.getElementById('previewImage').src = url || 'https://via.placeholder.com/300x300?text=No+Image';
+        const previewImage = document.getElementById('previewImage');
+        const previewText = document.getElementById('previewText');
+
+        if (url) {
+            previewImage.src = url;
+            previewImage.classList.remove('d-none');
+            previewText.classList.add('d-none');
+        } else {
+            previewImage.src = '';
+            previewImage.classList.add('d-none');
+            previewText.classList.remove('d-none');
+        }
     },
 
     async updateForm() {
@@ -204,7 +189,7 @@ const ProductUpdate = {
         };
 
         try {
-            const response = await fetch('/api/admin/admin/products/update', {
+            const response = await fetch('/api/admin/product/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)

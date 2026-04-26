@@ -21,6 +21,7 @@ public class ProductDetailResDto {
     private Integer releasePrice;
     private LocalDate releaseDt;
     private String thumbnailUrl;
+    private String status;
     private LocalDateTime crtDtm;
     private LocalDateTime uptDtm;
 }

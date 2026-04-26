@@ -83,7 +83,7 @@ const ProductList = {
             size: this.state.size,
             brandNo: document.getElementById('brandNo').value,
             categoryNo: document.getElementById('categoryNo').value,
-            isActive: document.getElementById('statusFilter').value,
+            status: document.getElementById('statusFilter').value,
             searchKeyword: document.getElementById('searchKeyword').value,
             orderType: document.getElementById('orderType').getAttribute('data-current-value'),
         });

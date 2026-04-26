@@ -10,7 +10,7 @@ public class ProductListRequest {
 //    브랜드, 카테고리, 상태, 검색 조건 = 상품명, 모델
     private Long categoryNo;
     private Long brandNo;
-    private String isActive;
+    private String status;
     private String searchKeyword;
     private String orderType;
 
@@ -18,7 +18,7 @@ public class ProductListRequest {
         ProductListReqDto reqDto = new ProductListReqDto();
         reqDto.setCategoryNo(categoryNo);
         reqDto.setBrandNo(brandNo);
-        reqDto.setIsActive(isActive);
+        reqDto.setStatus(status);
         reqDto.setSearchKeyword(searchKeyword);
         reqDto.setOrderType(orderType);
         return reqDto;

@@ -20,6 +20,7 @@ public record ProductDetailResponse(
         Integer releasePrice,
         LocalDate releaseDt,
         String thumbnailUrl,
+        String status,
         String crtDtm,
         String uptDtm,
         List<OptionInfo> options
@@ -37,6 +38,7 @@ public record ProductDetailResponse(
                 resDto.getReleasePrice(),
                 resDto.getReleaseDt(),
                 resDto.getThumbnailUrl(),
+                resDto.getStatus(),
                 resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "",
                 resDto.getUptDtm() != null ? DateUtil.localDateTimeToStr(resDto.getUptDtm()) : "",
                 Optional.ofNullable(options)

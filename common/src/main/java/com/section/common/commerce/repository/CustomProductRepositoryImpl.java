@@ -55,7 +55,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq()
+                        statusEq(reqDto.getStatus()),
+                        notDeleted()
                 )
                 .orderBy(orderTypeEq(reqDto.getOrderType()))
                 .offset(pageable.getOffset())
@@ -72,7 +73,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq()
+                        statusEq(reqDto.getStatus()),
+                        notDeleted()
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
@@ -94,7 +96,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq()
+                        statusEq(reqDto.getStatus()),
+                        notDeleted()
                 )
                 .fetchOne();
         stats.setTotalCount(totalCount != null ? totalCount : 0L);
@@ -107,7 +110,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq(),
+                        statusEq(reqDto.getStatus()),
+                        notDeleted(),
                         product.status.eq(ProductStatus.ACTIVE.name())
                 )
                 .fetchOne();
@@ -122,7 +126,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq()
+                        statusEq(reqDto.getStatus()),
+                        notDeleted()
                 )
                 .groupBy(product.id)
                 .having(productOption.stockCnt.sumLong().lt(100L))
@@ -137,7 +142,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         categoryNoEq(reqDto.getCategoryNo()),
                         brandNoEq(reqDto.getBrandNo()),
-                        isActiveEq(),
+                        statusEq(reqDto.getStatus()),
+                        notDeleted(),
                         product.crtDtm.goe(today)
                 )
                 .fetchOne();
@@ -188,7 +194,14 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return product.brandNo.eq(brandNo);
     }
 
-    public BooleanExpression isActiveEq() {
+    public BooleanExpression statusEq(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return product.status.eq(status);
+    }
+
+    public BooleanExpression notDeleted() {
         return product.status.ne(ProductStatus.DELETE.name());
     }
 

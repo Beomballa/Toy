@@ -7,6 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
 </head>
 <body>
@@ -14,24 +15,87 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main class="main-content detail-main">
-    <div class="detail-scroll-content">
+    <div class="detail-scroll-content community-editor-page">
     <form id="contentEditForm">
         <input type="hidden" id="contentId" th:value="${id}">
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-            <div class="d-flex align-items-center gap-3">
-                <select id="boardType" class="form-select form-select-sm select-auto-width">
-                    <option th:each="type : ${boardTypes}" th:value="${type}" th:text="${type}"></option>
-                </select>
-                <span id="saveStatus" class="text-muted small"></span>
-            </div>
-            <div class="btn-group">
-                <button type="button" class="btn btn-outline-secondary" onclick="location.href='/admin/content/list'">목록</button>
-                <button type="button" class="btn btn-primary" id="btnSave">저장</button>
-                <button type="button" class="btn btn-danger" id="btnDelete" th:if="${id != null}">삭제</button>
+        <input type="hidden" id="initialBoardType" th:value="${boardType}">
+        <div class="page-header community-editor-header">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                    <li class="breadcrumb-item"><a id="contentListBreadcrumb" href="/admin/content/list">커뮤니티</a></li>
+                    <li class="breadcrumb-item active" id="contentEditBreadcrumb">콘텐츠 작성</li>
+                </ol>
+            </nav>
+            <div class="page-title-wrapper community-editor-titlebar">
+                <div class="community-editor-heading">
+                    <div class="community-editor-eyebrow" id="contentBoardBadge">NOTICE</div>
+                    <h1 class="page-title" id="contentEditTitle">콘텐츠 작성</h1>
+                    <p class="community-editor-description" id="contentEditDescription">게시판에 노출될 제목과 본문을 정리합니다.</p>
+                </div>
+                <div class="community-editor-actions">
+                    <button type="button" class="btn btn-secondary" id="btnBackToList">
+                        <i class="fas fa-list me-2"></i>목록
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnSave">
+                        <i class="fas fa-save me-2"></i><span id="btnSaveLabel">저장</span>
+                    </button>
+                    <button type="button" class="btn btn-danger" id="btnDelete" th:if="${id != null}">
+                        <i class="fas fa-trash me-2"></i>삭제
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="mb-3"><input type="text" id="title" class="form-control notion-title" placeholder="제목을 입력하세요"></div>
-        <div class="mb-3"><textarea id="content" class="form-control notion-content" rows="15" placeholder="내용을 입력하세요..."></textarea></div>
+        <div class="row g-4 community-editor-layout">
+            <div class="col-xl-8">
+                <div class="card animate-in community-editor-card">
+                    <div class="card-header community-editor-toolbar">
+                        <div class="community-editor-toolbar-group">
+                            <label for="boardType" class="community-editor-toolbar-label">게시판</label>
+                            <select id="boardType" class="form-select select-auto-width community-editor-select">
+                                <option th:each="type : ${boardTypes}" th:value="${type}" th:text="${type}"></option>
+                            </select>
+                        </div>
+                        <span id="saveStatus" class="community-editor-status"></span>
+                    </div>
+                    <div class="card-body community-editor-body">
+                        <div class="community-editor-field">
+                            <label for="title" class="community-editor-label">제목</label>
+                            <input type="text" id="title" class="form-control notion-title community-editor-title-input" placeholder="제목을 입력하세요">
+                        </div>
+                        <div class="community-editor-divider"></div>
+                        <div class="community-editor-field">
+                            <label for="content" class="community-editor-label">본문</label>
+                            <textarea id="content" class="form-control notion-content community-editor-content-input" rows="15" placeholder="내용을 입력하세요..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-4">
+                <div class="card animate-in community-editor-side-card">
+                    <div class="card-header community-editor-side-header">
+                        <span class="card-title">작성 안내</span>
+                    </div>
+                    <div class="card-body community-editor-side-body">
+                        <div class="community-editor-side-item">
+                            <span class="community-editor-side-label">현재 게시판</span>
+                            <strong id="contentBoardName">공지</strong>
+                        </div>
+                        <div class="community-editor-side-item">
+                            <span class="community-editor-side-label">저장 방식</span>
+                            <strong>수동 저장 + 자동 임시 저장</strong>
+                        </div>
+                        <div class="community-editor-side-item">
+                            <span class="community-editor-side-label">자동 저장 주기</span>
+                            <strong>입력 후 5초</strong>
+                        </div>
+                        <p class="community-editor-side-note" id="contentSideNote">
+                            제목과 본문이 목록 카드와 상세 화면에 그대로 반영됩니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </form>
     </div>
 </main>
@@ -39,5 +103,6 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/content-edit.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => ContentEdit.init());</script>
 </body>
 </html>

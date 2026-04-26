@@ -2,6 +2,7 @@ package com.section.admin.content.controller;
 
 import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.res.ContentListResponse;
+import com.section.admin.content.res.ContentSaveResponse;
 import com.section.common.content.entity.Document;
 import com.section.common.content.service.DocumentService;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,9 @@ public class AdminContentRestController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Void> save(@RequestBody ContentSaveRequest req) {
-        documentService.saveDocument(req.toEntity());
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ContentSaveResponse> save(@RequestBody ContentSaveRequest req) {
+        Document savedDocument = documentService.saveDocument(req.toEntity());
+        return ResponseEntity.ok(ContentSaveResponse.from(savedDocument.getId()));
     }
 
     @DeleteMapping("/delete")

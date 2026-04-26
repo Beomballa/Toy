@@ -19,12 +19,12 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                <li class="breadcrumb-item active">콘텐츠 관리</li>
+                <li class="breadcrumb-item active" id="contentBreadcrumb">콘텐츠 관리</li>
             </ol>
         </nav>
         <div class="page-title-wrapper">
-            <h1 class="page-title">콘텐츠 관리</h1>
-            <button class="btn btn-primary" id="btnNewContent"><i class="fas fa-plus me-2"></i>새 콘텐츠 작성</button>
+            <h1 class="page-title" id="contentPageTitle">콘텐츠 관리</h1>
+            <button class="btn btn-primary" id="btnNewContent"><i class="fas fa-plus me-2"></i><span id="contentCreateLabel">새 콘텐츠 작성</span></button>
         </div>
     </div>
 
@@ -47,5 +47,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/content-list.js"></script>
+<script th:inline="javascript">
+    window.initialContentBoardType = /*[[${boardType}]]*/ 'NOTICE';
+</script>
 </body>
 </html>

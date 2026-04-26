@@ -28,8 +28,8 @@ public class DocumentService {
     }
 
     @Transactional
-    public void saveDocument(Document document) {
-        documentRepository.save(document);
+    public Document saveDocument(Document document) {
+        return documentRepository.save(document);
     }
 
     @Transactional

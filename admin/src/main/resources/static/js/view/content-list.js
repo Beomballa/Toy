@@ -1,12 +1,19 @@
 const ContentList = {
+    boardMeta: {
+        NOTICE: { pageTitle: '콘텐츠 관리', breadcrumb: '콘텐츠 관리', createLabel: '새 공지 작성' },
+        STYLE: { pageTitle: '스타일 피드', breadcrumb: '스타일 피드', createLabel: '새 스타일 피드 작성' },
+        DISCUSS: { pageTitle: '종목 토론방', breadcrumb: '종목 토론방', createLabel: '새 토론 작성' },
+        QNA: { pageTitle: '문의사항', breadcrumb: '문의사항', createLabel: '새 문의 작성' }
+    },
     state: {
         page: 0,
         size: 9,
-        boardType: new URLSearchParams(window.location.search).get('boardType') || 'NOTICE'
+        boardType: window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType') || 'NOTICE'
     },
 
     init() {
         this.setInitialTab();
+        this.updatePageMeta();
         this.bindEvents();
         this.getList();
     },
@@ -34,7 +41,7 @@ const ContentList = {
                 // URL 파라미터 업데이트 (새로고침 없이)
                 const newUrl = `${window.location.pathname}?boardType=${this.state.boardType}`;
                 window.history.pushState({ path: newUrl }, '', newUrl);
-                
+                this.updatePageMeta();
                 this.getList();
             });
         });
@@ -43,6 +50,17 @@ const ContentList = {
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
             location.href = `/admin/content/edit?boardType=${this.state.boardType}`;
         });
+    },
+
+    updatePageMeta() {
+        const meta = this.boardMeta[this.state.boardType] || this.boardMeta.NOTICE;
+        const titleEl = document.getElementById('contentPageTitle');
+        const breadcrumbEl = document.getElementById('contentBreadcrumb');
+        const createLabelEl = document.getElementById('contentCreateLabel');
+
+        if (titleEl) titleEl.textContent = meta.pageTitle;
+        if (breadcrumbEl) breadcrumbEl.textContent = meta.breadcrumb;
+        if (createLabelEl) createLabelEl.textContent = meta.createLabel;
     },
 
     async getList() {

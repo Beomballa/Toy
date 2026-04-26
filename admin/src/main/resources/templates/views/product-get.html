@@ -15,9 +15,9 @@
 <div class="main-container">
     <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-    <main id="main-content" class="detail-main">
-        <div class="detail-scroll-content">
-        <div class="page-header">
+<main id="main-content" class="detail-main">
+        <div class="detail-scroll-content product-detail-page">
+        <div class="page-header product-detail-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/admin">Home</a></li>
@@ -25,19 +25,24 @@
                     <li class="breadcrumb-item active">상품 상세</li>
                 </ol>
             </nav>
-            <div class="page-title-wrapper">
-                <div>
+            <div class="page-title-wrapper product-detail-titlebar">
+                <div class="product-detail-heading">
+                    <div class="product-detail-eyebrow" id="productCategoryChip">Product Detail</div>
                     <h1 class="page-title" id="productTitle">상품 상세</h1>
-                    <div id="statusBadge" class="mt-2"></div>
+                    <div class="product-detail-submeta">
+                        <span class="product-detail-meta-chip" id="brandChip">브랜드 -</span>
+                        <span class="product-detail-meta-chip" id="modelChip">모델 -</span>
+                        <span id="statusBadge"></span>
+                    </div>
                 </div>
-                <div>
-                    <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/admin/products'">
+                <div class="product-detail-actions">
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/admin/products'">
                         <i class="fas fa-list me-2"></i>목록
                     </button>
-                    <button type="button" class="btn btn-secondary me-2" id="btnSearchImage">
+                    <button type="button" class="btn btn-secondary" id="btnSearchImage">
                         <i class="fas fa-image me-2"></i>실제 이미지 보기
                     </button>
-                    <button type="button" class="btn btn-primary me-2" id="btnEdit">
+                    <button type="button" class="btn btn-primary" id="btnEdit">
                         <i class="fas fa-edit me-2"></i>수정
                     </button>
                     <button type="button" class="btn btn-danger" id="btnDelete">
@@ -47,61 +52,113 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row g-4 product-detail-layout">
             <div class="col-lg-5">
-                <div class="card animate-in mb-4">
-                    <div class="card-body p-4 text-center">
-                        <img id="productImage" src="https://via.placeholder.com/500x500?text=Loading..."
-                             class="img-fluid rounded preview-image-contain preview-image-contain-500">
+                <div class="card animate-in product-hero-card">
+                    <div class="card-body product-hero-body">
+                        <div class="product-image-stage">
+                            <img id="productImage" src="https://via.placeholder.com/500x500?text=Loading..."
+                                 class="img-fluid rounded preview-image-contain preview-image-contain-500 product-hero-image">
+                        </div>
+                        <div class="product-hero-caption">
+                            <span class="product-hero-caption-label">대표 이미지</span>
+                            <a id="thumbnailUrlLink" href="#" target="_blank" class="product-hero-link hidden-default">
+                                <i class="fas fa-external-link-alt me-1"></i>이미지 새창 열기
+                            </a>
+                        </div>
                     </div>
                 </div>
-                <div class="card animate-in">
-                    <div class="card-header d-flex justify-content-between">
-                        <span class="card-title">상품 옵션 (사이즈)</span>
-                        <span class="badge bg-primary rounded-pill" id="optionCount">0</span>
+                <div class="card animate-in product-option-card">
+                    <div class="card-header product-section-header">
+                        <span class="card-title">상품 옵션</span>
+                        <span class="product-section-count" id="optionCount">0</span>
                     </div>
-                    <div class="card-body"><div id="optionList" class="d-flex flex-wrap gap-2"></div></div>
+                    <div class="card-body">
+                        <div id="optionList" class="product-option-list"></div>
+                    </div>
                 </div>
             </div>
             <div class="col-lg-7">
-                <div class="card animate-in mb-4">
-                    <div class="card-header"><span class="card-title">기본 정보</span></div>
+                <div class="card animate-in product-summary-card">
                     <div class="card-body">
-                        <table class="table table-borderless">
-                            <colgroup><col class="table-col-label"><col></colgroup>
-                            <tbody>
-                                <tr><th class="text-muted">상품번호</th><td id="productNo" class="fw-bold">-</td></tr>
-                                <tr><th class="text-muted">카테고리</th><td id="categoryName">-</td></tr>
-                                <tr><th class="text-muted">브랜드</th><td id="brandName" class="fw-bold">-</td></tr>
-                                <tr><th class="text-muted">상품명</th><td id="nameKo" class="fw-bold fs-5">-</td></tr>
-                                <tr><th class="text-muted">모델번호</th><td><span id="modelNum" class="badge badge-model">-</span></td></tr>
-                                <tr><th class="text-muted">발매가</th><td id="releasePrice" class="fw-bold text-primary fs-4">-</td></tr>
-                                <tr><th class="text-muted">발매일</th><td id="releaseDt">-</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card animate-in mb-4">
-                    <div class="card-header"><span class="card-title">관리 정보</span></div>
-                    <div class="card-body">
-                        <table class="table table-borderless">
-                            <colgroup><col class="table-col-label"><col></colgroup>
-                            <tbody>
-                                <tr><th class="text-muted">등록일시</th><td id="crtDtm">-</td></tr>
-                                <tr><th class="text-muted">수정일시</th><td id="uptDtm">-</td></tr>
-                                <tr><th class="text-muted">썸네일 URL</th><td><a id="thumbnailUrlLink" href="#" target="_blank" class="text-primary text-decoration-none small"><i class="fas fa-external-link-alt me-1"></i>이미지 새창 열기</a></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="card animate-in">
-                    <div class="card-header"><span class="card-title">실시간 현황</span></div>
-                    <div class="card-body py-4">
-                        <div class="row text-center">
-                            <div class="col-6 border-end"><div class="stat-label text-muted">총 재고량</div><div class="stat-value fs-4 fw-bold" id="totalStockValue">0</div></div>
-                            <div class="col-6"><div class="stat-label text-muted">상태</div><div class="stat-value fs-4 fw-bold text-success" id="statusTextValue">-</div></div>
+                        <div class="product-summary-top">
+                            <div>
+                                <div class="product-summary-label">판매 정보</div>
+                                <div id="releasePrice" class="product-summary-price">-</div>
+                            </div>
+                            <div class="product-summary-side">
+                                <div class="product-summary-side-label">총 재고</div>
+                                <div class="product-summary-side-value" id="totalStockValue">0 개</div>
+                            </div>
+                        </div>
+                        <div class="product-summary-grid">
+                            <div class="product-summary-item">
+                                <span class="product-summary-item-label">상품번호</span>
+                                <strong id="productNo">-</strong>
+                            </div>
+                            <div class="product-summary-item">
+                                <span class="product-summary-item-label">브랜드</span>
+                                <strong id="brandName">-</strong>
+                            </div>
+                            <div class="product-summary-item">
+                                <span class="product-summary-item-label">카테고리</span>
+                                <strong id="categoryName">-</strong>
+                            </div>
+                            <div class="product-summary-item">
+                                <span class="product-summary-item-label">발매일</span>
+                                <strong id="releaseDt">-</strong>
+                            </div>
+                        </div>
+                        <div class="product-summary-name-block">
+                            <div class="product-summary-name-label">상품명</div>
+                            <div id="nameKo" class="product-summary-name">-</div>
                         </div>
                     </div>
+                </div>
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="card animate-in">
+                            <div class="card-header product-section-header"><span class="card-title">기본 정보</span></div>
+                            <div class="card-body">
+                                <div class="product-info-grid">
+                                    <div class="product-info-row">
+                                        <span class="product-info-label">모델번호</span>
+                                        <span class="product-info-value"><span id="modelNum" class="badge badge-model">-</span></span>
+                                    </div>
+                                    <div class="product-info-row">
+                                        <span class="product-info-label">상태</span>
+                                        <span class="product-info-value" id="statusTextValue">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                <div class="card animate-in">
+                    <div class="card-header product-section-header"><span class="card-title">관리 정보</span></div>
+                    <div class="card-body">
+                        <div class="product-info-grid">
+                            <div class="product-info-row">
+                                <span class="product-info-label">등록일시</span>
+                                <span class="product-info-value" id="crtDtm">-</span>
+                            </div>
+                            <div class="product-info-row">
+                                <span class="product-info-label">수정일시</span>
+                                <span class="product-info-value" id="uptDtm">-</span>
+                            </div>
+                            <div class="product-info-row">
+                                <span class="product-info-label">썸네일 URL</span>
+                                <span class="product-info-value">
+                                    <a id="thumbnailUrlLinkInline" href="#" target="_blank" class="product-inline-link hidden-default">
+                                        <i class="fas fa-external-link-alt me-1"></i>이미지 새창 열기
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>

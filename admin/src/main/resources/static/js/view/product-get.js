@@ -84,17 +84,25 @@ const ProductDetail = {
         setText('crtDtm', data.crtDtm);
         setText('uptDtm', data.uptDtm);
         setText('statusTextValue', data.status || 'ACTIVE');
+        setText('brandChip', data.brandName || '브랜드 -');
+        setText('modelChip', data.productModel || '모델 -');
+        setText('productCategoryChip', data.categoryName || 'Product Detail');
 
         const releasePriceEl = document.getElementById('releasePrice');
         if (releasePriceEl) releasePriceEl.textContent = this.formatPrice(data.releasePrice);
 
         const productImage = document.getElementById('productImage');
         const thumbnailUrlLink = document.getElementById('thumbnailUrlLink');
+        const thumbnailUrlLinkInline = document.getElementById('thumbnailUrlLinkInline');
         if (data.thumbnailUrl) {
             if (productImage) productImage.src = data.thumbnailUrl;
             if (thumbnailUrlLink) {
                 thumbnailUrlLink.href = data.thumbnailUrl;
                 thumbnailUrlLink.style.display = 'inline-block';
+            }
+            if (thumbnailUrlLinkInline) {
+                thumbnailUrlLinkInline.href = data.thumbnailUrl;
+                thumbnailUrlLinkInline.style.display = 'inline-flex';
             }
         }
 
@@ -106,10 +114,9 @@ const ProductDetail = {
             if (optionCount) optionCount.textContent = data.options.length;
 
             const optHtml = data.options.map(opt => `
-                <div class="d-inline-block border rounded p-2 me-2 mb-2 bg-light">
-                    <span class="fw-bold text-dark">${opt.optionName}</span>
-                    <hr class="my-1">
-                    <span class="text-primary small">재고: ${opt.stockQty.toLocaleString()}개</span>
+                <div class="product-option-chip">
+                    <span class="product-option-name">${opt.optionName}</span>
+                    <span class="product-option-stock">재고 ${opt.stockQty.toLocaleString()}개</span>
                 </div>
             `).join('');
 
@@ -126,8 +133,7 @@ const ProductDetail = {
         const statusBadge = document.getElementById('statusBadge');
         if (statusBadge) {
             const status = data.status || 'ACTIVE';
-            const statusClass = status === 'ACTIVE' ? 'bg-success' : 'bg-secondary';
-            statusBadge.innerHTML = `<span class="badge ${statusClass} fs-6">${status}</span>`;
+            statusBadge.innerHTML = `<span class="product-status-badge status-${status.toLowerCase()}">${status}</span>`;
         }
     },
 

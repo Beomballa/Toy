@@ -42,3 +42,10 @@ Thumbs.db
 
 # Log files
 *.log
+
+# Local environment overrides
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml

@@ -1,8 +1,9 @@
 package com.section.admin.brand.controller;
 
 import com.section.admin.brand.req.BrandSaveRequest;
+import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.service.AdminBrandService;
-import com.section.common.commerce.entity.Brand;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,17 +18,17 @@ public class AdminBrandRestController {
     private final AdminBrandService adminBrandService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<Brand>> getList() {
+    public ResponseEntity<List<BrandResponse>> getList() {
         return ResponseEntity.ok(adminBrandService.getBrandList());
     }
 
     @GetMapping("/get")
-    public ResponseEntity<Brand> getDetail(@RequestParam("no") Long brandNo) {
+    public ResponseEntity<BrandResponse> getDetail(@RequestParam("no") Long brandNo) {
         return ResponseEntity.ok(adminBrandService.getBrand(brandNo));
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Void> save(@RequestBody BrandSaveRequest req) {
+    public ResponseEntity<Void> save(@Valid @RequestBody BrandSaveRequest req) {
         adminBrandService.saveBrand(req);
         return ResponseEntity.ok().build();
     }

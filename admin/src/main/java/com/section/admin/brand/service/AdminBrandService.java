@@ -1,6 +1,7 @@
 package com.section.admin.brand.service;
 
 import com.section.admin.brand.req.BrandSaveRequest;
+import com.section.admin.brand.res.BrandResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Brand;
@@ -18,11 +19,17 @@ public class AdminBrandService {
 
     private final BrandRepository brandRepository;
 
-    public List<Brand> getBrandList() {
-        return brandRepository.findAll();
+    public List<BrandResponse> getBrandList() {
+        return brandRepository.findAll().stream()
+                .map(BrandResponse::from)
+                .toList();
     }
 
-    public Brand getBrand(Long brandNo) {
+    public BrandResponse getBrand(Long brandNo) {
+        return BrandResponse.from(getBrandEntity(brandNo));
+    }
+
+    public Brand getBrandEntity(Long brandNo) {
         return brandRepository.findById(brandNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.BRAND_NOT_FOUND));
     }
@@ -30,8 +37,8 @@ public class AdminBrandService {
     @Transactional
     public void saveBrand(BrandSaveRequest req) {
         if (req.brandNo() != null) {
-            Brand brand = getBrand(req.brandNo());
-            brand.update(req.nameKo(), req.nameEn(), req.logoUrl(), req.isActive());
+            Brand brand = getBrandEntity(req.brandNo());
+            brand.update(req.nameKo(), req.nameEn(), req.logoUrl(), req.isActive() != null ? req.isActive() : "Y");
         } else {
             brandRepository.save(Brand.builder()
                     .nameKo(req.nameKo())

@@ -1,6 +1,7 @@
 package com.section.admin.category.service;
 
 import com.section.admin.category.req.CategorySaveRequest;
+import com.section.admin.category.res.CategoryResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Category;
@@ -18,15 +19,19 @@ public class AdminCategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    public List<Category> getCategoryListByDepth(Integer depth) {
-        return categoryRepository.findByDepth(depth);
+    public List<CategoryResponse> getCategoryListByDepth(Integer depth) {
+        return categoryRepository.findByDepth(depth).stream()
+                .map(CategoryResponse::from)
+                .toList();
     }
 
-    public List<Category> getSubCategories(Long parentNo) {
-        return categoryRepository.findByParentNo(parentNo);
+    public List<CategoryResponse> getSubCategories(Long parentNo) {
+        return categoryRepository.findByParentNo(parentNo).stream()
+                .map(CategoryResponse::from)
+                .toList();
     }
 
-    public Category getCategory(Long categoryNo) {
+    public Category getCategoryEntity(Long categoryNo) {
         return categoryRepository.findById(categoryNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CATEGORY_NOT_FOUND));
     }
@@ -34,14 +39,14 @@ public class AdminCategoryService {
     @Transactional
     public void saveCategory(CategorySaveRequest req) {
         if (req.categoryNo() != null) {
-            Category category = getCategory(req.categoryNo());
-            category.update(req.name(), req.isActive());
+            Category category = getCategoryEntity(req.categoryNo());
+            category.update(req.name(), req.isActive() != null ? req.isActive() : "Y");
         } else {
             categoryRepository.save(Category.builder()
                     .parentNo(req.parentNo())
                     .name(req.name())
                     .depth(req.depth())
-                    .isActive(req.isActive())
+                    .isActive(req.isActive() != null ? req.isActive() : "Y")
                     .build());
         }
     }

@@ -20,7 +20,8 @@
 <div class="main-container">
     <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-    <main id="main-content">
+    <main id="main-content" class="detail-main">
+        <div class="detail-scroll-content">
         <div class="page-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
@@ -37,6 +38,9 @@
                 <div>
                     <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/admin/products'">
                         <i class="fas fa-list me-2"></i>목록
+                    </button>
+                    <button type="button" class="btn btn-secondary me-2" id="btnSearchImage">
+                        <i class="fas fa-image me-2"></i>실제 이미지 보기
                     </button>
                     <button type="button" class="btn btn-primary me-2" id="btnEdit">
                         <i class="fas fa-edit me-2"></i>수정
@@ -105,6 +109,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </main>
 </div>

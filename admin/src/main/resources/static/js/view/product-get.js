@@ -1,5 +1,6 @@
 const ProductDetail = {
     productNo: null,
+    productData: null,
 
     init() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -34,6 +35,18 @@ const ProductDetail = {
                 this.deleteProduct();
             });
         }
+
+        const btnSearchImage = document.getElementById('btnSearchImage');
+        if (btnSearchImage) {
+            btnSearchImage.addEventListener('click', () => {
+                if (!this.productData) return;
+                CommonJS.openImageSearch(
+                    this.productData.productName,
+                    this.productData.productModel,
+                    this.productData.brandName
+                );
+            });
+        }
     },
 
     async loadProductDetail() {
@@ -54,6 +67,8 @@ const ProductDetail = {
     },
 
     renderProduct(data) {
+        this.productData = data;
+
         const setText = (id, value) => {
             const el = document.getElementById(id);
             if (el) el.textContent = value || '-';

@@ -1,0 +1,10 @@
+<svg width="1200" height="480" viewBox="0 0 1200 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="480" rx="28" fill="#111827"/>
+  <rect x="40" y="40" width="1120" height="400" rx="24" fill="#1F2937"/>
+  <circle cx="196" cy="240" r="88" fill="#F59E0B" fill-opacity="0.9"/>
+  <circle cx="1006" cy="138" r="56" fill="#60A5FA" fill-opacity="0.9"/>
+  <circle cx="930" cy="328" r="92" fill="#34D399" fill-opacity="0.85"/>
+  <text x="110" y="208" fill="#F9FAFB" font-family="Arial, sans-serif" font-size="54" font-weight="700">TOY ADMIN</text>
+  <text x="110" y="274" fill="#D1D5DB" font-family="Arial, sans-serif" font-size="28" font-weight="500">Banner Preview</text>
+  <text x="110" y="320" fill="#9CA3AF" font-family="Arial, sans-serif" font-size="22" font-weight="500">Static placeholder asset for local development</text>
+</svg>

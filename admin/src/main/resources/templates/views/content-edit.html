@@ -19,7 +19,8 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content detail-main">
+    <div class="detail-scroll-content">
     <form id="contentEditForm">
         <input type="hidden" id="contentId" th:value="${id}">
         <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
@@ -38,6 +39,7 @@
         <div class="mb-3"><input type="text" id="title" class="form-control notion-title" placeholder="제목을 입력하세요"></div>
         <div class="mb-3"><textarea id="content" class="form-control notion-content" rows="15" placeholder="내용을 입력하세요..."></textarea></div>
     </form>
+    </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

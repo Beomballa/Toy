@@ -49,6 +49,16 @@ const ProductList = {
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
                 location.href = `/admin/products/get?no=${productNo}`;
+                return;
+            }
+
+            const imageSearchBtn = e.target.closest('.btn-image-search');
+            if (imageSearchBtn) {
+                CommonJS.openImageSearch(
+                    imageSearchBtn.dataset.productName,
+                    imageSearchBtn.dataset.modelNum,
+                    imageSearchBtn.dataset.brandName
+                );
             }
         });
 
@@ -139,6 +149,14 @@ const ProductList = {
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>
                 <td class="text-end pe-4">
+                    <button type="button"
+                            class="btn btn-icon btn-secondary me-1 btn-image-search"
+                            data-product-name="${item.productName || ''}"
+                            data-model-num="${item.productModel || ''}"
+                            data-brand-name="${item.brandName || ''}"
+                            title="실제 이미지 검색">
+                        <i class="fas fa-image"></i>
+                    </button>
                     <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/admin/products/update?no=${item.productNo}'">
                         <i class="fas fa-edit"></i>
                     </button>

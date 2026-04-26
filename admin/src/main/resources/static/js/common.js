@@ -131,6 +131,20 @@ let CommonJS = {
             fallback.innerHTML = fallbackText ? `<span>${fallbackText.substring(0,1)}</span>` : '<i class="fas fa-image"></i>';
             parent.appendChild(fallback);
         }
+    },
+
+    buildImageSearchUrl: function(productName = '', modelNum = '', brandName = '') {
+        const query = [brandName, productName, modelNum]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+
+        return `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(query)}`;
+    },
+
+    openImageSearch: function(productName = '', modelNum = '', brandName = '') {
+        const url = this.buildImageSearchUrl(productName, modelNum, brandName);
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 }
 

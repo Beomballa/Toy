@@ -1,7 +1,9 @@
 package com.section.admin.user.controller;
 
+import com.section.admin.user.req.AdminUserSaveRequest;
+import com.section.admin.user.res.AdminUserListResponse;
 import com.section.admin.user.service.AdminUserService;
-import com.section.common.system.entity.AdminUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,13 +18,13 @@ public class AdminUserRestController {
     private final AdminUserService adminUserService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<AdminUser>> getList() {
+    public ResponseEntity<List<AdminUserListResponse>> getList() {
         return ResponseEntity.ok(adminUserService.getAdminList());
     }
 
     @PostMapping("/save")
-    public ResponseEntity<Void> save(@RequestBody AdminUser adminUser) {
-        adminUserService.saveAdmin(adminUser);
+    public ResponseEntity<Void> save(@Valid @RequestBody AdminUserSaveRequest req) {
+        adminUserService.saveAdmin(req);
         return ResponseEntity.ok().build();
     }
 

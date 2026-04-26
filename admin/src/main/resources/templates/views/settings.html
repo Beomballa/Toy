@@ -199,10 +199,9 @@
                     throw new Error(err.message || '저장 실패');
                 }
 
-                CommonJS.alert('저장되었습니다.', '성공', 'success', () => {
-                    this.modal.hide();
-                    this.getList();
-                });
+                await CommonJS.alert('저장되었습니다.', '성공', 'success');
+                this.modal.hide();
+                this.getList();
             } catch (err) {
                 CommonJS.alert(err.message, '오류', 'error');
             }

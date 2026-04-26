@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "SY_APPROVAL_DOCUMENT")
+@Table(name = "sy_approval_document")
 public class ApprovalDocument extends BaseEntity {
 
     @Id

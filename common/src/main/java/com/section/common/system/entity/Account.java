@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-@Table(name = "SY_ACCOUNT")
+@Table(name = "sy_account")
 public class Account extends BaseEntity {
 
     @Id

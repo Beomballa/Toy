@@ -139,4 +139,18 @@ public class AdminOrderService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         order.startDelivery(deliveryCompany, trackingNum);
     }
+
+    @Transactional
+    public void completeDelivery(Long orderNo) {
+        Orders order = orderRepository.findById(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.completeDelivery();
+    }
+
+    @Transactional
+    public void cancelOrder(Long orderNo) {
+        Orders order = orderRepository.findById(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        order.cancel();
+    }
 }

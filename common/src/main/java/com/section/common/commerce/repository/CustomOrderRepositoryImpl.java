@@ -166,17 +166,17 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     @Override
     public List<Map<String, Object>> getTopSellingProducts(int limit) {
         return jpaQueryFactory
-                .select(orderItem.productName, orderItem.count.sum())
+                .select(orderItem.productName, orderItem.count.sumLong())
                 .from(orderItem)
                 .groupBy(orderItem.productName)
-                .orderBy(orderItem.count.sum().desc())
+                .orderBy(orderItem.count.sumLong().desc())
                 .limit(limit)
                 .fetch()
                 .stream()
                 .map(tuple -> {
                     Map<String, Object> map = new HashMap<>();
                     map.put("name", tuple.get(orderItem.productName));
-                    map.put("count", tuple.get(orderItem.count.sum()));
+                    map.put("count", tuple.get(orderItem.count.sumLong()));
                     return map;
                 }).toList();
     }

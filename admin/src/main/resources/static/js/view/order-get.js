@@ -13,8 +13,9 @@ const OrderDetail = {
     },
 
     bindEvents() {
-        document.getElementById('btnUpdateStatus')?.addEventListener('click', () => this.updateStatus());
         document.getElementById('btnSaveDelivery')?.addEventListener('click', () => this.saveDelivery());
+        document.getElementById('btnCompleteDelivery')?.addEventListener('click', () => this.completeDelivery());
+        document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
     },
 
     async getDetail() {
@@ -44,21 +45,30 @@ const OrderDetail = {
         badge.textContent = data.statusDesc;
         badge.className = 'badge rounded-pill ' + this.getStatusClass(data.statusCode);
 
-        // 상태 변경 셀렉트박스 초기값
-        document.getElementById('updateStatusSelect').value = data.statusCode;
-
-        // 배송 섹션 제어
+        // 버튼 노출 제어
+        const btnCancel = document.getElementById('btnCancelOrder');
+        const btnComplete = document.getElementById('btnCompleteDelivery');
         const inputCard = document.getElementById('deliveryInputCard');
         const infoCard = document.getElementById('deliveryInfoCard');
-        
+
+        // 취소 버튼: 배송 시작 전(ORDERED, PAID)일 때만 노출
+        btnCancel.style.display = (data.statusCode === 'ORDERED' || data.statusCode === 'PAID') ? 'block' : 'none';
+
         if (data.statusCode === 'PAID') {
             inputCard.style.display = 'block';
             infoCard.style.display = 'none';
-        } else if (data.deliveryCompany && data.trackingNum) {
+        } else if (data.statusCode === 'SHIPPED') {
             inputCard.style.display = 'none';
             infoCard.style.display = 'block';
-            document.getElementById('displayCompany').innerText = data.deliveryCompany;
-            document.getElementById('displayTracking').innerText = data.trackingNum;
+            btnComplete.style.display = 'block'; // 배송 중일 때만 완료 버튼 노출
+            document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
+            document.getElementById('displayTracking').innerText = data.trackingNum || '-';
+        } else if (data.statusCode === 'DELIVERED') {
+            inputCard.style.display = 'none';
+            infoCard.style.display = 'block';
+            btnComplete.style.display = 'none';
+            document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
+            document.getElementById('displayTracking').innerText = data.trackingNum || '-';
         } else {
             inputCard.style.display = 'none';
             infoCard.style.display = 'none';
@@ -102,30 +112,47 @@ const OrderDetail = {
         }
     },
 
-    async updateStatus() {
-        const status = document.getElementById('updateStatusSelect').value;
-        const confirm = await CommonJS.confirm('주문 상태를 변경하시겠습니까?');
-        
+    async completeDelivery() {
+        const confirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
         if (!confirm) return;
 
         try {
-            const res = await fetch('/api/admin/orders/status', {
-                method: 'PATCH',
+            const res = await fetch('/api/admin/orders/delivery-complete', {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orderNo: this.orderNo,
-                    status: status
-                })
+                body: JSON.stringify({ orderNo: this.orderNo })
             });
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            CommonJS.alert('상태가 변경되었습니다.', '성공', 'success', () => {
-                this.getDetail(); // 다시 불러오기
+            CommonJS.alert('배송 완료 처리가 되었습니다.', '성공', 'success', () => {
+                this.getDetail();
             });
         } catch (err) {
-            console.error('상태 변경 실패:', err);
-            CommonJS.alert('상태 변경 중 오류가 발생했습니다.', '오류', 'error');
+            console.error('배송 완료 처리 실패:', err);
+            CommonJS.alert('배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
+        }
+    },
+
+    async cancelOrder() {
+        const confirm = await CommonJS.confirm('주문을 취소하시겠습니까?');
+        if (!confirm) return;
+
+        try {
+            const res = await fetch('/api/admin/orders/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderNo: this.orderNo })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            CommonJS.alert('주문이 취소되었습니다.', '성공', 'success', () => {
+                this.getDetail();
+            });
+        } catch (err) {
+            console.error('주문 취소 실패:', err);
+            CommonJS.alert('주문 취소 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 

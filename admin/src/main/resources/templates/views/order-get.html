@@ -14,6 +14,8 @@
         .product-img { width: 64px; height: 64px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; }
         .badge-ordered { background-color: #ebf5ff; color: #1e429f; }
         .badge-paid { background-color: #def7ec; color: #03543f; }
+        .badge-shipped { background-color: #fef3c7; color: #92400e; }
+        .badge-delivered { background-color: #e0e7ff; color: #3730a3; }
         .badge-cancelled { background-color: #fde8e8; color: #9b1c1c; }
     </style>
 </head>
@@ -39,12 +41,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <select id="updateStatusSelect" class="form-select" style="width: auto;">
-                    <option value="ORDERED">주문완료</option>
-                    <option value="PAID">결제완료</option>
-                    <option value="CANCELLED">주문취소</option>
-                </select>
-                <button type="button" class="btn btn-primary" id="btnUpdateStatus">상태 변경</button>
+                <button type="button" class="btn btn-outline-danger" id="btnCancelOrder" style="display: none;">주문 취소</button>
                 <button type="button" class="btn btn-secondary" onclick="location.href='/admin/orders/list'">목록으로</button>
             </div>
         </div>
@@ -114,7 +111,10 @@
 
             <!-- 배송 정보 표시 (이미 배송 중이거나 완료된 경우) -->
             <div class="card animate-in mb-4" id="deliveryInfoCard" style="display: none;">
-                <div class="card-header"><span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span></div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span>
+                    <button type="button" class="btn btn-sm btn-success" id="btnCompleteDelivery" style="display: none;">배송 완료 처리</button>
+                </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-6">

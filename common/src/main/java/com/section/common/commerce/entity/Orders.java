@@ -62,10 +62,6 @@ public class Orders extends BaseEntity {
         this.status = newStatus.name();
     }
 
-    public void cancel() {
-        this.status = OrderStatus.CANCELLED.name();
-    }
-
     public void pay() {
         this.status = OrderStatus.PAID.name();
     }
@@ -74,8 +70,31 @@ public class Orders extends BaseEntity {
      * 배송 시작 처리
      */
     public void startDelivery(String deliveryCompany, String trackingNum) {
+        if (!OrderStatus.PAID.name().equals(this.status)) {
+            throw new IllegalStateException("결제 완료된 주문만 배송을 시작할 수 있습니다.");
+        }
         this.deliveryCompany = deliveryCompany;
         this.trackingNum = trackingNum;
         this.status = OrderStatus.SHIPPED.name();
+    }
+
+    /**
+     * 배송 완료 처리
+     */
+    public void completeDelivery() {
+        if (!OrderStatus.SHIPPED.name().equals(this.status)) {
+            throw new IllegalStateException("배송 중인 주문만 배송 완료 처리가 가능합니다.");
+        }
+        this.status = OrderStatus.DELIVERED.name();
+    }
+
+    /**
+     * 주문 취소 처리
+     */
+    public void cancel() {
+        if (OrderStatus.SHIPPED.name().equals(this.status) || OrderStatus.DELIVERED.name().equals(this.status)) {
+            throw new IllegalStateException("배송이 시작된 주문은 취소할 수 없습니다.");
+        }
+        this.status = OrderStatus.CANCELLED.name();
     }
 }

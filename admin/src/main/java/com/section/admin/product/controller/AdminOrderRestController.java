@@ -45,4 +45,16 @@ public class AdminOrderRestController {
         adminOrderService.startDelivery(orderNo, company, trackingNum);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/delivery-complete")
+    public ResponseEntity<Void> completeDelivery(@RequestBody Map<String, Long> params) {
+        adminOrderService.completeDelivery(params.get("orderNo"));
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/cancel")
+    public ResponseEntity<Void> cancelOrder(@RequestBody Map<String, Long> params) {
+        adminOrderService.cancelOrder(params.get("orderNo"));
+        return ResponseEntity.ok().build();
+    }
 }

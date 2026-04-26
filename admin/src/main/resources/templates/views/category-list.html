@@ -9,13 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
-    <style>
-        .category-item { cursor: pointer; transition: all 0.2s; border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; border: 1px solid transparent; background: #f9fafb; }
-        .category-item:hover { background-color: #f3f4f6; transform: translateX(4px); }
-        .category-item.active { background-color: #eff6ff; border-color: #bfdbfe; font-weight: 600; color: #1d4ed8; }
-        .badge-y { background: rgba(49, 196, 141, 0.1); color: #057a55; }
-        .badge-n { background: rgba(240, 82, 82, 0.1); color: #c81e1e; }
-    </style>
 </head>
 <body>
 
@@ -39,7 +32,7 @@
                     <h6 class="card-title mb-0">대분류 (1차)</h6>
                     <button class="btn btn-sm btn-outline-primary" onclick="CategoryList.openModal(1)">추가</button>
                 </div>
-                <div class="card-body" id="depth1Body" style="min-height: 500px; max-height: 700px; overflow-y: auto;">
+                <div class="card-body panel-scroll-y" id="depth1Body">
                     <div class="text-center py-5 text-muted">데이터를 불러오는 중입니다...</div>
                 </div>
             </div>
@@ -52,16 +45,16 @@
                         <i class="fas fa-plus me-1"></i>추가
                     </button>
                 </div>
-                <div class="card-body p-0" id="depth2Body" style="min-height: 500px;">
+                <div class="card-body p-0 panel-min-h-500" id="depth2Body">
                     <div class="text-center py-5 text-muted" id="depth2EmptyMessage">대분류를 선택하면 하위 카테고리가 표시됩니다.</div>
                     <div class="table-responsive d-none" id="depth2TableWrapper">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="ps-4" style="width: 80px;">No</th>
+                                    <th class="ps-4 table-col-80">No</th>
                                     <th>카테고리명</th>
-                                    <th class="text-center" style="width: 120px;">상태</th>
-                                    <th class="text-end pe-4" style="width: 150px;">관리</th>
+                                    <th class="text-center table-col-120">상태</th>
+                                    <th class="text-end pe-4 table-col-150">관리</th>
                                 </tr>
                             </thead>
                             <tbody id="depth2ListBody"></tbody>
@@ -80,7 +73,7 @@
             <div class="modal-body">
                 <form id="categoryForm">
                     <input type="hidden" id="categoryNo"><input type="hidden" id="parentNo"><input type="hidden" id="depth">
-                    <div class="mb-3" id="parentNameWrapper" style="display: none;"><label class="form-label text-muted small">상위 카테고리</label><div id="parentDisplay" class="fw-bold"></div></div>
+                    <div class="mb-3 hidden-default" id="parentNameWrapper"><label class="form-label text-muted small">상위 카테고리</label><div id="parentDisplay" class="fw-bold"></div></div>
                     <div class="mb-3"><label class="form-label fw-bold">카테고리명</label><input type="text" id="categoryName" class="form-control" required></div>
                     <div class="mb-3">
                         <label class="form-label fw-bold">사용 여부</label>

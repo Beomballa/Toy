@@ -94,9 +94,9 @@
                                     <thead>
                                         <tr>
                                             <th>옵션명 (사이즈 등)</th>
-                                            <th style="width: 150px;">추가 금액</th>
-                                            <th style="width: 150px;">재고 수량</th>
-                                            <th style="width: 80px;">관리</th>
+                                            <th class="table-col-150">추가 금액</th>
+                                            <th class="table-col-150">재고 수량</th>
+                                            <th class="table-col-80">관리</th>
                                         </tr>
                                     </thead>
                                     <tbody id="optionTableBody"></tbody>
@@ -114,8 +114,8 @@
                                 <label class="form-label fw-bold">이미지 URL</label>
                                 <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl">
                             </div>
-                            <div id="imagePreview" class="bg-light rounded d-flex align-items-center justify-content-center border" style="height: 300px;">
-                                <img src="" id="previewImage" class="img-fluid d-none" style="max-height: 100%;" alt="상품 미리보기">
+                            <div id="imagePreview" class="bg-light rounded d-flex align-items-center justify-content-center border preview-frame-300">
+                                <img src="" id="previewImage" class="img-fluid d-none preview-image-contain preview-image-contain-300" alt="상품 미리보기">
                                 <span id="previewText" class="text-muted">이미지 미리보기</span>
                             </div>
                             <div class="preview-info mt-4">

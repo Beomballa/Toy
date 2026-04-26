@@ -9,14 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
-    <style>
-        .badge-ordered { background-color: #ebf5ff; color: #1e429f; }
-        .badge-paid { background-color: #def7ec; color: #03543f; }
-        .badge-shipped { background-color: #fef3c7; color: #92400e; }
-        .badge-delivered { background-color: #e1effe; color: #1e429f; }
-        .badge-cancelled { background-color: #fde8e8; color: #9b1c1c; }
-        .order-id { font-family: 'Monaco', monospace; font-weight: 600; color: #2563eb; }
-    </style>
 </head>
 <body>
 
@@ -73,7 +65,7 @@
                         <input type="text" id="searchKeyword" class="form-control" placeholder="주문번호, 주문자명 검색">
                     </div>
                 </div>
-                <div class="filter-item" style="flex: 0 0 auto;">
+                <div class="filter-item flex-fixed-auto">
                     <button class="btn btn-primary w-100" type="button" id="btnFilter">
                         <i class="fas fa-filter me-2"></i>필터 적용
                     </button>

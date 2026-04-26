@@ -9,11 +9,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/product.css">
   <link rel="stylesheet" href="/css/common.css">
-  <style>
-      .badge-active { background-color: #dcfce7; color: #166534; }
-      .badge-model { background-color: #f3f4f6; color: #374151; font-weight: 500; }
-      .stat-label { font-size: 0.85rem; margin-bottom: 5px; }
-  </style>
 </head>
 <body>
 
@@ -57,7 +52,7 @@
                 <div class="card animate-in mb-4">
                     <div class="card-body p-4 text-center">
                         <img id="productImage" src="https://via.placeholder.com/500x500?text=Loading..."
-                             class="img-fluid rounded" style="max-height: 500px; object-fit: contain; border: 1px solid #E5E7EB;">
+                             class="img-fluid rounded preview-image-contain preview-image-contain-500">
                     </div>
                 </div>
                 <div class="card animate-in">
@@ -73,7 +68,7 @@
                     <div class="card-header"><span class="card-title">기본 정보</span></div>
                     <div class="card-body">
                         <table class="table table-borderless">
-                            <colgroup><col style="width: 150px;"><col></colgroup>
+                            <colgroup><col class="table-col-label"><col></colgroup>
                             <tbody>
                                 <tr><th class="text-muted">상품번호</th><td id="productNo" class="fw-bold">-</td></tr>
                                 <tr><th class="text-muted">카테고리</th><td id="categoryName">-</td></tr>
@@ -90,7 +85,7 @@
                     <div class="card-header"><span class="card-title">관리 정보</span></div>
                     <div class="card-body">
                         <table class="table table-borderless">
-                            <colgroup><col style="width: 150px;"><col></colgroup>
+                            <colgroup><col class="table-col-label"><col></colgroup>
                             <tbody>
                                 <tr><th class="text-muted">등록일시</th><td id="crtDtm">-</td></tr>
                                 <tr><th class="text-muted">수정일시</th><td id="uptDtm">-</td></tr>

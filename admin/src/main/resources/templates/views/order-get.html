@@ -9,15 +9,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/product.css">
     <link rel="stylesheet" href="/css/common.css">
-    <style>
-        .order-id-display { font-family: 'Monaco', monospace; font-weight: 600; color: #2563eb; font-size: 1.25rem; }
-        .product-img { width: 64px; height: 64px; object-fit: contain; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .badge-ordered { background-color: #ebf5ff; color: #1e429f; }
-        .badge-paid { background-color: #def7ec; color: #03543f; }
-        .badge-shipped { background-color: #fef3c7; color: #92400e; }
-        .badge-delivered { background-color: #e0e7ff; color: #3730a3; }
-        .badge-cancelled { background-color: #fde8e8; color: #9b1c1c; }
-    </style>
 </head>
 <body>
 
@@ -42,7 +33,7 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
-                <button type="button" class="btn btn-outline-danger" id="btnCancelOrder" style="display: none;">주문 취소</button>
+                <button type="button" class="btn btn-outline-danger hidden-default" id="btnCancelOrder">주문 취소</button>
                 <button type="button" class="btn btn-secondary" onclick="location.href='/admin/orders/list'">목록으로</button>
             </div>
         </div>
@@ -76,7 +67,7 @@
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
-                                <tr><th class="ps-4" style="width: 100px;">이미지</th><th>상품 정보</th><th class="text-center">수량</th><th class="text-end pe-4">금액</th></tr>
+                                <tr><th class="ps-4 table-col-100">이미지</th><th>상품 정보</th><th class="text-center">수량</th><th class="text-end pe-4">금액</th></tr>
                             </thead>
                             <tbody id="orderItemsTableBody"></tbody>
                         </table>
@@ -85,7 +76,7 @@
             </div>
 
             <!-- 배송 정보 입력 (결제완료 상태일 때 노출) -->
-            <div class="card animate-in mb-4" id="deliveryInputCard" style="display: none;">
+            <div class="card animate-in mb-4 hidden-default" id="deliveryInputCard">
                 <div class="card-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
                 <div class="card-body">
                     <form id="deliveryForm" class="row g-3">
@@ -111,10 +102,10 @@
             </div>
 
             <!-- 배송 정보 표시 (이미 배송 중이거나 완료된 경우) -->
-            <div class="card animate-in mb-4" id="deliveryInfoCard" style="display: none;">
+            <div class="card animate-in mb-4 hidden-default" id="deliveryInfoCard">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span>
-                    <button type="button" class="btn btn-sm btn-success" id="btnCompleteDelivery" style="display: none;">배송 완료 처리</button>
+                    <button type="button" class="btn btn-sm btn-success hidden-default" id="btnCompleteDelivery">배송 완료 처리</button>
                 </div>
                 <div class="card-body">
                     <div class="row">

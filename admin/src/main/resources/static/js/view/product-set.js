@@ -85,44 +85,40 @@ const ProductCreate = {
         const optionId = this.optionCount;
 
         const optionHtml = `
-            <div class="option-item mb-2" data-option-id="${optionId}">
-                <div class="row g-2 align-items-center">
-                    <div class="col-sm-6">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted small">사이즈</span>
-                            <input type="text" class="form-control option-name" placeholder="예: 250" required>
-                        </div>
+            <tr class="option-item" data-option-id="${optionId}">
+                <td>
+                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" required>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control option-price" placeholder="0" min="0" value="0" required>
+                        <span class="input-group-text">원</span>
                     </div>
-                    <div class="col-sm-5">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted small">수량</span>
-                            <input type="number" class="form-control option-cnt" placeholder="0" min="0" value="0" required>
-                            <span class="input-group-text bg-light text-muted small">개</span>
-                        </div>
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input type="number" class="form-control option-cnt" placeholder="0" min="0" value="0" required>
+                        <span class="input-group-text">개</span>
                     </div>
-                    <div class="col-sm-1 text-end">
-                        <button type="button" class="btn btn-outline-danger btn-remove-option w-100" data-option-id="${optionId}">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-option" data-option-id="${optionId}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
         `;
 
-        const optionList = document.getElementById('optionList');
-        if (this.optionCount === 1) optionList.innerHTML = '';
-        optionList.insertAdjacentHTML('beforeend', optionHtml);
+        const tbody = document.getElementById('optionTableBody');
+        if (this.optionCount === 1) tbody.innerHTML = '';
+        tbody.insertAdjacentHTML('beforeend', optionHtml);
 
-        const removeBtn = optionList.querySelector(`[data-option-id="${optionId}"].btn-remove-option`);
-        removeBtn.addEventListener('click', (e) => {
-            const id = e.currentTarget.getAttribute('data-option-id');
-            document.querySelector(`.option-item[data-option-id="${id}"]`).remove();
+        const row = tbody.querySelector(`tr[data-option-id="${optionId}"]`);
+        row.querySelector('.btn-remove-option').addEventListener('click', () => {
+            row.remove();
             if (document.querySelectorAll('.option-item').length === 0) {
-                document.getElementById('optionList').innerHTML = `
-                    <div class="alert alert-info mb-0">
-                        <i class="fas fa-info-circle me-2"></i>
-                        상품 사이즈 옵션과 수량을 추가해주세요.
-                    </div>
+                tbody.innerHTML = `
+                    <tr><td colspan="4" class="text-center py-4 text-muted"><i class="fas fa-info-circle me-2"></i>상품 사이즈 옵션을 추가해주세요.</td></tr>
                 `;
                 this.optionCount = 0;
             }
@@ -150,9 +146,14 @@ const ProductCreate = {
         const options = [];
         document.querySelectorAll('.option-item').forEach(input => {
             const nameInput = input.querySelector('.option-name').value.trim();
-            const cntInput = parseInt(input.querySelector('.option-cnt').value);
+            const cntInput = parseInt(input.querySelector('.option-cnt').value) || 0;
+            const priceInput = parseInt(input.querySelector('.option-price').value) || 0;
             if(nameInput){
-                options.push({ optionName: nameInput, stockCnt: cntInput || 0 });
+                options.push({ 
+                    optionName: nameInput, 
+                    stockCnt: cntInput,
+                    additionalPrice: priceInput
+                });
             }
         });
 

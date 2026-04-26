@@ -24,7 +24,7 @@ const ProductDetail = {
         const btnEdit = document.getElementById('btnEdit');
         if (btnEdit) {
             btnEdit.addEventListener('click', () => {
-                window.location.href = `/product/update?no=${this.productNo}`;
+                window.location.href = `/admin/products/update?no=${this.productNo}`;
             });
         }
 

@@ -58,7 +58,7 @@ const ProductUpdate = {
 
     async loadProductData() {
         try {
-            const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
+            const response = await fetch(`/api/admin/admin/products/get?no=${this.productNo}`);
             if (!response.ok) throw new Error('상품 정보를 불러오는데 실패했습니다.');
 
             const data = await response.json();
@@ -204,7 +204,7 @@ const ProductUpdate = {
         };
 
         try {
-            const response = await fetch('/api/admin/product/update', {
+            const response = await fetch('/api/admin/admin/products/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
@@ -212,7 +212,7 @@ const ProductUpdate = {
 
             if (response.ok) {
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
-                window.location.href = `/product/get?no=${this.productNo}`;
+                window.location.href = `/admin/products/get?no=${this.productNo}`;
             } else {
                 const err = await response.json();
                 await CommonJS.alert('수정 실패: ' + (err.message || '알 수 없는 오류'), '오류', 'error');

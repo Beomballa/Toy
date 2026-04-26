@@ -13,7 +13,7 @@ const ProductList = {
         this._initAnimations();
         this.getList(); // 초기 로드
 
-        document.getElementById('new-product')?.addEventListener('click', () => location.href = '/product/set');
+        document.getElementById('new-product')?.addEventListener('click', () => location.href = '/admin/products/set');
         document.getElementById('main-logo')?.addEventListener('click', () => location.href = '/admin/products');
     },
 
@@ -48,7 +48,7 @@ const ProductList = {
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
-                location.href = `/product/get?no=${productNo}`;
+                location.href = `/admin/products/get?no=${productNo}`;
             }
         });
 
@@ -139,7 +139,7 @@ const ProductList = {
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>
                 <td class="text-end pe-4">
-                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/product/update?no=${item.productNo}'">
+                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/admin/products/update?no=${item.productNo}'">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button" class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">

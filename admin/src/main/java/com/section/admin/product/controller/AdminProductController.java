@@ -15,15 +15,15 @@ import org.springframework.web.servlet.ModelAndView;
 @Slf4j
 @Controller
 @RequiredArgsConstructor
-@RequestMapping("/product")
+@RequestMapping({"/admin/products", "/product"})
 public class AdminProductController {
 
     private final AdminProductService adminProductService;
 
     /**
-     * 본인 작성 문서 조회
+     * 상품 목록 조회
      * */
-    @RequestMapping("/list")
+    @RequestMapping({"", "/list"})
     public ModelAndView productList(HttpServletRequest req, Model model){
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
         model.addAttribute("brands", defaultInfo.brands());

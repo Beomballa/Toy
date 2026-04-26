@@ -117,12 +117,24 @@
             </button>
           </div>
           <div class="card-body">
-            <div id="optionList">
-              <!-- 옵션이 동적으로 추가됩니다 -->
-              <div class="alert alert-info mb-0">
-                <i class="fas fa-info-circle me-2"></i>
-                상품 사이즈 옵션을 추가해주세요. 예: 250, 255, 260, M, L, XL 등
-              </div>
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>옵션명 (사이즈 등)</th>
+                    <th style="width: 150px;">추가 금액</th>
+                    <th style="width: 150px;">재고 수량</th>
+                    <th style="width: 80px;">관리</th>
+                  </tr>
+                </thead>
+                <tbody id="optionTableBody">
+                  <tr>
+                    <td colspan="4" class="text-center py-4 text-muted">
+                      <i class="fas fa-info-circle me-2"></i>상품 사이즈 옵션을 추가해주세요.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

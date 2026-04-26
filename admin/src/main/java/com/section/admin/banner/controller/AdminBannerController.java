@@ -1,0 +1,15 @@
+package com.section.admin.banner.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping("/admin/banners")
+public class AdminBannerController {
+
+    @RequestMapping({"", "/list"})
+    public String bannerList() {
+        return "views/banner-list";
+    }
+}

@@ -64,8 +64,8 @@ const ContentEdit = {
     },
 
     bindEvents() {
-        // 수동 저장 버튼
-        document.getElementById('btnSave')?.addEventListener('click', () => {
+        document.getElementById('contentEditForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
             this.saveContent(false);
         });
 

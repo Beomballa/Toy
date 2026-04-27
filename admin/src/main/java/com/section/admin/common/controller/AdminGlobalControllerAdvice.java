@@ -15,4 +15,9 @@ public class AdminGlobalControllerAdvice {
         }
         return request.getRequestURI() + "?" + queryString;
     }
+
+    @ModelAttribute("currentBoardType")
+    public String currentBoardType(HttpServletRequest request) {
+        return request.getParameter("boardType");
+    }
 }

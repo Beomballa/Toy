@@ -9,6 +9,10 @@ public class AdminGlobalControllerAdvice {
 
     @ModelAttribute("currentUri")
     public String currentUri(HttpServletRequest request) {
-        return request.getRequestURI();
+        String queryString = request.getQueryString();
+        if (queryString == null || queryString.isBlank()) {
+            return request.getRequestURI();
+        }
+        return request.getRequestURI() + "?" + queryString;
     }
 }

@@ -32,14 +32,24 @@
 
     <div class="nav-section">
         <div class="nav-section-title">Community</div>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('content') ? 'active' : ''}" href="/admin/content/list">
+        <a class="nav-link"
+           th:classappend="${currentUri != null
+                && currentUri.contains('/admin/content')
+                && !currentUri.contains('boardType=DISCUSS')
+                && !currentUri.contains('boardType=STYLE')
+                && !currentUri.contains('boardType=QNA') ? 'active' : ''}"
+           href="/admin/content/list">
             <i class="fas fa-edit"></i> 콘텐츠 관리
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('discuss') ? 'active' : ''}" href="/admin/content/list?boardType=DISCUSS">
+        <a class="nav-link"
+           th:classappend="${currentUri != null && currentUri.contains('boardType=DISCUSS') ? 'active' : ''}"
+           href="/admin/content/list?boardType=DISCUSS">
             <i class="fas fa-comments"></i> 종목 토론방
         </a>
 
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('style') ? 'active' : ''}" href="/admin/content/list?boardType=STYLE">
+        <a class="nav-link"
+           th:classappend="${currentUri != null && currentUri.contains('boardType=STYLE') ? 'active' : ''}"
+           href="/admin/content/list?boardType=STYLE">
             <i class="fas fa-camera"></i> 스타일 피드
         </a>
         <a class="nav-link" href="/admin/members"><i class="fas fa-users"></i> 회원 관리</a>

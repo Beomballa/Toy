@@ -128,15 +128,20 @@ const ContentList = {
                 <div class="card h-100 content-board-card">
                     <div class="card-body content-board-card-body">
                         <div class="content-board-card-top">
-                            <span class="content-board-card-badge">${this.getBoardLabel(item.boardType)}</span>
+                            <span class="content-board-card-badge">${this.escapeHtml(this.getBoardLabel(item.boardType))}</span>
                             <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
-                        <h5 class="card-title content-board-card-title text-line-clamp-2">${item.title}</h5>
-                        <p class="content-board-card-copy">클릭하여 내용을 확인하고 게시판 문맥에 맞게 수정할 수 있습니다.</p>
+                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}">
+                            <h5 class="card-title content-board-card-title text-line-clamp-2">${this.escapeHtml(item.title || '제목 없음')}</h5>
+                        </a>
+                        <p class="content-board-card-copy">${this.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
                     </div>
                     <div class="card-footer content-board-card-footer">
                         <span class="content-board-card-date">${item.crtDtm}</span>
-                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='/admin/content/edit?id=${item.id}&boardType=${this.state.boardType}'">수정</button>
+                        <div class="content-board-card-actions">
+                            <button class="btn btn-sm btn-light" onclick="location.href='/admin/content/get?id=${item.id}&boardType=${item.boardType}'">상세</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="location.href='/admin/content/edit?id=${item.id}&boardType=${item.boardType}'">수정</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -166,6 +171,15 @@ const ContentList = {
     goPage(page) {
         this.state.page = page;
         this.getList();
+    },
+
+    escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 };
 

@@ -16,6 +16,7 @@ public record ContentListResponse(
         Long id,
         String boardType,
         String title,
+        String contentPreview,
         int viewCnt,
         String crtDtm
     ) {}
@@ -26,6 +27,7 @@ public record ContentListResponse(
                 d.getId(),
                 d.getBoardType().name(),
                 d.getTitle(),
+                buildPreview(d.getContent()),
                 d.getViewCnt(),
                 d.getCrtDtm() != null ? d.getCrtDtm().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : ""
             )).toList();
@@ -36,5 +38,17 @@ public record ContentListResponse(
             page.getTotalPages(),
             page.getNumber()
         );
+    }
+
+    private static String buildPreview(String content) {
+        if (content == null || content.isBlank()) {
+            return "내용 미리보기가 없습니다.";
+        }
+
+        String normalized = content.replaceAll("\\s+", " ").trim();
+        if (normalized.length() <= 88) {
+            return normalized;
+        }
+        return normalized.substring(0, 88) + "...";
     }
 }

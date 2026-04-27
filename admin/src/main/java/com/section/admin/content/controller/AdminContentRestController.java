@@ -1,6 +1,7 @@
 package com.section.admin.content.controller;
 
 import com.section.admin.content.req.ContentSaveRequest;
+import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.common.content.entity.Document;
@@ -34,8 +35,13 @@ public class AdminContentRestController {
     }
 
     @GetMapping("/get")
-    public ResponseEntity<Document> getDetail(@RequestParam("id") Long id) {
-        return ResponseEntity.ok(documentService.getDocument(id));
+    public ResponseEntity<ContentDetailResponse> getDetail(@RequestParam("id") Long id) {
+        return ResponseEntity.ok(ContentDetailResponse.from(documentService.getDocument(id)));
+    }
+
+    @GetMapping("/read")
+    public ResponseEntity<ContentDetailResponse> read(@RequestParam("id") Long id) {
+        return ResponseEntity.ok(ContentDetailResponse.from(documentService.readDocument(id)));
     }
 
     @PostMapping("/save")

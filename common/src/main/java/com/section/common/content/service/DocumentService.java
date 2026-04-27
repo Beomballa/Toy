@@ -28,6 +28,13 @@ public class DocumentService {
     }
 
     @Transactional
+    public Document readDocument(Long id) {
+        Document document = getDocument(id);
+        document.setViewCnt(document.getViewCnt() + 1);
+        return document;
+    }
+
+    @Transactional
     public Document saveDocument(Document document) {
         return documentRepository.save(document);
     }

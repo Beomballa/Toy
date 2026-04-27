@@ -31,4 +31,15 @@ public class AdminContentController {
         model.addAttribute("boardTypes", Document.BoardType.values());
         return "views/content-edit";
     }
+
+    @GetMapping("/get")
+    public String contentGet(
+            @RequestParam("id") Long id,
+            @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            Model model
+    ) {
+        model.addAttribute("id", id);
+        model.addAttribute("boardType", boardType);
+        return "views/content-get";
+    }
 }

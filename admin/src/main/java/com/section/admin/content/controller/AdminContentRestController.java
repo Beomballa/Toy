@@ -5,6 +5,7 @@ import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.common.content.entity.Document;
 import com.section.common.content.service.DocumentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,7 @@ public class AdminContentRestController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<ContentSaveResponse> save(@RequestBody ContentSaveRequest req) {
+    public ResponseEntity<ContentSaveResponse> save(@Valid @RequestBody ContentSaveRequest req) {
         Document savedDocument = documentService.saveDocument(req.toEntity());
         return ResponseEntity.ok(ContentSaveResponse.from(savedDocument.getId()));
     }

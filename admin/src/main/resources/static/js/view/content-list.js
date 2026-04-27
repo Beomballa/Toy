@@ -1,9 +1,9 @@
 const ContentList = {
     boardMeta: {
-        NOTICE: { pageTitle: '콘텐츠 관리', breadcrumb: '콘텐츠 관리', createLabel: '새 공지 작성' },
-        STYLE: { pageTitle: '스타일 피드', breadcrumb: '스타일 피드', createLabel: '새 스타일 피드 작성' },
-        DISCUSS: { pageTitle: '종목 토론방', breadcrumb: '종목 토론방', createLabel: '새 토론 작성' },
-        QNA: { pageTitle: '문의사항', breadcrumb: '문의사항', createLabel: '새 문의 작성' }
+        NOTICE: { pageTitle: '콘텐츠 관리', breadcrumb: '콘텐츠 관리', createLabel: '새 공지 작성', badge: 'NOTICE', description: '운영 공지와 서비스 안내 문서를 관리합니다.', boardLabel: '공지' },
+        STYLE: { pageTitle: '스타일 피드', breadcrumb: '스타일 피드', createLabel: '새 스타일 피드 작성', badge: 'STYLE', description: '룩북, 착용 이미지, 큐레이션 피드를 관리합니다.', boardLabel: '스타일' },
+        DISCUSS: { pageTitle: '종목 토론방', breadcrumb: '종목 토론방', createLabel: '새 토론 작성', badge: 'DISCUSS', description: '상품별 이슈와 시세 흐름을 다루는 토론 게시글을 관리합니다.', boardLabel: '토론' },
+        QNA: { pageTitle: '문의사항', breadcrumb: '문의사항', createLabel: '새 문의 작성', badge: 'QNA', description: '사용자 문의와 응답이 필요한 게시글을 관리합니다.', boardLabel: '문의' }
     },
     state: {
         page: 0,
@@ -19,7 +19,7 @@ const ContentList = {
     },
 
     setInitialTab() {
-        document.querySelectorAll('.nav-link[data-board-type]').forEach(el => {
+        document.querySelectorAll('.content-board-tab[data-board-type]').forEach(el => {
             if (el.dataset.boardType === this.state.boardType) {
                 el.classList.add('active');
             } else {
@@ -30,10 +30,10 @@ const ContentList = {
 
     bindEvents() {
         // 보드 타입 탭 클릭
-        document.querySelectorAll('.nav-link[data-board-type]').forEach(el => {
+        document.querySelectorAll('.content-board-tab[data-board-type]').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
-                document.querySelectorAll('.nav-link[data-board-type]').forEach(link => link.classList.remove('active'));
+                document.querySelectorAll('.content-board-tab[data-board-type]').forEach(link => link.classList.remove('active'));
                 el.classList.add('active');
                 this.state.boardType = el.dataset.boardType;
                 this.state.page = 0;
@@ -57,10 +57,14 @@ const ContentList = {
         const titleEl = document.getElementById('contentPageTitle');
         const breadcrumbEl = document.getElementById('contentBreadcrumb');
         const createLabelEl = document.getElementById('contentCreateLabel');
+        const badgeEl = document.getElementById('contentBoardBadge');
+        const descEl = document.getElementById('contentBoardDescription');
 
         if (titleEl) titleEl.textContent = meta.pageTitle;
         if (breadcrumbEl) breadcrumbEl.textContent = meta.breadcrumb;
         if (createLabelEl) createLabelEl.textContent = meta.createLabel;
+        if (badgeEl) badgeEl.textContent = meta.badge;
+        if (descEl) descEl.textContent = meta.description;
     },
 
     async getList() {
@@ -98,22 +102,27 @@ const ContentList = {
 
         grid.innerHTML = items.map(item => `
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm hover-card">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="badge bg-light text-primary">${item.boardType}</span>
-                            <span class="text-muted small"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
+                <div class="card h-100 content-board-card">
+                    <div class="card-body content-board-card-body">
+                        <div class="content-board-card-top">
+                            <span class="content-board-card-badge">${this.getBoardLabel(item.boardType)}</span>
+                            <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
-                        <h5 class="card-title fw-bold text-truncate">${item.title}</h5>
-                        <p class="card-text text-muted small text-line-clamp-2">클릭하여 상세 내용을 확인하고 수정하세요.</p>
+                        <h5 class="card-title content-board-card-title text-line-clamp-2">${item.title}</h5>
+                        <p class="content-board-card-copy">클릭하여 내용을 확인하고 게시판 문맥에 맞게 수정할 수 있습니다.</p>
                     </div>
-                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-3">
-                        <span class="text-muted small">${item.crtDtm}</span>
-                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='/admin/content/edit?id=${item.id}'">수정</button>
+                    <div class="card-footer content-board-card-footer">
+                        <span class="content-board-card-date">${item.crtDtm}</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="location.href='/admin/content/edit?id=${item.id}&boardType=${this.state.boardType}'">수정</button>
                     </div>
                 </div>
             </div>
         `).join('');
+    },
+
+    getBoardLabel(boardType) {
+        const meta = this.boardMeta[boardType];
+        return meta ? meta.boardLabel : boardType;
     },
 
     renderPagination(data) {

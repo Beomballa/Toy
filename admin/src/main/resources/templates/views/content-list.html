@@ -15,32 +15,38 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main class="main-content">
-    <div class="page-header">
+    <div class="content-board-page">
+    <div class="page-header content-board-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
                 <li class="breadcrumb-item active" id="contentBreadcrumb">콘텐츠 관리</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper">
-            <h1 class="page-title" id="contentPageTitle">콘텐츠 관리</h1>
-            <button class="btn btn-primary" id="btnNewContent"><i class="fas fa-plus me-2"></i><span id="contentCreateLabel">새 콘텐츠 작성</span></button>
+        <div class="page-title-wrapper content-board-titlebar">
+            <div class="content-board-heading">
+                <div class="content-board-eyebrow" id="contentBoardBadge">NOTICE</div>
+                <h1 class="page-title" id="contentPageTitle">콘텐츠 관리</h1>
+                <p class="content-board-description" id="contentBoardDescription">커뮤니티 게시판별 문서와 운영 콘텐츠를 관리합니다.</p>
+            </div>
+            <button class="btn btn-primary content-board-create-btn" id="btnNewContent"><i class="fas fa-plus me-2"></i><span id="contentCreateLabel">새 콘텐츠 작성</span></button>
         </div>
     </div>
 
-    <ul class="nav nav-tabs mb-4" id="contentTabs">
-        <li class="nav-item"><a class="nav-link active" href="#" data-board-type="NOTICE">공지사항</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-board-type="STYLE">스타일 피드</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-board-type="DISCUSS">종목 토론방</a></li>
-        <li class="nav-item"><a class="nav-link" href="#" data-board-type="QNA">문의사항</a></li>
-    </ul>
+    <div class="content-board-tabs" id="contentTabs">
+        <a class="content-board-tab active" href="#" data-board-type="NOTICE">공지사항</a>
+        <a class="content-board-tab" href="#" data-board-type="STYLE">스타일 피드</a>
+        <a class="content-board-tab" href="#" data-board-type="DISCUSS">종목 토론방</a>
+        <a class="content-board-tab" href="#" data-board-type="QNA">문의사항</a>
+    </div>
 
-    <div class="row g-4" id="contentGrid">
+    <div class="row g-4 content-board-grid" id="contentGrid">
         <div class="col-12 text-center py-5 text-muted">데이터를 불러오는 중입니다...</div>
     </div>
 
-    <div class="d-flex justify-content-center mt-5">
+    <div class="d-flex justify-content-center mt-4">
         <nav aria-label="Page navigation"><ul class="pagination pagination-sm" id="pagination"></ul></nav>
+    </div>
     </div>
 </main>
 

@@ -36,21 +36,25 @@
            th:classappend="${currentUri != null
                 && currentUri.contains('/admin/content')
                 && (currentBoardType == null || #strings.equals(currentBoardType, 'NOTICE')) ? 'active' : ''}"
+           data-community-nav="NOTICE"
            href="/admin/content/list">
             <i class="fas fa-edit"></i> 콘텐츠 관리
         </a>
         <a class="nav-link"
            th:classappend="${#strings.equals(currentBoardType, 'STYLE') ? 'active' : ''}"
+           data-community-nav="STYLE"
            href="/admin/content/list?boardType=STYLE">
             <i class="fas fa-camera"></i> 스타일 피드
         </a>
         <a class="nav-link"
            th:classappend="${#strings.equals(currentBoardType, 'DISCUSS') ? 'active' : ''}"
+           data-community-nav="DISCUSS"
            href="/admin/content/list?boardType=DISCUSS">
             <i class="fas fa-comments"></i> 종목 토론방
         </a>
         <a class="nav-link"
            th:classappend="${#strings.equals(currentBoardType, 'QNA') ? 'active' : ''}"
+           data-community-nav="QNA"
            href="/admin/content/list?boardType=QNA">
             <i class="fas fa-circle-question"></i> 문의사항
         </a>

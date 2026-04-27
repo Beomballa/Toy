@@ -13,6 +13,7 @@ const ContentList = {
 
     init() {
         this.setInitialTab();
+        this.updateSidebarActive();
         this.updatePageMeta();
         this.bindEvents();
         this.getList();
@@ -21,6 +22,17 @@ const ContentList = {
     setInitialTab() {
         document.querySelectorAll('.content-board-tab[data-board-type]').forEach(el => {
             if (el.dataset.boardType === this.state.boardType) {
+                el.classList.add('active');
+            } else {
+                el.classList.remove('active');
+            }
+        });
+    },
+
+    updateSidebarActive() {
+        document.querySelectorAll('.nav-link[data-community-nav]').forEach(el => {
+            const boardType = el.dataset.communityNav;
+            if (boardType === this.state.boardType) {
                 el.classList.add('active');
             } else {
                 el.classList.remove('active');
@@ -41,9 +53,20 @@ const ContentList = {
                 // URL 파라미터 업데이트 (새로고침 없이)
                 const newUrl = `${window.location.pathname}?boardType=${this.state.boardType}`;
                 window.history.pushState({ path: newUrl }, '', newUrl);
+                this.updateSidebarActive();
                 this.updatePageMeta();
                 this.getList();
             });
+        });
+
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            this.state.boardType = params.get('boardType') || 'NOTICE';
+            this.state.page = 0;
+            this.setInitialTab();
+            this.updateSidebarActive();
+            this.updatePageMeta();
+            this.getList();
         });
 
         // 새 글 작성 버튼

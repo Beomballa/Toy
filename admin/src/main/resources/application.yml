@@ -8,8 +8,14 @@ spring:
   datasource:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}
-    url: ${DB_URL:jdbc:mysql://localhost:3306/new_toy}
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/new_toy?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&connectTimeout=5000&socketTimeout=60000&tcpKeepAlive=true}
     driver-class-name: ${DB_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+    hikari:
+      connection-timeout: 5000
+      validation-timeout: 3000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      keepalive-time: 300000
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:none}

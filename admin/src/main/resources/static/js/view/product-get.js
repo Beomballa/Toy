@@ -87,6 +87,7 @@ const ProductDetail = {
         setText('brandChip', data.brandName || '브랜드 -');
         setText('modelChip', data.productModel || '모델 -');
         setText('productCategoryChip', data.categoryName || 'Product Detail');
+        setText('releaseMetaChip', data.releaseDt ? `발매일 ${data.releaseDt}` : '발매일 -');
 
         const releasePriceEl = document.getElementById('releasePrice');
         if (releasePriceEl) releasePriceEl.textContent = this.formatPrice(data.releasePrice);

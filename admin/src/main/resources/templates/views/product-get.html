@@ -16,8 +16,8 @@
     <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main id="main-content" class="detail-main">
-        <div class="detail-scroll-content product-detail-page">
-        <div class="page-header product-detail-header">
+        <div class="detail-scroll-content product-detail-page admin-detail-page">
+        <div class="page-header product-detail-header admin-detail-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/admin">Home</a></li>
@@ -25,17 +25,18 @@
                     <li class="breadcrumb-item active">상품 상세</li>
                 </ol>
             </nav>
-            <div class="page-title-wrapper product-detail-titlebar">
-                <div class="product-detail-heading">
-                    <div class="product-detail-eyebrow" id="productCategoryChip">Product Detail</div>
+            <div class="page-title-wrapper product-detail-titlebar admin-detail-titlebar">
+                <div class="product-detail-heading admin-detail-heading">
+                    <div class="product-detail-eyebrow admin-detail-eyebrow" id="productCategoryChip">Product Detail</div>
                     <h1 class="page-title" id="productTitle">상품 상세</h1>
-                    <div class="product-detail-submeta">
-                        <span class="product-detail-meta-chip" id="brandChip">브랜드 -</span>
-                        <span class="product-detail-meta-chip" id="modelChip">모델 -</span>
+                    <div class="product-detail-submeta admin-detail-submeta">
+                        <span class="product-detail-meta-chip admin-detail-meta-chip" id="brandChip">브랜드 -</span>
+                        <span class="product-detail-meta-chip admin-detail-meta-chip" id="modelChip">모델 -</span>
+                        <span class="product-detail-meta-chip admin-detail-meta-chip" id="releaseMetaChip">발매일 -</span>
                         <span id="statusBadge"></span>
                     </div>
                 </div>
-                <div class="product-detail-actions">
+                <div class="product-detail-actions admin-detail-actions">
                     <button type="button" class="btn btn-secondary" onclick="window.location.href='/admin/products'">
                         <i class="fas fa-list me-2"></i>목록
                     </button>
@@ -52,7 +53,7 @@
             </div>
         </div>
 
-        <div class="row g-4 product-detail-layout">
+        <div class="row g-4 product-detail-layout admin-detail-layout">
             <div class="col-lg-5">
                 <div class="card animate-in product-hero-card">
                     <div class="card-body product-hero-body">

@@ -1,6 +1,6 @@
 package com.section.admin.content.res;
 
-import com.section.common.content.entity.Document;
+import com.section.common.content.dto.DocumentListItemDto;
 import org.springframework.data.domain.Page;
 
 import java.time.format.DateTimeFormatter;
@@ -21,13 +21,13 @@ public record ContentListResponse(
         String crtDtm
     ) {}
 
-    public static ContentListResponse of(Page<Document> page) {
+    public static ContentListResponse of(Page<DocumentListItemDto> page) {
         List<ContentItem> items = page.getContent().stream()
             .map(d -> new ContentItem(
                 d.getId(),
-                d.getBoardType().name(),
+                d.getBoardType(),
                 d.getTitle(),
-                buildPreview(d.getContent()),
+                buildPreview(d.getContentPreview()),
                 d.getViewCnt(),
                 d.getCrtDtm() != null ? d.getCrtDtm().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : ""
             )).toList();

@@ -4,6 +4,9 @@ import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
+import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
 import com.section.common.content.service.DocumentService;
 import jakarta.validation.Valid;
@@ -22,16 +25,12 @@ public class AdminContentRestController {
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
             @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            @RequestParam(value = "keyword", required = false) String keyword,
             @org.springframework.data.web.PageableDefault(size = 9) org.springframework.data.domain.Pageable pageable
     ) {
-        try {
-            return ResponseEntity.ok(ContentListResponse.of(
-                    documentService.getDocumentList(Document.BoardType.valueOf(boardType), pageable)
-            ));
-        } catch (Exception e) {
-            e.printStackTrace(); // 서버 로그에서 확인 가능하도록
-            throw e;
-        }
+        return ResponseEntity.ok(ContentListResponse.of(
+                documentService.getDocumentList(new DocumentListQuery(parseBoardType(boardType), keyword), pageable)
+        ));
     }
 
     @GetMapping("/get")
@@ -54,5 +53,13 @@ public class AdminContentRestController {
     public ResponseEntity<Void> delete(@RequestParam("id") Long id) {
         documentService.deleteDocument(id);
         return ResponseEntity.ok().build();
+    }
+
+    private Document.BoardType parseBoardType(String boardType) {
+        try {
+            return Document.BoardType.valueOf(boardType);
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

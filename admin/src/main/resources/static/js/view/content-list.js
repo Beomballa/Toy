@@ -4,10 +4,12 @@ const ContentList = {
         size: 9,
         boardType: ContentBoardConfig.normalizeBoardType(
             window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType')
-        )
+        ),
+        keyword: new URLSearchParams(window.location.search).get('keyword') || ''
     },
 
     init() {
+        this.syncSearchField();
         this.setInitialTab();
         this.updateSidebarActive();
         this.updatePageMeta();
@@ -45,10 +47,8 @@ const ContentList = {
                 el.classList.add('active');
                 this.state.boardType = el.dataset.boardType;
                 this.state.page = 0;
-                
-                // URL 파라미터 업데이트 (새로고침 없이)
-                const newUrl = `${window.location.pathname}?boardType=${this.state.boardType}`;
-                window.history.pushState({ path: newUrl }, '', newUrl);
+
+                this.pushState();
                 this.updateSidebarActive();
                 this.updatePageMeta();
                 this.getList();
@@ -59,7 +59,9 @@ const ContentList = {
             const params = new URLSearchParams(window.location.search);
             // 히스토리 이동 시 URL이 현재 게시판 상태의 기준이 된다.
             this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType'));
+            this.state.keyword = params.get('keyword') || '';
             this.state.page = 0;
+            this.syncSearchField();
             this.setInitialTab();
             this.updateSidebarActive();
             this.updatePageMeta();
@@ -69,6 +71,22 @@ const ContentList = {
         // 새 글 작성 버튼
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
             location.href = `/admin/content/edit?boardType=${this.state.boardType}`;
+        });
+
+        document.getElementById('contentSearchForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.state.keyword = document.getElementById('contentSearchKeyword')?.value.trim() || '';
+            this.state.page = 0;
+            this.pushState();
+            this.getList();
+        });
+
+        document.getElementById('btnResetContentSearch')?.addEventListener('click', () => {
+            this.state.keyword = '';
+            this.state.page = 0;
+            this.syncSearchField();
+            this.pushState();
+            this.getList();
         });
     },
 
@@ -94,6 +112,9 @@ const ContentList = {
             size: this.state.size,
             boardType: this.state.boardType
         });
+        if (this.state.keyword) {
+            params.set('keyword', this.state.keyword);
+        }
 
         try {
             const res = await fetch(`/api/admin/content/list?${params}`);
@@ -169,6 +190,22 @@ const ContentList = {
     goPage(page) {
         this.state.page = page;
         this.getList();
+    },
+
+    pushState() {
+        const params = new URLSearchParams({ boardType: this.state.boardType });
+        if (this.state.keyword) {
+            params.set('keyword', this.state.keyword);
+        }
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+    },
+
+    syncSearchField() {
+        const searchInput = document.getElementById('contentSearchKeyword');
+        if (searchInput) {
+            searchInput.value = this.state.keyword;
+        }
     }
 };
 

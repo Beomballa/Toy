@@ -40,6 +40,17 @@
         <a class="content-board-tab" href="#" data-board-type="QNA">문의사항</a>
     </div>
 
+    <div class="content-board-toolbar">
+        <form id="contentSearchForm" class="content-board-search-form">
+            <div class="content-board-search-field">
+                <i class="fas fa-search"></i>
+                <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
+            </div>
+            <button type="submit" class="btn btn-light">검색</button>
+            <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
+        </form>
+    </div>
+
     <div class="row g-4 content-board-grid" id="contentGrid">
         <div class="col-12 text-center py-5 text-muted">데이터를 불러오는 중입니다...</div>
     </div>

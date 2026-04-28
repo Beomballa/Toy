@@ -1,10 +1,15 @@
 const OrderList = {
     state: {
-        page: 0,
-        size: 10
+        page: Number(new URLSearchParams(window.location.search).get('page') || 0),
+        size: Number(new URLSearchParams(window.location.search).get('size') || 10),
+        status: new URLSearchParams(window.location.search).get('status') || '',
+        startDate: new URLSearchParams(window.location.search).get('startDate') || '',
+        endDate: new URLSearchParams(window.location.search).get('endDate') || '',
+        searchKeyword: new URLSearchParams(window.location.search).get('searchKeyword') || ''
     },
 
     init() {
+        this.syncFilterFields();
         this.bindEvents();
         this.getList();
     },
@@ -13,26 +18,43 @@ const OrderList = {
         // 필터 적용 버튼
         document.getElementById('btnFilter')?.addEventListener('click', () => {
             this.state.page = 0;
+            this.captureFilterState();
+            this.pushState();
             this.getList();
         });
 
-        // 엔터키 검색
+        // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.
         document.getElementById('searchKeyword')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.state.page = 0;
+                this.captureFilterState();
+                this.pushState();
                 this.getList();
             }
+        });
+
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            this.state.page = Number(params.get('page') || 0);
+            this.state.size = Number(params.get('size') || 10);
+            this.state.status = params.get('status') || '';
+            this.state.startDate = params.get('startDate') || '';
+            this.state.endDate = params.get('endDate') || '';
+            this.state.searchKeyword = params.get('searchKeyword') || '';
+            this.syncFilterFields();
+            this.getList();
         });
     },
 
     async getList() {
+        this.captureFilterState();
         const params = new URLSearchParams({
             page: this.state.page,
             size: this.state.size,
-            status: document.getElementById('orderStatus').value,
-            startDate: document.getElementById('startDate').value,
-            endDate: document.getElementById('endDate').value,
-            searchKeyword: document.getElementById('searchKeyword').value
+            status: this.state.status,
+            startDate: this.state.startDate,
+            endDate: this.state.endDate,
+            searchKeyword: this.state.searchKeyword
         });
 
         try {
@@ -110,7 +132,42 @@ const OrderList = {
 
     goPage(page) {
         this.state.page = page;
+        this.pushState();
         this.getList();
+    },
+
+    captureFilterState() {
+        this.state.status = document.getElementById('orderStatus')?.value || '';
+        this.state.startDate = document.getElementById('startDate')?.value || '';
+        this.state.endDate = document.getElementById('endDate')?.value || '';
+        this.state.searchKeyword = document.getElementById('searchKeyword')?.value || '';
+    },
+
+    syncFilterFields() {
+        const statusEl = document.getElementById('orderStatus');
+        const startDateEl = document.getElementById('startDate');
+        const endDateEl = document.getElementById('endDate');
+        const searchKeywordEl = document.getElementById('searchKeyword');
+
+        if (statusEl) statusEl.value = this.state.status;
+        if (startDateEl) startDateEl.value = this.state.startDate;
+        if (endDateEl) endDateEl.value = this.state.endDate;
+        if (searchKeywordEl) searchKeywordEl.value = this.state.searchKeyword;
+    },
+
+    pushState() {
+        const params = new URLSearchParams({
+            page: this.state.page,
+            size: this.state.size
+        });
+
+        if (this.state.status) params.set('status', this.state.status);
+        if (this.state.startDate) params.set('startDate', this.state.startDate);
+        if (this.state.endDate) params.set('endDate', this.state.endDate);
+        if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
+
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
     }
 };
 

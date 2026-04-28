@@ -1,14 +1,10 @@
 const ContentList = {
-    boardMeta: {
-        NOTICE: { pageTitle: '콘텐츠 관리', breadcrumb: '콘텐츠 관리', createLabel: '새 공지 작성', badge: 'NOTICE', description: '운영 공지와 서비스 안내 문서를 관리합니다.', boardLabel: '공지' },
-        STYLE: { pageTitle: '스타일 피드', breadcrumb: '스타일 피드', createLabel: '새 스타일 피드 작성', badge: 'STYLE', description: '룩북, 착용 이미지, 큐레이션 피드를 관리합니다.', boardLabel: '스타일' },
-        DISCUSS: { pageTitle: '종목 토론방', breadcrumb: '종목 토론방', createLabel: '새 토론 작성', badge: 'DISCUSS', description: '상품별 이슈와 시세 흐름을 다루는 토론 게시글을 관리합니다.', boardLabel: '토론' },
-        QNA: { pageTitle: '문의사항', breadcrumb: '문의사항', createLabel: '새 문의 작성', badge: 'QNA', description: '사용자 문의와 응답이 필요한 게시글을 관리합니다.', boardLabel: '문의' }
-    },
     state: {
         page: 0,
         size: 9,
-        boardType: window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType') || 'NOTICE'
+        boardType: ContentBoardConfig.normalizeBoardType(
+            window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType')
+        )
     },
 
     init() {
@@ -61,7 +57,8 @@ const ContentList = {
 
         window.addEventListener('popstate', () => {
             const params = new URLSearchParams(window.location.search);
-            this.state.boardType = params.get('boardType') || 'NOTICE';
+            // 히스토리 이동 시 URL이 현재 게시판 상태의 기준이 된다.
+            this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType'));
             this.state.page = 0;
             this.setInitialTab();
             this.updateSidebarActive();
@@ -76,7 +73,8 @@ const ContentList = {
     },
 
     updatePageMeta() {
-        const meta = this.boardMeta[this.state.boardType] || this.boardMeta.NOTICE;
+        const meta = ContentBoardConfig.getMeta(this.state.boardType).list;
+        const badge = ContentBoardConfig.getMeta(this.state.boardType).badge;
         const titleEl = document.getElementById('contentPageTitle');
         const breadcrumbEl = document.getElementById('contentBreadcrumb');
         const createLabelEl = document.getElementById('contentCreateLabel');
@@ -86,7 +84,7 @@ const ContentList = {
         if (titleEl) titleEl.textContent = meta.pageTitle;
         if (breadcrumbEl) breadcrumbEl.textContent = meta.breadcrumb;
         if (createLabelEl) createLabelEl.textContent = meta.createLabel;
-        if (badgeEl) badgeEl.textContent = meta.badge;
+        if (badgeEl) badgeEl.textContent = badge;
         if (descEl) descEl.textContent = meta.description;
     },
 
@@ -125,16 +123,16 @@ const ContentList = {
 
         grid.innerHTML = items.map(item => `
             <div class="col-md-4 mb-4">
-                <div class="card h-100 content-board-card">
+                    <div class="card h-100 content-board-card">
                     <div class="card-body content-board-card-body">
                         <div class="content-board-card-top">
-                            <span class="content-board-card-badge">${this.escapeHtml(this.getBoardLabel(item.boardType))}</span>
+                            <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(item.boardType))}</span>
                             <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
                         <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}">
-                            <h5 class="card-title content-board-card-title text-line-clamp-2">${this.escapeHtml(item.title || '제목 없음')}</h5>
+                            <h5 class="card-title content-board-card-title text-line-clamp-2">${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</h5>
                         </a>
-                        <p class="content-board-card-copy">${this.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
+                        <p class="content-board-card-copy">${ContentBoardConfig.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
                     </div>
                     <div class="card-footer content-board-card-footer">
                         <span class="content-board-card-date">${item.crtDtm}</span>
@@ -149,7 +147,7 @@ const ContentList = {
     },
 
     getBoardLabel(boardType) {
-        const meta = this.boardMeta[boardType];
+        const meta = ContentBoardConfig.getMeta(boardType).list;
         return meta ? meta.boardLabel : boardType;
     },
 
@@ -171,15 +169,6 @@ const ContentList = {
     goPage(page) {
         this.state.page = page;
         this.getList();
-    },
-
-    escapeHtml(value) {
-        return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#39;');
     }
 };
 

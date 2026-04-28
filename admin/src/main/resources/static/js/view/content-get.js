@@ -1,10 +1,4 @@
 const ContentDetail = {
-    boardMeta: {
-        NOTICE: { pageTitle: '공지 상세', listTitle: '콘텐츠 관리', label: '공지사항', listPath: '/admin/content/list' },
-        STYLE: { pageTitle: '스타일 피드 상세', listTitle: '스타일 피드', label: '스타일 피드', listPath: '/admin/content/list?boardType=STYLE' },
-        DISCUSS: { pageTitle: '종목 토론 상세', listTitle: '종목 토론방', label: '종목 토론방', listPath: '/admin/content/list?boardType=DISCUSS' },
-        QNA: { pageTitle: '문의 상세', listTitle: '문의사항', label: '문의사항', listPath: '/admin/content/list?boardType=QNA' }
-    },
     state: {
         id: null,
         boardType: 'NOTICE',
@@ -14,7 +8,9 @@ const ContentDetail = {
     init() {
         const params = new URLSearchParams(window.location.search);
         this.state.id = window.initialContentDetail?.id || params.get('id');
-        this.state.boardType = window.initialContentDetail?.boardType || params.get('boardType') || 'NOTICE';
+        this.state.boardType = ContentBoardConfig.normalizeBoardType(
+            window.initialContentDetail?.boardType || params.get('boardType')
+        );
 
         if (!this.state.id) {
             CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error').then(() => {
@@ -76,14 +72,15 @@ const ContentDetail = {
     },
 
     applyBoardMeta(boardType) {
-        const meta = this.boardMeta[boardType] || this.boardMeta.NOTICE;
-        this.setText('contentDetailBadge', boardType);
-        this.setText('contentDetailBreadcrumb', meta.pageTitle);
-        this.setText('contentBoardLabel', meta.label);
+        const normalizedBoardType = ContentBoardConfig.normalizeBoardType(boardType);
+        const meta = ContentBoardConfig.getMeta(normalizedBoardType);
+        this.setText('contentDetailBadge', meta.badge);
+        this.setText('contentDetailBreadcrumb', meta.detail.pageTitle);
+        this.setText('contentBoardLabel', meta.detail.label);
 
         const listLink = document.getElementById('contentListBreadcrumbLink');
         if (listLink) {
-            listLink.textContent = meta.listTitle;
+            listLink.textContent = meta.detail.listTitle;
             listLink.href = meta.listPath;
         }
     },
@@ -110,7 +107,7 @@ const ContentDetail = {
     },
 
     getListPath() {
-        return (this.boardMeta[this.state.boardType] || this.boardMeta.NOTICE).listPath;
+        return ContentBoardConfig.getListPath(this.state.boardType);
     },
 
     setText(id, value) {

@@ -1,42 +1,4 @@
 const ContentEdit = {
-    boardMeta: {
-        NOTICE: {
-            title: '공지 작성',
-            saveLabel: '공지 저장',
-            boardName: '공지',
-            badge: 'NOTICE',
-            description: '운영 공지와 서비스 안내를 명확하게 전달하는 문서를 작성합니다.',
-            sideNote: '공지 게시판은 모든 운영자와 사용자가 가장 먼저 확인하는 정보성 영역입니다.',
-            listPath: '/admin/content/list?boardType=NOTICE'
-        },
-        STYLE: {
-            title: '스타일 피드 작성',
-            saveLabel: '피드 저장',
-            boardName: '스타일 피드',
-            badge: 'STYLE',
-            description: '룩북, 착용 이미지, 큐레이션 성격의 콘텐츠를 피드 형식으로 정리합니다.',
-            sideNote: '스타일 피드는 시각적인 흐름이 중요하므로 제목과 첫 문장의 완성도가 특히 중요합니다.',
-            listPath: '/admin/content/list?boardType=STYLE'
-        },
-        DISCUSS: {
-            title: '종목 토론 작성',
-            saveLabel: '토론 저장',
-            boardName: '종목 토론방',
-            badge: 'DISCUSS',
-            description: '상품 이슈, 시세 흐름, 관심 포인트를 토론형 문맥에 맞춰 작성합니다.',
-            sideNote: '토론형 게시판은 질문형 제목이나 핵심 이슈가 먼저 드러나는 문장이 더 잘 읽힙니다.',
-            listPath: '/admin/content/list?boardType=DISCUSS'
-        },
-        QNA: {
-            title: '문의 작성',
-            saveLabel: '문의 저장',
-            boardName: '문의사항',
-            badge: 'QNA',
-            description: '사용자 문의와 답변 관리에 적합한 형태로 내용을 정리합니다.',
-            sideNote: '문의 게시판은 요약 제목과 본문 내 맥락 분리가 잘 되어야 후속 대응이 쉽습니다.',
-            listPath: '/admin/content/list?boardType=QNA'
-        }
-    },
     debounceTimer: null,
     statusTimer: null,
     isSaving: false,
@@ -48,7 +10,9 @@ const ContentEdit = {
 
     init() {
         this.id = document.getElementById('contentId').value;
-        this.initialBoardType = document.getElementById('initialBoardType')?.value || 'NOTICE';
+        this.initialBoardType = ContentBoardConfig.normalizeBoardType(
+            document.getElementById('initialBoardType')?.value
+        );
         const boardTypeSelect = document.getElementById('boardType');
 
         if (boardTypeSelect) {
@@ -137,7 +101,8 @@ const ContentEdit = {
     },
 
     applyBoardMeta(boardType) {
-        const meta = this.boardMeta[boardType] || this.boardMeta.NOTICE;
+        const normalizedBoardType = ContentBoardConfig.normalizeBoardType(boardType);
+        const meta = ContentBoardConfig.getMeta(normalizedBoardType);
         const titleEl = document.getElementById('contentEditTitle');
         const saveBtn = document.getElementById('btnSave');
         const saveBtnLabel = document.getElementById('btnSaveLabel');
@@ -148,23 +113,25 @@ const ContentEdit = {
         const sideNoteEl = document.getElementById('contentSideNote');
         const listBreadcrumbEl = document.getElementById('contentListBreadcrumb');
 
-        if (titleEl) titleEl.textContent = this.id ? meta.title.replace('작성', '수정') : meta.title;
-        if (breadcrumbEl) breadcrumbEl.textContent = this.id ? meta.title.replace('작성', '수정') : meta.title;
-        if (saveBtn) saveBtn.setAttribute('aria-label', meta.saveLabel);
-        if (saveBtnLabel) saveBtnLabel.textContent = meta.saveLabel;
+        const pageTitle = this.id ? meta.edit.title.replace('작성', '수정') : meta.edit.title;
+
+        if (titleEl) titleEl.textContent = pageTitle;
+        if (breadcrumbEl) breadcrumbEl.textContent = pageTitle;
+        if (saveBtn) saveBtn.setAttribute('aria-label', meta.edit.saveLabel);
+        if (saveBtnLabel) saveBtnLabel.textContent = meta.edit.saveLabel;
         if (badgeEl) badgeEl.textContent = meta.badge;
-        if (descEl) descEl.textContent = meta.description;
-        if (boardNameEl) boardNameEl.textContent = meta.boardName;
-        if (sideNoteEl) sideNoteEl.textContent = meta.sideNote;
+        if (descEl) descEl.textContent = meta.edit.description;
+        if (boardNameEl) boardNameEl.textContent = meta.edit.boardName;
+        if (sideNoteEl) sideNoteEl.textContent = meta.edit.sideNote;
         if (listBreadcrumbEl) {
-            listBreadcrumbEl.textContent = meta.boardName;
+            listBreadcrumbEl.textContent = meta.edit.boardName;
             listBreadcrumbEl.href = meta.listPath;
         }
     },
 
     getListPath() {
-        const boardType = document.getElementById('boardType')?.value || this.initialBoardType || 'NOTICE';
-        return (this.boardMeta[boardType] || this.boardMeta.NOTICE).listPath;
+        const boardType = document.getElementById('boardType')?.value || this.initialBoardType;
+        return ContentBoardConfig.getListPath(boardType);
     },
 
     async saveContent(isAutoSave) {
@@ -172,14 +139,14 @@ const ContentEdit = {
 
         const title = document.getElementById('title').value;
         const content = document.getElementById('content').value;
-        const boardType = document.getElementById('boardType').value;
+        const boardType = ContentBoardConfig.normalizeBoardType(document.getElementById('boardType').value);
 
         if (!title.trim()) {
             if (!isAutoSave) CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
             return;
         }
 
-        // 변경 사항 확인
+        // 자동 저장은 실제 변경이 생긴 경우에만 보내서 불필요한 저장 요청을 줄인다.
         if (isAutoSave && 
             title === this.initialData.title && 
             content === this.initialData.content && 

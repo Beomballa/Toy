@@ -39,7 +39,7 @@ public class AdminOrderRestController {
 
     @PostMapping("/delivery")
     public ResponseEntity<Void> startDelivery(@Valid @RequestBody OrderDeliveryStartRequest req) {
-        adminOrderService.startDelivery(req.orderNo(), req.deliveryCompany(), req.trackingNum());
+        adminOrderService.startDelivery(req.orderNo(), req.normalizedDeliveryCompany(), req.normalizedTrackingNum());
         return ResponseEntity.ok().build();
     }
 

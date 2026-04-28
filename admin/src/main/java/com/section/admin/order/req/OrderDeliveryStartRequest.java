@@ -16,4 +16,12 @@ public record OrderDeliveryStartRequest(
         @Size(max = 50, message = "운송장 번호는 50자 이하여야 합니다.")
         String trackingNum
 ) {
+    public String normalizedDeliveryCompany() {
+        return this.deliveryCompany().trim();
+    }
+
+    public String normalizedTrackingNum() {
+        // 운송장 번호는 외부 연동 키로 쓰일 수 있어 저장 전 공백을 제거합니다.
+        return this.trackingNum().trim();
+    }
 }

@@ -1,8 +1,8 @@
 package com.section.common.commerce.repository;
 
 import com.section.common.commerce.dto.OrderItemResDto;
+import com.section.common.commerce.dto.OrderListItemDto;
 import com.section.common.commerce.dto.OrderListReqDto;
-import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface CustomOrderRepository {
-    Page<OrderListResDto> getOrderList(OrderListReqDto reqDto, Pageable pageable);
+    Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable);
 
     OrderListResDto getOrderDetail(Long orderNo);
 
@@ -24,4 +24,3 @@ public interface CustomOrderRepository {
     List<Map<String, Object>> getTopSellingProducts(int limit);
     List<Map<String, Object>> getTopBrandsBySales(int limit);
 }
-

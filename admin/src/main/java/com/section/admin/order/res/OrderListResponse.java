@@ -1,7 +1,7 @@
 package com.section.admin.order.res;
 
 import com.section.common.base.entity.type.OrderStatus;
-import com.section.common.commerce.dto.OrderListResDto;
+import com.section.common.commerce.dto.OrderListItemDto;
 import com.section.common.util.DateUtil;
 import org.springframework.data.domain.Page;
 
@@ -13,7 +13,7 @@ public record OrderListResponse(
         int totalPages,
         long totalElements
 ) {
-    public static OrderListResponse of(Page<OrderListResDto> page) {
+    public static OrderListResponse of(Page<OrderListItemDto> page) {
         return new OrderListResponse(
                 page.getContent().stream().map(OrderItem::from).toList(),
                 page.getNumber(),
@@ -27,12 +27,13 @@ public record OrderListResponse(
             String orderNum,
             String buyerName,
             String buyerPhone,
+            String productSummary,
             String totalAmount,
             String statusDesc,
             String statusCode,
             String orderDt
     ) {
-        public static OrderItem from(OrderListResDto dto) {
+        public static OrderItem from(OrderListItemDto dto) {
             String statusDesc = dto.getStatus();
             try {
                 // String 상태값을 기반으로 Enum의 desc(한글명) 추출
@@ -46,11 +47,22 @@ public record OrderListResponse(
                     dto.getOrderNum(),
                     dto.getBuyerName(),
                     dto.getBuyerPhone(),
+                    buildProductSummary(dto.getFirstProductName(), dto.getItemCount()),
                     String.format("%,d원", dto.getTotalAmount()),
                     statusDesc,
                     dto.getStatus(),
                     dto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(dto.getCrtDtm()) : ""
             );
+        }
+
+        private static String buildProductSummary(String firstProductName, Long itemCount) {
+            if (firstProductName == null || firstProductName.isBlank()) {
+                return "-";
+            }
+            if (itemCount == null || itemCount <= 1) {
+                return firstProductName;
+            }
+            return firstProductName + " 외 " + (itemCount - 1) + "건";
         }
     }
 }

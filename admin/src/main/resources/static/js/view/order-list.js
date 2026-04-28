@@ -77,7 +77,7 @@ const OrderList = {
                             <div class="text-muted small">${item.buyerPhone}</div>
                         </div>
                     </td>
-                    <td>-</td> <!-- 상품명은 상세조회나 쿼리 확장 필요 -->
+                    <td>${item.productSummary}</td>
                     <td><strong>${item.totalAmount}</strong></td>
                     <td><span class="badge ${statusClass}">${item.statusDesc}</span></td>
                     <td class="text-end pe-4">

@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.commerce.dto.OrderListItemDto;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
@@ -33,11 +34,11 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public Page<OrderListResDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
-        List<OrderListResDto> list = jpaQueryFactory
+    public Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
+        List<OrderListItemDto> list = jpaQueryFactory
                 .select(
                         Projections.bean(
-                                OrderListResDto.class,
+                                OrderListItemDto.class,
                                 orders.id.as("orderNo"),
                                 orders.orderNum.as("orderNum"),
                                 orders.buyerName.as("buyerName"),
@@ -45,15 +46,25 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                                 orders.totalAmount.as("totalAmount"),
                                 orders.status.as("status"),
                                 orders.crtDtm.as("crtDtm"),
-                                orders.deliveryCompany.as("deliveryCompany"),
-                                orders.trackingNum.as("trackingNum")
+                                orderItem.productName.min().as("firstProductName"),
+                                orderItem.id.count().as("itemCount")
                         )
                 )
                 .from(orders)
+                .leftJoin(orderItem).on(orderItem.orderNo.eq(orders.id))
                 .where(
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         statusEq(reqDto.getStatus()),
                         crtDtmBetween(reqDto.getStartDate(), reqDto.getEndDate())
+                )
+                .groupBy(
+                        orders.id,
+                        orders.orderNum,
+                        orders.buyerName,
+                        orders.buyerPhone,
+                        orders.totalAmount,
+                        orders.status,
+                        orders.crtDtm
                 )
                 .orderBy(orders.id.desc())
                 .offset(pageable.getOffset())
@@ -61,8 +72,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .fetch();
 
         JPAQuery<Long> countQuery = jpaQueryFactory
-                .select(orders.count())
+                .select(orders.countDistinct())
                 .from(orders)
+                .leftJoin(orderItem).on(orderItem.orderNo.eq(orders.id))
                 .where(
                         searchKeywordLike(reqDto.getSearchKeyword()),
                         statusEq(reqDto.getStatus()),
@@ -235,7 +247,8 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         }
         return orders.orderNum.containsIgnoreCase(searchKeyword)
                 .or(orders.buyerName.containsIgnoreCase(searchKeyword))
-                .or(orders.buyerPhone.containsIgnoreCase(searchKeyword));
+                .or(orders.buyerPhone.containsIgnoreCase(searchKeyword))
+                .or(orderItem.productName.containsIgnoreCase(searchKeyword));
     }
 
     private BooleanExpression statusEq(String statusVal) {

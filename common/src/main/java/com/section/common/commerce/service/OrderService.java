@@ -4,6 +4,7 @@ import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderListItemDto;
+import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
@@ -27,7 +28,7 @@ public class OrderService {
      * 주문 목록 조회
      */
     public Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
-        return orderRepository.getOrderList(reqDto, pageable);
+        return orderRepository.getOrderList(reqDto.toQuery(), pageable);
     }
 
     /**

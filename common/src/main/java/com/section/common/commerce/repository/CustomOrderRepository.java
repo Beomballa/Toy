@@ -2,6 +2,7 @@ package com.section.common.commerce.repository;
 
 import com.section.common.commerce.dto.OrderItemResDto;
 import com.section.common.commerce.dto.OrderListItemDto;
+import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import org.springframework.data.domain.Page;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface CustomOrderRepository {
-    Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable);
+    Page<OrderListItemDto> getOrderList(OrderListQuery query, Pageable pageable);
 
     OrderListResDto getOrderDetail(Long orderNo);
 

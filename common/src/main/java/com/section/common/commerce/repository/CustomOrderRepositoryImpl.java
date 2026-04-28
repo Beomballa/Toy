@@ -4,8 +4,9 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.dto.OrderListItemDto;
-import com.section.common.commerce.dto.OrderListReqDto;
+import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
 import org.springframework.data.domain.Page;
@@ -34,7 +35,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     }
 
     @Override
-    public Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
+    public Page<OrderListItemDto> getOrderList(OrderListQuery query, Pageable pageable) {
         List<OrderListItemDto> list = jpaQueryFactory
                 .select(
                         Projections.bean(
@@ -53,9 +54,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .leftJoin(orderItem).on(orderItem.orderNo.eq(orders.id))
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        statusEq(reqDto.getStatus()),
-                        crtDtmBetween(reqDto.getStartDate(), reqDto.getEndDate())
+                        searchKeywordLike(query.searchKeyword()),
+                        statusEq(query.status()),
+                        crtDtmBetween(query.startDateTime(), query.endDateTime())
                 )
                 .groupBy(
                         orders.id,
@@ -76,9 +77,9 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .from(orders)
                 .leftJoin(orderItem).on(orderItem.orderNo.eq(orders.id))
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        statusEq(reqDto.getStatus()),
-                        crtDtmBetween(reqDto.getStartDate(), reqDto.getEndDate())
+                        searchKeywordLike(query.searchKeyword()),
+                        statusEq(query.status()),
+                        crtDtmBetween(query.startDateTime(), query.endDateTime())
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
@@ -251,38 +252,24 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .or(orderItem.productName.containsIgnoreCase(searchKeyword));
     }
 
-    private BooleanExpression statusEq(String statusVal) {
-        if (statusVal == null || statusVal.isBlank()) {
+    private BooleanExpression statusEq(OrderStatus status) {
+        if (status == null) {
             return null;
         }
-        return orders.status.stringValue().eq(statusVal);
+        return orders.status.eq(status.name());
     }
 
-    private BooleanExpression crtDtmBetween(String startDate, String endDate) {
-        if ((startDate == null || startDate.isBlank()) && (endDate == null || endDate.isBlank())) {
+    private BooleanExpression crtDtmBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        if (startDateTime == null && endDateTime == null) {
             return null;
         }
 
-        LocalDateTime start = null;
-        LocalDateTime end = null;
-
-        try {
-            if (startDate != null && !startDate.isBlank()) {
-                start = LocalDate.parse(startDate).atStartOfDay();
-            }
-            if (endDate != null && !endDate.isBlank()) {
-                end = LocalDate.parse(endDate).atTime(LocalTime.MAX);
-            }
-        } catch (Exception e) {
-            return null;
-        }
-
-        if (start != null && end != null) {
-            return orders.crtDtm.between(start, end);
-        } else if (start != null) {
-            return orders.crtDtm.goe(start);
-        } else if (end != null) {
-            return orders.crtDtm.loe(end);
+        if (startDateTime != null && endDateTime != null) {
+            return orders.crtDtm.between(startDateTime, endDateTime);
+        } else if (startDateTime != null) {
+            return orders.crtDtm.goe(startDateTime);
+        } else if (endDateTime != null) {
+            return orders.crtDtm.loe(endDateTime);
         }
 
         return null;

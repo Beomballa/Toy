@@ -2,7 +2,7 @@ const OrderDetail = {
     init() {
         this.orderNo = new URLSearchParams(window.location.search).get('no');
         if (!this.orderNo) {
-            CommonJS.alert('잘못된 접근입니다.', '오류', 'error', () => {
+            CommonJS.alert('잘못된 접근입니다.', '오류', 'error').then(() => {
                 location.href = '/admin/orders/list';
             });
             return;
@@ -37,6 +37,7 @@ const OrderDetail = {
         document.getElementById('buyerName').textContent = data.buyerName;
         document.getElementById('buyerPhone').textContent = data.buyerPhone;
         document.getElementById('orderDt').textContent = data.orderDt;
+        document.getElementById('orderDtMeta').textContent = `주문일시 ${data.orderDt || '-'}`;
         document.getElementById('totalAmount').textContent = data.totalAmount;
         document.getElementById('itemCount').textContent = data.items.length;
 
@@ -113,8 +114,8 @@ const OrderDetail = {
     },
 
     async completeDelivery() {
-        const confirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
-        if (!confirm) return;
+        const isConfirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
+        if (!isConfirm) return;
 
         try {
             const res = await fetch('/api/admin/orders/delivery-complete', {
@@ -125,18 +126,17 @@ const OrderDetail = {
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            CommonJS.alert('배송 완료 처리가 되었습니다.', '성공', 'success', () => {
-                this.getDetail();
-            });
+            await CommonJS.alert('배송 완료 처리가 되었습니다.', '성공', 'success');
+            this.getDetail();
         } catch (err) {
             console.error('배송 완료 처리 실패:', err);
-            CommonJS.alert('배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert('배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
     async cancelOrder() {
-        const confirm = await CommonJS.confirm('주문을 취소하시겠습니까?');
-        if (!confirm) return;
+        const isConfirm = await CommonJS.confirm('주문을 취소하시겠습니까?');
+        if (!isConfirm) return;
 
         try {
             const res = await fetch('/api/admin/orders/cancel', {
@@ -147,12 +147,11 @@ const OrderDetail = {
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            CommonJS.alert('주문이 취소되었습니다.', '성공', 'success', () => {
-                this.getDetail();
-            });
+            await CommonJS.alert('주문이 취소되었습니다.', '성공', 'success');
+            this.getDetail();
         } catch (err) {
             console.error('주문 취소 실패:', err);
-            CommonJS.alert('주문 취소 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert('주문 취소 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -161,7 +160,7 @@ const OrderDetail = {
         const tracking = document.getElementById('trackingNum').value;
 
         if (!company || !tracking) {
-            CommonJS.alert('택배사와 운송장 번호를 모두 입력하세요.', '알림', 'warning');
+            await CommonJS.alert('택배사와 운송장 번호를 모두 입력하세요.', '알림', 'warning');
             return;
         }
 
@@ -178,12 +177,11 @@ const OrderDetail = {
 
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-            CommonJS.alert('배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.', '성공', 'success', () => {
-                this.getDetail();
-            });
+            await CommonJS.alert('배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.', '성공', 'success');
+            this.getDetail();
         } catch (err) {
             console.error('배송 정보 저장 실패:', err);
-            CommonJS.alert('배송 정보 저장 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert('배송 정보 저장 중 오류가 발생했습니다.', '오류', 'error');
         }
     }
 };

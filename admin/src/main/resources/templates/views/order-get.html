@@ -15,8 +15,8 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main class="main-content detail-main">
-    <div class="detail-scroll-content">
-    <div class="page-header">
+    <div class="detail-scroll-content admin-detail-page">
+    <div class="page-header admin-detail-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
@@ -24,42 +24,55 @@
                 <li class="breadcrumb-item active">주문 상세</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper">
-            <div>
-                <h1 class="page-title">주문 상세 정보</h1>
-                <div class="mt-2 d-flex align-items-center gap-3">
-                    <span id="orderNumDisplay" class="order-id-display">-</span>
-                    <span id="orderStatusBadge" class="badge rounded-pill">-</span>
+        <div class="page-title-wrapper admin-detail-titlebar">
+            <div class="admin-detail-heading">
+                <div class="admin-detail-eyebrow" id="orderDetailBadge">ORDER</div>
+                <h1 class="page-title" id="orderDetailTitle">주문 상세 정보</h1>
+                <div class="admin-detail-submeta">
+                    <span class="admin-detail-meta-chip" id="orderNumDisplay">-</span>
+                    <span class="admin-detail-meta-chip" id="orderStatusBadge">-</span>
+                    <span class="admin-detail-meta-chip" id="orderDtMeta">주문일시 -</span>
                 </div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="admin-detail-actions">
                 <button type="button" class="btn btn-outline-danger hidden-default" id="btnCancelOrder">주문 취소</button>
                 <button type="button" class="btn btn-secondary" onclick="location.href='/admin/orders/list'">목록으로</button>
             </div>
         </div>
     </div>
 
-    <div class="row">
+    <div class="row admin-detail-layout">
         <div class="col-lg-4">
-            <div class="card animate-in mb-4">
-                <div class="card-header"><span class="card-title">주문자 정보</span></div>
-                <div class="card-body">
-                    <div class="mb-3"><label class="text-muted small d-block">성함</label><div id="buyerName" class="fw-bold fs-5">-</div></div>
-                    <div><label class="text-muted small d-block">연락처</label><div id="buyerPhone" class="fw-bold fs-5">-</div></div>
+            <div class="card animate-in admin-detail-side-card">
+                <div class="card-header admin-detail-side-header"><span class="card-title">주문자 정보</span></div>
+                <div class="card-body admin-detail-side-body">
+                    <div class="admin-detail-side-item">
+                        <span class="admin-detail-side-label">성함</span>
+                        <strong id="buyerName">-</strong>
+                    </div>
+                    <div class="admin-detail-side-item">
+                        <span class="admin-detail-side-label">연락처</span>
+                        <strong id="buyerPhone">-</strong>
+                    </div>
                 </div>
             </div>
-            <div class="card animate-in">
-                <div class="card-header"><span class="card-title">결제 요약</span></div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between mb-3"><span class="text-muted">주문 일시</span><span id="orderDt" class="fw-medium">-</span></div>
-                    <hr class="my-3">
-                    <div class="d-flex justify-content-between align-items-center"><span class="h6 mb-0">총 결제 금액</span><span id="totalAmount" class="h4 mb-0 text-primary fw-bold">-</span></div>
+            <div class="card animate-in admin-detail-side-card">
+                <div class="card-header admin-detail-side-header"><span class="card-title">결제 요약</span></div>
+                <div class="card-body admin-detail-side-body">
+                    <div class="admin-detail-side-item">
+                        <span class="admin-detail-side-label">주문 일시</span>
+                        <strong id="orderDt">-</strong>
+                    </div>
+                    <div class="admin-detail-side-item">
+                        <span class="admin-detail-side-label">총 결제 금액</span>
+                        <strong id="totalAmount" class="text-primary">-</strong>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-8">
-            <div class="card animate-in mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card animate-in admin-detail-card">
+                <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
                     <span class="card-title">주문 상품 목록</span>
                     <span id="itemCount" class="badge bg-secondary rounded-pill">0</span>
                 </div>
@@ -76,9 +89,9 @@
             </div>
 
             <!-- 배송 정보 입력 (결제완료 상태일 때 노출) -->
-            <div class="card animate-in mb-4 hidden-default" id="deliveryInputCard">
-                <div class="card-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
-                <div class="card-body">
+            <div class="card animate-in admin-detail-card hidden-default" id="deliveryInputCard">
+                <div class="card-header admin-detail-side-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
+                <div class="card-body admin-detail-body">
                     <form id="deliveryForm" class="row g-3">
                         <div class="col-md-5">
                             <label class="form-label small fw-bold">택배사</label>
@@ -102,19 +115,19 @@
             </div>
 
             <!-- 배송 정보 표시 (이미 배송 중이거나 완료된 경우) -->
-            <div class="card animate-in mb-4 hidden-default" id="deliveryInfoCard">
-                <div class="card-header d-flex justify-content-between align-items-center">
+            <div class="card animate-in admin-detail-card hidden-default" id="deliveryInfoCard">
+                <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
                     <span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span>
                     <button type="button" class="btn btn-sm btn-success hidden-default" id="btnCompleteDelivery">배송 완료 처리</button>
                 </div>
-                <div class="card-body">
+                <div class="card-body admin-detail-body">
                     <div class="row">
                         <div class="col-6">
-                            <label class="text-muted small d-block">택배사</label>
+                            <label class="admin-detail-side-label d-block">택배사</label>
                             <div id="displayCompany" class="fw-bold fs-5">-</div>
                         </div>
                         <div class="col-6">
-                            <label class="text-muted small d-block">운송장 번호</label>
+                            <label class="admin-detail-side-label d-block">운송장 번호</label>
                             <div id="displayTracking" class="fw-bold fs-5 text-primary">-</div>
                         </div>
                     </div>

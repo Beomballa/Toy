@@ -33,7 +33,7 @@ public class AdminOrderRestController {
 
     @PatchMapping("/status")
     public ResponseEntity<Void> updateStatus(@Valid @RequestBody OrderStatusUpdateRequest req) {
-        adminOrderService.updateOrderStatus(req.orderNo(), req.status());
+        adminOrderService.updateOrderStatus(req.orderNo(), req.toOrderStatus());
         return ResponseEntity.ok().build();
     }
 

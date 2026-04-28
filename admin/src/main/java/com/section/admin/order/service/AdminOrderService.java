@@ -127,8 +127,8 @@ public class AdminOrderService {
      * 주문 상태 변경
      */
     @Transactional
-    public void updateOrderStatus(Long orderNo, String status) {
-        orderService.updateOrderStatus(orderNo, OrderStatus.valueOf(status));
+    public void updateOrderStatus(Long orderNo, OrderStatus status) {
+        orderService.updateOrderStatus(orderNo, status);
     }
 
     @Transactional

@@ -16,4 +16,16 @@ public enum OrderStatus {
     OrderStatus(String desc) {
         this.desc = desc;
     }
+
+    public boolean canCancel() {
+        return this == ORDERED || this == PAID;
+    }
+
+    public boolean canStartDelivery() {
+        return this == PAID;
+    }
+
+    public boolean canCompleteDelivery() {
+        return this == SHIPPED;
+    }
 }

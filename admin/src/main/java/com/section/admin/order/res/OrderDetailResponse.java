@@ -30,10 +30,6 @@ public record OrderDetailResponse(
             statusDesc = status.getDesc();
         } catch (Exception ignored) {}
 
-        boolean canCancel = status == OrderStatus.ORDERED || status == OrderStatus.PAID;
-        boolean canStartDelivery = status == OrderStatus.PAID;
-        boolean canCompleteDelivery = status == OrderStatus.SHIPPED;
-
         return new OrderDetailResponse(
                 master.getOrderNo(),
                 master.getOrderNum(),
@@ -43,9 +39,9 @@ public record OrderDetailResponse(
                 statusDesc,
                 master.getStatus(),
                 master.getCrtDtm() != null ? DateUtil.localDateTimeToStr(master.getCrtDtm()) : "",
-                canCancel,
-                canStartDelivery,
-                canCompleteDelivery,
+                status != null && status.canCancel(),
+                status != null && status.canStartDelivery(),
+                status != null && status.canCompleteDelivery(),
                 Optional.ofNullable(items)
                         .map(list -> list.stream().map(OrderItemInfo::from).toList())
                         .orElse(List.of())

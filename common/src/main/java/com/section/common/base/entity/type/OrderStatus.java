@@ -28,4 +28,12 @@ public enum OrderStatus {
     public boolean canCompleteDelivery() {
         return this == SHIPPED;
     }
+
+    public boolean showDeliveryInput() {
+        return this == PAID;
+    }
+
+    public boolean showDeliveryInfo() {
+        return this == SHIPPED || this == DELIVERED;
+    }
 }

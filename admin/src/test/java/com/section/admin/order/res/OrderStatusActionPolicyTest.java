@@ -15,6 +15,8 @@ class OrderStatusActionPolicyTest {
         assertTrue(OrderStatus.PAID.canCancel());
         assertTrue(OrderStatus.PAID.canStartDelivery());
         assertFalse(OrderStatus.PAID.canCompleteDelivery());
+        assertTrue(OrderStatus.PAID.showDeliveryInput());
+        assertFalse(OrderStatus.PAID.showDeliveryInfo());
     }
 
     @Test
@@ -23,5 +25,7 @@ class OrderStatusActionPolicyTest {
         assertFalse(OrderStatus.SHIPPED.canCancel());
         assertFalse(OrderStatus.SHIPPED.canStartDelivery());
         assertTrue(OrderStatus.SHIPPED.canCompleteDelivery());
+        assertFalse(OrderStatus.SHIPPED.showDeliveryInput());
+        assertTrue(OrderStatus.SHIPPED.showDeliveryInfo());
     }
 }

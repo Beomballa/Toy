@@ -28,6 +28,8 @@ class OrderDetailResponseTest {
         assertTrue(response.canCancel());
         assertTrue(response.canStartDelivery());
         assertFalse(response.canCompleteDelivery());
+        assertTrue(response.showDeliveryInput());
+        assertFalse(response.showDeliveryInfo());
     }
 
     @Test
@@ -47,5 +49,7 @@ class OrderDetailResponseTest {
         assertFalse(response.canCancel());
         assertFalse(response.canStartDelivery());
         assertTrue(response.canCompleteDelivery());
+        assertFalse(response.showDeliveryInput());
+        assertTrue(response.showDeliveryInfo());
     }
 }

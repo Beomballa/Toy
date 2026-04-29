@@ -64,11 +64,11 @@ const OrderDetail = {
         const infoCard = document.getElementById('deliveryInfoCard');
 
         btnCancel.style.display = data.canCancel ? 'block' : 'none';
-        inputCard.style.display = data.canStartDelivery ? 'block' : 'none';
-        infoCard.style.display = statusMeta.showDeliveryInfo ? 'block' : 'none';
+        inputCard.style.display = data.showDeliveryInput ? 'block' : 'none';
+        infoCard.style.display = data.showDeliveryInfo ? 'block' : 'none';
         btnComplete.style.display = data.canCompleteDelivery ? 'block' : 'none';
 
-        if (statusMeta.showDeliveryInfo) {
+        if (data.showDeliveryInfo) {
             document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
             document.getElementById('displayTracking').innerText = data.trackingNum || '-';
         }

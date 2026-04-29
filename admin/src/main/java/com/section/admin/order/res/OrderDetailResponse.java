@@ -20,6 +20,8 @@ public record OrderDetailResponse(
         boolean canCancel,
         boolean canStartDelivery,
         boolean canCompleteDelivery,
+        boolean showDeliveryInput,
+        boolean showDeliveryInfo,
         List<OrderItemInfo> items
 ) {
     public static OrderDetailResponse from(OrderListResDto master, List<OrderItemResDto> items) {
@@ -42,6 +44,8 @@ public record OrderDetailResponse(
                 status != null && status.canCancel(),
                 status != null && status.canStartDelivery(),
                 status != null && status.canCompleteDelivery(),
+                status != null && status.showDeliveryInput(),
+                status != null && status.showDeliveryInfo(),
                 Optional.ofNullable(items)
                         .map(list -> list.stream().map(OrderItemInfo::from).toList())
                         .orElse(List.of())

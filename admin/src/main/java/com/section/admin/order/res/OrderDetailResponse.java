@@ -17,13 +17,22 @@ public record OrderDetailResponse(
         String statusDesc,
         String statusCode,
         String orderDt,
+        boolean canCancel,
+        boolean canStartDelivery,
+        boolean canCompleteDelivery,
         List<OrderItemInfo> items
 ) {
     public static OrderDetailResponse from(OrderListResDto master, List<OrderItemResDto> items) {
         String statusDesc = master.getStatus();
+        OrderStatus status = null;
         try {
-            statusDesc = OrderStatus.valueOf(master.getStatus()).getDesc();
+            status = OrderStatus.valueOf(master.getStatus());
+            statusDesc = status.getDesc();
         } catch (Exception ignored) {}
+
+        boolean canCancel = status == OrderStatus.ORDERED || status == OrderStatus.PAID;
+        boolean canStartDelivery = status == OrderStatus.PAID;
+        boolean canCompleteDelivery = status == OrderStatus.SHIPPED;
 
         return new OrderDetailResponse(
                 master.getOrderNo(),
@@ -34,6 +43,9 @@ public record OrderDetailResponse(
                 statusDesc,
                 master.getStatus(),
                 master.getCrtDtm() != null ? DateUtil.localDateTimeToStr(master.getCrtDtm()) : "",
+                canCancel,
+                canStartDelivery,
+                canCompleteDelivery,
                 Optional.ofNullable(items)
                         .map(list -> list.stream().map(OrderItemInfo::from).toList())
                         .orElse(List.of())

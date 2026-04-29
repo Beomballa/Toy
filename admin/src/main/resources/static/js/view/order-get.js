@@ -63,10 +63,10 @@ const OrderDetail = {
         const inputCard = document.getElementById('deliveryInputCard');
         const infoCard = document.getElementById('deliveryInfoCard');
 
-        btnCancel.style.display = statusMeta.canCancel ? 'block' : 'none';
-        inputCard.style.display = statusMeta.showDeliveryInput ? 'block' : 'none';
+        btnCancel.style.display = data.canCancel ? 'block' : 'none';
+        inputCard.style.display = data.canStartDelivery ? 'block' : 'none';
         infoCard.style.display = statusMeta.showDeliveryInfo ? 'block' : 'none';
-        btnComplete.style.display = statusMeta.showCompleteDelivery ? 'block' : 'none';
+        btnComplete.style.display = data.canCompleteDelivery ? 'block' : 'none';
 
         if (statusMeta.showDeliveryInfo) {
             document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';

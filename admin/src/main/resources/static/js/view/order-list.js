@@ -19,6 +19,9 @@ const OrderList = {
         document.getElementById('btnFilter')?.addEventListener('click', () => {
             this.state.page = 0;
             this.captureFilterState();
+            if (!this.validateDateRange()) {
+                return;
+            }
             this.pushState();
             this.getList();
         });
@@ -28,6 +31,9 @@ const OrderList = {
             if (e.key === 'Enter') {
                 this.state.page = 0;
                 this.captureFilterState();
+                if (!this.validateDateRange()) {
+                    return;
+                }
                 this.pushState();
                 this.getList();
             }
@@ -59,14 +65,16 @@ const OrderList = {
 
         try {
             const res = await fetch(`/api/admin/orders/list?${params}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '데이터를 불러오는 중 오류가 발생했습니다.'));
+            }
 
             const data = await res.json();
             this.renderList(data.orders);
             this.renderPagination(data);
         } catch (err) {
             console.error('주문 목록 로드 실패:', err);
-            CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -128,6 +136,11 @@ const OrderList = {
         if (infoEl) {
             infoEl.textContent = `Showing page ${curr + 1} of ${totalPages} (Total ${totalElements.toLocaleString()} entries)`;
         }
+
+        const totalCountEl = document.getElementById('totalElementsCount');
+        if (totalCountEl) {
+            totalCountEl.textContent = `전체 ${Number(totalElements || 0).toLocaleString()}건`;
+        }
     },
 
     goPage(page) {
@@ -177,6 +190,19 @@ const OrderList = {
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
 
         return params.toString();
+    },
+
+    validateDateRange() {
+        if (!this.state.startDate || !this.state.endDate) {
+            return true;
+        }
+
+        if (this.state.startDate > this.state.endDate) {
+            CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
+            return false;
+        }
+
+        return true;
     }
 };
 

@@ -2,6 +2,8 @@ package com.section.common.commerce.entity;
 
 import com.section.common.base.entity.type.BaseEntity;
 import com.section.common.base.entity.type.OrderStatus;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -71,7 +73,7 @@ public class Orders extends BaseEntity {
      */
     public void startDelivery(String deliveryCompany, String trackingNum) {
         if (!OrderStatus.PAID.name().equals(this.status)) {
-            throw new IllegalStateException("결제 완료된 주문만 배송을 시작할 수 있습니다.");
+            throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.deliveryCompany = deliveryCompany;
         this.trackingNum = trackingNum;
@@ -83,7 +85,7 @@ public class Orders extends BaseEntity {
      */
     public void completeDelivery() {
         if (!OrderStatus.SHIPPED.name().equals(this.status)) {
-            throw new IllegalStateException("배송 중인 주문만 배송 완료 처리가 가능합니다.");
+            throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.status = OrderStatus.DELIVERED.name();
     }
@@ -93,7 +95,7 @@ public class Orders extends BaseEntity {
      */
     public void cancel() {
         if (OrderStatus.SHIPPED.name().equals(this.status) || OrderStatus.DELIVERED.name().equals(this.status)) {
-            throw new IllegalStateException("배송이 시작된 주문은 취소할 수 없습니다.");
+            throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.status = OrderStatus.CANCELLED.name();
     }

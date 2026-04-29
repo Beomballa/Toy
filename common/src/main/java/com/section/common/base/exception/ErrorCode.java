@@ -20,6 +20,7 @@ public enum ErrorCode {
     BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "존재하지 않는 브랜드입니다."),
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CA001", "존재하지 않는 카테고리입니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "O001", "존재하지 않는 주문입니다."),
+    ORDER_STATUS_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "O002", "현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."),
 
     // Member
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "M001", "존재하지 않는 회원입니다."),

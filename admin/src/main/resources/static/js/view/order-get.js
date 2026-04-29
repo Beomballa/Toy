@@ -45,11 +45,12 @@ const OrderDetail = {
         document.getElementById('orderDtMeta').textContent = `주문일시 ${data.orderDt || '-'}`;
         document.getElementById('totalAmount').textContent = data.totalAmount;
         document.getElementById('itemCount').textContent = data.items.length;
+        const statusMeta = CommonJS.getOrderStatusMeta(data.statusCode);
 
         // 상태 배지
         const badge = document.getElementById('orderStatusBadge');
         badge.textContent = data.statusDesc;
-        badge.className = 'badge rounded-pill ' + this.getStatusClass(data.statusCode);
+        badge.className = `badge rounded-pill ${statusMeta.badgeClass}`;
 
         // 버튼 노출 제어
         const btnCancel = document.getElementById('btnCancelOrder');
@@ -57,27 +58,14 @@ const OrderDetail = {
         const inputCard = document.getElementById('deliveryInputCard');
         const infoCard = document.getElementById('deliveryInfoCard');
 
-        // 취소 버튼: 배송 시작 전(ORDERED, PAID)일 때만 노출
-        btnCancel.style.display = (data.statusCode === 'ORDERED' || data.statusCode === 'PAID') ? 'block' : 'none';
+        btnCancel.style.display = statusMeta.canCancel ? 'block' : 'none';
+        inputCard.style.display = statusMeta.showDeliveryInput ? 'block' : 'none';
+        infoCard.style.display = statusMeta.showDeliveryInfo ? 'block' : 'none';
+        btnComplete.style.display = statusMeta.showCompleteDelivery ? 'block' : 'none';
 
-        if (data.statusCode === 'PAID') {
-            inputCard.style.display = 'block';
-            infoCard.style.display = 'none';
-        } else if (data.statusCode === 'SHIPPED') {
-            inputCard.style.display = 'none';
-            infoCard.style.display = 'block';
-            btnComplete.style.display = 'block'; // 배송 중일 때만 완료 버튼 노출
+        if (statusMeta.showDeliveryInfo) {
             document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
             document.getElementById('displayTracking').innerText = data.trackingNum || '-';
-        } else if (data.statusCode === 'DELIVERED') {
-            inputCard.style.display = 'none';
-            infoCard.style.display = 'block';
-            btnComplete.style.display = 'none';
-            document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
-            document.getElementById('displayTracking').innerText = data.trackingNum || '-';
-        } else {
-            inputCard.style.display = 'none';
-            infoCard.style.display = 'none';
         }
 
         // 아이템 목록
@@ -104,18 +92,6 @@ const OrderDetail = {
                 <td class="text-end pe-4 fw-bold text-primary">${item.orderPrice}</td>
             </tr>
         `).join('');
-    },
-
-    getStatusClass(code) {
-        switch(code) {
-            case 'ORDERED': return 'badge-ordered';
-            case 'PAID': return 'badge-paid';
-            case 'PREPARING': return 'badge-preparing';
-            case 'SHIPPED': return 'badge-shipped';
-            case 'DELIVERED': return 'badge-delivered';
-            case 'CANCELLED': return 'badge-cancelled';
-            default: return 'bg-secondary';
-        }
     },
 
     async completeDelivery() {

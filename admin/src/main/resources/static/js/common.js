@@ -1,5 +1,13 @@
 // /js/common.js
 let CommonJS = {
+    orderStatusMeta: {
+        ORDERED: { badgeClass: 'badge-ordered', canCancel: true, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false },
+        PAID: { badgeClass: 'badge-paid', canCancel: true, showDeliveryInput: true, showDeliveryInfo: false, showCompleteDelivery: false },
+        PREPARING: { badgeClass: 'badge-preparing', canCancel: false, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false },
+        SHIPPED: { badgeClass: 'badge-shipped', canCancel: false, showDeliveryInput: false, showDeliveryInfo: true, showCompleteDelivery: true },
+        DELIVERED: { badgeClass: 'badge-delivered', canCancel: false, showDeliveryInput: false, showDeliveryInfo: true, showCompleteDelivery: false },
+        CANCELLED: { badgeClass: 'badge-cancelled', canCancel: false, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false }
+    },
 
     init: function () {
         document.getElementById("main-logo")?.addEventListener("click", function (el){
@@ -154,6 +162,16 @@ let CommonJS = {
         } catch (e) {
             return fallbackMessage;
         }
+    },
+
+    getOrderStatusMeta: function(statusCode) {
+        return this.orderStatusMeta[statusCode] || {
+            badgeClass: 'bg-secondary',
+            canCancel: false,
+            showDeliveryInput: false,
+            showDeliveryInfo: false,
+            showCompleteDelivery: false
+        };
     }
 }
 

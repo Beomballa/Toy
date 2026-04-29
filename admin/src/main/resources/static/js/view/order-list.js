@@ -88,14 +88,7 @@ const OrderList = {
         }
 
         tbody.innerHTML = items.map(item => {
-            let statusClass = 'bg-secondary';
-            switch(item.statusCode) {
-                case 'PAID': statusClass = 'badge-paid'; break;
-                case 'SHIPPED': statusClass = 'badge-shipped'; break;
-                case 'DELIVERED': statusClass = 'badge-delivered'; break;
-                case 'CANCELLED': statusClass = 'badge-cancelled'; break;
-                case 'ORDERED': statusClass = 'badge-ordered'; break;
-            }
+            const statusMeta = CommonJS.getOrderStatusMeta(item.statusCode);
 
             return `
                 <tr>
@@ -109,7 +102,7 @@ const OrderList = {
                     </td>
                     <td>${item.productSummary}</td>
                     <td><strong>${item.totalAmount}</strong></td>
-                    <td><span class="badge ${statusClass}">${item.statusDesc}</span></td>
+                    <td><span class="badge ${statusMeta.badgeClass}">${item.statusDesc}</span></td>
                     <td class="text-end pe-4">
                         <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='${this.buildDetailUrl(item.orderNo)}'">상세보기</button>
                     </td>

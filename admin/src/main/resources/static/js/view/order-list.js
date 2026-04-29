@@ -39,6 +39,14 @@ const OrderList = {
             this.getList();
         });
 
+        document.querySelectorAll('[data-date-preset]').forEach((button) => {
+            button.addEventListener('click', () => {
+                this.applyDatePreset(Number(button.dataset.datePreset || 0));
+                this.pushState();
+                this.getList();
+            });
+        });
+
         // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.
         document.getElementById('searchKeyword')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -185,6 +193,19 @@ const OrderList = {
         this.syncFilterFields();
     },
 
+    applyDatePreset(days) {
+        const today = new Date();
+        const endDate = this.formatDate(today);
+        const startDate = new Date(today);
+
+        startDate.setDate(today.getDate() - Math.max(days - 1, 0));
+
+        this.state.page = 0;
+        this.state.startDate = this.formatDate(startDate);
+        this.state.endDate = endDate;
+        this.syncFilterFields();
+    },
+
     pushState() {
         const newUrl = `${window.location.pathname}?${this.buildQueryString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
@@ -220,6 +241,13 @@ const OrderList = {
         }
 
         return true;
+    },
+
+    formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 };
 

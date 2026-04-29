@@ -26,6 +26,12 @@ const OrderList = {
             this.getList();
         });
 
+        document.getElementById('btnResetFilter')?.addEventListener('click', () => {
+            this.resetFilters();
+            this.pushState();
+            this.getList();
+        });
+
         // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.
         document.getElementById('searchKeyword')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -159,6 +165,15 @@ const OrderList = {
         if (startDateEl) startDateEl.value = this.state.startDate;
         if (endDateEl) endDateEl.value = this.state.endDate;
         if (searchKeywordEl) searchKeywordEl.value = this.state.searchKeyword;
+    },
+
+    resetFilters() {
+        this.state.page = 0;
+        this.state.status = '';
+        this.state.startDate = '';
+        this.state.endDate = '';
+        this.state.searchKeyword = '';
+        this.syncFilterFields();
     },
 
     pushState() {

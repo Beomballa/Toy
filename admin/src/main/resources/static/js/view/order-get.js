@@ -3,6 +3,7 @@ const OrderDetail = {
         const params = new URLSearchParams(window.location.search);
         this.orderNo = params.get('no');
         this.returnTo = params.get('returnTo') || '/admin/orders/list';
+        this.isSubmitting = false;
         if (!this.orderNo) {
             CommonJS.alert('잘못된 접근입니다.', '오류', 'error').then(() => {
                 location.href = this.returnTo;
@@ -16,6 +17,10 @@ const OrderDetail = {
     },
 
     bindEvents() {
+        document.getElementById('deliveryForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveDelivery();
+        });
         document.getElementById('btnSaveDelivery')?.addEventListener('click', () => this.saveDelivery());
         document.getElementById('btnCompleteDelivery')?.addEventListener('click', () => this.completeDelivery());
         document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
@@ -143,6 +148,13 @@ const OrderDetail = {
     },
 
     async submitOrderAction({ url, payload, successMessage, fallbackErrorMessage, logLabel }) {
+        if (this.isSubmitting) {
+            return;
+        }
+
+        this.isSubmitting = true;
+        this.setActionButtonsDisabled(true);
+
         try {
             const res = await fetch(url, {
                 method: 'POST',
@@ -159,6 +171,9 @@ const OrderDetail = {
         } catch (err) {
             console.error(`${logLabel} 실패:`, err);
             await CommonJS.alert(err.message || fallbackErrorMessage, '오류', 'error');
+        } finally {
+            this.isSubmitting = false;
+            this.setActionButtonsDisabled(false);
         }
     },
 
@@ -166,6 +181,16 @@ const OrderDetail = {
         document.getElementById('orderListBreadcrumb')?.setAttribute('href', this.returnTo);
         document.getElementById('btnBackToOrderList')?.addEventListener('click', () => {
             location.href = this.returnTo;
+        });
+    },
+
+    setActionButtonsDisabled(disabled) {
+        // 상세 액션은 중복 요청이 그대로 상태 전이 중복으로 이어질 수 있어서 전송 중 버튼을 잠급니다.
+        ['btnSaveDelivery', 'btnCompleteDelivery', 'btnCancelOrder', 'btnBackToOrderList'].forEach((id) => {
+            const button = document.getElementById(id);
+            if (button) {
+                button.disabled = disabled;
+            }
         });
     }
 };

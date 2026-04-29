@@ -98,46 +98,26 @@ const OrderDetail = {
         const isConfirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
         if (!isConfirm) return;
 
-        try {
-            const res = await fetch('/api/admin/orders/delivery-complete', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderNo: this.orderNo })
-            });
-
-            if (!res.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(res, '배송 완료 처리 중 오류가 발생했습니다.'));
-            }
-
-            await CommonJS.alert('배송 완료 처리가 되었습니다.', '성공', 'success');
-            this.getDetail();
-        } catch (err) {
-            console.error('배송 완료 처리 실패:', err);
-            await CommonJS.alert(err.message || '배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
-        }
+        await this.submitOrderAction({
+            url: '/api/admin/orders/delivery-complete',
+            payload: { orderNo: this.orderNo },
+            successMessage: '배송 완료 처리가 되었습니다.',
+            fallbackErrorMessage: '배송 완료 처리 중 오류가 발생했습니다.',
+            logLabel: '배송 완료 처리'
+        });
     },
 
     async cancelOrder() {
         const isConfirm = await CommonJS.confirm('주문을 취소하시겠습니까?');
         if (!isConfirm) return;
 
-        try {
-            const res = await fetch('/api/admin/orders/cancel', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderNo: this.orderNo })
-            });
-
-            if (!res.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(res, '주문 취소 중 오류가 발생했습니다.'));
-            }
-
-            await CommonJS.alert('주문이 취소되었습니다.', '성공', 'success');
-            this.getDetail();
-        } catch (err) {
-            console.error('주문 취소 실패:', err);
-            await CommonJS.alert(err.message || '주문 취소 중 오류가 발생했습니다.', '오류', 'error');
-        }
+        await this.submitOrderAction({
+            url: '/api/admin/orders/cancel',
+            payload: { orderNo: this.orderNo },
+            successMessage: '주문이 취소되었습니다.',
+            fallbackErrorMessage: '주문 취소 중 오류가 발생했습니다.',
+            logLabel: '주문 취소'
+        });
     },
 
     async saveDelivery() {
@@ -149,26 +129,36 @@ const OrderDetail = {
             return;
         }
 
+        await this.submitOrderAction({
+            url: '/api/admin/orders/delivery',
+            payload: {
+                orderNo: this.orderNo,
+                deliveryCompany: company,
+                trackingNum: tracking
+            },
+            successMessage: '배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.',
+            fallbackErrorMessage: '배송 정보 저장 중 오류가 발생했습니다.',
+            logLabel: '배송 정보 저장'
+        });
+    },
+
+    async submitOrderAction({ url, payload, successMessage, fallbackErrorMessage, logLabel }) {
         try {
-            const res = await fetch('/api/admin/orders/delivery', {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orderNo: this.orderNo,
-                    deliveryCompany: company,
-                    trackingNum: tracking
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!res.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(res, '배송 정보 저장 중 오류가 발생했습니다.'));
+                throw new Error(await CommonJS.extractErrorMessage(res, fallbackErrorMessage));
             }
 
-            await CommonJS.alert('배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.', '성공', 'success');
-            this.getDetail();
+            await CommonJS.alert(successMessage, '성공', 'success');
+            await this.getDetail();
         } catch (err) {
-            console.error('배송 정보 저장 실패:', err);
-            await CommonJS.alert(err.message || '배송 정보 저장 중 오류가 발생했습니다.', '오류', 'error');
+            console.error(`${logLabel} 실패:`, err);
+            await CommonJS.alert(err.message || fallbackErrorMessage, '오류', 'error');
         }
     },
 

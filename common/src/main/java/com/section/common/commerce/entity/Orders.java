@@ -61,6 +61,9 @@ public class Orders extends BaseEntity {
      * 상태 변경 비즈니스 메서드
      */
     public void changeStatus(OrderStatus newStatus) {
+        if (!canTransitionTo(newStatus)) {
+            throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
+        }
         this.status = newStatus.name();
     }
 
@@ -98,5 +101,24 @@ public class Orders extends BaseEntity {
             throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.status = OrderStatus.CANCELLED.name();
+    }
+
+    private boolean canTransitionTo(OrderStatus newStatus) {
+        OrderStatus currentStatus = OrderStatus.valueOf(this.status);
+
+        // 같은 상태 재적용은 운영자가 화면 동기화를 다시 맞출 때 불필요한 실패를 만들지 않도록 허용합니다.
+        if (currentStatus == newStatus) {
+            return true;
+        }
+
+        return switch (currentStatus) {
+            case ORDERED -> newStatus == OrderStatus.PAID || newStatus == OrderStatus.CANCELLED;
+            case PAID -> newStatus == OrderStatus.PREPARING
+                    || newStatus == OrderStatus.SHIPPED
+                    || newStatus == OrderStatus.CANCELLED;
+            case PREPARING -> newStatus == OrderStatus.SHIPPED || newStatus == OrderStatus.CANCELLED;
+            case SHIPPED -> newStatus == OrderStatus.DELIVERED;
+            case DELIVERED, CANCELLED -> false;
+        };
     }
 }

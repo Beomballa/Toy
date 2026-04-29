@@ -74,6 +74,21 @@ class AdminOrderRestControllerTest {
                 .andExpect(jsonPath("$.message").value("현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."));
     }
 
+    @Test
+    @DisplayName("일반 주문 상태 변경에서도 허용되지 않은 전이는 400 ORDER_STATUS_NOT_ALLOWED를 반환한다")
+    void updateStatusReturnsBadRequestWhenTransitionInvalid() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED))
+                .when(adminOrderService)
+                .updateOrderStatus(1L, com.section.common.base.entity.type.OrderStatus.DELIVERED);
+
+        mockMvc.perform(patch("/api/admin/orders/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new StatusPayload(1L, "DELIVERED"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("O002"))
+                .andExpect(jsonPath("$.message").value("현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."));
+    }
+
     private record StatusPayload(Long orderNo, String status) {
     }
 

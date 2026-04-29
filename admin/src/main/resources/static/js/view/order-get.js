@@ -42,7 +42,13 @@ const OrderDetail = {
     },
 
     renderDetail(data) {
-        // 마스터 정보
+        this.renderSummary(data);
+        this.renderActionVisibility(data);
+        this.renderDeliveryInfo(data);
+        this.renderOrderItems(data.items);
+    },
+
+    renderSummary(data) {
         document.getElementById('orderNumDisplay').textContent = data.orderNum;
         document.getElementById('buyerName').textContent = data.buyerName;
         document.getElementById('buyerPhone').textContent = data.buyerPhone;
@@ -50,14 +56,14 @@ const OrderDetail = {
         document.getElementById('orderDtMeta').textContent = `주문일시 ${data.orderDt || '-'}`;
         document.getElementById('totalAmount').textContent = data.totalAmount;
         document.getElementById('itemCount').textContent = data.items.length;
-        const statusMeta = CommonJS.getOrderStatusMeta(data.statusCode);
 
-        // 상태 배지
+        const statusMeta = CommonJS.getOrderStatusMeta(data.statusCode);
         const badge = document.getElementById('orderStatusBadge');
         badge.textContent = data.statusDesc;
         badge.className = `badge rounded-pill ${statusMeta.badgeClass}`;
+    },
 
-        // 버튼 노출 제어
+    renderActionVisibility(data) {
         const btnCancel = document.getElementById('btnCancelOrder');
         const btnComplete = document.getElementById('btnCompleteDelivery');
         const inputCard = document.getElementById('deliveryInputCard');
@@ -67,20 +73,23 @@ const OrderDetail = {
         inputCard.style.display = data.showDeliveryInput ? 'block' : 'none';
         infoCard.style.display = data.showDeliveryInfo ? 'block' : 'none';
         btnComplete.style.display = data.canCompleteDelivery ? 'block' : 'none';
+    },
 
+    renderDeliveryInfo(data) {
         if (data.showDeliveryInfo) {
             document.getElementById('displayCompany').innerText = data.deliveryCompany || '-';
             document.getElementById('displayTracking').innerText = data.trackingNum || '-';
         }
+    },
 
-        // 아이템 목록
+    renderOrderItems(items) {
         const tbody = document.getElementById('orderItemsTableBody');
-        if (data.items.length === 0) {
+        if (items.length === 0) {
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">주문 상품 정보가 없습니다.</td></tr>';
             return;
         }
 
-        tbody.innerHTML = data.items.map(item => `
+        tbody.innerHTML = items.map(item => `
             <tr class="item-row">
                 <td class="ps-4">
                     <div style="width:64px; height:64px;">

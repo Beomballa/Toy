@@ -1,14 +1,8 @@
 const OrderList = {
-    state: {
-        page: Number(new URLSearchParams(window.location.search).get('page') || 0),
-        size: Number(new URLSearchParams(window.location.search).get('size') || 10),
-        status: new URLSearchParams(window.location.search).get('status') || '',
-        startDate: new URLSearchParams(window.location.search).get('startDate') || '',
-        endDate: new URLSearchParams(window.location.search).get('endDate') || '',
-        searchKeyword: new URLSearchParams(window.location.search).get('searchKeyword') || ''
-    },
+    state: null,
 
     init() {
+        this.state = this.readStateFromUrl();
         this.syncFilterFields();
         this.bindEvents();
         this.getList();
@@ -61,13 +55,7 @@ const OrderList = {
         });
 
         window.addEventListener('popstate', () => {
-            const params = new URLSearchParams(window.location.search);
-            this.state.page = Number(params.get('page') || 0);
-            this.state.size = Number(params.get('size') || 10);
-            this.state.status = params.get('status') || '';
-            this.state.startDate = params.get('startDate') || '';
-            this.state.endDate = params.get('endDate') || '';
-            this.state.searchKeyword = params.get('searchKeyword') || '';
+            this.state = this.readStateFromUrl();
             this.syncFilterFields();
             this.getList();
         });
@@ -217,17 +205,7 @@ const OrderList = {
     },
 
     buildQueryString() {
-        const params = new URLSearchParams({
-            page: this.state.page,
-            size: this.state.size
-        });
-
-        if (this.state.status) params.set('status', this.state.status);
-        if (this.state.startDate) params.set('startDate', this.state.startDate);
-        if (this.state.endDate) params.set('endDate', this.state.endDate);
-        if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
-
-        return params.toString();
+        return this.buildStateParams().toString();
     },
 
     validateDateRange() {
@@ -248,6 +226,33 @@ const OrderList = {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    },
+
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        return {
+            page: Number(params.get('page') || 0),
+            size: Number(params.get('size') || 10),
+            status: params.get('status') || '',
+            startDate: params.get('startDate') || '',
+            endDate: params.get('endDate') || '',
+            searchKeyword: params.get('searchKeyword') || ''
+        };
+    },
+
+    buildStateParams() {
+        // URL state를 한 곳에서만 조립해야 필터 항목이 늘어나도 popstate와 상세 복귀가 같이 유지됩니다.
+        const params = new URLSearchParams({
+            page: this.state.page,
+            size: this.state.size
+        });
+
+        if (this.state.status) params.set('status', this.state.status);
+        if (this.state.startDate) params.set('startDate', this.state.startDate);
+        if (this.state.endDate) params.set('endDate', this.state.endDate);
+        if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
+
+        return params;
     }
 };
 

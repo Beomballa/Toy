@@ -32,6 +32,13 @@ const OrderList = {
             this.getList();
         });
 
+        document.getElementById('pageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.state.size = Number(document.getElementById('pageSize')?.value || 10);
+            this.pushState();
+            this.getList();
+        });
+
         // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.
         document.getElementById('searchKeyword')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -160,11 +167,13 @@ const OrderList = {
         const startDateEl = document.getElementById('startDate');
         const endDateEl = document.getElementById('endDate');
         const searchKeywordEl = document.getElementById('searchKeyword');
+        const pageSizeEl = document.getElementById('pageSize');
 
         if (statusEl) statusEl.value = this.state.status;
         if (startDateEl) startDateEl.value = this.state.startDate;
         if (endDateEl) endDateEl.value = this.state.endDate;
         if (searchKeywordEl) searchKeywordEl.value = this.state.searchKeyword;
+        if (pageSizeEl) pageSizeEl.value = String(this.state.size);
     },
 
     resetFilters() {

@@ -20,7 +20,7 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                <li class="breadcrumb-item"><a href="/admin/orders/list">주문 관리</a></li>
+                <li class="breadcrumb-item"><a href="/admin/orders/list" id="orderListBreadcrumb">주문 관리</a></li>
                 <li class="breadcrumb-item active">주문 상세</li>
             </ol>
         </nav>
@@ -36,7 +36,7 @@
             </div>
             <div class="admin-detail-actions">
                 <button type="button" class="btn btn-outline-danger hidden-default" id="btnCancelOrder">주문 취소</button>
-                <button type="button" class="btn btn-secondary" onclick="location.href='/admin/orders/list'">목록으로</button>
+                <button type="button" class="btn btn-secondary" id="btnBackToOrderList">목록으로</button>
             </div>
         </div>
     </div>

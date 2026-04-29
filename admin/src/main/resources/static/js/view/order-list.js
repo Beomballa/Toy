@@ -103,7 +103,7 @@ const OrderList = {
                     <td><strong>${item.totalAmount}</strong></td>
                     <td><span class="badge ${statusClass}">${item.statusDesc}</span></td>
                     <td class="text-end pe-4">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='/admin/orders/get?no=${item.orderNo}'">상세보기</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='${this.buildDetailUrl(item.orderNo)}'">상세보기</button>
                     </td>
                 </tr>
             `;
@@ -156,6 +156,16 @@ const OrderList = {
     },
 
     pushState() {
+        const newUrl = `${window.location.pathname}?${this.buildQueryString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+    },
+
+    buildDetailUrl(orderNo) {
+        const returnTo = encodeURIComponent(`${window.location.pathname}?${this.buildQueryString()}`);
+        return `/admin/orders/get?no=${orderNo}&returnTo=${returnTo}`;
+    },
+
+    buildQueryString() {
         const params = new URLSearchParams({
             page: this.state.page,
             size: this.state.size
@@ -166,8 +176,7 @@ const OrderList = {
         if (this.state.endDate) params.set('endDate', this.state.endDate);
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
 
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        return params.toString();
     }
 };
 

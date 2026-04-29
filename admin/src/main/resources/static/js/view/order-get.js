@@ -1,13 +1,16 @@
 const OrderDetail = {
     init() {
-        this.orderNo = new URLSearchParams(window.location.search).get('no');
+        const params = new URLSearchParams(window.location.search);
+        this.orderNo = params.get('no');
+        this.returnTo = params.get('returnTo') || '/admin/orders/list';
         if (!this.orderNo) {
             CommonJS.alert('잘못된 접근입니다.', '오류', 'error').then(() => {
-                location.href = '/admin/orders/list';
+                location.href = this.returnTo;
             });
             return;
         }
 
+        this.syncReturnLinks();
         this.bindEvents();
         this.getDetail();
     },
@@ -21,13 +24,15 @@ const OrderDetail = {
     async getDetail() {
         try {
             const res = await fetch(`/api/admin/orders/get?no=${this.orderNo}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '데이터를 불러오는 중 오류가 발생했습니다.'));
+            }
 
             const data = await res.json();
             this.renderDetail(data);
         } catch (err) {
             console.error('주문 상세 로드 실패:', err);
-            CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -124,13 +129,15 @@ const OrderDetail = {
                 body: JSON.stringify({ orderNo: this.orderNo })
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '배송 완료 처리 중 오류가 발생했습니다.'));
+            }
 
             await CommonJS.alert('배송 완료 처리가 되었습니다.', '성공', 'success');
             this.getDetail();
         } catch (err) {
             console.error('배송 완료 처리 실패:', err);
-            await CommonJS.alert('배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '배송 완료 처리 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -145,13 +152,15 @@ const OrderDetail = {
                 body: JSON.stringify({ orderNo: this.orderNo })
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '주문 취소 중 오류가 발생했습니다.'));
+            }
 
             await CommonJS.alert('주문이 취소되었습니다.', '성공', 'success');
             this.getDetail();
         } catch (err) {
             console.error('주문 취소 실패:', err);
-            await CommonJS.alert('주문 취소 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '주문 취소 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -175,14 +184,23 @@ const OrderDetail = {
                 })
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '배송 정보 저장 중 오류가 발생했습니다.'));
+            }
 
             await CommonJS.alert('배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.', '성공', 'success');
             this.getDetail();
         } catch (err) {
             console.error('배송 정보 저장 실패:', err);
-            await CommonJS.alert('배송 정보 저장 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '배송 정보 저장 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    syncReturnLinks() {
+        document.getElementById('orderListBreadcrumb')?.setAttribute('href', this.returnTo);
+        document.getElementById('btnBackToOrderList')?.addEventListener('click', () => {
+            location.href = this.returnTo;
+        });
     }
 };
 

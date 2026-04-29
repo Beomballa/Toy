@@ -2,6 +2,7 @@ package com.section.admin.order.service;
 
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderListResponse;
+import com.section.admin.order.support.OrderListPagePolicy;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -108,7 +109,7 @@ public class AdminOrderService {
      * 화면용 주문 목록 조회
      */
     public OrderListResponse getOrderList(OrderListReqDto reqDto, Pageable pageable) {
-        Page<OrderListItemDto> result = orderService.getOrderList(reqDto, pageable);
+        Page<OrderListItemDto> result = orderService.getOrderList(reqDto, OrderListPagePolicy.normalize(pageable));
         return OrderListResponse.of(result);
     }
 

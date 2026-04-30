@@ -141,13 +141,18 @@ const OrderDetail = {
     },
 
     async saveDelivery() {
-        const company = document.getElementById('deliveryCompany').value;
-        const tracking = document.getElementById('trackingNum').value;
+        const companyInput = document.getElementById('deliveryCompany');
+        const trackingInput = document.getElementById('trackingNum');
+        const company = companyInput.value.trim().replace(/\s+/g, ' ');
+        const tracking = trackingInput.value.trim();
 
         if (!company || !tracking) {
             await CommonJS.alert('택배사와 운송장 번호를 모두 입력하세요.', '알림', 'warning');
             return;
         }
+
+        companyInput.value = company;
+        trackingInput.value = tracking;
 
         await this.submitOrderAction({
             url: '/api/admin/orders/delivery',

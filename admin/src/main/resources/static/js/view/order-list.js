@@ -1,4 +1,5 @@
 const OrderList = {
+    maxDateRangeDays: 92,
     state: null,
 
     init() {
@@ -215,6 +216,15 @@ const OrderList = {
 
         if (this.state.startDate > this.state.endDate) {
             CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
+            return false;
+        }
+
+        const startDate = new Date(`${this.state.startDate}T00:00:00`);
+        const endDate = new Date(`${this.state.endDate}T00:00:00`);
+        const diffDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+        if (diffDays > this.maxDateRangeDays) {
+            CommonJS.alert(`조회 기간은 ${this.maxDateRangeDays + 1}일 이내로만 설정할 수 있습니다.`, '알림', 'warning');
             return false;
         }
 

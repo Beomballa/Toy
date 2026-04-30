@@ -16,6 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -87,6 +89,18 @@ class AdminOrderRestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("O002"))
                 .andExpect(jsonPath("$.message").value("현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 주문 상세 조회는 404 ORDER_NOT_FOUND를 반환한다")
+    void getOrderDetailReturnsNotFoundWhenOrderMissing() throws Exception {
+        when(adminOrderService.getOrderDetail(999L))
+                .thenThrow(new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+
+        mockMvc.perform(get("/api/admin/orders/get").param("no", "999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("O001"))
+                .andExpect(jsonPath("$.message").value("존재하지 않는 주문입니다."));
     }
 
     private record StatusPayload(Long orderNo, String status) {

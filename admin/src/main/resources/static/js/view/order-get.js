@@ -30,7 +30,13 @@ const OrderDetail = {
         try {
             const res = await fetch(`/api/admin/orders/get?no=${this.orderNo}`);
             if (!res.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(res, '데이터를 불러오는 중 오류가 발생했습니다.'));
+                const error = await CommonJS.extractError(res);
+                if (error.code === 'O001') {
+                    await CommonJS.alert(error.message || '존재하지 않는 주문입니다.', '오류', 'error');
+                    location.href = this.returnTo;
+                    return;
+                }
+                throw new Error(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');
             }
 
             const data = await res.json();

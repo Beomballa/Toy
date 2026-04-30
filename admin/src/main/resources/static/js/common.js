@@ -156,11 +156,22 @@ let CommonJS = {
     },
 
     extractErrorMessage: async function(response, fallbackMessage = '오류가 발생했습니다.') {
+        const error = await this.extractError(response);
+        return error.message || fallbackMessage;
+    },
+
+    extractError: async function(response) {
         try {
             const error = await response.json();
-            return error?.message || fallbackMessage;
+            return {
+                code: error?.code || '',
+                message: error?.message || ''
+            };
         } catch (e) {
-            return fallbackMessage;
+            return {
+                code: '',
+                message: ''
+            };
         }
     },
 

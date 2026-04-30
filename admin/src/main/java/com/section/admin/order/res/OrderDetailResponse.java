@@ -1,9 +1,9 @@
 package com.section.admin.order.res;
 
+import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
-import com.section.common.util.DateUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,10 +32,10 @@ public record OrderDetailResponse(
                 master.getOrderNum(),
                 master.getBuyerName(),
                 master.getBuyerPhone(),
-                String.format("%,d원", master.getTotalAmount()),
-                OrderStatus.resolveDesc(master.getStatus()),
+                OrderViewFormatter.formatAmount(master.getTotalAmount()),
+                OrderViewFormatter.formatStatusDesc(master.getStatus()),
                 master.getStatus(),
-                master.getCrtDtm() != null ? DateUtil.localDateTimeToStr(master.getCrtDtm()) : "",
+                OrderViewFormatter.formatDateTime(master.getCrtDtm()),
                 status != null && status.canCancel(),
                 status != null && status.canStartDelivery(),
                 status != null && status.canCompleteDelivery(),
@@ -60,7 +60,7 @@ public record OrderDetailResponse(
                     dto.getOrderItemNo(),
                     dto.getProductNo(),
                     dto.getProductName(),
-                    String.format("%,d원", dto.getOrderPrice()),
+                    OrderViewFormatter.formatAmount(dto.getOrderPrice()),
                     dto.getCount(),
                     dto.getThumbnailUrl()
             );

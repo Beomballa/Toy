@@ -1,12 +1,11 @@
 package com.section.admin.dashboard.service;
 
 import com.section.admin.dashboard.res.DashboardResponse;
-import com.section.common.base.entity.type.OrderStatus;
+import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
-import com.section.common.util.DateUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +35,7 @@ public class AdminDashBoardService {
 
         DashboardResponse.SummaryCounts summary = new DashboardResponse.SummaryCounts(
                 todayOrderCount.longValue(),
-                String.format("%,d원", todayTotalAmount.intValue()),
+                OrderViewFormatter.formatAmount(todayTotalAmount),
                 preparingCount.longValue(),
                 shippingCount.longValue(),
                 cancelledCount.longValue()
@@ -44,21 +43,14 @@ public class AdminDashBoardService {
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
-                .map(o -> {
-                    String statusDesc = o.getStatus();
-                    try {
-                        statusDesc = OrderStatus.valueOf(o.getStatus()).getDesc();
-                    } catch (Exception ignored) {}
-
-                    return new DashboardResponse.RecentOrder(
-                            o.getOrderNo(),
-                            o.getOrderNum(),
-                            o.getBuyerName(),
-                            String.format("%,d원", o.getTotalAmount()),
-                            statusDesc,
-                            o.getCrtDtm() != null ? DateUtil.localDateTimeToStr(o.getCrtDtm()) : ""
-                    );
-                }).toList();
+                .map(o -> new DashboardResponse.RecentOrder(
+                        o.getOrderNo(),
+                        o.getOrderNum(),
+                        o.getBuyerName(),
+                        OrderViewFormatter.formatAmount(o.getTotalAmount()),
+                        OrderViewFormatter.formatStatusDesc(o.getStatus()),
+                        OrderViewFormatter.formatDateTime(o.getCrtDtm())
+                )).toList();
 
         // 3. 재고 부족 상품 (10개 미만, 최대 5개)
         List<ProductListResDto> lowStockList = productRepository.getLowStockProducts(10, 5);

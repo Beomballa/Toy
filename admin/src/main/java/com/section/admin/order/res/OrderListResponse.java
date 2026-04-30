@@ -1,8 +1,7 @@
 package com.section.admin.order.res;
 
-import com.section.common.base.entity.type.OrderStatus;
+import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.commerce.dto.OrderListItemDto;
-import com.section.common.util.DateUtil;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -39,22 +38,12 @@ public record OrderListResponse(
                     dto.getOrderNum(),
                     dto.getBuyerName(),
                     dto.getBuyerPhone(),
-                    buildProductSummary(dto.getFirstProductName(), dto.getItemCount()),
-                    String.format("%,d원", dto.getTotalAmount()),
-                    OrderStatus.resolveDesc(dto.getStatus()),
+                    OrderViewFormatter.buildProductSummary(dto.getFirstProductName(), dto.getItemCount()),
+                    OrderViewFormatter.formatAmount(dto.getTotalAmount()),
+                    OrderViewFormatter.formatStatusDesc(dto.getStatus()),
                     dto.getStatus(),
-                    dto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(dto.getCrtDtm()) : ""
+                    OrderViewFormatter.formatDateTime(dto.getCrtDtm())
             );
-        }
-
-        private static String buildProductSummary(String firstProductName, Long itemCount) {
-            if (firstProductName == null || firstProductName.isBlank()) {
-                return "-";
-            }
-            if (itemCount == null || itemCount <= 1) {
-                return firstProductName;
-            }
-            return firstProductName + " 외 " + (itemCount - 1) + "건";
         }
     }
 }

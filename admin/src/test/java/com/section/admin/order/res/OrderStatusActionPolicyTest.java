@@ -4,7 +4,9 @@ import com.section.common.base.entity.type.OrderStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OrderStatusActionPolicyTest {
@@ -27,5 +29,14 @@ class OrderStatusActionPolicyTest {
         assertTrue(OrderStatus.SHIPPED.canCompleteDelivery());
         assertFalse(OrderStatus.SHIPPED.showDeliveryInput());
         assertTrue(OrderStatus.SHIPPED.showDeliveryInfo());
+    }
+
+    @Test
+    @DisplayName("상태 코드는 enum과 한글명으로 안전하게 해석된다")
+    void fromCodeAndResolveDescSafelyHandleUnknownCode() {
+        assertSame(OrderStatus.PAID, OrderStatus.fromCode("PAID").orElseThrow());
+        assertTrue(OrderStatus.fromCode("UNKNOWN").isEmpty());
+        assertEquals("결제완료", OrderStatus.resolveDesc("PAID"));
+        assertEquals("UNKNOWN", OrderStatus.resolveDesc("UNKNOWN"));
     }
 }

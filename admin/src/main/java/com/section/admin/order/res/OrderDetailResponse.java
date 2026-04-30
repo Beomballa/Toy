@@ -25,12 +25,7 @@ public record OrderDetailResponse(
         List<OrderItemInfo> items
 ) {
     public static OrderDetailResponse from(OrderListResDto master, List<OrderItemResDto> items) {
-        String statusDesc = master.getStatus();
-        OrderStatus status = null;
-        try {
-            status = OrderStatus.valueOf(master.getStatus());
-            statusDesc = status.getDesc();
-        } catch (Exception ignored) {}
+        OrderStatus status = OrderStatus.fromCode(master.getStatus()).orElse(null);
 
         return new OrderDetailResponse(
                 master.getOrderNo(),
@@ -38,7 +33,7 @@ public record OrderDetailResponse(
                 master.getBuyerName(),
                 master.getBuyerPhone(),
                 String.format("%,d원", master.getTotalAmount()),
-                statusDesc,
+                OrderStatus.resolveDesc(master.getStatus()),
                 master.getStatus(),
                 master.getCrtDtm() != null ? DateUtil.localDateTimeToStr(master.getCrtDtm()) : "",
                 status != null && status.canCancel(),

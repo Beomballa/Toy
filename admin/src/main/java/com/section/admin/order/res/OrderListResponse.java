@@ -34,14 +34,6 @@ public record OrderListResponse(
             String orderDt
     ) {
         public static OrderItem from(OrderListItemDto dto) {
-            String statusDesc = dto.getStatus();
-            try {
-                // String 상태값을 기반으로 Enum의 desc(한글명) 추출
-                statusDesc = OrderStatus.valueOf(dto.getStatus()).getDesc();
-            } catch (Exception ignored) {
-                // 매칭되는 Enum이 없을 경우 원본 문자열 유지
-            }
-
             return new OrderItem(
                     dto.getOrderNo(),
                     dto.getOrderNum(),
@@ -49,7 +41,7 @@ public record OrderListResponse(
                     dto.getBuyerPhone(),
                     buildProductSummary(dto.getFirstProductName(), dto.getItemCount()),
                     String.format("%,d원", dto.getTotalAmount()),
-                    statusDesc,
+                    OrderStatus.resolveDesc(dto.getStatus()),
                     dto.getStatus(),
                     dto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(dto.getCrtDtm()) : ""
             );

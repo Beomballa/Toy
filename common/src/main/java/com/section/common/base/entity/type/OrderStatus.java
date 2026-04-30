@@ -2,6 +2,9 @@ package com.section.common.base.entity.type;
 
 import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.Optional;
+
 @Getter
 public enum OrderStatus {
     ORDERED("주문완료"),
@@ -15,6 +18,22 @@ public enum OrderStatus {
 
     OrderStatus(String desc) {
         this.desc = desc;
+    }
+
+    public static Optional<OrderStatus> fromCode(String code) {
+        if (code == null || code.isBlank()) {
+            return Optional.empty();
+        }
+
+        return Arrays.stream(values())
+                .filter(status -> status.name().equals(code))
+                .findFirst();
+    }
+
+    public static String resolveDesc(String code) {
+        return fromCode(code)
+                .map(OrderStatus::getDesc)
+                .orElse(code);
     }
 
     public boolean canCancel() {

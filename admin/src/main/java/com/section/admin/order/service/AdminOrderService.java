@@ -3,6 +3,7 @@ package com.section.admin.order.service;
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderListResponse;
 import com.section.admin.order.support.OrderListPagePolicy;
+import com.section.admin.order.support.OrderExportCsvWriter;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -20,6 +21,7 @@ import com.section.common.commerce.service.OrderService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminOrderService {
+    private static final int ORDER_EXPORT_MAX_SIZE = 1000;
 
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -111,6 +114,11 @@ public class AdminOrderService {
     public OrderListResponse getOrderList(OrderListReqDto reqDto, Pageable pageable) {
         Page<OrderListItemDto> result = orderService.getOrderList(reqDto, OrderListPagePolicy.normalize(pageable));
         return OrderListResponse.of(result);
+    }
+
+    public byte[] exportOrderListCsv(OrderListReqDto reqDto) {
+        Page<OrderListItemDto> result = orderService.getOrderList(reqDto, PageRequest.of(0, ORDER_EXPORT_MAX_SIZE));
+        return OrderExportCsvWriter.write(result.getContent());
     }
 
     /**

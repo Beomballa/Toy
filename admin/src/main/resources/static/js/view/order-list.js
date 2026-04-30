@@ -35,6 +35,14 @@ const OrderList = {
             this.getList();
         });
 
+        document.getElementById('btnExportOrders')?.addEventListener('click', () => {
+            this.captureFilterState();
+            if (!this.validateDateRange()) {
+                return;
+            }
+            window.location.href = `/api/admin/orders/export?${this.buildStateParams().toString()}`;
+        });
+
         document.querySelectorAll('[data-date-preset]').forEach((button) => {
             button.addEventListener('click', () => {
                 this.applyDatePreset(Number(button.dataset.datePreset || 0));

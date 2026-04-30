@@ -2,6 +2,7 @@ package com.section.admin.order.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
@@ -16,7 +18,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -101,6 +106,23 @@ class AdminOrderRestControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("O001"))
                 .andExpect(jsonPath("$.message").value("존재하지 않는 주문입니다."));
+    }
+
+    @Test
+    @DisplayName("주문 목록 엑셀 다운로드는 CSV 파일 응답을 반환한다")
+    void exportOrderListReturnsCsvAttachment() throws Exception {
+        when(adminOrderService.exportOrderListCsv(org.mockito.ArgumentMatchers.any(OrderListReqDto.class)))
+                .thenReturn("주문번호\nORD-1".getBytes());
+
+        mockMvc.perform(get("/api/admin/orders/export")
+                        .param("status", "PAID")
+                        .param("searchKeyword", "함장님"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("attachment; filename=\"orders-")))
+                .andExpect(content().bytes("주문번호\nORD-1".getBytes()));
+
+        verify(adminOrderService).exportOrderListCsv(org.mockito.ArgumentMatchers.any(OrderListReqDto.class));
     }
 
     private record StatusPayload(Long orderNo, String status) {

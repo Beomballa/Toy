@@ -10,8 +10,12 @@ import com.section.common.commerce.dto.OrderListReqDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +28,15 @@ public class AdminOrderRestController {
             @ModelAttribute OrderListReqDto reqDto, Pageable pageable
     ) {
         return ResponseEntity.ok(adminOrderService.getOrderList(reqDto, pageable));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> exportOrderList(@ModelAttribute OrderListReqDto reqDto) {
+        String fileName = "orders-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOrderService.exportOrderListCsv(reqDto));
     }
 
     @GetMapping("/get")

@@ -1,5 +1,6 @@
 const OrderList = {
     maxDateRangeDays: 92,
+    maxKeywordLength: 50,
     state: null,
 
     init() {
@@ -156,7 +157,8 @@ const OrderList = {
         this.state.status = document.getElementById('orderStatus')?.value || '';
         this.state.startDate = document.getElementById('startDate')?.value || '';
         this.state.endDate = document.getElementById('endDate')?.value || '';
-        this.state.searchKeyword = document.getElementById('searchKeyword')?.value || '';
+        const rawKeyword = document.getElementById('searchKeyword')?.value || '';
+        this.state.searchKeyword = rawKeyword.trim().replace(/\s+/g, ' ');
     },
 
     syncFilterFields() {
@@ -210,6 +212,11 @@ const OrderList = {
     },
 
     validateDateRange() {
+        if (this.state.searchKeyword && this.state.searchKeyword.length > this.maxKeywordLength) {
+            CommonJS.alert(`검색어는 ${this.maxKeywordLength}자 이내로 입력할 수 있습니다.`, '알림', 'warning');
+            return false;
+        }
+
         if (!this.state.startDate || !this.state.endDate) {
             return true;
         }

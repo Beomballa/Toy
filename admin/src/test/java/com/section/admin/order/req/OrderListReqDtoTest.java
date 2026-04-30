@@ -19,14 +19,14 @@ class OrderListReqDtoTest {
     void toQueryReturnsTypedQuery() {
         OrderListReqDto reqDto = new OrderListReqDto();
         reqDto.setStatus("PAID");
-        reqDto.setSearchKeyword("  함장님 ");
+        reqDto.setSearchKeyword("  함장님   삼바  ");
         reqDto.setStartDate("2026-04-01");
         reqDto.setEndDate("2026-04-30");
 
         OrderListQuery query = reqDto.toQuery();
 
         assertEquals(OrderStatus.PAID, query.status());
-        assertEquals("함장님", query.searchKeyword());
+        assertEquals("함장님 삼바", query.searchKeyword());
         assertEquals("2026-04-01T00:00", query.startDateTime().toString());
         assertEquals("2026-04-30T23:59:59.999999999", query.endDateTime().toString());
     }
@@ -73,6 +73,17 @@ class OrderListReqDtoTest {
         OrderListReqDto reqDto = new OrderListReqDto();
         reqDto.setStartDate("2026-01-01");
         reqDto.setEndDate("2026-04-10");
+
+        BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("검색어가 50자를 초과하면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsBusinessExceptionWhenKeywordTooLong() {
+        OrderListReqDto reqDto = new OrderListReqDto();
+        reqDto.setSearchKeyword("a".repeat(51));
 
         BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
 

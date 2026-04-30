@@ -13,6 +13,7 @@ import java.time.LocalTime;
 @Getter @Setter
 public class OrderListReqDto {
     private static final long MAX_DATE_RANGE_DAYS = 92L;
+    private static final int MAX_KEYWORD_LENGTH = 50;
 
     private String status;
     private String searchKeyword;
@@ -57,7 +58,13 @@ public class OrderListReqDto {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;
         }
-        return searchKeyword.trim();
+
+        String normalizedKeyword = searchKeyword.trim().replaceAll("\\s+", " ");
+        // 상품명/주문자/전화번호까지 함께 타는 검색이라, 비정상적으로 긴 키워드는 요청 경계에서 제한합니다.
+        if (normalizedKeyword.length() > MAX_KEYWORD_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalizedKeyword;
     }
 
     private LocalDateTime parseStartDateTime() {

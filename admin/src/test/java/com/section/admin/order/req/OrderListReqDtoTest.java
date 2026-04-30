@@ -66,4 +66,16 @@ class OrderListReqDtoTest {
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
+
+    @Test
+    @DisplayName("조회 기간이 92일을 초과하면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsBusinessExceptionWhenDateRangeTooLarge() {
+        OrderListReqDto reqDto = new OrderListReqDto();
+        reqDto.setStartDate("2026-01-01");
+        reqDto.setEndDate("2026-04-10");
+
+        BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
 }

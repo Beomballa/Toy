@@ -12,6 +12,8 @@ import java.time.LocalTime;
 
 @Getter @Setter
 public class OrderListReqDto {
+    private static final long MAX_DATE_RANGE_DAYS = 92L;
+
     private String status;
     private String searchKeyword;
     private String startDate;
@@ -23,6 +25,11 @@ public class OrderListReqDto {
 
         // 기간 조건은 조회 결과 왜곡을 막기 위해 요청 경계에서 먼저 정합성을 확인합니다.
         if (startDateTime != null && endDateTime != null && startDateTime.isAfter(endDateTime)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        // 주문 목록은 운영자가 자주 반복 조회하는 화면이라, 과도한 기간 조회는 요청 경계에서 먼저 제한합니다.
+        if (startDateTime != null && endDateTime != null
+                && startDateTime.toLocalDate().plusDays(MAX_DATE_RANGE_DAYS).isBefore(endDateTime.toLocalDate())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 

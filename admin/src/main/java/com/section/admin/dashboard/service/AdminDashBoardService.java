@@ -3,6 +3,7 @@ package com.section.admin.dashboard.service;
 import com.section.admin.dashboard.res.DashboardResponse;
 import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,10 +74,19 @@ public class AdminDashBoardService {
 
         // 6. 인기 브랜드 Top 5 (이름 매핑 포함)
         List<Map<String, Object>> brandSales = orderRepository.getTopBrandsBySales(5);
+        Map<Long, String> brandNameMap = brandRepository.findAllById(
+                        brandSales.stream()
+                                .map(m -> (Long) m.get("brandNo"))
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(Brand::getBrandNo, Brand::getNameKo));
         List<DashboardResponse.ChartData> topBrands = brandSales.stream()
                 .map(m -> {
                     Long brandNo = (Long) m.get("brandNo");
-                    String brandName = brandRepository.findById(brandNo).map(com.section.common.commerce.entity.Brand::getNameKo).orElse("Unknown");
+                    // 집계 결과는 적지만 대시보드가 반복 조회되는 화면이라 브랜드명은 한번에 가져와 N+1을 피합니다.
+                    String brandName = brandNameMap.getOrDefault(brandNo, "Unknown");
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 

@@ -39,7 +39,7 @@ const ProductList = {
     },
 
     _bindEvents() {
-        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'searchKeyword', 'orderType'];
+        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'searchKeyword', 'pageSize', 'orderType'];
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -300,6 +300,7 @@ const ProductList = {
         document.getElementById('categoryNo').value = this.state.categoryNo;
         document.getElementById('statusFilter').value = this.state.status;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
+        document.getElementById('pageSize').value = String(this.state.size);
 
         const orderButton = document.getElementById('orderType');
         // 목록 문맥은 상세/수정 복귀에도 쓰이므로 URL 상태와 버튼 표시를 함께 맞춥니다.
@@ -318,6 +319,7 @@ const ProductList = {
         this.state.categoryNo = document.getElementById('categoryNo').value;
         this.state.status = document.getElementById('statusFilter').value;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
+        this.state.size = Number(document.getElementById('pageSize').value || 10);
         this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
     },
 

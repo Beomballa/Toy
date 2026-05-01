@@ -5,6 +5,7 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -51,7 +52,8 @@ public class AdminProductService {
      * @return ProductDefaultResDto
      * */
     public ProductListResponse getProductList(ProductListRequest req, Pageable pageable) {
-        Page<ProductListResDto> resDto = productService.getProductList(req.toProductListReqDto(), pageable);
+        Pageable normalizedPageable = ProductListPagePolicy.normalize(pageable);
+        Page<ProductListResDto> resDto = productService.getProductList(req.toProductListReqDto(), normalizedPageable);
         ProductStatsDto statsDto = productService.getProductStats(req.toProductListReqDto());
 
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);

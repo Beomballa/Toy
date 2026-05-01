@@ -9,6 +9,15 @@
     transition: all 0.2s ease-in-out;
 }
 
+.summary-card-link {
+    font-size: 0.78rem;
+    text-decoration: none;
+}
+
+.summary-card-link:hover {
+    text-decoration: underline;
+}
+
 /* 리스트 그룹 아이템 스타일 */
 .list-group-item .date-badge {
     font-size: 0.8rem;

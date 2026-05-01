@@ -1,6 +1,31 @@
 const DashBoardListJS = {
     init() {
+        this.bindSummaryActions();
         this.getStats();
+    },
+
+    bindSummaryActions() {
+        document.getElementById('summaryTodayOrders')?.addEventListener('click', () => {
+            const today = this.formatDate(new Date());
+            this.goToOrderList({ startDate: today, endDate: today });
+        });
+
+        document.getElementById('summaryTodaySales')?.addEventListener('click', () => {
+            const today = this.formatDate(new Date());
+            this.goToOrderList({ startDate: today, endDate: today });
+        });
+
+        document.getElementById('summaryPreparingOrders')?.addEventListener('click', () => {
+            this.goToOrderList({ status: 'PREPARING' });
+        });
+
+        document.getElementById('summaryShippingOrders')?.addEventListener('click', () => {
+            this.goToOrderList({ status: 'SHIPPED' });
+        });
+
+        document.getElementById('summaryCancelledOrders')?.addEventListener('click', () => {
+            this.goToOrderList({ status: 'CANCELLED' });
+        });
     },
 
     async getStats() {
@@ -164,5 +189,25 @@ const DashBoardListJS = {
 
     goToProductDetail(productNo) {
         location.href = `/admin/products/get?no=${productNo}`;
+    },
+
+    goToOrderList(filters = {}) {
+        const params = new URLSearchParams({
+            page: 0,
+            size: 10
+        });
+
+        if (filters.status) params.set('status', filters.status);
+        if (filters.startDate) params.set('startDate', filters.startDate);
+        if (filters.endDate) params.set('endDate', filters.endDate);
+
+        location.href = `/admin/orders/list?${params.toString()}`;
+    },
+
+    formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 };

@@ -2,17 +2,21 @@ const ProductCreate = {
     optionCount: 0,
     brands: [],
     categories: [],
+    returnTo: '/admin/products',
+    isSubmitting: false,
 
     init(brands, categories) {
         // Thymeleaf에서 전달받은 데이터 저장
         this.brands = brands || [];
         this.categories = categories || [];
+        this.returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/admin/products';
 
         // 선택박스 렌더링
         this.renderSelects();
 
         // 이벤트 바인딩
         this.bindEvents();
+        this.syncReturnLinks();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = "/admin/products";
@@ -42,6 +46,9 @@ const ProductCreate = {
     bindEvents() {
         // 등록 버튼
         document.getElementById('btnSubmit').addEventListener('click', () => this.submitForm());
+        document.getElementById('btnBackToProductList').addEventListener('click', () => {
+            window.location.href = this.returnTo;
+        });
 
         // 옵션 추가 버튼
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
@@ -127,6 +134,10 @@ const ProductCreate = {
 
     // 폼 제출
     async submitForm() {
+        if (this.isSubmitting) {
+            return;
+        }
+
         // 필수 입력 체크
         const categoryNo = document.getElementById('categoryNo');
         const brandNo = document.getElementById('brandNo');
@@ -169,6 +180,8 @@ const ProductCreate = {
         };
 
         try {
+            this.isSubmitting = true;
+            this.setSubmitDisabled(true);
             const response = await fetch('/api/admin/product/set', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -177,14 +190,30 @@ const ProductCreate = {
 
             if (response.ok) {
                 await CommonJS.alert('상품이 성공적으로 등록되었습니다.', '성공', 'success');
-                window.location.href = '/admin/products';
+                window.location.href = this.returnTo;
             } else {
-                const error = await response.json();
-                await CommonJS.alert('등록 실패: ' + (error.message || '알 수 없는 오류'), '오류', 'error');
+                const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
+                await CommonJS.alert('등록 실패: ' + message, '오류', 'error');
             }
         } catch (error) {
             console.error('등록 실패:', error);
             await CommonJS.alert('상품 등록 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isSubmitting = false;
+            this.setSubmitDisabled(false);
         }
+    },
+
+    setSubmitDisabled(disabled) {
+        document.getElementById('btnSubmit').disabled = disabled;
+        document.getElementById('btnBackToProductList').disabled = disabled;
+    },
+
+    syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
+        document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
+        document.getElementById('productListBreadcrumb').textContent = returnContext.label;
+        document.getElementById('btnBackToProductList').innerHTML =
+            `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
     }
 };

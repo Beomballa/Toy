@@ -23,14 +23,14 @@
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
         <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-        <li class="breadcrumb-item"><a href="/admin/products">상품 관리</a></li>
+        <li class="breadcrumb-item"><a href="/admin/products" id="productListBreadcrumb">상품 관리</a></li>
         <li class="breadcrumb-item active">상품 등록</li>
       </ol>
     </nav>
     <div class="page-title-wrapper">
       <h1 class="page-title">새 상품 등록</h1>
       <div>
-        <button type="button" class="btn btn-secondary me-2" onclick="history.back()">
+        <button type="button" class="btn btn-secondary me-2" id="btnBackToProductList">
           <i class="fas fa-arrow-left me-2"></i>취소
         </button>
         <button type="button" class="btn btn-primary" id="btnSubmit">

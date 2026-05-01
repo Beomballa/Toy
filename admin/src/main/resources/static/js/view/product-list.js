@@ -20,7 +20,7 @@ const ProductList = {
         this._initAnimations();
         this.getList(); // 초기 로드
 
-        document.getElementById('new-product')?.addEventListener('click', () => location.href = '/admin/products/set');
+        document.getElementById('new-product')?.addEventListener('click', () => location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`);
         document.getElementById('main-logo')?.addEventListener('click', () => location.href = '/admin/products');
     },
 

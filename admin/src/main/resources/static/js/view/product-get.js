@@ -1,31 +1,42 @@
 const ProductDetail = {
     productNo: null,
     productData: null,
+    returnTo: '/admin/products',
 
     init() {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
+        this.returnTo = urlParams.get('returnTo') || '/admin/products';
 
         if (!this.productNo) {
             CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error').then(() => {
-                window.location.href = '/admin/products';
+                window.location.href = this.returnTo;
             });
             return;
         }
 
+        this.syncReturnLinks();
         this.loadProductDetail();
         this.bindEvents();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = "/admin/products";
+            window.location.href = this.returnTo;
         });
     },
 
     bindEvents() {
+        const btnBack = document.getElementById('btnBackToProductList');
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                window.location.href = this.returnTo;
+            });
+        }
+
         const btnEdit = document.getElementById('btnEdit');
         if (btnEdit) {
             btnEdit.addEventListener('click', () => {
-                window.location.href = `/admin/products/update?no=${this.productNo}`;
+                const returnTo = encodeURIComponent(this.returnTo);
+                window.location.href = `/admin/products/update?no=${this.productNo}&returnTo=${returnTo}`;
             });
         }
 
@@ -62,7 +73,9 @@ const ProductDetail = {
 
         } catch (error) {
             console.error('Error:', error);
-            CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error').then(() => {
+                window.location.href = this.returnTo;
+            });
         }
     },
 
@@ -149,7 +162,7 @@ const ProductDetail = {
 
             if (response.ok) {
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
-                window.location.href = '/admin/products';
+                window.location.href = this.returnTo;
             } else {
                 await CommonJS.alert('삭제에 실패했습니다.', '오류', 'error');
             }
@@ -162,5 +175,9 @@ const ProductDetail = {
     formatPrice(price) {
         if (!price) return '0원';
         return price.toLocaleString() + '원';
+    },
+
+    syncReturnLinks() {
+        document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
     }
 };

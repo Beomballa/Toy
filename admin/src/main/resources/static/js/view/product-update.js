@@ -1,27 +1,35 @@
 const ProductUpdate = {
     optionCount: 0,
     productNo: null,
+    returnTo: '/admin/products',
 
     init() {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
+        this.returnTo = urlParams.get('returnTo') || '/admin/products';
 
         if (!this.productNo) {
-            CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error').then(() => history.back());
+            CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error').then(() => {
+                window.location.href = this.returnTo;
+            });
             return;
         }
 
+        this.syncReturnLinks();
         this.loadProductData();
         this.bindEvents();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = "/admin/products";
+            window.location.href = this.returnTo;
         });
     },
 
     bindEvents() {
         document.getElementById('btnUpdate').addEventListener('click', () => this.updateForm());
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
+        document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
+            window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
+        });
 
         const previewIds = ['categoryNo', 'brandNo', 'nameKo', 'modelNum', 'releasePrice', 'thumbnailUrl'];
         previewIds.forEach(id => {
@@ -43,6 +51,7 @@ const ProductUpdate = {
         } catch (error) {
             console.error('Data Load Error:', error);
             await CommonJS.alert('데이터 로드 중 오류가 발생했습니다.', '오류', 'error');
+            window.location.href = this.returnTo;
         }
     },
 
@@ -197,7 +206,7 @@ const ProductUpdate = {
 
             if (response.ok) {
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
-                window.location.href = `/admin/products/get?no=${this.productNo}`;
+                window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
             } else {
                 const err = await response.json();
                 await CommonJS.alert('수정 실패: ' + (err.message || '알 수 없는 오류'), '오류', 'error');
@@ -206,5 +215,9 @@ const ProductUpdate = {
             console.error('Update Error:', error);
             await CommonJS.alert('수정 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    syncReturnLinks() {
+        document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
     }
 };

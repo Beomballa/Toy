@@ -188,7 +188,8 @@ const DashBoardListJS = {
     },
 
     goToProductDetail(productNo) {
-        location.href = `/admin/products/get?no=${productNo}`;
+        const returnTo = encodeURIComponent('/admin/dashboard');
+        location.href = `/admin/products/get?no=${productNo}&returnTo=${returnTo}`;
     },
 
     goToOrderList(filters = {}) {

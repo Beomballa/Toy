@@ -21,7 +21,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/admin/products">상품 관리</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/products" id="productListBreadcrumb">상품 관리</a></li>
                     <li class="breadcrumb-item active">상품 수정</li>
                 </ol>
             </nav>
@@ -148,7 +148,7 @@
                     </div>
                     <div class="d-grid gap-2">
                         <button type="button" class="btn btn-primary btn-lg py-3" id="btnUpdate"><i class="fas fa-check me-2"></i>수정 완료</button>
-                        <button type="button" class="btn btn-outline-secondary py-2" onclick="history.back()">취소</button>
+                        <button type="button" class="btn btn-outline-secondary py-2" id="btnCancelEdit">취소</button>
                     </div>
                 </div>
             </div>

@@ -21,7 +21,7 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                    <li class="breadcrumb-item"><a href="/admin/products">상품 관리</a></li>
+                    <li class="breadcrumb-item"><a href="/admin/products" id="productListBreadcrumb">상품 관리</a></li>
                     <li class="breadcrumb-item active">상품 상세</li>
                 </ol>
             </nav>
@@ -37,7 +37,7 @@
                     </div>
                 </div>
                 <div class="product-detail-actions admin-detail-actions">
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/admin/products'">
+                    <button type="button" class="btn btn-secondary" id="btnBackToProductList">
                         <i class="fas fa-list me-2"></i>목록
                     </button>
                     <button type="button" class="btn btn-secondary" id="btnSearchImage">

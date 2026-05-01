@@ -43,14 +43,8 @@ public class AdminDashBoardService {
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
-                .map(o -> new DashboardResponse.RecentOrder(
-                        o.getOrderNo(),
-                        o.getOrderNum(),
-                        o.getBuyerName(),
-                        OrderViewFormatter.formatAmount(o.getTotalAmount()),
-                        OrderViewFormatter.formatStatusDesc(o.getStatus()),
-                        OrderViewFormatter.formatDateTime(o.getCrtDtm())
-                )).toList();
+                .map(DashboardResponse.RecentOrder::from)
+                .toList();
 
         // 3. 재고 부족 상품 (10개 미만, 최대 5개)
         List<ProductListResDto> lowStockList = productRepository.getLowStockProducts(10, 5);

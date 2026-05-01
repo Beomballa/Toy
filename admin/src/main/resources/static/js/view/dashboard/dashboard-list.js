@@ -117,7 +117,7 @@ const DashBoardListJS = {
     renderRecentOrders(orders) {
         const tbody = document.getElementById('recentOrderTableBody');
         if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">최근 주문 데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">최근 주문 데이터가 없습니다.</td></tr>';
             return;
         }
 
@@ -126,8 +126,11 @@ const DashBoardListJS = {
                 <td class="ps-4"><span class="order-id">${order.orderNum}</span></td>
                 <td><span class="fw-bold text-dark">${order.buyerName}</span></td>
                 <td><span class="fw-medium">${order.totalAmount}</span></td>
-                <td><span class="badge ${this.getStatusClass(order.statusDesc)}">${order.statusDesc}</span></td>
-                <td class="text-end pe-4 small text-muted">${order.orderDt}</td>
+                <td><span class="badge ${CommonJS.getOrderStatusMeta(order.statusCode).badgeClass}">${order.statusDesc}</span></td>
+                <td class="small text-muted">${order.orderDt}</td>
+                <td class="text-end pe-4">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="DashBoardListJS.goToOrderDetail(${order.orderNo})">상세보기</button>
+                </td>
             </tr>
         `).join('');
     },
@@ -150,10 +153,8 @@ const DashBoardListJS = {
         `).join('');
     },
 
-    getStatusClass(desc) {
-        if (desc === '주문취소') return 'bg-danger-subtle text-danger';
-        if (desc === '결제완료') return 'bg-success-subtle text-success';
-        if (desc === '배송중') return 'bg-warning-subtle text-warning';
-        return 'bg-primary-subtle text-primary';
+    goToOrderDetail(orderNo) {
+        const returnTo = encodeURIComponent('/admin/dashboard');
+        location.href = `/admin/orders/get?no=${orderNo}&returnTo=${returnTo}`;
     }
 };

@@ -1,5 +1,8 @@
 package com.section.admin.dashboard.res;
 
+import com.section.admin.order.support.OrderViewFormatter;
+import com.section.common.commerce.dto.OrderListResDto;
+
 import java.util.List;
 
 public record DashboardResponse(
@@ -24,8 +27,21 @@ public record DashboardResponse(
             String buyerName,
             String totalAmount,
             String statusDesc,
+            String statusCode,
             String orderDt
-    ) {}
+    ) {
+        public static RecentOrder from(OrderListResDto order) {
+            return new RecentOrder(
+                    order.getOrderNo(),
+                    order.getOrderNum(),
+                    order.getBuyerName(),
+                    OrderViewFormatter.formatAmount(order.getTotalAmount()),
+                    OrderViewFormatter.formatStatusDesc(order.getStatus()),
+                    order.getStatus(),
+                    OrderViewFormatter.formatDateTime(order.getCrtDtm())
+            );
+        }
+    }
 
     public record LowStockProduct(
             Long productNo,

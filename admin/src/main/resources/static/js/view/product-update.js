@@ -218,6 +218,12 @@ const ProductUpdate = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
         document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
+        document.getElementById('productListBreadcrumb')?.textContent = returnContext.label;
+        const cancelButton = document.getElementById('btnCancelEdit');
+        if (cancelButton) {
+            cancelButton.textContent = returnContext.buttonLabel;
+        }
     }
 };

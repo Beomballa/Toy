@@ -178,6 +178,12 @@ const ProductDetail = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
         document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
+        document.getElementById('productListBreadcrumb')?.textContent = returnContext.label;
+        const backButton = document.getElementById('btnBackToProductList');
+        if (backButton) {
+            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext.buttonLabel}`;
+        }
     }
 };

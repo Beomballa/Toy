@@ -198,7 +198,13 @@ const OrderDetail = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.returnTo, '주문 관리');
         document.getElementById('orderListBreadcrumb')?.setAttribute('href', this.returnTo);
+        document.getElementById('orderListBreadcrumb')?.textContent = returnContext.label;
+        const backButton = document.getElementById('btnBackToOrderList');
+        if (backButton) {
+            backButton.textContent = returnContext.buttonLabel;
+        }
         document.getElementById('btnBackToOrderList')?.addEventListener('click', () => {
             location.href = this.returnTo;
         });

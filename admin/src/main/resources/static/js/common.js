@@ -183,6 +183,26 @@ let CommonJS = {
             showDeliveryInfo: false,
             showCompleteDelivery: false
         };
+    },
+
+    getReturnContext: function(returnTo, fallbackLabel = '목록') {
+        if (!returnTo) {
+            return { label: fallbackLabel, buttonLabel: `${fallbackLabel}으로` };
+        }
+
+        if (returnTo.includes('/admin/dashboard')) {
+            return { label: '대시보드', buttonLabel: '대시보드로' };
+        }
+
+        if (returnTo.includes('/admin/orders')) {
+            return { label: '주문 관리', buttonLabel: '주문 관리로' };
+        }
+
+        if (returnTo.includes('/admin/products')) {
+            return { label: '상품 관리', buttonLabel: '상품 관리로' };
+        }
+
+        return { label: fallbackLabel, buttonLabel: `${fallbackLabel}으로` };
     }
 }
 

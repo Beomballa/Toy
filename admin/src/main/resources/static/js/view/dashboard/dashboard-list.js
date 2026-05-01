@@ -148,7 +148,10 @@ const DashBoardListJS = {
                     <div class="fw-bold small">${product.productName}</div>
                     <div class="text-muted" style="font-size: 0.75rem;">${product.brandName}</div>
                 </div>
-                <span class="badge low-stock-badge rounded-pill">${product.stockCnt}개</span>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge low-stock-badge rounded-pill">${product.stockCnt}개</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="DashBoardListJS.goToProductDetail(${product.productNo})">상세보기</button>
+                </div>
             </div>
         `).join('');
     },
@@ -156,5 +159,9 @@ const DashBoardListJS = {
     goToOrderDetail(orderNo) {
         const returnTo = encodeURIComponent('/admin/dashboard');
         location.href = `/admin/orders/get?no=${orderNo}&returnTo=${returnTo}`;
+    },
+
+    goToProductDetail(productNo) {
+        location.href = `/admin/products/get?no=${productNo}`;
     }
 };

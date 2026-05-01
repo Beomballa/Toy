@@ -108,9 +108,12 @@
         <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0개</span>
       </div>
       <div class="dropdown">
-        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderType" data-bs-toggle="dropdown" data-current-value="r">
-          최신순
-        </button>
+        <div class="d-flex gap-2">
+          <button class="btn btn-sm btn-outline-secondary" type="button" id="btnResetFilter">초기화</button>
+          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderType" data-bs-toggle="dropdown" data-current-value="r">
+            최신순
+          </button>
+        </div>
         <ul class="dropdown-menu">
           <li><a class="dropdown-item" href="#" data-value="r">최신순</a></li>
           <li><a class="dropdown-item" href="#" data-value="p">발매가순</a></li>

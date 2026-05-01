@@ -3,12 +3,19 @@ const ProductList = {
     state: {
         page: 0,
         size: 10,
+        brandNo: '',
+        categoryNo: '',
+        status: '',
+        searchKeyword: '',
+        orderType: 'r',
     },
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
         this._fillSelect('categoryNo', categories, 'categoryNo', 'name');
 
+        this._readStateFromUrl();
+        this._syncFilterInputs();
         this._bindEvents();
         this._initAnimations();
         this.getList(); // 초기 로드
@@ -36,10 +43,10 @@ const ProductList = {
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('change', () => { this.state.page = 0; this.getList(); });
+            el.addEventListener('change', () => { this.state.page = 0; this._updateStateFromInputs(); this.getList(); });
             if (el.tagName === 'INPUT') {
                 el.addEventListener('keypress', e => {
-                    if (e.key === 'Enter') { e.preventDefault(); this.state.page = 0; this.getList(); }
+                    if (e.key === 'Enter') { e.preventDefault(); this.state.page = 0; this._updateStateFromInputs(); this.getList(); }
                 });
             }
         });
@@ -48,7 +55,7 @@ const ProductList = {
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
-                location.href = `/admin/products/get?no=${productNo}`;
+                location.href = `/admin/products/get?no=${productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
                 return;
             }
 
@@ -75,8 +82,16 @@ const ProductList = {
 
                 // 2. 즉시 조회 실행
                 this.state.page = 0;
+                this.state.orderType = val;
                 this.getList();
             });
+        });
+
+        document.getElementById('btnResetFilter')?.addEventListener('click', () => this.resetFilters());
+        window.addEventListener('popstate', () => {
+            this._readStateFromUrl();
+            this._syncFilterInputs();
+            this.getList(false);
         });
     },
 
@@ -87,15 +102,20 @@ const ProductList = {
         });
     },
 
-    async getList() {
+    async getList(pushState = true) {
+        this._updateStateFromInputs();
+        if (pushState) {
+            this._syncUrlState();
+        }
+
         const params = new URLSearchParams({
             page: this.state.page,
             size: this.state.size,
-            brandNo: document.getElementById('brandNo').value,
-            categoryNo: document.getElementById('categoryNo').value,
-            status: document.getElementById('statusFilter').value,
-            searchKeyword: document.getElementById('searchKeyword').value,
-            orderType: document.getElementById('orderType').getAttribute('data-current-value'),
+            brandNo: this.state.brandNo,
+            categoryNo: this.state.categoryNo,
+            status: this.state.status,
+            searchKeyword: this.state.searchKeyword,
+            orderType: this.state.orderType,
         });
 
         try {
@@ -157,7 +177,7 @@ const ProductList = {
                             title="실제 이미지 검색">
                         <i class="fas fa-image"></i>
                     </button>
-                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/admin/products/update?no=${item.productNo}'">
+                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/admin/products/update?no=${item.productNo}&returnTo=${encodeURIComponent(ProductList.getReturnTo())}'">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button" class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">
@@ -209,6 +229,20 @@ const ProductList = {
         this.getList();
     },
 
+    resetFilters() {
+        this.state = {
+            page: 0,
+            size: this.state.size,
+            brandNo: '',
+            categoryNo: '',
+            status: '',
+            searchKeyword: '',
+            orderType: 'r',
+        };
+        this._syncFilterInputs();
+        this.getList();
+    },
+
     async deleteProduct(no) {
         const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');
         if (!isConfirm) return;
@@ -222,11 +256,74 @@ const ProductList = {
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
                 this.getList();
             } else {
-                await CommonJS.alert('삭제에 실패했습니다.', '오류', 'error');
+                const message = await CommonJS.extractErrorMessage(response, '삭제에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
             }
         } catch (error) {
             console.error('Delete Error:', error);
             await CommonJS.alert('삭제 처리 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    getReturnTo() {
+        const query = this.buildQueryString();
+        return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    },
+
+    buildQueryString() {
+        const params = new URLSearchParams();
+        params.set('page', this.state.page);
+        params.set('size', this.state.size);
+
+        if (this.state.brandNo) params.set('brandNo', this.state.brandNo);
+        if (this.state.categoryNo) params.set('categoryNo', this.state.categoryNo);
+        if (this.state.status) params.set('status', this.state.status);
+        if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
+        if (this.state.orderType && this.state.orderType !== 'r') params.set('orderType', this.state.orderType);
+
+        return params.toString();
+    },
+
+    _readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        this.state.page = Number(params.get('page') || 0);
+        this.state.size = Number(params.get('size') || 10);
+        this.state.brandNo = params.get('brandNo') || '';
+        this.state.categoryNo = params.get('categoryNo') || '';
+        this.state.status = params.get('status') || '';
+        this.state.searchKeyword = params.get('searchKeyword') || '';
+        this.state.orderType = params.get('orderType') || 'r';
+    },
+
+    _syncFilterInputs() {
+        document.getElementById('brandNo').value = this.state.brandNo;
+        document.getElementById('categoryNo').value = this.state.categoryNo;
+        document.getElementById('statusFilter').value = this.state.status;
+        document.getElementById('searchKeyword').value = this.state.searchKeyword;
+
+        const orderButton = document.getElementById('orderType');
+        // 목록 문맥은 상세/수정 복귀에도 쓰이므로 URL 상태와 버튼 표시를 함께 맞춥니다.
+        const orderTypeLabel = {
+            r: '최신순',
+            p: '발매가순',
+            c: '재고순',
+        }[this.state.orderType] || '최신순';
+
+        orderButton.setAttribute('data-current-value', this.state.orderType);
+        orderButton.textContent = orderTypeLabel;
+    },
+
+    _updateStateFromInputs() {
+        this.state.brandNo = document.getElementById('brandNo').value;
+        this.state.categoryNo = document.getElementById('categoryNo').value;
+        this.state.status = document.getElementById('statusFilter').value;
+        this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
+        this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
+    },
+
+    _syncUrlState() {
+        const query = this.buildQueryString();
+        const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+        history.pushState(null, '', url);
     }
 };

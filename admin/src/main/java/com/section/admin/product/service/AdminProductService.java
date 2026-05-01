@@ -92,13 +92,7 @@ public class AdminProductService {
      * */
     @Transactional
     public void createProductInfo(ProductCreateRequest reqDto) {
-
-        if(!brandRepository.existsById(reqDto.getBrandNo())){
-            throw new IllegalArgumentException("존재하지 않는 브랜드입니다. brandNo : " + reqDto.getBrandNo());
-        }
-        if(!categoryRepository.existsById(reqDto.getCategoryNo())){
-            throw new IllegalArgumentException("존재하지 않는 카테고리입니다. categoryNo : " + reqDto.getCategoryNo());
-        }
+        validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
         // 상품 정보 저장
         Product product = Product.createProduct(reqDto.toProductCreateReqDto());
         Product savedProduct = productRepository.save(product);
@@ -125,6 +119,7 @@ public class AdminProductService {
     public void updateProductInfo(ProductUpdateRequest reqDto) {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
 
         // 기본 정보 수정
         product.updateBasicInfo(
@@ -137,7 +132,7 @@ public class AdminProductService {
         product.changeCategory(reqDto.getCategoryNo());
         product.changeBrand(reqDto.getBrandNo());
         if (reqDto.getStatus() != null) {
-            product.changeStatus(ProductStatus.valueOf(reqDto.getStatus()));
+            product.changeStatus(parseProductStatus(reqDto.getStatus()));
         }
 
         // 옵션 수정: 기존 옵션 삭제 후 재등록
@@ -198,5 +193,19 @@ public class AdminProductService {
 
         product.deleteProduct();
         log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
+    }
+
+    private void validateBrandAndCategory(Long brandNo, Long categoryNo) {
+        if (!brandRepository.existsById(brandNo) || !categoryRepository.existsById(categoryNo)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private ProductStatus parseProductStatus(String status) {
+        try {
+            return ProductStatus.valueOf(status.trim().toUpperCase());
+        } catch (IllegalArgumentException ex) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

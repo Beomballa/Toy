@@ -1,6 +1,7 @@
 package com.section.common.commerce.service;
 
 import com.section.common.commerce.dto.ProductDetailResDto;
+import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListReqDto;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -19,11 +20,13 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public Page<ProductListResDto> getProductList(ProductListReqDto reqDto, Pageable pageable) {
-        return productRepository.getProductList(reqDto, pageable);
+        ProductListQuery query = reqDto.toQuery();
+        return productRepository.getProductList(query, pageable);
     }
 
     public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
-        return productRepository.getProductStats(reqDto);
+        ProductListQuery query = reqDto.toQuery();
+        return productRepository.getProductStats(query);
     }
 
     public ProductDetailResDto getProductDetail(Long productNo) {

@@ -5,8 +5,9 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.base.entity.type.ProductOrderType;
 import com.section.common.base.entity.type.ProductStatus;
-import com.section.common.commerce.dto.ProductListReqDto;
+import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.*;
@@ -30,7 +31,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public Page<ProductListResDto> getProductList(ProductListReqDto reqDto, Pageable pageable) {
+    public Page<ProductListResDto> getProductList(ProductListQuery query, Pageable pageable) {
         List<ProductListResDto> list = queryFactory
                 .select(
                         Projections.bean(
@@ -52,13 +53,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id))
                 .groupBy(product.id)
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted()
                 )
-                .orderBy(orderTypeEq(reqDto.getOrderType()))
+                .orderBy(orderTypeEq(query.orderType()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -70,10 +71,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id))
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted()
                 );
 
@@ -81,7 +82,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
+    public ProductStatsDto getProductStats(ProductListQuery query) {
         LocalDateTime today = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
 
         ProductStatsDto stats = new ProductStatsDto();
@@ -93,10 +94,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted()
                 )
                 .fetchOne();
@@ -107,10 +108,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .select(product.countDistinct())
                 .from(product)
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted(),
                         product.status.eq(ProductStatus.ACTIVE.name())
                 )
@@ -123,10 +124,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id))
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted()
                 )
                 .groupBy(product.id)
@@ -139,10 +140,10 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .select(product.countDistinct())
                 .from(product)
                 .where(
-                        searchKeywordLike(reqDto.getSearchKeyword()),
-                        categoryNoEq(reqDto.getCategoryNo()),
-                        brandNoEq(reqDto.getBrandNo()),
-                        statusEq(reqDto.getStatus()),
+                        searchKeywordLike(query.searchKeyword()),
+                        categoryNoEq(query.categoryNo()),
+                        brandNoEq(query.brandNo()),
+                        statusEq(query.status()),
                         notDeleted(),
                         product.crtDtm.goe(today)
                 )
@@ -194,30 +195,30 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return product.brandNo.eq(brandNo);
     }
 
-    public BooleanExpression statusEq(String status) {
-        if (status == null || status.isBlank()) {
+    public BooleanExpression statusEq(ProductStatus status) {
+        if (status == null) {
             return null;
         }
-        return product.status.eq(status);
+        return product.status.eq(status.name());
     }
 
     public BooleanExpression notDeleted() {
         return product.status.ne(ProductStatus.DELETE.name());
     }
 
-    public OrderSpecifier<?> orderTypeEq(String orderType) {
-        if (orderType == null || orderType.isBlank()) {
-            return product.releaseDt.desc();
+    public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {
+        if (orderType == null) {
+            return product.crtDtm.desc();
         }
         switch (orderType) {
-            case "r":
+            case RECENT:
                 return product.crtDtm.desc();
-            case "p":
+            case RELEASE_PRICE:
                 return product.releasePrice.desc();
-            case "c":
+            case STOCK_COUNT:
                 return productOption.stockCnt.sumLong().desc();
             default:
-                return product.releaseDt.desc();
+                return product.crtDtm.desc();
         }
     }
 }

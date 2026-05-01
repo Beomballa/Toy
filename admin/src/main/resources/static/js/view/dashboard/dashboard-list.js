@@ -111,6 +111,7 @@ const DashBoardListJS = {
         document.getElementById('todayOrderCount').innerText = summary.todayOrderCount.toLocaleString();
         document.getElementById('todayTotalAmount').innerText = summary.todayTotalAmount;
         document.getElementById('preparingCount').innerText = summary.preparingCount.toLocaleString();
+        document.getElementById('shippingCount').innerText = summary.shippingCount.toLocaleString();
         document.getElementById('cancelledCount').innerText = summary.cancelledCount.toLocaleString();
     },
 

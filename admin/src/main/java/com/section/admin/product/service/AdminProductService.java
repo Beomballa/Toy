@@ -181,17 +181,20 @@ public class AdminProductService {
      * */
     public ProductDetailResponse getProductDetail(Long productNo) {
         ProductDetailResDto resDto = productService.getProductDetail(productNo);
+        if (resDto == null) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
         List<ProductOption> option = productOptionRepository.findByProductId(productNo);
         return ProductDetailResponse.from(resDto, option);
     }
 
     @Transactional
     public void deleteProduct(Long productNo) {
-        productRepository.findById(productNo)
+        Product product = productRepository.findById(productNo)
                 .filter(p -> !ProductStatus.DELETE.name().equals(p.getStatus()))
-                .ifPresent(product -> {
-                    product.deleteProduct();
-                    log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
-                });
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        product.deleteProduct();
+        log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
     }
 }

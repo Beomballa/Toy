@@ -65,7 +65,13 @@ const ProductDetail = {
             const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
 
             if (!response.ok) {
-                throw new Error('상품 정보를 가져오는데 실패했습니다.');
+                const error = await CommonJS.extractError(response);
+                if (error.code === 'P001') {
+                    await CommonJS.alert(error.message || '존재하지 않는 상품입니다.', '오류', 'error');
+                    window.location.href = this.returnTo;
+                    return;
+                }
+                throw new Error(error.message || '상품 정보를 가져오는데 실패했습니다.');
             }
 
             const data = await response.json();
@@ -164,7 +170,8 @@ const ProductDetail = {
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
                 window.location.href = this.returnTo;
             } else {
-                await CommonJS.alert('삭제에 실패했습니다.', '오류', 'error');
+                const error = await CommonJS.extractError(response);
+                await CommonJS.alert(error.message || '삭제에 실패했습니다.', '오류', 'error');
             }
         } catch (error) {
             console.error('Delete Error:', error);

@@ -68,7 +68,7 @@ const ProductUpdate = {
         document.getElementById('releasePrice').value = data.releasePrice || 0;
         document.getElementById('releaseDt').value = data.releaseDt || '';
         document.getElementById('thumbnailUrl').value = data.thumbnailUrl || '';
-        document.getElementById('productStatus').value = data.status || 'ACTIVE';
+        document.getElementById('productStatus').value = data.statusCode || 'ACTIVE';
 
         const tbody = document.getElementById('optionTableBody');
         tbody.innerHTML = '';
@@ -147,7 +147,8 @@ const ProductUpdate = {
         document.getElementById('previewBrand').textContent = brandSelect.options[brandSelect.selectedIndex]?.text || '-';
         document.getElementById('previewName').textContent = document.getElementById('nameKo').value || '-';
         document.getElementById('previewModel').textContent = document.getElementById('modelNum').value || '-';
-        document.getElementById('previewStatus').textContent = document.getElementById('productStatus').value || 'ACTIVE';
+        document.getElementById('previewStatus').textContent =
+            document.getElementById('productStatus').options[document.getElementById('productStatus').selectedIndex]?.text || '판매중 (ACTIVE)';
 
         const url = document.getElementById('thumbnailUrl').value;
         const previewImage = document.getElementById('previewImage');

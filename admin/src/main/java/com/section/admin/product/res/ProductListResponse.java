@@ -2,6 +2,7 @@ package com.section.admin.product.res;
 
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
+import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.util.DateUtil;
 import lombok.*;
 import org.springframework.data.domain.Page;
@@ -40,10 +41,12 @@ public record ProductListResponse(
             String brandName,
             String releasePrice,
             Long totalStock,
-            String status,
+            String statusCode,
+            String statusDesc,
             String crtDtm
     ){
         public static ProductListItem from(ProductListResDto resDto) {
+            ProductStatus status = ProductStatus.fromCode(resDto.getStatus());
             return new ProductListItem(
                     resDto.getProductNo(),
                     resDto.getProductName(),
@@ -52,7 +55,8 @@ public record ProductListResponse(
                     resDto.getBrandName(),
                     String.format("%,d원", resDto.getReleasePrice()),
                     resDto.getTotalStock(),
-                    resDto.getStatus(),
+                    status.name(),
+                    status.getDesc(),
                     resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : ""
             );
         }

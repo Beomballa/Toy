@@ -1,6 +1,7 @@
 package com.section.admin.product.res;
 
 import com.section.common.commerce.dto.ProductDetailResDto;
+import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.util.DateUtil;
 
@@ -20,13 +21,15 @@ public record ProductDetailResponse(
         Integer releasePrice,
         LocalDate releaseDt,
         String thumbnailUrl,
-        String status,
+        String statusCode,
+        String statusDesc,
         String crtDtm,
         String uptDtm,
         List<OptionInfo> options
 ) {
 
     public static ProductDetailResponse from(ProductDetailResDto resDto, List<ProductOption> options) {
+        ProductStatus status = ProductStatus.fromCode(resDto.getStatus());
         return new ProductDetailResponse(
                 resDto.getProductNo(),
                 resDto.getCategoryNo(),
@@ -38,7 +41,8 @@ public record ProductDetailResponse(
                 resDto.getReleasePrice(),
                 resDto.getReleaseDt(),
                 resDto.getThumbnailUrl(),
-                resDto.getStatus(),
+                status.name(),
+                status.getDesc(),
                 resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "",
                 resDto.getUptDtm() != null ? DateUtil.localDateTimeToStr(resDto.getUptDtm()) : "",
                 Optional.ofNullable(options)

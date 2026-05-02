@@ -102,7 +102,7 @@ const ProductDetail = {
         setText('releaseDt', data.releaseDt);
         setText('crtDtm', data.crtDtm);
         setText('uptDtm', data.uptDtm);
-        setText('statusTextValue', data.status || 'ACTIVE');
+        setText('statusTextValue', data.statusDesc || '판매중');
         setText('brandChip', data.brandName || '브랜드 -');
         setText('modelChip', data.productModel || '모델 -');
         setText('productCategoryChip', data.categoryName || 'Product Detail');
@@ -152,8 +152,9 @@ const ProductDetail = {
 
         const statusBadge = document.getElementById('statusBadge');
         if (statusBadge) {
-            const status = data.status || 'ACTIVE';
-            statusBadge.innerHTML = `<span class="product-status-badge status-${status.toLowerCase()}">${status}</span>`;
+            const statusCode = data.statusCode || 'ACTIVE';
+            const statusMeta = CommonJS.getProductStatusMeta(statusCode);
+            statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${data.statusDesc || '판매중'}</span>`;
         }
     },
 

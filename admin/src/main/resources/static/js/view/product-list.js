@@ -163,8 +163,8 @@ const ProductList = {
                 <td><strong>${item.releasePrice || '-'}</strong></td>
                 <td>${(item.totalStock ?? 0).toLocaleString()}개</td>
                 <td>
-                    <span class="badge ${item.status === 'ACTIVE' ? 'badge-active' : 'bg-secondary'}">
-                        ${item.status}
+                    <span class="badge ${CommonJS.getProductStatusMeta(item.statusCode).badgeClass}">
+                        ${item.statusDesc}
                     </span>
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>

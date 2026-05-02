@@ -8,6 +8,12 @@ let CommonJS = {
         DELIVERED: { badgeClass: 'badge-delivered', canCancel: false, showDeliveryInput: false, showDeliveryInfo: true, showCompleteDelivery: false },
         CANCELLED: { badgeClass: 'badge-cancelled', canCancel: false, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false }
     },
+    productStatusMeta: {
+        ACTIVE: { badgeClass: 'badge-active' },
+        HIDDEN: { badgeClass: 'bg-secondary' },
+        SOLD_OUT: { badgeClass: 'bg-dark' },
+        DELETE: { badgeClass: 'bg-danger' }
+    },
 
     init: function () {
         document.getElementById("main-logo")?.addEventListener("click", function (el){
@@ -182,6 +188,12 @@ let CommonJS = {
             showDeliveryInput: false,
             showDeliveryInfo: false,
             showCompleteDelivery: false
+        };
+    },
+
+    getProductStatusMeta: function(statusCode) {
+        return this.productStatusMeta[statusCode] || {
+            badgeClass: 'bg-secondary'
         };
     },
 

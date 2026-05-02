@@ -12,4 +12,18 @@ public enum ProductStatus {
     private final String desc;
 
     ProductStatus(String desc) {this.desc = desc;}
+
+    public static ProductStatus fromCode(String code) {
+        if (code == null || code.isBlank()) {
+            return ACTIVE;
+        }
+
+        for (ProductStatus value : values()) {
+            if (value.name().equalsIgnoreCase(code.trim())) {
+                return value;
+            }
+        }
+
+        return ACTIVE;
+    }
 }

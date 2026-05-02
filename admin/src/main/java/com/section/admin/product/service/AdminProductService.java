@@ -102,7 +102,7 @@ public class AdminProductService {
             List<ProductOption> productOptions = reqDto.getOptions().stream()
                     .map(optDto -> ProductOption.builder()
                             .productNo(savedProduct.getId())
-                            .optionName(optDto.getOptionName())
+                            .optionName(optDto.normalizeOptionName())
                             .stockCnt(optDto.getStockCnt())
                             .additionalPrice(optDto.getAdditionalPrice())
                             .build())
@@ -125,11 +125,11 @@ public class AdminProductService {
 
         // 기본 정보 수정
         product.updateBasicInfo(
-                reqDto.getNameKo(),
-                reqDto.getModelNum(),
+                reqDto.normalizeRequiredText(reqDto.getNameKo()),
+                reqDto.normalizeOptionalText(reqDto.getModelNum()),
                 reqDto.getReleasePrice(),
                 reqDto.getReleaseDt(),
-                reqDto.getThumbnailUrl()
+                reqDto.normalizeOptionalText(reqDto.getThumbnailUrl())
         );
         product.changeCategory(reqDto.getCategoryNo());
         product.changeBrand(reqDto.getBrandNo());
@@ -145,7 +145,7 @@ public class AdminProductService {
                     .filter(opt -> opt.getOptionName() != null && !opt.getOptionName().isBlank())
                     .map(optDto -> ProductOption.builder()
                             .productNo(product.getId())
-                            .optionName(optDto.getOptionName())
+                            .optionName(optDto.normalizeOptionName())
                             .stockCnt(optDto.getStockCnt())
                             .additionalPrice(optDto.getAdditionalPrice())
                             .build())

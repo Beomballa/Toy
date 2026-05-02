@@ -43,6 +43,17 @@ public class ProductUpdateRequest {
 
     private List<ProductOptionUpdateRequest> options;
 
+    public String normalizeRequiredText(String value) {
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    public String normalizeOptionalText(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
     @Getter
     @Setter
     public static class ProductOptionUpdateRequest {
@@ -56,5 +67,9 @@ public class ProductUpdateRequest {
         @NotNull(message = "추가 금액을 입력해주세요")
         @Min(value = 0, message = "추가 금액은 0원 이상이어야 합니다.")
         private Integer additionalPrice;
+
+        public String normalizeOptionName() {
+            return optionName.trim().replaceAll("\\s+", " ");
+        }
     }
 }

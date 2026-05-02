@@ -1,7 +1,9 @@
 package com.section.admin.product.controller;
 
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.service.AdminProductService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -26,6 +29,7 @@ class AdminProductRestControllerTest {
     @Mock
     private AdminProductService adminProductService;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -33,6 +37,26 @@ class AdminProductRestControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(new AdminProductRestController(adminProductService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
+    }
+
+    @Test
+    @DisplayName("상품 생성 성공 시 생성된 상품 번호를 반환한다")
+    void createProductReturnsCreatedProductNo() throws Exception {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+
+        when(adminProductService.createProductInfo(org.mockito.ArgumentMatchers.any(ProductCreateRequest.class)))
+                .thenReturn(33L);
+
+        mockMvc.perform(post("/api/admin/product/set")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.productNo").value(33L));
     }
 
     @Test

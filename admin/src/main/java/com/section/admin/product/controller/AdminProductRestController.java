@@ -4,6 +4,7 @@ import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
+import com.section.admin.product.res.ProductCreateResponse;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
@@ -32,12 +33,12 @@ public class AdminProductRestController {
     }
 
     @PostMapping("/product/set")
-    public ResponseEntity<BaseSimpleResDto> defaultProductSetInfo(@Valid @RequestBody ProductCreateRequest reqDto) {
+    public ResponseEntity<ProductCreateResponse> defaultProductSetInfo(@Valid @RequestBody ProductCreateRequest reqDto) {
         log.info("상품 등록 요청 : {}", reqDto);
 
-        adminProductService.createProductInfo(reqDto);
+        Long productNo = adminProductService.createProductInfo(reqDto);
 
-        return ResponseEntity.ok(new BaseSimpleResDto());
+        return ResponseEntity.ok(ProductCreateResponse.success(productNo));
     }
 
     @PostMapping("/product/update")

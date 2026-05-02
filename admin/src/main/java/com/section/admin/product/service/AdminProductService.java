@@ -91,7 +91,7 @@ public class AdminProductService {
      * @Param reqDto
      * */
     @Transactional
-    public void createProductInfo(ProductCreateRequest reqDto) {
+    public Long createProductInfo(ProductCreateRequest reqDto) {
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
         // 상품 정보 저장
         Product product = Product.createProduct(reqDto.toProductCreateReqDto());
@@ -110,6 +110,8 @@ public class AdminProductService {
 
             productOptionRepository.saveAll(productOptions);
         }
+
+        return savedProduct.getId();
     }
 
     /**

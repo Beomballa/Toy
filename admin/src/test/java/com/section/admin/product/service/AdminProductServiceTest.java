@@ -21,6 +21,8 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +54,32 @@ class AdminProductServiceTest {
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상품 생성 성공 시 저장된 상품 번호를 반환한다")
+    void createProductInfoReturnsSavedProductNo() {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+
+        when(brandRepository.existsById(1L)).thenReturn(true);
+        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(productRepository.save(any(Product.class))).thenReturn(Product.builder()
+                .id(33L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("테스트 상품")
+                .status("ACTIVE")
+                .releasePrice(1000)
+                .build());
+
+        Long productNo = adminProductService.createProductInfo(request);
+
+        assertEquals(33L, productNo);
+        verify(productRepository).save(any(Product.class));
     }
 
     @Test

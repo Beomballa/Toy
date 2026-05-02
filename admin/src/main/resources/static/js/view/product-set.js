@@ -189,8 +189,10 @@ const ProductCreate = {
             });
 
             if (response.ok) {
+                const result = await response.json();
                 await CommonJS.alert('상품이 성공적으로 등록되었습니다.', '성공', 'success');
-                window.location.href = this.returnTo;
+                const returnTo = encodeURIComponent(this.returnTo);
+                window.location.href = `/admin/products/get?no=${result.productNo}&returnTo=${returnTo}`;
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
                 await CommonJS.alert('등록 실패: ' + message, '오류', 'error');

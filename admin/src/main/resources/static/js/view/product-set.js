@@ -44,8 +44,10 @@ const ProductCreate = {
 
     // 이벤트 바인딩
     bindEvents() {
-        // 등록 버튼
-        document.getElementById('btnSubmit').addEventListener('click', () => this.submitForm());
+        document.getElementById('productCreateForm')?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            this.submitForm();
+        });
         document.getElementById('btnBackToProductList').addEventListener('click', () => {
             window.location.href = this.returnTo;
         });

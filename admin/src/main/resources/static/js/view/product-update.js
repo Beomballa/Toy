@@ -26,7 +26,10 @@ const ProductUpdate = {
     },
 
     bindEvents() {
-        document.getElementById('btnUpdate').addEventListener('click', () => this.updateForm());
+        document.getElementById('productUpdateForm')?.addEventListener('submit', (event) => {
+            event.preventDefault();
+            this.updateForm();
+        });
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
         document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
             window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;

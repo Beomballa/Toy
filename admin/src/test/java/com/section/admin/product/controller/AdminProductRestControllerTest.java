@@ -2,6 +2,7 @@ package com.section.admin.product.controller;
 
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.service.AdminProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.common.base.exception.BusinessException;
@@ -61,6 +62,23 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("잘못된 상품 생성 요청은 400 INVALID_INPUT_VALUE를 반환한다")
+    void createProductReturnsBadRequestWhenPayloadInvalid() throws Exception {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo(" ");
+        request.setReleasePrice(1000);
+
+        mockMvc.perform(post("/api/admin/product/set")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
+    }
+
+    @Test
     @DisplayName("상품 목록 CSV 내보내기는 attachment 헤더로 응답한다")
     void exportProductListReturnsAttachmentResponse() throws Exception {
         when(adminProductService.exportProductListCsv(org.mockito.ArgumentMatchers.any()))
@@ -94,5 +112,23 @@ class AdminProductRestControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("P001"))
                 .andExpect(jsonPath("$.message").value("존재하지 않는 상품입니다."));
+    }
+
+    @Test
+    @DisplayName("잘못된 상품 수정 요청은 400 INVALID_INPUT_VALUE를 반환한다")
+    void updateProductReturnsBadRequestWhenPayloadInvalid() throws Exception {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo(" ");
+        request.setReleasePrice(1000);
+
+        mockMvc.perform(post("/api/admin/product/update")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
     }
 }

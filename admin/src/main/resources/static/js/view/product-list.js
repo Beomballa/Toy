@@ -93,6 +93,13 @@ const ProductList = {
         });
 
         document.getElementById('btnResetFilter')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('statLowStockCard')?.addEventListener('click', () => this.applyLowStockFilter());
+        document.getElementById('statLowStockCard')?.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                this.applyLowStockFilter();
+            }
+        });
         window.addEventListener('popstate', () => {
             this._readStateFromUrl();
             this._syncFilterInputs();
@@ -246,6 +253,13 @@ const ProductList = {
             searchKeyword: '',
             orderType: 'r',
         };
+        this._syncFilterInputs();
+        this.getList();
+    },
+
+    applyLowStockFilter() {
+        this.state.page = 0;
+        this.state.lowStockOnly = true;
         this._syncFilterInputs();
         this.getList();
     },

@@ -9,6 +9,7 @@ public record ProductListQuery(
         ProductStatus status,
         String searchKeyword,
         ProductOrderType orderType,
-        boolean lowStockOnly
+        boolean lowStockOnly,
+        boolean createdTodayOnly
 ) {
 }

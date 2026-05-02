@@ -25,6 +25,7 @@ class ProductListReqDtoTest {
         reqDto.setSearchKeyword("  젤   카야노 14 ");
         reqDto.setOrderType("c");
         reqDto.setLowStockOnly(true);
+        reqDto.setCreatedTodayOnly(true);
 
         ProductListQuery query = reqDto.toQuery();
 
@@ -34,6 +35,7 @@ class ProductListReqDtoTest {
         assertEquals("젤 카야노 14", query.searchKeyword());
         assertEquals(ProductOrderType.STOCK_COUNT, query.orderType());
         assertEquals(true, query.lowStockOnly());
+        assertEquals(true, query.createdTodayOnly());
     }
 
     @Test
@@ -49,6 +51,7 @@ class ProductListReqDtoTest {
         assertNull(query.searchKeyword());
         assertEquals(ProductOrderType.RECENT, query.orderType());
         assertEquals(false, query.lowStockOnly());
+        assertEquals(false, query.createdTodayOnly());
     }
 
     @Test

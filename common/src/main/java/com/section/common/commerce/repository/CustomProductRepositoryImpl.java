@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QBrand.brand;
@@ -228,6 +229,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 brandNoEq(query.brandNo()),
                 statusEq(query.status()),
                 lowStockOnlyEq(query.lowStockOnly()),
+                createdTodayOnlyEq(query.createdTodayOnly()),
                 notDeleted()
         };
     }
@@ -245,6 +247,15 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 product.status.as("status"),
                 product.crtDtm.as("crtDtm")
         );
+    }
+
+    public BooleanExpression createdTodayOnlyEq(boolean createdTodayOnly) {
+        if (!createdTodayOnly) {
+            return null;
+        }
+
+        LocalDateTime startOfToday = LocalDateTime.now().with(LocalTime.MIN);
+        return product.crtDtm.goe(startOfToday);
     }
 
     public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {

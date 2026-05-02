@@ -7,6 +7,7 @@ const ProductList = {
         categoryNo: '',
         status: '',
         lowStockOnly: false,
+        createdTodayOnly: false,
         searchKeyword: '',
         orderType: 'r',
     },
@@ -44,7 +45,7 @@ const ProductList = {
     },
 
     _bindEvents() {
-        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'lowStockOnly', 'searchKeyword', 'pageSize', 'orderType'];
+        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'lowStockOnly', 'createdTodayOnly', 'searchKeyword', 'pageSize', 'orderType'];
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -93,13 +94,19 @@ const ProductList = {
         });
 
         document.getElementById('btnResetFilter')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('statTotalCard')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('statActiveCard')?.addEventListener('click', () => this.applyActiveFilter());
         document.getElementById('statLowStockCard')?.addEventListener('click', () => this.applyLowStockFilter());
+        document.getElementById('statTodayCard')?.addEventListener('click', () => this.applyTodayFilter());
+        this.bindStatCardKeyboard('statTotalCard', () => this.resetFilters());
+        this.bindStatCardKeyboard('statActiveCard', () => this.applyActiveFilter());
         document.getElementById('statLowStockCard')?.addEventListener('keypress', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
                 event.preventDefault();
                 this.applyLowStockFilter();
             }
         });
+        this.bindStatCardKeyboard('statTodayCard', () => this.applyTodayFilter());
         window.addEventListener('popstate', () => {
             this._readStateFromUrl();
             this._syncFilterInputs();
@@ -127,6 +134,7 @@ const ProductList = {
             categoryNo: this.state.categoryNo,
             status: this.state.status,
             lowStockOnly: this.state.lowStockOnly,
+            createdTodayOnly: this.state.createdTodayOnly,
             searchKeyword: this.state.searchKeyword,
             orderType: this.state.orderType,
         });
@@ -250,6 +258,7 @@ const ProductList = {
             categoryNo: '',
             status: '',
             lowStockOnly: false,
+            createdTodayOnly: false,
             searchKeyword: '',
             orderType: 'r',
         };
@@ -259,7 +268,26 @@ const ProductList = {
 
     applyLowStockFilter() {
         this.state.page = 0;
+        this.state.status = '';
         this.state.lowStockOnly = true;
+        this.state.createdTodayOnly = false;
+        this._syncFilterInputs();
+        this.getList();
+    },
+
+    applyActiveFilter() {
+        this.state.page = 0;
+        this.state.status = 'ACTIVE';
+        this.state.lowStockOnly = false;
+        this.state.createdTodayOnly = false;
+        this._syncFilterInputs();
+        this.getList();
+    },
+
+    applyTodayFilter() {
+        this.state.page = 0;
+        this.state.createdTodayOnly = true;
+        this.state.lowStockOnly = false;
         this._syncFilterInputs();
         this.getList();
     },
@@ -300,6 +328,7 @@ const ProductList = {
         if (this.state.categoryNo) params.set('categoryNo', this.state.categoryNo);
         if (this.state.status) params.set('status', this.state.status);
         if (this.state.lowStockOnly) params.set('lowStockOnly', 'true');
+        if (this.state.createdTodayOnly) params.set('createdTodayOnly', 'true');
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
         if (this.state.orderType && this.state.orderType !== 'r') params.set('orderType', this.state.orderType);
 
@@ -314,6 +343,7 @@ const ProductList = {
         this.state.categoryNo = params.get('categoryNo') || '';
         this.state.status = params.get('status') || '';
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
+        this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
     },
@@ -323,6 +353,7 @@ const ProductList = {
         document.getElementById('categoryNo').value = this.state.categoryNo;
         document.getElementById('statusFilter').value = this.state.status;
         document.getElementById('lowStockOnly').checked = this.state.lowStockOnly;
+        document.getElementById('createdTodayOnly').checked = this.state.createdTodayOnly;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
         document.getElementById('pageSize').value = String(this.state.size);
 
@@ -343,9 +374,19 @@ const ProductList = {
         this.state.categoryNo = document.getElementById('categoryNo').value;
         this.state.status = document.getElementById('statusFilter').value;
         this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
+        this.state.createdTodayOnly = document.getElementById('createdTodayOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = Number(document.getElementById('pageSize').value || 10);
         this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
+    },
+
+    bindStatCardKeyboard(elementId, action) {
+        document.getElementById(elementId)?.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                action();
+            }
+        });
     },
 
     _syncUrlState() {

@@ -1,6 +1,7 @@
 package com.section.admin.product.req;
 
 import com.section.common.commerce.dto.ProductCreateReqDto;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,6 +37,7 @@ public class ProductCreateRequest {
     @Size(max = 500, message = "썸네일 URL은 500자 이내로 입력해주세요")
     private String thumbnailUrl;
 
+    @Valid
     private List<ProductOptionRequest> options;
 
     public ProductCreateReqDto toProductCreateReqDto() {
@@ -60,10 +62,12 @@ public class ProductCreateRequest {
         }
         return value.trim().replaceAll("\\s+", " ");
     }
+
     @Getter
     @Setter
     public static class ProductOptionRequest {
         @NotBlank(message = "옵션명을 입력해주세요")
+        @Size(max = 100, message = "옵션명은 100자 이내로 입력해주세요")
         private String optionName;
 
         @NotNull(message = "수량을 입력해주세요")

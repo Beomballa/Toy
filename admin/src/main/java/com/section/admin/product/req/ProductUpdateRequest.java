@@ -1,5 +1,6 @@
 package com.section.admin.product.req;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -41,6 +42,7 @@ public class ProductUpdateRequest {
 
     private String status;
 
+    @Valid
     private List<ProductOptionUpdateRequest> options;
 
     public String normalizeRequiredText(String value) {
@@ -58,6 +60,7 @@ public class ProductUpdateRequest {
     @Setter
     public static class ProductOptionUpdateRequest {
         @NotBlank(message = "옵션명을 입력해주세요")
+        @Size(max = 100, message = "옵션명은 100자 이내로 입력해주세요")
         private String optionName;
 
         @NotNull(message = "수량을 입력해주세요")

@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.List;
+
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -79,6 +81,29 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("잘못된 상품 옵션 생성 요청은 400 INVALID_INPUT_VALUE를 반환한다")
+    void createProductReturnsBadRequestWhenOptionPayloadInvalid() throws Exception {
+        ProductCreateRequest.ProductOptionRequest optionRequest = new ProductCreateRequest.ProductOptionRequest();
+        optionRequest.setOptionName("  ");
+        optionRequest.setStockCnt(-1);
+        optionRequest.setAdditionalPrice(0);
+
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+        request.setOptions(List.of(optionRequest));
+
+        mockMvc.perform(post("/api/admin/product/set")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
+    }
+
+    @Test
     @DisplayName("상품 목록 CSV 내보내기는 attachment 헤더로 응답한다")
     void exportProductListReturnsAttachmentResponse() throws Exception {
         when(adminProductService.exportProductListCsv(org.mockito.ArgumentMatchers.any()))
@@ -123,6 +148,30 @@ class AdminProductRestControllerTest {
         request.setBrandNo(1L);
         request.setNameKo(" ");
         request.setReleasePrice(1000);
+
+        mockMvc.perform(post("/api/admin/product/update")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
+    }
+
+    @Test
+    @DisplayName("잘못된 상품 옵션 수정 요청은 400 INVALID_INPUT_VALUE를 반환한다")
+    void updateProductReturnsBadRequestWhenOptionPayloadInvalid() throws Exception {
+        ProductUpdateRequest.ProductOptionUpdateRequest optionRequest = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        optionRequest.setOptionName("옵션명".repeat(30));
+        optionRequest.setStockCnt(1);
+        optionRequest.setAdditionalPrice(-1);
+
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+        request.setOptions(List.of(optionRequest));
 
         mockMvc.perform(post("/api/admin/product/update")
                         .contentType("application/json")

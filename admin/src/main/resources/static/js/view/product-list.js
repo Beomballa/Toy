@@ -6,6 +6,7 @@ const ProductList = {
         brandNo: '',
         categoryNo: '',
         status: '',
+        lowStockOnly: false,
         searchKeyword: '',
         orderType: 'r',
     },
@@ -43,7 +44,7 @@ const ProductList = {
     },
 
     _bindEvents() {
-        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'searchKeyword', 'pageSize', 'orderType'];
+        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'lowStockOnly', 'searchKeyword', 'pageSize', 'orderType'];
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -118,6 +119,7 @@ const ProductList = {
             brandNo: this.state.brandNo,
             categoryNo: this.state.categoryNo,
             status: this.state.status,
+            lowStockOnly: this.state.lowStockOnly,
             searchKeyword: this.state.searchKeyword,
             orderType: this.state.orderType,
         });
@@ -240,6 +242,7 @@ const ProductList = {
             brandNo: '',
             categoryNo: '',
             status: '',
+            lowStockOnly: false,
             searchKeyword: '',
             orderType: 'r',
         };
@@ -282,6 +285,7 @@ const ProductList = {
         if (this.state.brandNo) params.set('brandNo', this.state.brandNo);
         if (this.state.categoryNo) params.set('categoryNo', this.state.categoryNo);
         if (this.state.status) params.set('status', this.state.status);
+        if (this.state.lowStockOnly) params.set('lowStockOnly', 'true');
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
         if (this.state.orderType && this.state.orderType !== 'r') params.set('orderType', this.state.orderType);
 
@@ -295,6 +299,7 @@ const ProductList = {
         this.state.brandNo = params.get('brandNo') || '';
         this.state.categoryNo = params.get('categoryNo') || '';
         this.state.status = params.get('status') || '';
+        this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
     },
@@ -303,6 +308,7 @@ const ProductList = {
         document.getElementById('brandNo').value = this.state.brandNo;
         document.getElementById('categoryNo').value = this.state.categoryNo;
         document.getElementById('statusFilter').value = this.state.status;
+        document.getElementById('lowStockOnly').checked = this.state.lowStockOnly;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
         document.getElementById('pageSize').value = String(this.state.size);
 
@@ -322,6 +328,7 @@ const ProductList = {
         this.state.brandNo = document.getElementById('brandNo').value;
         this.state.categoryNo = document.getElementById('categoryNo').value;
         this.state.status = document.getElementById('statusFilter').value;
+        this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = Number(document.getElementById('pageSize').value || 10);
         this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';

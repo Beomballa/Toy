@@ -58,6 +58,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted()
                 )
                 .orderBy(orderTypeEq(query.orderType()))
@@ -76,6 +77,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted()
                 );
 
@@ -99,6 +101,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted()
                 )
                 .fetchOne();
@@ -113,6 +116,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted(),
                         product.status.eq(ProductStatus.ACTIVE.name())
                 )
@@ -128,6 +132,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted(),
                         lowStockProductEq(100L)
                 )
@@ -143,6 +148,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
+                        lowStockOnlyEq(query.lowStockOnly()),
                         notDeleted(),
                         product.crtDtm.goe(today)
                 )
@@ -217,6 +223,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         .groupBy(productOption.productNo)
                         .having(productOption.stockCnt.sumLong().lt(threshold))
         );
+    }
+
+    public BooleanExpression lowStockOnlyEq(boolean lowStockOnly) {
+        if (!lowStockOnly) {
+            return null;
+        }
+        return lowStockProductEq(100L);
     }
 
     public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {

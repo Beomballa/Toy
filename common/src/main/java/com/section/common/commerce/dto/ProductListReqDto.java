@@ -15,13 +15,15 @@ public class ProductListReqDto {
     private String status;
     private String searchKeyword;
     private String orderType;
+    private Boolean lowStockOnly;
 
     public ProductListQuery toQuery() {
         ProductStatus normalizedStatus = normalizeStatus(status);
         String normalizedKeyword = normalizeKeyword(searchKeyword);
         ProductOrderType normalizedOrderType = normalizeOrderType(orderType);
+        boolean normalizedLowStockOnly = Boolean.TRUE.equals(lowStockOnly);
 
-        return new ProductListQuery(categoryNo, brandNo, normalizedStatus, normalizedKeyword, normalizedOrderType);
+        return new ProductListQuery(categoryNo, brandNo, normalizedStatus, normalizedKeyword, normalizedOrderType, normalizedLowStockOnly);
     }
 
     private ProductStatus normalizeStatus(String status) {

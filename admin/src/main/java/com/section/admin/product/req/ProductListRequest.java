@@ -13,6 +13,7 @@ public class ProductListRequest {
     private String status;
     private String searchKeyword;
     private String orderType;
+    private Boolean lowStockOnly;
 
     public ProductListReqDto toProductListReqDto() {
         ProductListReqDto reqDto = new ProductListReqDto();
@@ -21,6 +22,7 @@ public class ProductListRequest {
         reqDto.setStatus(status);
         reqDto.setSearchKeyword(searchKeyword);
         reqDto.setOrderType(orderType);
+        reqDto.setLowStockOnly(lowStockOnly);
         return reqDto;
     }
 }

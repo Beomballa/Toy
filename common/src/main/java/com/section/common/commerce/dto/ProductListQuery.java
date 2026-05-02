@@ -8,6 +8,7 @@ public record ProductListQuery(
         Long brandNo,
         ProductStatus status,
         String searchKeyword,
-        ProductOrderType orderType
+        ProductOrderType orderType,
+        boolean lowStockOnly
 ) {
 }

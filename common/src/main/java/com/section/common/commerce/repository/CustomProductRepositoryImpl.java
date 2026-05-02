@@ -18,6 +18,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QBrand.brand;
@@ -86,14 +87,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted()
-                )
+                .where(productStatConditions(query))
                 .fetchOne();
         stats.setTotalCount(totalCount != null ? totalCount : 0L);
 
@@ -101,15 +95,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long activeCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted(),
-                        product.status.eq(ProductStatus.ACTIVE.name())
-                )
+                .where(productStatConditions(query, product.status.eq(ProductStatus.ACTIVE.name())))
                 .fetchOne();
         stats.setActiveCount(activeCount != null ? activeCount : 0L);
 
@@ -117,15 +103,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long lowStockCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted(),
-                        lowStockProductEq(100L)
-                )
+                .where(productStatConditions(query, lowStockProductEq(100L)))
                 .fetchOne();
         stats.setLowStockCount(lowStockCount != null ? lowStockCount : 0L);
 
@@ -133,15 +111,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long todayCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted(),
-                        product.crtDtm.goe(today)
-                )
+                .where(productStatConditions(query, product.crtDtm.goe(today)))
                 .fetchOne();
         stats.setTodayCount(todayCount != null ? todayCount : 0L);
 
@@ -232,6 +202,26 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 createdTodayOnlyEq(query.createdTodayOnly()),
                 notDeleted()
         };
+    }
+
+    private BooleanExpression[] productStatConditions(ProductListQuery query) {
+        // 통계 카드도 목록과 같은 빠른 필터 문맥을 따라가야 숫자와 실제 결과가 어긋나지 않습니다.
+        return new BooleanExpression[] {
+                searchKeywordLike(query.searchKeyword()),
+                categoryNoEq(query.categoryNo()),
+                brandNoEq(query.brandNo()),
+                statusEq(query.status()),
+                lowStockOnlyEq(query.lowStockOnly()),
+                createdTodayOnlyEq(query.createdTodayOnly()),
+                notDeleted()
+        };
+    }
+
+    private BooleanExpression[] productStatConditions(ProductListQuery query, BooleanExpression extraCondition) {
+        BooleanExpression[] baseConditions = productStatConditions(query);
+        BooleanExpression[] mergedConditions = Arrays.copyOf(baseConditions, baseConditions.length + 1);
+        mergedConditions[baseConditions.length] = extraCondition;
+        return mergedConditions;
     }
 
     private com.querydsl.core.types.QBean<ProductListResDto> productListProjection() {

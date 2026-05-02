@@ -5,8 +5,9 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
-import com.section.common.commerce.dto.ProductListReqDto;
+import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
@@ -16,14 +17,18 @@ import com.section.common.commerce.service.ProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -122,12 +127,39 @@ class AdminProductServiceTest {
         dto.setProductName("테스트 상품");
         dto.setStatus("ACTIVE");
 
-        when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListReqDto.class), org.mockito.ArgumentMatchers.eq(1000)))
+        when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
                 .thenReturn(List.of(dto));
 
         byte[] csv = adminProductService.exportProductListCsv(request);
 
         assertEquals(true, csv.length > 0);
-        verify(productService).getProductExportList(org.mockito.ArgumentMatchers.any(ProductListReqDto.class), org.mockito.ArgumentMatchers.eq(1000));
+        verify(productService).getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000));
+    }
+
+    @Test
+    @DisplayName("상품 목록 조회는 같은 typed query를 목록과 통계 조회에 재사용한다")
+    void getProductListReusesSameTypedQueryForListAndStats() {
+        ProductListRequest request = new ProductListRequest();
+        request.setStatus("ACTIVE");
+        request.setLowStockOnly(true);
+        request.setCreatedTodayOnly(true);
+        request.setSearchKeyword("  젤   카야노  ");
+
+        when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(productService.getProductStats(any(ProductListQuery.class)))
+                .thenReturn(new ProductStatsDto());
+
+        adminProductService.getProductList(request, PageRequest.of(0, 10));
+
+        ArgumentCaptor<ProductListQuery> listQueryCaptor = ArgumentCaptor.forClass(ProductListQuery.class);
+        ArgumentCaptor<ProductListQuery> statsQueryCaptor = ArgumentCaptor.forClass(ProductListQuery.class);
+        verify(productService).getProductList(listQueryCaptor.capture(), any(PageRequest.class));
+        verify(productService).getProductStats(statsQueryCaptor.capture());
+
+        assertSame(listQueryCaptor.getValue(), statsQueryCaptor.getValue());
+        assertEquals(true, listQueryCaptor.getValue().lowStockOnly());
+        assertEquals(true, listQueryCaptor.getValue().createdTodayOnly());
+        assertEquals("젤 카야노", listQueryCaptor.getValue().searchKeyword());
     }
 }

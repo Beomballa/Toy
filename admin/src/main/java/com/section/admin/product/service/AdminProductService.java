@@ -13,6 +13,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.dto.ProductDetailResDto;
+import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
@@ -55,8 +56,9 @@ public class AdminProductService {
      * */
     public ProductListResponse getProductList(ProductListRequest req, Pageable pageable) {
         Pageable normalizedPageable = ProductListPagePolicy.normalize(pageable);
-        Page<ProductListResDto> resDto = productService.getProductList(req.toProductListReqDto(), normalizedPageable);
-        ProductStatsDto statsDto = productService.getProductStats(req.toProductListReqDto());
+        ProductListQuery query = req.toProductListReqDto().toQuery();
+        Page<ProductListResDto> resDto = productService.getProductList(query, normalizedPageable);
+        ProductStatsDto statsDto = productService.getProductStats(query);
 
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
         ProductListResponse.ProductStatsItem stats = ProductListResponse.ProductStatsItem.from(statsDto);
@@ -64,8 +66,9 @@ public class AdminProductService {
     }
 
     public byte[] exportProductListCsv(ProductListRequest req) {
+        ProductListQuery query = req.toProductListReqDto().toQuery();
         List<ProductListResDto> result = productService.getProductExportList(
-                req.toProductListReqDto(),
+                query,
                 ProductExportPolicy.MAX_EXPORT_SIZE
         );
 

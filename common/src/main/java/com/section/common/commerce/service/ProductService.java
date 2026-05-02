@@ -20,17 +20,26 @@ public class ProductService {
     private final ProductRepository productRepository;
 
     public Page<ProductListResDto> getProductList(ProductListReqDto reqDto, Pageable pageable) {
-        ProductListQuery query = reqDto.toQuery();
+        return getProductList(reqDto.toQuery(), pageable);
+    }
+
+    public Page<ProductListResDto> getProductList(ProductListQuery query, Pageable pageable) {
         return productRepository.getProductList(query, pageable);
     }
 
     public java.util.List<ProductListResDto> getProductExportList(ProductListReqDto reqDto, int limit) {
-        ProductListQuery query = reqDto.toQuery();
+        return getProductExportList(reqDto.toQuery(), limit);
+    }
+
+    public java.util.List<ProductListResDto> getProductExportList(ProductListQuery query, int limit) {
         return productRepository.getProductExportList(query, limit);
     }
 
     public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
-        ProductListQuery query = reqDto.toQuery();
+        return getProductStats(reqDto.toQuery());
+    }
+
+    public ProductStatsDto getProductStats(ProductListQuery query) {
         return productRepository.getProductStats(query);
     }
 

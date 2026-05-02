@@ -19,6 +19,8 @@ public class ProductListReqDto {
     private Boolean createdTodayOnly;
 
     public ProductListQuery toQuery() {
+        Long normalizedCategoryNo = normalizeFilterId(categoryNo);
+        Long normalizedBrandNo = normalizeFilterId(brandNo);
         ProductStatus normalizedStatus = normalizeStatus(status);
         String normalizedKeyword = normalizeKeyword(searchKeyword);
         ProductOrderType normalizedOrderType = normalizeOrderType(orderType);
@@ -26,14 +28,25 @@ public class ProductListReqDto {
         boolean normalizedCreatedTodayOnly = Boolean.TRUE.equals(createdTodayOnly);
 
         return new ProductListQuery(
-                categoryNo,
-                brandNo,
+                normalizedCategoryNo,
+                normalizedBrandNo,
                 normalizedStatus,
                 normalizedKeyword,
                 normalizedOrderType,
                 normalizedLowStockOnly,
                 normalizedCreatedTodayOnly
         );
+    }
+
+    private Long normalizeFilterId(Long value) {
+        if (value == null || value == 0L) {
+            return null;
+        }
+        if (value < 0L) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return value;
     }
 
     private ProductStatus normalizeStatus(String status) {

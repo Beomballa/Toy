@@ -25,6 +25,9 @@ const ProductList = {
         document.getElementById('new-product')?.addEventListener('click', () => location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`);
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
             this._updateStateFromInputs();
+            if (!this.validateState()) {
+                return;
+            }
             window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
         });
         document.getElementById('main-logo')?.addEventListener('click', () => location.href = '/admin/products');
@@ -123,6 +126,9 @@ const ProductList = {
 
     async getList(pushState = true) {
         this._updateStateFromInputs();
+        if (!this.validateState()) {
+            return;
+        }
         if (pushState) {
             this._syncUrlState();
         }
@@ -387,6 +393,16 @@ const ProductList = {
                 action();
             }
         });
+    },
+
+    validateState() {
+        // 검색/다운로드가 같은 요청 경계를 타므로 프런트에서도 같은 길이 제한을 먼저 맞춥니다.
+        if (this.state.searchKeyword && this.state.searchKeyword.length > 50) {
+            CommonJS.alert('검색어는 50자 이하로 입력해주세요.', '알림', 'warning');
+            return false;
+        }
+
+        return true;
     },
 
     _syncUrlState() {

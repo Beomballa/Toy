@@ -86,4 +86,28 @@ class ProductListReqDtoTest {
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
+
+    @Test
+    @DisplayName("0번 브랜드나 카테고리 필터는 null 조건으로 정규화된다")
+    void toQueryNormalizesZeroFilterIdsToNull() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setCategoryNo(0L);
+        reqDto.setBrandNo(0L);
+
+        ProductListQuery query = reqDto.toQuery();
+
+        assertNull(query.categoryNo());
+        assertNull(query.brandNo());
+    }
+
+    @Test
+    @DisplayName("음수 브랜드나 카테고리 필터는 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsBusinessExceptionWhenFilterIdNegative() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setBrandNo(-1L);
+
+        BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
 }

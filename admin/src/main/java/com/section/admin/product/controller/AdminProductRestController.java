@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @Slf4j
@@ -30,6 +32,14 @@ public class AdminProductRestController {
         log.info("상품 목록 조회 요청 : {}, 페이징 : {}", req, pageable);
         ProductListResponse result = adminProductService.getProductList(req, pageable);
         return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/product/export")
+    public ResponseEntity<byte[]> exportProductList(@ModelAttribute ProductListRequest req) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=products.csv")
+                .contentType(new MediaType("text", "csv"))
+                .body(adminProductService.exportProductListCsv(req));
     }
 
     @PostMapping("/product/set")

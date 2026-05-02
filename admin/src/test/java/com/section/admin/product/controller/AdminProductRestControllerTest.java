@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +58,17 @@ class AdminProductRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.productNo").value(33L));
+    }
+
+    @Test
+    @DisplayName("상품 목록 CSV 내보내기는 attachment 헤더로 응답한다")
+    void exportProductListReturnsAttachmentResponse() throws Exception {
+        when(adminProductService.exportProductListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("csv".getBytes());
+
+        mockMvc.perform(get("/api/admin/product/export"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products.csv"));
     }
 
     @Test

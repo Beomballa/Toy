@@ -5,6 +5,7 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
@@ -59,6 +60,15 @@ public class AdminProductService {
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
         ProductListResponse.ProductStatsItem stats = ProductListResponse.ProductStatsItem.from(statsDto);
         return ProductListResponse.of(result, stats);
+    }
+
+    public byte[] exportProductListCsv(ProductListRequest req) {
+        Page<ProductListResDto> result = productService.getProductList(
+                req.toProductListReqDto(),
+                ProductListPagePolicy.normalize(org.springframework.data.domain.PageRequest.of(0, 50))
+        );
+
+        return ProductExportCsvWriter.write(result.getContent());
     }
 
     /**

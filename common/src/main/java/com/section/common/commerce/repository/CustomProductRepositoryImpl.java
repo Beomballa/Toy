@@ -3,6 +3,7 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.ProductOrderType;
@@ -122,18 +123,16 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long lowStockCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
-                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
                 .where(
                         searchKeywordLike(query.searchKeyword()),
                         categoryNoEq(query.categoryNo()),
                         brandNoEq(query.brandNo()),
                         statusEq(query.status()),
-                        notDeleted()
+                        notDeleted(),
+                        lowStockProductEq(100L)
                 )
-                .groupBy(product.id)
-                .having(productOption.stockCnt.sumLong().lt(100L))
-                .fetchCount();
-        stats.setLowStockCount(lowStockCount);
+                .fetchOne();
+        stats.setLowStockCount(lowStockCount != null ? lowStockCount : 0L);
 
         // 오늘 등록된 상품 개수
         Long todayCount = queryFactory
@@ -204,6 +203,20 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
     public BooleanExpression notDeleted() {
         return product.status.ne(ProductStatus.DELETE.name());
+    }
+
+    // 저재고 집계는 상품별 옵션 합계를 서브쿼리에서 먼저 좁혀서 메모리 count 경고를 피합니다.
+    public BooleanExpression lowStockProductEq(Long threshold) {
+        if (threshold == null) {
+            return null;
+        }
+
+        return product.id.in(
+                JPAExpressions.select(productOption.productNo)
+                        .from(productOption)
+                        .groupBy(productOption.productNo)
+                        .having(productOption.stockCnt.sumLong().lt(threshold))
+        );
     }
 
     public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {

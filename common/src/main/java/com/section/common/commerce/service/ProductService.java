@@ -24,6 +24,11 @@ public class ProductService {
         return productRepository.getProductList(query, pageable);
     }
 
+    public java.util.List<ProductListResDto> getProductExportList(ProductListReqDto reqDto, int limit) {
+        ProductListQuery query = reqDto.toQuery();
+        return productRepository.getProductExportList(query, limit);
+    }
+
     public ProductStatsDto getProductStats(ProductListReqDto reqDto) {
         ProductListQuery query = reqDto.toQuery();
         return productRepository.getProductStats(query);

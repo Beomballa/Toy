@@ -34,33 +34,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     @Override
     public Page<ProductListResDto> getProductList(ProductListQuery query, Pageable pageable) {
         List<ProductListResDto> list = queryFactory
-                .select(
-                        Projections.bean(
-                                ProductListResDto.class,
-                                product.id.as("productNo"),
-                                product.nameKo.as("productName"),
-                                product.thumbnailUrl.as("thumbnailUrl"),
-                                product.modelNum.as("productModel"),
-                                brand.nameKo.as("brandName"),
-                                product.releasePrice.as("releasePrice"),
-                                productOption.stockCnt.sumLong().coalesce(0L).as("totalStock"),
-                                product.status.as("status"),
-                                product.crtDtm.as("crtDtm")
-                        )
-                )
+                .select(productListProjection())
                 .from(product)
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id))
                 .groupBy(product.id)
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted()
-                )
+                .where(productListConditions(query))
                 .orderBy(orderTypeEq(query.orderType()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -72,16 +52,25 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id))
-                .where(
-                        searchKeywordLike(query.searchKeyword()),
-                        categoryNoEq(query.categoryNo()),
-                        brandNoEq(query.brandNo()),
-                        statusEq(query.status()),
-                        lowStockOnlyEq(query.lowStockOnly()),
-                        notDeleted()
-                );
+                .where(productListConditions(query));
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public List<ProductListResDto> getProductExportList(ProductListQuery query, int limit) {
+        // export는 화면 페이지네이션과 분리해서 같은 필터만 재사용하고, 건수만 별도 정책으로 제한합니다.
+        return queryFactory
+                .select(productListProjection())
+                .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                .groupBy(product.id)
+                .where(productListConditions(query))
+                .orderBy(orderTypeEq(query.orderType()))
+                .limit(limit)
+                .fetch();
     }
 
     @Override
@@ -230,6 +219,32 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             return null;
         }
         return lowStockProductEq(100L);
+    }
+
+    private BooleanExpression[] productListConditions(ProductListQuery query) {
+        return new BooleanExpression[] {
+                searchKeywordLike(query.searchKeyword()),
+                categoryNoEq(query.categoryNo()),
+                brandNoEq(query.brandNo()),
+                statusEq(query.status()),
+                lowStockOnlyEq(query.lowStockOnly()),
+                notDeleted()
+        };
+    }
+
+    private com.querydsl.core.types.QBean<ProductListResDto> productListProjection() {
+        return Projections.bean(
+                ProductListResDto.class,
+                product.id.as("productNo"),
+                product.nameKo.as("productName"),
+                product.thumbnailUrl.as("thumbnailUrl"),
+                product.modelNum.as("productModel"),
+                brand.nameKo.as("brandName"),
+                product.releasePrice.as("releasePrice"),
+                productOption.stockCnt.sumLong().coalesce(0L).as("totalStock"),
+                product.status.as("status"),
+                product.crtDtm.as("crtDtm")
+        );
     }
 
     public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {

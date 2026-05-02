@@ -6,6 +6,7 @@ import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.support.ProductExportCsvWriter;
+import com.section.admin.product.support.ProductExportPolicy;
 import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
@@ -63,12 +64,12 @@ public class AdminProductService {
     }
 
     public byte[] exportProductListCsv(ProductListRequest req) {
-        Page<ProductListResDto> result = productService.getProductList(
+        List<ProductListResDto> result = productService.getProductExportList(
                 req.toProductListReqDto(),
-                ProductListPagePolicy.normalize(org.springframework.data.domain.PageRequest.of(0, 50))
+                ProductExportPolicy.MAX_EXPORT_SIZE
         );
 
-        return ProductExportCsvWriter.write(result.getContent());
+        return ProductExportCsvWriter.write(result);
     }
 
     /**

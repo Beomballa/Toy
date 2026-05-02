@@ -13,6 +13,8 @@ public interface CustomProductRepository {
 
     Page<ProductListResDto> getProductList(ProductListQuery query, Pageable pageable);
 
+    List<ProductListResDto> getProductExportList(ProductListQuery query, int limit);
+
     ProductStatsDto getProductStats(ProductListQuery query);
 
     List<ProductListResDto> getLowStockProducts(int threshold, int limit);

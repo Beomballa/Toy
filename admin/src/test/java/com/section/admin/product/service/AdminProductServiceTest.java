@@ -1,9 +1,12 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.dto.ProductListReqDto;
+import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
@@ -18,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -107,5 +111,23 @@ class AdminProductServiceTest {
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상품 CSV 내보내기는 export 전용 조회 경계로 최대 건수를 제한한다")
+    void exportProductListCsvUsesDedicatedExportQuery() {
+        ProductListRequest request = new ProductListRequest();
+        ProductListResDto dto = new ProductListResDto();
+        dto.setProductNo(1L);
+        dto.setProductName("테스트 상품");
+        dto.setStatus("ACTIVE");
+
+        when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListReqDto.class), org.mockito.ArgumentMatchers.eq(1000)))
+                .thenReturn(List.of(dto));
+
+        byte[] csv = adminProductService.exportProductListCsv(request);
+
+        assertEquals(true, csv.length > 0);
+        verify(productService).getProductExportList(org.mockito.ArgumentMatchers.any(ProductListReqDto.class), org.mockito.ArgumentMatchers.eq(1000));
     }
 }

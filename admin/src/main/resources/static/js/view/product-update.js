@@ -2,6 +2,7 @@ const ProductUpdate = {
     optionCount: 0,
     productNo: null,
     returnTo: '/admin/products',
+    isSubmitting: false,
 
     init() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -43,7 +44,10 @@ const ProductUpdate = {
     async loadProductData() {
         try {
             const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
-            if (!response.ok) throw new Error('상품 정보를 불러오는데 실패했습니다.');
+            if (!response.ok) {
+                const error = await CommonJS.extractError(response);
+                throw new Error(error.message || '상품 정보를 불러오는데 실패했습니다.');
+            }
 
             const data = await response.json();
             this.fillForm(data);
@@ -161,6 +165,10 @@ const ProductUpdate = {
     },
 
     async updateForm() {
+        if (this.isSubmitting) {
+            return;
+        }
+
         const categoryNo = document.getElementById('categoryNo').value;
         const brandNo = document.getElementById('brandNo').value;
         const nameKo = document.getElementById('nameKo').value;
@@ -198,6 +206,9 @@ const ProductUpdate = {
         };
 
         try {
+            // 수정 API는 옵션 삭제/재등록까지 같이 처리하므로 중복 요청을 먼저 막습니다.
+            this.isSubmitting = true;
+            this.setSubmitDisabled(true);
             const response = await fetch('/api/admin/product/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -208,13 +219,22 @@ const ProductUpdate = {
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
                 window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
             } else {
-                const err = await response.json();
-                await CommonJS.alert('수정 실패: ' + (err.message || '알 수 없는 오류'), '오류', 'error');
+                const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
+                await CommonJS.alert('수정 실패: ' + message, '오류', 'error');
             }
         } catch (error) {
             console.error('Update Error:', error);
             await CommonJS.alert('수정 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isSubmitting = false;
+            this.setSubmitDisabled(false);
         }
+    },
+
+    setSubmitDisabled(disabled) {
+        document.getElementById('btnUpdate').disabled = disabled;
+        document.getElementById('btnCancelEdit').disabled = disabled;
+        document.getElementById('btnAddOption').disabled = disabled;
     },
 
     syncReturnLinks() {

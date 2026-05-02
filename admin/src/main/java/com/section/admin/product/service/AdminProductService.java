@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -107,6 +108,10 @@ public class AdminProductService {
     @Transactional
     public Long createProductInfo(ProductCreateRequest reqDto) {
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
+        validateDuplicateOptionNames(reqDto.getOptions() == null ? List.of() :
+                reqDto.getOptions().stream()
+                        .map(ProductCreateRequest.ProductOptionRequest::normalizeOptionName)
+                        .toList());
         // 상품 정보 저장
         Product product = Product.createProduct(reqDto.toProductCreateReqDto());
         Product savedProduct = productRepository.save(product);
@@ -136,6 +141,10 @@ public class AdminProductService {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
+        validateDuplicateOptionNames(reqDto.getOptions() == null ? List.of() :
+                reqDto.getOptions().stream()
+                        .map(ProductUpdateRequest.ProductOptionUpdateRequest::normalizeOptionName)
+                        .toList());
 
         // 기본 정보 수정
         product.updateBasicInfo(
@@ -221,6 +230,14 @@ public class AdminProductService {
         try {
             return ProductStatus.valueOf(status.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private void validateDuplicateOptionNames(List<String> optionNames) {
+        // 옵션명은 저장 전 공백 정규화 기준으로 중복 여부를 판단해야 화면 표시와 DB 값이 어긋나지 않습니다.
+        Set<String> distinctNames = optionNames.stream().collect(Collectors.toSet());
+        if (distinctNames.size() != optionNames.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

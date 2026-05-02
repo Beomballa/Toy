@@ -119,6 +119,71 @@ class AdminProductServiceTest {
     }
 
     @Test
+    @DisplayName("공백 정규화 후 중복되는 상품 옵션명으로 생성 시 INVALID_INPUT_VALUE 예외를 던진다")
+    void createProductInfoThrowsBusinessExceptionWhenOptionNamesDuplicated() {
+        ProductCreateRequest.ProductOptionRequest firstOption = new ProductCreateRequest.ProductOptionRequest();
+        firstOption.setOptionName("270");
+        firstOption.setStockCnt(1);
+        firstOption.setAdditionalPrice(0);
+
+        ProductCreateRequest.ProductOptionRequest duplicatedOption = new ProductCreateRequest.ProductOptionRequest();
+        duplicatedOption.setOptionName(" 270 ");
+        duplicatedOption.setStockCnt(2);
+        duplicatedOption.setAdditionalPrice(0);
+
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+        request.setOptions(List.of(firstOption, duplicatedOption));
+
+        when(brandRepository.existsById(1L)).thenReturn(true);
+        when(categoryRepository.existsById(2L)).thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("공백 정규화 후 중복되는 상품 옵션명으로 수정 시 INVALID_INPUT_VALUE 예외를 던진다")
+    void updateProductInfoThrowsBusinessExceptionWhenOptionNamesDuplicated() {
+        ProductUpdateRequest.ProductOptionUpdateRequest firstOption = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        firstOption.setOptionName("280");
+        firstOption.setStockCnt(1);
+        firstOption.setAdditionalPrice(0);
+
+        ProductUpdateRequest.ProductOptionUpdateRequest duplicatedOption = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        duplicatedOption.setOptionName(" 280 ");
+        duplicatedOption.setStockCnt(2);
+        duplicatedOption.setAdditionalPrice(0);
+
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+        request.setOptions(List.of(firstOption, duplicatedOption));
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+                .id(1L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("기존 상품")
+                .status("ACTIVE")
+                .releasePrice(1000)
+                .build()));
+        when(brandRepository.existsById(1L)).thenReturn(true);
+        when(categoryRepository.existsById(2L)).thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("상품 CSV 내보내기는 export 전용 조회 경계로 최대 건수를 제한한다")
     void exportProductListCsvUsesDedicatedExportQuery() {
         ProductListRequest request = new ProductListRequest();

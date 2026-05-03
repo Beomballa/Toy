@@ -12,6 +12,7 @@ const ProductList = {
         orderType: 'r',
     },
     requestSequence: 0,
+    activeRequestController: null,
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -158,9 +159,14 @@ const ProductList = {
             orderType: this.state.orderType,
         });
         const requestId = ++this.requestSequence;
+        this.activeRequestController?.abort();
+        this.activeRequestController = new AbortController();
+        this._setLoadingState(true);
 
         try {
-            const res = await fetch(`/api/admin/product/list?${params}`);
+            const res = await fetch(`/api/admin/product/list?${params}`, {
+                signal: this.activeRequestController.signal,
+            });
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
@@ -174,8 +180,15 @@ const ProductList = {
             this._updateStats(data.productStats);
 
         } catch (err) {
+            if (err.name === 'AbortError') {
+                return;
+            }
             console.error('상품 목록 로드 실패:', err);
             this._showError();
+        } finally {
+            if (requestId === this.requestSequence) {
+                this._setLoadingState(false);
+            }
         }
     },
 
@@ -280,6 +293,32 @@ const ProductList = {
     _showError() {
         document.getElementById('productListTableBody').innerHTML = `
             <tr><td colspan="8" class="text-center py-5 text-danger">데이터 로드 중 오류가 발생했습니다.</td></tr>`;
+    },
+
+    _setLoadingState(isLoading) {
+        const tbody = document.getElementById('productListTableBody');
+        const pageInfoText = document.getElementById('pageInfoText');
+        const totalElementsCount = document.getElementById('totalElementsCount');
+
+        if (isLoading) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="product-loading-state">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>상품 목록을 다시 불러오는 중입니다.</strong>
+                            <p>현재 필터 조건에 맞는 결과를 조회하고 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            if (pageInfoText) {
+                pageInfoText.textContent = '상품 목록 조회 중';
+            }
+            if (totalElementsCount) {
+                totalElementsCount.textContent = '조회 중...';
+            }
+        }
     },
 
     goPage(page) {

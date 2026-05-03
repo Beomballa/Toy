@@ -171,6 +171,9 @@
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/product-get.js"></script>
-<script>document.addEventListener('DOMContentLoaded', () => ProductDetail.init());</script>
+<script th:inline="javascript">
+    const productDetailData = /*[[${product}]]*/ null;
+    document.addEventListener('DOMContentLoaded', () => ProductDetail.init(productDetailData));
+</script>
 </body>
 </html>

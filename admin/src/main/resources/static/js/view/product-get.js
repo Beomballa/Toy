@@ -3,7 +3,7 @@ const ProductDetail = {
     productData: null,
     returnTo: '/admin/products',
 
-    init() {
+    init(bootstrapProduct = null) {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
@@ -16,12 +16,21 @@ const ProductDetail = {
         }
 
         this.syncReturnLinks();
-        this.loadProductDetail();
+        if (this.hasBootstrapProduct(bootstrapProduct)) {
+            // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
+            this.renderProduct(bootstrapProduct);
+        } else {
+            this.loadProductDetail();
+        }
         this.bindEvents();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = this.returnTo;
         });
+    },
+
+    hasBootstrapProduct(bootstrapProduct) {
+        return !!bootstrapProduct && String(bootstrapProduct.productNo) === String(this.productNo);
     },
 
     bindEvents() {

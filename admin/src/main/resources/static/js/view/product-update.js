@@ -4,7 +4,7 @@ const ProductUpdate = {
     returnTo: '/admin/products',
     isSubmitting: false,
 
-    init() {
+    init(bootstrapProduct = null) {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
@@ -17,12 +17,22 @@ const ProductUpdate = {
         }
 
         this.syncReturnLinks();
-        this.loadProductData();
+        if (this.hasBootstrapProduct(bootstrapProduct)) {
+            // 수정 화면도 서버가 이미 가진 상세 모델을 먼저 써서 초기 로딩 왕복을 줄입니다.
+            this.fillForm(bootstrapProduct);
+            this.updatePreview();
+        } else {
+            this.loadProductData();
+        }
         this.bindEvents();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = this.returnTo;
         });
+    },
+
+    hasBootstrapProduct(bootstrapProduct) {
+        return !!bootstrapProduct && String(bootstrapProduct.productNo) === String(this.productNo);
     },
 
     bindEvents() {

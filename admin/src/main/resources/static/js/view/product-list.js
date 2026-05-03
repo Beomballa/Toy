@@ -18,6 +18,7 @@ const ProductList = {
 
         this._readStateFromUrl();
         this._syncFilterInputs();
+        this._renderFilterSummary();
         this._bindEvents();
         this._initAnimations();
         this.getList(); // 초기 로드
@@ -103,16 +104,12 @@ const ProductList = {
         document.getElementById('statTodayCard')?.addEventListener('click', () => this.applyTodayFilter());
         this.bindStatCardKeyboard('statTotalCard', () => this.resetFilters());
         this.bindStatCardKeyboard('statActiveCard', () => this.applyActiveFilter());
-        document.getElementById('statLowStockCard')?.addEventListener('keypress', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-                event.preventDefault();
-                this.applyLowStockFilter();
-            }
-        });
+        this.bindStatCardKeyboard('statLowStockCard', () => this.applyLowStockFilter());
         this.bindStatCardKeyboard('statTodayCard', () => this.applyTodayFilter());
         window.addEventListener('popstate', () => {
             this._readStateFromUrl();
             this._syncFilterInputs();
+            this._renderFilterSummary();
             this.getList(false);
         });
     },
@@ -132,6 +129,7 @@ const ProductList = {
         if (pushState) {
             this._syncUrlState();
         }
+        this._renderFilterSummary();
 
         const params = new URLSearchParams({
             page: this.state.page,
@@ -269,6 +267,7 @@ const ProductList = {
             orderType: 'r',
         };
         this._syncFilterInputs();
+        this._renderFilterSummary();
         this.getList();
     },
 
@@ -373,6 +372,85 @@ const ProductList = {
 
         orderButton.setAttribute('data-current-value', this.state.orderType);
         orderButton.textContent = orderTypeLabel;
+    },
+
+    _renderFilterSummary() {
+        const titleEl = document.getElementById('productFilterSummaryTitle');
+        const descEl = document.getElementById('productFilterSummaryDescription');
+        const chipsEl = document.getElementById('productFilterSummaryChips');
+        if (!titleEl || !descEl || !chipsEl) {
+            return;
+        }
+
+        const statusTextMap = {
+            ACTIVE: '판매중 상품',
+            HIDDEN: '숨김 상품',
+            SOLD_OUT: '품절 상품',
+        };
+
+        let title = '전체 상품';
+        if (this.state.createdTodayOnly) {
+            title = '오늘 등록 상품';
+        } else if (this.state.lowStockOnly) {
+            title = '품절 임박 상품';
+        } else if (this.state.status) {
+            title = statusTextMap[this.state.status] || '상태 필터 상품';
+        }
+
+        const chips = [];
+        if (this.state.brandNo) {
+            chips.push(this._createFilterChip('fa-tags', this._findSelectLabel('brandNo')));
+        }
+        if (this.state.categoryNo) {
+            chips.push(this._createFilterChip('fa-layer-group', this._findSelectLabel('categoryNo')));
+        }
+        if (this.state.status) {
+            chips.push(this._createFilterChip('fa-circle-check', statusTextMap[this.state.status] || this.state.status));
+        }
+        if (this.state.lowStockOnly) {
+            chips.push(this._createFilterChip('fa-triangle-exclamation', '품절 임박만'));
+        }
+        if (this.state.createdTodayOnly) {
+            chips.push(this._createFilterChip('fa-calendar-day', '오늘 등록만'));
+        }
+        if (this.state.searchKeyword) {
+            chips.push(this._createFilterChip('fa-magnifying-glass', `검색: ${this.state.searchKeyword}`));
+        }
+
+        const summaryDesc = chips.length
+            ? `${chips.length}개의 필터 조건이 적용되어 있습니다.`
+            : '모든 상품을 보고 있습니다.';
+
+        titleEl.textContent = title;
+        descEl.textContent = summaryDesc;
+        chipsEl.innerHTML = chips.length ? chips.join('') : this._createFilterChip('fa-sliders', '추가 필터 없음');
+        this._syncStatCardState();
+    },
+
+    _syncStatCardState() {
+        const activeMap = {
+            statTotalCard: !this.state.status && !this.state.lowStockOnly && !this.state.createdTodayOnly,
+            statActiveCard: this.state.status === 'ACTIVE' && !this.state.lowStockOnly && !this.state.createdTodayOnly,
+            statLowStockCard: this.state.lowStockOnly,
+            statTodayCard: this.state.createdTodayOnly,
+        };
+
+        Object.entries(activeMap).forEach(([id, isActive]) => {
+            document.getElementById(id)?.classList.toggle('stat-card-active', isActive);
+        });
+    },
+
+    _findSelectLabel(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) {
+            return '';
+        }
+
+        return select.options[select.selectedIndex]?.text || '';
+    },
+
+    _createFilterChip(iconClass, label) {
+        return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i>${label}</span>`;
     },
 
     _updateStateFromInputs() {

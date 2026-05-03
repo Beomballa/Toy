@@ -632,6 +632,81 @@ body {
     box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
+.stat-card.stat-card-active {
+    border-color: #111827;
+    box-shadow: 0 18px 36px rgba(15, 23, 42, 0.1);
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.stat-card.stat-card-active .stat-label,
+.stat-card.stat-card-active .stat-value {
+    color: #111827;
+}
+
+.product-filter-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.product-filter-summary-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.product-filter-summary-label {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.product-filter-summary-copy strong {
+    color: #111827;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.product-filter-summary-desc {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.product-filter-summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.product-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 34px;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid #dbe1ea;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.product-filter-chip i {
+    color: #64748b;
+    font-size: 0.76rem;
+}
+
 .product-detail-layout > [class*="col-"] {
     display: flex;
     flex-direction: column;
@@ -872,6 +947,14 @@ body {
 }
 
 @media (max-width: 1200px) {
+    .product-filter-summary {
+        flex-direction: column;
+    }
+
+    .product-filter-summary-chips {
+        justify-content: flex-start;
+    }
+
     .product-detail-titlebar,
     .product-summary-top {
         flex-direction: column;

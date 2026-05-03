@@ -95,6 +95,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long activeCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .where(productStatConditions(query, product.status.eq(ProductStatus.ACTIVE.name())))
                 .fetchOne();
         stats.setActiveCount(activeCount != null ? activeCount : 0L);
@@ -103,6 +105,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long lowStockCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .where(productStatConditions(query, lowStockProductEq(100L)))
                 .fetchOne();
         stats.setLowStockCount(lowStockCount != null ? lowStockCount : 0L);
@@ -111,6 +115,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         Long todayCount = queryFactory
                 .select(product.countDistinct())
                 .from(product)
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .where(productStatConditions(query, product.crtDtm.goe(today)))
                 .fetchOne();
         stats.setTodayCount(todayCount != null ? todayCount : 0L);
@@ -143,7 +149,9 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             return null;
         }
         return product.nameKo.containsIgnoreCase(searchKeyword)
-                .or(product.modelNum.containsIgnoreCase(searchKeyword));
+                .or(product.modelNum.containsIgnoreCase(searchKeyword))
+                .or(brand.nameKo.containsIgnoreCase(searchKeyword))
+                .or(category.name.containsIgnoreCase(searchKeyword));
     }
 
     public BooleanExpression categoryNoEq(Long categoryNo) {

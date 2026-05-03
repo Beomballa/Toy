@@ -270,8 +270,15 @@ const ProductList = {
             </li>`;
         }
         pagination.innerHTML = html;
-        document.getElementById('totalElementsCount').textContent = `전체 ${totalElements.toLocaleString()}개`;
-        document.getElementById('pageInfoText').textContent = `전체 ${totalElements.toLocaleString()}개 중 ${totalPages}페이지`;
+        const listCountLabel = this._hasActiveFilters()
+            ? `검색 결과 ${totalElements.toLocaleString()}개`
+            : `전체 ${totalElements.toLocaleString()}개`;
+        const pageInfoLabel = totalElements === 0
+            ? '조건에 맞는 상품이 없습니다.'
+            : `${listCountLabel} / ${Math.max(totalPages, 1)}페이지`;
+
+        document.getElementById('totalElementsCount').textContent = listCountLabel;
+        document.getElementById('pageInfoText').textContent = pageInfoLabel;
     },
 
     _updateStats(stats) {
@@ -552,6 +559,17 @@ const ProductList = {
         }
 
         return '등록된 상품이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+    },
+
+    _hasActiveFilters() {
+        return Boolean(
+            this.state.brandNo ||
+            this.state.categoryNo ||
+            this.state.status ||
+            this.state.lowStockOnly ||
+            this.state.createdTodayOnly ||
+            this.state.searchKeyword
+        );
     },
 
     clearFilter(filterKey) {

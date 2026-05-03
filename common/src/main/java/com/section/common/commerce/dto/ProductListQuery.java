@@ -10,6 +10,7 @@ public record ProductListQuery(
         String searchKeyword,
         ProductOrderType orderType,
         boolean lowStockOnly,
+        Long lowStockThreshold,
         boolean createdTodayOnly
 ) {
 }

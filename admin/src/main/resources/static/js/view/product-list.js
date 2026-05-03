@@ -7,6 +7,7 @@ const ProductList = {
         categoryNo: '',
         status: '',
         lowStockOnly: false,
+        lowStockThreshold: '100',
         createdTodayOnly: false,
         searchKeyword: '',
         orderType: 'r',
@@ -52,7 +53,7 @@ const ProductList = {
     },
 
     _bindEvents() {
-        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'lowStockOnly', 'createdTodayOnly', 'searchKeyword', 'pageSize', 'orderType'];
+        const FILTER_IDS = ['brandNo', 'categoryNo', 'statusFilter', 'lowStockOnly', 'lowStockThreshold', 'createdTodayOnly', 'searchKeyword', 'pageSize', 'orderType'];
         FILTER_IDS.forEach(id => {
             const el = document.getElementById(id);
             if (!el) return;
@@ -154,6 +155,7 @@ const ProductList = {
             categoryNo: this.state.categoryNo,
             status: this.state.status,
             lowStockOnly: this.state.lowStockOnly,
+            lowStockThreshold: this.state.lowStockThreshold,
             createdTodayOnly: this.state.createdTodayOnly,
             searchKeyword: this.state.searchKeyword,
             orderType: this.state.orderType,
@@ -341,6 +343,7 @@ const ProductList = {
             categoryNo: '',
             status: '',
             lowStockOnly: false,
+            lowStockThreshold: this.state.lowStockThreshold,
             createdTodayOnly: false,
             searchKeyword: '',
             orderType: 'r',
@@ -418,6 +421,9 @@ const ProductList = {
         if (this.state.categoryNo) params.set('categoryNo', this.state.categoryNo);
         if (this.state.status) params.set('status', this.state.status);
         if (this.state.lowStockOnly) params.set('lowStockOnly', 'true');
+        if (this.state.lowStockOnly && this.state.lowStockThreshold && this.state.lowStockThreshold !== '100') {
+            params.set('lowStockThreshold', this.state.lowStockThreshold);
+        }
         if (this.state.createdTodayOnly) params.set('createdTodayOnly', 'true');
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
         if (this.state.orderType && this.state.orderType !== 'r') params.set('orderType', this.state.orderType);
@@ -433,6 +439,7 @@ const ProductList = {
         this.state.categoryNo = params.get('categoryNo') || '';
         this.state.status = params.get('status') || '';
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
+        this.state.lowStockThreshold = params.get('lowStockThreshold') || '100';
         this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
@@ -443,6 +450,7 @@ const ProductList = {
         document.getElementById('categoryNo').value = this.state.categoryNo;
         document.getElementById('statusFilter').value = this.state.status;
         document.getElementById('lowStockOnly').checked = this.state.lowStockOnly;
+        document.getElementById('lowStockThreshold').value = String(this.state.lowStockThreshold || '100');
         document.getElementById('createdTodayOnly').checked = this.state.createdTodayOnly;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
         document.getElementById('pageSize').value = String(this.state.size);
@@ -493,7 +501,7 @@ const ProductList = {
             chips.push(this._createFilterChip('status', 'fa-circle-check', statusTextMap[this.state.status] || this.state.status));
         }
         if (this.state.lowStockOnly) {
-            chips.push(this._createFilterChip('lowStockOnly', 'fa-triangle-exclamation', '품절 임박만'));
+            chips.push(this._createFilterChip('lowStockOnly', 'fa-triangle-exclamation', `재고 ${this.state.lowStockThreshold}개 미만`));
         }
         if (this.state.createdTodayOnly) {
             chips.push(this._createFilterChip('createdTodayOnly', 'fa-calendar-day', '오늘 등록만'));
@@ -595,6 +603,7 @@ const ProductList = {
         this.state.categoryNo = document.getElementById('categoryNo').value;
         this.state.status = document.getElementById('statusFilter').value;
         this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
+        this.state.lowStockThreshold = document.getElementById('lowStockThreshold').value || '100';
         this.state.createdTodayOnly = document.getElementById('createdTodayOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = Number(document.getElementById('pageSize').value || 10);

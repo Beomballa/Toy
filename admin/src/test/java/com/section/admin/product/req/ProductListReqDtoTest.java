@@ -25,6 +25,7 @@ class ProductListReqDtoTest {
         reqDto.setSearchKeyword("  젤   카야노 14 ");
         reqDto.setOrderType("c");
         reqDto.setLowStockOnly(true);
+        reqDto.setLowStockThreshold(30L);
         reqDto.setCreatedTodayOnly(true);
 
         ProductListQuery query = reqDto.toQuery();
@@ -35,6 +36,7 @@ class ProductListReqDtoTest {
         assertEquals("젤 카야노 14", query.searchKeyword());
         assertEquals(ProductOrderType.STOCK_COUNT, query.orderType());
         assertEquals(true, query.lowStockOnly());
+        assertEquals(30L, query.lowStockThreshold());
         assertEquals(true, query.createdTodayOnly());
     }
 
@@ -51,7 +53,20 @@ class ProductListReqDtoTest {
         assertNull(query.searchKeyword());
         assertEquals(ProductOrderType.RECENT, query.orderType());
         assertEquals(false, query.lowStockOnly());
+        assertNull(query.lowStockThreshold());
         assertEquals(false, query.createdTodayOnly());
+    }
+
+    @Test
+    @DisplayName("저재고 필터만 켜면 기본 임계값 100개 미만을 사용한다")
+    void toQueryUsesDefaultLowStockThreshold() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setLowStockOnly(true);
+
+        ProductListQuery query = reqDto.toQuery();
+
+        assertEquals(true, query.lowStockOnly());
+        assertEquals(100L, query.lowStockThreshold());
     }
 
     @Test
@@ -105,6 +120,18 @@ class ProductListReqDtoTest {
     void toQueryThrowsBusinessExceptionWhenFilterIdNegative() {
         ProductListReqDto reqDto = new ProductListReqDto();
         reqDto.setBrandNo(-1L);
+
+        BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("저재고 임계값이 0 이하이면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsBusinessExceptionWhenLowStockThresholdInvalid() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setLowStockOnly(true);
+        reqDto.setLowStockThreshold(0L);
 
         BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
 

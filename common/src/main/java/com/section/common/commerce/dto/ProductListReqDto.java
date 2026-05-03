@@ -16,6 +16,7 @@ public class ProductListReqDto {
     private String searchKeyword;
     private String orderType;
     private Boolean lowStockOnly;
+    private Long lowStockThreshold;
     private Boolean createdTodayOnly;
 
     public ProductListQuery toQuery() {
@@ -25,6 +26,7 @@ public class ProductListReqDto {
         String normalizedKeyword = normalizeKeyword(searchKeyword);
         ProductOrderType normalizedOrderType = normalizeOrderType(orderType);
         boolean normalizedLowStockOnly = Boolean.TRUE.equals(lowStockOnly);
+        Long normalizedLowStockThreshold = normalizeLowStockThreshold(lowStockThreshold, normalizedLowStockOnly);
         boolean normalizedCreatedTodayOnly = Boolean.TRUE.equals(createdTodayOnly);
 
         return new ProductListQuery(
@@ -34,6 +36,7 @@ public class ProductListReqDto {
                 normalizedKeyword,
                 normalizedOrderType,
                 normalizedLowStockOnly,
+                normalizedLowStockThreshold,
                 normalizedCreatedTodayOnly
         );
     }
@@ -81,5 +84,19 @@ public class ProductListReqDto {
         }
 
         return normalizedOrderType;
+    }
+
+    private Long normalizeLowStockThreshold(Long threshold, boolean lowStockOnly) {
+        if (!lowStockOnly) {
+            return null;
+        }
+        if (threshold == null) {
+            return 100L;
+        }
+        if (threshold <= 0L) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        return threshold;
     }
 }

@@ -84,15 +84,15 @@ class ProductRepositorySearchIntegrationTest {
                 .build());
 
         Page<ProductListResDto> brandResult = productRepository.getProductList(
-                new ProductListQuery(null, null, null, "테스트 브랜드 검색", ProductOrderType.RECENT, false, false),
+                new ProductListQuery(null, null, null, "테스트 브랜드 검색", ProductOrderType.RECENT, false, null, false),
                 PageRequest.of(0, 10)
         );
         Page<ProductListResDto> categoryResult = productRepository.getProductList(
-                new ProductListQuery(null, null, null, "테스트 카테고리 검색", ProductOrderType.RECENT, false, false),
+                new ProductListQuery(null, null, null, "테스트 카테고리 검색", ProductOrderType.RECENT, false, null, false),
                 PageRequest.of(0, 10)
         );
         ProductStatsDto stats = productRepository.getProductStats(
-                new ProductListQuery(null, null, null, "테스트 브랜드 검색", ProductOrderType.RECENT, false, false)
+                new ProductListQuery(null, null, null, "테스트 브랜드 검색", ProductOrderType.RECENT, false, null, false)
         );
 
         assertEquals(1, brandResult.getTotalElements());

@@ -14,6 +14,7 @@ public class ProductListRequest {
     private String searchKeyword;
     private String orderType;
     private Boolean lowStockOnly;
+    private Long lowStockThreshold;
     private Boolean createdTodayOnly;
 
     public ProductListReqDto toProductListReqDto() {
@@ -24,6 +25,7 @@ public class ProductListRequest {
         reqDto.setSearchKeyword(searchKeyword);
         reqDto.setOrderType(orderType);
         reqDto.setLowStockOnly(lowStockOnly);
+        reqDto.setLowStockThreshold(lowStockThreshold);
         reqDto.setCreatedTodayOnly(createdTodayOnly);
         return reqDto;
     }

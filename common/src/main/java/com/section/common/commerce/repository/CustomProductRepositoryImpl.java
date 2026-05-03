@@ -193,11 +193,11 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         );
     }
 
-    public BooleanExpression lowStockOnlyEq(boolean lowStockOnly) {
+    public BooleanExpression lowStockOnlyEq(boolean lowStockOnly, Long threshold) {
         if (!lowStockOnly) {
             return null;
         }
-        return lowStockProductEq(100L);
+        return lowStockProductEq(threshold == null ? 100L : threshold);
     }
 
     private BooleanExpression[] productListConditions(ProductListQuery query) {
@@ -206,7 +206,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 categoryNoEq(query.categoryNo()),
                 brandNoEq(query.brandNo()),
                 statusEq(query.status()),
-                lowStockOnlyEq(query.lowStockOnly()),
+                lowStockOnlyEq(query.lowStockOnly(), query.lowStockThreshold()),
                 createdTodayOnlyEq(query.createdTodayOnly()),
                 notDeleted()
         };
@@ -219,7 +219,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 categoryNoEq(query.categoryNo()),
                 brandNoEq(query.brandNo()),
                 statusEq(query.status()),
-                lowStockOnlyEq(query.lowStockOnly()),
+                lowStockOnlyEq(query.lowStockOnly(), query.lowStockThreshold()),
                 createdTodayOnlyEq(query.createdTodayOnly()),
                 notDeleted()
         };

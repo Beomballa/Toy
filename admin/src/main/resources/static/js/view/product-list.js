@@ -24,6 +24,7 @@ const ProductList = {
         this.getList(); // 초기 로드
 
         document.getElementById('new-product')?.addEventListener('click', () => location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`);
+        document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
             this._updateStateFromInputs();
             if (!this.validateState()) {
@@ -55,7 +56,7 @@ const ProductList = {
             if (!el) return;
             el.addEventListener('change', () => { this.state.page = 0; this._updateStateFromInputs(); this.getList(); });
             if (el.tagName === 'INPUT') {
-                el.addEventListener('keypress', e => {
+                el.addEventListener('keydown', e => {
                     if (e.key === 'Enter') { e.preventDefault(); this.state.page = 0; this._updateStateFromInputs(); this.getList(); }
                 });
             }
@@ -302,6 +303,12 @@ const ProductList = {
         this.state.createdTodayOnly = true;
         this.state.lowStockOnly = false;
         this._syncFilterInputs();
+        this.getList();
+    },
+
+    applySearchFilter() {
+        this.state.page = 0;
+        this._updateStateFromInputs();
         this.getList();
     },
 

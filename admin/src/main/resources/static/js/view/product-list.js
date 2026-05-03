@@ -98,6 +98,14 @@ const ProductList = {
         });
 
         document.getElementById('btnResetFilter')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('productFilterSummaryChips')?.addEventListener('click', (event) => {
+            const removeButton = event.target.closest('[data-filter-remove]');
+            if (!removeButton) {
+                return;
+            }
+
+            this.clearFilter(removeButton.dataset.filterRemove);
+        });
         document.getElementById('statTotalCard')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('statActiveCard')?.addEventListener('click', () => this.applyActiveFilter());
         document.getElementById('statLowStockCard')?.addEventListener('click', () => this.applyLowStockFilter());
@@ -399,22 +407,22 @@ const ProductList = {
 
         const chips = [];
         if (this.state.brandNo) {
-            chips.push(this._createFilterChip('fa-tags', this._findSelectLabel('brandNo')));
+            chips.push(this._createFilterChip('brandNo', 'fa-tags', this._findSelectLabel('brandNo')));
         }
         if (this.state.categoryNo) {
-            chips.push(this._createFilterChip('fa-layer-group', this._findSelectLabel('categoryNo')));
+            chips.push(this._createFilterChip('categoryNo', 'fa-layer-group', this._findSelectLabel('categoryNo')));
         }
         if (this.state.status) {
-            chips.push(this._createFilterChip('fa-circle-check', statusTextMap[this.state.status] || this.state.status));
+            chips.push(this._createFilterChip('status', 'fa-circle-check', statusTextMap[this.state.status] || this.state.status));
         }
         if (this.state.lowStockOnly) {
-            chips.push(this._createFilterChip('fa-triangle-exclamation', '품절 임박만'));
+            chips.push(this._createFilterChip('lowStockOnly', 'fa-triangle-exclamation', '품절 임박만'));
         }
         if (this.state.createdTodayOnly) {
-            chips.push(this._createFilterChip('fa-calendar-day', '오늘 등록만'));
+            chips.push(this._createFilterChip('createdTodayOnly', 'fa-calendar-day', '오늘 등록만'));
         }
         if (this.state.searchKeyword) {
-            chips.push(this._createFilterChip('fa-magnifying-glass', `검색: ${this.state.searchKeyword}`));
+            chips.push(this._createFilterChip('searchKeyword', 'fa-magnifying-glass', `검색: ${this.state.searchKeyword}`));
         }
 
         const summaryDesc = chips.length
@@ -423,7 +431,7 @@ const ProductList = {
 
         titleEl.textContent = title;
         descEl.textContent = summaryDesc;
-        chipsEl.innerHTML = chips.length ? chips.join('') : this._createFilterChip('fa-sliders', '추가 필터 없음');
+        chipsEl.innerHTML = chips.length ? chips.join('') : this._createStaticFilterChip('fa-sliders', '추가 필터 없음');
         this._syncStatCardState();
     },
 
@@ -449,8 +457,38 @@ const ProductList = {
         return select.options[select.selectedIndex]?.text || '';
     },
 
-    _createFilterChip(iconClass, label) {
-        return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i>${label}</span>`;
+    _createFilterChip(filterKey, iconClass, label) {
+        return `
+            <span class="product-filter-chip">
+                <i class="fas ${iconClass}"></i>
+                <span>${label}</span>
+                <button type="button" class="product-filter-chip-remove" data-filter-remove="${filterKey}" aria-label="${label} 필터 해제">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </span>
+        `;
+    },
+
+    _createStaticFilterChip(iconClass, label) {
+        return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i><span>${label}</span></span>`;
+    },
+
+    clearFilter(filterKey) {
+        this.state.page = 0;
+
+        // 카드 shortcut 필터와 일반 폼 필터가 같은 state를 공유하므로 해제도 같은 state에서 정리합니다.
+        const clearActions = {
+            brandNo: () => { this.state.brandNo = ''; },
+            categoryNo: () => { this.state.categoryNo = ''; },
+            status: () => { this.state.status = ''; },
+            lowStockOnly: () => { this.state.lowStockOnly = false; },
+            createdTodayOnly: () => { this.state.createdTodayOnly = false; },
+            searchKeyword: () => { this.state.searchKeyword = ''; },
+        };
+
+        clearActions[filterKey]?.();
+        this._syncFilterInputs();
+        this.getList();
     },
 
     _updateStateFromInputs() {

@@ -730,6 +730,30 @@ body {
     font-size: 0.7rem;
 }
 
+.product-empty-state {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.65rem;
+    max-width: 420px;
+}
+
+.product-empty-state strong {
+    color: #111827;
+    font-size: 1rem;
+}
+
+.product-empty-state p {
+    margin: 0;
+    color: #6b7280;
+    line-height: 1.5;
+}
+
+.product-empty-state-icon {
+    font-size: 1.5rem;
+    color: #94a3b8;
+}
+
 .product-detail-layout > [class*="col-"] {
     display: flex;
     flex-direction: column;

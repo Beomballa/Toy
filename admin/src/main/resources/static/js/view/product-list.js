@@ -11,6 +11,7 @@ const ProductList = {
         searchKeyword: '',
         orderType: 'r',
     },
+    requestSequence: 0,
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -63,6 +64,11 @@ const ProductList = {
         });
 
         document.getElementById('productListTableBody')?.addEventListener('click', e => {
+            if (e.target.closest('[data-role="reset-empty-product-filters"]')) {
+                this.resetFilters();
+                return;
+            }
+
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
@@ -151,12 +157,17 @@ const ProductList = {
             searchKeyword: this.state.searchKeyword,
             orderType: this.state.orderType,
         });
+        const requestId = ++this.requestSequence;
 
         try {
             const res = await fetch(`/api/admin/product/list?${params}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
+            // 빠른 필터 전환 시 먼저 보낸 요청이 늦게 도착할 수 있어서, 최신 요청만 화면에 반영합니다.
+            if (requestId !== this.requestSequence) {
+                return;
+            }
 
             this._renderList(data.products);
             this._renderPagination(data);
@@ -171,7 +182,20 @@ const ProductList = {
     _renderList(items) {
         const tbody = document.getElementById('productListTableBody');
         if (!items?.length) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">조회된 상품이 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-box-open product-empty-state-icon"></i>
+                            <strong>조건에 맞는 상품이 없습니다.</strong>
+                            <p>${this._buildEmptyStateMessage()}</p>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-role="reset-empty-product-filters">
+                                필터 초기화
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
@@ -478,6 +502,17 @@ const ProductList = {
 
     _createStaticFilterChip(iconClass, label) {
         return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i><span>${label}</span></span>`;
+    },
+
+    _buildEmptyStateMessage() {
+        if (this.state.searchKeyword) {
+            return `"${this.state.searchKeyword}" 검색 결과가 없습니다. 필터를 줄이거나 검색어를 바꿔보세요.`;
+        }
+        if (this.state.brandNo || this.state.categoryNo || this.state.status || this.state.lowStockOnly || this.state.createdTodayOnly) {
+            return '현재 필터 조합에 맞는 상품이 없습니다. 필터를 일부 해제해 보세요.';
+        }
+
+        return '등록된 상품이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
     },
 
     clearFilter(filterKey) {

@@ -107,7 +107,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
-                .where(productStatConditions(query, lowStockProductEq(100L)))
+                .where(productStatConditions(query, lowStockProductEq(resolveLowStockThreshold(query))))
                 .fetchOne();
         stats.setLowStockCount(lowStockCount != null ? lowStockCount : 0L);
 
@@ -200,6 +200,14 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return lowStockProductEq(threshold == null ? 100L : threshold);
     }
 
+    private Long resolveLowStockThreshold(ProductListQuery query) {
+        if (query.lowStockOnly() && query.lowStockThreshold() != null) {
+            return query.lowStockThreshold();
+        }
+
+        return 100L;
+    }
+
     private BooleanExpression[] productListConditions(ProductListQuery query) {
         return new BooleanExpression[] {
                 searchKeywordLike(query.searchKeyword()),
@@ -260,15 +268,11 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (orderType == null) {
             return product.crtDtm.desc();
         }
-        switch (orderType) {
-            case RECENT:
-                return product.crtDtm.desc();
-            case RELEASE_PRICE:
-                return product.releasePrice.desc();
-            case STOCK_COUNT:
-                return productOption.stockCnt.sumLong().desc();
-            default:
-                return product.crtDtm.desc();
-        }
+        return switch (orderType) {
+            case RECENT -> product.crtDtm.desc();
+            case RELEASE_PRICE -> product.releasePrice.desc();
+            case STOCK_COUNT -> productOption.stockCnt.sumLong().desc();
+            default -> product.crtDtm.desc();
+        };
     }
 }

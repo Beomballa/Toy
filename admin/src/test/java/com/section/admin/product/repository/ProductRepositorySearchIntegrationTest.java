@@ -9,8 +9,10 @@ import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +41,9 @@ class ProductRepositorySearchIntegrationTest {
 
     @Autowired
     private CategoryRepository categoryRepository;
+
+    @Autowired
+    private ProductOptionRepository productOptionRepository;
 
     @Test
     @DisplayName("상품 목록 검색은 브랜드명과 카테고리명까지 QueryDSL 조건으로 조회한다")
@@ -101,5 +106,63 @@ class ProductRepositorySearchIntegrationTest {
         assertEquals(searchProduct.getId(), categoryResult.getContent().getFirst().getProductNo());
         assertEquals(1L, stats.getTotalCount());
         assertTrue(brandResult.getContent().stream().allMatch(item -> "검색 대상 상품".equals(item.getProductName())));
+    }
+
+    @Test
+    @DisplayName("저재고 임계값은 목록과 통계 카드 모두 같은 QueryDSL 기준을 사용한다")
+    void lowStockThresholdAffectsListAndStats() {
+        Brand stockBrand = brandRepository.save(Brand.builder()
+                .nameKo("재고 테스트 브랜드")
+                .nameEn("Stock Brand")
+                .isActive("Y")
+                .build());
+        Category stockCategory = categoryRepository.save(Category.builder()
+                .name("재고 테스트 카테고리")
+                .depth(1)
+                .isActive("Y")
+                .build());
+
+        Product lowStockProduct = productRepository.save(Product.builder()
+                .brandNo(stockBrand.getBrandNo())
+                .categoryNo(stockCategory.getCategoryNo())
+                .nameKo("저재고 상품")
+                .modelNum("LOW-STOCK-001")
+                .releasePrice(1000)
+                .releaseDt(LocalDate.of(2026, 5, 4))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(lowStockProduct.getId())
+                .optionName("260")
+                .stockCnt(20)
+                .additionalPrice(0)
+                .build());
+
+        Product normalStockProduct = productRepository.save(Product.builder()
+                .brandNo(stockBrand.getBrandNo())
+                .categoryNo(stockCategory.getCategoryNo())
+                .nameKo("일반 재고 상품")
+                .modelNum("NORMAL-STOCK-001")
+                .releasePrice(1000)
+                .releaseDt(LocalDate.of(2026, 5, 4))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(normalStockProduct.getId())
+                .optionName("270")
+                .stockCnt(80)
+                .additionalPrice(0)
+                .build());
+
+        ProductListQuery lowStockThresholdQuery =
+                new ProductListQuery(null, null, null, "재고 테스트 브랜드", ProductOrderType.RECENT, true, 30L, false);
+
+        Page<ProductListResDto> listResult = productRepository.getProductList(lowStockThresholdQuery, PageRequest.of(0, 10));
+        ProductStatsDto stats = productRepository.getProductStats(lowStockThresholdQuery);
+
+        assertEquals(1, listResult.getTotalElements());
+        assertEquals(lowStockProduct.getId(), listResult.getContent().getFirst().getProductNo());
+        assertEquals(1L, stats.getTotalCount());
+        assertEquals(1L, stats.getLowStockCount());
     }
 }

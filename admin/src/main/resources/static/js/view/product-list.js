@@ -1,4 +1,5 @@
 const ProductList = {
+    allowedLowStockThresholds: ['10', '30', '50', '100'],
 
     state: {
         page: 0,
@@ -439,7 +440,7 @@ const ProductList = {
         this.state.categoryNo = params.get('categoryNo') || '';
         this.state.status = params.get('status') || '';
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
-        this.state.lowStockThreshold = params.get('lowStockThreshold') || '100';
+        this.state.lowStockThreshold = this._normalizeLowStockThreshold(params.get('lowStockThreshold'));
         this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
@@ -450,7 +451,7 @@ const ProductList = {
         document.getElementById('categoryNo').value = this.state.categoryNo;
         document.getElementById('statusFilter').value = this.state.status;
         document.getElementById('lowStockOnly').checked = this.state.lowStockOnly;
-        document.getElementById('lowStockThreshold').value = String(this.state.lowStockThreshold || '100');
+        document.getElementById('lowStockThreshold').value = this._normalizeLowStockThreshold(this.state.lowStockThreshold);
         document.getElementById('createdTodayOnly').checked = this.state.createdTodayOnly;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
         document.getElementById('pageSize').value = String(this.state.size);
@@ -580,6 +581,11 @@ const ProductList = {
         );
     },
 
+    _normalizeLowStockThreshold(value) {
+        // URL 조작이나 오래된 북마크로 허용되지 않은 값이 들어오면 기본 임계값으로 수렴시킵니다.
+        return this.allowedLowStockThresholds.includes(String(value)) ? String(value) : '100';
+    },
+
     clearFilter(filterKey) {
         this.state.page = 0;
 
@@ -603,7 +609,7 @@ const ProductList = {
         this.state.categoryNo = document.getElementById('categoryNo').value;
         this.state.status = document.getElementById('statusFilter').value;
         this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
-        this.state.lowStockThreshold = document.getElementById('lowStockThreshold').value || '100';
+        this.state.lowStockThreshold = this._normalizeLowStockThreshold(document.getElementById('lowStockThreshold').value);
         this.state.createdTodayOnly = document.getElementById('createdTodayOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = Number(document.getElementById('pageSize').value || 10);

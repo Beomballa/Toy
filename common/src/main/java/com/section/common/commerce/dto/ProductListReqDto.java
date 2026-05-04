@@ -7,9 +7,13 @@ import com.section.common.base.exception.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Getter
 @Setter
 public class ProductListReqDto {
+    private static final Set<Long> ALLOWED_LOW_STOCK_THRESHOLDS = Set.of(10L, 30L, 50L, 100L);
+
     private Long categoryNo;
     private Long brandNo;
     private String status;
@@ -93,7 +97,7 @@ public class ProductListReqDto {
         if (threshold == null) {
             return 100L;
         }
-        if (threshold <= 0L) {
+        if (!ALLOWED_LOW_STOCK_THRESHOLDS.contains(threshold)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 

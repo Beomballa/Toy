@@ -127,11 +127,11 @@ class ProductListReqDtoTest {
     }
 
     @Test
-    @DisplayName("저재고 임계값이 0 이하이면 INVALID_INPUT_VALUE 예외를 던진다")
+    @DisplayName("허용되지 않은 저재고 임계값이면 INVALID_INPUT_VALUE 예외를 던진다")
     void toQueryThrowsBusinessExceptionWhenLowStockThresholdInvalid() {
         ProductListReqDto reqDto = new ProductListReqDto();
         reqDto.setLowStockOnly(true);
-        reqDto.setLowStockThreshold(0L);
+        reqDto.setLowStockThreshold(25L);
 
         BusinessException exception = assertThrows(BusinessException.class, reqDto::toQuery);
 

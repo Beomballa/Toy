@@ -66,19 +66,21 @@ public record ProductListResponse(
             Long totalCount,
             Long activeCount,
             Long lowStockCount,
-            Long todayCount
+            Long todayCount,
+            Long lowStockThreshold
     ){
         public static ProductStatsItem empty() {
-            return new ProductStatsItem(0L, 0L, 0L, 0L);
+            return new ProductStatsItem(0L, 0L, 0L, 0L, 100L);
         }
 
-        public static ProductStatsItem from(ProductStatsDto resDto){
+        public static ProductStatsItem from(ProductStatsDto resDto, Long lowStockThreshold){
             return Optional.ofNullable(resDto)
                     .map(dto -> new ProductStatsItem(
                             dto.getTotalCount(),
                             dto.getActiveCount(),
                             dto.getLowStockCount(),
-                            dto.getTodayCount()
+                            dto.getTodayCount(),
+                            lowStockThreshold == null ? 100L : lowStockThreshold
                     ))
                     .orElseGet(ProductStatsItem::empty);
         }

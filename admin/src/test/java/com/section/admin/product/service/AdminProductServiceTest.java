@@ -3,6 +3,7 @@ package com.section.admin.product.service;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
+import com.section.admin.product.res.ProductListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductListQuery;
@@ -207,6 +208,7 @@ class AdminProductServiceTest {
         ProductListRequest request = new ProductListRequest();
         request.setStatus("ACTIVE");
         request.setLowStockOnly(true);
+        request.setLowStockThreshold(30L);
         request.setCreatedTodayOnly(true);
         request.setSearchKeyword("  젤   카야노  ");
 
@@ -224,7 +226,29 @@ class AdminProductServiceTest {
 
         assertSame(listQueryCaptor.getValue(), statsQueryCaptor.getValue());
         assertEquals(true, listQueryCaptor.getValue().lowStockOnly());
+        assertEquals(30L, listQueryCaptor.getValue().effectiveLowStockThreshold());
         assertEquals(true, listQueryCaptor.getValue().createdTodayOnly());
         assertEquals("젤 카야노", listQueryCaptor.getValue().searchKeyword());
+    }
+
+    @Test
+    @DisplayName("상품 목록 응답 통계는 현재 저재고 기준값을 함께 내려준다")
+    void getProductListIncludesEffectiveLowStockThresholdInStats() {
+        ProductListRequest request = new ProductListRequest();
+        request.setLowStockOnly(true);
+        request.setLowStockThreshold(50L);
+
+        ProductStatsDto statsDto = new ProductStatsDto();
+        statsDto.setLowStockCount(3L);
+
+        when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(productService.getProductStats(any(ProductListQuery.class)))
+                .thenReturn(statsDto);
+
+        ProductListResponse response = adminProductService.getProductList(request, PageRequest.of(0, 10));
+
+        assertEquals(50L, response.productStats().lowStockThreshold());
+        assertEquals(3L, response.productStats().lowStockCount());
     }
 }

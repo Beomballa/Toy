@@ -298,6 +298,11 @@ const ProductList = {
             const el = document.getElementById(id);
             if (el) el.textContent = (val || 0).toLocaleString();
         });
+
+        const lowStockThresholdEl = document.getElementById('stat-low-stock-threshold');
+        if (lowStockThresholdEl) {
+            lowStockThresholdEl.textContent = `${stats.lowStockThreshold || 100}개 미만`;
+        }
     },
 
     _showError() {
@@ -452,6 +457,7 @@ const ProductList = {
         document.getElementById('statusFilter').value = this.state.status;
         document.getElementById('lowStockOnly').checked = this.state.lowStockOnly;
         document.getElementById('lowStockThreshold').value = this._normalizeLowStockThreshold(this.state.lowStockThreshold);
+        this._syncLowStockThresholdAvailability();
         document.getElementById('createdTodayOnly').checked = this.state.createdTodayOnly;
         document.getElementById('searchKeyword').value = this.state.searchKeyword;
         document.getElementById('pageSize').value = String(this.state.size);
@@ -584,6 +590,15 @@ const ProductList = {
     _normalizeLowStockThreshold(value) {
         // URL 조작이나 오래된 북마크로 허용되지 않은 값이 들어오면 기본 임계값으로 수렴시킵니다.
         return this.allowedLowStockThresholds.includes(String(value)) ? String(value) : '100';
+    },
+
+    _syncLowStockThresholdAvailability() {
+        const lowStockThresholdSelect = document.getElementById('lowStockThreshold');
+        if (!lowStockThresholdSelect) {
+            return;
+        }
+
+        lowStockThresholdSelect.disabled = !this.state.lowStockOnly;
     },
 
     clearFilter(filterKey) {

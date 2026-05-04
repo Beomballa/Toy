@@ -13,4 +13,7 @@ public record ProductListQuery(
         Long lowStockThreshold,
         boolean createdTodayOnly
 ) {
+    public long effectiveLowStockThreshold() {
+        return lowStockThreshold == null ? 100L : lowStockThreshold;
+    }
 }

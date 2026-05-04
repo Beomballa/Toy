@@ -228,6 +228,13 @@ body {
     font-weight: 500;
 }
 
+.stat-meta {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+
 .stat-value {
     font-size: 1.75rem;
     font-weight: 800;
@@ -639,6 +646,7 @@ body {
 }
 
 .stat-card.stat-card-active .stat-label,
+.stat-card.stat-card-active .stat-meta,
 .stat-card.stat-card-active .stat-value {
     color: #111827;
 }

@@ -62,7 +62,8 @@ public class AdminProductService {
         ProductStatsDto statsDto = productService.getProductStats(query);
 
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
-        ProductListResponse.ProductStatsItem stats = ProductListResponse.ProductStatsItem.from(statsDto);
+        ProductListResponse.ProductStatsItem stats =
+                ProductListResponse.ProductStatsItem.from(statsDto, query.effectiveLowStockThreshold());
         return ProductListResponse.of(result, stats);
     }
 

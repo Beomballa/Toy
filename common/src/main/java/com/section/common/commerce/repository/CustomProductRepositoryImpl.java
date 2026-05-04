@@ -107,7 +107,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .from(product)
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
-                .where(productStatConditions(query, lowStockProductEq(resolveLowStockThreshold(query))))
+                .where(productStatConditions(query, lowStockProductEq(query.effectiveLowStockThreshold())))
                 .fetchOne();
         stats.setLowStockCount(lowStockCount != null ? lowStockCount : 0L);
 
@@ -198,14 +198,6 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             return null;
         }
         return lowStockProductEq(threshold == null ? 100L : threshold);
-    }
-
-    private Long resolveLowStockThreshold(ProductListQuery query) {
-        if (query.lowStockOnly() && query.lowStockThreshold() != null) {
-            return query.lowStockThreshold();
-        }
-
-        return 100L;
     }
 
     private BooleanExpression[] productListConditions(ProductListQuery query) {

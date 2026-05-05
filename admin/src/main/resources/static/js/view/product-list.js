@@ -503,6 +503,7 @@ const ProductList = {
     },
 
     _renderFilterSummary() {
+        const summaryEl = document.getElementById('productFilterSummary');
         const titleEl = document.getElementById('productFilterSummaryTitle');
         const descEl = document.getElementById('productFilterSummaryDescription');
         const metaEl = document.getElementById('productFilterSummaryMeta');
@@ -562,6 +563,12 @@ const ProductList = {
         }
         if (signatureEl) {
             signatureEl.textContent = this.lastResultMeta?.querySignature || '최신순';
+        }
+        if (summaryEl) {
+            // 브라우저 자동 검증은 보이는 문구보다 안정적인 속성 기준점이 있어야 회귀를 덜 놓칩니다.
+            summaryEl.dataset.querySignature = this.lastResultMeta?.querySignature || '';
+            summaryEl.dataset.resultLabel = this.lastResultMeta?.resultLabel || '';
+            summaryEl.dataset.filterCount = String(this.lastResultMeta?.appliedFilterCount ?? chips.length);
         }
         chipsEl.innerHTML = chips.length ? chips.join('') : this._createStaticFilterChip('fa-sliders', '추가 필터 없음');
         this._syncStatCardState();

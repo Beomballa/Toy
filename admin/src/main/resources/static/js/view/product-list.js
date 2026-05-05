@@ -15,6 +15,7 @@ const ProductList = {
     },
     requestSequence: 0,
     activeRequestController: null,
+    lastAppliedQuery: null,
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -178,9 +179,11 @@ const ProductList = {
                 return;
             }
 
+            this._applyServerAppliedQuery(data.appliedQuery);
             this._renderList(data.products);
             this._renderPagination(data);
             this._updateStats(data.productStats);
+            this._renderFilterSummary();
 
         } catch (err) {
             if (err.name === 'AbortError') {
@@ -303,6 +306,29 @@ const ProductList = {
         if (lowStockThresholdEl) {
             lowStockThresholdEl.textContent = `${stats.lowStockThreshold || 100}개 미만`;
         }
+    },
+
+    _applyServerAppliedQuery(appliedQuery) {
+        if (!appliedQuery) {
+            return;
+        }
+
+        this.lastAppliedQuery = appliedQuery;
+        this.state.brandNo = appliedQuery.brandNo ? String(appliedQuery.brandNo) : '';
+        this.state.categoryNo = appliedQuery.categoryNo ? String(appliedQuery.categoryNo) : '';
+        this.state.status = appliedQuery.statusCode || '';
+        this.state.lowStockOnly = Boolean(appliedQuery.lowStockOnly);
+        this.state.createdTodayOnly = Boolean(appliedQuery.createdTodayOnly);
+        this.state.searchKeyword = appliedQuery.searchKeyword || '';
+        this.state.orderType = appliedQuery.orderTypeCode || 'r';
+
+        // 서버 기준으로 실제 조회된 조건을 다시 맞춰야 프런트 요약과 QueryDSL 조건이 어긋나지 않습니다.
+        this.state.lowStockThreshold = this._normalizeLowStockThreshold(
+            appliedQuery.lowStockThreshold || this.state.lowStockThreshold
+        );
+
+        this._syncFilterInputs();
+        this._syncUrlState();
     },
 
     _showError() {
@@ -477,6 +503,7 @@ const ProductList = {
     _renderFilterSummary() {
         const titleEl = document.getElementById('productFilterSummaryTitle');
         const descEl = document.getElementById('productFilterSummaryDescription');
+        const metaEl = document.getElementById('productFilterSummaryMeta');
         const chipsEl = document.getElementById('productFilterSummaryChips');
         if (!titleEl || !descEl || !chipsEl) {
             return;
@@ -520,9 +547,18 @@ const ProductList = {
         const summaryDesc = chips.length
             ? `${chips.length}개의 필터 조건이 적용되어 있습니다.`
             : '모든 상품을 보고 있습니다.';
+        const orderTypeTextMap = {
+            r: '최신순',
+            p: '발매가순',
+            c: '재고순',
+        };
 
         titleEl.textContent = title;
         descEl.textContent = summaryDesc;
+        if (metaEl) {
+            const serverAppliedText = this.lastAppliedQuery ? '서버 적용 기준 반영' : '브라우저 기본 상태';
+            metaEl.textContent = `정렬: ${orderTypeTextMap[this.state.orderType] || '최신순'} · ${serverAppliedText}`;
+        }
         chipsEl.innerHTML = chips.length ? chips.join('') : this._createStaticFilterChip('fa-sliders', '추가 필터 없음');
         this._syncStatCardState();
     },

@@ -64,7 +64,7 @@ public class AdminProductService {
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
         ProductListResponse.ProductStatsItem stats =
                 ProductListResponse.ProductStatsItem.from(statsDto, query.effectiveLowStockThreshold());
-        return ProductListResponse.of(result, stats);
+        return ProductListResponse.of(result, stats, ProductListResponse.AppliedQueryItem.from(query));
     }
 
     public byte[] exportProductListCsv(ProductListRequest req) {

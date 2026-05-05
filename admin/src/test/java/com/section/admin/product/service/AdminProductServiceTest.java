@@ -251,4 +251,32 @@ class AdminProductServiceTest {
         assertEquals(50L, response.productStats().lowStockThreshold());
         assertEquals(3L, response.productStats().lowStockCount());
     }
+
+    @Test
+    @DisplayName("상품 목록 응답은 실제 조회에 사용한 typed query를 함께 내려준다")
+    void getProductListIncludesAppliedQuery() {
+        ProductListRequest request = new ProductListRequest();
+        request.setBrandNo(7L);
+        request.setCategoryNo(3L);
+        request.setStatus("ACTIVE");
+        request.setSearchKeyword("  뉴발란스   993 ");
+        request.setOrderType("c");
+        request.setLowStockOnly(true);
+        request.setLowStockThreshold(30L);
+
+        when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of()));
+        when(productService.getProductStats(any(ProductListQuery.class)))
+                .thenReturn(new ProductStatsDto());
+
+        ProductListResponse response = adminProductService.getProductList(request, PageRequest.of(0, 10));
+
+        assertEquals(7L, response.appliedQuery().brandNo());
+        assertEquals(3L, response.appliedQuery().categoryNo());
+        assertEquals("ACTIVE", response.appliedQuery().statusCode());
+        assertEquals("뉴발란스 993", response.appliedQuery().searchKeyword());
+        assertEquals("c", response.appliedQuery().orderTypeCode());
+        assertEquals(true, response.appliedQuery().lowStockOnly());
+        assertEquals(30L, response.appliedQuery().lowStockThreshold());
+    }
 }

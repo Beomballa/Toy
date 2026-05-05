@@ -1,6 +1,8 @@
 package com.section.admin.product.res;
 
+import com.section.common.base.entity.type.ProductOrderType;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.util.DateUtil;
@@ -16,17 +18,19 @@ public record ProductListResponse(
         int currentPage,
         int totalPages,
         Long totalElements,
-        ProductStatsItem productStats
+        ProductStatsItem productStats,
+        AppliedQueryItem appliedQuery
 ) {
 
 
-    public static ProductListResponse of(Page<ProductListItem> page, ProductStatsItem stats){
+    public static ProductListResponse of(Page<ProductListItem> page, ProductStatsItem stats, AppliedQueryItem appliedQuery){
         return new ProductListResponse(
                 page.getContent(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
-                stats
+                stats,
+                appliedQuery
         );
     }
 
@@ -83,6 +87,42 @@ public record ProductListResponse(
                             lowStockThreshold == null ? 100L : lowStockThreshold
                     ))
                     .orElseGet(ProductStatsItem::empty);
+        }
+    }
+
+    public record AppliedQueryItem(
+            Long categoryNo,
+            Long brandNo,
+            String statusCode,
+            String searchKeyword,
+            String orderTypeCode,
+            boolean lowStockOnly,
+            Long lowStockThreshold,
+            boolean createdTodayOnly
+    ) {
+        public static AppliedQueryItem from(ProductListQuery query) {
+            return new AppliedQueryItem(
+                    query.categoryNo(),
+                    query.brandNo(),
+                    query.status() == null ? null : query.status().name(),
+                    query.searchKeyword(),
+                    orderTypeCode(query.orderType()),
+                    query.lowStockOnly(),
+                    query.lowStockThreshold(),
+                    query.createdTodayOnly()
+            );
+        }
+
+        private static String orderTypeCode(ProductOrderType orderType) {
+            if (orderType == null) {
+                return "r";
+            }
+
+            return switch (orderType) {
+                case RECENT -> "r";
+                case RELEASE_PRICE -> "p";
+                case STOCK_COUNT -> "c";
+            };
         }
     }
 }

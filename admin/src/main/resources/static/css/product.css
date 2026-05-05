@@ -689,6 +689,12 @@ body {
     font-size: 0.9rem;
 }
 
+.product-filter-summary-meta {
+    color: #94a3b8;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
 .product-filter-summary-chips {
     display: flex;
     flex-wrap: wrap;

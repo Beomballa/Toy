@@ -123,7 +123,7 @@ const ProductDetail = {
         const productImage = document.getElementById('productImage');
         const thumbnailUrlLink = document.getElementById('thumbnailUrlLink');
         const thumbnailUrlLinkInline = document.getElementById('thumbnailUrlLinkInline');
-        if (data.thumbnailUrl) {
+        if (data.hasThumbnail) {
             if (productImage) productImage.src = data.thumbnailUrl;
             if (thumbnailUrlLink) {
                 thumbnailUrlLink.href = data.thumbnailUrl;
@@ -133,6 +133,16 @@ const ProductDetail = {
                 thumbnailUrlLinkInline.href = data.thumbnailUrl;
                 thumbnailUrlLinkInline.style.display = 'inline-flex';
             }
+        } else {
+            if (productImage) productImage.src = '/images/product-placeholder.svg';
+            if (thumbnailUrlLink) {
+                thumbnailUrlLink.removeAttribute('href');
+                thumbnailUrlLink.style.display = 'none';
+            }
+            if (thumbnailUrlLinkInline) {
+                thumbnailUrlLinkInline.removeAttribute('href');
+                thumbnailUrlLinkInline.style.display = 'none';
+            }
         }
 
         const optionList = document.getElementById('optionList');
@@ -140,7 +150,7 @@ const ProductDetail = {
         const totalStockValueEl = document.getElementById('totalStockValue');
 
         if (data.options && data.options.length > 0) {
-            if (optionCount) optionCount.textContent = data.options.length;
+            if (optionCount) optionCount.textContent = data.optionCount ?? data.options.length;
 
             const optHtml = data.options.map(opt => `
                 <div class="product-option-chip">
@@ -151,12 +161,12 @@ const ProductDetail = {
 
             if (optionList) optionList.innerHTML = optHtml;
 
-            const totalStock = data.options.reduce((acc, cur) => acc + (cur.stockQty || 0), 0);
-            if (totalStockValueEl) totalStockValueEl.textContent = totalStock.toLocaleString() + ' 개';
+            if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
 
         } else {
             if (optionList) optionList.innerHTML = '<p class="text-muted small">등록된 옵션 정보가 없습니다.</p>';
-            if (totalStockValueEl) totalStockValueEl.textContent = '0 개';
+            if (optionCount) optionCount.textContent = String(data.optionCount ?? 0);
+            if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
         }
 
         const statusBadge = document.getElementById('statusBadge');

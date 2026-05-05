@@ -21,15 +21,22 @@ public record ProductDetailResponse(
         Integer releasePrice,
         LocalDate releaseDt,
         String thumbnailUrl,
+        boolean hasThumbnail,
         String statusCode,
         String statusDesc,
         String crtDtm,
         String uptDtm,
+        int optionCount,
+        long totalStock,
         List<OptionInfo> options
 ) {
 
     public static ProductDetailResponse from(ProductDetailResDto resDto, List<ProductOption> options) {
         ProductStatus status = ProductStatus.fromCode(resDto.getStatus());
+        List<OptionInfo> optionInfos = Optional.ofNullable(options)
+                .map(list -> list.stream().map(OptionInfo::from).collect(Collectors.toList()))
+                .orElse(List.of());
+
         return new ProductDetailResponse(
                 resDto.getProductNo(),
                 resDto.getCategoryNo(),
@@ -41,13 +48,16 @@ public record ProductDetailResponse(
                 resDto.getReleasePrice(),
                 resDto.getReleaseDt(),
                 resDto.getThumbnailUrl(),
+                resDto.getThumbnailUrl() != null && !resDto.getThumbnailUrl().isBlank(),
                 status.name(),
                 status.getDesc(),
                 resDto.getCrtDtm() != null ? DateUtil.localDateTimeToStr(resDto.getCrtDtm()) : "",
                 resDto.getUptDtm() != null ? DateUtil.localDateTimeToStr(resDto.getUptDtm()) : "",
-                Optional.ofNullable(options)
-                        .map(list -> list.stream().map(OptionInfo::from).collect(Collectors.toList()))
-                        .orElse(List.of())
+                optionInfos.size(),
+                optionInfos.stream()
+                        .mapToLong(option -> option.stockQty() == null ? 0 : option.stockQty())
+                        .sum(),
+                optionInfos
         );
     }
 

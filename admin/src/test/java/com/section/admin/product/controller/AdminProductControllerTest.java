@@ -31,7 +31,7 @@ class AdminProductControllerTest {
     void productGetAddsProductToModel() {
         ProductDetailResponse product = new ProductDetailResponse(
                 4L, 2L, "스니커즈", 3L, "뉴발란스", "993", "MR993GL",
-                259000, null, null, "ACTIVE", "판매중", "2026.04.20 14:24", "2026.04.26 17:09", List.of()
+                259000, null, null, false, "ACTIVE", "판매중", "2026.04.20 14:24", "2026.04.26 17:09", 0, 0L, List.of()
         );
         ProductDefaultResDto defaultInfo = new ProductDefaultResDto(List.of(), List.of());
         ExtendedModelMap model = new ExtendedModelMap();
@@ -52,7 +52,7 @@ class AdminProductControllerTest {
     void productUpdateAddsProductToModel() {
         ProductDetailResponse product = new ProductDetailResponse(
                 4L, 2L, "스니커즈", 3L, "뉴발란스", "993", "MR993GL",
-                259000, null, null, "ACTIVE", "판매중", "2026.04.20 14:24", "2026.04.26 17:09", List.of()
+                259000, null, null, false, "ACTIVE", "판매중", "2026.04.20 14:24", "2026.04.26 17:09", 0, 0L, List.of()
         );
         ProductDefaultResDto defaultInfo = new ProductDefaultResDto(List.of(), List.of());
         ExtendedModelMap model = new ExtendedModelMap();

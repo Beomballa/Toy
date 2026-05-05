@@ -2,6 +2,7 @@ package com.section.admin.product.res;
 
 import com.section.common.commerce.dto.ProductDetailResDto;
 import com.section.common.commerce.dto.ProductListResDto;
+import com.section.common.commerce.entity.ProductOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -32,9 +33,15 @@ class ProductResponseStatusTest {
                 "1201A019", 129000, null, null, "HIDDEN", null, null
         );
 
-        ProductDetailResponse response = ProductDetailResponse.from(dto, List.of());
+        ProductOption firstOption = ProductOption.builder().optionName("260").stockCnt(2).additionalPrice(0).build();
+        ProductOption secondOption = ProductOption.builder().optionName("270").stockCnt(3).additionalPrice(5000).build();
+
+        ProductDetailResponse response = ProductDetailResponse.from(dto, List.of(firstOption, secondOption));
 
         assertEquals("HIDDEN", response.statusCode());
         assertEquals("숨김", response.statusDesc());
+        assertEquals(2, response.optionCount());
+        assertEquals(5L, response.totalStock());
+        assertEquals(false, response.hasThumbnail());
     }
 }

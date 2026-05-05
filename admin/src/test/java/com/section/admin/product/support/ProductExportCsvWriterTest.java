@@ -25,10 +25,19 @@ class ProductExportCsvWriterTest {
         dto.setStatus("SOLD_OUT");
         dto.setCrtDtm(LocalDateTime.of(2026, 5, 2, 13, 0));
 
-        byte[] bytes = ProductExportCsvWriter.write(List.of(dto));
+        ProductExportSummary summary = new ProductExportSummary(
+                "2026.05.05 12:30",
+                "재고순",
+                "브랜드: 아식스 | 검색어: 젤 카야노"
+        );
+
+        byte[] bytes = ProductExportCsvWriter.write(summary, List.of(dto));
         String csv = new String(bytes, StandardCharsets.UTF_8);
 
         assertTrue(bytes[0] == (byte) 0xEF && bytes[1] == (byte) 0xBB && bytes[2] == (byte) 0xBF);
+        assertTrue(csv.contains("\"내보낸시각\",\"2026.05.05 12:30\""));
+        assertTrue(csv.contains("\"정렬\",\"재고순\""));
+        assertTrue(csv.contains("\"조회조건\",\"브랜드: 아식스 | 검색어: 젤 카야노\""));
         assertTrue(csv.contains("상품번호,상품명,모델번호,브랜드,발매가,총재고,상태,등록일시"));
         assertTrue(csv.contains("\"품절\""));
         assertTrue(csv.contains("\"129,000원\""));

@@ -14,8 +14,13 @@ public final class ProductExportCsvWriter {
     private ProductExportCsvWriter() {
     }
 
-    public static byte[] write(List<ProductListResDto> products) {
-        StringBuilder builder = new StringBuilder(HEADER).append("\r\n");
+    public static byte[] write(ProductExportSummary summary, List<ProductListResDto> products) {
+        StringBuilder builder = new StringBuilder();
+        builder.append(csv("내보낸시각")).append(',').append(csv(summary.exportedAt())).append("\r\n");
+        builder.append(csv("정렬")).append(',').append(csv(summary.orderTypeLabel())).append("\r\n");
+        builder.append(csv("조회조건")).append(',').append(csv(summary.filterSummary())).append("\r\n");
+        builder.append("\r\n");
+        builder.append(HEADER).append("\r\n");
 
         for (ProductListResDto product : products) {
             builder.append(csv(String.valueOf(product.getProductNo()))).append(',')

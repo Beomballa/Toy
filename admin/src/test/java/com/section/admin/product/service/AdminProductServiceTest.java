@@ -9,6 +9,8 @@ import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
+import com.section.common.commerce.entity.Brand;
+import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.List;
 
@@ -200,6 +203,37 @@ class AdminProductServiceTest {
 
         assertEquals(true, csv.length > 0);
         verify(productService).getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000));
+    }
+
+    @Test
+    @DisplayName("상품 CSV 내보내기는 현재 조회 조건 요약을 함께 포함한다")
+    void exportProductListCsvIncludesFilterSummary() {
+        ProductListRequest request = new ProductListRequest();
+        request.setBrandNo(7L);
+        request.setCategoryNo(3L);
+        request.setStatus("ACTIVE");
+        request.setSearchKeyword("뉴발란스 993");
+        request.setLowStockOnly(true);
+        request.setLowStockThreshold(30L);
+
+        ProductListResDto dto = new ProductListResDto();
+        dto.setProductNo(1L);
+        dto.setProductName("테스트 상품");
+        dto.setStatus("ACTIVE");
+
+        Brand brand = Brand.builder().brandNo(7L).nameKo("뉴발란스").build();
+        Category category = Category.builder().categoryNo(3L).name("러닝화").build();
+
+        when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
+                .thenReturn(List.of(dto));
+        when(brandRepository.findById(7L)).thenReturn(Optional.of(brand));
+        when(categoryRepository.findById(3L)).thenReturn(Optional.of(category));
+
+        byte[] csv = adminProductService.exportProductListCsv(request);
+        String body = new String(csv, StandardCharsets.UTF_8);
+
+        assertEquals(true, body.contains("\"조회조건\",\"브랜드: 뉴발란스 | 카테고리: 러닝화 | 상태: 판매중 | 저재고: 30개 미만 | 검색어: 뉴발란스 993\""));
+        assertEquals(true, body.contains("\"정렬\",\"최신순\""));
     }
 
     @Test

@@ -7,6 +7,7 @@ import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductExportPolicy;
+import com.section.admin.product.support.ProductExportSummary;
 import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
@@ -75,8 +76,13 @@ public class AdminProductService {
                 query,
                 ProductExportPolicy.MAX_EXPORT_SIZE
         );
+        ProductExportSummary summary = ProductExportSummary.from(
+                query,
+                resolveBrandName(query.brandNo()),
+                resolveCategoryName(query.categoryNo())
+        );
 
-        return ProductExportCsvWriter.write(result);
+        return ProductExportCsvWriter.write(summary, result);
     }
 
     /**
@@ -243,5 +249,25 @@ public class AdminProductService {
         if (distinctNames.size() != optionNames.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private String resolveBrandName(Long brandNo) {
+        if (brandNo == null) {
+            return null;
+        }
+
+        return brandRepository.findById(brandNo)
+                .map(Brand::getNameKo)
+                .orElse(null);
+    }
+
+    private String resolveCategoryName(Long categoryNo) {
+        if (categoryNo == null) {
+            return null;
+        }
+
+        return categoryRepository.findById(categoryNo)
+                .map(Category::getName)
+                .orElse(null);
     }
 }

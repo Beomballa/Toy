@@ -31,10 +31,6 @@ const ProductList = {
         document.getElementById('new-product')?.addEventListener('click', () => location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`);
         document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
-            this._updateStateFromInputs();
-            if (!this.validateState()) {
-                return;
-            }
             window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
         });
         document.getElementById('main-logo')?.addEventListener('click', () => location.href = '/admin/products');
@@ -556,8 +552,10 @@ const ProductList = {
         titleEl.textContent = title;
         descEl.textContent = summaryDesc;
         if (metaEl) {
-            const serverAppliedText = this.lastAppliedQuery ? '서버 적용 기준 반영' : '브라우저 기본 상태';
-            metaEl.textContent = `정렬: ${orderTypeTextMap[this.state.orderType] || '최신순'} · ${serverAppliedText}`;
+            const appliedText = this._hasPendingSearchInput()
+                ? '검색어 변경 미적용'
+                : (this.lastAppliedQuery ? '현재 목록 기준' : '브라우저 기본 상태');
+            metaEl.textContent = `정렬: ${orderTypeTextMap[this.state.orderType] || '최신순'} · ${appliedText}`;
         }
         chipsEl.innerHTML = chips.length ? chips.join('') : this._createStaticFilterChip('fa-sliders', '추가 필터 없음');
         this._syncStatCardState();
@@ -665,6 +663,17 @@ const ProductList = {
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = Number(document.getElementById('pageSize').value || 10);
         this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
+    },
+
+    _hasPendingSearchInput() {
+        const searchInput = document.getElementById('searchKeyword');
+        if (!searchInput) {
+            return false;
+        }
+
+        // 검색창은 Enter/검색 버튼 전까지 state에 반영되지 않으므로 현재 목록 기준과 분리해서 봅니다.
+        const normalizedKeyword = searchInput.value.trim().replaceAll(/\s+/g, ' ');
+        return normalizedKeyword !== this.state.searchKeyword;
     },
 
     bindStatCardKeyboard(elementId, action) {

@@ -16,6 +16,7 @@ const ProductList = {
     requestSequence: 0,
     activeRequestController: null,
     lastAppliedQuery: null,
+    lastResultMeta: null,
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -176,6 +177,7 @@ const ProductList = {
             }
 
             this._applyServerAppliedQuery(data.appliedQuery);
+            this.lastResultMeta = data.resultMeta || null;
             this._renderList(data.products);
             this._renderPagination(data);
             this._updateStats(data.productStats);
@@ -262,7 +264,7 @@ const ProductList = {
     },
 
     _renderPagination(data) {
-        const { totalPages, currentPage: curr, totalElements } = data;
+        const { totalPages, currentPage: curr, totalElements, resultMeta } = data;
         const pagination = document.getElementById('pagination');
         let html = '';
         for (let i = 0; i < totalPages; i++) {
@@ -272,12 +274,16 @@ const ProductList = {
             </li>`;
         }
         pagination.innerHTML = html;
-        const listCountLabel = this._hasActiveFilters()
-            ? `검색 결과 ${totalElements.toLocaleString()}개`
-            : `전체 ${totalElements.toLocaleString()}개`;
-        const pageInfoLabel = totalElements === 0
-            ? '조건에 맞는 상품이 없습니다.'
-            : `${listCountLabel} / ${Math.max(totalPages, 1)}페이지`;
+        const listCountLabel = resultMeta?.resultLabel || (
+            this._hasActiveFilters()
+                ? `검색 결과 ${totalElements.toLocaleString()}개`
+                : `전체 ${totalElements.toLocaleString()}개`
+        );
+        const pageInfoLabel = resultMeta?.pageInfoLabel || (
+            totalElements === 0
+                ? '조건에 맞는 상품이 없습니다.'
+                : `${listCountLabel} / ${Math.max(totalPages, 1)}페이지`
+        );
 
         document.getElementById('totalElementsCount').textContent = listCountLabel;
         document.getElementById('pageInfoText').textContent = pageInfoLabel;
@@ -500,6 +506,7 @@ const ProductList = {
         const titleEl = document.getElementById('productFilterSummaryTitle');
         const descEl = document.getElementById('productFilterSummaryDescription');
         const metaEl = document.getElementById('productFilterSummaryMeta');
+        const signatureEl = document.getElementById('productFilterSummarySignature');
         const chipsEl = document.getElementById('productFilterSummaryChips');
         if (!titleEl || !descEl || !chipsEl) {
             return;
@@ -540,22 +547,21 @@ const ProductList = {
             chips.push(this._createFilterChip('searchKeyword', 'fa-magnifying-glass', `검색: ${this.state.searchKeyword}`));
         }
 
-        const summaryDesc = chips.length
-            ? `${chips.length}개의 필터 조건이 적용되어 있습니다.`
-            : '모든 상품을 보고 있습니다.';
-        const orderTypeTextMap = {
-            r: '최신순',
-            p: '발매가순',
-            c: '재고순',
-        };
+        const summaryDesc = this.lastResultMeta
+            ? `${this.lastResultMeta.appliedFilterCount}개의 필터 조건이 적용되어 있습니다.`
+            : (chips.length ? `${chips.length}개의 필터 조건이 적용되어 있습니다.` : '모든 상품을 보고 있습니다.');
 
         titleEl.textContent = title;
-        descEl.textContent = summaryDesc;
+        descEl.textContent = this.lastResultMeta?.hasActiveFilters ? summaryDesc : '모든 상품을 보고 있습니다.';
         if (metaEl) {
             const appliedText = this._hasPendingSearchInput()
                 ? '검색어 변경 미적용'
-                : (this.lastAppliedQuery ? '현재 목록 기준' : '브라우저 기본 상태');
-            metaEl.textContent = `정렬: ${orderTypeTextMap[this.state.orderType] || '최신순'} · ${appliedText}`;
+                : (this.lastResultMeta ? '현재 목록 기준' : '브라우저 기본 상태');
+            const orderTypeLabel = this.lastResultMeta?.orderTypeLabel || '최신순';
+            metaEl.textContent = `정렬: ${orderTypeLabel} · ${appliedText}`;
+        }
+        if (signatureEl) {
+            signatureEl.textContent = this.lastResultMeta?.querySignature || '최신순';
         }
         chipsEl.innerHTML = chips.length ? chips.join('') : this._createStaticFilterChip('fa-sliders', '추가 필터 없음');
         this._syncStatCardState();

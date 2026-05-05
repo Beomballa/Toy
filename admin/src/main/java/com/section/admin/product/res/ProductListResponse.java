@@ -19,18 +19,25 @@ public record ProductListResponse(
         int totalPages,
         Long totalElements,
         ProductStatsItem productStats,
-        AppliedQueryItem appliedQuery
+        AppliedQueryItem appliedQuery,
+        ResultMetaItem resultMeta
 ) {
 
 
-    public static ProductListResponse of(Page<ProductListItem> page, ProductStatsItem stats, AppliedQueryItem appliedQuery){
+    public static ProductListResponse of(
+            Page<ProductListItem> page,
+            ProductStatsItem stats,
+            AppliedQueryItem appliedQuery,
+            ResultMetaItem resultMeta
+    ){
         return new ProductListResponse(
                 page.getContent(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
                 stats,
-                appliedQuery
+                appliedQuery,
+                resultMeta
         );
     }
 
@@ -123,6 +130,84 @@ public record ProductListResponse(
                 case RELEASE_PRICE -> "p";
                 case STOCK_COUNT -> "c";
             };
+        }
+    }
+
+    public record ResultMetaItem(
+            String resultLabel,
+            String pageInfoLabel,
+            String orderTypeLabel,
+            long appliedFilterCount,
+            boolean hasActiveFilters,
+            String querySignature
+    ) {
+        public static ResultMetaItem from(ProductListQuery query, long totalElements, int totalPages) {
+            boolean hasActiveFilters = hasActiveFilters(query);
+            long appliedFilterCount = appliedFilterCount(query);
+            String resultLabel = hasActiveFilters
+                    ? String.format("검색 결과 %,d개", totalElements)
+                    : String.format("전체 %,d개", totalElements);
+            String pageInfoLabel = totalElements == 0
+                    ? "조건에 맞는 상품이 없습니다."
+                    : String.format("%s / %d페이지", resultLabel, Math.max(totalPages, 1));
+
+            return new ResultMetaItem(
+                    resultLabel,
+                    pageInfoLabel,
+                    orderTypeLabel(query.orderType()),
+                    appliedFilterCount,
+                    hasActiveFilters,
+                    querySignature(query)
+            );
+        }
+
+        private static boolean hasActiveFilters(ProductListQuery query) {
+            return query.brandNo() != null
+                    || query.categoryNo() != null
+                    || query.status() != null
+                    || query.lowStockOnly()
+                    || query.createdTodayOnly()
+                    || query.searchKeyword() != null;
+        }
+
+        private static long appliedFilterCount(ProductListQuery query) {
+            long count = 0;
+            if (query.brandNo() != null) count++;
+            if (query.categoryNo() != null) count++;
+            if (query.status() != null) count++;
+            if (query.lowStockOnly()) count++;
+            if (query.createdTodayOnly()) count++;
+            if (query.searchKeyword() != null) count++;
+            return count;
+        }
+
+        private static String orderTypeLabel(ProductOrderType orderType) {
+            if (orderType == null) {
+                return "최신순";
+            }
+
+            return switch (orderType) {
+                case RECENT -> "최신순";
+                case RELEASE_PRICE -> "발매가순";
+                case STOCK_COUNT -> "재고순";
+            };
+        }
+
+        private static String querySignature(ProductListQuery query) {
+            StringBuilder builder = new StringBuilder(orderTypeLabel(query.orderType()));
+            if (query.searchKeyword() != null) {
+                builder.append(" · 검색=").append(query.searchKeyword());
+            }
+            if (query.status() != null) {
+                builder.append(" · 상태=").append(query.status().name());
+            }
+            if (query.lowStockOnly()) {
+                builder.append(" · 재고<").append(query.effectiveLowStockThreshold());
+            }
+            if (query.createdTodayOnly()) {
+                builder.append(" · 오늘등록");
+            }
+            return builder.toString();
         }
     }
 }

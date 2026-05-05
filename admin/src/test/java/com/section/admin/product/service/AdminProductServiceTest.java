@@ -279,4 +279,27 @@ class AdminProductServiceTest {
         assertEquals(true, response.appliedQuery().lowStockOnly());
         assertEquals(30L, response.appliedQuery().lowStockThreshold());
     }
+
+    @Test
+    @DisplayName("상품 목록 응답은 현재 결과 문맥을 설명하는 메타를 함께 내려준다")
+    void getProductListIncludesResultMeta() {
+        ProductListRequest request = new ProductListRequest();
+        request.setStatus("ACTIVE");
+        request.setSearchKeyword("  뉴발란스   993 ");
+        request.setOrderType("p");
+
+        when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 2));
+        when(productService.getProductStats(any(ProductListQuery.class)))
+                .thenReturn(new ProductStatsDto());
+
+        ProductListResponse response = adminProductService.getProductList(request, PageRequest.of(0, 10));
+
+        assertEquals("검색 결과 2개", response.resultMeta().resultLabel());
+        assertEquals("검색 결과 2개 / 1페이지", response.resultMeta().pageInfoLabel());
+        assertEquals("발매가순", response.resultMeta().orderTypeLabel());
+        assertEquals(2L, response.resultMeta().appliedFilterCount());
+        assertEquals(true, response.resultMeta().hasActiveFilters());
+        assertEquals("발매가순 · 검색=뉴발란스 993 · 상태=ACTIVE", response.resultMeta().querySignature());
+    }
 }

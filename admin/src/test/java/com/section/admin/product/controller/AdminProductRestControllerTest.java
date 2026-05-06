@@ -3,6 +3,7 @@ package com.section.admin.product.controller;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
+import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -114,6 +115,42 @@ class AdminProductRestControllerTest {
                 .andExpect(header().string("Content-Disposition", "attachment; filename=products.csv"))
                 .andExpect(content().contentType("text/csv"))
                 .andExpect(content().bytes(body));
+    }
+
+    @Test
+    @DisplayName("상품 상세 API는 화면 요약용 필드를 함께 반환한다")
+    void getProductDetailReturnsSummaryFields() throws Exception {
+        ProductDetailResponse response = new ProductDetailResponse(
+                4L,
+                2L,
+                "러닝화",
+                7L,
+                "뉴발란스",
+                "992",
+                "M992GR",
+                259000,
+                null,
+                "https://example.com/992.jpg",
+                true,
+                "ACTIVE",
+                "판매중",
+                "2026.05.01 10:00",
+                "2026.05.06 11:30",
+                2,
+                8L,
+                List.of()
+        );
+
+        when(adminProductService.getProductDetail(4L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/product/get?no=4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productNo").value(4L))
+                .andExpect(jsonPath("$.hasThumbnail").value(true))
+                .andExpect(jsonPath("$.optionCount").value(2))
+                .andExpect(jsonPath("$.totalStock").value(8L))
+                .andExpect(jsonPath("$.statusCode").value("ACTIVE"))
+                .andExpect(jsonPath("$.statusDesc").value("판매중"));
     }
 
     @Test

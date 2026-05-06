@@ -27,6 +27,21 @@ class AdminProductControllerTest {
     private AdminProductController adminProductController;
 
     @Test
+    @DisplayName("상품 등록 화면은 서버에서 조회한 기본 선택 데이터를 뷰에 전달한다")
+    void productSetAddsDefaultInfoToModel() {
+        ProductDefaultResDto defaultInfo = new ProductDefaultResDto(List.of(), List.of());
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        when(adminProductService.getProductDefaultInfo()).thenReturn(defaultInfo);
+
+        String viewName = adminProductController.productSet(null, model);
+
+        assertEquals("views/product-set", viewName);
+        assertSame(defaultInfo.brands(), model.get("brands"));
+        assertSame(defaultInfo.categories(), model.get("categories"));
+    }
+
+    @Test
     @DisplayName("상품 상세 화면은 서버에서 조회한 상품 모델을 뷰에 전달한다")
     void productGetAddsProductToModel() {
         ProductDetailResponse product = new ProductDetailResponse(

@@ -19,7 +19,7 @@ const ProductCreate = {
         this.syncReturnLinks();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = "/admin/products";
+            window.location.href = this.returnTo;
         });
     },
 

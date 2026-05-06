@@ -103,6 +103,19 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("상품 목록 조회 중 INVALID_INPUT_VALUE 예외는 400으로 변환된다")
+    void getProductListReturnsBadRequestWhenServiceThrowsInvalidInput() throws Exception {
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE))
+                .when(adminProductService)
+                .getProductList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(get("/api/admin/product/list?page=0&size=10&lowStockOnly=true&lowStockThreshold=25"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
+    }
+
+    @Test
     @DisplayName("상품 CSV 다운로드는 첨부 헤더와 CSV 바디를 반환한다")
     void exportProductListReturnsCsvAttachment() throws Exception {
         byte[] body = "\"내보낸시각\",\"2026.05.06 10:00\"\r\n\"정렬\",\"최신순\"".getBytes();
@@ -115,6 +128,19 @@ class AdminProductRestControllerTest {
                 .andExpect(header().string("Content-Disposition", "attachment; filename=products.csv"))
                 .andExpect(content().contentType("text/csv"))
                 .andExpect(content().bytes(body));
+    }
+
+    @Test
+    @DisplayName("상품 CSV 다운로드 중 INVALID_INPUT_VALUE 예외는 400으로 변환된다")
+    void exportProductListReturnsBadRequestWhenServiceThrowsInvalidInput() throws Exception {
+        doThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE))
+                .when(adminProductService)
+                .exportProductListCsv(org.mockito.ArgumentMatchers.any());
+
+        mockMvc.perform(get("/api/admin/product/export?lowStockOnly=true&lowStockThreshold=25"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"))
+                .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
     }
 
     @Test

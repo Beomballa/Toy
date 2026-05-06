@@ -17,6 +17,7 @@ const ProductList = {
     activeRequestController: null,
     lastAppliedQuery: null,
     lastResultMeta: null,
+    lastErrorMessage: '',
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -168,7 +169,12 @@ const ProductList = {
             const res = await fetch(`/api/admin/product/list?${params}`, {
                 signal: this.activeRequestController.signal,
             });
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                const message = await CommonJS.extractErrorMessage(res, '상품 목록 조회 중 오류가 발생했습니다.');
+                const error = new Error(message);
+                error.userMessage = message;
+                throw error;
+            }
 
             const data = await res.json();
             // 빠른 필터 전환 시 먼저 보낸 요청이 늦게 도착할 수 있어서, 최신 요청만 화면에 반영합니다.
@@ -176,6 +182,7 @@ const ProductList = {
                 return;
             }
 
+            this.lastErrorMessage = '';
             this._applyServerAppliedQuery(data.appliedQuery);
             this.lastResultMeta = data.resultMeta || null;
             this._renderList(data.products);
@@ -188,7 +195,8 @@ const ProductList = {
                 return;
             }
             console.error('상품 목록 로드 실패:', err);
-            this._showError();
+            this.lastErrorMessage = err.userMessage || '상품 목록 조회 중 오류가 발생했습니다.';
+            this._showError(this.lastErrorMessage);
         } finally {
             if (requestId === this.requestSequence) {
                 this._setLoadingState(false);
@@ -333,9 +341,17 @@ const ProductList = {
         this._syncUrlState();
     },
 
-    _showError() {
+    _showError(message = '데이터 로드 중 오류가 발생했습니다.') {
         document.getElementById('productListTableBody').innerHTML = `
-            <tr><td colspan="8" class="text-center py-5 text-danger">데이터 로드 중 오류가 발생했습니다.</td></tr>`;
+            <tr><td colspan="8" class="text-center py-5 text-danger">${message}</td></tr>`;
+        const pageInfoText = document.getElementById('pageInfoText');
+        const totalElementsCount = document.getElementById('totalElementsCount');
+        if (pageInfoText) {
+            pageInfoText.textContent = message;
+        }
+        if (totalElementsCount) {
+            totalElementsCount.textContent = '조회 실패';
+        }
     },
 
     _setLoadingState(isLoading) {

@@ -66,7 +66,7 @@ public class AdminProductService {
         ProductListResponse.ProductStatsItem stats =
                 ProductListResponse.ProductStatsItem.from(statsDto, query.effectiveLowStockThreshold());
         ProductListResponse.ResultMetaItem resultMeta =
-                ProductListResponse.ResultMetaItem.from(query, result.getTotalElements(), result.getTotalPages());
+                ProductListResponse.ResultMetaItem.from(query, result);
         return ProductListResponse.of(result, stats, ProductListResponse.AppliedQueryItem.from(query), resultMeta);
     }
 

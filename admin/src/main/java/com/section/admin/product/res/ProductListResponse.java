@@ -137,11 +137,16 @@ public record ProductListResponse(
             String resultLabel,
             String pageInfoLabel,
             String orderTypeLabel,
+            int pageSize,
+            long rangeStart,
+            long rangeEnd,
             long appliedFilterCount,
             boolean hasActiveFilters,
             String querySignature
     ) {
-        public static ResultMetaItem from(ProductListQuery query, long totalElements, int totalPages) {
+        public static ResultMetaItem from(ProductListQuery query, Page<?> page) {
+            long totalElements = page.getTotalElements();
+            int totalPages = page.getTotalPages();
             boolean hasActiveFilters = hasActiveFilters(query);
             long appliedFilterCount = appliedFilterCount(query);
             String resultLabel = hasActiveFilters
@@ -150,11 +155,16 @@ public record ProductListResponse(
             String pageInfoLabel = totalElements == 0
                     ? "조건에 맞는 상품이 없습니다."
                     : String.format("%s / %d페이지", resultLabel, Math.max(totalPages, 1));
+            long rangeStart = totalElements == 0 ? 0 : (long) page.getNumber() * page.getSize() + 1;
+            long rangeEnd = totalElements == 0 ? 0 : Math.min(totalElements, rangeStart + page.getNumberOfElements() - 1);
 
             return new ResultMetaItem(
                     resultLabel,
                     pageInfoLabel,
                     orderTypeLabel(query.orderType()),
+                    page.getSize(),
+                    rangeStart,
+                    rangeEnd,
                     appliedFilterCount,
                     hasActiveFilters,
                     querySignature(query)

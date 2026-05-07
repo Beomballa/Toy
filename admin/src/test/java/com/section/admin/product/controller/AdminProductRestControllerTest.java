@@ -82,10 +82,16 @@ class AdminProductRestControllerTest {
                 ProductListResponse.AppliedQueryItem.from(
                         new ProductListQuery(3L, 7L, null, "뉴발란스 993", ProductOrderType.STOCK_COUNT, true, 30L, false)
                 ),
-                ProductListResponse.ResultMetaItem.from(
-                        new ProductListQuery(3L, 7L, null, "뉴발란스 993", ProductOrderType.STOCK_COUNT, true, 30L, false),
+                new ProductListResponse.ResultMetaItem(
+                        "검색 결과 2개",
+                        "검색 결과 2개 / 1페이지",
+                        "재고순",
+                        10,
+                        1L,
                         2L,
-                        1
+                        3L,
+                        true,
+                        "재고순 · 검색=뉴발란스 993 · 재고<30"
                 )
         );
 

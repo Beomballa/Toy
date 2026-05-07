@@ -322,16 +322,31 @@ class AdminProductServiceTest {
         request.setSearchKeyword("  뉴발란스   993 ");
         request.setOrderType("p");
 
+        ProductListResDto first = new ProductListResDto();
+        first.setProductNo(11L);
+        first.setProductName("첫 번째");
+        first.setStatus("ACTIVE");
+        first.setReleasePrice(1000);
+
+        ProductListResDto second = new ProductListResDto();
+        second.setProductNo(12L);
+        second.setProductName("두 번째");
+        second.setStatus("ACTIVE");
+        second.setReleasePrice(1000);
+
         when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
-                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 2));
+                .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(1, 10), 12));
         when(productService.getProductStats(any(ProductListQuery.class)))
                 .thenReturn(new ProductStatsDto());
 
         ProductListResponse response = adminProductService.getProductList(request, PageRequest.of(0, 10));
 
-        assertEquals("검색 결과 2개", response.resultMeta().resultLabel());
-        assertEquals("검색 결과 2개 / 1페이지", response.resultMeta().pageInfoLabel());
+        assertEquals("검색 결과 12개", response.resultMeta().resultLabel());
+        assertEquals("검색 결과 12개 / 2페이지", response.resultMeta().pageInfoLabel());
         assertEquals("발매가순", response.resultMeta().orderTypeLabel());
+        assertEquals(10, response.resultMeta().pageSize());
+        assertEquals(11L, response.resultMeta().rangeStart());
+        assertEquals(12L, response.resultMeta().rangeEnd());
         assertEquals(2L, response.resultMeta().appliedFilterCount());
         assertEquals(true, response.resultMeta().hasActiveFilters());
         assertEquals("발매가순 · 검색=뉴발란스 993 · 상태=ACTIVE", response.resultMeta().querySignature());

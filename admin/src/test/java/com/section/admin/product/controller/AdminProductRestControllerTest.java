@@ -84,7 +84,7 @@ class AdminProductRestControllerTest {
                 ),
                 new ProductListResponse.ResultMetaItem(
                         "검색 결과 2개",
-                        "검색 결과 2개 / 1페이지",
+                        "1-2 / 2개 · 1페이지",
                         "재고순",
                         10,
                         1L,
@@ -105,6 +105,10 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.appliedQuery.orderTypeCode").value("c"))
                 .andExpect(jsonPath("$.productStats.lowStockThreshold").value(30L))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 2개"))
+                .andExpect(jsonPath("$.resultMeta.pageSize").value(10))
+                .andExpect(jsonPath("$.resultMeta.rangeStart").value(1L))
+                .andExpect(jsonPath("$.resultMeta.rangeEnd").value(2L))
+                .andExpect(jsonPath("$.resultMeta.pageInfoLabel").value("1-2 / 2개 · 1페이지"))
                 .andExpect(jsonPath("$.resultMeta.querySignature").value("재고순 · 검색=뉴발란스 993 · 재고<30"));
     }
 

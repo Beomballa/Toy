@@ -149,14 +149,14 @@ public record ProductListResponse(
             int totalPages = page.getTotalPages();
             boolean hasActiveFilters = hasActiveFilters(query);
             long appliedFilterCount = appliedFilterCount(query);
+            long rangeStart = totalElements == 0 ? 0 : (long) page.getNumber() * page.getSize() + 1;
+            long rangeEnd = totalElements == 0 ? 0 : Math.min(totalElements, rangeStart + page.getNumberOfElements() - 1);
             String resultLabel = hasActiveFilters
                     ? String.format("검색 결과 %,d개", totalElements)
                     : String.format("전체 %,d개", totalElements);
             String pageInfoLabel = totalElements == 0
                     ? "조건에 맞는 상품이 없습니다."
-                    : String.format("%s / %d페이지", resultLabel, Math.max(totalPages, 1));
-            long rangeStart = totalElements == 0 ? 0 : (long) page.getNumber() * page.getSize() + 1;
-            long rangeEnd = totalElements == 0 ? 0 : Math.min(totalElements, rangeStart + page.getNumberOfElements() - 1);
+                    : String.format("%d-%d / %,d개 · %d페이지", rangeStart, rangeEnd, totalElements, Math.max(totalPages, 1));
 
             return new ResultMetaItem(
                     resultLabel,

@@ -342,7 +342,7 @@ class AdminProductServiceTest {
         ProductListResponse response = adminProductService.getProductList(request, PageRequest.of(0, 10));
 
         assertEquals("검색 결과 12개", response.resultMeta().resultLabel());
-        assertEquals("검색 결과 12개 / 2페이지", response.resultMeta().pageInfoLabel());
+        assertEquals("11-12 / 12개 · 2페이지", response.resultMeta().pageInfoLabel());
         assertEquals("발매가순", response.resultMeta().orderTypeLabel());
         assertEquals(10, response.resultMeta().pageSize());
         assertEquals(11L, response.resultMeta().rangeStart());

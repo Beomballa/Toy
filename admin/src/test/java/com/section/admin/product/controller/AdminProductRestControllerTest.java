@@ -135,7 +135,7 @@ class AdminProductRestControllerTest {
 
         mockMvc.perform(get("/api/admin/product/export"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=products.csv"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_20260508.csv"))
                 .andExpect(content().contentType("text/csv"))
                 .andExpect(content().bytes(body));
     }
@@ -237,7 +237,24 @@ class AdminProductRestControllerTest {
 
         mockMvc.perform(get("/api/admin/product/export"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=products.csv"));
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_20260508.csv"));
+    }
+
+    @Test
+    @DisplayName("상품 목록 CSV 파일명은 현재 필터 조건을 반영한다")
+    void exportProductListUsesDynamicFilename() throws Exception {
+        when(adminProductService.exportProductListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("csv".getBytes());
+
+        mockMvc.perform(get("/api/admin/product/export")
+                        .param("status", "ACTIVE")
+                        .param("lowStockOnly", "true")
+                        .param("createdTodayOnly", "true")
+                        .param("brandNo", "7")
+                        .param("categoryNo", "3")
+                        .param("searchKeyword", "뉴발란스"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_active_lowstock_today_brand7_category3_search_20260508.csv"));
     }
 
     @Test

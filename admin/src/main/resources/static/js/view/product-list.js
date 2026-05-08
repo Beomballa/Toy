@@ -274,6 +274,7 @@ const ProductList = {
     _renderPagination(data) {
         const { totalPages, currentPage: curr, totalElements, resultMeta } = data;
         const pagination = document.getElementById('pagination');
+        const pageMetaText = document.getElementById('pageMetaText');
         let html = '';
         for (let i = 0; i < totalPages; i++) {
             html += `
@@ -295,6 +296,12 @@ const ProductList = {
 
         document.getElementById('totalElementsCount').textContent = listCountLabel;
         document.getElementById('pageInfoText').textContent = pageInfoLabel;
+        if (pageMetaText) {
+            const pageMetaLabel = resultMeta
+                ? `페이지 크기 ${resultMeta.pageSize} · ${resultMeta.rangeStart}-${resultMeta.rangeEnd}`
+                : `페이지 크기 ${this.state.size} · 0-0`;
+            pageMetaText.textContent = pageMetaLabel;
+        }
     },
 
     _updateStats(stats) {
@@ -346,11 +353,15 @@ const ProductList = {
             <tr><td colspan="8" class="text-center py-5 text-danger">${message}</td></tr>`;
         const pageInfoText = document.getElementById('pageInfoText');
         const totalElementsCount = document.getElementById('totalElementsCount');
+        const pageMetaText = document.getElementById('pageMetaText');
         if (pageInfoText) {
             pageInfoText.textContent = message;
         }
         if (totalElementsCount) {
             totalElementsCount.textContent = '조회 실패';
+        }
+        if (pageMetaText) {
+            pageMetaText.textContent = '페이지 메타 확인 불가';
         }
     },
 
@@ -376,6 +387,10 @@ const ProductList = {
             }
             if (totalElementsCount) {
                 totalElementsCount.textContent = '조회 중...';
+            }
+            const pageMetaText = document.getElementById('pageMetaText');
+            if (pageMetaText) {
+                pageMetaText.textContent = '페이지 메타 계산 중';
             }
         }
     },

@@ -44,4 +44,22 @@ class ProductResponseStatusTest {
         assertEquals(5L, response.totalStock());
         assertEquals(false, response.hasThumbnail());
     }
+
+    @Test
+    @DisplayName("상품 상세 응답은 썸네일과 옵션이 없어도 기본 요약값을 안전하게 유지한다")
+    void productDetailResponseKeepsSafeSummaryWhenThumbnailAndOptionsMissing() {
+        ProductDetailResDto dto = new ProductDetailResDto(
+                2L, 4L, "러닝화", 9L, "뉴발란스", "1080",
+                "M1080", 199000, null, "   ", "ACTIVE", null, null
+        );
+
+        ProductDetailResponse response = ProductDetailResponse.from(dto, null);
+
+        assertEquals("ACTIVE", response.statusCode());
+        assertEquals("판매중", response.statusDesc());
+        assertEquals(0, response.optionCount());
+        assertEquals(0L, response.totalStock());
+        assertEquals(false, response.hasThumbnail());
+        assertEquals(0, response.options().size());
+    }
 }

@@ -199,6 +199,41 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("상품 상세 API는 썸네일과 옵션이 없어도 기본 요약 필드를 유지한다")
+    void getProductDetailReturnsSafeSummaryFieldsWhenOptionalValuesMissing() throws Exception {
+        ProductDetailResponse response = new ProductDetailResponse(
+                9L,
+                2L,
+                "러닝화",
+                7L,
+                "뉴발란스",
+                "1080",
+                "M1080",
+                199000,
+                null,
+                "   ",
+                false,
+                "ACTIVE",
+                "판매중",
+                "",
+                "",
+                0,
+                0L,
+                List.of()
+        );
+
+        when(adminProductService.getProductDetail(9L)).thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/product/get?no=9"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasThumbnail").value(false))
+                .andExpect(jsonPath("$.optionCount").value(0))
+                .andExpect(jsonPath("$.totalStock").value(0L))
+                .andExpect(jsonPath("$.options").isArray())
+                .andExpect(jsonPath("$.options").isEmpty());
+    }
+
+    @Test
     @DisplayName("잘못된 상품 생성 요청은 400 INVALID_INPUT_VALUE를 반환한다")
     void createProductReturnsBadRequestWhenPayloadInvalid() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest();

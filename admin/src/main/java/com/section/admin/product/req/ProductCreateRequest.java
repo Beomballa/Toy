@@ -1,5 +1,6 @@
 package com.section.admin.product.req;
 
+import com.section.admin.product.support.ProductInputNormalizer;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -53,14 +54,11 @@ public class ProductCreateRequest {
     }
 
     public String normalizeRequiredText(String value) {
-        return value.trim().replaceAll("\\s+", " ");
+        return ProductInputNormalizer.normalizeRequiredText(value);
     }
 
     public String normalizeOptionalText(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim().replaceAll("\\s+", " ");
+        return ProductInputNormalizer.normalizeOptionalText(value);
     }
 
     @Getter
@@ -79,7 +77,7 @@ public class ProductCreateRequest {
         private Integer additionalPrice;
 
         public String normalizeOptionName() {
-            return optionName.trim().replaceAll("\\s+", " ");
+            return ProductInputNormalizer.normalizeRequiredText(optionName);
         }
     }
 }

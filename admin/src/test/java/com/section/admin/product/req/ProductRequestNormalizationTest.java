@@ -1,5 +1,6 @@
 package com.section.admin.product.req;
 
+import com.section.admin.product.support.ProductInputNormalizer;
 import com.section.common.commerce.dto.ProductCreateReqDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,5 +49,14 @@ class ProductRequestNormalizationTest {
 
         assertEquals("270 wide", createOption.normalizeOptionName());
         assertEquals("280 standard", updateOption.normalizeOptionName());
+    }
+
+    @Test
+    @DisplayName("상품 입력 정규화 유틸은 필수값과 선택값을 같은 기준으로 처리한다")
+    void productInputNormalizerNormalizesRequiredAndOptionalText() {
+        assertEquals("젤 카야노 14", ProductInputNormalizer.normalizeRequiredText("  젤   카야노  14 "));
+        assertEquals("1201A019", ProductInputNormalizer.normalizeOptionalText("  1201A019 "));
+        assertNull(ProductInputNormalizer.normalizeOptionalText("   "));
+        assertEquals("", ProductInputNormalizer.normalizeRequiredText(null));
     }
 }

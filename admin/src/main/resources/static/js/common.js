@@ -215,6 +215,15 @@ let CommonJS = {
         }
 
         return { label: fallbackLabel, buttonLabel: `${fallbackLabel}으로` };
+    },
+
+    normalizeRequiredText: function(value) {
+        return (value || '').trim().replaceAll(/\s+/g, ' ');
+    },
+
+    normalizeOptionalText: function(value) {
+        const normalized = this.normalizeRequiredText(value);
+        return normalized ? normalized : null;
     }
 }
 

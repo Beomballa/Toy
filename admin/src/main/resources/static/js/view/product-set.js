@@ -273,15 +273,11 @@ const ProductCreate = {
     },
 
     normalizeRequiredText(value) {
-        return value.trim().replaceAll(/\s+/g, ' ');
+        return CommonJS.normalizeRequiredText(value);
     },
 
     normalizeOptionalText(value) {
-        if (!value || !value.trim()) {
-            return null;
-        }
-
-        return this.normalizeRequiredText(value);
+        return CommonJS.normalizeOptionalText(value);
     },
 
     syncReturnLinks() {

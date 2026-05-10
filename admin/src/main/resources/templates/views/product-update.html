@@ -27,6 +27,10 @@
             </nav>
             <div class="page-title-wrapper"><h1 class="page-title">상품 정보 수정</h1></div>
         </div>
+        <span class="visually-hidden" id="productReturnContextMeta"
+              data-return-to=""
+              data-return-label=""
+              data-return-button-label=""></span>
 
         <form id="productUpdateForm">
             <input type="hidden" id="productNo" th:value="${#strings.isEmpty(param.no) ? '' : param.no}">

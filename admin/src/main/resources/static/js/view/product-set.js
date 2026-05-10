@@ -282,9 +282,25 @@ const ProductCreate = {
 
     syncReturnLinks() {
         const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
-        document.getElementById('productListBreadcrumb')?.setAttribute('href', this.returnTo);
-        document.getElementById('productListBreadcrumb').textContent = returnContext.label;
-        document.getElementById('btnBackToProductList').innerHTML =
-            `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
+        const breadcrumb = document.getElementById('productListBreadcrumb');
+        const backButton = document.getElementById('btnBackToProductList');
+        const returnContextMeta = document.getElementById('productReturnContextMeta');
+
+        if (breadcrumb) {
+            breadcrumb.setAttribute('href', this.returnTo);
+            breadcrumb.textContent = returnContext.label;
+            breadcrumb.dataset.returnTo = this.returnTo;
+            breadcrumb.dataset.returnLabel = returnContext.label;
+        }
+        if (backButton) {
+            backButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
+            backButton.dataset.returnTo = this.returnTo;
+            backButton.dataset.returnButtonLabel = returnContext.buttonLabel;
+        }
+        if (returnContextMeta) {
+            returnContextMeta.dataset.returnTo = this.returnTo;
+            returnContextMeta.dataset.returnLabel = returnContext.label;
+            returnContextMeta.dataset.returnButtonLabel = returnContext.buttonLabel;
+        }
     }
 };

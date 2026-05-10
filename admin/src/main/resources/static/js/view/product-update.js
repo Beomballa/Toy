@@ -322,13 +322,23 @@ const ProductUpdate = {
     syncReturnLinks() {
         const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
         const breadcrumb = document.getElementById('productListBreadcrumb');
+        const returnContextMeta = document.getElementById('productReturnContextMeta');
         if (breadcrumb) {
             breadcrumb.setAttribute('href', this.returnTo);
             breadcrumb.textContent = returnContext.label;
+            breadcrumb.dataset.returnTo = this.returnTo;
+            breadcrumb.dataset.returnLabel = returnContext.label;
         }
         const cancelButton = document.getElementById('btnCancelEdit');
         if (cancelButton) {
             cancelButton.textContent = returnContext.buttonLabel;
+            cancelButton.dataset.returnTo = this.returnTo;
+            cancelButton.dataset.returnButtonLabel = returnContext.buttonLabel;
+        }
+        if (returnContextMeta) {
+            returnContextMeta.dataset.returnTo = this.returnTo;
+            returnContextMeta.dataset.returnLabel = returnContext.label;
+            returnContextMeta.dataset.returnButtonLabel = returnContext.buttonLabel;
         }
     }
 };

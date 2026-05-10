@@ -207,13 +207,24 @@ const ProductDetail = {
     syncReturnLinks() {
         const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
         const breadcrumb = document.getElementById('productListBreadcrumb');
+        const returnContextMeta = document.getElementById('productReturnContextMeta');
         if (breadcrumb) {
             breadcrumb.setAttribute('href', this.returnTo);
             breadcrumb.textContent = returnContext.label;
+            breadcrumb.dataset.returnTo = this.returnTo;
+            breadcrumb.dataset.returnLabel = returnContext.label;
         }
         const backButton = document.getElementById('btnBackToProductList');
         if (backButton) {
             backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext.buttonLabel}`;
+            backButton.dataset.returnTo = this.returnTo;
+            backButton.dataset.returnButtonLabel = returnContext.buttonLabel;
+        }
+        if (returnContextMeta) {
+            // 복귀 문맥은 브라우저에서 상태 확인이 잦아서 dataset 기준점으로 남겨두는 편이 회귀 추적에 유리합니다.
+            returnContextMeta.dataset.returnTo = this.returnTo;
+            returnContextMeta.dataset.returnLabel = returnContext.label;
+            returnContextMeta.dataset.returnButtonLabel = returnContext.buttonLabel;
         }
     }
 };

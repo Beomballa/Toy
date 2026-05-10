@@ -18,6 +18,7 @@ const ProductList = {
     lastAppliedQuery: null,
     lastResultMeta: null,
     lastErrorMessage: '',
+    lastTotalElements: 0,
 
     init(brands = [], categories = []) {
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -185,6 +186,7 @@ const ProductList = {
             this.lastErrorMessage = '';
             this._applyServerAppliedQuery(data.appliedQuery);
             this.lastResultMeta = data.resultMeta || null;
+            this.lastTotalElements = Number(data.totalElements || 0);
             this._renderList(data.products);
             this._renderPagination(data);
             this._updateStats(data.productStats);
@@ -196,6 +198,7 @@ const ProductList = {
             }
             console.error('상품 목록 로드 실패:', err);
             this.lastErrorMessage = err.userMessage || '상품 목록 조회 중 오류가 발생했습니다.';
+            this.lastTotalElements = 0;
             this._showError(this.lastErrorMessage);
         } finally {
             if (requestId === this.requestSequence) {
@@ -207,13 +210,14 @@ const ProductList = {
     _renderList(items) {
         const tbody = document.getElementById('productListTableBody');
         if (!items?.length) {
+            const emptyMessage = this._buildEmptyStateMessage();
             tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center py-5 text-muted">
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품이 없습니다.</strong>
-                            <p>${this._buildEmptyStateMessage()}</p>
+                            <p>${emptyMessage}</p>
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-role="reset-empty-product-filters">
                                 필터 초기화
                             </button>
@@ -221,6 +225,7 @@ const ProductList = {
                     </td>
                 </tr>
             `;
+            this._setListStateMeta('empty', emptyMessage, 0);
             return;
         }
 
@@ -269,6 +274,7 @@ const ProductList = {
                 </td>
             </tr>
         `).join('');
+        this._setListStateMeta('ready', '', items.length);
     },
 
     _renderPagination(data) {
@@ -381,6 +387,7 @@ const ProductList = {
         if (pageMetaText) {
             pageMetaText.textContent = '페이지 메타 확인 불가';
         }
+        this._setListStateMeta('error', message, 0);
     },
 
     _setLoadingState(isLoading) {
@@ -410,6 +417,7 @@ const ProductList = {
             if (pageMetaText) {
                 pageMetaText.textContent = '페이지 메타 계산 중';
             }
+            this._setListStateMeta('loading', '상품 목록 조회 중', 0);
         }
     },
 
@@ -761,5 +769,44 @@ const ProductList = {
         const query = this.buildQueryString();
         const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
         history.pushState(null, '', url);
+    },
+
+    _setListStateMeta(state, message, visibleCount) {
+        const stateMetaEl = document.getElementById('productListStateMeta');
+        if (!stateMetaEl) {
+            return;
+        }
+
+        // 인앱 브라우저 검증은 렌더된 문구보다 안정적인 dataset 기준점이 있어야 회귀를 덜 놓칩니다.
+        stateMetaEl.dataset.listState = state;
+        stateMetaEl.dataset.stateMessage = message || '';
+        stateMetaEl.dataset.totalElements = String(this.lastTotalElements);
+        stateMetaEl.dataset.visibleCount = String(visibleCount ?? 0);
+        stateMetaEl.dataset.querySignature = this.lastResultMeta?.querySignature || this._buildClientQuerySignature();
+    },
+
+    _buildClientQuerySignature() {
+        const signatureParts = [];
+        const orderTypeLabel = {
+            r: '최신순',
+            p: '발매가순',
+            c: '재고순',
+        }[this.state.orderType] || '최신순';
+
+        signatureParts.push(orderTypeLabel);
+        if (this.state.searchKeyword) {
+            signatureParts.push(`검색=${this.state.searchKeyword}`);
+        }
+        if (this.state.status) {
+            signatureParts.push(`상태=${this.state.status}`);
+        }
+        if (this.state.lowStockOnly) {
+            signatureParts.push(`재고<${this.state.lowStockThreshold}`);
+        }
+        if (this.state.createdTodayOnly) {
+            signatureParts.push('오늘등록');
+        }
+
+        return signatureParts.join(' · ');
     }
 };

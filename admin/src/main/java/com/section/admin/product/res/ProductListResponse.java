@@ -22,6 +22,7 @@ public record ProductListResponse(
         AppliedQueryItem appliedQuery,
         ResultMetaItem resultMeta
 ) {
+    private static final String DEFAULT_STATS_CONTEXT_LABEL = "현재 목록 기준";
 
 
     public static ProductListResponse of(
@@ -78,20 +79,24 @@ public record ProductListResponse(
             Long activeCount,
             Long lowStockCount,
             Long todayCount,
-            Long lowStockThreshold
+            Long lowStockThreshold,
+            String contextLabel,
+            String querySignature
     ){
         public static ProductStatsItem empty() {
-            return new ProductStatsItem(0L, 0L, 0L, 0L, 100L);
+            return new ProductStatsItem(0L, 0L, 0L, 0L, 100L, DEFAULT_STATS_CONTEXT_LABEL, "최신순");
         }
 
-        public static ProductStatsItem from(ProductStatsDto resDto, Long lowStockThreshold){
+        public static ProductStatsItem from(ProductStatsDto resDto, ProductListQuery query){
             return Optional.ofNullable(resDto)
                     .map(dto -> new ProductStatsItem(
                             dto.getTotalCount(),
                             dto.getActiveCount(),
                             dto.getLowStockCount(),
                             dto.getTodayCount(),
-                            lowStockThreshold == null ? 100L : lowStockThreshold
+                            query.effectiveLowStockThreshold(),
+                            DEFAULT_STATS_CONTEXT_LABEL,
+                            ProductListResponse.querySignature(query)
                     ))
                     .orElseGet(ProductStatsItem::empty);
         }
@@ -161,13 +166,13 @@ public record ProductListResponse(
             return new ResultMetaItem(
                     resultLabel,
                     pageInfoLabel,
-                    orderTypeLabel(query.orderType()),
+                    ProductListResponse.orderTypeLabel(query.orderType()),
                     page.getSize(),
                     rangeStart,
                     rangeEnd,
                     appliedFilterCount,
                     hasActiveFilters,
-                    querySignature(query)
+                    ProductListResponse.querySignature(query)
             );
         }
 
@@ -191,33 +196,34 @@ public record ProductListResponse(
             return count;
         }
 
-        private static String orderTypeLabel(ProductOrderType orderType) {
-            if (orderType == null) {
-                return "최신순";
-            }
+    }
 
-            return switch (orderType) {
-                case RECENT -> "최신순";
-                case RELEASE_PRICE -> "발매가순";
-                case STOCK_COUNT -> "재고순";
-            };
+    private static String orderTypeLabel(ProductOrderType orderType) {
+        if (orderType == null) {
+            return "최신순";
         }
 
-        private static String querySignature(ProductListQuery query) {
-            StringBuilder builder = new StringBuilder(orderTypeLabel(query.orderType()));
-            if (query.searchKeyword() != null) {
-                builder.append(" · 검색=").append(query.searchKeyword());
-            }
-            if (query.status() != null) {
-                builder.append(" · 상태=").append(query.status().name());
-            }
-            if (query.lowStockOnly()) {
-                builder.append(" · 재고<").append(query.effectiveLowStockThreshold());
-            }
-            if (query.createdTodayOnly()) {
-                builder.append(" · 오늘등록");
-            }
-            return builder.toString();
+        return switch (orderType) {
+            case RECENT -> "최신순";
+            case RELEASE_PRICE -> "발매가순";
+            case STOCK_COUNT -> "재고순";
+        };
+    }
+
+    private static String querySignature(ProductListQuery query) {
+        StringBuilder builder = new StringBuilder(orderTypeLabel(query.orderType()));
+        if (query.searchKeyword() != null) {
+            builder.append(" · 검색=").append(query.searchKeyword());
         }
+        if (query.status() != null) {
+            builder.append(" · 상태=").append(query.status().name());
+        }
+        if (query.lowStockOnly()) {
+            builder.append(" · 재고<").append(query.effectiveLowStockThreshold());
+        }
+        if (query.createdTodayOnly()) {
+            builder.append(" · 오늘등록");
+        }
+        return builder.toString();
     }
 }

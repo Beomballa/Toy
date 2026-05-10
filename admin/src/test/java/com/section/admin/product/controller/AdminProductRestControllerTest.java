@@ -21,6 +21,8 @@ import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
@@ -35,12 +37,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 class AdminProductRestControllerTest {
+    private static final DateTimeFormatter EXPORT_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd");
 
     @Mock
     private AdminProductService adminProductService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
+
+    private String todayExportDate() {
+        return LocalDate.now().format(EXPORT_DATE_FORMAT);
+    }
 
     @BeforeEach
     void setUp() {
@@ -78,7 +85,7 @@ class AdminProductRestControllerTest {
                 0,
                 1,
                 2L,
-                new ProductListResponse.ProductStatsItem(2L, 1L, 1L, 0L, 30L),
+                new ProductListResponse.ProductStatsItem(2L, 1L, 1L, 0L, 30L, "현재 목록 기준", "재고순 · 검색=뉴발란스 993 · 재고<30"),
                 ProductListResponse.AppliedQueryItem.from(
                         new ProductListQuery(3L, 7L, null, "뉴발란스 993", ProductOrderType.STOCK_COUNT, true, 30L, false)
                 ),
@@ -104,6 +111,8 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.appliedQuery.categoryNo").value(3L))
                 .andExpect(jsonPath("$.appliedQuery.orderTypeCode").value("c"))
                 .andExpect(jsonPath("$.productStats.lowStockThreshold").value(30L))
+                .andExpect(jsonPath("$.productStats.contextLabel").value("현재 목록 기준"))
+                .andExpect(jsonPath("$.productStats.querySignature").value("재고순 · 검색=뉴발란스 993 · 재고<30"))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 2개"))
                 .andExpect(jsonPath("$.resultMeta.pageSize").value(10))
                 .andExpect(jsonPath("$.resultMeta.rangeStart").value(1L))
@@ -135,7 +144,7 @@ class AdminProductRestControllerTest {
 
         mockMvc.perform(get("/api/admin/product/export"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=products_20260508.csv"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_" + todayExportDate() + ".csv"))
                 .andExpect(content().contentType("text/csv"))
                 .andExpect(content().bytes(body));
     }
@@ -237,7 +246,7 @@ class AdminProductRestControllerTest {
 
         mockMvc.perform(get("/api/admin/product/export"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=products_20260508.csv"));
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_" + todayExportDate() + ".csv"));
     }
 
     @Test
@@ -246,7 +255,7 @@ class AdminProductRestControllerTest {
         when(adminProductService.exportProductListCsv(org.mockito.ArgumentMatchers.any()))
                 .thenReturn("csv".getBytes());
 
-        mockMvc.perform(get("/api/admin/product/export")
+                mockMvc.perform(get("/api/admin/product/export")
                         .param("status", "ACTIVE")
                         .param("lowStockOnly", "true")
                         .param("createdTodayOnly", "true")
@@ -254,7 +263,7 @@ class AdminProductRestControllerTest {
                         .param("categoryNo", "3")
                         .param("searchKeyword", "뉴발란스"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=products_active_lowstock_today_brand7_category3_search_20260508.csv"));
+                .andExpect(header().string("Content-Disposition", "attachment; filename=products_active_lowstock_today_brand7_category3_search_" + todayExportDate() + ".csv"));
     }
 
     @Test

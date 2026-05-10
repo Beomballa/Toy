@@ -284,6 +284,8 @@ class AdminProductServiceTest {
 
         assertEquals(50L, response.productStats().lowStockThreshold());
         assertEquals(3L, response.productStats().lowStockCount());
+        assertEquals("현재 목록 기준", response.productStats().contextLabel());
+        assertEquals("최신순 · 재고<50", response.productStats().querySignature());
     }
 
     @Test
@@ -350,5 +352,6 @@ class AdminProductServiceTest {
         assertEquals(2L, response.resultMeta().appliedFilterCount());
         assertEquals(true, response.resultMeta().hasActiveFilters());
         assertEquals("발매가순 · 검색=뉴발란스 993 · 상태=ACTIVE", response.resultMeta().querySignature());
+        assertEquals(response.resultMeta().querySignature(), response.productStats().querySignature());
     }
 }

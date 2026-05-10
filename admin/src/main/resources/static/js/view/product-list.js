@@ -323,6 +323,24 @@ const ProductList = {
         if (lowStockThresholdEl) {
             lowStockThresholdEl.textContent = `${stats.lowStockThreshold || 100}개 미만`;
         }
+
+        const contextLabel = stats.contextLabel || '현재 목록 기준';
+        document.getElementById('stat-total-meta')?.replaceChildren(contextLabel);
+        document.getElementById('stat-active-meta')?.replaceChildren(contextLabel);
+        document.getElementById('stat-today-meta')?.replaceChildren(contextLabel);
+        document.getElementById('stat-low-stock-meta')?.replaceChildren(contextLabel);
+
+        const statCardIds = ['statTotalCard', 'statActiveCard', 'statLowStockCard', 'statTodayCard'];
+        statCardIds.forEach((id) => {
+            const cardEl = document.getElementById(id);
+            if (!cardEl) {
+                return;
+            }
+
+            // 통계 카드도 서버가 계산한 목록 문맥을 그대로 들고 있어야 화면과 자동 검증 기준이 어긋나지 않습니다.
+            cardEl.dataset.querySignature = stats.querySignature || this.lastResultMeta?.querySignature || '';
+            cardEl.dataset.contextLabel = contextLabel;
+        });
     },
 
     _applyServerAppliedQuery(appliedQuery) {

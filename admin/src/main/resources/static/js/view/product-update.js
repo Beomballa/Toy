@@ -183,40 +183,27 @@ const ProductUpdate = {
             return;
         }
 
-        const categoryNo = document.getElementById('categoryNo').value;
-        const brandNo = document.getElementById('brandNo').value;
-        const nameKo = document.getElementById('nameKo').value;
-        const releasePrice = document.getElementById('releasePrice').value;
-
-        if (!categoryNo || !brandNo || !nameKo || !releasePrice) {
-            await CommonJS.alert('필수 항목을 모두 입력해주세요.', '알림', 'warning');
+        const validationResult = this.validateFormInputs();
+        if (!validationResult.valid) {
+            await CommonJS.alert(validationResult.message, '알림', 'warning');
+            validationResult.focusElement?.focus();
             return;
         }
 
         const isConfirm = await CommonJS.confirm('상품 정보를 수정하시겠습니까?', '상품 수정 확인');
         if (!isConfirm) return;
 
-        const options = [];
-        document.querySelectorAll('.option-item').forEach(item => {
-            const optionName = item.querySelector('.option-name').value.trim();
-            const stockCnt = parseInt(item.querySelector('.option-cnt').value);
-            const additionalPrice = parseInt(item.querySelector('.option-price').value) || 0;
-            if (optionName) {
-                options.push({ optionName, stockCnt, additionalPrice });
-            }
-        });
-
         const data = {
             productNo: parseInt(this.productNo),
-            categoryNo: parseInt(categoryNo),
-            brandNo: parseInt(brandNo),
-            nameKo: nameKo,
-            modelNum: document.getElementById('modelNum').value || null,
-            releasePrice: parseInt(releasePrice),
+            categoryNo: parseInt(validationResult.categoryNo),
+            brandNo: parseInt(validationResult.brandNo),
+            nameKo: validationResult.nameKo,
+            modelNum: validationResult.modelNum,
+            releasePrice: validationResult.releasePrice,
             releaseDt: document.getElementById('releaseDt').value || null,
-            thumbnailUrl: document.getElementById('thumbnailUrl').value || null,
+            thumbnailUrl: validationResult.thumbnailUrl,
             status: document.getElementById('productStatus').value,
-            options: options
+            options: validationResult.options
         };
 
         try {
@@ -249,6 +236,91 @@ const ProductUpdate = {
         document.getElementById('btnUpdate').disabled = disabled;
         document.getElementById('btnCancelEdit').disabled = disabled;
         document.getElementById('btnAddOption').disabled = disabled;
+    },
+
+    validateFormInputs() {
+        const categoryNoEl = document.getElementById('categoryNo');
+        const brandNoEl = document.getElementById('brandNo');
+        const nameKoEl = document.getElementById('nameKo');
+        const modelNumEl = document.getElementById('modelNum');
+        const releasePriceEl = document.getElementById('releasePrice');
+        const thumbnailUrlEl = document.getElementById('thumbnailUrl');
+
+        const categoryNo = categoryNoEl.value;
+        const brandNo = brandNoEl.value;
+        const nameKo = this.normalizeRequiredText(nameKoEl.value);
+        const modelNum = this.normalizeOptionalText(modelNumEl.value);
+        const thumbnailUrl = this.normalizeOptionalText(thumbnailUrlEl.value);
+        const releasePrice = Number(releasePriceEl.value);
+
+        if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
+        if (!brandNo) return this.invalidResult('브랜드를 선택해주세요.', brandNoEl);
+        if (!nameKo) return this.invalidResult('상품명을 입력해주세요.', nameKoEl);
+        if (nameKo.length > 200) return this.invalidResult('상품명은 200자 이내로 입력해주세요.', nameKoEl);
+        if (modelNum && modelNum.length > 200) return this.invalidResult('모델 번호는 200자 이내로 입력해주세요.', modelNumEl);
+        if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
+        if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
+        if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+
+        const optionValidation = this.collectAndValidateOptions();
+        if (!optionValidation.valid) {
+            return optionValidation;
+        }
+
+        return {
+            valid: true,
+            categoryNo,
+            brandNo,
+            nameKo,
+            modelNum,
+            releasePrice,
+            thumbnailUrl,
+            options: optionValidation.options,
+        };
+    },
+
+    collectAndValidateOptions() {
+        const seenOptionNames = new Set();
+        const options = [];
+
+        for (const item of document.querySelectorAll('.option-item')) {
+            const optionNameEl = item.querySelector('.option-name');
+            const stockCntEl = item.querySelector('.option-cnt');
+            const additionalPriceEl = item.querySelector('.option-price');
+            const optionName = this.normalizeRequiredText(optionNameEl.value);
+            const stockCnt = Number(stockCntEl.value);
+            const additionalPrice = Number(additionalPriceEl.value || 0);
+
+            // 옵션 row는 동적 추가/삭제가 자주 일어나서 여기서 정규화와 중복 체크를 같이 묶어야 흐름을 따라가기 쉽습니다.
+            if (!optionName) return this.invalidResult('옵션명을 입력해주세요.', optionNameEl);
+            if (optionName.length > 100) return this.invalidResult('옵션명은 100자 이내로 입력해주세요.', optionNameEl);
+            if (Number.isNaN(stockCnt)) return this.invalidResult('수량을 입력해주세요.', stockCntEl);
+            if (stockCnt < 0) return this.invalidResult('수량은 0개 이상이어야 합니다.', stockCntEl);
+            if (Number.isNaN(additionalPrice)) return this.invalidResult('추가 금액을 입력해주세요.', additionalPriceEl);
+            if (additionalPrice < 0) return this.invalidResult('추가 금액은 0원 이상이어야 합니다.', additionalPriceEl);
+            if (seenOptionNames.has(optionName)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
+
+            seenOptionNames.add(optionName);
+            options.push({ optionName, stockCnt, additionalPrice });
+        }
+
+        return { valid: true, options };
+    },
+
+    invalidResult(message, focusElement) {
+        return { valid: false, message, focusElement };
+    },
+
+    normalizeRequiredText(value) {
+        return value.trim().replaceAll(/\s+/g, ' ');
+    },
+
+    normalizeOptionalText(value) {
+        if (!value || !value.trim()) {
+            return null;
+        }
+
+        return this.normalizeRequiredText(value);
     },
 
     syncReturnLinks() {

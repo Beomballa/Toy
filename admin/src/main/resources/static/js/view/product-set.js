@@ -140,45 +140,26 @@ const ProductCreate = {
             return;
         }
 
-        // 필수 입력 체크
-        const categoryNo = document.getElementById('categoryNo');
-        const brandNo = document.getElementById('brandNo');
-        const nameKo = document.getElementById('nameKo');
-        const releasePrice = document.getElementById('releasePrice');
-
-        if (!categoryNo.value) { await CommonJS.alert('카테고리를 선택해주세요.', '알림', 'warning'); categoryNo.focus(); return; }
-        if (!brandNo.value) { await CommonJS.alert('브랜드를 선택해주세요.', '알림', 'warning'); brandNo.focus(); return; }
-        if (!nameKo.value) { await CommonJS.alert('상품명을 입력해주세요.', '알림', 'warning'); nameKo.focus(); return; }
-        if (!releasePrice.value) { await CommonJS.alert('발매가를 입력해주세요.', '알림', 'warning'); releasePrice.focus(); return; }
+        const validationResult = this.validateFormInputs();
+        if (!validationResult.valid) {
+            await CommonJS.alert(validationResult.message, '알림', 'warning');
+            validationResult.focusElement?.focus();
+            return;
+        }
 
         // 최종 확인
         const isConfirm = await CommonJS.confirm('입력하신 정보로 상품을 등록하시겠습니까?', '상품 등록 확인');
         if (!isConfirm) return;
 
-        // 옵션 수집
-        const options = [];
-        document.querySelectorAll('.option-item').forEach(input => {
-            const nameInput = input.querySelector('.option-name').value.trim();
-            const cntInput = parseInt(input.querySelector('.option-cnt').value) || 0;
-            const priceInput = parseInt(input.querySelector('.option-price').value) || 0;
-            if(nameInput){
-                options.push({ 
-                    optionName: nameInput, 
-                    stockCnt: cntInput,
-                    additionalPrice: priceInput
-                });
-            }
-        });
-
         const data = {
-            categoryNo: parseInt(categoryNo.value),
-            brandNo: parseInt(brandNo.value),
-            nameKo: nameKo.value,
-            modelNum: document.getElementById('modelNum').value || null,
-            releasePrice: parseInt(releasePrice.value),
+            categoryNo: parseInt(validationResult.categoryNo),
+            brandNo: parseInt(validationResult.brandNo),
+            nameKo: validationResult.nameKo,
+            modelNum: validationResult.modelNum,
+            releasePrice: validationResult.releasePrice,
             releaseDt: document.getElementById('releaseDt').value || null,
-            thumbnailUrl: document.getElementById('thumbnailUrl').value || null,
-            options: options
+            thumbnailUrl: validationResult.thumbnailUrl,
+            options: validationResult.options
         };
 
         try {
@@ -211,6 +192,96 @@ const ProductCreate = {
     setSubmitDisabled(disabled) {
         document.getElementById('btnSubmit').disabled = disabled;
         document.getElementById('btnBackToProductList').disabled = disabled;
+        document.getElementById('btnAddOption').disabled = disabled;
+    },
+
+    validateFormInputs() {
+        const categoryNoEl = document.getElementById('categoryNo');
+        const brandNoEl = document.getElementById('brandNo');
+        const nameKoEl = document.getElementById('nameKo');
+        const modelNumEl = document.getElementById('modelNum');
+        const releasePriceEl = document.getElementById('releasePrice');
+        const thumbnailUrlEl = document.getElementById('thumbnailUrl');
+
+        const categoryNo = categoryNoEl.value;
+        const brandNo = brandNoEl.value;
+        const nameKo = this.normalizeRequiredText(nameKoEl.value);
+        const modelNum = this.normalizeOptionalText(modelNumEl.value);
+        const thumbnailUrl = this.normalizeOptionalText(thumbnailUrlEl.value);
+        const releasePrice = Number(releasePriceEl.value);
+
+        if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
+        if (!brandNo) return this.invalidResult('브랜드를 선택해주세요.', brandNoEl);
+        if (!nameKo) return this.invalidResult('상품명을 입력해주세요.', nameKoEl);
+        if (nameKo.length > 200) return this.invalidResult('상품명은 200자 이내로 입력해주세요.', nameKoEl);
+        if (modelNum && modelNum.length > 200) return this.invalidResult('모델 번호는 200자 이내로 입력해주세요.', modelNumEl);
+        if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
+        if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
+        if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+
+        const optionValidation = this.collectAndValidateOptions();
+        if (!optionValidation.valid) {
+            return optionValidation;
+        }
+
+        return {
+            valid: true,
+            categoryNo,
+            brandNo,
+            nameKo,
+            modelNum,
+            releasePrice,
+            thumbnailUrl,
+            options: optionValidation.options,
+        };
+    },
+
+    collectAndValidateOptions() {
+        const seenOptionNames = new Set();
+        const options = [];
+
+        for (const item of document.querySelectorAll('.option-item')) {
+            const optionNameEl = item.querySelector('.option-name');
+            const stockCntEl = item.querySelector('.option-cnt');
+            const additionalPriceEl = item.querySelector('.option-price');
+            const optionName = this.normalizeRequiredText(optionNameEl.value);
+            const stockCnt = Number(stockCntEl.value);
+            const additionalPrice = Number(additionalPriceEl.value || 0);
+
+            // 옵션 row는 동적 추가/삭제가 잦아서 정규화와 중복 체크를 한 흐름에서 끝내야 검증 포인트가 분산되지 않습니다.
+            if (!optionName) return this.invalidResult('옵션명을 입력해주세요.', optionNameEl);
+            if (optionName.length > 100) return this.invalidResult('옵션명은 100자 이내로 입력해주세요.', optionNameEl);
+            if (Number.isNaN(stockCnt)) return this.invalidResult('수량을 입력해주세요.', stockCntEl);
+            if (stockCnt < 0) return this.invalidResult('수량은 0개 이상이어야 합니다.', stockCntEl);
+            if (Number.isNaN(additionalPrice)) return this.invalidResult('추가 금액을 입력해주세요.', additionalPriceEl);
+            if (additionalPrice < 0) return this.invalidResult('추가 금액은 0원 이상이어야 합니다.', additionalPriceEl);
+            if (seenOptionNames.has(optionName)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
+
+            seenOptionNames.add(optionName);
+            options.push({
+                optionName,
+                stockCnt,
+                additionalPrice
+            });
+        }
+
+        return { valid: true, options };
+    },
+
+    invalidResult(message, focusElement) {
+        return { valid: false, message, focusElement };
+    },
+
+    normalizeRequiredText(value) {
+        return value.trim().replaceAll(/\s+/g, ' ');
+    },
+
+    normalizeOptionalText(value) {
+        if (!value || !value.trim()) {
+            return null;
+        }
+
+        return this.normalizeRequiredText(value);
     },
 
     syncReturnLinks() {

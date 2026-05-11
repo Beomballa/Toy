@@ -19,6 +19,7 @@ const ProductDetail = {
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
             this.renderProduct(bootstrapProduct);
+            this.loadProductHistory();
         } else {
             this.loadProductDetail();
         }
@@ -85,6 +86,7 @@ const ProductDetail = {
 
             const data = await response.json();
             this.renderProduct(data);
+            this.loadProductHistory();
 
         } catch (error) {
             console.error('Error:', error);
@@ -174,6 +176,52 @@ const ProductDetail = {
             const statusCode = data.statusCode || 'ACTIVE';
             const statusMeta = CommonJS.getProductStatusMeta(statusCode);
             statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${data.statusDesc || '판매중'}</span>`;
+        }
+    },
+
+    async loadProductHistory() {
+        const historyListEl = document.getElementById('productHistoryList');
+        const historyCountEl = document.getElementById('historyCount');
+
+        try {
+            const response = await fetch(`/api/admin/product/history?no=${this.productNo}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '상품 변경 이력을 불러오지 못했습니다.'));
+            }
+
+            const histories = await response.json();
+            if (historyCountEl) {
+                historyCountEl.textContent = String(histories.length);
+            }
+
+            if (!histories.length) {
+                if (historyListEl) {
+                    historyListEl.innerHTML = '<p class="text-muted small mb-0">등록된 변경 이력이 없습니다.</p>';
+                }
+                return;
+            }
+
+            if (historyListEl) {
+                // 상세 화면 검증에서 텍스트만 보는 것보다 action/status/count가 같이 드러나는 구조가 추적하기 쉽습니다.
+                historyListEl.innerHTML = histories.map((history) => `
+                    <div class="product-option-chip flex-column align-items-start">
+                        <div class="d-flex justify-content-between w-100 gap-2">
+                            <strong>${history.actionLabel}</strong>
+                            <span class="text-muted small">${history.crtDtm || '-'}</span>
+                        </div>
+                        <span class="small text-muted">${history.summary}</span>
+                        <span class="small text-muted">상태 ${history.statusSnapshot || '-'} · 옵션 ${history.optionCount}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('History Load Error:', error);
+            if (historyListEl) {
+                historyListEl.innerHTML = `<p class="text-danger small mb-0">${error.message || '상품 변경 이력을 불러오지 못했습니다.'}</p>`;
+            }
+            if (historyCountEl) {
+                historyCountEl.textContent = '0';
+            }
         }
     },
 

@@ -1,5 +1,6 @@
 const BannerList = {
     modal: null,
+    state: {},
 
     init() {
         const modalEl = document.getElementById('bannerModal');
@@ -7,6 +8,7 @@ const BannerList = {
             this.modal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
+        this.readStateFromUrl();
         this.getList();
     },
 
@@ -18,16 +20,38 @@ const BannerList = {
         document.getElementById('btnSaveBanner')?.addEventListener('click', () => {
             this.saveBanner();
         });
+
+        document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
+    },
+
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('bannerKeyword').value = params.get('keyword') || '';
+        document.getElementById('bannerIsActiveFilter').value = params.get('isActive') || '';
+    },
+
+    buildParams() {
+        const params = new URLSearchParams();
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value);
+        const isActive = document.getElementById('bannerIsActiveFilter').value;
+        if (keyword) params.set('keyword', keyword);
+        if (isActive) params.set('isActive', isActive);
+        return params;
     },
 
     async getList() {
         try {
-            const res = await fetch('/api/admin/banners/list');
-            if (!res.ok) throw new Error();
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
-            this.renderList(data);
+            this.renderList(data.items || []);
+            document.getElementById('bannerMetaText').textContent = `${(data.items || []).length}건 조회`;
         } catch (err) {
-            console.error('배너 목록 로드 실패:', err);
+            document.getElementById('bannerMetaText').textContent = err.message;
+            document.getElementById('bannerListBody').innerHTML =
+                `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
         }
     },
 
@@ -57,11 +81,12 @@ const BannerList = {
                 </td>
                 <td class="text-center">
                     <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                        ${item.isActive === 'Y' ? '사용중' : '중지'}
+                        ${item.displayStatus}
                     </span>
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="BannerList.openEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">수정</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" onclick="BannerList.toggleActive(${item.bannerNo}, '${item.isActive === 'Y' ? 'N' : 'Y'}')">${item.isActive === 'Y' ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" onclick="BannerList.deleteBanner(${item.bannerNo})">삭제</button>
                 </td>
             </tr>
@@ -97,8 +122,7 @@ const BannerList = {
             startDtm: document.getElementById('startDtm').value,
             endDtm: document.getElementById('endDtm').value,
             sortOrder: document.getElementById('sortOrder').value,
-            isActive: document.getElementById('isActive').value,
-            crtAdminNo: 1 // 테스트용
+            isActive: document.getElementById('isActive').value
         };
 
         if (!formData.title || !formData.imageUrl || !formData.startDtm || !formData.endDtm) {
@@ -113,14 +137,24 @@ const BannerList = {
                 body: JSON.stringify(formData)
             });
 
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '저장 중 오류가 발생했습니다.'));
 
-            CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success', () => {
-                this.modal.hide();
-                this.getList();
-            });
+            await CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success');
+            this.modal.hide();
+            this.getList();
         } catch (err) {
-            CommonJS.alert('저장 중 오류가 발생했습니다.', '오류', 'error');
+            CommonJS.alert(err.message, '오류', 'error');
+        }
+    },
+
+    async toggleActive(no, isActive) {
+        try {
+            const res = await fetch(`/api/admin/banners/active/${no}?isActive=${isActive}`, { method: 'PATCH' });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '상태 변경 중 오류가 발생했습니다.'));
+            await CommonJS.alert('배너 상태가 변경되었습니다.', '성공', 'success');
+            this.getList();
+        } catch (err) {
+            CommonJS.alert(err.message, '오류', 'error');
         }
     },
 
@@ -130,10 +164,11 @@ const BannerList = {
 
         try {
             const res = await fetch(`/api/admin/banners/delete?no=${no}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
-            CommonJS.alert('삭제되었습니다.', '성공', 'success', () => this.getList());
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다.'));
+            await CommonJS.alert('삭제되었습니다.', '성공', 'success');
+            this.getList();
         } catch (err) {
-            CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
+            CommonJS.alert(err.message, '오류', 'error');
         }
     }
 };

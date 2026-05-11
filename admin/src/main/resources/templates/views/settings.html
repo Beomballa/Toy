@@ -29,6 +29,47 @@
     </div>
 
     <div class="row g-4">
+        <div class="col-lg-12">
+            <div class="card animate-in">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0">운영 설정</h6>
+                    <button class="btn btn-sm btn-dark" id="btnSaveSystemSettings"><i class="fas fa-save me-1"></i>설정 저장</button>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">유지보수 모드</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="maintenanceMode">
+                                <label class="form-check-label" for="maintenanceMode">관리자 서비스 유지보수 모드 활성화</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">커뮤니티 작성 허용</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="communityWriteEnabled">
+                                <label class="form-check-label" for="communityWriteEnabled">커뮤니티 신규 작성 허용</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">주문 Export 허용</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="orderExportEnabled">
+                                <label class="form-check-label" for="orderExportEnabled">주문 CSV 내보내기 허용</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">기본 저재고 임계값</label>
+                            <input type="number" min="1" id="lowStockDefaultThreshold" class="form-control" placeholder="100">
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <div class="small text-muted" id="systemSettingMetaText">운영 설정을 불러오는 중입니다...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 관리자 계정 관리 -->
         <div class="col-lg-12">
             <div class="card animate-in">
@@ -118,10 +159,12 @@
             this.modal = new bootstrap.Modal(document.getElementById('adminModal'));
             this.bindEvents();
             this.getList();
+            this.getSystemSettings();
         },
         bindEvents() {
             document.getElementById('btnNewAdmin').addEventListener('click', () => this.openModal());
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
+            document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
         },
         async getList() {
             try {
@@ -205,6 +248,52 @@
                 this.modal.hide();
                 this.getList();
             } catch (err) {
+                CommonJS.alert(err.message, '오류', 'error');
+            }
+        },
+        async getSystemSettings() {
+            try {
+                const res = await fetch('/api/admin/settings/system');
+                if (!res.ok) {
+                    throw new Error(await CommonJS.extractErrorMessage(res, '설정을 불러오지 못했습니다.'));
+                }
+                const data = await res.json();
+                document.getElementById('maintenanceMode').checked = !!data.maintenanceMode;
+                document.getElementById('communityWriteEnabled').checked = !!data.communityWriteEnabled;
+                document.getElementById('orderExportEnabled').checked = !!data.orderExportEnabled;
+                document.getElementById('lowStockDefaultThreshold').value = data.lowStockDefaultThreshold;
+                document.getElementById('systemSettingMetaText').textContent = '현재 운영 설정이 로드되었습니다.';
+            } catch (err) {
+                document.getElementById('systemSettingMetaText').textContent = err.message;
+            }
+        },
+        async saveSystemSettings() {
+            const lowStockDefaultThreshold = Number(document.getElementById('lowStockDefaultThreshold').value);
+            if (!Number.isFinite(lowStockDefaultThreshold) || lowStockDefaultThreshold <= 0) {
+                await CommonJS.alert('기본 저재고 임계값은 1 이상의 숫자여야 합니다.', '알림', 'warning');
+                return;
+            }
+
+            const payload = {
+                maintenanceMode: document.getElementById('maintenanceMode').checked,
+                communityWriteEnabled: document.getElementById('communityWriteEnabled').checked,
+                orderExportEnabled: document.getElementById('orderExportEnabled').checked,
+                lowStockDefaultThreshold
+            };
+
+            try {
+                const res = await fetch('/api/admin/settings/system', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    throw new Error(await CommonJS.extractErrorMessage(res, '설정 저장에 실패했습니다.'));
+                }
+                document.getElementById('systemSettingMetaText').textContent = '운영 설정이 저장되었습니다.';
+                await CommonJS.alert('운영 설정이 저장되었습니다.', '성공', 'success');
+            } catch (err) {
+                document.getElementById('systemSettingMetaText').textContent = err.message;
                 CommonJS.alert(err.message, '오류', 'error');
             }
         }

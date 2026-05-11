@@ -4,6 +4,7 @@ import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
@@ -251,6 +252,31 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$[0].optionCount").value(2))
                 .andExpect(jsonPath("$[0].totalStock").value(8L));
+    }
+
+    @Test
+    @DisplayName("상품 이력 목록 API는 필터 결과와 메타 정보를 함께 반환한다")
+    void getProductHistoryListReturnsPagedResult() throws Exception {
+        when(adminProductService.getProductHistoryList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new ProductHistoryListResponse(
+                        List.of(new ProductHistoryListResponse.Item(
+                                7L, 4L, "UPDATED", "수정", "변경 항목: 상품명", "ACTIVE", 2, 8L, 1L, "관리자", "2026-05-11 10:00"
+                        )),
+                        1L,
+                        1,
+                        20,
+                        1L,
+                        1L,
+                        new ProductHistoryListResponse.AppliedQuery(4L, "UPDATED", null, null, null)
+                ));
+
+        mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&page=0&size=20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].historyNo").value(7L))
+                .andExpect(jsonPath("$.items[0].actorName").value("관리자"))
+                .andExpect(jsonPath("$.totalElements").value(1L))
+                .andExpect(jsonPath("$.appliedQuery.productNo").value(4L))
+                .andExpect(jsonPath("$.appliedQuery.actionType").value("UPDATED"));
     }
 
     @Test

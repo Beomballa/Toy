@@ -1,11 +1,14 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
+import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.dto.ProductHistoryListResDto;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -224,6 +227,37 @@ class AdminProductServiceTest {
 
         assertEquals(1, histories.size());
         assertEquals("관리자", histories.get(0).actorName());
+    }
+
+    @Test
+    @DisplayName("상품 변경 이력 목록은 필터 결과와 작업자명을 함께 반환한다")
+    void getProductHistoryListReturnsPagedHistoryWithActorName() {
+        ProductHistoryListRequest request = new ProductHistoryListRequest();
+        request.setProductNo(4L);
+        request.setActionType("UPDATED");
+
+        ProductHistoryListResDto row = new ProductHistoryListResDto();
+        row.setHistoryNo(7L);
+        row.setProductNo(4L);
+        row.setActionType("UPDATED");
+        row.setSummary("변경 항목: 상품명");
+        row.setStatusSnapshot("ACTIVE");
+        row.setOptionCount(2);
+        row.setTotalStock(8L);
+        row.setActorNo(1L);
+        row.setActionDtm(java.time.LocalDateTime.of(2026, 5, 11, 10, 0));
+
+        when(productChangeHistoryRepository.getProductHistoryList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
+        when(adminUserRepository.findAllById(any()))
+                .thenReturn(List.of(AdminUser.builder().adminNo(1L).name("관리자").loginId("admin").password("pw").build()));
+
+        ProductHistoryListResponse response = adminProductService.getProductHistoryList(request, PageRequest.of(0, 20));
+
+        assertEquals(1, response.items().size());
+        assertEquals("관리자", response.items().get(0).actorName());
+        assertEquals("UPDATED", response.appliedQuery().actionType());
+        assertEquals(1L, response.totalElements());
     }
 
     @Test

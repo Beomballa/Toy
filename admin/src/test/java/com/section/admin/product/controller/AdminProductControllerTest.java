@@ -82,4 +82,12 @@ class AdminProductControllerTest {
         assertSame(defaultInfo.brands(), model.get("brands"));
         assertSame(defaultInfo.categories(), model.get("categories"));
     }
+
+    @Test
+    @DisplayName("상품 이력 화면은 전용 뷰를 반환한다")
+    void productHistoryReturnsView() {
+        String viewName = adminProductController.productHistory();
+
+        assertEquals("views/product-history", viewName);
+    }
 }

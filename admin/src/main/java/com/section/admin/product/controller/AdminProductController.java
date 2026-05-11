@@ -69,4 +69,9 @@ public class AdminProductController {
         return "views/product-update";
     }
 
+    @RequestMapping("/history")
+    public String productHistory() {
+        return "views/product-history";
+    }
+
 }

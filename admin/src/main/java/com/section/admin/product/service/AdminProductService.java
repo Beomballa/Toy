@@ -1,9 +1,11 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.support.ProductExportCsvWriter;
@@ -16,6 +18,8 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.common.commerce.dto.ProductDetailResDto;
+import com.section.common.commerce.dto.ProductHistoryListQuery;
+import com.section.common.commerce.dto.ProductHistoryListResDto;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -286,6 +290,20 @@ public class AdminProductService {
                         actorNameMap.getOrDefault(history.getCrtNo(), history.getCrtNo() == null ? "-" : "관리자#" + history.getCrtNo())
                 ))
                 .toList();
+    }
+
+    public ProductHistoryListResponse getProductHistoryList(ProductHistoryListRequest req, Pageable pageable) {
+        ProductHistoryListQuery query = req.toQuery();
+        Page<ProductHistoryListResDto> page = productChangeHistoryRepository.getProductHistoryList(query, pageable);
+        java.util.Map<Long, String> actorNameMap = adminUserRepository.findAllById(
+                        page.getContent().stream()
+                                .map(ProductHistoryListResDto::getActorNo)
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+        return ProductHistoryListResponse.of(page, query, actorNameMap);
     }
 
     private void validateBrandAndCategory(Long brandNo, Long categoryNo) {

@@ -2,10 +2,12 @@ package com.section.admin.product.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductCreateResponse;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
@@ -76,6 +78,14 @@ public class AdminProductRestController {
     @GetMapping("/product/history")
     public ResponseEntity<List<ProductHistoryResponse>> getProductHistory(@RequestParam("no") Long productNo) {
         return ResponseEntity.ok(adminProductService.getProductHistory(productNo));
+    }
+
+    @GetMapping("/product/history/list")
+    public ResponseEntity<ProductHistoryListResponse> getProductHistoryList(
+            @ModelAttribute ProductHistoryListRequest req,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(adminProductService.getProductHistoryList(req, pageable));
     }
 
     @PatchMapping("/product/delete/{no}")

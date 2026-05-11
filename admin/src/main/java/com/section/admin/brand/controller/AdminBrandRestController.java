@@ -1,6 +1,9 @@
 package com.section.admin.brand.controller;
 
+import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.req.BrandSaveRequest;
+import com.section.admin.brand.req.BrandStatusUpdateRequest;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.service.AdminBrandService;
 import jakarta.validation.Valid;
@@ -18,8 +21,8 @@ public class AdminBrandRestController {
     private final AdminBrandService adminBrandService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<BrandResponse>> getList() {
-        return ResponseEntity.ok(adminBrandService.getBrandList());
+    public ResponseEntity<List<BrandResponse>> getList(@ModelAttribute BrandListRequest req) {
+        return ResponseEntity.ok(adminBrandService.getBrandList(req));
     }
 
     @GetMapping("/get")
@@ -31,6 +34,12 @@ public class AdminBrandRestController {
     public ResponseEntity<Void> save(@Valid @RequestBody BrandSaveRequest req) {
         adminBrandService.saveBrand(req);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/active/{no}")
+    public ResponseEntity<BaseSimpleResDto> updateActive(@PathVariable("no") Long brandNo, @Valid @RequestBody BrandStatusUpdateRequest req) {
+        adminBrandService.updateActive(brandNo, req.isActive());
+        return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
     @DeleteMapping("/delete")

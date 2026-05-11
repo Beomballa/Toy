@@ -68,6 +68,30 @@ const ProductDetail = {
                 );
             });
         }
+
+        const btnCloneProduct = document.getElementById('btnCloneProduct');
+        if (btnCloneProduct) {
+            btnCloneProduct.addEventListener('click', () => this.cloneProduct());
+        }
+    },
+
+    async cloneProduct() {
+        const confirmed = await CommonJS.confirm('현재 상품을 복제하시겠습니까?');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/product/clone/${this.productNo}`, { method: 'POST' });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '상품 복제에 실패했습니다.'));
+            }
+            const data = await response.json();
+            await CommonJS.alert('상품이 복제되었습니다.', '성공', 'success');
+            window.location.href = `/admin/products/get?no=${data.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        } catch (error) {
+            CommonJS.alert(error.message, '오류', 'error');
+        }
     },
 
     async loadProductDetail() {

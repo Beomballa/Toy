@@ -16,6 +16,7 @@ import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductChangeHistory;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.BrandRepository;
@@ -258,6 +259,45 @@ class AdminProductServiceTest {
         assertEquals("관리자", response.items().get(0).actorName());
         assertEquals("UPDATED", response.appliedQuery().actionType());
         assertEquals(1L, response.totalElements());
+    }
+
+    @Test
+    @DisplayName("상품 복제는 원본 상품과 옵션을 복사하고 숨김 상태로 생성한다")
+    void cloneProductCopiesSourceProductAndOptions() {
+        Product source = Product.builder()
+                .id(5L)
+                .categoryNo(2L)
+                .brandNo(3L)
+                .nameKo("원본 상품")
+                .modelNum("M-01")
+                .releasePrice(1000)
+                .status("ACTIVE")
+                .build();
+        Product saved = Product.builder()
+                .id(10L)
+                .categoryNo(2L)
+                .brandNo(3L)
+                .nameKo("원본 상품 (복제)")
+                .modelNum("M-01")
+                .releasePrice(1000)
+                .status("HIDDEN")
+                .build();
+
+        when(productRepository.findById(5L)).thenReturn(Optional.of(source));
+        when(productRepository.save(any(Product.class))).thenReturn(saved);
+        when(productOptionRepository.findByProductId(5L)).thenReturn(List.of(
+                ProductOption.builder().productNo(5L).optionName("260").stockCnt(2).additionalPrice(0).build()
+        ));
+
+        Long clonedProductNo = adminProductService.cloneProduct(5L);
+
+        assertEquals(10L, clonedProductNo);
+        verify(productOptionRepository).saveAll(any());
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(10L)
+                        && history.getSummary().contains("원본 상품 번호: 5")
+                        && history.getStatusSnapshot().equals("HIDDEN")
+        ));
     }
 
     @Test

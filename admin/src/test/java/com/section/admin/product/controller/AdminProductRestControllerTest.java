@@ -280,6 +280,17 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("상품 복제 API는 새 상품 번호를 반환한다")
+    void cloneProductReturnsCreatedProductNo() throws Exception {
+        when(adminProductService.cloneProduct(5L)).thenReturn(10L);
+
+        mockMvc.perform(post("/api/admin/product/clone/5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.productNo").value(10L));
+    }
+
+    @Test
     @DisplayName("잘못된 상품 생성 요청은 400 INVALID_INPUT_VALUE를 반환한다")
     void createProductReturnsBadRequestWhenPayloadInvalid() throws Exception {
         ProductCreateRequest request = new ProductCreateRequest();

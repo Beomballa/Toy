@@ -1,6 +1,9 @@
 package com.section.admin.category.controller;
 
+import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
+import com.section.admin.category.req.CategoryStatusUpdateRequest;
 import com.section.admin.category.res.CategoryResponse;
 import com.section.admin.category.service.AdminCategoryService;
 import jakarta.validation.Valid;
@@ -18,8 +21,8 @@ public class AdminCategoryRestController {
     private final AdminCategoryService adminCategoryService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<CategoryResponse>> getList(@RequestParam(value = "depth", defaultValue = "1") Integer depth) {
-        return ResponseEntity.ok(adminCategoryService.getCategoryListByDepth(depth));
+    public ResponseEntity<List<CategoryResponse>> getList(@ModelAttribute CategoryListRequest req) {
+        return ResponseEntity.ok(adminCategoryService.getCategoryListByDepth(req));
     }
 
     @GetMapping("/sub")
@@ -31,6 +34,12 @@ public class AdminCategoryRestController {
     public ResponseEntity<Void> save(@Valid @RequestBody CategorySaveRequest req) {
         adminCategoryService.saveCategory(req);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/active/{no}")
+    public ResponseEntity<BaseSimpleResDto> updateActive(@PathVariable("no") Long categoryNo, @Valid @RequestBody CategoryStatusUpdateRequest req) {
+        adminCategoryService.updateActive(categoryNo, req.isActive());
+        return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
     @DeleteMapping("/delete")

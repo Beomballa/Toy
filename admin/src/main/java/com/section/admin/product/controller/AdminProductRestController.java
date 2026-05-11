@@ -94,6 +94,11 @@ public class AdminProductRestController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/product/clone/{no}")
+    public ResponseEntity<ProductCreateResponse> cloneProduct(@PathVariable("no") Long productNo) {
+        return ResponseEntity.ok(ProductCreateResponse.success(adminProductService.cloneProduct(productNo)));
+    }
+
     private String buildExportFilename(ProductListRequest req) {
         List<String> parts = new ArrayList<>();
         parts.add("products");

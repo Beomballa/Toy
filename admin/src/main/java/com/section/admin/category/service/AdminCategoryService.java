@@ -1,10 +1,12 @@
 package com.section.admin.category.service;
 
+import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.res.CategoryResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Category;
+import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,12 @@ import java.util.List;
 public class AdminCategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final ProductRepository productRepository;
 
-    public List<CategoryResponse> getCategoryListByDepth(Integer depth) {
-        return categoryRepository.findByDepth(depth).stream()
+    public List<CategoryResponse> getCategoryListByDepth(CategoryListRequest req) {
+        return categoryRepository.findByDepth(req.getDepth()).stream()
+                .filter(category -> req.normalizedKeyword() == null || category.getName().contains(req.normalizedKeyword()))
+                .filter(category -> req.normalizedIsActive() == null || req.normalizedIsActive().equalsIgnoreCase(category.getIsActive()))
                 .map(CategoryResponse::from)
                 .toList();
     }
@@ -53,6 +58,19 @@ public class AdminCategoryService {
 
     @Transactional
     public void deleteCategory(Long categoryNo) {
+        if (productRepository.findAll().stream().anyMatch(product -> product.getCategoryNo().equals(categoryNo))) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         categoryRepository.deleteById(categoryNo);
+    }
+
+    @Transactional
+    public void updateActive(Long categoryNo, String isActive) {
+        String normalized = isActive == null ? null : isActive.trim().toUpperCase();
+        if (!"Y".equals(normalized) && !"N".equals(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        Category category = getCategoryEntity(categoryNo);
+        category.changeStatus(normalized);
     }
 }

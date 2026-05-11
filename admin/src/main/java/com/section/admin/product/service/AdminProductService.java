@@ -306,6 +306,50 @@ public class AdminProductService {
         return ProductHistoryListResponse.of(page, query, actorNameMap);
     }
 
+    @Transactional
+    public Long cloneProduct(Long productNo) {
+        Product source = productRepository.findById(productNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        Product clonedProduct = Product.builder()
+                .categoryNo(source.getCategoryNo())
+                .brandNo(source.getBrandNo())
+                .nameKo(source.getNameKo() + " (복제)")
+                .modelNum(source.getModelNum())
+                .releasePrice(source.getReleasePrice())
+                .releaseDt(source.getReleaseDt())
+                .thumbnailUrl(source.getThumbnailUrl())
+                .status(ProductStatus.HIDDEN.name())
+                .build();
+        Product savedProduct = productRepository.save(clonedProduct);
+
+        List<ProductOption> sourceOptions = productOptionRepository.findByProductId(productNo);
+        if (!sourceOptions.isEmpty()) {
+            productOptionRepository.saveAll(sourceOptions.stream()
+                    .map(option -> ProductOption.builder()
+                            .productNo(savedProduct.getId())
+                            .optionName(option.getOptionName())
+                            .stockCnt(option.getStockCnt())
+                            .additionalPrice(option.getAdditionalPrice())
+                            .build())
+                    .toList());
+        }
+
+        recordProductHistory(
+                savedProduct.getId(),
+                ProductHistoryActionType.CREATED,
+                "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: " + productNo,
+                ProductStatus.HIDDEN.name(),
+                sourceOptions.size(),
+                sourceOptions.stream()
+                        .map(ProductOption::getStockCnt)
+                        .filter(java.util.Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum()
+        );
+        return savedProduct.getId();
+    }
+
     private void validateBrandAndCategory(Long brandNo, Long categoryNo) {
         if (!brandRepository.existsById(brandNo) || !categoryRepository.existsById(categoryNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);

@@ -26,9 +26,40 @@
         <h1 class="page-title">관리 활동 로그</h1>
     </div>
 
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">관리자 번호</label>
+                    <input type="number" min="1" id="logAdminNo" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">작업 종류</label>
+                    <input type="text" id="logActionType" class="form-control" placeholder="PRODUCT_UPDATE">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">대상 ID</label>
+                    <input type="number" min="1" id="logTargetId" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">시작일</label>
+                    <input type="date" id="logStartDate" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">종료일</label>
+                    <input type="date" id="logEndDate" class="form-control">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button type="button" class="btn btn-dark" id="btnSearchLog">조회</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in">
-        <div class="card-header bg-white py-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">활동 내역</h6>
+            <div class="small text-muted" id="logMetaText">데이터를 불러오는 중입니다...</div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -40,11 +71,12 @@
                             <th>작업 종류</th>
                             <th>대상 ID</th>
                             <th>IP 주소</th>
+                            <th class="text-center">상세</th>
                             <th class="text-end pe-4">일시</th>
                         </tr>
                     </thead>
                     <tbody id="logListBody">
-                        <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                        <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -52,41 +84,22 @@
     </div>
 </main>
 
+<div class="modal fade" id="logDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">로그 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="logDetailBody">
+                데이터를 불러오는 중입니다...
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
-<script>
-    const AdminLog = {
-        init() {
-            this.getList();
-        },
-        async getList() {
-            try {
-                const res = await fetch('/api/admin/logs/list');
-                const data = await res.json();
-                this.renderList(data.content);
-            } catch (err) {
-                console.error('로그 로드 실패:', err);
-            }
-        },
-        renderList(items) {
-            const tbody = document.getElementById('logListBody');
-            if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5">활동 로그가 없습니다.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = items.map(item => `
-                <tr>
-                    <td class="ps-4 text-muted small">${item.logNo}</td>
-                    <td><span class="badge bg-light text-dark">Admin #${item.adminNo}</span></td>
-                    <td><span class="fw-bold text-primary">${item.actionType}</span></td>
-                    <td>${item.targetId || '-'}</td>
-                    <td><code class="small">${item.ipAddress}</code></td>
-                    <td class="text-end pe-4 small text-muted">${item.actionDtm.replace('T', ' ')}</td>
-                </tr>
-            `).join('');
-        }
-    };
-    document.addEventListener('DOMContentLoaded', () => AdminLog.init());
-</script>
+<script src="/js/view/admin-logs.js"></script>
 </body>
 </html>

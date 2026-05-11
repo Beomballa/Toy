@@ -4,6 +4,7 @@ import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -231,6 +232,23 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.totalStock").value(0L))
                 .andExpect(jsonPath("$.options").isArray())
                 .andExpect(jsonPath("$.options").isEmpty());
+    }
+
+    @Test
+    @DisplayName("상품 이력 API는 최신 변경 이력을 반환한다")
+    void getProductHistoryReturnsHistoryItems() throws Exception {
+        when(adminProductService.getProductHistory(4L)).thenReturn(List.of(
+                new ProductHistoryResponse(11L, "UPDATED", "수정", "변경 항목: 상품명, 옵션", "ACTIVE", 2, 8L, "2026.05.11 09:30")
+        ));
+
+        mockMvc.perform(get("/api/admin/product/history?no=4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].historyNo").value(11L))
+                .andExpect(jsonPath("$[0].actionType").value("UPDATED"))
+                .andExpect(jsonPath("$[0].actionLabel").value("수정"))
+                .andExpect(jsonPath("$[0].summary").value("변경 항목: 상품명, 옵션"))
+                .andExpect(jsonPath("$[0].optionCount").value(2))
+                .andExpect(jsonPath("$[0].totalStock").value(8L));
     }
 
     @Test

@@ -12,6 +12,7 @@ import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
@@ -34,6 +35,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -45,6 +47,8 @@ class AdminProductServiceTest {
     private ProductRepository productRepository;
     @Mock
     private ProductOptionRepository productOptionRepository;
+    @Mock
+    private ProductChangeHistoryRepository productChangeHistoryRepository;
     @Mock
     private BrandRepository brandRepository;
     @Mock
@@ -93,6 +97,11 @@ class AdminProductServiceTest {
 
         assertEquals(33L, productNo);
         verify(productRepository).save(any(Product.class));
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(33L)
+                        && history.getSummary().equals("상품이 새로 등록되었습니다.")
+                        && history.getStatusSnapshot().equals("ACTIVE")
+        ));
     }
 
     @Test
@@ -114,12 +123,77 @@ class AdminProductServiceTest {
                 .status("ACTIVE")
                 .releasePrice(1000)
                 .build()));
-        when(brandRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.existsById(1L)).thenReturn(true);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상품 수정 성공 시 변경 이력을 함께 저장한다")
+    void updateProductInfoRecordsHistory() {
+        ProductUpdateRequest.ProductOptionUpdateRequest option = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        option.setOptionName(" 280 ");
+        option.setStockCnt(3);
+        option.setAdditionalPrice(5000);
+
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(2L);
+        request.setCategoryNo(3L);
+        request.setNameKo("수정 상품");
+        request.setModelNum("M992GR");
+        request.setReleasePrice(259000);
+        request.setStatus("ACTIVE");
+        request.setOptions(List.of(option));
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+                .id(1L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("기존 상품")
+                .modelNum("OLD")
+                .status("HIDDEN")
+                .releasePrice(1000)
+                .build()));
+        when(brandRepository.existsById(2L)).thenReturn(true);
+        when(categoryRepository.existsById(3L)).thenReturn(true);
+
+        adminProductService.updateProductInfo(request);
+
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().contains("브랜드")
+                        && history.getSummary().contains("카테고리")
+                        && history.getSummary().contains("상품명")
+                        && history.getSummary().contains("모델번호")
+                        && history.getSummary().contains("발매가")
+                        && history.getSummary().contains("상태")
+                        && history.getSummary().contains("옵션")
+                        && history.getOptionCount().equals(1)
+                        && history.getTotalStock().equals(3L)
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 삭제 성공 시 삭제 이력을 저장한다")
+    void deleteProductRecordsHistory() {
+        when(productRepository.findById(9L)).thenReturn(Optional.of(Product.builder()
+                .id(9L)
+                .brandNo(1L)
+                .categoryNo(1L)
+                .nameKo("삭제 대상")
+                .status("ACTIVE")
+                .releasePrice(1000)
+                .build()));
+
+        adminProductService.deleteProduct(9L);
+
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(9L)
+                        && history.getSummary().equals("상품이 삭제 처리되었습니다.")
+                        && history.getStatusSnapshot().equals("DELETE")
+        ));
     }
 
     @Test

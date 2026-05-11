@@ -6,6 +6,7 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductCreateResponse;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
 import jakarta.validation.Valid;
@@ -70,6 +71,11 @@ public class AdminProductRestController {
     @GetMapping("/product/get")
     public ResponseEntity<ProductDetailResponse> getProductDetail(@RequestParam("no") Long productNo) {
         return ResponseEntity.ok(adminProductService.getProductDetail(productNo));
+    }
+
+    @GetMapping("/product/history")
+    public ResponseEntity<List<ProductHistoryResponse>> getProductHistory(@RequestParam("no") Long productNo) {
+        return ResponseEntity.ok(adminProductService.getProductHistory(productNo));
     }
 
     @PatchMapping("/product/delete/{no}")

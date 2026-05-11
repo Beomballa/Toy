@@ -5,10 +5,12 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductExportPolicy;
 import com.section.admin.product.support.ProductExportSummary;
 import com.section.admin.product.support.ProductListPagePolicy;
+import com.section.common.base.entity.type.ProductHistoryActionType;
 import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -20,9 +22,11 @@ import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.entity.ProductChangeHistory;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.service.ProductService;
@@ -47,6 +51,7 @@ public class AdminProductService {
 
     private final ProductRepository productRepository;
     private final ProductOptionRepository productOptionRepository;
+    private final ProductChangeHistoryRepository productChangeHistoryRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
 
@@ -139,6 +144,19 @@ public class AdminProductService {
             productOptionRepository.saveAll(productOptions);
         }
 
+        recordProductHistory(
+                savedProduct.getId(),
+                ProductHistoryActionType.CREATED,
+                "상품이 새로 등록되었습니다.",
+                ProductStatus.ACTIVE.name(),
+                reqDto.getOptions() == null ? 0 : reqDto.getOptions().size(),
+                reqDto.getOptions() == null ? 0L : reqDto.getOptions().stream()
+                        .map(ProductCreateRequest.ProductOptionRequest::getStockCnt)
+                        .filter(java.util.Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum()
+        );
+
         return savedProduct.getId();
     }
 
@@ -149,6 +167,7 @@ public class AdminProductService {
     public void updateProductInfo(ProductUpdateRequest reqDto) {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        String updateSummary = buildUpdateSummary(product, reqDto);
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
         validateDuplicateOptionNames(reqDto.getOptions() == null ? List.of() :
                 reqDto.getOptions().stream()
@@ -185,6 +204,19 @@ public class AdminProductService {
 
             productOptionRepository.saveAll(productOptions);
         }
+
+        recordProductHistory(
+                product.getId(),
+                ProductHistoryActionType.UPDATED,
+                updateSummary,
+                product.getStatus(),
+                reqDto.getOptions() == null ? 0 : reqDto.getOptions().size(),
+                reqDto.getOptions() == null ? 0L : reqDto.getOptions().stream()
+                        .map(ProductUpdateRequest.ProductOptionUpdateRequest::getStockCnt)
+                        .filter(java.util.Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum()
+        );
     }
 
     /**
@@ -226,7 +258,18 @@ public class AdminProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
         product.deleteProduct();
+        recordProductHistory(productNo, ProductHistoryActionType.DELETED, "상품이 삭제 처리되었습니다.", ProductStatus.DELETE.name(), 0, 0L);
         log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
+    }
+
+    public List<ProductHistoryResponse> getProductHistory(Long productNo) {
+        if (!productRepository.existsById(productNo)) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        return productChangeHistoryRepository.findTop20ByProductNoOrderByHistoryNoDesc(productNo).stream()
+                .map(ProductHistoryResponse::from)
+                .toList();
     }
 
     private void validateBrandAndCategory(Long brandNo, Long categoryNo) {
@@ -249,6 +292,37 @@ public class AdminProductService {
         if (distinctNames.size() != optionNames.size()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private void recordProductHistory(
+            Long productNo,
+            ProductHistoryActionType actionType,
+            String summary,
+            String statusSnapshot,
+            int optionCount,
+            long totalStock
+    ) {
+        productChangeHistoryRepository.save(
+                ProductChangeHistory.of(productNo, actionType, summary, statusSnapshot, optionCount, totalStock)
+        );
+    }
+
+    private String buildUpdateSummary(Product product, ProductUpdateRequest reqDto) {
+        List<String> changedFields = new java.util.ArrayList<>();
+
+        if (!product.getCategoryNo().equals(reqDto.getCategoryNo())) changedFields.add("카테고리");
+        if (!product.getBrandNo().equals(reqDto.getBrandNo())) changedFields.add("브랜드");
+        if (!product.getNameKo().equals(reqDto.normalizeRequiredText(reqDto.getNameKo()))) changedFields.add("상품명");
+        if (!java.util.Objects.equals(product.getModelNum(), reqDto.normalizeOptionalText(reqDto.getModelNum()))) changedFields.add("모델번호");
+        if (!java.util.Objects.equals(product.getReleasePrice(), reqDto.getReleasePrice())) changedFields.add("발매가");
+        if (!java.util.Objects.equals(product.getReleaseDt(), reqDto.getReleaseDt())) changedFields.add("발매일");
+        if (!java.util.Objects.equals(product.getThumbnailUrl(), reqDto.normalizeOptionalText(reqDto.getThumbnailUrl()))) changedFields.add("썸네일");
+        if (reqDto.getStatus() != null && !product.getStatus().equals(parseProductStatus(reqDto.getStatus()).name())) changedFields.add("상태");
+        changedFields.add("옵션");
+
+        return changedFields.isEmpty()
+                ? "변경된 정보가 없습니다."
+                : "변경 항목: " + String.join(", ", changedFields);
     }
 
     private String resolveBrandName(Long brandNo) {

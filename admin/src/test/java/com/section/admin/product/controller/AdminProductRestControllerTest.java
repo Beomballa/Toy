@@ -238,7 +238,7 @@ class AdminProductRestControllerTest {
     @DisplayName("상품 이력 API는 최신 변경 이력을 반환한다")
     void getProductHistoryReturnsHistoryItems() throws Exception {
         when(adminProductService.getProductHistory(4L)).thenReturn(List.of(
-                new ProductHistoryResponse(11L, "UPDATED", "수정", "변경 항목: 상품명, 옵션", "ACTIVE", 2, 8L, "2026.05.11 09:30")
+                new ProductHistoryResponse(11L, "UPDATED", "수정", "변경 항목: 상품명, 옵션", "ACTIVE", 2, 8L, 1L, "관리자", "2026.05.11 09:30")
         ));
 
         mockMvc.perform(get("/api/admin/product/history?no=4"))
@@ -247,6 +247,8 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$[0].actionType").value("UPDATED"))
                 .andExpect(jsonPath("$[0].actionLabel").value("수정"))
                 .andExpect(jsonPath("$[0].summary").value("변경 항목: 상품명, 옵션"))
+                .andExpect(jsonPath("$[0].actorNo").value(1L))
+                .andExpect(jsonPath("$[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$[0].optionCount").value(2))
                 .andExpect(jsonPath("$[0].totalStock").value(8L));
     }

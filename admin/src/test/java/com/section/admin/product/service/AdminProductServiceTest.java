@@ -12,12 +12,15 @@ import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.entity.ProductChangeHistory;
+import com.section.common.system.entity.AdminUser;
 import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.service.ProductService;
+import com.section.common.system.repository.AdminUserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +58,8 @@ class AdminProductServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private ProductService productService;
+    @Mock
+    private AdminUserRepository adminUserRepository;
 
     @InjectMocks
     private AdminProductService adminProductService;
@@ -194,6 +199,31 @@ class AdminProductServiceTest {
                         && history.getSummary().equals("상품이 삭제 처리되었습니다.")
                         && history.getStatusSnapshot().equals("DELETE")
         ));
+    }
+
+    @Test
+    @DisplayName("상품 이력 조회는 작업자 이름을 함께 내려준다")
+    void getProductHistoryIncludesActorName() {
+        ProductChangeHistory history = ProductChangeHistory.of(
+                4L,
+                com.section.common.base.entity.type.ProductHistoryActionType.UPDATED,
+                "변경 항목: 상품명",
+                "ACTIVE",
+                2,
+                8L
+        );
+        history.setCrtNo(1L);
+
+        when(productRepository.existsById(4L)).thenReturn(true);
+        when(productChangeHistoryRepository.findTop20ByProductNoOrderByHistoryNoDesc(4L)).thenReturn(List.of(history));
+        when(adminUserRepository.findAllById(any())).thenReturn(List.of(
+                AdminUser.builder().adminNo(1L).name("관리자").loginId("admin").password("pw").build()
+        ));
+
+        List<com.section.admin.product.res.ProductHistoryResponse> histories = adminProductService.getProductHistory(4L);
+
+        assertEquals(1, histories.size());
+        assertEquals("관리자", histories.get(0).actorName());
     }
 
     @Test

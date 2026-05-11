@@ -210,6 +210,7 @@ const ProductDetail = {
                             <span class="text-muted small">${history.crtDtm || '-'}</span>
                         </div>
                         <span class="small text-muted">${history.summary}</span>
+                        <span class="small text-muted">작업자 ${history.actorName || '-'}${history.actorNo ? ` (#${history.actorNo})` : ''}</span>
                         <span class="small text-muted">상태 ${history.statusSnapshot || '-'} · 옵션 ${history.optionCount}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
                     </div>
                 `).join('');

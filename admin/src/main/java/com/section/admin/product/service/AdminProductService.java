@@ -30,6 +30,8 @@ import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.service.ProductService;
+import com.section.common.system.entity.AdminUser;
+import com.section.common.system.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -54,6 +56,7 @@ public class AdminProductService {
     private final ProductChangeHistoryRepository productChangeHistoryRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
+    private final AdminUserRepository adminUserRepository;
 
     private final ProductService productService;
 
@@ -267,8 +270,21 @@ public class AdminProductService {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
         }
 
-        return productChangeHistoryRepository.findTop20ByProductNoOrderByHistoryNoDesc(productNo).stream()
-                .map(ProductHistoryResponse::from)
+        List<ProductChangeHistory> histories = productChangeHistoryRepository.findTop20ByProductNoOrderByHistoryNoDesc(productNo);
+        java.util.Map<Long, String> actorNameMap = adminUserRepository.findAllById(
+                        histories.stream()
+                                .map(ProductChangeHistory::getCrtNo)
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+
+        return histories.stream()
+                .map(history -> ProductHistoryResponse.from(
+                        history,
+                        actorNameMap.getOrDefault(history.getCrtNo(), history.getCrtNo() == null ? "-" : "관리자#" + history.getCrtNo())
+                ))
                 .toList();
     }
 

@@ -27,9 +27,40 @@
         </div>
     </div>
 
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold">검색</label>
+                    <input type="text" id="memberKeyword" class="form-control" placeholder="이메일, 이름, 닉네임">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">권한</label>
+                    <select id="memberMasterYn" class="form-select">
+                        <option value="">전체</option>
+                        <option value="Y">마스터</option>
+                        <option value="N">일반</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">상태</label>
+                    <select id="memberDelYn" class="form-select">
+                        <option value="">전체</option>
+                        <option value="N">정상</option>
+                        <option value="Y">탈퇴</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-grid">
+                    <button type="button" class="btn btn-dark" id="btnSearchMember">조회</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in">
-        <div class="card-header bg-white py-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <span class="card-title h6 mb-0">회원 목록</span>
+            <div class="small text-muted" id="memberMetaText">데이터를 불러오는 중입니다...</div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -41,11 +72,12 @@
                             <th>이메일</th>
                             <th class="text-center">권한</th>
                             <th class="text-center">가입일시</th>
+                            <th class="text-center">상세</th>
                             <th class="text-end pe-4">상태</th>
                         </tr>
                     </thead>
                     <tbody id="memberListBody">
-                        <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                        <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -53,58 +85,25 @@
     </div>
 </main>
 
+<div class="modal fade" id="memberDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">회원 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="memberDetailBody">데이터를 불러오는 중입니다...</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-outline-primary" id="btnToggleMasterYn">권한 변경</button>
+                <button type="button" class="btn btn-outline-danger" id="btnToggleMemberStatus">상태 변경</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
-<script>
-    const MemberList = {
-        init() {
-            this.getList();
-        },
-        async getList() {
-            try {
-                const res = await fetch('/api/admin/members/list');
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                
-                const data = await res.json();
-                // data가 Page 객체일 경우 content를 사용, 아닐 경우 배열로 처리
-                const items = data.content || data.members || (Array.isArray(data) ? data : []);
-                this.renderList(items);
-            } catch (err) {
-                console.error('회원 목록 로드 실패:', err);
-                document.getElementById('memberListBody').innerHTML = 
-                    '<tr><td colspan="6" class="text-center py-5 text-danger">데이터를 불러오는 중 오류가 발생했습니다.</td></tr>';
-            }
-        },
-        renderList(items) {
-            const tbody = document.getElementById('memberListBody');
-            if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">등록된 회원이 없습니다.</td></tr>';
-                return;
-            }
-            tbody.innerHTML = items.map(item => `
-                <tr>
-                    <td class="ps-4 text-muted small">${item.id || '-'}</td>
-                    <td>
-                        <div class="fw-bold text-dark">${item.name || 'Unknown'}</div>
-                        <div class="text-muted small">${item.nickname || '-'}</div>
-                    </td>
-                    <td>${item.email || '-'}</td>
-                    <td class="text-center">
-                        <span class="badge ${item.masterYn === 'Y' ? 'badge-master' : 'badge-user'}">
-                            ${item.masterYn === 'Y' ? '관리자' : '일반회원'}
-                        </span>
-                    </td>
-                    <td class="text-center text-muted small">${item.crtDtm || '-'}</td>
-                    <td class="text-end pe-4">
-                        <span class="badge ${item.delYn === 'N' ? 'badge-normal' : 'badge-deleted'}">
-                            ${item.delYn === 'N' ? '정상' : '탈퇴'}
-                        </span>
-                    </td>
-                </tr>
-            `).join('');
-        }
-    };
-    document.addEventListener('DOMContentLoaded', () => MemberList.init());
-</script>
+<script src="/js/view/member-list.js"></script>
 </body>
 </html>

@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
 
-public interface AccountRepository extends JpaRepository<Account,Long> {
+public interface AccountRepository extends JpaRepository<Account,Long>, CustomAccountRepository {
 
     @Query("SELECT a FROM Account a where a.email =:email and a.password =:password")
     Optional<Account> findByAdminInfo(String email, String password);

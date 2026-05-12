@@ -4,6 +4,7 @@ const ProductCreate = {
     categories: [],
     returnTo: '/admin/products',
     isSubmitting: false,
+    operationPolicy: null,
 
     init(brands, categories) {
         // Thymeleaf에서 전달받은 데이터 저장
@@ -17,10 +18,23 @@ const ProductCreate = {
         // 이벤트 바인딩
         this.bindEvents();
         this.syncReturnLinks();
+        this.applyOperationPolicy();
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = this.returnTo;
         });
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 상품 등록이 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnSubmit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnAddOption'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     // 브랜드 & 카테고리 선택박스 렌더링
@@ -137,6 +151,10 @@ const ProductCreate = {
     // 폼 제출
     async submitForm() {
         if (this.isSubmitting) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 상품 등록이 불가능합니다.', '알림', 'warning');
             return;
         }
 

@@ -1,5 +1,6 @@
 // /js/common.js
 let CommonJS = {
+    systemSettingsCache: null,
     orderStatusMeta: {
         ORDERED: { badgeClass: 'badge-ordered', canCancel: true, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false },
         PAID: { badgeClass: 'badge-paid', canCancel: true, showDeliveryInput: true, showDeliveryInfo: false, showCompleteDelivery: false },
@@ -224,6 +225,42 @@ let CommonJS = {
     normalizeOptionalText: function(value) {
         const normalized = this.normalizeRequiredText(value);
         return normalized ? normalized : null;
+    },
+
+    fetchSystemSettings: async function(forceRefresh = false) {
+        if (!forceRefresh && this.systemSettingsCache) {
+            return this.systemSettingsCache;
+        }
+
+        const response = await fetch('/api/admin/settings/system');
+        if (!response.ok) {
+            throw new Error(await this.extractErrorMessage(response, '운영 설정을 불러오지 못했습니다.'));
+        }
+
+        this.systemSettingsCache = await response.json();
+        return this.systemSettingsCache;
+    },
+
+    isAdminWriteBlocked: function(settings) {
+        return !!settings?.maintenanceMode;
+    },
+
+    isCommunityWriteBlocked: function(settings) {
+        return this.isAdminWriteBlocked(settings) || settings?.communityWriteEnabled === false;
+    },
+
+    isOrderExportBlocked: function(settings) {
+        return settings?.orderExportEnabled === false;
+    },
+
+    setButtonDisabled: function(button, disabled, reason = '') {
+        if (!button) return;
+        button.disabled = disabled;
+        if (disabled && reason) {
+            button.title = reason;
+        } else {
+            button.removeAttribute('title');
+        }
     }
 }
 

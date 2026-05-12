@@ -3,6 +3,7 @@ const ProductUpdate = {
     productNo: null,
     returnTo: '/admin/products',
     isSubmitting: false,
+    operationPolicy: null,
 
     init(bootstrapProduct = null) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -17,6 +18,7 @@ const ProductUpdate = {
         }
 
         this.syncReturnLinks();
+        this.applyOperationPolicy();
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 수정 화면도 서버가 이미 가진 상세 모델을 먼저 써서 초기 로딩 왕복을 줄입니다.
             this.fillForm(bootstrapProduct);
@@ -29,6 +31,18 @@ const ProductUpdate = {
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = this.returnTo;
         });
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 상품 수정이 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnUpdate'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnAddOption'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     hasBootstrapProduct(bootstrapProduct) {
@@ -180,6 +194,10 @@ const ProductUpdate = {
 
     async updateForm() {
         if (this.isSubmitting) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 상품 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
 

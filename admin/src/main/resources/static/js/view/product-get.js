@@ -2,6 +2,7 @@ const ProductDetail = {
     productNo: null,
     productData: null,
     returnTo: '/admin/products',
+    operationPolicy: null,
 
     init(bootstrapProduct = null) {
         const urlParams = new URLSearchParams(window.location.search);
@@ -16,6 +17,7 @@ const ProductDetail = {
         }
 
         this.syncReturnLinks();
+        this.applyOperationPolicy();
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
             this.renderProduct(bootstrapProduct);
@@ -75,7 +77,24 @@ const ProductDetail = {
         }
     },
 
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 상품 수정, 삭제, 복제가 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnEdit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnDelete'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnCloneProduct'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
+    },
+
     async cloneProduct() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 상품 복제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const confirmed = await CommonJS.confirm('현재 상품을 복제하시겠습니까?');
         if (!confirmed) {
             return;
@@ -251,6 +270,10 @@ const ProductDetail = {
     },
 
     async deleteProduct() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 상품 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');
         if (!isConfirm) return;
 

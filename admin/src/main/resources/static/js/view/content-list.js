@@ -17,6 +17,7 @@ const ContentList = {
         this.updateSidebarActive();
         this.updatePageMeta();
         this.bindEvents();
+        this.applyOperationPolicy();
         this.getList();
     },
 
@@ -116,6 +117,20 @@ const ContentList = {
         if (createLabelEl) createLabelEl.textContent = meta.createLabel;
         if (badgeEl) badgeEl.textContent = badge;
         if (descEl) descEl.textContent = meta.description;
+    },
+
+    async applyOperationPolicy() {
+        const createButton = document.getElementById('btnNewContent');
+        try {
+            const settings = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isCommunityWriteBlocked(settings);
+            const reason = settings.maintenanceMode
+                ? '유지보수 모드에서는 커뮤니티 작성이 불가능합니다.'
+                : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+            CommonJS.setButtonDisabled(createButton, disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async getList() {

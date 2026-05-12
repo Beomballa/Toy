@@ -2,11 +2,13 @@ const OrderList = {
     maxDateRangeDays: 92,
     maxKeywordLength: 50,
     state: null,
+    operationPolicy: null,
 
     init() {
         this.state = this.readStateFromUrl();
         this.syncFilterFields();
         this.bindEvents();
+        this.applyOperationPolicy();
         this.getList();
     },
 
@@ -36,6 +38,10 @@ const OrderList = {
         });
 
         document.getElementById('btnExportOrders')?.addEventListener('click', () => {
+            if (this.operationPolicy && CommonJS.isOrderExportBlocked(this.operationPolicy)) {
+                CommonJS.alert('현재 설정에서 주문 CSV 내보내기 기능이 비활성화되어 있습니다.', '알림', 'warning');
+                return;
+            }
             this.captureFilterState();
             if (!this.validateDateRange()) {
                 return;
@@ -69,6 +75,20 @@ const OrderList = {
             this.syncFilterFields();
             this.getList();
         });
+    },
+
+    async applyOperationPolicy() {
+        const exportButton = document.getElementById('btnExportOrders');
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            CommonJS.setButtonDisabled(
+                exportButton,
+                CommonJS.isOrderExportBlocked(this.operationPolicy),
+                '현재 설정에서 주문 CSV 내보내기 기능이 비활성화되어 있습니다.'
+            );
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async getList() {

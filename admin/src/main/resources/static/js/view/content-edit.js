@@ -2,6 +2,7 @@ const ContentEdit = {
     debounceTimer: null,
     statusTimer: null,
     isSaving: false,
+    operationPolicy: null,
     initialData: {
         title: '',
         content: '',
@@ -28,6 +29,7 @@ const ContentEdit = {
         this.bindEvents();
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
         this.syncVisibilitySummary();
+        this.applyOperationPolicy();
         
         if (this.id) {
             this.getDetail();
@@ -153,8 +155,34 @@ const ContentEdit = {
         return ContentBoardConfig.getListPath(boardType);
     },
 
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
+            const reason = this.operationPolicy.maintenanceMode
+                ? '유지보수 모드에서는 커뮤니티 저장 및 삭제가 불가능합니다.'
+                : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnSave'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnDelete'), disabled, reason);
+            if (disabled) {
+                this.setStatus(reason);
+            }
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
+    },
+
     async saveContent(isAutoSave) {
         if (this.isSaving) return;
+        if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
+            if (!isAutoSave) {
+                const message = this.operationPolicy.maintenanceMode
+                    ? '유지보수 모드에서는 커뮤니티 저장이 불가능합니다.'
+                    : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+                await CommonJS.alert(message, '알림', 'warning');
+            }
+            return;
+        }
 
         const title = document.getElementById('title').value;
         const content = document.getElementById('content').value;
@@ -228,6 +256,16 @@ const ContentEdit = {
     },
 
     async deleteContent() {
+        if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(
+                this.operationPolicy.maintenanceMode
+                    ? '유지보수 모드에서는 커뮤니티 삭제가 불가능합니다.'
+                    : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.',
+                '알림',
+                'warning'
+            );
+            return;
+        }
         const confirm = await CommonJS.confirm('정말 삭제하시겠습니까?');
         if (!confirm) return;
 

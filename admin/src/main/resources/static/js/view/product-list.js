@@ -13,6 +13,7 @@ const ProductList = {
         searchKeyword: '',
         orderType: 'r',
     },
+    defaultLowStockThreshold: '100',
     requestSequence: 0,
     activeRequestController: null,
     lastAppliedQuery: null,
@@ -20,7 +21,9 @@ const ProductList = {
     lastErrorMessage: '',
     lastTotalElements: 0,
 
-    init(brands = [], categories = []) {
+    init(brands = [], categories = [], initialLowStockThreshold = 100) {
+        this.defaultLowStockThreshold = this._normalizeLowStockThreshold(String(initialLowStockThreshold));
+        this.state.lowStockThreshold = this.defaultLowStockThreshold;
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
         this._fillSelect('categoryNo', categories, 'categoryNo', 'name');
 
@@ -327,7 +330,7 @@ const ProductList = {
 
         const lowStockThresholdEl = document.getElementById('stat-low-stock-threshold');
         if (lowStockThresholdEl) {
-            lowStockThresholdEl.textContent = `${stats.lowStockThreshold || 100}개 미만`;
+            lowStockThresholdEl.textContent = `${stats.lowStockThreshold || this.defaultLowStockThreshold}개 미만`;
         }
 
         const contextLabel = stats.contextLabel || '현재 목록 기준';
@@ -512,7 +515,7 @@ const ProductList = {
         if (this.state.categoryNo) params.set('categoryNo', this.state.categoryNo);
         if (this.state.status) params.set('status', this.state.status);
         if (this.state.lowStockOnly) params.set('lowStockOnly', 'true');
-        if (this.state.lowStockOnly && this.state.lowStockThreshold && this.state.lowStockThreshold !== '100') {
+        if (this.state.lowStockOnly && this.state.lowStockThreshold && this.state.lowStockThreshold !== this.defaultLowStockThreshold) {
             params.set('lowStockThreshold', this.state.lowStockThreshold);
         }
         if (this.state.createdTodayOnly) params.set('createdTodayOnly', 'true');
@@ -530,7 +533,7 @@ const ProductList = {
         this.state.categoryNo = params.get('categoryNo') || '';
         this.state.status = params.get('status') || '';
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
-        this.state.lowStockThreshold = this._normalizeLowStockThreshold(params.get('lowStockThreshold'));
+        this.state.lowStockThreshold = this._normalizeLowStockThreshold(params.get('lowStockThreshold') || this.defaultLowStockThreshold);
         this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
@@ -693,7 +696,9 @@ const ProductList = {
 
     _normalizeLowStockThreshold(value) {
         // URL 조작이나 오래된 북마크로 허용되지 않은 값이 들어오면 기본 임계값으로 수렴시킵니다.
-        return this.allowedLowStockThresholds.includes(String(value)) ? String(value) : '100';
+        return this.allowedLowStockThresholds.includes(String(value))
+            ? String(value)
+            : (this.defaultLowStockThreshold || '100');
     },
 
     _syncLowStockThresholdAvailability() {

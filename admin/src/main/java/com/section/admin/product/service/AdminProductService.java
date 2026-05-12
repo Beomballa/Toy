@@ -8,6 +8,7 @@ import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
+import com.section.admin.settings.service.AdminSettingsService;
 import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductExportPolicy;
 import com.section.admin.product.support.ProductExportSummary;
@@ -61,6 +62,7 @@ public class AdminProductService {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
     private final AdminUserRepository adminUserRepository;
+    private final AdminSettingsService adminSettingsService;
 
     private final ProductService productService;
 
@@ -70,7 +72,7 @@ public class AdminProductService {
      * */
     public ProductListResponse getProductList(ProductListRequest req, Pageable pageable) {
         Pageable normalizedPageable = ProductListPagePolicy.normalize(pageable);
-        ProductListQuery query = req.toProductListReqDto().toQuery();
+        ProductListQuery query = req.toProductListReqDto().toQuery(resolveLowStockDefaultThreshold());
         Page<ProductListResDto> resDto = productService.getProductList(query, normalizedPageable);
         ProductStatsDto statsDto = productService.getProductStats(query);
 
@@ -83,7 +85,7 @@ public class AdminProductService {
     }
 
     public byte[] exportProductListCsv(ProductListRequest req) {
-        ProductListQuery query = req.toProductListReqDto().toQuery();
+        ProductListQuery query = req.toProductListReqDto().toQuery(resolveLowStockDefaultThreshold());
         List<ProductListResDto> result = productService.getProductExportList(
                 query,
                 ProductExportPolicy.MAX_EXPORT_SIZE
@@ -95,6 +97,10 @@ public class AdminProductService {
         );
 
         return ProductExportCsvWriter.write(summary, result);
+    }
+
+    public long getLowStockDefaultThreshold() {
+        return resolveLowStockDefaultThreshold();
     }
 
     /**
@@ -354,6 +360,10 @@ public class AdminProductService {
         if (!brandRepository.existsById(brandNo) || !categoryRepository.existsById(categoryNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private long resolveLowStockDefaultThreshold() {
+        return adminSettingsService.getLowStockDefaultThreshold();
     }
 
     private ProductStatus parseProductStatus(String status) {

@@ -70,6 +70,18 @@ class ProductListReqDtoTest {
     }
 
     @Test
+    @DisplayName("저재고 필터만 켜면 설정된 기본 임계값도 typed query에 반영할 수 있다")
+    void toQueryUsesConfiguredLowStockThreshold() {
+        ProductListReqDto reqDto = new ProductListReqDto();
+        reqDto.setLowStockOnly(true);
+
+        ProductListQuery query = reqDto.toQuery(50L);
+
+        assertEquals(true, query.lowStockOnly());
+        assertEquals(50L, query.lowStockThreshold());
+    }
+
+    @Test
     @DisplayName("잘못된 상품 상태는 INVALID_INPUT_VALUE 예외를 던진다")
     void toQueryThrowsBusinessExceptionWhenStatusInvalid() {
         ProductListReqDto reqDto = new ProductListReqDto();

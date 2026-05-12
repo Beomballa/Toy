@@ -43,6 +43,10 @@ public class AdminSettingsService {
         );
     }
 
+    public long getLowStockDefaultThreshold() {
+        return getSystemSettings().lowStockDefaultThreshold();
+    }
+
     @Transactional
     public void saveSystemSettings(AdminSystemSettingSaveRequest req) {
         if (req.lowStockDefaultThreshold() == null || req.lowStockDefaultThreshold() <= 0) {

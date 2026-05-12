@@ -6,6 +6,7 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.admin.settings.service.AdminSettingsService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductHistoryListResDto;
@@ -64,6 +65,8 @@ class AdminProductServiceTest {
     private ProductService productService;
     @Mock
     private AdminUserRepository adminUserRepository;
+    @Mock
+    private AdminSettingsService adminSettingsService;
 
     @InjectMocks
     private AdminProductService adminProductService;
@@ -374,6 +377,7 @@ class AdminProductServiceTest {
         dto.setProductName("테스트 상품");
         dto.setStatus("ACTIVE");
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
                 .thenReturn(List.of(dto));
 
@@ -402,6 +406,7 @@ class AdminProductServiceTest {
         Brand brand = Brand.builder().brandNo(7L).nameKo("뉴발란스").build();
         Category category = Category.builder().categoryNo(3L).name("러닝화").build();
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductExportList(org.mockito.ArgumentMatchers.any(ProductListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
                 .thenReturn(List.of(dto));
         when(brandRepository.findById(7L)).thenReturn(Optional.of(brand));
@@ -424,6 +429,7 @@ class AdminProductServiceTest {
         request.setCreatedTodayOnly(true);
         request.setSearchKeyword("  젤   카야노  ");
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
         when(productService.getProductStats(any(ProductListQuery.class)))
@@ -453,6 +459,7 @@ class AdminProductServiceTest {
         ProductStatsDto statsDto = new ProductStatsDto();
         statsDto.setLowStockCount(3L);
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
         when(productService.getProductStats(any(ProductListQuery.class)))
@@ -478,6 +485,7 @@ class AdminProductServiceTest {
         request.setLowStockOnly(true);
         request.setLowStockThreshold(30L);
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of()));
         when(productService.getProductStats(any(ProductListQuery.class)))
@@ -514,6 +522,7 @@ class AdminProductServiceTest {
         second.setStatus("ACTIVE");
         second.setReleasePrice(1000);
 
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(100L);
         when(productService.getProductList(any(ProductListQuery.class), any(PageRequest.class)))
                 .thenReturn(new PageImpl<>(List.of(first, second), PageRequest.of(1, 10), 12));
         when(productService.getProductStats(any(ProductListQuery.class)))

@@ -28,6 +28,7 @@ public class AdminProductController {
         ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
         model.addAttribute("brands", defaultInfo.brands());
         model.addAttribute("categories", defaultInfo.categories());
+        model.addAttribute("initialLowStockThreshold", adminProductService.getLowStockDefaultThreshold());
         return new ModelAndView("views/product-list");
     }
 

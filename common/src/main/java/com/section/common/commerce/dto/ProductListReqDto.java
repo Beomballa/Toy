@@ -24,13 +24,17 @@ public class ProductListReqDto {
     private Boolean createdTodayOnly;
 
     public ProductListQuery toQuery() {
+        return toQuery(100L);
+    }
+
+    public ProductListQuery toQuery(long defaultLowStockThreshold) {
         Long normalizedCategoryNo = normalizeFilterId(categoryNo);
         Long normalizedBrandNo = normalizeFilterId(brandNo);
         ProductStatus normalizedStatus = normalizeStatus(status);
         String normalizedKeyword = normalizeKeyword(searchKeyword);
         ProductOrderType normalizedOrderType = normalizeOrderType(orderType);
         boolean normalizedLowStockOnly = Boolean.TRUE.equals(lowStockOnly);
-        Long normalizedLowStockThreshold = normalizeLowStockThreshold(lowStockThreshold, normalizedLowStockOnly);
+        Long normalizedLowStockThreshold = normalizeLowStockThreshold(lowStockThreshold, normalizedLowStockOnly, defaultLowStockThreshold);
         boolean normalizedCreatedTodayOnly = Boolean.TRUE.equals(createdTodayOnly);
 
         return new ProductListQuery(
@@ -90,12 +94,12 @@ public class ProductListReqDto {
         return normalizedOrderType;
     }
 
-    private Long normalizeLowStockThreshold(Long threshold, boolean lowStockOnly) {
+    private Long normalizeLowStockThreshold(Long threshold, boolean lowStockOnly, long defaultLowStockThreshold) {
         if (!lowStockOnly) {
             return null;
         }
         if (threshold == null) {
-            return 100L;
+            return defaultLowStockThreshold;
         }
         if (!ALLOWED_LOW_STOCK_THRESHOLDS.contains(threshold)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);

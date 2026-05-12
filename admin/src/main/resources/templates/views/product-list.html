@@ -233,7 +233,8 @@
 <script th:inline="javascript">
     const brands = /*[[${brands}]]*/ [];
     const categories = /*[[${categories}]]*/ [];
-    document.addEventListener('DOMContentLoaded', () => ProductList.init(brands, categories));
+    const initialLowStockThreshold = /*[[${initialLowStockThreshold}]]*/ 100;
+    document.addEventListener('DOMContentLoaded', () => ProductList.init(brands, categories, initialLowStockThreshold));
 </script>
 
 </body>

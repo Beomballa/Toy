@@ -42,6 +42,21 @@ class AdminProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 목록 화면은 설정된 저재고 기본 임계값을 뷰에 전달한다")
+    void productListAddsLowStockThresholdToModel() {
+        ProductDefaultResDto defaultInfo = new ProductDefaultResDto(List.of(), List.of());
+        ExtendedModelMap model = new ExtendedModelMap();
+
+        when(adminProductService.getProductDefaultInfo()).thenReturn(defaultInfo);
+        when(adminProductService.getLowStockDefaultThreshold()).thenReturn(50L);
+
+        String viewName = adminProductController.productList(null, model).getViewName();
+
+        assertEquals("views/product-list", viewName);
+        assertEquals(50L, model.get("initialLowStockThreshold"));
+    }
+
+    @Test
     @DisplayName("상품 상세 화면은 서버에서 조회한 상품 모델을 뷰에 전달한다")
     void productGetAddsProductToModel() {
         ProductDetailResponse product = new ProductDetailResponse(

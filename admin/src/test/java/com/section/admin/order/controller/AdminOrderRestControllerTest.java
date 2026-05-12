@@ -49,7 +49,7 @@ class AdminOrderRestControllerTest {
     void updateStatusReturnsBadRequestWhenStatusInvalid() throws Exception {
         mockMvc.perform(patch("/api/admin/orders/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new StatusPayload(1L, "UNKNOWN"))))
+                        .content(objectMapper.writeValueAsString(new StatusPayload(1L, "UNKNOWN", null))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"))
                 .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
@@ -60,7 +60,7 @@ class AdminOrderRestControllerTest {
     void startDeliveryReturnsBadRequestWhenTrackingNumMissing() throws Exception {
         mockMvc.perform(post("/api/admin/orders/delivery")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new DeliveryPayload(1L, "CJ대한통운", ""))))
+                        .content(objectMapper.writeValueAsString(new DeliveryPayload(1L, "CJ대한통운", "", null))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"))
                 .andExpect(jsonPath("$.message").value("잘못된 입력값입니다."));
@@ -71,7 +71,7 @@ class AdminOrderRestControllerTest {
     void completeDeliveryReturnsBadRequestWhenStatusTransitionInvalid() throws Exception {
         doThrow(new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED))
                 .when(adminOrderService)
-                .completeDelivery(1L);
+                .completeDelivery(1L, null);
 
         mockMvc.perform(post("/api/admin/orders/delivery-complete")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -86,11 +86,11 @@ class AdminOrderRestControllerTest {
     void updateStatusReturnsBadRequestWhenTransitionInvalid() throws Exception {
         doThrow(new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED))
                 .when(adminOrderService)
-                .updateOrderStatus(1L, com.section.common.base.entity.type.OrderStatus.DELIVERED);
+                .updateOrderStatus(1L, com.section.common.base.entity.type.OrderStatus.DELIVERED, null);
 
         mockMvc.perform(patch("/api/admin/orders/status")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new StatusPayload(1L, "DELIVERED"))))
+                        .content(objectMapper.writeValueAsString(new StatusPayload(1L, "DELIVERED", null))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("O002"))
                 .andExpect(jsonPath("$.message").value("현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."));
@@ -125,12 +125,25 @@ class AdminOrderRestControllerTest {
         verify(adminOrderService).exportOrderListCsv(org.mockito.ArgumentMatchers.any(OrderListReqDto.class));
     }
 
-    private record StatusPayload(Long orderNo, String status) {
+    @Test
+    @DisplayName("관리 메모 저장 요청 필수값이 없으면 400 INVALID_INPUT_VALUE를 반환한다")
+    void saveAdminMemoReturnsBadRequestWhenOrderNoMissing() throws Exception {
+        mockMvc.perform(patch("/api/admin/orders/memo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new MemoPayload(null, "메모"))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
     }
 
-    private record DeliveryPayload(Long orderNo, String deliveryCompany, String trackingNum) {
+    private record StatusPayload(Long orderNo, String status, String reason) {
+    }
+
+    private record DeliveryPayload(Long orderNo, String deliveryCompany, String trackingNum, String reason) {
     }
 
     private record OrderNoPayload(Long orderNo) {
+    }
+
+    private record MemoPayload(Long orderNo, String adminMemo) {
     }
 }

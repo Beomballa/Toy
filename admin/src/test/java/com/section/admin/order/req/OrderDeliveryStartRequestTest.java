@@ -13,10 +13,12 @@ class OrderDeliveryStartRequestTest {
         OrderDeliveryStartRequest request = new OrderDeliveryStartRequest(
                 1L,
                 "  CJ대한통운  ",
-                "  1234-5678-9999  "
+                "  1234-5678-9999  ",
+                "  출고 요청  "
         );
 
         assertEquals("CJ대한통운", request.normalizedDeliveryCompany());
         assertEquals("1234-5678-9999", request.normalizedTrackingNum());
+        assertEquals("출고 요청", request.normalizedReason());
     }
 }

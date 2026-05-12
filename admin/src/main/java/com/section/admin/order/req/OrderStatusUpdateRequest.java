@@ -5,13 +5,17 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record OrderStatusUpdateRequest(
         @NotNull(message = "주문 번호는 필수입니다.")
         Long orderNo,
 
         @NotBlank(message = "주문 상태는 필수입니다.")
-        String status
+        String status,
+
+        @Size(max = 200, message = "사유는 200자 이하여야 합니다.")
+        String reason
 ) {
     public OrderStatus toOrderStatus() {
         try {
@@ -20,5 +24,13 @@ public record OrderStatusUpdateRequest(
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    public String normalizedReason() {
+        if (reason == null) {
+            return null;
+        }
+        String normalized = reason.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
     }
 }

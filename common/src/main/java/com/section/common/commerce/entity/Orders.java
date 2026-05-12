@@ -44,6 +44,9 @@ public class Orders extends BaseEntity {
     @Column(name = "tracking_num", length = 50)
     private String trackingNum;
 
+    @Column(name = "admin_memo", length = 1000)
+    private String adminMemo;
+
     /**
      * 주문 생성 (정적 팩토리 메서드)
      */
@@ -101,6 +104,10 @@ public class Orders extends BaseEntity {
             throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.status = OrderStatus.CANCELLED.name();
+    }
+
+    public void updateAdminMemo(String adminMemo) {
+        this.adminMemo = adminMemo;
     }
 
     private boolean canTransitionTo(OrderStatus newStatus) {

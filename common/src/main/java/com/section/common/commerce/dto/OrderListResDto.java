@@ -19,4 +19,5 @@ public class OrderListResDto {
     private LocalDateTime crtDtm;
     private String deliveryCompany;
     private String trackingNum;
+    private String adminMemo;
 }

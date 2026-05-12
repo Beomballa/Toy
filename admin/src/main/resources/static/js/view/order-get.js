@@ -21,9 +21,9 @@ const OrderDetail = {
             e.preventDefault();
             this.saveDelivery();
         });
-        document.getElementById('btnSaveDelivery')?.addEventListener('click', () => this.saveDelivery());
         document.getElementById('btnCompleteDelivery')?.addEventListener('click', () => this.completeDelivery());
         document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
+        document.getElementById('btnSaveAdminMemo')?.addEventListener('click', () => this.saveAdminMemo());
     },
 
     async getDetail() {
@@ -52,6 +52,8 @@ const OrderDetail = {
         this.renderActionVisibility(data);
         this.renderDeliveryInfo(data);
         this.renderOrderItems(data.items);
+        this.renderAdminMemo(data.adminMemo);
+        this.renderOrderHistory(data.histories || []);
     },
 
     renderSummary(data) {
@@ -88,6 +90,13 @@ const OrderDetail = {
         }
     },
 
+    renderAdminMemo(adminMemo) {
+        const memoInput = document.getElementById('adminMemo');
+        if (memoInput) {
+            memoInput.value = adminMemo || '';
+        }
+    },
+
     renderOrderItems(items) {
         const tbody = document.getElementById('orderItemsTableBody');
         if (items.length === 0) {
@@ -114,13 +123,40 @@ const OrderDetail = {
         `).join('');
     },
 
+    renderOrderHistory(histories) {
+        const container = document.getElementById('orderHistoryList');
+        if (!container) {
+            return;
+        }
+
+        if (!histories.length) {
+            container.innerHTML = '<div class="text-muted">등록된 주문 처리 이력이 없습니다.</div>';
+            return;
+        }
+
+        container.innerHTML = histories.map((history) => `
+            <div class="border rounded-3 p-3">
+                <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
+                    <div class="fw-semibold text-dark">${history.actionType}</div>
+                    <div class="text-muted small">${history.crtDtm || '-'}</div>
+                </div>
+                <div class="small text-muted mb-2">
+                    상태: ${history.beforeStatusDesc || '-'} -> ${history.afterStatusDesc || '-'}
+                </div>
+                ${history.reason ? `<div class="small mb-1"><span class="text-muted">사유</span> ${CommonJS.escapeHtml(history.reason)}</div>` : ''}
+                ${history.adminMemoSnapshot ? `<div class="small mb-1"><span class="text-muted">메모</span> ${CommonJS.escapeHtml(history.adminMemoSnapshot)}</div>` : ''}
+                ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
+            </div>
+        `).join('');
+    },
+
     async completeDelivery() {
         const isConfirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
         if (!isConfirm) return;
 
         await this.submitOrderAction({
             url: '/api/admin/orders/delivery-complete',
-            payload: { orderNo: this.orderNo },
+            payload: { orderNo: this.orderNo, reason: this.readActionReason() },
             successMessage: '배송 완료 처리가 되었습니다.',
             fallbackErrorMessage: '배송 완료 처리 중 오류가 발생했습니다.',
             logLabel: '배송 완료 처리'
@@ -133,7 +169,7 @@ const OrderDetail = {
 
         await this.submitOrderAction({
             url: '/api/admin/orders/cancel',
-            payload: { orderNo: this.orderNo },
+            payload: { orderNo: this.orderNo, reason: this.readActionReason() },
             successMessage: '주문이 취소되었습니다.',
             fallbackErrorMessage: '주문 취소 중 오류가 발생했습니다.',
             logLabel: '주문 취소'
@@ -159,7 +195,8 @@ const OrderDetail = {
             payload: {
                 orderNo: this.orderNo,
                 deliveryCompany: company,
-                trackingNum: tracking
+                trackingNum: tracking,
+                reason: this.readActionReason()
             },
             successMessage: '배송 정보가 등록되었으며 상태가 배송중으로 변경되었습니다.',
             fallbackErrorMessage: '배송 정보 저장 중 오류가 발생했습니다.',
@@ -167,7 +204,22 @@ const OrderDetail = {
         });
     },
 
-    async submitOrderAction({ url, payload, successMessage, fallbackErrorMessage, logLabel }) {
+    async saveAdminMemo() {
+        const adminMemo = (document.getElementById('adminMemo')?.value || '').trim();
+        await this.submitOrderAction({
+            url: '/api/admin/orders/memo',
+            method: 'PATCH',
+            payload: {
+                orderNo: this.orderNo,
+                adminMemo: adminMemo
+            },
+            successMessage: '관리 메모가 저장되었습니다.',
+            fallbackErrorMessage: '관리 메모 저장 중 오류가 발생했습니다.',
+            logLabel: '관리 메모 저장'
+        });
+    },
+
+    async submitOrderAction({ url, method = 'POST', payload, successMessage, fallbackErrorMessage, logLabel }) {
         if (this.isSubmitting) {
             return;
         }
@@ -177,7 +229,7 @@ const OrderDetail = {
 
         try {
             const res = await fetch(url, {
-                method: 'POST',
+                method,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
@@ -213,9 +265,19 @@ const OrderDetail = {
         });
     },
 
+    readActionReason() {
+        const input = document.getElementById('orderActionReason');
+        if (!input) {
+            return null;
+        }
+        const normalized = input.value.trim().replace(/\s+/g, ' ');
+        input.value = normalized;
+        return normalized || null;
+    },
+
     setActionButtonsDisabled(disabled) {
         // 상세 액션은 중복 요청이 그대로 상태 전이 중복으로 이어질 수 있어서 전송 중 버튼을 잠급니다.
-        ['btnSaveDelivery', 'btnCompleteDelivery', 'btnCancelOrder', 'btnBackToOrderList'].forEach((id) => {
+        ['btnSaveDelivery', 'btnCompleteDelivery', 'btnCancelOrder', 'btnBackToOrderList', 'btnSaveAdminMemo'].forEach((id) => {
             const button = document.getElementById(id);
             if (button) {
                 button.disabled = disabled;

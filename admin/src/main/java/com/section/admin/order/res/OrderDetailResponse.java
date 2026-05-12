@@ -2,6 +2,7 @@ package com.section.admin.order.res;
 
 import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.base.entity.type.OrderStatus;
+import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
 
@@ -22,9 +23,17 @@ public record OrderDetailResponse(
         boolean canCompleteDelivery,
         boolean showDeliveryInput,
         boolean showDeliveryInfo,
-        List<OrderItemInfo> items
+        String deliveryCompany,
+        String trackingNum,
+        String adminMemo,
+        List<OrderItemInfo> items,
+        List<OrderHistoryItem> histories
 ) {
-    public static OrderDetailResponse from(OrderListResDto master, List<OrderItemResDto> items) {
+    public static OrderDetailResponse from(
+            OrderListResDto master,
+            List<OrderItemResDto> items,
+            List<OrderStatusHistory> histories
+    ) {
         OrderStatus status = OrderStatus.fromCode(master.getStatus()).orElse(null);
 
         return new OrderDetailResponse(
@@ -41,8 +50,14 @@ public record OrderDetailResponse(
                 status != null && status.canCompleteDelivery(),
                 status != null && status.showDeliveryInput(),
                 status != null && status.showDeliveryInfo(),
+                master.getDeliveryCompany(),
+                master.getTrackingNum(),
+                master.getAdminMemo(),
                 Optional.ofNullable(items)
                         .map(list -> list.stream().map(OrderItemInfo::from).toList())
+                        .orElse(List.of()),
+                Optional.ofNullable(histories)
+                        .map(list -> list.stream().map(OrderHistoryItem::from).toList())
                         .orElse(List.of())
         );
     }
@@ -63,6 +78,32 @@ public record OrderDetailResponse(
                     OrderViewFormatter.formatAmount(dto.getOrderPrice()),
                     dto.getCount(),
                     dto.getThumbnailUrl()
+            );
+        }
+    }
+
+    public record OrderHistoryItem(
+            Long historyNo,
+            String actionType,
+            String beforeStatusDesc,
+            String afterStatusDesc,
+            String reason,
+            String adminMemoSnapshot,
+            String deliveryCompany,
+            String trackingNum,
+            String crtDtm
+    ) {
+        public static OrderHistoryItem from(OrderStatusHistory history) {
+            return new OrderHistoryItem(
+                    history.getId(),
+                    history.getActionType(),
+                    OrderViewFormatter.formatStatusDesc(history.getBeforeStatus()),
+                    OrderViewFormatter.formatStatusDesc(history.getAfterStatus()),
+                    history.getReason(),
+                    history.getAdminMemoSnapshot(),
+                    history.getDeliveryCompany(),
+                    history.getTrackingNum(),
+                    OrderViewFormatter.formatDateTime(history.getCrtDtm())
             );
         }
     }

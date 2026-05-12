@@ -1,6 +1,8 @@
 package com.section.admin.order.controller;
 
 import com.section.admin.order.req.OrderDeliveryStartRequest;
+import com.section.admin.order.req.OrderActionRequest;
+import com.section.admin.order.req.OrderMemoSaveRequest;
 import com.section.admin.order.req.OrderNoRequest;
 import com.section.admin.order.req.OrderStatusUpdateRequest;
 import com.section.admin.order.res.OrderDetailResponse;
@@ -46,25 +48,36 @@ public class AdminOrderRestController {
 
     @PatchMapping("/status")
     public ResponseEntity<Void> updateStatus(@Valid @RequestBody OrderStatusUpdateRequest req) {
-        adminOrderService.updateOrderStatus(req.orderNo(), req.toOrderStatus());
+        adminOrderService.updateOrderStatus(req.orderNo(), req.toOrderStatus(), req.normalizedReason());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/delivery")
     public ResponseEntity<Void> startDelivery(@Valid @RequestBody OrderDeliveryStartRequest req) {
-        adminOrderService.startDelivery(req.orderNo(), req.normalizedDeliveryCompany(), req.normalizedTrackingNum());
+        adminOrderService.startDelivery(
+                req.orderNo(),
+                req.normalizedDeliveryCompany(),
+                req.normalizedTrackingNum(),
+                req.normalizedReason()
+        );
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/delivery-complete")
-    public ResponseEntity<Void> completeDelivery(@Valid @RequestBody OrderNoRequest req) {
-        adminOrderService.completeDelivery(req.orderNo());
+    public ResponseEntity<Void> completeDelivery(@Valid @RequestBody OrderActionRequest req) {
+        adminOrderService.completeDelivery(req.orderNo(), req.normalizedReason());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/cancel")
-    public ResponseEntity<Void> cancelOrder(@Valid @RequestBody OrderNoRequest req) {
-        adminOrderService.cancelOrder(req.orderNo());
+    public ResponseEntity<Void> cancelOrder(@Valid @RequestBody OrderActionRequest req) {
+        adminOrderService.cancelOrder(req.orderNo(), req.normalizedReason());
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/memo")
+    public ResponseEntity<Void> saveAdminMemo(@Valid @RequestBody OrderMemoSaveRequest req) {
+        adminOrderService.saveAdminMemo(req.orderNo(), req.normalizedAdminMemo());
         return ResponseEntity.ok().build();
     }
 }

@@ -97,7 +97,8 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         orders.status.as("status"),
                         orders.crtDtm.as("crtDtm"),
                         orders.deliveryCompany.as("deliveryCompany"),
-                        orders.trackingNum.as("trackingNum")
+                        orders.trackingNum.as("trackingNum"),
+                        orders.adminMemo.as("adminMemo")
                 ))
                 .from(orders)
                 .where(orders.id.eq(orderNo))
@@ -234,7 +235,8 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                         orders.status.as("status"),
                         orders.crtDtm.as("crtDtm"),
                         orders.deliveryCompany.as("deliveryCompany"),
-                        orders.trackingNum.as("trackingNum")
+                        orders.trackingNum.as("trackingNum"),
+                        orders.adminMemo.as("adminMemo")
                 ))
                 .from(orders)
                 .orderBy(orders.id.desc())

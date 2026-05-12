@@ -12,6 +12,7 @@ import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
 import com.section.common.commerce.entity.Orders;
+import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.entity.OrderItem;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.Brand;
@@ -35,6 +36,7 @@ public class AdminOrderService {
     private static final int ORDER_EXPORT_MAX_SIZE = 1000;
 
     private final OrderRepository orderRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final OrderItemRepository orderItemRepository;
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
@@ -129,35 +131,41 @@ public class AdminOrderService {
         if (master == null) throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
         
         List<OrderItemResDto> items = orderService.getOrderItems(orderNo);
-        return OrderDetailResponse.from(master, items);
+        List<OrderStatusHistory> histories = orderStatusHistoryRepository.findTop20ByOrderNoOrderByCrtDtmDescIdDesc(orderNo);
+        return OrderDetailResponse.from(master, items, histories);
     }
 
     /**
      * 주문 상태 변경
      */
     @Transactional
-    public void updateOrderStatus(Long orderNo, OrderStatus status) {
-        orderService.updateOrderStatus(orderNo, status);
+    public void updateOrderStatus(Long orderNo, OrderStatus status, String reason) {
+        Orders order = findOrder(orderNo);
+        String beforeStatus = order.getStatus();
+        order.changeStatus(status);
+        saveHistory(order, "STATUS_CHANGE", beforeStatus, order.getStatus(), reason);
     }
 
     @Transactional
-    public void startDelivery(Long orderNo, String deliveryCompany, String trackingNum) {
-        Orders order = orderRepository.findById(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+    public void startDelivery(Long orderNo, String deliveryCompany, String trackingNum, String reason) {
+        Orders order = findOrder(orderNo);
+        String beforeStatus = order.getStatus();
         order.startDelivery(deliveryCompany, trackingNum);
+        saveHistory(order, "DELIVERY_START", beforeStatus, order.getStatus(), reason);
     }
 
     @Transactional
-    public void completeDelivery(Long orderNo) {
-        Orders order = orderRepository.findById(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+    public void completeDelivery(Long orderNo, String reason) {
+        Orders order = findOrder(orderNo);
+        String beforeStatus = order.getStatus();
         order.completeDelivery();
+        saveHistory(order, "DELIVERY_COMPLETE", beforeStatus, order.getStatus(), reason);
     }
 
     @Transactional
-    public void cancelOrder(Long orderNo) {
-        Orders order = orderRepository.findById(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+    public void cancelOrder(Long orderNo, String reason) {
+        Orders order = findOrder(orderNo);
+        String beforeStatus = order.getStatus();
         
         // 주문 상태 변경 (상태 전이 유효성 검사는 엔티티 내에서 수행)
         order.cancel();
@@ -171,5 +179,32 @@ public class AdminOrderService {
                 });
             }
         }
+
+        saveHistory(order, "CANCEL", beforeStatus, order.getStatus(), reason);
+    }
+
+    @Transactional
+    public void saveAdminMemo(Long orderNo, String adminMemo) {
+        Orders order = findOrder(orderNo);
+        order.updateAdminMemo(adminMemo);
+        saveHistory(order, "ADMIN_MEMO", order.getStatus(), order.getStatus(), "관리 메모 저장");
+    }
+
+    private Orders findOrder(Long orderNo) {
+        return orderRepository.findById(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+    }
+
+    private void saveHistory(Orders order, String actionType, String beforeStatus, String afterStatus, String reason) {
+        orderStatusHistoryRepository.save(OrderStatusHistory.create(
+                order.getId(),
+                actionType,
+                beforeStatus,
+                afterStatus,
+                reason,
+                order.getAdminMemo(),
+                order.getDeliveryCompany(),
+                order.getTrackingNum()
+        ));
     }
 }

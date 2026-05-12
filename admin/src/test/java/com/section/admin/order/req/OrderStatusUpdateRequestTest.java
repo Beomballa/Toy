@@ -14,17 +14,18 @@ class OrderStatusUpdateRequestTest {
     @Test
     @DisplayName("유효한 주문 상태 문자열은 enum으로 변환된다")
     void toOrderStatusReturnsEnum() {
-        OrderStatusUpdateRequest request = new OrderStatusUpdateRequest(1L, "SHIPPED");
+        OrderStatusUpdateRequest request = new OrderStatusUpdateRequest(1L, "SHIPPED", "  출고 승인  ");
 
         OrderStatus result = request.toOrderStatus();
 
         assertEquals(OrderStatus.SHIPPED, result);
+        assertEquals("출고 승인", request.normalizedReason());
     }
 
     @Test
     @DisplayName("잘못된 주문 상태 문자열은 INVALID_INPUT_VALUE 예외를 던진다")
     void toOrderStatusThrowsBusinessExceptionWhenInvalid() {
-        OrderStatusUpdateRequest request = new OrderStatusUpdateRequest(1L, "UNKNOWN");
+        OrderStatusUpdateRequest request = new OrderStatusUpdateRequest(1L, "UNKNOWN", null);
 
         BusinessException exception = assertThrows(BusinessException.class, request::toOrderStatus);
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +35,15 @@ class AdminOrderRestControllerTest {
     @Mock
     private AdminOrderService adminOrderService;
 
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOrderRestController(adminOrderService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOrderRestController(adminOrderService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -133,6 +137,18 @@ class AdminOrderRestControllerTest {
                         .content(objectMapper.writeValueAsString(new MemoPayload(null, "메모"))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("주문 export 설정이 비활성화되면 400 ADMIN_FEATURE_DISABLED를 반환한다")
+    void exportOrderListReturnsBadRequestWhenOrderExportDisabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_FEATURE_DISABLED))
+                .when(adminOperationPolicyService)
+                .assertOrderExportAllowed();
+
+        mockMvc.perform(get("/api/admin/orders/export"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("A002"));
     }
 
     private record StatusPayload(Long orderNo, String status, String reason) {

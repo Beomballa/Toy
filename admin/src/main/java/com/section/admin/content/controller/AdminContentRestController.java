@@ -4,6 +4,7 @@ import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminContentRestController {
 
     private final DocumentService documentService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -55,12 +57,14 @@ public class AdminContentRestController {
 
     @PostMapping("/save")
     public ResponseEntity<ContentSaveResponse> save(@Valid @RequestBody ContentSaveRequest req) {
+        adminOperationPolicyService.assertCommunityWriteAllowed();
         Document savedDocument = documentService.saveDocument(req.toEntity());
         return ResponseEntity.ok(ContentSaveResponse.from(savedDocument.getId()));
     }
 
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("id") Long id) {
+        adminOperationPolicyService.assertCommunityWriteAllowed();
         documentService.deleteDocument(id);
         return ResponseEntity.ok().build();
     }

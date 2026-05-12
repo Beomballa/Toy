@@ -2,6 +2,7 @@ package com.section.admin.content.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -41,12 +43,15 @@ class AdminContentRestControllerTest {
     @Mock
     private DocumentService documentService;
 
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminContentRestController(documentService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminContentRestController(documentService, adminOperationPolicyService))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
@@ -127,6 +132,22 @@ class AdminContentRestControllerTest {
         mockMvc.perform(get("/api/admin/content/get").param("id", "999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("D001"));
+    }
+
+    @Test
+    @DisplayName("커뮤니티 작성이 비활성화되면 저장은 400 ADMIN_FEATURE_DISABLED를 반환한다")
+    void saveReturnsBadRequestWhenCommunityWriteDisabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_FEATURE_DISABLED))
+                .when(adminOperationPolicyService)
+                .assertCommunityWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/content/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SavePayload(
+                                null, "DISCUSS", "제목", "본문", 7L, "PUBLISHED", "N", "Y"
+                        ))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("A002"));
     }
 
     private record SavePayload(

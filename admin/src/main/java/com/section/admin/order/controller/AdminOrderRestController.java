@@ -8,6 +8,7 @@ import com.section.admin.order.req.OrderStatusUpdateRequest;
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderListResponse;
 import com.section.admin.order.service.AdminOrderService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.commerce.dto.OrderListReqDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 @RequestMapping("/api/admin/orders")
 public class AdminOrderRestController {
     private final AdminOrderService adminOrderService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<OrderListResponse> getOrderList(
@@ -34,6 +36,7 @@ public class AdminOrderRestController {
 
     @GetMapping("/export")
     public ResponseEntity<byte[]> exportOrderList(@ModelAttribute OrderListReqDto reqDto) {
+        adminOperationPolicyService.assertOrderExportAllowed();
         String fileName = "orders-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
@@ -48,12 +51,14 @@ public class AdminOrderRestController {
 
     @PatchMapping("/status")
     public ResponseEntity<Void> updateStatus(@Valid @RequestBody OrderStatusUpdateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.updateOrderStatus(req.orderNo(), req.toOrderStatus(), req.normalizedReason());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/delivery")
     public ResponseEntity<Void> startDelivery(@Valid @RequestBody OrderDeliveryStartRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.startDelivery(
                 req.orderNo(),
                 req.normalizedDeliveryCompany(),
@@ -65,18 +70,21 @@ public class AdminOrderRestController {
 
     @PostMapping("/delivery-complete")
     public ResponseEntity<Void> completeDelivery(@Valid @RequestBody OrderActionRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.completeDelivery(req.orderNo(), req.normalizedReason());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/cancel")
     public ResponseEntity<Void> cancelOrder(@Valid @RequestBody OrderActionRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.cancelOrder(req.orderNo(), req.normalizedReason());
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/memo")
     public ResponseEntity<Void> saveAdminMemo(@Valid @RequestBody OrderMemoSaveRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.saveAdminMemo(req.orderNo(), req.normalizedAdminMemo());
         return ResponseEntity.ok().build();
     }

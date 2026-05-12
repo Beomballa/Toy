@@ -27,7 +27,11 @@ public enum ErrorCode {
     EMAIL_DUPLICATION(HttpStatus.BAD_REQUEST, "M002", "이미 가입된 이메일입니다."),
 
     // Content
-    DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "존재하지 않는 게시물입니다.");
+    DOCUMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "D001", "존재하지 않는 게시물입니다."),
+
+    // Admin operation policy
+    ADMIN_MAINTENANCE_MODE(HttpStatus.SERVICE_UNAVAILABLE, "A001", "현재 관리자 유지보수 모드입니다."),
+    ADMIN_FEATURE_DISABLED(HttpStatus.BAD_REQUEST, "A002", "현재 설정으로 비활성화된 기능입니다.");
 
     private final HttpStatus status;
     private final String code;

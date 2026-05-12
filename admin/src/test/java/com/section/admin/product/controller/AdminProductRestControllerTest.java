@@ -8,6 +8,7 @@ import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -43,6 +44,8 @@ class AdminProductRestControllerTest {
 
     @Mock
     private AdminProductService adminProductService;
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private MockMvc mockMvc;
@@ -53,7 +56,7 @@ class AdminProductRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminProductRestController(adminProductService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminProductRestController(adminProductService, adminOperationPolicyService))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
@@ -288,6 +291,75 @@ class AdminProductRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.productNo").value(10L));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 생성이 차단된다")
+    void createProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/product/set")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 수정이 차단된다")
+    void updateProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(4L);
+        request.setCategoryNo(2L);
+        request.setBrandNo(1L);
+        request.setNameKo("수정 상품");
+        request.setReleasePrice(1000);
+
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/product/update")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 삭제가 차단된다")
+    void deleteProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(patch("/api/admin/product/delete/5"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 복제가 차단된다")
+    void cloneProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/product/clone/5"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
     }
 
     @Test

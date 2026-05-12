@@ -11,6 +11,7 @@ import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.service.AdminProductService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import java.util.Locale;
 public class AdminProductRestController {
 
     private final AdminProductService adminProductService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/product/list")
     public ResponseEntity<ProductListResponse> getProductList(
@@ -55,6 +57,7 @@ public class AdminProductRestController {
     @PostMapping("/product/set")
     public ResponseEntity<ProductCreateResponse> defaultProductSetInfo(@Valid @RequestBody ProductCreateRequest reqDto) {
         log.info("상품 등록 요청 : {}", reqDto);
+        adminOperationPolicyService.assertAdminWriteAllowed();
 
         Long productNo = adminProductService.createProductInfo(reqDto);
 
@@ -64,6 +67,7 @@ public class AdminProductRestController {
     @PostMapping("/product/update")
     public ResponseEntity<BaseSimpleResDto> updateProductInfo(@Valid @RequestBody ProductUpdateRequest reqDto) {
         log.info("상품 수정 요청 : {}", reqDto);
+        adminOperationPolicyService.assertAdminWriteAllowed();
 
         adminProductService.updateProductInfo(reqDto);
 
@@ -90,12 +94,14 @@ public class AdminProductRestController {
 
     @PatchMapping("/product/delete/{no}")
     public ResponseEntity<Void> deleteProduct(@PathVariable("no") Long productNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminProductService.deleteProduct(productNo);
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/product/clone/{no}")
     public ResponseEntity<ProductCreateResponse> cloneProduct(@PathVariable("no") Long productNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         return ResponseEntity.ok(ProductCreateResponse.success(adminProductService.cloneProduct(productNo)));
     }
 

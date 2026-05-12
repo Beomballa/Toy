@@ -5,6 +5,7 @@ import com.section.admin.banner.req.BannerSaveRequest;
 import com.section.admin.banner.res.BannerListResponse;
 import com.section.admin.banner.service.AdminBannerService;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,13 +33,15 @@ class AdminBannerRestControllerTest {
 
     @Mock
     private AdminBannerService adminBannerService;
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminBannerRestController(adminBannerService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminBannerRestController(adminBannerService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -87,5 +90,42 @@ class AdminBannerRestControllerTest {
         mockMvc.perform(patch("/api/admin/banners/active/3?isActive=N"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 배너 저장이 차단된다")
+    void saveReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        BannerSaveRequest request = new BannerSaveRequest(
+                null,
+                "배너",
+                "https://example.com/banner.png",
+                null,
+                LocalDateTime.of(2026, 5, 10, 10, 0),
+                LocalDateTime.of(2026, 5, 20, 10, 0),
+                1,
+                "Y"
+        );
+
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/banners/save")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 배너 상태 변경이 차단된다")
+    void updateActiveReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(patch("/api/admin/banners/active/3?isActive=N"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
     }
 }

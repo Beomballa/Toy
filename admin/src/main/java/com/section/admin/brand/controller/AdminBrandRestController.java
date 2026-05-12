@@ -6,6 +6,7 @@ import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.req.BrandStatusUpdateRequest;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.service.AdminBrandService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import java.util.List;
 public class AdminBrandRestController {
 
     private final AdminBrandService adminBrandService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<List<BrandResponse>> getList(@ModelAttribute BrandListRequest req) {
@@ -32,18 +34,21 @@ public class AdminBrandRestController {
 
     @PostMapping("/save")
     public ResponseEntity<Void> save(@Valid @RequestBody BrandSaveRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminBrandService.saveBrand(req);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/active/{no}")
     public ResponseEntity<BaseSimpleResDto> updateActive(@PathVariable("no") Long brandNo, @Valid @RequestBody BrandStatusUpdateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminBrandService.updateActive(brandNo, req.isActive());
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("no") Long brandNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminBrandService.deleteBrand(brandNo);
         return ResponseEntity.ok().build();
     }

@@ -6,6 +6,7 @@ import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
 import com.section.admin.user.service.AdminMemberService;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminMemberRestController {
 
     private final AdminMemberService adminMemberService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<AdminMemberListResponse> getList(@ModelAttribute AdminMemberListRequest req, Pageable pageable) {
@@ -38,6 +40,7 @@ public class AdminMemberRestController {
 
     @PatchMapping("/status/{id}")
     public ResponseEntity<BaseSimpleResDto> updateStatus(@PathVariable("id") Long memberId, @Valid @RequestBody AdminMemberStatusUpdateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminMemberService.updateMemberStatus(memberId, req);
         return ResponseEntity.ok(new BaseSimpleResDto());
     }

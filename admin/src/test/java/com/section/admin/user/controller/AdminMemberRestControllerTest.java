@@ -2,6 +2,7 @@ package com.section.admin.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
@@ -32,13 +33,15 @@ class AdminMemberRestControllerTest {
 
     @Mock
     private AdminMemberService adminMemberService;
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminMemberRestController(adminMemberService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminMemberRestController(adminMemberService, adminOperationPolicyService))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
@@ -83,5 +86,19 @@ class AdminMemberRestControllerTest {
                         .content(objectMapper.writeValueAsString(new AdminMemberStatusUpdateRequest(true, false))))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("M001"));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 회원 상태 변경이 차단된다")
+    void updateStatusReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(patch("/api/admin/members/status/9")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminMemberStatusUpdateRequest(true, false))))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
     }
 }

@@ -4,6 +4,7 @@ import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
+import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.dto.DocumentListQuery;
@@ -26,10 +27,19 @@ public class AdminContentRestController {
     public ResponseEntity<ContentListResponse> getList(
             @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "publicYn", required = false) String publicYn,
+            @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
             @org.springframework.data.web.PageableDefault(size = 9) org.springframework.data.domain.Pageable pageable
     ) {
         return ResponseEntity.ok(ContentListResponse.of(
-                documentService.getDocumentList(new DocumentListQuery(parseBoardType(boardType), keyword), pageable)
+                documentService.getDocumentList(new DocumentListQuery(
+                        parseBoardType(boardType),
+                        keyword,
+                        parseStatus(status),
+                        parseYn(publicYn),
+                        pinnedOnly
+                ), pageable)
         ));
     }
 
@@ -59,6 +69,30 @@ public class AdminContentRestController {
         try {
             return Document.BoardType.valueOf(boardType);
         } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private Document.PublishStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Document.PublishStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private YN parseYn(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return YN.valueOf(value);
+        } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

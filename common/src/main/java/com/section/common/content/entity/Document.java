@@ -5,9 +5,6 @@ import lombok.Getter;
 import lombok.Setter;
 import com.section.common.base.entity.type.BaseEntity;
 import com.section.common.base.entity.type.YN;
-import com.section.common.system.entity.ApprovalDocument;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -26,9 +23,41 @@ public class Document extends BaseEntity {
     @Column(name = "board_type")
     private BoardType boardType;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private PublishStatus status = PublishStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "public_yn", nullable = false, length = 1)
+    private YN publicYn = YN.Y;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pinned_yn", nullable = false, length = 1)
+    private YN pinnedYn = YN.N;
+
     private String title;
     private String content;
     private int viewCnt;
 
     public enum BoardType { NOTICE, STYLE, DISCUSS, QNA }
+
+    public enum PublishStatus { DRAFT, PUBLISHED }
+
+    public void applyEditorValues(
+            BoardType boardType,
+            PublishStatus status,
+            YN publicYn,
+            YN pinnedYn,
+            String title,
+            String content,
+            Long productNo
+    ) {
+        this.boardType = boardType;
+        this.status = status;
+        this.publicYn = publicYn;
+        this.pinnedYn = pinnedYn;
+        this.title = title;
+        this.content = content;
+        this.productNo = productNo;
+    }
 }

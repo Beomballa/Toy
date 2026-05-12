@@ -36,7 +36,22 @@ public class DocumentService {
 
     @Transactional
     public Document saveDocument(Document document) {
-        return documentRepository.save(document);
+        if (document.getId() == null) {
+            return documentRepository.save(document);
+        }
+
+        Document existingDocument = getDocument(document.getId());
+        // 수정 시에는 기존 엔티티를 그대로 유지하고 변경 필드만 덮어서 조회수/감사값이 흔들리지 않게 한다.
+        existingDocument.applyEditorValues(
+                document.getBoardType(),
+                document.getStatus(),
+                document.getPublicYn(),
+                document.getPinnedYn(),
+                document.getTitle(),
+                document.getContent(),
+                document.getProductNo()
+        );
+        return existingDocument;
     }
 
     @Transactional

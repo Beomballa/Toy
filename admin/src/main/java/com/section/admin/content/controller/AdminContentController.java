@@ -29,6 +29,7 @@ public class AdminContentController {
         model.addAttribute("id", id);
         model.addAttribute("boardType", boardType);
         model.addAttribute("boardTypes", Document.BoardType.values());
+        model.addAttribute("publishStatuses", Document.PublishStatus.values());
         return "views/content-edit";
     }
 

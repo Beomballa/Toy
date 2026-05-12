@@ -63,6 +63,9 @@ const ContentDetail = {
         this.setText('contentBodyValue', data.content || '등록된 본문이 없습니다.');
         this.setText('contentIdValue', data.id || '-');
         this.setText('contentProductNoValue', data.productNo || '-');
+        this.setText('contentStatusValue', data.status === 'PUBLISHED' ? '게시중' : '임시저장');
+        this.setText('contentPublicValue', data.publicYn === 'Y' ? '공개' : '비공개');
+        this.setText('contentPinnedValue', data.pinnedYn === 'Y' ? '고정글' : '일반글');
         this.setText('contentCreatedValue', data.crtDtm || '-');
         this.setText('contentUpdatedValue', data.uptDtm || '-');
         this.setText('contentViewsValue', `${(data.viewCnt ?? 0).toLocaleString()}회`);

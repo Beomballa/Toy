@@ -59,6 +59,28 @@
                         <span id="saveStatus" class="community-editor-status"></span>
                     </div>
                     <div class="card-body community-editor-body">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label for="status" class="community-editor-label">게시 상태</label>
+                                <select id="status" class="form-select">
+                                    <option th:each="status : ${publishStatuses}" th:value="${status}" th:text="${status}"></option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="publicYn" class="community-editor-label">공개 여부</label>
+                                <select id="publicYn" class="form-select">
+                                    <option value="Y">공개</option>
+                                    <option value="N">비공개</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="pinnedYn" class="community-editor-label">고정글 여부</label>
+                                <select id="pinnedYn" class="form-select">
+                                    <option value="N">일반글</option>
+                                    <option value="Y">고정글</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="community-editor-field">
                             <label for="title" class="community-editor-label">제목</label>
                             <input type="text" id="title" class="form-control notion-title community-editor-title-input" placeholder="제목을 입력하세요">
@@ -88,6 +110,10 @@
                         <div class="community-editor-side-item">
                             <span class="community-editor-side-label">자동 저장 주기</span>
                             <strong>입력 후 5초</strong>
+                        </div>
+                        <div class="community-editor-side-item">
+                            <span class="community-editor-side-label">운영 상태</span>
+                            <strong id="contentVisibilitySummary">임시저장 · 공개 · 일반글</strong>
                         </div>
                         <p class="community-editor-side-note" id="contentSideNote">
                             제목과 본문이 목록 카드와 상세 화면에 그대로 반영됩니다.

@@ -15,6 +15,9 @@ public record ContentListResponse(
     public record ContentItem(
         Long id,
         String boardType,
+        String status,
+        String publicYn,
+        String pinnedYn,
         String title,
         String contentPreview,
         int viewCnt,
@@ -26,6 +29,9 @@ public record ContentListResponse(
             .map(d -> new ContentItem(
                 d.getId(),
                 d.getBoardType(),
+                d.getStatus(),
+                d.getPublicYn(),
+                d.getPinnedYn(),
                 d.getTitle(),
                 buildPreview(d.getContentPreview()),
                 d.getViewCnt(),

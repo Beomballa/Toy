@@ -46,6 +46,20 @@
                 <i class="fas fa-search"></i>
                 <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
             </div>
+            <select id="contentStatusFilter" class="form-select select-auto-width">
+                <option value="">전체 상태</option>
+                <option value="DRAFT">임시저장</option>
+                <option value="PUBLISHED">게시중</option>
+            </select>
+            <select id="contentPublicFilter" class="form-select select-auto-width">
+                <option value="">전체 공개</option>
+                <option value="Y">공개</option>
+                <option value="N">비공개</option>
+            </select>
+            <div class="form-check d-flex align-items-center ms-2">
+                <input class="form-check-input me-2" type="checkbox" id="contentPinnedOnly">
+                <label class="form-check-label" for="contentPinnedOnly">고정글만</label>
+            </div>
             <button type="submit" class="btn btn-light">검색</button>
             <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
         </form>

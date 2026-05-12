@@ -7,6 +7,9 @@ import java.time.format.DateTimeFormatter;
 public record ContentDetailResponse(
         Long id,
         String boardType,
+        String status,
+        String publicYn,
+        String pinnedYn,
         String title,
         String content,
         int viewCnt,
@@ -20,6 +23,9 @@ public record ContentDetailResponse(
         return new ContentDetailResponse(
                 document.getId(),
                 document.getBoardType() != null ? document.getBoardType().name() : "NOTICE",
+                document.getStatus() != null ? document.getStatus().name() : "DRAFT",
+                document.getPublicYn() != null ? document.getPublicYn().name() : "Y",
+                document.getPinnedYn() != null ? document.getPinnedYn().name() : "N",
                 document.getTitle(),
                 document.getContent(),
                 document.getViewCnt(),

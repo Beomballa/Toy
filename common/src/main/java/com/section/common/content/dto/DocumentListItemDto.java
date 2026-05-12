@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 public class DocumentListItemDto {
     private Long id;
     private String boardType;
+    private String status;
+    private String publicYn;
+    private String pinnedYn;
     private String title;
     private String contentPreview;
     private int viewCnt;

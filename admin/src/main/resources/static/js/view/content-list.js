@@ -5,7 +5,10 @@ const ContentList = {
         boardType: ContentBoardConfig.normalizeBoardType(
             window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType')
         ),
-        keyword: new URLSearchParams(window.location.search).get('keyword') || ''
+        keyword: new URLSearchParams(window.location.search).get('keyword') || '',
+        status: new URLSearchParams(window.location.search).get('status') || '',
+        publicYn: new URLSearchParams(window.location.search).get('publicYn') || '',
+        pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true'
     },
 
     init() {
@@ -60,6 +63,9 @@ const ContentList = {
             // 히스토리 이동 시 URL이 현재 게시판 상태의 기준이 된다.
             this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType'));
             this.state.keyword = params.get('keyword') || '';
+            this.state.status = params.get('status') || '';
+            this.state.publicYn = params.get('publicYn') || '';
+            this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
             this.state.page = 0;
             this.syncSearchField();
             this.setInitialTab();
@@ -76,6 +82,9 @@ const ContentList = {
         document.getElementById('contentSearchForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.state.keyword = document.getElementById('contentSearchKeyword')?.value.trim() || '';
+            this.state.status = document.getElementById('contentStatusFilter')?.value || '';
+            this.state.publicYn = document.getElementById('contentPublicFilter')?.value || '';
+            this.state.pinnedOnly = document.getElementById('contentPinnedOnly')?.checked || false;
             this.state.page = 0;
             this.pushState();
             this.getList();
@@ -83,6 +92,9 @@ const ContentList = {
 
         document.getElementById('btnResetContentSearch')?.addEventListener('click', () => {
             this.state.keyword = '';
+            this.state.status = '';
+            this.state.publicYn = '';
+            this.state.pinnedOnly = false;
             this.state.page = 0;
             this.syncSearchField();
             this.pushState();
@@ -114,6 +126,15 @@ const ContentList = {
         });
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
+        }
+        if (this.state.status) {
+            params.set('status', this.state.status);
+        }
+        if (this.state.publicYn) {
+            params.set('publicYn', this.state.publicYn);
+        }
+        if (this.state.pinnedOnly) {
+            params.set('pinnedOnly', 'true');
         }
 
         try {
@@ -147,7 +168,12 @@ const ContentList = {
                     <div class="card h-100 content-board-card">
                     <div class="card-body content-board-card-body">
                         <div class="content-board-card-top">
-                            <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(item.boardType))}</span>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(item.boardType))}</span>
+                                ${item.pinnedYn === 'Y' ? '<span class="badge bg-dark">고정</span>' : ''}
+                                <span class="badge ${item.status === 'PUBLISHED' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${item.status === 'PUBLISHED' ? '게시중' : '임시저장'}</span>
+                                <span class="badge ${item.publicYn === 'Y' ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis'}">${item.publicYn === 'Y' ? '공개' : '비공개'}</span>
+                            </div>
                             <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
                         <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}">
@@ -197,6 +223,15 @@ const ContentList = {
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
         }
+        if (this.state.status) {
+            params.set('status', this.state.status);
+        }
+        if (this.state.publicYn) {
+            params.set('publicYn', this.state.publicYn);
+        }
+        if (this.state.pinnedOnly) {
+            params.set('pinnedOnly', 'true');
+        }
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
     },
@@ -205,6 +240,18 @@ const ContentList = {
         const searchInput = document.getElementById('contentSearchKeyword');
         if (searchInput) {
             searchInput.value = this.state.keyword;
+        }
+        const statusInput = document.getElementById('contentStatusFilter');
+        if (statusInput) {
+            statusInput.value = this.state.status;
+        }
+        const publicInput = document.getElementById('contentPublicFilter');
+        if (publicInput) {
+            publicInput.value = this.state.publicYn;
+        }
+        const pinnedInput = document.getElementById('contentPinnedOnly');
+        if (pinnedInput) {
+            pinnedInput.checked = this.state.pinnedOnly;
         }
     }
 };

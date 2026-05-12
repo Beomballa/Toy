@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
@@ -28,6 +29,9 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         DocumentListItemDto.class,
                         document.id.as("id"),
                         document.boardType.stringValue().as("boardType"),
+                        document.status.stringValue().as("status"),
+                        document.publicYn.stringValue().as("publicYn"),
+                        document.pinnedYn.stringValue().as("pinnedYn"),
                         document.title.as("title"),
                         document.content.as("contentPreview"),
                         document.viewCnt.as("viewCnt"),
@@ -36,9 +40,12 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .from(document)
                 .where(
                         boardTypeEq(query.boardType()),
-                        keywordLike(query.keyword())
+                        keywordLike(query.keyword()),
+                        statusEq(query.status()),
+                        publicYnEq(query.publicYn()),
+                        pinnedOnly(query.pinnedOnly())
                 )
-                .orderBy(document.crtDtm.desc(), document.id.desc())
+                .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -48,7 +55,10 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .from(document)
                 .where(
                         boardTypeEq(query.boardType()),
-                        keywordLike(query.keyword())
+                        keywordLike(query.keyword()),
+                        statusEq(query.status()),
+                        publicYnEq(query.publicYn()),
+                        pinnedOnly(query.pinnedOnly())
                 );
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
@@ -69,5 +79,26 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
         String normalizedKeyword = keyword.trim();
         return document.title.containsIgnoreCase(normalizedKeyword)
                 .or(document.content.containsIgnoreCase(normalizedKeyword));
+    }
+
+    private BooleanExpression statusEq(Document.PublishStatus status) {
+        if (status == null) {
+            return null;
+        }
+        return document.status.eq(status);
+    }
+
+    private BooleanExpression publicYnEq(YN publicYn) {
+        if (publicYn == null) {
+            return null;
+        }
+        return document.publicYn.eq(publicYn);
+    }
+
+    private BooleanExpression pinnedOnly(Boolean pinnedOnly) {
+        if (!Boolean.TRUE.equals(pinnedOnly)) {
+            return null;
+        }
+        return document.pinnedYn.eq(YN.Y);
     }
 }

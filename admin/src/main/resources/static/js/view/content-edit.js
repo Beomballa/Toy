@@ -5,7 +5,10 @@ const ContentEdit = {
     initialData: {
         title: '',
         content: '',
-        boardType: ''
+        boardType: '',
+        status: 'DRAFT',
+        publicYn: 'Y',
+        pinnedYn: 'N'
     },
 
     init() {
@@ -18,9 +21,13 @@ const ContentEdit = {
         if (boardTypeSelect) {
             boardTypeSelect.value = this.initialBoardType;
         }
+        document.getElementById('status').value = this.initialData.status;
+        document.getElementById('publicYn').value = this.initialData.publicYn;
+        document.getElementById('pinnedYn').value = this.initialData.pinnedYn;
 
         this.bindEvents();
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
+        this.syncVisibilitySummary();
         
         if (this.id) {
             this.getDetail();
@@ -39,16 +46,21 @@ const ContentEdit = {
         });
 
         // 자동 저장 (입력 시)
-        const inputs = [document.getElementById('title'), document.getElementById('content'), document.getElementById('boardType')];
-        inputs.slice(0, 2).forEach(el => {
+        const textInputs = [document.getElementById('title'), document.getElementById('content')];
+        textInputs.forEach(el => {
             el?.addEventListener('input', () => {
                 this.scheduleAutoSave();
             });
         });
 
-        document.getElementById('boardType')?.addEventListener('change', (e) => {
-            this.applyBoardMeta(e.target.value);
-            this.scheduleAutoSave();
+        ['boardType', 'status', 'publicYn', 'pinnedYn'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('change', (e) => {
+                if (id === 'boardType') {
+                    this.applyBoardMeta(e.target.value);
+                }
+                this.syncVisibilitySummary();
+                this.scheduleAutoSave();
+            });
         });
 
         document.getElementById('btnBackToList')?.addEventListener('click', () => {
@@ -65,13 +77,20 @@ const ContentEdit = {
             document.getElementById('title').value = data.title || '';
             document.getElementById('content').value = data.content || '';
             document.getElementById('boardType').value = data.boardType || 'NOTICE';
+            document.getElementById('status').value = data.status || 'DRAFT';
+            document.getElementById('publicYn').value = data.publicYn || 'Y';
+            document.getElementById('pinnedYn').value = data.pinnedYn || 'N';
             
             this.initialData = {
                 title: data.title,
                 content: data.content,
-                boardType: data.boardType
+                boardType: data.boardType,
+                status: data.status || 'DRAFT',
+                publicYn: data.publicYn || 'Y',
+                pinnedYn: data.pinnedYn || 'N'
             };
             this.applyBoardMeta(data.boardType || 'NOTICE');
+            this.syncVisibilitySummary();
         } catch (err) {
             console.error('콘텐츠 로드 실패:', err);
             CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
@@ -140,6 +159,9 @@ const ContentEdit = {
         const title = document.getElementById('title').value;
         const content = document.getElementById('content').value;
         const boardType = ContentBoardConfig.normalizeBoardType(document.getElementById('boardType').value);
+        const status = document.getElementById('status').value || 'DRAFT';
+        const publicYn = document.getElementById('publicYn').value || 'Y';
+        const pinnedYn = document.getElementById('pinnedYn').value || 'N';
 
         if (!title.trim()) {
             if (!isAutoSave) CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
@@ -150,7 +172,10 @@ const ContentEdit = {
         if (isAutoSave && 
             title === this.initialData.title && 
             content === this.initialData.content && 
-            boardType === this.initialData.boardType) {
+            boardType === this.initialData.boardType &&
+            status === this.initialData.status &&
+            publicYn === this.initialData.publicYn &&
+            pinnedYn === this.initialData.pinnedYn) {
             return;
         }
 
@@ -165,7 +190,10 @@ const ContentEdit = {
                     id: this.id || null,
                     title: title,
                     content: content,
-                    boardType: boardType
+                    boardType: boardType,
+                    status: status,
+                    publicYn: publicYn,
+                    pinnedYn: pinnedYn
                 })
             });
 
@@ -181,7 +209,7 @@ const ContentEdit = {
                 window.history.replaceState({}, '', url);
             }
 
-            this.initialData = { title, content, boardType };
+            this.initialData = { title, content, boardType, status, publicYn, pinnedYn };
             this.setStatus(isAutoSave ? '임시 저장되었습니다.' : '저장되었습니다.', 3000);
 
             if (!isAutoSave) {
@@ -216,5 +244,15 @@ const ContentEdit = {
             console.error('삭제 실패:', err);
             CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    syncVisibilitySummary() {
+        const summaryEl = document.getElementById('contentVisibilitySummary');
+        if (!summaryEl) return;
+
+        const statusLabel = (document.getElementById('status')?.value || 'DRAFT') === 'PUBLISHED' ? '게시중' : '임시저장';
+        const publicLabel = (document.getElementById('publicYn')?.value || 'Y') === 'Y' ? '공개' : '비공개';
+        const pinnedLabel = (document.getElementById('pinnedYn')?.value || 'N') === 'Y' ? '고정글' : '일반글';
+        summaryEl.textContent = `${statusLabel} · ${publicLabel} · ${pinnedLabel}`;
     }
 };

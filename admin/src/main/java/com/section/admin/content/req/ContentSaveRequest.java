@@ -1,5 +1,6 @@
 package com.section.admin.content.req;
 
+import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.entity.Document;
@@ -16,15 +17,23 @@ public record ContentSaveRequest(
     @NotBlank
     @Size(max = 10000)
     String content,
-    Long productNo
+    Long productNo,
+    String status,
+    String publicYn,
+    String pinnedYn
 ) {
     public Document toEntity() {
         Document document = new Document();
         document.setId(this.id());
-        document.setBoardType(parseBoardType(this.boardType()));
-        document.setTitle(this.title());
-        document.setContent(this.content());
-        document.setProductNo(this.productNo());
+        document.applyEditorValues(
+                parseBoardType(this.boardType()),
+                parseStatus(this.status()),
+                parseYn(this.publicYn(), YN.Y),
+                parseYn(this.pinnedYn(), YN.N),
+                this.title().trim(),
+                this.content().trim(),
+                this.productNo()
+        );
         return document;
     }
 
@@ -32,6 +41,30 @@ public record ContentSaveRequest(
         try {
             return Document.BoardType.valueOf(boardType);
         } catch (IllegalArgumentException | NullPointerException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private Document.PublishStatus parseStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return Document.PublishStatus.DRAFT;
+        }
+
+        try {
+            return Document.PublishStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private YN parseYn(String value, YN defaultValue) {
+        if (value == null || value.isBlank()) {
+            return defaultValue;
+        }
+
+        try {
+            return YN.valueOf(value);
+        } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

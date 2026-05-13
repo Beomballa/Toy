@@ -1,6 +1,7 @@
 const BannerList = {
     modal: null,
     state: {},
+    operationPolicy: null,
 
     init() {
         const modalEl = document.getElementById('bannerModal');
@@ -9,7 +10,20 @@ const BannerList = {
         }
         this.bindEvents();
         this.readStateFromUrl();
+        this.applyOperationPolicy();
         this.getList();
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 배너 등록, 수정, 상태 변경, 삭제가 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnNewBanner'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveBanner'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     bindEvents() {
@@ -94,6 +108,10 @@ const BannerList = {
     },
 
     openModal() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            CommonJS.alert('유지보수 모드에서는 배너 등록이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('bannerForm').reset();
         document.getElementById('bannerNo').value = '';
         document.getElementById('bannerModalTitle').innerText = '신규 배너 등록';
@@ -101,6 +119,10 @@ const BannerList = {
     },
 
     openEditModal(item) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            CommonJS.alert('유지보수 모드에서는 배너 수정이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('bannerNo').value = item.bannerNo;
         document.getElementById('title').value = item.title;
         document.getElementById('imageUrl').value = item.imageUrl;
@@ -114,6 +136,10 @@ const BannerList = {
     },
 
     async saveBanner() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배너 저장이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const formData = {
             bannerNo: document.getElementById('bannerNo').value || null,
             title: document.getElementById('title').value,
@@ -148,6 +174,10 @@ const BannerList = {
     },
 
     async toggleActive(no, isActive) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배너 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/banners/active/${no}?isActive=${isActive}`, { method: 'PATCH' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '상태 변경 중 오류가 발생했습니다.'));
@@ -159,6 +189,10 @@ const BannerList = {
     },
 
     async deleteBanner(no) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배너 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const confirm = await CommonJS.confirm('배너를 삭제하시겠습니까?');
         if (!confirm) return;
 

@@ -1,6 +1,7 @@
 const MemberListPage = {
     modal: null,
     selectedMember: null,
+    operationPolicy: null,
     state: {
         page: 0,
         size: 20
@@ -10,7 +11,16 @@ const MemberListPage = {
         this.modal = new bootstrap.Modal(document.getElementById('memberDetailModal'));
         this.bindEvents();
         this.readStateFromUrl();
+        this.applyOperationPolicy();
         this.getList();
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     bindEvents() {
@@ -120,10 +130,18 @@ const MemberListPage = {
         `;
         document.getElementById('btnToggleMasterYn').textContent = data.masterYn === 'Y' ? '마스터 해제' : '마스터 지정';
         document.getElementById('btnToggleMemberStatus').textContent = data.delYn === 'Y' ? '회원 복구' : '탈퇴 처리';
+        const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
+        const reason = '유지보수 모드에서는 회원 상태 변경이 불가능합니다.';
+        CommonJS.setButtonDisabled(document.getElementById('btnToggleMasterYn'), disabled, reason);
+        CommonJS.setButtonDisabled(document.getElementById('btnToggleMemberStatus'), disabled, reason);
     },
 
     async toggleMemberStatus(type) {
         if (!this.selectedMember) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 회원 상태 변경이 불가능합니다.', '알림', 'warning');
             return;
         }
         const payload = {

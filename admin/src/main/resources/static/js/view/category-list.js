@@ -1,5 +1,6 @@
 const CategoryList = {
     modal: null,
+    operationPolicy: null,
     state: {
         selectedParentNo: null,
         selectedParentName: '',
@@ -15,7 +16,20 @@ const CategoryList = {
             console.error('카테고리 모달 엘리먼트를 찾을 수 없습니다.');
         }
         this.bindEvents();
+        this.applyOperationPolicy();
         this.getDepth1List();
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 카테고리 등록, 수정, 삭제가 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnNewSubCategory'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveCategory'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     bindEvents() {
@@ -40,7 +54,12 @@ const CategoryList = {
         this.state.selectedParentName = parentName;
         
         document.getElementById('parentCategoryName').innerText = `> ${parentName}`;
-        document.getElementById('btnNewSubCategory').disabled = false;
+        const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
+        CommonJS.setButtonDisabled(
+            document.getElementById('btnNewSubCategory'),
+            disabled,
+            '유지보수 모드에서는 하위 카테고리를 추가할 수 없습니다.'
+        );
 
         try {
             const res = await fetch(`/api/admin/categories/sub?parentNo=${parentNo}`);
@@ -106,6 +125,10 @@ const CategoryList = {
     },
 
     openModal(depth, item) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            CommonJS.alert('유지보수 모드에서는 카테고리 등록 및 수정이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('categoryForm').reset();
         document.getElementById('categoryNo').value = '';
         document.getElementById('depth').value = depth;
@@ -132,6 +155,10 @@ const CategoryList = {
     },
 
     async saveCategory() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 카테고리 저장이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const name = document.getElementById('categoryName').value;
         if (!name) {
             CommonJS.alert('카테고리명을 입력하세요.', '알림', 'warning');
@@ -168,6 +195,10 @@ const CategoryList = {
     },
 
     async deleteCategory(no) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 카테고리 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const confirm = await CommonJS.confirm('정말 삭제하시겠습니까? (하위 항목이 있는 경우 삭제되지 않을 수 있습니다)');
         if (!confirm) return;
 

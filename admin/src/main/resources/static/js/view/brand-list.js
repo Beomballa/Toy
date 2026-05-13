@@ -1,5 +1,6 @@
 const BrandList = {
     modal: null,
+    operationPolicy: null,
 
     init() {
         const modalEl = document.getElementById('brandModal');
@@ -9,7 +10,20 @@ const BrandList = {
             console.error('브랜드 모달 엘리먼트를 찾을 수 없습니다.');
         }
         this.bindEvents();
+        this.applyOperationPolicy();
         this.getList();
+    },
+
+    async applyOperationPolicy() {
+        try {
+            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 브랜드 등록, 수정, 삭제가 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnNewBrand'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveBrand'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     bindEvents() {
@@ -67,6 +81,10 @@ const BrandList = {
     },
 
     async openModal(brandNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 등록 및 수정이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('brandForm').reset();
         document.getElementById('brandNo').value = '';
         document.getElementById('brandModalTitle').innerText = '신규 브랜드 등록';
@@ -90,6 +108,10 @@ const BrandList = {
     },
 
     async saveBrand() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 저장이 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const brandNo = document.getElementById('brandNo').value;
         const nameKo = document.getElementById('nameKo').value;
         if (!nameKo) {
@@ -124,6 +146,10 @@ const BrandList = {
     },
 
     async deleteBrand(brandNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
         const confirm = await CommonJS.confirm('정말 삭제하시겠습니까?');
         if (!confirm) return;
 

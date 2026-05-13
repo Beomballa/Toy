@@ -33,6 +33,46 @@
     min-width: 1040px;
 }
 
+.operation-policy-banner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding: 0.95rem 1.1rem;
+    border: 1px solid #dbe4ff;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.operation-policy-banner__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #1d4ed8;
+    font-size: 0.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.operation-policy-banner__items {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.55rem;
+}
+
+.operation-policy-banner__item {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.45rem 0.7rem;
+    border-radius: 999px;
+    background: #eef4ff;
+    color: #334155;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
 /* Custom Alert & Confirm Modal Styles */
 .custom-modal-overlay {
     position: fixed;

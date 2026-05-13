@@ -20,6 +20,7 @@ let CommonJS = {
         document.getElementById("main-logo")?.addEventListener("click", function (el){
             window.location.href = "/product/list";
         });
+        this.renderOperationPolicyBanner();
     },
 
     /**
@@ -261,6 +262,58 @@ let CommonJS = {
         } else {
             button.removeAttribute('title');
         }
+    },
+
+    renderOperationPolicyBanner: async function() {
+        const host = document.querySelector('main.main-content, main#main-content');
+        if (!host || document.getElementById('operationPolicyBanner')) {
+            return;
+        }
+
+        try {
+            const settings = await this.fetchSystemSettings();
+            const items = this.buildOperationPolicyBannerItems(settings);
+            if (!items.length) {
+                return;
+            }
+
+            const banner = document.createElement('div');
+            banner.id = 'operationPolicyBanner';
+            banner.className = 'operation-policy-banner';
+            banner.dataset.maintenanceMode = String(!!settings.maintenanceMode);
+            banner.dataset.communityWriteEnabled = String(settings.communityWriteEnabled !== false);
+            banner.dataset.orderExportEnabled = String(settings.orderExportEnabled !== false);
+            banner.dataset.lowStockDefaultThreshold = String(settings.lowStockDefaultThreshold || 100);
+            banner.innerHTML = `
+                <div class="operation-policy-banner__title">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>현재 운영 정책</span>
+                </div>
+                <div class="operation-policy-banner__items">
+                    ${items.map((item) => `<span class="operation-policy-banner__item">${item}</span>`).join('')}
+                </div>
+            `;
+            host.insertAdjacentElement('afterbegin', banner);
+        } catch (error) {
+            console.error('운영 정책 배너 로드 실패:', error);
+        }
+    },
+
+    buildOperationPolicyBannerItems: function(settings) {
+        const items = [];
+        if (settings.maintenanceMode) {
+            items.push('유지보수 모드 활성화');
+        }
+        if (settings.communityWriteEnabled === false) {
+            items.push('커뮤니티 작성 비활성화');
+        }
+        if (settings.orderExportEnabled === false) {
+            items.push('주문 CSV 비활성화');
+        }
+
+        // 운영 기본값은 화면 해석 비용을 줄이는 정보라, 경고성 상태가 아니어도 같이 보여줍니다.
+        items.push(`기본 저재고 기준 ${settings.lowStockDefaultThreshold || 100}개 미만`);
+        return items;
     }
 }
 

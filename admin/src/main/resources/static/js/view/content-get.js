@@ -4,6 +4,7 @@ const ContentDetail = {
         boardType: 'NOTICE',
         data: null
     },
+    operationPolicy: null,
 
     init() {
         const params = new URLSearchParams(window.location.search);
@@ -21,6 +22,8 @@ const ContentDetail = {
 
         this.applyBoardMeta(this.state.boardType);
         this.bindEvents();
+        this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
     },
 
@@ -30,12 +33,29 @@ const ContentDetail = {
         });
 
         document.getElementById('btnEditContent')?.addEventListener('click', () => {
+            if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
+                CommonJS.alert('현재 설정에서 커뮤니티 수정 기능이 비활성화되어 있습니다.', '알림', 'warning');
+                return;
+            }
             window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}`;
         });
 
         document.getElementById('btnDeleteContent')?.addEventListener('click', () => {
             this.deleteContent();
         });
+    },
+
+    async applyOperationPolicy(settings = null) {
+        try {
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
+            const reason = '현재 설정에서 커뮤니티 수정 및 삭제 기능이 비활성화되어 있습니다.';
+
+            CommonJS.setButtonDisabled(document.getElementById('btnEditContent'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnDeleteContent'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async loadDetail() {
@@ -89,6 +109,11 @@ const ContentDetail = {
     },
 
     async deleteContent() {
+        if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('현재 설정에서 커뮤니티 삭제 기능이 비활성화되어 있습니다.', '알림', 'warning');
+            return;
+        }
+
         const isConfirm = await CommonJS.confirm('정말로 이 게시글을 삭제하시겠습니까?', '콘텐츠 삭제 확인', 'error');
         if (!isConfirm) return;
 

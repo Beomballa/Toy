@@ -159,6 +159,7 @@
         init() {
             this.modal = new bootstrap.Modal(document.getElementById('adminModal'));
             this.bindEvents();
+            window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
             this.getList();
             this.getSystemSettings();
         },
@@ -191,10 +192,27 @@
                     <td><span class="badge ${item.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
                     <td class="text-muted small">${item.lastLoginDtm ? item.lastLoginDtm.replace('T', ' ') : '-'}</td>
                     <td class="text-end pe-4">
-                        <button class="btn btn-sm btn-outline-primary" onclick='AdminUser.openModal(${JSON.stringify(item)})'>수정</button>
+                        <button class="btn btn-sm btn-outline-primary"
+                                data-role="edit-admin"
+                                onclick='AdminUser.openModal(${JSON.stringify(item)})'>수정</button>
                     </td>
                 </tr>
             `).join('');
+            this.updateAdminActionState();
+        },
+        applyOperationPolicy(settings) {
+            this.operationPolicy = settings;
+            this.updateAdminActionState();
+        },
+        updateAdminActionState() {
+            const disabled = !!this.operationPolicy?.maintenanceMode;
+            const reason = '유지보수 모드에서는 관리자 계정 등록 및 수정이 불가능합니다.';
+
+            CommonJS.setButtonDisabled(document.getElementById('btnNewAdmin'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), disabled, reason);
+            document.querySelectorAll('[data-role="edit-admin"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
         },
         openModal(item) {
             if (this.operationPolicy?.maintenanceMode) {
@@ -269,10 +287,7 @@
                 document.getElementById('orderExportEnabled').checked = !!data.orderExportEnabled;
                 document.getElementById('lowStockDefaultThreshold').value = data.lowStockDefaultThreshold;
                 document.getElementById('systemSettingMetaText').textContent = '현재 운영 설정이 로드되었습니다.';
-                const disabled = !!data.maintenanceMode;
-                const reason = '유지보수 모드에서는 관리자 계정 등록 및 수정이 불가능합니다.';
-                CommonJS.setButtonDisabled(document.getElementById('btnNewAdmin'), disabled, reason);
-                CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), disabled, reason);
+                this.applyOperationPolicy(data);
             } catch (err) {
                 document.getElementById('systemSettingMetaText').textContent = err.message;
             }
@@ -308,10 +323,6 @@
                 };
                 document.getElementById('systemSettingMetaText').textContent = '운영 설정이 저장되었습니다.';
                 this.operationPolicy = CommonJS.setSystemSettingsCache(nextSettings);
-                const disabled = !!this.operationPolicy.maintenanceMode;
-                const reason = '유지보수 모드에서는 관리자 계정 등록 및 수정이 불가능합니다.';
-                CommonJS.setButtonDisabled(document.getElementById('btnNewAdmin'), disabled, reason);
-                CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), disabled, reason);
                 await CommonJS.alert('운영 설정이 저장되었습니다.', '성공', 'success');
             } catch (err) {
                 document.getElementById('systemSettingMetaText').textContent = err.message;

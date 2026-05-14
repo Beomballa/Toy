@@ -20,6 +20,7 @@ const ProductList = {
     lastResultMeta: null,
     lastErrorMessage: '',
     lastTotalElements: 0,
+    operationPolicy: null,
 
     init(brands = [], categories = [], initialLowStockThreshold = 100) {
         this.defaultLowStockThreshold = this._normalizeLowStockThreshold(String(initialLowStockThreshold));
@@ -32,9 +33,18 @@ const ProductList = {
         this._renderFilterSummary();
         this._bindEvents();
         this._initAnimations();
+        this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList(); // 초기 로드
 
-        document.getElementById('new-product')?.addEventListener('click', () => location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`);
+        document.getElementById('new-product')?.addEventListener('click', async () => {
+            if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+                await CommonJS.alert('유지보수 모드에서는 상품 등록이 불가능합니다.', '알림', 'warning');
+                return;
+            }
+
+            location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`;
+        });
         document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
             window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
@@ -89,6 +99,22 @@ const ProductList = {
                     imageSearchBtn.dataset.modelNum,
                     imageSearchBtn.dataset.brandName
                 );
+                return;
+            }
+
+            const editButton = e.target.closest('[data-role="edit-product"]');
+            if (editButton) {
+                if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+                    CommonJS.alert('유지보수 모드에서는 상품 수정이 불가능합니다.', '알림', 'warning');
+                    return;
+                }
+                location.href = `/admin/products/update?no=${editButton.dataset.productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+                return;
+            }
+
+            const deleteButton = e.target.closest('[data-role="delete-product"]');
+            if (deleteButton) {
+                this.deleteProduct(deleteButton.dataset.productNo);
             }
         });
 
@@ -133,6 +159,20 @@ const ProductList = {
             this._renderFilterSummary();
             this.getList(false);
         });
+    },
+
+    async applyOperationPolicy(settings = null) {
+        try {
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            CommonJS.setButtonDisabled(
+                document.getElementById('new-product'),
+                disabled,
+                '유지보수 모드에서는 상품 등록, 수정, 삭제가 불가능합니다.'
+            );
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     _initAnimations() {
@@ -268,10 +308,18 @@ const ProductList = {
                             title="실제 이미지 검색">
                         <i class="fas fa-image"></i>
                     </button>
-                    <button type="button" class="btn btn-icon btn-secondary me-1" onclick="location.href='/admin/products/update?no=${item.productNo}&returnTo=${encodeURIComponent(ProductList.getReturnTo())}'">
+                    <button type="button"
+                            class="btn btn-icon btn-secondary me-1"
+                            data-role="edit-product"
+                            data-product-no="${item.productNo}"
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상품 수정이 불가능합니다."' : ''}>
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button type="button" class="btn btn-icon btn-secondary" onclick="ProductList.deleteProduct('${item.productNo}')">
+                    <button type="button"
+                            class="btn btn-icon btn-secondary"
+                            data-role="delete-product"
+                            data-product-no="${item.productNo}"
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상품 삭제가 불가능합니다."' : ''}>
                         <i class="fas fa-trash text-danger"></i>
                     </button>
                 </td>
@@ -480,6 +528,11 @@ const ProductList = {
     },
 
     async deleteProduct(no) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 상품 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
         const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');
         if (!isConfirm) return;
 

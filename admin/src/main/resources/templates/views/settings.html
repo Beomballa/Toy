@@ -66,6 +66,11 @@
                             <div class="small text-muted" id="systemSettingMetaText">운영 설정을 불러오는 중입니다...</div>
                         </div>
                     </div>
+                    <div id="systemSettingsStateMeta" class="d-none"
+                         data-maintenance-mode=""
+                         data-community-write-enabled=""
+                         data-order-export-enabled=""
+                         data-low-stock-default-threshold=""></div>
                 </div>
             </div>
         </div>
@@ -202,7 +207,19 @@
         },
         applyOperationPolicy(settings) {
             this.operationPolicy = settings;
+            this.updateSettingsStateMeta(settings);
             this.updateAdminActionState();
+        },
+        updateSettingsStateMeta(settings) {
+            const meta = document.getElementById('systemSettingsStateMeta');
+            if (!meta || !settings) {
+                return;
+            }
+
+            meta.dataset.maintenanceMode = String(!!settings.maintenanceMode);
+            meta.dataset.communityWriteEnabled = String(settings.communityWriteEnabled !== false);
+            meta.dataset.orderExportEnabled = String(settings.orderExportEnabled !== false);
+            meta.dataset.lowStockDefaultThreshold = String(settings.lowStockDefaultThreshold || 100);
         },
         updateAdminActionState() {
             const disabled = !!this.operationPolicy?.maintenanceMode;

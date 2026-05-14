@@ -279,10 +279,13 @@ let CommonJS = {
     setButtonDisabled: function(button, disabled, reason = '') {
         if (!button) return;
         button.disabled = disabled;
+        button.dataset.policyDisabled = String(!!disabled);
         if (disabled && reason) {
             button.title = reason;
+            button.dataset.policyDisabledReason = reason;
         } else {
             button.removeAttribute('title');
+            delete button.dataset.policyDisabledReason;
         }
     },
 

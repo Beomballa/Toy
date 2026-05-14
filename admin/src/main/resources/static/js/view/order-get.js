@@ -4,6 +4,7 @@ const OrderDetail = {
         this.orderNo = params.get('no');
         this.returnTo = params.get('returnTo') || '/admin/orders/list';
         this.isSubmitting = false;
+        this.operationPolicy = null;
         if (!this.orderNo) {
             CommonJS.alert('잘못된 접근입니다.', '오류', 'error').then(() => {
                 location.href = this.returnTo;
@@ -13,6 +14,8 @@ const OrderDetail = {
 
         this.syncReturnLinks();
         this.bindEvents();
+        this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getDetail();
     },
 
@@ -24,6 +27,21 @@ const OrderDetail = {
         document.getElementById('btnCompleteDelivery')?.addEventListener('click', () => this.completeDelivery());
         document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
         document.getElementById('btnSaveAdminMemo')?.addEventListener('click', () => this.saveAdminMemo());
+    },
+
+    async applyOperationPolicy(settings = null) {
+        try {
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = '유지보수 모드에서는 주문 처리와 관리 메모 저장이 불가능합니다.';
+
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveDelivery'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnCompleteDelivery'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnCancelOrder'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveAdminMemo'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async getDetail() {
@@ -151,6 +169,11 @@ const OrderDetail = {
     },
 
     async completeDelivery() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배송 완료 처리가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
         const isConfirm = await CommonJS.confirm('배송 완료 처리를 하시겠습니까?');
         if (!isConfirm) return;
 
@@ -164,6 +187,11 @@ const OrderDetail = {
     },
 
     async cancelOrder() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 주문 취소가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
         const isConfirm = await CommonJS.confirm('주문을 취소하시겠습니까?');
         if (!isConfirm) return;
 
@@ -177,6 +205,11 @@ const OrderDetail = {
     },
 
     async saveDelivery() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배송 정보 저장이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
         const companyInput = document.getElementById('deliveryCompany');
         const trackingInput = document.getElementById('trackingNum');
         const company = companyInput.value.trim().replace(/\s+/g, ' ');
@@ -205,6 +238,11 @@ const OrderDetail = {
     },
 
     async saveAdminMemo() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 관리 메모 저장이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
         const adminMemo = (document.getElementById('adminMemo')?.value || '').trim();
         await this.submitOrderAction({
             url: '/api/admin/orders/memo',

@@ -11,12 +11,13 @@ const BannerList = {
         this.bindEvents();
         this.readStateFromUrl();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 배너 등록, 수정, 상태 변경, 삭제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnNewBanner'), disabled, reason);

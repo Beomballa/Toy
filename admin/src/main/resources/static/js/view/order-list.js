@@ -9,6 +9,7 @@ const OrderList = {
         this.syncFilterFields();
         this.bindEvents();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
 
@@ -77,10 +78,10 @@ const OrderList = {
         });
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         const exportButton = document.getElementById('btnExportOrders');
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             CommonJS.setButtonDisabled(
                 exportButton,
                 CommonJS.isOrderExportBlocked(this.operationPolicy),

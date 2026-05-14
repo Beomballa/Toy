@@ -19,15 +19,16 @@ const ProductCreate = {
         this.bindEvents();
         this.syncReturnLinks();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
 
         document.getElementById("main-logo")?.addEventListener("click", () => {
             window.location.href = this.returnTo;
         });
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 상품 등록이 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnSubmit'), disabled, reason);

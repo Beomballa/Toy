@@ -17,12 +17,13 @@ const CategoryList = {
         }
         this.bindEvents();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getDepth1List();
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 카테고리 등록, 수정, 삭제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnNewSubCategory'), disabled, reason);

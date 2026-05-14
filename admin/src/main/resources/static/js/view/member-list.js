@@ -12,12 +12,13 @@ const MemberListPage = {
         this.bindEvents();
         this.readStateFromUrl();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }

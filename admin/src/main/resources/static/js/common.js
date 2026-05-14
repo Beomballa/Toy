@@ -1,6 +1,7 @@
 // /js/common.js
 let CommonJS = {
     systemSettingsCache: null,
+    systemSettingsEventName: 'admin-system-settings-updated',
     orderStatusMeta: {
         ORDERED: { badgeClass: 'badge-ordered', canCancel: true, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false },
         PAID: { badgeClass: 'badge-paid', canCancel: true, showDeliveryInput: true, showDeliveryInfo: false, showCompleteDelivery: false },
@@ -238,8 +239,14 @@ let CommonJS = {
             throw new Error(await this.extractErrorMessage(response, '운영 설정을 불러오지 못했습니다.'));
         }
 
-        this.systemSettingsCache = await response.json();
-        return this.systemSettingsCache;
+        return this.setSystemSettingsCache(await response.json());
+    },
+
+    setSystemSettingsCache: function(settings) {
+        this.systemSettingsCache = settings;
+        window.dispatchEvent(new CustomEvent(this.systemSettingsEventName, { detail: settings }));
+        this.renderOperationPolicyBanner(settings);
+        return settings;
     },
 
     isAdminWriteBlocked: function(settings) {
@@ -264,26 +271,22 @@ let CommonJS = {
         }
     },
 
-    renderOperationPolicyBanner: async function() {
+    renderOperationPolicyBanner: async function(settings = null) {
         const host = document.querySelector('main.main-content, main#main-content');
-        if (!host || document.getElementById('operationPolicyBanner')) {
+        if (!host) {
             return;
         }
 
         try {
-            const settings = await this.fetchSystemSettings();
-            const items = this.buildOperationPolicyBannerItems(settings);
-            if (!items.length) {
-                return;
-            }
-
-            const banner = document.createElement('div');
+            const resolvedSettings = settings || await this.fetchSystemSettings();
+            const banner = document.getElementById('operationPolicyBanner') || document.createElement('div');
             banner.id = 'operationPolicyBanner';
             banner.className = 'operation-policy-banner';
-            banner.dataset.maintenanceMode = String(!!settings.maintenanceMode);
-            banner.dataset.communityWriteEnabled = String(settings.communityWriteEnabled !== false);
-            banner.dataset.orderExportEnabled = String(settings.orderExportEnabled !== false);
-            banner.dataset.lowStockDefaultThreshold = String(settings.lowStockDefaultThreshold || 100);
+            const items = this.buildOperationPolicyBannerItems(resolvedSettings);
+            banner.dataset.maintenanceMode = String(!!resolvedSettings.maintenanceMode);
+            banner.dataset.communityWriteEnabled = String(resolvedSettings.communityWriteEnabled !== false);
+            banner.dataset.orderExportEnabled = String(resolvedSettings.orderExportEnabled !== false);
+            banner.dataset.lowStockDefaultThreshold = String(resolvedSettings.lowStockDefaultThreshold || 100);
             banner.innerHTML = `
                 <div class="operation-policy-banner__title">
                     <i class="fas fa-shield-alt"></i>
@@ -293,7 +296,9 @@ let CommonJS = {
                     ${items.map((item) => `<span class="operation-policy-banner__item">${item}</span>`).join('')}
                 </div>
             `;
-            host.insertAdjacentElement('afterbegin', banner);
+            if (!banner.isConnected) {
+                host.insertAdjacentElement('afterbegin', banner);
+            }
         } catch (error) {
             console.error('운영 정책 배너 로드 실패:', error);
         }

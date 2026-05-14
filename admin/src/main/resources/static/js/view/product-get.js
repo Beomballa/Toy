@@ -18,6 +18,7 @@ const ProductDetail = {
 
         this.syncReturnLinks();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
             this.renderProduct(bootstrapProduct);
@@ -77,9 +78,9 @@ const ProductDetail = {
         }
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 상품 수정, 삭제, 복제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnEdit'), disabled, reason);

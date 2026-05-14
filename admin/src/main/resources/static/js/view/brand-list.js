@@ -11,12 +11,13 @@ const BrandList = {
         }
         this.bindEvents();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 브랜드 등록, 수정, 삭제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnNewBrand'), disabled, reason);

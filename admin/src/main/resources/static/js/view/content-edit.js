@@ -30,6 +30,7 @@ const ContentEdit = {
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
         this.syncVisibilitySummary();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         
         if (this.id) {
             this.getDetail();
@@ -155,9 +156,9 @@ const ContentEdit = {
         return ContentBoardConfig.getListPath(boardType);
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
             const reason = this.operationPolicy.maintenanceMode
                 ? '유지보수 모드에서는 커뮤니티 저장 및 삭제가 불가능합니다.'

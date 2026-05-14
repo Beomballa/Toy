@@ -19,6 +19,7 @@ const ProductUpdate = {
 
         this.syncReturnLinks();
         this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 수정 화면도 서버가 이미 가진 상세 모델을 먼저 써서 초기 로딩 왕복을 줄입니다.
             this.fillForm(bootstrapProduct);
@@ -33,9 +34,9 @@ const ProductUpdate = {
         });
     },
 
-    async applyOperationPolicy() {
+    async applyOperationPolicy(settings = null) {
         try {
-            this.operationPolicy = await CommonJS.fetchSystemSettings();
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 상품 수정이 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnUpdate'), disabled, reason);

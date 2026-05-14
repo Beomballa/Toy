@@ -125,9 +125,7 @@ const ContentList = {
         try {
             const resolvedSettings = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(resolvedSettings);
-            const reason = resolvedSettings.maintenanceMode
-                ? '유지보수 모드에서는 커뮤니티 작성이 불가능합니다.'
-                : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+            const reason = CommonJS.getCommunityWriteBlockedReason(resolvedSettings, '커뮤니티 작성');
             CommonJS.setButtonDisabled(createButton, disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);

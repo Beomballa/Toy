@@ -261,6 +261,21 @@ let CommonJS = {
         return settings?.orderExportEnabled === false;
     },
 
+    getAdminWriteBlockedReason: function(actionLabel = '관리 작업') {
+        return `유지보수 모드에서는 ${actionLabel}이 불가능합니다.`;
+    },
+
+    getCommunityWriteBlockedReason: function(settings, actionLabel = '커뮤니티 작성') {
+        if (this.isAdminWriteBlocked(settings)) {
+            return this.getAdminWriteBlockedReason(actionLabel);
+        }
+        return `현재 설정에서 ${actionLabel} 기능이 비활성화되어 있습니다.`;
+    },
+
+    getOrderExportBlockedReason: function() {
+        return '현재 설정에서 주문 CSV 내보내기 기능이 비활성화되어 있습니다.';
+    },
+
     setButtonDisabled: function(button, disabled, reason = '') {
         if (!button) return;
         button.disabled = disabled;

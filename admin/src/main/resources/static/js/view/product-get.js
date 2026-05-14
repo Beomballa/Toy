@@ -82,7 +82,7 @@ const ProductDetail = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
-            const reason = '유지보수 모드에서는 상품 수정, 삭제, 복제가 불가능합니다.';
+            const reason = CommonJS.getAdminWriteBlockedReason('상품 수정, 삭제, 복제');
             CommonJS.setButtonDisabled(document.getElementById('btnEdit'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnDelete'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnCloneProduct'), disabled, reason);
@@ -93,7 +93,7 @@ const ProductDetail = {
 
     async cloneProduct() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 상품 복제가 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 복제'), '알림', 'warning');
             return;
         }
         const confirmed = await CommonJS.confirm('현재 상품을 복제하시겠습니까?');
@@ -272,7 +272,7 @@ const ProductDetail = {
 
     async deleteProduct() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 상품 삭제가 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 삭제'), '알림', 'warning');
             return;
         }
         const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');

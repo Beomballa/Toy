@@ -33,7 +33,7 @@ const OrderDetail = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
-            const reason = '유지보수 모드에서는 주문 처리와 관리 메모 저장이 불가능합니다.';
+            const reason = CommonJS.getAdminWriteBlockedReason('주문 처리와 관리 메모 저장');
 
             CommonJS.setButtonDisabled(document.getElementById('btnSaveDelivery'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnCompleteDelivery'), disabled, reason);
@@ -170,7 +170,7 @@ const OrderDetail = {
 
     async completeDelivery() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 배송 완료 처리가 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('배송 완료 처리'), '알림', 'warning');
             return;
         }
 
@@ -188,7 +188,7 @@ const OrderDetail = {
 
     async cancelOrder() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 주문 취소가 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('주문 취소'), '알림', 'warning');
             return;
         }
 
@@ -206,7 +206,7 @@ const OrderDetail = {
 
     async saveDelivery() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 배송 정보 저장이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('배송 정보 저장'), '알림', 'warning');
             return;
         }
 
@@ -239,7 +239,7 @@ const OrderDetail = {
 
     async saveAdminMemo() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 관리 메모 저장이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리 메모 저장'), '알림', 'warning');
             return;
         }
 

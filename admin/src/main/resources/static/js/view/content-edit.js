@@ -160,9 +160,7 @@ const ContentEdit = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
-            const reason = this.operationPolicy.maintenanceMode
-                ? '유지보수 모드에서는 커뮤니티 저장 및 삭제가 불가능합니다.'
-                : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+            const reason = CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 저장 및 삭제');
             CommonJS.setButtonDisabled(document.getElementById('btnSave'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnDelete'), disabled, reason);
             if (disabled) {
@@ -177,9 +175,7 @@ const ContentEdit = {
         if (this.isSaving) return;
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             if (!isAutoSave) {
-                const message = this.operationPolicy.maintenanceMode
-                    ? '유지보수 모드에서는 커뮤니티 저장이 불가능합니다.'
-                    : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.';
+                const message = CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 저장');
                 await CommonJS.alert(message, '알림', 'warning');
             }
             return;
@@ -259,9 +255,7 @@ const ContentEdit = {
     async deleteContent() {
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(
-                this.operationPolicy.maintenanceMode
-                    ? '유지보수 모드에서는 커뮤니티 삭제가 불가능합니다.'
-                    : '현재 설정에서 커뮤니티 작성 기능이 비활성화되어 있습니다.',
+                CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 삭제'),
                 '알림',
                 'warning'
             );

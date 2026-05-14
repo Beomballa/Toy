@@ -30,7 +30,7 @@ const ProductCreate = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
-            const reason = '유지보수 모드에서는 상품 등록이 불가능합니다.';
+            const reason = CommonJS.getAdminWriteBlockedReason('상품 등록');
             CommonJS.setButtonDisabled(document.getElementById('btnSubmit'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnAddOption'), disabled, reason);
         } catch (error) {
@@ -155,7 +155,7 @@ const ProductCreate = {
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 상품 등록이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 등록'), '알림', 'warning');
             return;
         }
 

@@ -34,7 +34,7 @@ const ContentDetail = {
 
         document.getElementById('btnEditContent')?.addEventListener('click', () => {
             if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
-                CommonJS.alert('현재 설정에서 커뮤니티 수정 기능이 비활성화되어 있습니다.', '알림', 'warning');
+                CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정'), '알림', 'warning');
                 return;
             }
             window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}`;
@@ -49,7 +49,7 @@ const ContentDetail = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
-            const reason = '현재 설정에서 커뮤니티 수정 및 삭제 기능이 비활성화되어 있습니다.';
+            const reason = CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정 및 삭제');
 
             CommonJS.setButtonDisabled(document.getElementById('btnEditContent'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnDeleteContent'), disabled, reason);
@@ -110,7 +110,7 @@ const ContentDetail = {
 
     async deleteContent() {
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('현재 설정에서 커뮤니티 삭제 기능이 비활성화되어 있습니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 삭제'), '알림', 'warning');
             return;
         }
 

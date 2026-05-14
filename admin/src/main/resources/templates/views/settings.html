@@ -206,7 +206,7 @@
         },
         updateAdminActionState() {
             const disabled = !!this.operationPolicy?.maintenanceMode;
-            const reason = '유지보수 모드에서는 관리자 계정 등록 및 수정이 불가능합니다.';
+            const reason = CommonJS.getAdminWriteBlockedReason('관리자 계정 등록 및 수정');
 
             CommonJS.setButtonDisabled(document.getElementById('btnNewAdmin'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), disabled, reason);
@@ -216,7 +216,7 @@
         },
         openModal(item) {
             if (this.operationPolicy?.maintenanceMode) {
-                CommonJS.alert('유지보수 모드에서는 관리자 계정 등록 및 수정이 불가능합니다.', '알림', 'warning');
+                CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리자 계정 등록 및 수정'), '알림', 'warning');
                 return;
             }
             document.getElementById('adminForm').reset();
@@ -240,7 +240,7 @@
         },
         async saveAdmin() {
             if (this.operationPolicy?.maintenanceMode) {
-                await CommonJS.alert('유지보수 모드에서는 관리자 계정 저장이 불가능합니다.', '알림', 'warning');
+                await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리자 계정 저장'), '알림', 'warning');
                 return;
             }
             const formData = {

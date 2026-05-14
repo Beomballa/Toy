@@ -40,7 +40,7 @@ const OrderList = {
 
         document.getElementById('btnExportOrders')?.addEventListener('click', () => {
             if (this.operationPolicy && CommonJS.isOrderExportBlocked(this.operationPolicy)) {
-                CommonJS.alert('현재 설정에서 주문 CSV 내보내기 기능이 비활성화되어 있습니다.', '알림', 'warning');
+                CommonJS.alert(CommonJS.getOrderExportBlockedReason(), '알림', 'warning');
                 return;
             }
             this.captureFilterState();
@@ -85,7 +85,7 @@ const OrderList = {
             CommonJS.setButtonDisabled(
                 exportButton,
                 CommonJS.isOrderExportBlocked(this.operationPolicy),
-                '현재 설정에서 주문 CSV 내보내기 기능이 비활성화되어 있습니다.'
+                CommonJS.getOrderExportBlockedReason()
             );
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);

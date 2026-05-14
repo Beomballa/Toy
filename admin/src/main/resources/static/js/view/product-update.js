@@ -38,7 +38,7 @@ const ProductUpdate = {
         try {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
-            const reason = '유지보수 모드에서는 상품 수정이 불가능합니다.';
+            const reason = CommonJS.getAdminWriteBlockedReason('상품 수정');
             CommonJS.setButtonDisabled(document.getElementById('btnUpdate'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnAddOption'), disabled, reason);
         } catch (error) {
@@ -198,7 +198,7 @@ const ProductUpdate = {
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 상품 수정이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
             return;
         }
 

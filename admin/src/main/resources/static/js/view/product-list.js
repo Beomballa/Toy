@@ -39,7 +39,7 @@ const ProductList = {
 
         document.getElementById('new-product')?.addEventListener('click', async () => {
             if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-                await CommonJS.alert('유지보수 모드에서는 상품 등록이 불가능합니다.', '알림', 'warning');
+                await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 등록'), '알림', 'warning');
                 return;
             }
 
@@ -105,7 +105,7 @@ const ProductList = {
             const editButton = e.target.closest('[data-role="edit-product"]');
             if (editButton) {
                 if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-                    CommonJS.alert('유지보수 모드에서는 상품 수정이 불가능합니다.', '알림', 'warning');
+                    CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
                     return;
                 }
                 location.href = `/admin/products/update?no=${editButton.dataset.productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
@@ -168,7 +168,7 @@ const ProductList = {
             CommonJS.setButtonDisabled(
                 document.getElementById('new-product'),
                 disabled,
-                '유지보수 모드에서는 상품 등록, 수정, 삭제가 불가능합니다.'
+                CommonJS.getAdminWriteBlockedReason('상품 등록, 수정, 삭제')
             );
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
@@ -312,14 +312,14 @@ const ProductList = {
                             class="btn btn-icon btn-secondary me-1"
                             data-role="edit-product"
                             data-product-no="${item.productNo}"
-                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상품 수정이 불가능합니다."' : ''}>
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 수정')}"` : ''}>
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button"
                             class="btn btn-icon btn-secondary"
                             data-role="delete-product"
                             data-product-no="${item.productNo}"
-                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상품 삭제가 불가능합니다."' : ''}>
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 삭제')}"` : ''}>
                         <i class="fas fa-trash text-danger"></i>
                     </button>
                 </td>
@@ -529,7 +529,7 @@ const ProductList = {
 
     async deleteProduct(no) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            await CommonJS.alert('유지보수 모드에서는 상품 삭제가 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 삭제'), '알림', 'warning');
             return;
         }
 

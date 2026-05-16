@@ -246,6 +246,7 @@ const ProductDetail = {
             }
 
             if (historyListEl) {
+                const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
                 // 상세 화면 검증에서 텍스트만 보는 것보다 action/status/count가 같이 드러나는 구조가 추적하기 쉽습니다.
                 historyListEl.innerHTML = histories.map((history) => `
                     <div class="product-option-chip flex-column align-items-start">
@@ -254,6 +255,11 @@ const ProductDetail = {
                             <span class="text-muted small">${history.crtDtm || '-'}</span>
                         </div>
                         <span class="small text-muted">${history.summary}</span>
+                        ${history.relatedProductNo ? `
+                            <a class="small text-decoration-none" href="/admin/products/get?no=${history.relatedProductNo}&returnTo=${returnTo}">
+                                ${history.relatedProductLabel} #${history.relatedProductNo}
+                            </a>
+                        ` : ''}
                         <span class="small text-muted">작업자 ${history.actorName || '-'}${history.actorNo ? ` (#${history.actorNo})` : ''}</span>
                         <span class="small text-muted">상태 ${history.statusSnapshot || '-'} · 옵션 ${history.optionCount}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
                     </div>

@@ -5,6 +5,8 @@ import com.section.common.util.DateUtil;
 
 public record ProductHistoryResponse(
         Long historyNo,
+        Long relatedProductNo,
+        String relatedProductLabel,
         String actionType,
         String actionLabel,
         String summary,
@@ -16,8 +18,11 @@ public record ProductHistoryResponse(
         String crtDtm
 ) {
     public static ProductHistoryResponse from(ProductChangeHistory history, String actorName) {
+        Long relatedProductNo = ProductHistoryRelatedProductSupport.resolveRelatedProductNo(history.getSummary());
         return new ProductHistoryResponse(
                 history.getHistoryNo(),
+                relatedProductNo,
+                ProductHistoryRelatedProductSupport.resolveRelatedProductLabel(history.getSummary()),
                 history.getActionType().name(),
                 history.getActionType().getDesc(),
                 history.getSummary(),

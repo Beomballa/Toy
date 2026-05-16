@@ -46,6 +46,8 @@ public record ProductHistoryListResponse(
     public record Item(
             Long historyNo,
             Long productNo,
+            Long relatedProductNo,
+            String relatedProductLabel,
             String actionType,
             String actionLabel,
             String summary,
@@ -58,9 +60,12 @@ public record ProductHistoryListResponse(
     ) {
         public static Item from(ProductHistoryListResDto item) {
             ProductHistoryActionType actionType = ProductHistoryActionType.valueOf(item.getActionType());
+            Long relatedProductNo = ProductHistoryRelatedProductSupport.resolveRelatedProductNo(item.getSummary());
             return new Item(
                     item.getHistoryNo(),
                     item.getProductNo(),
+                    relatedProductNo,
+                    ProductHistoryRelatedProductSupport.resolveRelatedProductLabel(item.getSummary()),
                     actionType.name(),
                     actionType.getDesc(),
                     item.getSummary(),

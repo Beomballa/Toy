@@ -97,6 +97,7 @@ const ProductHistoryPage = {
 
     renderList(items) {
         const tbody = document.getElementById('productHistoryBody');
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 변경 이력이 없습니다.</td></tr>';
             return;
@@ -109,6 +110,13 @@ const ProductHistoryPage = {
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>
                     <div class="fw-semibold">${item.summary}</div>
+                    ${item.relatedProductNo ? `
+                        <div class="small">
+                            <a class="text-decoration-none" href="/admin/products/get?no=${item.relatedProductNo}&returnTo=${returnTo}">
+                                ${item.relatedProductLabel} #${item.relatedProductNo}
+                            </a>
+                        </div>
+                    ` : ''}
                     <div class="text-muted small">상태 ${item.statusSnapshot || '-'} · 옵션 ${item.optionCount}개 · 재고 ${item.totalStock}개</div>
                 </td>
                 <td>${item.actorName}${item.actorNo ? ` <span class="text-muted small">(#${item.actorNo})</span>` : ''}</td>

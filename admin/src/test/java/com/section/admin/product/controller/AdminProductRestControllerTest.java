@@ -242,15 +242,17 @@ class AdminProductRestControllerTest {
     @DisplayName("상품 이력 API는 최신 변경 이력을 반환한다")
     void getProductHistoryReturnsHistoryItems() throws Exception {
         when(adminProductService.getProductHistory(4L)).thenReturn(List.of(
-                new ProductHistoryResponse(11L, "UPDATED", "수정", "변경 항목: 상품명, 옵션", "ACTIVE", 2, 8L, 1L, "관리자", "2026.05.11 09:30")
+                new ProductHistoryResponse(11L, 2L, "원본 상품", "CREATED", "등록", "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 2", "ACTIVE", 2, 8L, 1L, "관리자", "2026.05.11 09:30")
         ));
 
         mockMvc.perform(get("/api/admin/product/history?no=4"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].historyNo").value(11L))
-                .andExpect(jsonPath("$[0].actionType").value("UPDATED"))
-                .andExpect(jsonPath("$[0].actionLabel").value("수정"))
-                .andExpect(jsonPath("$[0].summary").value("변경 항목: 상품명, 옵션"))
+                .andExpect(jsonPath("$[0].relatedProductNo").value(2L))
+                .andExpect(jsonPath("$[0].relatedProductLabel").value("원본 상품"))
+                .andExpect(jsonPath("$[0].actionType").value("CREATED"))
+                .andExpect(jsonPath("$[0].actionLabel").value("등록"))
+                .andExpect(jsonPath("$[0].summary").value("상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 2"))
                 .andExpect(jsonPath("$[0].actorNo").value(1L))
                 .andExpect(jsonPath("$[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$[0].optionCount").value(2))
@@ -263,7 +265,7 @@ class AdminProductRestControllerTest {
         when(adminProductService.getProductHistoryList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new ProductHistoryListResponse(
                         List.of(new ProductHistoryListResponse.Item(
-                                7L, 4L, "UPDATED", "수정", "변경 항목: 상품명", "ACTIVE", 2, 8L, 1L, "관리자", "2026-05-11 10:00"
+                                7L, 4L, 5L, "원본 상품", "CREATED", "등록", "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 5", "ACTIVE", 2, 8L, 1L, "관리자", "2026-05-11 10:00"
                         )),
                         1L,
                         1,
@@ -278,6 +280,8 @@ class AdminProductRestControllerTest {
         mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].historyNo").value(7L))
+                .andExpect(jsonPath("$.items[0].relatedProductNo").value(5L))
+                .andExpect(jsonPath("$.items[0].relatedProductLabel").value("원본 상품"))
                 .andExpect(jsonPath("$.items[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$.totalElements").value(1L))
                 .andExpect(jsonPath("$.currentPage").value(0))

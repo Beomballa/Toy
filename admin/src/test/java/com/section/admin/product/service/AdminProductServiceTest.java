@@ -213,8 +213,8 @@ class AdminProductServiceTest {
     void getProductHistoryIncludesActorName() {
         ProductChangeHistory history = ProductChangeHistory.of(
                 4L,
-                com.section.common.base.entity.type.ProductHistoryActionType.UPDATED,
-                "변경 항목: 상품명",
+                com.section.common.base.entity.type.ProductHistoryActionType.CREATED,
+                "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 2",
                 "ACTIVE",
                 2,
                 8L
@@ -231,6 +231,8 @@ class AdminProductServiceTest {
 
         assertEquals(1, histories.size());
         assertEquals("관리자", histories.get(0).actorName());
+        assertEquals(2L, histories.get(0).relatedProductNo());
+        assertEquals("원본 상품", histories.get(0).relatedProductLabel());
     }
 
     @Test
@@ -245,8 +247,8 @@ class AdminProductServiceTest {
         ProductHistoryListResDto row = new ProductHistoryListResDto();
         row.setHistoryNo(7L);
         row.setProductNo(4L);
-        row.setActionType("UPDATED");
-        row.setSummary("변경 항목: 상품명");
+        row.setActionType("CREATED");
+        row.setSummary("상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 5");
         row.setStatusSnapshot("ACTIVE");
         row.setOptionCount(2);
         row.setTotalStock(8L);
@@ -261,6 +263,8 @@ class AdminProductServiceTest {
 
         assertEquals(1, response.items().size());
         assertEquals("관리자", response.items().get(0).actorName());
+        assertEquals(5L, response.items().get(0).relatedProductNo());
+        assertEquals("원본 상품", response.items().get(0).relatedProductLabel());
         assertEquals("UPDATED", response.appliedQuery().actionType());
         assertEquals("관리자", response.appliedQuery().actorKeyword());
         assertEquals("oldest", response.appliedQuery().orderType());

@@ -1,6 +1,7 @@
 package com.section.admin.content.controller;
 
 import com.section.admin.content.req.ContentSaveRequest;
+import com.section.admin.content.req.ContentBulkOperateRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
@@ -67,6 +68,20 @@ public class AdminContentRestController {
         adminOperationPolicyService.assertCommunityWriteAllowed();
         documentService.deleteDocument(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/bulk-operate")
+    public ResponseEntity<Integer> bulkOperate(@RequestBody ContentBulkOperateRequest request) {
+        adminOperationPolicyService.assertCommunityWriteAllowed();
+        if (!request.hasOperateField()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return ResponseEntity.ok(documentService.bulkOperateDocuments(
+                request.normalizedIds(),
+                request.normalizedStatus(),
+                request.normalizedPublicYn(),
+                request.normalizedPinnedYn()
+        ));
     }
 
     private Document.BoardType parseBoardType(String boardType) {

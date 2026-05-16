@@ -60,4 +60,20 @@ public class Document extends BaseEntity {
         this.content = content;
         this.productNo = productNo;
     }
+
+    public void applyOperateValues(
+            PublishStatus status,
+            YN publicYn,
+            YN pinnedYn
+    ) {
+        if (status != null) {
+            this.status = status;
+        }
+        if (publicYn != null) {
+            this.publicYn = publicYn;
+        }
+        if (pinnedYn != null) {
+            this.pinnedYn = pinnedYn;
+        }
+    }
 }

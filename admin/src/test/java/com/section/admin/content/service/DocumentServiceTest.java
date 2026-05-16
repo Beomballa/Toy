@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.never;
@@ -66,5 +67,39 @@ class DocumentServiceTest {
         assertEquals("새 내용", existing.getContent());
         assertEquals(44L, existing.getProductNo());
         verify(documentRepository, never()).save(editorInput);
+    }
+
+    @Test
+    @DisplayName("커뮤니티 일괄 운영은 기존 엔티티를 유지한 채 상태/공개/고정 값만 반영한다")
+    void bulkOperateDocumentsUpdatesExistingEntityWithDirtyChecking() {
+        Document first = new Document();
+        first.setId(1L);
+        first.setStatus(Document.PublishStatus.DRAFT);
+        first.setPublicYn(YN.Y);
+        first.setPinnedYn(YN.N);
+
+        Document second = new Document();
+        second.setId(2L);
+        second.setStatus(Document.PublishStatus.DRAFT);
+        second.setPublicYn(YN.Y);
+        second.setPinnedYn(YN.N);
+
+        when(documentRepository.findById(1L)).thenReturn(Optional.of(first));
+        when(documentRepository.findById(2L)).thenReturn(Optional.of(second));
+
+        int updatedCount = documentService.bulkOperateDocuments(
+                Set.of(1L, 2L),
+                Document.PublishStatus.PUBLISHED,
+                YN.N,
+                YN.Y
+        );
+
+        assertEquals(2, updatedCount);
+        assertEquals(Document.PublishStatus.PUBLISHED, first.getStatus());
+        assertEquals(YN.N, first.getPublicYn());
+        assertEquals(YN.Y, first.getPinnedYn());
+        assertEquals(Document.PublishStatus.PUBLISHED, second.getStatus());
+        assertEquals(YN.N, second.getPublicYn());
+        assertEquals(YN.Y, second.getPinnedYn());
     }
 }

@@ -65,6 +65,30 @@
         </form>
     </div>
 
+    <div class="content-board-toolbar">
+        <div class="d-flex flex-wrap align-items-center gap-2 w-100">
+            <label class="small text-muted mb-0">선택 작업</label>
+            <select id="contentBulkStatus" class="form-select select-auto-width">
+                <option value="">상태 유지</option>
+                <option value="DRAFT">임시저장</option>
+                <option value="PUBLISHED">게시중</option>
+            </select>
+            <select id="contentBulkPublicYn" class="form-select select-auto-width">
+                <option value="">공개 유지</option>
+                <option value="Y">공개</option>
+                <option value="N">비공개</option>
+            </select>
+            <select id="contentBulkPinnedYn" class="form-select select-auto-width">
+                <option value="">고정 유지</option>
+                <option value="Y">고정</option>
+                <option value="N">고정 해제</option>
+            </select>
+            <button type="button" class="btn btn-outline-primary" id="btnApplyBulkOperate">선택 적용</button>
+            <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
+            <span class="small text-muted ms-auto" id="contentSelectionMeta">선택된 게시글 0건</span>
+        </div>
+    </div>
+
     <div class="row g-4 content-board-grid" id="contentGrid">
         <div class="col-12 text-center py-5 text-muted">데이터를 불러오는 중입니다...</div>
     </div>

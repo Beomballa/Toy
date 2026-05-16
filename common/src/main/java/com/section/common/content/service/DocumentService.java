@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -57,5 +59,21 @@ public class DocumentService {
     @Transactional
     public void deleteDocument(Long id) {
         documentRepository.deleteById(id);
+    }
+
+    @Transactional
+    public int bulkOperateDocuments(
+            Set<Long> ids,
+            Document.PublishStatus status,
+            com.section.common.base.entity.type.YN publicYn,
+            com.section.common.base.entity.type.YN pinnedYn
+    ) {
+        int updatedCount = 0;
+        for (Long id : ids) {
+            Document document = getDocument(id);
+            document.applyOperateValues(status, publicYn, pinnedYn);
+            updatedCount += 1;
+        }
+        return updatedCount;
     }
 }

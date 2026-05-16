@@ -8,7 +8,8 @@ const ContentList = {
         keyword: new URLSearchParams(window.location.search).get('keyword') || '',
         status: new URLSearchParams(window.location.search).get('status') || '',
         publicYn: new URLSearchParams(window.location.search).get('publicYn') || '',
-        pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true'
+        pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
+        selectedIds: new Set()
     },
 
     init() {
@@ -102,6 +103,12 @@ const ContentList = {
             this.pushState();
             this.getList();
         });
+
+        document.getElementById('btnApplyBulkOperate')?.addEventListener('click', () => this.applyBulkOperate());
+        document.getElementById('btnClearSelection')?.addEventListener('click', () => {
+            this.state.selectedIds.clear();
+            this.syncSelectionState();
+        });
     },
 
     updatePageMeta() {
@@ -122,11 +129,13 @@ const ContentList = {
 
     async applyOperationPolicy(settings = null) {
         const createButton = document.getElementById('btnNewContent');
+        const bulkButton = document.getElementById('btnApplyBulkOperate');
         try {
             const resolvedSettings = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(resolvedSettings);
             const reason = CommonJS.getCommunityWriteBlockedReason(resolvedSettings, '커뮤니티 작성');
             CommonJS.setButtonDisabled(createButton, disabled, reason);
+            CommonJS.setButtonDisabled(bulkButton, disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -183,6 +192,9 @@ const ContentList = {
                     <div class="card-body content-board-card-body">
                         <div class="content-board-card-top">
                             <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <label class="form-check mb-0">
+                                    <input class="form-check-input content-select-checkbox" type="checkbox" data-content-id="${item.id}" ${this.state.selectedIds.has(item.id) ? 'checked' : ''}>
+                                </label>
                                 <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(item.boardType))}</span>
                                 ${item.pinnedYn === 'Y' ? '<span class="badge bg-dark">고정</span>' : ''}
                                 <span class="badge ${item.status === 'PUBLISHED' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${item.status === 'PUBLISHED' ? '게시중' : '임시저장'}</span>
@@ -205,6 +217,8 @@ const ContentList = {
                 </div>
             </div>
         `).join('');
+        this.bindSelectionEvents();
+        this.syncSelectionState();
     },
 
     getBoardLabel(boardType) {
@@ -267,6 +281,69 @@ const ContentList = {
         if (pinnedInput) {
             pinnedInput.checked = this.state.pinnedOnly;
         }
+    },
+
+    bindSelectionEvents() {
+        document.querySelectorAll('.content-select-checkbox').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const id = Number(checkbox.dataset.contentId);
+                if (checkbox.checked) {
+                    this.state.selectedIds.add(id);
+                } else {
+                    this.state.selectedIds.delete(id);
+                }
+                this.syncSelectionState();
+            });
+        });
+    },
+
+    syncSelectionState() {
+        const meta = document.getElementById('contentSelectionMeta');
+        if (meta) {
+            meta.textContent = `선택된 게시글 ${this.state.selectedIds.size}건`;
+        }
+    },
+
+    async applyBulkOperate() {
+        if (!this.state.selectedIds.size) {
+            await CommonJS.alert('일괄 적용할 게시글을 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const payload = {
+            ids: Array.from(this.state.selectedIds),
+            status: document.getElementById('contentBulkStatus')?.value || null,
+            publicYn: document.getElementById('contentBulkPublicYn')?.value || null,
+            pinnedYn: document.getElementById('contentBulkPinnedYn')?.value || null
+        };
+
+        if (!payload.status && !payload.publicYn && !payload.pinnedYn) {
+            await CommonJS.alert('변경할 항목을 하나 이상 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 게시글 ${this.state.selectedIds.size}건에 일괄 적용하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        const response = await fetch('/api/admin/content/bulk-operate', {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            await CommonJS.alert(await CommonJS.extractErrorMessage(response, '일괄 적용에 실패했습니다.'), '오류', 'error');
+            return;
+        }
+
+        this.state.selectedIds.clear();
+        this.syncSelectionState();
+        await CommonJS.alert('선택한 게시글에 운영 상태를 적용했습니다.', '성공', 'success');
+        this.getList();
     }
 };
 

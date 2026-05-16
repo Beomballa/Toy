@@ -33,6 +33,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -150,12 +151,46 @@ class AdminContentRestControllerTest {
                 .andExpect(jsonPath("$.code").value("A002"));
     }
 
+    @Test
+    @DisplayName("콘텐츠 일괄 운영은 선택한 게시글 수를 반환한다")
+    void bulkOperateReturnsUpdatedCount() throws Exception {
+        when(documentService.bulkOperateDocuments(any(), any(), any(), any())).thenReturn(2);
+
+        mockMvc.perform(patch("/api/admin/content/bulk-operate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BulkOperatePayload(
+                                List.of(1L, 2L), "PUBLISHED", "N", "Y"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").value(2));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 일괄 운영은 변경 항목이 없으면 400 INVALID_INPUT_VALUE를 반환한다")
+    void bulkOperateReturnsBadRequestWhenOperateFieldMissing() throws Exception {
+        mockMvc.perform(patch("/api/admin/content/bulk-operate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BulkOperatePayload(
+                                List.of(1L, 2L), null, null, null
+                        ))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
     private record SavePayload(
             Long id,
             String boardType,
             String title,
             String content,
             Long productNo,
+            String status,
+            String publicYn,
+            String pinnedYn
+    ) {
+    }
+
+    private record BulkOperatePayload(
+            List<Long> ids,
             String status,
             String publicYn,
             String pinnedYn

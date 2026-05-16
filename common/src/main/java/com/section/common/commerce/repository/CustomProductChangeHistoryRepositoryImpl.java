@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.ProductHistoryActionType;
+import com.section.common.base.entity.type.ProductHistoryOrderType;
 import com.section.common.commerce.dto.ProductHistoryListQuery;
 import com.section.common.commerce.dto.ProductHistoryListResDto;
 import org.springframework.data.domain.Page;
@@ -16,6 +17,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QProductChangeHistory.productChangeHistory;
+import static com.section.common.system.entity.QAdminUser.adminUser;
 
 public class CustomProductChangeHistoryRepositoryImpl implements CustomProductChangeHistoryRepository {
 
@@ -38,11 +40,14 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
                         productChangeHistory.optionCount,
                         productChangeHistory.totalStock,
                         productChangeHistory.crtNo.as("actorNo"),
+                        adminUser.name.as("actorName"),
                         productChangeHistory.crtDtm.as("actionDtm")
                 ))
                 .from(productChangeHistory)
+                // 이력 엔티티에 직접 연관관계가 없어서, 작업자명 조회는 관리자 번호 기준 조인으로 묶는다.
+                .leftJoin(adminUser).on(productChangeHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query))
-                .orderBy(productChangeHistory.historyNo.desc())
+                .orderBy(resolveOrderType(query.orderType()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -50,6 +55,7 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
         JPAQuery<Long> countQuery = queryFactory
                 .select(productChangeHistory.count())
                 .from(productChangeHistory)
+                .leftJoin(adminUser).on(productChangeHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query));
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
@@ -60,6 +66,7 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
                 productNoEq(query.productNo()),
                 actionTypeEq(query.actionType()),
                 keywordLike(query.keyword()),
+                actorKeywordLike(query.actorKeyword()),
                 actionDateBetween(query.startDate(), query.endDate())
         };
     }
@@ -79,6 +86,13 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
         return productChangeHistory.summary.containsIgnoreCase(keyword.trim());
     }
 
+    private BooleanExpression actorKeywordLike(String actorKeyword) {
+        if (actorKeyword == null || actorKeyword.isBlank()) {
+            return null;
+        }
+        return adminUser.name.containsIgnoreCase(actorKeyword.trim());
+    }
+
     private BooleanExpression actionDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate) {
         if (startDate == null && endDate == null) {
             return null;
@@ -95,5 +109,12 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
             return productChangeHistory.crtDtm.goe(startDateTime);
         }
         return productChangeHistory.crtDtm.loe(endDateTime);
+    }
+
+    private com.querydsl.core.types.OrderSpecifier<?> resolveOrderType(ProductHistoryOrderType orderType) {
+        if (orderType == ProductHistoryOrderType.OLDEST) {
+            return productChangeHistory.historyNo.asc();
+        }
+        return productChangeHistory.historyNo.desc();
     }
 }

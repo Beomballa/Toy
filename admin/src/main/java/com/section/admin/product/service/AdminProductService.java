@@ -301,15 +301,7 @@ public class AdminProductService {
     public ProductHistoryListResponse getProductHistoryList(ProductHistoryListRequest req, Pageable pageable) {
         ProductHistoryListQuery query = req.toQuery();
         Page<ProductHistoryListResDto> page = productChangeHistoryRepository.getProductHistoryList(query, pageable);
-        java.util.Map<Long, String> actorNameMap = adminUserRepository.findAllById(
-                        page.getContent().stream()
-                                .map(ProductHistoryListResDto::getActorNo)
-                                .filter(java.util.Objects::nonNull)
-                                .distinct()
-                                .toList()
-                ).stream()
-                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
-        return ProductHistoryListResponse.of(page, query, actorNameMap);
+        return ProductHistoryListResponse.of(page, query);
     }
 
     @Transactional

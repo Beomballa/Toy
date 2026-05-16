@@ -1,6 +1,7 @@
 package com.section.admin.product.req;
 
 import com.section.common.base.entity.type.ProductHistoryActionType;
+import com.section.common.base.entity.type.ProductHistoryOrderType;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductHistoryListQuery;
@@ -16,8 +17,10 @@ public class ProductHistoryListRequest {
     private Long productNo;
     private String actionType;
     private String keyword;
+    private String actorKeyword;
     private LocalDate startDate;
     private LocalDate endDate;
+    private String orderType;
 
     public ProductHistoryListQuery toQuery() {
         if (productNo != null && productNo <= 0) {
@@ -30,8 +33,10 @@ public class ProductHistoryListRequest {
                 productNo,
                 parseActionType(actionType),
                 normalizeKeyword(keyword),
+                normalizeKeyword(actorKeyword),
                 startDate,
-                endDate
+                endDate,
+                parseOrderType(orderType)
         );
     }
 
@@ -52,5 +57,16 @@ public class ProductHistoryListRequest {
         }
         String normalized = keyword.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private ProductHistoryOrderType parseOrderType(String orderType) {
+        if (orderType == null || orderType.isBlank()) {
+            return ProductHistoryOrderType.LATEST;
+        }
+        return switch (orderType.trim().toLowerCase()) {
+            case "latest" -> ProductHistoryOrderType.LATEST;
+            case "oldest" -> ProductHistoryOrderType.OLDEST;
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
     }
 }

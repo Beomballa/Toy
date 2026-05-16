@@ -15,12 +15,28 @@ const ProductHistoryPage = {
             this.state.page = 0;
             this.loadHistory();
         });
+        document.getElementById('historyPageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.state.size = Number(document.getElementById('historyPageSize')?.value || 20);
+            this.loadHistory();
+        });
         document.getElementById('historyKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 this.state.page = 0;
                 this.loadHistory();
             }
+        });
+        document.getElementById('historyActorKeyword')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.state.page = 0;
+                this.loadHistory();
+            }
+        });
+        document.getElementById('historyOrderType')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.loadHistory();
         });
     },
 
@@ -31,8 +47,11 @@ const ProductHistoryPage = {
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
         document.getElementById('historyKeyword').value = params.get('keyword') || '';
+        document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
+        document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        document.getElementById('historyPageSize').value = String(this.state.size);
     },
 
     buildParams() {
@@ -42,12 +61,16 @@ const ProductHistoryPage = {
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
+        const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword').value);
+        const orderType = document.getElementById('historyOrderType').value || 'latest';
 
         if (productNo) params.set('productNo', productNo);
         if (actionType) params.set('actionType', actionType);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (keyword) params.set('keyword', keyword);
+        if (actorKeyword) params.set('actorKeyword', actorKeyword);
+        if (orderType && orderType !== 'latest') params.set('orderType', orderType);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -66,6 +89,7 @@ const ProductHistoryPage = {
             const data = await response.json();
             this.renderList(data.items || []);
             this.renderMeta(data);
+            this.renderPagination(data);
         } catch (error) {
             this.renderError(error.message);
         }
@@ -95,17 +119,45 @@ const ProductHistoryPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(`${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건 · ${data.totalPages}페이지`);
+        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+    },
+
+    renderPagination(data) {
+        const pagination = document.getElementById('historyPagination');
+        if (!pagination) {
+            return;
+        }
+
+        if (!data.totalPages) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < data.totalPages; i += 1) {
+            html += `
+                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="javascript:void(0);" onclick="ProductHistoryPage.goPage(${i})">${i + 1}</a>
+                </li>
+            `;
+        }
+        pagination.innerHTML = html;
     },
 
     renderError(message) {
         document.getElementById('productHistoryBody').innerHTML =
             `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
         this.setMetaText('이력 조회 실패');
+        document.getElementById('historyPagination').innerHTML = '';
     },
 
     setMetaText(message) {
         document.getElementById('historyMetaText').textContent = message;
+    },
+
+    goPage(page) {
+        this.state.page = page;
+        this.loadHistory();
     }
 };
 

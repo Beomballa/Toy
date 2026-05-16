@@ -17,5 +17,6 @@ public class ProductHistoryListResDto {
     private Integer optionCount;
     private Long totalStock;
     private Long actorNo;
+    private String actorName;
     private LocalDateTime actionDtm;
 }

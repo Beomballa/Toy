@@ -267,19 +267,25 @@ class AdminProductRestControllerTest {
                         )),
                         1L,
                         1,
+                        0,
                         20,
                         1L,
                         1L,
-                        new ProductHistoryListResponse.AppliedQuery(4L, "UPDATED", null, null, null)
+                        "1-1 / 1건 · 1페이지",
+                        new ProductHistoryListResponse.AppliedQuery(4L, "UPDATED", null, "관리자", null, null, "oldest", "오래된순")
                 ));
 
-        mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&page=0&size=20"))
+        mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].historyNo").value(7L))
                 .andExpect(jsonPath("$.items[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$.totalElements").value(1L))
+                .andExpect(jsonPath("$.currentPage").value(0))
+                .andExpect(jsonPath("$.pageInfoLabel").value("1-1 / 1건 · 1페이지"))
                 .andExpect(jsonPath("$.appliedQuery.productNo").value(4L))
-                .andExpect(jsonPath("$.appliedQuery.actionType").value("UPDATED"));
+                .andExpect(jsonPath("$.appliedQuery.actionType").value("UPDATED"))
+                .andExpect(jsonPath("$.appliedQuery.actorKeyword").value("관리자"))
+                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"));
     }
 
     @Test

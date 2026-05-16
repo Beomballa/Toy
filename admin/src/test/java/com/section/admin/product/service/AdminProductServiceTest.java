@@ -239,6 +239,8 @@ class AdminProductServiceTest {
         ProductHistoryListRequest request = new ProductHistoryListRequest();
         request.setProductNo(4L);
         request.setActionType("UPDATED");
+        request.setActorKeyword("관리자");
+        request.setOrderType("oldest");
 
         ProductHistoryListResDto row = new ProductHistoryListResDto();
         row.setHistoryNo(7L);
@@ -249,19 +251,23 @@ class AdminProductServiceTest {
         row.setOptionCount(2);
         row.setTotalStock(8L);
         row.setActorNo(1L);
+        row.setActorName("관리자");
         row.setActionDtm(java.time.LocalDateTime.of(2026, 5, 11, 10, 0));
 
         when(productChangeHistoryRepository.getProductHistoryList(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
-        when(adminUserRepository.findAllById(any()))
-                .thenReturn(List.of(AdminUser.builder().adminNo(1L).name("관리자").loginId("admin").password("pw").build()));
 
         ProductHistoryListResponse response = adminProductService.getProductHistoryList(request, PageRequest.of(0, 20));
 
         assertEquals(1, response.items().size());
         assertEquals("관리자", response.items().get(0).actorName());
         assertEquals("UPDATED", response.appliedQuery().actionType());
+        assertEquals("관리자", response.appliedQuery().actorKeyword());
+        assertEquals("oldest", response.appliedQuery().orderType());
+        assertEquals("오래된순", response.appliedQuery().orderTypeLabel());
         assertEquals(1L, response.totalElements());
+        assertEquals(0, response.currentPage());
+        assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
     }
 
     @Test

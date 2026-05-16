@@ -55,6 +55,17 @@
                     <label class="form-label fw-bold">요약 검색</label>
                     <input type="text" id="historyKeyword" class="form-control" placeholder="변경 항목, 요약 검색">
                 </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">작업자 검색</label>
+                    <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label fw-bold">정렬</label>
+                    <select id="historyOrderType" class="form-select">
+                        <option value="latest">최신순</option>
+                        <option value="oldest">오래된순</option>
+                    </select>
+                </div>
                 <div class="col-md-1 d-grid">
                     <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
                 </div>
@@ -65,7 +76,17 @@
     <div class="card animate-in">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">변경 이력 목록</h6>
-            <div class="small text-muted" id="historyMetaText">데이터를 불러오는 중입니다...</div>
+            <div class="d-flex align-items-center gap-3">
+                <label class="small text-muted d-flex align-items-center gap-2 mb-0">
+                    <span>페이지 크기</span>
+                    <select id="historyPageSize" class="form-select form-select-sm">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </label>
+                <div class="small text-muted" id="historyMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -86,6 +107,9 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <ul class="pagination pagination-sm justify-content-center mb-0" id="historyPagination"></ul>
         </div>
     </div>
 </main>

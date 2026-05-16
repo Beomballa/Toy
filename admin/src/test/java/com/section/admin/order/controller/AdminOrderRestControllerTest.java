@@ -2,6 +2,8 @@ package com.section.admin.order.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.order.req.OrderHistoryListRequest;
+import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -44,6 +47,7 @@ class AdminOrderRestControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new AdminOrderRestController(adminOrderService, adminOperationPolicyService))
+                .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -149,6 +153,38 @@ class AdminOrderRestControllerTest {
         mockMvc.perform(get("/api/admin/orders/export"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("A002"));
+    }
+
+    @Test
+    @DisplayName("주문 이력 목록 API는 필터 결과와 메타 정보를 함께 반환한다")
+    void getOrderHistoryListReturnsPagedResult() throws Exception {
+        when(adminOrderService.getOrderHistoryList(org.mockito.ArgumentMatchers.any(OrderHistoryListRequest.class), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new OrderHistoryListResponse(
+                        java.util.List.of(new OrderHistoryListResponse.Item(
+                                7L, 3L, "DELIVERY_START", "배송 시작", "배송준비", "배송중", "출고 완료", null, "CJ대한통운", "1234", 1L, "관리자", "2026.05.16 10:00"
+                        )),
+                        1L,
+                        1,
+                        0,
+                        20,
+                        1L,
+                        1L,
+                        "1-1 / 1건 · 1페이지",
+                        new OrderHistoryListResponse.AppliedQuery(3L, "DELIVERY_START", null, "관리자", null, null, "oldest", "오래된순")
+                ));
+
+        mockMvc.perform(get("/api/admin/orders/history/list?orderNo=3&actionType=DELIVERY_START&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].historyNo").value(7L))
+                .andExpect(jsonPath("$.items[0].actorName").value("관리자"))
+                .andExpect(jsonPath("$.items[0].actionLabel").value("배송 시작"))
+                .andExpect(jsonPath("$.totalElements").value(1L))
+                .andExpect(jsonPath("$.currentPage").value(0))
+                .andExpect(jsonPath("$.pageInfoLabel").value("1-1 / 1건 · 1페이지"))
+                .andExpect(jsonPath("$.appliedQuery.orderNo").value(3L))
+                .andExpect(jsonPath("$.appliedQuery.actionType").value("DELIVERY_START"))
+                .andExpect(jsonPath("$.appliedQuery.actorKeyword").value("관리자"))
+                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"));
     }
 
     private record StatusPayload(Long orderNo, String status, String reason) {

@@ -146,7 +146,10 @@
             </div>
 
             <div class="card animate-in admin-detail-card">
-                <div class="card-header admin-detail-side-header"><span class="card-title">주문 처리 이력</span></div>
+                <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
+                    <span class="card-title">주문 처리 이력</span>
+                    <a href="javascript:void(0);" id="btnOpenOrderHistory" class="small text-decoration-none">전체 이력 보기</a>
+                </div>
                 <div class="card-body admin-detail-body">
                     <div id="orderHistoryList" class="d-flex flex-column gap-3">
                         <div class="text-muted">이력을 불러오는 중입니다.</div>

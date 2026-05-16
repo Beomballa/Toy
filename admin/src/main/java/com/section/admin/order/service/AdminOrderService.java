@@ -1,6 +1,7 @@
 package com.section.admin.order.service;
 
 import com.section.admin.order.res.OrderDetailResponse;
+import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.admin.order.res.OrderListResponse;
 import com.section.admin.order.support.OrderListPagePolicy;
 import com.section.admin.order.support.OrderExportCsvWriter;
@@ -8,9 +9,11 @@ import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderListItemDto;
+import com.section.common.commerce.dto.OrderHistoryListQuery;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
+import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.entity.OrderItem;
@@ -133,6 +136,14 @@ public class AdminOrderService {
         List<OrderItemResDto> items = orderService.getOrderItems(orderNo);
         List<OrderStatusHistory> histories = orderStatusHistoryRepository.findTop20ByOrderNoOrderByCrtDtmDescIdDesc(orderNo);
         return OrderDetailResponse.from(master, items, histories);
+    }
+
+    public OrderHistoryListResponse getOrderHistoryList(OrderHistoryListRequest request, Pageable pageable) {
+        OrderHistoryListQuery query = request.toQuery();
+        return OrderHistoryListResponse.of(
+                orderStatusHistoryRepository.getOrderHistoryList(query, OrderListPagePolicy.normalize(pageable)),
+                query
+        );
     }
 
     /**

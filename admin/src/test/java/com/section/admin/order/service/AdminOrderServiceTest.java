@@ -4,10 +4,15 @@ import com.section.admin.order.support.OrderExportCsvWriter;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.dto.OrderHistoryListResDto;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.repository.*;
 import com.section.common.commerce.service.OrderService;
+import com.section.admin.order.req.OrderHistoryListRequest;
+import com.section.admin.order.res.OrderHistoryListResponse;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,5 +91,41 @@ class AdminOrderServiceTest {
 
         assertEquals(ErrorCode.ORDER_NOT_FOUND, exception.getErrorCode());
         verify(orderStatusHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("주문 처리 이력 목록은 작업자명과 메타 정보를 함께 반환한다")
+    void getOrderHistoryListReturnsPagedHistory() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setOrderNo(3L);
+        request.setActionType("DELIVERY_START");
+        request.setActorKeyword("관리자");
+        request.setOrderType("oldest");
+
+        OrderHistoryListResDto row = new OrderHistoryListResDto();
+        row.setHistoryNo(7L);
+        row.setOrderNo(3L);
+        row.setActionType("DELIVERY_START");
+        row.setBeforeStatus("PREPARING");
+        row.setAfterStatus("SHIPPED");
+        row.setReason("출고 완료");
+        row.setDeliveryCompany("CJ대한통운");
+        row.setTrackingNum("1234");
+        row.setActorNo(1L);
+        row.setActorName("관리자");
+        row.setActionDtm(java.time.LocalDateTime.of(2026, 5, 16, 10, 0));
+
+        when(orderStatusHistoryRepository.getOrderHistoryList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
+
+        OrderHistoryListResponse response = adminOrderService.getOrderHistoryList(request, PageRequest.of(0, 20));
+
+        assertEquals(1, response.items().size());
+        assertEquals("관리자", response.items().get(0).actorName());
+        assertEquals("배송 시작", response.items().get(0).actionLabel());
+        assertEquals("DELIVERY_START", response.appliedQuery().actionType());
+        assertEquals("관리자", response.appliedQuery().actorKeyword());
+        assertEquals("oldest", response.appliedQuery().orderType());
+        assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
     }
 }

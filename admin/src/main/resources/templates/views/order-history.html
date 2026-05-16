@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 처리 이력 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item"><a href="/admin/orders/list">주문 관리</a></li>
+                <li class="breadcrumb-item active">주문 처리 이력</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper">
+            <h1 class="page-title">주문 처리 이력</h1>
+        </div>
+    </div>
+
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">주문 번호</label>
+                    <input type="number" id="historyOrderNo" class="form-control" min="1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">작업 유형</label>
+                    <select id="historyActionType" class="form-select">
+                        <option value="">전체</option>
+                        <option value="STATUS_CHANGE">상태 변경</option>
+                        <option value="DELIVERY_START">배송 시작</option>
+                        <option value="DELIVERY_COMPLETE">배송 완료</option>
+                        <option value="CANCEL">주문 취소</option>
+                        <option value="ADMIN_MEMO">메모 저장</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">시작일</label>
+                    <input type="date" id="historyStartDate" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">종료일</label>
+                    <input type="date" id="historyEndDate" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">작업자 검색</label>
+                    <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">정렬</label>
+                    <select id="historyOrderType" class="form-select">
+                        <option value="latest">최신순</option>
+                        <option value="oldest">오래된순</option>
+                    </select>
+                </div>
+                <div class="col-md-11">
+                    <label class="form-label fw-bold">사유/메모/배송 검색</label>
+                    <input type="text" id="historyKeyword" class="form-control" placeholder="사유, 메모, 택배사, 운송장 번호 검색">
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card animate-in">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">주문 처리 이력 목록</h6>
+            <div class="d-flex align-items-center gap-3">
+                <label class="small text-muted d-flex align-items-center gap-2 mb-0">
+                    <span>페이지 크기</span>
+                    <select id="historyPageSize" class="form-select form-select-sm">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </label>
+                <div class="small text-muted" id="historyMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">이력 번호</th>
+                        <th>주문 번호</th>
+                        <th>작업 유형</th>
+                        <th>처리 내용</th>
+                        <th>작업자</th>
+                        <th class="text-end pe-4">작업 일시</th>
+                    </tr>
+                    </thead>
+                    <tbody id="orderHistoryBody">
+                    <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <ul class="pagination pagination-sm justify-content-center mb-0" id="historyPagination"></ul>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/order-history.js"></script>
+</body>
+</html>

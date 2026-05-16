@@ -5,6 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, Long> {
+public interface OrderStatusHistoryRepository extends JpaRepository<OrderStatusHistory, Long>, CustomOrderStatusHistoryRepository {
     List<OrderStatusHistory> findTop20ByOrderNoOrderByCrtDtmDescIdDesc(Long orderNo);
 }

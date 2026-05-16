@@ -20,4 +20,9 @@ public class AdminOrderController {
     public String orderDetail() {
         return "views/order-get";
     }
+
+    @RequestMapping("/history")
+    public String orderHistory() {
+        return "views/order-history";
+    }
 }

@@ -27,6 +27,10 @@ const OrderDetail = {
         document.getElementById('btnCompleteDelivery')?.addEventListener('click', () => this.completeDelivery());
         document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
         document.getElementById('btnSaveAdminMemo')?.addEventListener('click', () => this.saveAdminMemo());
+        document.getElementById('btnOpenOrderHistory')?.addEventListener('click', () => {
+            const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = `/admin/orders/history?orderNo=${this.orderNo}&returnTo=${returnTo}`;
+        });
     },
 
     async applyOperationPolicy(settings = null) {

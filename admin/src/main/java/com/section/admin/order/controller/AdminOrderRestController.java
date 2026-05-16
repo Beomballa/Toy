@@ -2,10 +2,12 @@ package com.section.admin.order.controller;
 
 import com.section.admin.order.req.OrderDeliveryStartRequest;
 import com.section.admin.order.req.OrderActionRequest;
+import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.admin.order.req.OrderMemoSaveRequest;
 import com.section.admin.order.req.OrderNoRequest;
 import com.section.admin.order.req.OrderStatusUpdateRequest;
 import com.section.admin.order.res.OrderDetailResponse;
+import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.admin.order.res.OrderListResponse;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -47,6 +49,14 @@ public class AdminOrderRestController {
     @GetMapping("/get")
     public ResponseEntity<OrderDetailResponse> getOrderDetail(@RequestParam("no") Long orderNo) {
         return ResponseEntity.ok(adminOrderService.getOrderDetail(orderNo));
+    }
+
+    @GetMapping("/history/list")
+    public ResponseEntity<OrderHistoryListResponse> getOrderHistoryList(
+            @ModelAttribute OrderHistoryListRequest request,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(adminOrderService.getOrderHistoryList(request, pageable));
     }
 
     @PatchMapping("/status")

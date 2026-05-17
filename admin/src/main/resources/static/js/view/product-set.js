@@ -1,4 +1,5 @@
 const ProductCreate = {
+    initialized: false,
     optionCount: 0,
     brands: [],
     categories: [],
@@ -7,6 +8,11 @@ const ProductCreate = {
     operationPolicy: null,
 
     init(brands, categories) {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         // Thymeleaf에서 전달받은 데이터 저장
         this.brands = brands || [];
         this.categories = categories || [];
@@ -61,6 +67,9 @@ const ProductCreate = {
     bindEvents() {
         document.getElementById('productCreateForm')?.addEventListener('submit', (event) => {
             event.preventDefault();
+            this.submitForm();
+        });
+        document.getElementById('btnSubmit')?.addEventListener('click', () => {
             this.submitForm();
         });
         document.getElementById('btnBackToProductList').addEventListener('click', () => {

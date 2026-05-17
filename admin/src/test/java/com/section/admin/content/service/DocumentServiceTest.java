@@ -87,19 +87,44 @@ class DocumentServiceTest {
         when(documentRepository.findById(1L)).thenReturn(Optional.of(first));
         when(documentRepository.findById(2L)).thenReturn(Optional.of(second));
 
-        int updatedCount = documentService.bulkOperateDocuments(
+        DocumentService.BulkOperateResult result = documentService.bulkOperateDocuments(
                 Set.of(1L, 2L),
                 Document.PublishStatus.PUBLISHED,
                 YN.N,
                 YN.Y
         );
 
-        assertEquals(2, updatedCount);
+        assertEquals(2, result.requestedCount());
+        assertEquals(2, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
         assertEquals(Document.PublishStatus.PUBLISHED, first.getStatus());
         assertEquals(YN.N, first.getPublicYn());
         assertEquals(YN.Y, first.getPinnedYn());
         assertEquals(Document.PublishStatus.PUBLISHED, second.getStatus());
         assertEquals(YN.N, second.getPublicYn());
         assertEquals(YN.Y, second.getPinnedYn());
+    }
+
+    @Test
+    @DisplayName("커뮤니티 일괄 운영은 이미 같은 값이면 변경 건수에 포함하지 않는다")
+    void bulkOperateDocumentsExcludesUnchangedEntityCount() {
+        Document unchanged = new Document();
+        unchanged.setId(1L);
+        unchanged.setStatus(Document.PublishStatus.PUBLISHED);
+        unchanged.setPublicYn(YN.N);
+        unchanged.setPinnedYn(YN.Y);
+
+        when(documentRepository.findById(1L)).thenReturn(Optional.of(unchanged));
+
+        DocumentService.BulkOperateResult result = documentService.bulkOperateDocuments(
+                Set.of(1L),
+                Document.PublishStatus.PUBLISHED,
+                YN.N,
+                YN.Y
+        );
+
+        assertEquals(1, result.requestedCount());
+        assertEquals(0, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
     }
 }

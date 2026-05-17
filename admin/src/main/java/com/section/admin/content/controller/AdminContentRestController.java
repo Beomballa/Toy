@@ -71,7 +71,7 @@ public class AdminContentRestController {
     }
 
     @PatchMapping("/bulk-operate")
-    public ResponseEntity<Integer> bulkOperate(@RequestBody ContentBulkOperateRequest request) {
+    public ResponseEntity<DocumentService.BulkOperateResult> bulkOperate(@RequestBody ContentBulkOperateRequest request) {
         adminOperationPolicyService.assertCommunityWriteAllowed();
         if (!request.hasOperateField()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);

@@ -68,6 +68,12 @@
     <div class="content-board-toolbar">
         <div class="d-flex flex-wrap align-items-center gap-2 w-100">
             <label class="small text-muted mb-0">선택 작업</label>
+            <div class="form-check d-flex align-items-center ms-1">
+                <input class="form-check-input me-2" type="checkbox" id="contentSelectAllOnPage">
+                <label class="form-check-label" for="contentSelectAllOnPage">현재 페이지 전체 선택</label>
+            </div>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectCurrentPage">현재 페이지 선택</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectCurrentPage">현재 페이지 해제</button>
             <select id="contentBulkStatus" class="form-select select-auto-width">
                 <option value="">상태 유지</option>
                 <option value="DRAFT">임시저장</option>
@@ -87,6 +93,10 @@
             <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
             <span class="small text-muted ms-auto" id="contentSelectionMeta">선택된 게시글 0건</span>
         </div>
+    </div>
+
+    <div class="content-board-toolbar">
+        <div class="small text-muted w-100" id="contentBulkResultMeta">아직 일괄 적용 결과가 없습니다.</div>
     </div>
 
     <div class="row g-4 content-board-grid" id="contentGrid">

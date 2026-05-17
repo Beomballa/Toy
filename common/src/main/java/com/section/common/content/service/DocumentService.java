@@ -62,7 +62,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public int bulkOperateDocuments(
+    public BulkOperateResult bulkOperateDocuments(
             Set<Long> ids,
             Document.PublishStatus status,
             com.section.common.base.entity.type.YN publicYn,
@@ -71,9 +71,20 @@ public class DocumentService {
         int updatedCount = 0;
         for (Long id : ids) {
             Document document = getDocument(id);
-            document.applyOperateValues(status, publicYn, pinnedYn);
-            updatedCount += 1;
+            if (document.applyOperateValues(status, publicYn, pinnedYn)) {
+                updatedCount += 1;
+            }
         }
-        return updatedCount;
+        return BulkOperateResult.of(ids.size(), updatedCount);
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount
+    ) {
+        public static BulkOperateResult of(int requestedCount, int updatedCount) {
+            return new BulkOperateResult(requestedCount, updatedCount, requestedCount - updatedCount);
+        }
     }
 }

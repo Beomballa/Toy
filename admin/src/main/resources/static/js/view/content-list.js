@@ -9,7 +9,9 @@ const ContentList = {
         status: new URLSearchParams(window.location.search).get('status') || '',
         publicYn: new URLSearchParams(window.location.search).get('publicYn') || '',
         pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
-        selectedIds: new Set()
+        selectedIds: new Set(),
+        currentPageIds: [],
+        lastBulkResultMessage: '아직 일괄 적용 결과가 없습니다.'
     },
 
     init() {
@@ -109,6 +111,11 @@ const ContentList = {
             this.state.selectedIds.clear();
             this.syncSelectionState();
         });
+        document.getElementById('btnSelectCurrentPage')?.addEventListener('click', () => this.updateCurrentPageSelection(true));
+        document.getElementById('btnDeselectCurrentPage')?.addEventListener('click', () => this.updateCurrentPageSelection(false));
+        document.getElementById('contentSelectAllOnPage')?.addEventListener('change', (event) => {
+            this.updateCurrentPageSelection(event.target.checked);
+        });
     },
 
     updatePageMeta() {
@@ -136,6 +143,12 @@ const ContentList = {
             const reason = CommonJS.getCommunityWriteBlockedReason(resolvedSettings, '커뮤니티 작성');
             CommonJS.setButtonDisabled(createButton, disabled, reason);
             CommonJS.setButtonDisabled(bulkButton, disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnSelectCurrentPage'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnDeselectCurrentPage'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('contentSelectAllOnPage'), disabled, reason);
+            document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -176,6 +189,7 @@ const ContentList = {
     renderList(items) {
         const grid = document.getElementById('contentGrid');
         if (!grid) return;
+        this.state.currentPageIds = (items || []).map((item) => item.id);
 
         if (!items || items.length === 0) {
             grid.innerHTML = `
@@ -183,6 +197,7 @@ const ContentList = {
                     <div class="mb-3 text-muted"><i class="fas fa-folder-open fa-3x opacity-25"></i></div>
                     <div class="text-muted">등록된 콘텐츠가 없습니다.</div>
                 </div>`;
+            this.syncSelectionState();
             return;
         }
 
@@ -210,8 +225,8 @@ const ContentList = {
                     <div class="card-footer content-board-card-footer">
                         <span class="content-board-card-date">${item.crtDtm}</span>
                         <div class="content-board-card-actions">
-                            <button class="btn btn-sm btn-light" onclick="location.href='/admin/content/get?id=${item.id}&boardType=${item.boardType}'">상세</button>
-                            <button class="btn btn-sm btn-outline-primary" onclick="location.href='/admin/content/edit?id=${item.id}&boardType=${item.boardType}'">수정</button>
+                            <button class="btn btn-sm btn-light" data-role="content-detail" data-content-id="${item.id}" data-board-type="${item.boardType}">상세</button>
+                            <button class="btn btn-sm btn-outline-primary" data-role="content-edit" data-content-id="${item.id}" data-board-type="${item.boardType}">수정</button>
                         </div>
                     </div>
                 </div>
@@ -219,6 +234,8 @@ const ContentList = {
         `).join('');
         this.bindSelectionEvents();
         this.syncSelectionState();
+        this.bindRowActions();
+        this.applyOperationPolicy();
     },
 
     getBoardLabel(boardType) {
@@ -297,11 +314,55 @@ const ContentList = {
         });
     },
 
+    bindRowActions() {
+        document.querySelectorAll('[data-role="content-detail"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}`;
+            });
+        });
+        document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const settings = await CommonJS.fetchSystemSettings();
+                if (CommonJS.isCommunityWriteBlocked(settings)) {
+                    await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
+                    return;
+                }
+                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}`;
+            });
+        });
+    },
+
     syncSelectionState() {
         const meta = document.getElementById('contentSelectionMeta');
+        const selectedOnPageCount = this.state.currentPageIds.filter((id) => this.state.selectedIds.has(id)).length;
         if (meta) {
-            meta.textContent = `선택된 게시글 ${this.state.selectedIds.size}건`;
+            meta.textContent = `전체 선택 ${this.state.selectedIds.size}건 · 현재 페이지 ${selectedOnPageCount}/${this.state.currentPageIds.length || 0}건`;
         }
+        const selectAllOnPage = document.getElementById('contentSelectAllOnPage');
+        if (selectAllOnPage) {
+            const hasCurrentPageItems = this.state.currentPageIds.length > 0;
+            selectAllOnPage.checked = hasCurrentPageItems && selectedOnPageCount === this.state.currentPageIds.length;
+            selectAllOnPage.indeterminate = hasCurrentPageItems && selectedOnPageCount > 0 && selectedOnPageCount < this.state.currentPageIds.length;
+        }
+        const resultMeta = document.getElementById('contentBulkResultMeta');
+        if (resultMeta) {
+            resultMeta.textContent = this.state.lastBulkResultMessage;
+        }
+    },
+
+    updateCurrentPageSelection(checked) {
+        // 선택 집합은 페이지 이동 후에도 유지해서, 여러 페이지를 넘겨가며 일괄 적용할 수 있게 둔다.
+        this.state.currentPageIds.forEach((id) => {
+            if (checked) {
+                this.state.selectedIds.add(id);
+            } else {
+                this.state.selectedIds.delete(id);
+            }
+        });
+        document.querySelectorAll('.content-select-checkbox').forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        this.syncSelectionState();
     },
 
     async applyBulkOperate() {
@@ -340,9 +401,15 @@ const ContentList = {
             return;
         }
 
-        this.state.selectedIds.clear();
+        const result = await response.json();
+        if (result.updatedCount > 0) {
+            this.state.selectedIds.clear();
+            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건 중 ${result.updatedCount}건을 변경했습니다. ${result.unchangedCount}건은 기존 상태를 유지했고, 적용 후 선택을 해제했습니다.`;
+        } else {
+            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건이 모두 현재 상태와 같아서 변경하지 않았습니다. 선택은 유지됩니다.`;
+        }
         this.syncSelectionState();
-        await CommonJS.alert('선택한 게시글에 운영 상태를 적용했습니다.', '성공', 'success');
+        await CommonJS.alert(this.state.lastBulkResultMessage, '성공', 'success');
         this.getList();
     }
 };

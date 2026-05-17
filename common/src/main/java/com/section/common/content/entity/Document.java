@@ -61,19 +61,24 @@ public class Document extends BaseEntity {
         this.productNo = productNo;
     }
 
-    public void applyOperateValues(
+    public boolean applyOperateValues(
             PublishStatus status,
             YN publicYn,
             YN pinnedYn
     ) {
+        boolean changed = false;
         if (status != null) {
+            changed = changed || this.status != status;
             this.status = status;
         }
         if (publicYn != null) {
+            changed = changed || this.publicYn != publicYn;
             this.publicYn = publicYn;
         }
         if (pinnedYn != null) {
+            changed = changed || this.pinnedYn != pinnedYn;
             this.pinnedYn = pinnedYn;
         }
+        return changed;
     }
 }

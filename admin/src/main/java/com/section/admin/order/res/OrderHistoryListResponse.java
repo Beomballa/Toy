@@ -17,7 +17,8 @@ public record OrderHistoryListResponse(
         long rangeStart,
         long rangeEnd,
         String pageInfoLabel,
-        AppliedQuery appliedQuery
+        AppliedQuery appliedQuery,
+        ResultMeta resultMeta
 ) {
     public static OrderHistoryListResponse of(Page<OrderHistoryListResDto> page, OrderHistoryListQuery query) {
         long rangeStart = page.getTotalElements() == 0 ? 0 : page.getNumber() * page.getSize() + 1L;
@@ -35,7 +36,8 @@ public record OrderHistoryListResponse(
                 rangeStart,
                 rangeEnd,
                 pageInfoLabel,
-                AppliedQuery.from(query)
+                AppliedQuery.from(query),
+                ResultMeta.from(page, query, rangeStart, rangeEnd, pageInfoLabel)
         );
     }
 
@@ -111,6 +113,51 @@ public record OrderHistoryListResponse(
                     query.orderType() == null ? OrderHistoryOrderType.LATEST.getCode() : query.orderType().getCode(),
                     query.orderType() == null ? OrderHistoryOrderType.LATEST.getDesc() : query.orderType().getDesc()
             );
+        }
+    }
+
+    public record ResultMeta(
+            String resultLabel,
+            String pageInfoLabel,
+            int filterCount,
+            String querySignature
+    ) {
+        public static ResultMeta from(
+                Page<OrderHistoryListResDto> page,
+                OrderHistoryListQuery query,
+                long rangeStart,
+                long rangeEnd,
+                String pageInfoLabel
+        ) {
+            return new ResultMeta(
+                    page.getTotalElements() == 0 ? "조회 결과 없음" : "검색 결과 " + page.getTotalElements() + "건",
+                    pageInfoLabel,
+                    countFilters(query),
+                    buildQuerySignature(query, rangeStart, rangeEnd)
+            );
+        }
+
+        private static int countFilters(OrderHistoryListQuery query) {
+            int count = 0;
+            if (query.orderNo() != null) count += 1;
+            if (query.actionType() != null && !query.actionType().isBlank()) count += 1;
+            if (query.keyword() != null && !query.keyword().isBlank()) count += 1;
+            if (query.actorKeyword() != null && !query.actorKeyword().isBlank()) count += 1;
+            if (query.startDate() != null) count += 1;
+            if (query.endDate() != null) count += 1;
+            if (query.orderType() != null && query.orderType() != OrderHistoryOrderType.LATEST) count += 1;
+            return count;
+        }
+
+        private static String buildQuerySignature(OrderHistoryListQuery query, long rangeStart, long rangeEnd) {
+            StringBuilder builder = new StringBuilder();
+            builder.append(rangeStart).append("-").append(rangeEnd);
+            if (query.orderNo() != null) builder.append(" · 주문=").append(query.orderNo());
+            if (query.actionType() != null && !query.actionType().isBlank()) builder.append(" · 작업=").append(query.actionType());
+            if (query.keyword() != null && !query.keyword().isBlank()) builder.append(" · 검색=").append(query.keyword());
+            if (query.actorKeyword() != null && !query.actorKeyword().isBlank()) builder.append(" · 작업자=").append(query.actorKeyword());
+            if (query.orderType() != null && query.orderType() != OrderHistoryOrderType.LATEST) builder.append(" · 정렬=").append(query.orderType().getDesc());
+            return builder.toString();
         }
     }
 }

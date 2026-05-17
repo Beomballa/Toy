@@ -127,5 +127,8 @@ class AdminOrderServiceTest {
         assertEquals("관리자", response.appliedQuery().actorKeyword());
         assertEquals("oldest", response.appliedQuery().orderType());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals(4, response.resultMeta().filterCount());
+        assertEquals("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자=관리자 · 정렬=오래된순", response.resultMeta().querySignature());
     }
 }

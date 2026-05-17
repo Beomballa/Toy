@@ -1,12 +1,14 @@
 const OrderHistoryPage = {
     state: {
         page: 0,
-        size: 20
+        size: 20,
+        returnTo: '/admin/orders/list'
     },
 
     init() {
         this.bindEvents();
         this.readStateFromUrl();
+        this.syncReturnLinks();
         this.loadHistory();
     },
 
@@ -38,6 +40,17 @@ const OrderHistoryPage = {
             this.state.page = 0;
             this.loadHistory();
         });
+        document.querySelectorAll('.history-quick-filter[data-action-type]').forEach((button) => {
+            button.addEventListener('click', () => {
+                document.getElementById('historyActionType').value = button.dataset.actionType || '';
+                this.state.page = 0;
+                this.syncQuickFilterState();
+                this.loadHistory();
+            });
+        });
+        document.getElementById('btnBackToOrderHistorySource')?.addEventListener('click', () => {
+            window.location.href = this.state.returnTo;
+        });
     },
 
     readStateFromUrl() {
@@ -51,7 +64,9 @@ const OrderHistoryPage = {
         document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        this.state.returnTo = params.get('returnTo') || '/admin/orders/list';
         document.getElementById('historyPageSize').value = String(this.state.size);
+        this.syncQuickFilterState();
     },
 
     buildParams() {
@@ -71,6 +86,7 @@ const OrderHistoryPage = {
         if (keyword) params.set('keyword', keyword);
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType !== 'latest') params.set('orderType', orderType);
+        if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -90,6 +106,7 @@ const OrderHistoryPage = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            this.renderResultSummary(data);
         } catch (error) {
             this.renderError(error.message);
         }
@@ -122,6 +139,14 @@ const OrderHistoryPage = {
 
     renderMeta(data) {
         this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+        const filterMeta = document.getElementById('orderHistoryFilterMeta');
+        if (filterMeta) {
+            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
+        }
+        const pageMeta = document.getElementById('orderHistoryPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
+        }
     },
 
     renderPagination(data) {
@@ -147,6 +172,18 @@ const OrderHistoryPage = {
         document.getElementById('orderHistoryBody').innerHTML =
             `<tr><td colspan="6" class="text-center py-5 text-danger">${message}</td></tr>`;
         this.setMetaText('이력 조회 실패');
+        const filterMeta = document.getElementById('orderHistoryFilterMeta');
+        if (filterMeta) {
+            filterMeta.textContent = '적용 필터 확인 불가';
+        }
+        const pageMeta = document.getElementById('orderHistoryPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = '페이지 메타 확인 불가';
+        }
+        const summary = document.getElementById('orderHistoryResultSummary');
+        if (summary) {
+            summary.textContent = '주문 처리 이력 조회에 실패했습니다.';
+        }
         document.getElementById('historyPagination').innerHTML = '';
     },
 
@@ -157,6 +194,30 @@ const OrderHistoryPage = {
     goPage(page) {
         this.state.page = page;
         this.loadHistory();
+    },
+
+    syncQuickFilterState() {
+        const currentActionType = document.getElementById('historyActionType')?.value || '';
+        document.querySelectorAll('.history-quick-filter[data-action-type]').forEach((button) => {
+            button.classList.toggle('active', (button.dataset.actionType || '') === currentActionType);
+            button.classList.toggle('btn-dark', (button.dataset.actionType || '') === currentActionType);
+            button.classList.toggle('btn-outline-dark', (button.dataset.actionType || '') !== currentActionType);
+        });
+    },
+
+    syncReturnLinks() {
+        const breadcrumbLink = document.getElementById('orderHistoryBreadcrumbLink');
+        if (breadcrumbLink) {
+            breadcrumbLink.href = this.state.returnTo;
+        }
+    },
+
+    renderResultSummary(data) {
+        const summary = document.getElementById('orderHistoryResultSummary');
+        if (!summary) {
+            return;
+        }
+        summary.textContent = data.resultMeta?.querySignature || '현재 적용된 필터를 기준으로 주문 처리 이력을 조회합니다.';
     }
 };
 

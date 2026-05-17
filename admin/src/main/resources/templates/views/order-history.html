@@ -18,12 +18,16 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
-                <li class="breadcrumb-item"><a href="/admin/orders/list">주문 관리</a></li>
+                <li class="breadcrumb-item"><a href="/admin/orders/list" id="orderHistoryBreadcrumbLink">주문 관리</a></li>
                 <li class="breadcrumb-item active">주문 처리 이력</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper">
-            <h1 class="page-title">주문 처리 이력</h1>
+        <div class="page-title-wrapper d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <h1 class="page-title">주문 처리 이력</h1>
+                <div class="small text-muted" id="orderHistoryResultSummary">현재 적용된 필터를 기준으로 주문 처리 이력을 조회합니다.</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" id="btnBackToOrderHistorySource">이전 화면으로</button>
         </div>
     </div>
 
@@ -44,6 +48,16 @@
                         <option value="CANCEL">주문 취소</option>
                         <option value="ADMIN_MEMO">메모 저장</option>
                     </select>
+                </div>
+                <div class="col-md-12">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter active" data-action-type="">전체</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="STATUS_CHANGE">상태 변경</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_START">배송 시작</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_COMPLETE">배송 완료</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="CANCEL">주문 취소</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="ADMIN_MEMO">메모 저장</button>
+                    </div>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label fw-bold">시작일</label>
@@ -79,6 +93,7 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">주문 처리 이력 목록</h6>
             <div class="d-flex align-items-center gap-3">
+                <div class="small text-muted" id="orderHistoryFilterMeta">적용 필터 0개</div>
                 <label class="small text-muted d-flex align-items-center gap-2 mb-0">
                     <span>페이지 크기</span>
                     <select id="historyPageSize" class="form-select form-select-sm">
@@ -110,6 +125,7 @@
             </div>
         </div>
         <div class="card-footer bg-white py-3">
+            <div class="small text-muted text-center mb-2" id="orderHistoryPageMeta">페이지 메타 계산 중</div>
             <ul class="pagination pagination-sm justify-content-center mb-0" id="historyPagination"></ul>
         </div>
     </div>

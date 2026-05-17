@@ -170,7 +170,8 @@ class AdminOrderRestControllerTest {
                         1L,
                         1L,
                         "1-1 / 1건 · 1페이지",
-                        new OrderHistoryListResponse.AppliedQuery(3L, "DELIVERY_START", null, "관리자", null, null, "oldest", "오래된순")
+                        new OrderHistoryListResponse.AppliedQuery(3L, "DELIVERY_START", null, "관리자", null, null, "oldest", "오래된순"),
+                        new OrderHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 3, "1-1 · 주문=3 · 작업=DELIVERY_START · 작업자=관리자 · 정렬=오래된순")
                 ));
 
         mockMvc.perform(get("/api/admin/orders/history/list?orderNo=3&actionType=DELIVERY_START&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
@@ -184,7 +185,10 @@ class AdminOrderRestControllerTest {
                 .andExpect(jsonPath("$.appliedQuery.orderNo").value(3L))
                 .andExpect(jsonPath("$.appliedQuery.actionType").value("DELIVERY_START"))
                 .andExpect(jsonPath("$.appliedQuery.actorKeyword").value("관리자"))
-                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"));
+                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1건"))
+                .andExpect(jsonPath("$.resultMeta.filterCount").value(3))
+                .andExpect(jsonPath("$.resultMeta.querySignature").value("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자=관리자 · 정렬=오래된순"));
     }
 
     private record StatusPayload(Long orderNo, String status, String reason) {

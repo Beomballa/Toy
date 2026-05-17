@@ -20,6 +20,23 @@ const AdminLogPage = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('btnResetLog')?.addEventListener('click', () => {
+            this.resetFilters();
+        });
+        document.getElementById('logPageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.state.size = Number(document.getElementById('logPageSize')?.value || 20);
+            this.getList();
+        });
+        ['logAdminNo', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
+            document.getElementById(id)?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.state.page = 0;
+                    this.getList();
+                }
+            });
+        });
     },
 
     readStateFromUrl() {
@@ -31,6 +48,7 @@ const AdminLogPage = {
         document.getElementById('logEndDate').value = params.get('endDate') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        document.getElementById('logPageSize').value = String(this.state.size);
     },
 
     buildParams() {
@@ -63,11 +81,15 @@ const AdminLogPage = {
             }
             const data = await res.json();
             this.renderList(data.items || []);
-            this.setMetaText(`${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건 · ${data.totalPages}페이지`);
+            this.renderMeta(data);
+            this.renderPagination(data);
         } catch (err) {
             document.getElementById('logListBody').innerHTML =
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             this.setMetaText('로그 조회 실패');
+            document.getElementById('logFilterMeta').textContent = '적용 필터 확인 불가';
+            document.getElementById('logPageMeta').textContent = '페이지 메타 확인 불가';
+            document.getElementById('logPagination').innerHTML = '';
         }
     },
 
@@ -96,6 +118,39 @@ const AdminLogPage = {
         `).join('');
     },
 
+    renderMeta(data) {
+        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+        const filterMeta = document.getElementById('logFilterMeta');
+        if (filterMeta) {
+            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
+        }
+        const pageMeta = document.getElementById('logPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = data.resultMeta?.querySignature || data.pageInfoLabel || '페이지 메타 없음';
+        }
+    },
+
+    renderPagination(data) {
+        const pagination = document.getElementById('logPagination');
+        if (!pagination) {
+            return;
+        }
+        if (!data.totalPages) {
+            pagination.innerHTML = '';
+            return;
+        }
+
+        let html = '';
+        for (let i = 0; i < data.totalPages; i += 1) {
+            html += `
+                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
+                    <a class="page-link" href="javascript:void(0);" onclick="AdminLogPage.goPage(${i})">${i + 1}</a>
+                </li>
+            `;
+        }
+        pagination.innerHTML = html;
+    },
+
     async openDetail(logNo) {
         document.getElementById('logDetailBody').textContent = '데이터를 불러오는 중입니다...';
         this.modal.show();
@@ -120,6 +175,23 @@ const AdminLogPage = {
 
     setMetaText(message) {
         document.getElementById('logMetaText').textContent = message;
+    },
+
+    goPage(page) {
+        this.state.page = page;
+        this.getList();
+    },
+
+    resetFilters() {
+        document.getElementById('logAdminNo').value = '';
+        document.getElementById('logActionType').value = '';
+        document.getElementById('logTargetId').value = '';
+        document.getElementById('logStartDate').value = '';
+        document.getElementById('logEndDate').value = '';
+        document.getElementById('logPageSize').value = '20';
+        this.state.page = 0;
+        this.state.size = 20;
+        this.getList();
     }
 };
 

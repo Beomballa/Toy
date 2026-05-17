@@ -58,6 +58,10 @@ class AdminLogServiceTest {
         assertEquals("운영자", response.items().get(0).adminName());
         assertEquals("상품 #4", response.items().get(0).targetLabel());
         assertEquals("/admin/products/history?productNo=4", response.items().get(0).targetPath());
+        assertEquals(0, response.currentPage());
+        assertEquals(20, response.pageSize());
+        assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
     }
 
     @Test

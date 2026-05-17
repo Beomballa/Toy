@@ -52,6 +52,9 @@
                 <div class="col-md-2 d-grid">
                     <button type="button" class="btn btn-dark" id="btnSearchLog">조회</button>
                 </div>
+                <div class="col-md-2 d-grid">
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetLog">초기화</button>
+                </div>
             </div>
         </div>
     </div>
@@ -59,7 +62,18 @@
     <div class="card animate-in">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">활동 내역</h6>
-            <div class="small text-muted" id="logMetaText">데이터를 불러오는 중입니다...</div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="small text-muted" id="logFilterMeta">적용 필터 0개</div>
+                <label class="small text-muted d-flex align-items-center gap-2 mb-0">
+                    <span>페이지 크기</span>
+                    <select id="logPageSize" class="form-select form-select-sm">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </label>
+                <div class="small text-muted" id="logMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -80,6 +94,10 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <div class="small text-muted text-center mb-2" id="logPageMeta">페이지 메타 계산 중</div>
+            <ul class="pagination pagination-sm justify-content-center mb-0" id="logPagination"></ul>
         </div>
     </div>
 </main>

@@ -56,6 +56,8 @@ class AdminLogServiceTest {
 
         assertEquals(1, response.items().size());
         assertEquals("운영자", response.items().get(0).adminName());
+        assertEquals("상품 #4", response.items().get(0).targetLabel());
+        assertEquals("/admin/products/history?productNo=4", response.items().get(0).targetPath());
     }
 
     @Test
@@ -86,5 +88,7 @@ class AdminLogServiceTest {
 
         assertEquals("배너담당", response.adminName());
         assertEquals("BANNER_DELETE", response.actionType());
+        assertEquals("배너 #7", response.targetLabel());
+        assertEquals("/admin/banner/list", response.targetPath());
     }
 }

@@ -34,6 +34,8 @@ public record AdminLogListResponse(
             String adminName,
             String actionType,
             Long targetId,
+            String targetLabel,
+            String targetPath,
             String ipAddress,
             String actionDtm
     ) {
@@ -44,6 +46,8 @@ public record AdminLogListResponse(
                     adminName,
                     item.getActionType(),
                     item.getTargetId(),
+                    AdminLogTargetLinkSupport.resolveTargetLabel(item.getActionType(), item.getTargetId()),
+                    AdminLogTargetLinkSupport.resolveTargetPath(item.getActionType(), item.getTargetId()),
                     item.getIpAddress(),
                     item.getActionDtm() == null ? "-" : item.getActionDtm().toString().replace('T', ' ')
             );

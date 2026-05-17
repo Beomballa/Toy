@@ -79,7 +79,11 @@ const AdminLogPage = {
                 <td class="ps-4 text-muted small">${item.logNo}</td>
                 <td><span class="badge bg-light text-dark">${item.adminName} (#${item.adminNo})</span></td>
                 <td><span class="fw-bold text-primary">${item.actionType}</span></td>
-                <td>${item.targetId || '-'}</td>
+                <td>
+                    ${item.targetPath
+                        ? `<a class="text-decoration-none" href="${item.targetPath}">${item.targetLabel}</a>`
+                        : (item.targetLabel || '-')}
+                </td>
                 <td><code class="small">${item.ipAddress}</code></td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-outline-dark" onclick="AdminLogPage.openDetail(${item.logNo})">상세</button>
@@ -102,7 +106,7 @@ const AdminLogPage = {
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${data.adminName} (#${data.adminNo})</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
-                <div class="mb-2"><strong>대상 ID</strong> ${data.targetId || '-'}</div>
+                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;

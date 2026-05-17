@@ -8,6 +8,8 @@ public record AdminLogDetailResponse(
         String adminName,
         String actionType,
         Long targetId,
+        String targetLabel,
+        String targetPath,
         String ipAddress,
         String actionDtm
 ) {
@@ -18,6 +20,8 @@ public record AdminLogDetailResponse(
                 adminName,
                 log.getActionType(),
                 log.getTargetId(),
+                AdminLogTargetLinkSupport.resolveTargetLabel(log.getActionType(), log.getTargetId()),
+                AdminLogTargetLinkSupport.resolveTargetPath(log.getActionType(), log.getTargetId()),
                 log.getIpAddress(),
                 log.getActionDtm() == null ? "-" : log.getActionDtm().toString().replace('T', ' ')
         );

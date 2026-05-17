@@ -32,6 +32,19 @@ const MemberListPage = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('btnResetMember')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('memberPageSize')?.addEventListener('change', (event) => {
+            this.state.size = Number(event.target.value || 20);
+            this.state.page = 0;
+            this.getList();
+        });
+        document.getElementById('memberKeyword')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.state.page = 0;
+                this.getList();
+            }
+        });
         document.getElementById('btnToggleMasterYn')?.addEventListener('click', () => this.toggleMemberStatus('master'));
         document.getElementById('btnToggleMemberStatus')?.addEventListener('click', () => this.toggleMemberStatus('deleted'));
     },
@@ -43,6 +56,7 @@ const MemberListPage = {
         document.getElementById('memberDelYn').value = params.get('delYn') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        document.getElementById('memberPageSize').value = String(this.state.size);
     },
 
     buildParams() {
@@ -62,16 +76,23 @@ const MemberListPage = {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
+        this.setFilterMetaText('적용 필터를 계산하는 중입니다...');
+        this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
+        this.renderPagination(0, 0);
         try {
             const res = await fetch(`/api/admin/members/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 목록을 불러오지 못했습니다.'));
             const data = await res.json();
             this.renderList(data.items || []);
-            this.setMetaText(`${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건 · ${data.totalPages}페이지`);
+            this.renderMeta(data);
+            this.renderPagination(data.currentPage ?? 0, data.totalPages ?? 0);
         } catch (err) {
             document.getElementById('memberListBody').innerHTML =
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             this.setMetaText('회원 목록 조회 실패');
+            this.setFilterMetaText(err.message);
+            this.setPageMetaText('페이지 메타 확인 불가');
+            this.setPaginationSummary('페이지 정보를 불러오지 못했습니다.');
         }
     },
 
@@ -96,7 +117,7 @@ const MemberListPage = {
                 </td>
                 <td class="text-center text-muted small">${item.crtDtm || '-'}</td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="MemberListPage.openDetail(${item.id})">상세</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-member-detail" data-member-id="${item.id}">상세</button>
                 </td>
                 <td class="text-end pe-4">
                     <span class="badge ${item.delYn === 'N' ? 'badge-normal' : 'badge-deleted'}">
@@ -105,6 +126,63 @@ const MemberListPage = {
                 </td>
             </tr>
         `).join('');
+        tbody.querySelectorAll('[data-role="open-member-detail"]').forEach((button) => {
+            button.addEventListener('click', () => this.openDetail(Number(button.dataset.memberId)));
+        });
+    },
+
+    renderMeta(data) {
+        this.setMetaText(data.resultMeta?.resultLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
+        this.setFilterMetaText(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '최신 가입순'}`);
+        this.setPageMetaText(data.resultMeta?.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
+        this.setPaginationSummary(`페이지 크기 ${data.pageSize ?? this.state.size} · ${data.resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
+    },
+
+    renderPagination(currentPage, totalPages) {
+        const pagination = document.getElementById('memberPagination');
+        if (!pagination) {
+            return;
+        }
+        if (!totalPages || totalPages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
+        const items = [];
+        items.push(this.paginationItem('이전', currentPage - 1, currentPage <= 0));
+        for (let page = 0; page < totalPages; page += 1) {
+            items.push(this.paginationItem(String(page + 1), page, false, page === currentPage));
+        }
+        items.push(this.paginationItem('다음', currentPage + 1, currentPage >= totalPages - 1));
+        pagination.innerHTML = items.join('');
+        pagination.querySelectorAll('[data-page]').forEach((link) => {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                const targetPage = Number(link.dataset.page);
+                if (Number.isNaN(targetPage) || targetPage === this.state.page) {
+                    return;
+                }
+                this.state.page = targetPage;
+                this.getList();
+            });
+        });
+    },
+
+    paginationItem(label, page, disabled, active = false) {
+        return `
+            <li class="page-item ${disabled ? 'disabled' : ''} ${active ? 'active' : ''}">
+                <a class="page-link" href="#" data-page="${page}">${label}</a>
+            </li>
+        `;
+    },
+
+    resetFilters() {
+        document.getElementById('memberKeyword').value = '';
+        document.getElementById('memberMasterYn').value = '';
+        document.getElementById('memberDelYn').value = '';
+        document.getElementById('memberPageSize').value = '20';
+        this.state.page = 0;
+        this.state.size = 20;
+        this.getList();
     },
 
     async openDetail(memberId) {
@@ -169,6 +247,18 @@ const MemberListPage = {
 
     setMetaText(message) {
         document.getElementById('memberMetaText').textContent = message;
+    },
+
+    setFilterMetaText(message) {
+        document.getElementById('memberFilterMeta').textContent = message;
+    },
+
+    setPageMetaText(message) {
+        document.getElementById('memberPageMeta').textContent = message;
+    },
+
+    setPaginationSummary(message) {
+        document.getElementById('memberPaginationSummary').textContent = message;
     }
 };
 

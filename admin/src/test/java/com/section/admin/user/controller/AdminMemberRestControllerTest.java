@@ -53,14 +53,18 @@ class AdminMemberRestControllerTest {
         when(adminMemberService.getMemberList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminMemberListResponse(
                         List.of(new AdminMemberListResponse.Item(1L, "member@test.com", "회원", "닉네임", "N", "N", "N", "-")),
+                        0, 20,
                         1L, 1, 1L, 1L,
-                        new AdminMemberListResponse.AppliedQuery(null, null, null)
+                        new AdminMemberListResponse.AppliedQuery(null, null, null),
+                        new AdminMemberListResponse.ResultMeta("전체 1명", "1-1 / 1명 · 1페이지", 0, false, "최신 가입순")
                 ));
 
         mockMvc.perform(get("/api/admin/members/list?page=0&size=20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].email").value("member@test.com"))
-                .andExpect(jsonPath("$.totalElements").value(1L));
+                .andExpect(jsonPath("$.totalElements").value(1L))
+                .andExpect(jsonPath("$.pageSize").value(20))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1명"));
     }
 
     @Test

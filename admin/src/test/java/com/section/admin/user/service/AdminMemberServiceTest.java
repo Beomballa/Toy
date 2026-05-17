@@ -51,6 +51,10 @@ class AdminMemberServiceTest {
 
         assertEquals(1, response.items().size());
         assertEquals("member@test.com", response.items().get(0).email());
+        assertEquals(0, response.currentPage());
+        assertEquals(20, response.pageSize());
+        assertEquals("전체 1명", response.resultMeta().resultLabel());
+        assertEquals("1-1 / 1명 · 1페이지", response.resultMeta().pageInfoLabel());
     }
 
     @Test

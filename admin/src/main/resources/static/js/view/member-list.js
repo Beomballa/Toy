@@ -1,4 +1,5 @@
 const MemberListPage = {
+    initialized: false,
     modal: null,
     selectedMember: null,
     operationPolicy: null,
@@ -8,6 +9,8 @@ const MemberListPage = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.modal = new bootstrap.Modal(document.getElementById('memberDetailModal'));
         this.bindEvents();
         this.readStateFromUrl();

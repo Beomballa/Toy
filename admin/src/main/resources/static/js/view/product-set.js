@@ -27,9 +27,7 @@ const ProductCreate = {
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
 
-        document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = this.returnTo;
-        });
+        CommonJS.bindMainLogoNavigation(this.returnTo);
     },
 
     async applyOperationPolicy(settings = null) {

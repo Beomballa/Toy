@@ -159,9 +159,12 @@
 <script src="/js/common.js"></script>
 <script>
     const AdminUser = {
+        initialized: false,
         modal: null,
         operationPolicy: null,
         init() {
+            if (this.initialized) return;
+            this.initialized = true;
             this.modal = new bootstrap.Modal(document.getElementById('adminModal'));
             this.bindEvents();
             window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));

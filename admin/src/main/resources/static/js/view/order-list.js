@@ -1,10 +1,13 @@
 const OrderList = {
+    initialized: false,
     maxDateRangeDays: 92,
     maxKeywordLength: 50,
     state: null,
     operationPolicy: null,
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.state = this.readStateFromUrl();
         this.syncFilterFields();
         this.bindEvents();

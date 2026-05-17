@@ -1,5 +1,6 @@
 // /js/common.js
 let CommonJS = {
+    initialized: false,
     systemSettingsCache: null,
     systemSettingsEventName: 'admin-system-settings-updated',
     orderStatusMeta: {
@@ -18,10 +19,21 @@ let CommonJS = {
     },
 
     init: function () {
-        document.getElementById("main-logo")?.addEventListener("click", function (el){
-            window.location.href = "/product/list";
-        });
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+        this.bindMainLogoNavigation('/admin');
         this.renderOperationPolicyBanner();
+    },
+
+    bindMainLogoNavigation: function (targetUrl) {
+        const logo = document.getElementById('main-logo');
+        if (!logo) return;
+        // 로고 이동은 화면별 문맥이 달라 addEventListener 누적보다 onclick 재할당이 안전합니다.
+        logo.onclick = () => {
+            window.location.href = targetUrl;
+        };
     },
 
     /**

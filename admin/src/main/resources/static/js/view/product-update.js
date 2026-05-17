@@ -1,4 +1,5 @@
 const ProductUpdate = {
+    initialized: false,
     optionCount: 0,
     productNo: null,
     returnTo: '/admin/products',
@@ -6,6 +7,11 @@ const ProductUpdate = {
     operationPolicy: null,
 
     init(bootstrapProduct = null) {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
@@ -29,9 +35,7 @@ const ProductUpdate = {
         }
         this.bindEvents();
 
-        document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = this.returnTo;
-        });
+        CommonJS.bindMainLogoNavigation(this.returnTo);
     },
 
     async applyOperationPolicy(settings = null) {

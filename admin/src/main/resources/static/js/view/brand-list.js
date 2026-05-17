@@ -1,8 +1,11 @@
 const BrandList = {
+    initialized: false,
     modal: null,
     operationPolicy: null,
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const modalEl = document.getElementById('brandModal');
         if (modalEl) {
             this.modal = new bootstrap.Modal(modalEl);

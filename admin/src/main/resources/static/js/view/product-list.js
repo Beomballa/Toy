@@ -1,4 +1,5 @@
 const ProductList = {
+    initialized: false,
     allowedLowStockThresholds: ['10', '30', '50', '100'],
 
     state: {
@@ -23,6 +24,11 @@ const ProductList = {
     operationPolicy: null,
 
     init(brands = [], categories = [], initialLowStockThreshold = 100) {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         this.defaultLowStockThreshold = this._normalizeLowStockThreshold(String(initialLowStockThreshold));
         this.state.lowStockThreshold = this.defaultLowStockThreshold;
         this._fillSelect('brandNo',    brands,     'brandNo',    'nameKo');
@@ -49,7 +55,7 @@ const ProductList = {
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
             window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
         });
-        document.getElementById('main-logo')?.addEventListener('click', () => location.href = '/admin/products');
+        CommonJS.bindMainLogoNavigation('/admin/products');
     },
 
     _fillSelect(selectId, items, valueKey, labelKey) {

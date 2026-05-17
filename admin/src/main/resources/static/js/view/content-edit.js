@@ -1,4 +1,5 @@
 const ContentEdit = {
+    initialized: false,
     debounceTimer: null,
     statusTimer: null,
     isSaving: false,
@@ -13,6 +14,8 @@ const ContentEdit = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.id = document.getElementById('contentId').value;
         this.initialBoardType = ContentBoardConfig.normalizeBoardType(
             document.getElementById('initialBoardType')?.value

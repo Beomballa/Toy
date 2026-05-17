@@ -1,10 +1,16 @@
 const ProductDetail = {
+    initialized: false,
     productNo: null,
     productData: null,
     returnTo: '/admin/products',
     operationPolicy: null,
 
     init(bootstrapProduct = null) {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
+
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
@@ -28,9 +34,7 @@ const ProductDetail = {
         }
         this.bindEvents();
 
-        document.getElementById("main-logo")?.addEventListener("click", () => {
-            window.location.href = this.returnTo;
-        });
+        CommonJS.bindMainLogoNavigation(this.returnTo);
     },
 
     hasBootstrapProduct(bootstrapProduct) {

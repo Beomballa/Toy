@@ -1,4 +1,5 @@
 const ContentDetail = {
+    initialized: false,
     state: {
         id: null,
         boardType: 'NOTICE',
@@ -7,6 +8,8 @@ const ContentDetail = {
     operationPolicy: null,
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const params = new URLSearchParams(window.location.search);
         this.state.id = window.initialContentDetail?.id || params.get('id');
         this.state.boardType = ContentBoardConfig.normalizeBoardType(

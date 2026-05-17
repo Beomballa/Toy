@@ -1,4 +1,5 @@
 const AdminLogPage = {
+    initialized: false,
     modal: null,
     state: {
         page: 0,
@@ -6,6 +7,8 @@ const AdminLogPage = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
         this.bindEvents();
         this.readStateFromUrl();

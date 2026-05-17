@@ -1,5 +1,8 @@
 const DashBoardListJS = {
+    initialized: false,
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.bindSummaryActions();
         this.getStats();
     },

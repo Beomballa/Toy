@@ -1,5 +1,8 @@
 const OrderDetail = {
+    initialized: false,
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const params = new URLSearchParams(window.location.search);
         this.orderNo = params.get('no');
         this.returnTo = params.get('returnTo') || '/admin/orders/list';

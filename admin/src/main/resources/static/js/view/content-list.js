@@ -1,4 +1,5 @@
 const ContentList = {
+    initialized: false,
     state: {
         page: 0,
         size: 9,
@@ -15,6 +16,8 @@ const ContentList = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.syncSearchField();
         this.setInitialTab();
         this.updateSidebarActive();

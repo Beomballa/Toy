@@ -1,9 +1,12 @@
 const BannerList = {
+    initialized: false,
     modal: null,
     state: {},
     operationPolicy: null,
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const modalEl = document.getElementById('bannerModal');
         if (modalEl) {
             this.modal = new bootstrap.Modal(modalEl);

@@ -1,4 +1,5 @@
 const OrderHistoryPage = {
+    initialized: false,
     state: {
         page: 0,
         size: 20,
@@ -6,6 +7,8 @@ const OrderHistoryPage = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.bindEvents();
         this.readStateFromUrl();
         this.syncReturnLinks();

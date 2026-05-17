@@ -1,4 +1,5 @@
 const CategoryList = {
+    initialized: false,
     modal: null,
     operationPolicy: null,
     state: {
@@ -9,6 +10,8 @@ const CategoryList = {
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         const modalEl = document.getElementById('categoryModal');
         if (modalEl) {
             this.modal = new bootstrap.Modal(modalEl);

@@ -1,10 +1,13 @@
 const ProductHistoryPage = {
+    initialized: false,
     state: {
         page: 0,
         size: 20
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
         this.bindEvents();
         this.readStateFromUrl();
         this.loadHistory();

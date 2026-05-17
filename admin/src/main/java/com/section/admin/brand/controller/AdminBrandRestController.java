@@ -4,6 +4,7 @@ import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.req.BrandStatusUpdateRequest;
+import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.service.AdminBrandService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -11,8 +12,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,7 +22,7 @@ public class AdminBrandRestController {
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<BrandResponse>> getList(@ModelAttribute BrandListRequest req) {
+    public ResponseEntity<BrandListResponse> getList(@ModelAttribute BrandListRequest req) {
         return ResponseEntity.ok(adminBrandService.getBrandList(req));
     }
 

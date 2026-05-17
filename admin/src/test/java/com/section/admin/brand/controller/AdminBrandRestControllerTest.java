@@ -3,6 +3,7 @@ package com.section.admin.brand.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.req.BrandStatusUpdateRequest;
+import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.service.AdminBrandService;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
@@ -51,11 +52,16 @@ class AdminBrandRestControllerTest {
     @DisplayName("브랜드 목록 API는 운영용 목록 응답을 반환한다")
     void getListReturnsBrandList() throws Exception {
         when(adminBrandService.getBrandList(org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of(new BrandResponse(1L, "나이키", "NIKE", "https://example.com/logo.png", "Y")));
+                .thenReturn(new BrandListResponse(
+                        List.of(new BrandResponse(1L, "나이키", "NIKE", "https://example.com/logo.png", "Y")),
+                        new BrandListResponse.AppliedQuery(null, null),
+                        new BrandListResponse.ResultMeta("전체 1건", 0, false, "브랜드명 기준")
+                ));
 
         mockMvc.perform(get("/api/admin/brands/list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].nameKo").value("나이키"));
+                .andExpect(jsonPath("$.items[0].nameKo").value("나이키"))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
     }
 
     @Test

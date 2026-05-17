@@ -29,8 +29,35 @@
     </div>
 
     <div class="card animate-in">
-        <div class="card-header bg-white py-3">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">브랜드 목록</h6>
+            <div class="small text-muted" id="brandMetaText">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="card-body border-bottom py-3">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-7">
+                    <label class="form-label fw-bold">브랜드 검색</label>
+                    <input type="text" id="brandKeyword" class="form-control" placeholder="브랜드명 검색">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">상태</label>
+                    <select id="brandIsActiveFilter" class="form-select">
+                        <option value="">전체</option>
+                        <option value="Y">사용</option>
+                        <option value="N">중지</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid gap-2">
+                    <button type="button" class="btn btn-dark" id="btnSearchBrand">조회</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetBrand">초기화</button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body border-bottom py-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted" id="brandFilterMeta">적용 필터를 계산하는 중입니다...</div>
+                <div class="small text-muted" id="brandResultMeta">결과 메타를 계산하는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

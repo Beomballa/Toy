@@ -13,6 +13,7 @@ const BrandList = {
             console.error('브랜드 모달 엘리먼트를 찾을 수 없습니다.');
         }
         this.bindEvents();
+        this.readStateFromUrl();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -38,16 +39,48 @@ const BrandList = {
         document.getElementById('btnSaveBrand')?.addEventListener('click', () => {
             this.saveBrand();
         });
+
+        document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
+        document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('brandKeyword')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.getList();
+            }
+        });
+    },
+
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('brandKeyword').value = params.get('keyword') || '';
+        document.getElementById('brandIsActiveFilter').value = params.get('isActive') || '';
+    },
+
+    buildParams() {
+        const params = new URLSearchParams();
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('brandKeyword').value);
+        const isActive = document.getElementById('brandIsActiveFilter').value;
+        if (keyword) params.set('keyword', keyword);
+        if (isActive) params.set('isActive', isActive);
+        return params;
     },
 
     async getList() {
         try {
-            const res = await fetch('/api/admin/brands/list');
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setFilterMeta('적용 필터를 계산하는 중입니다...');
+            this.setResultMeta('결과 메타를 계산하는 중입니다...');
+            const res = await fetch(`/api/admin/brands/list?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            this.renderList(data);
+            this.renderList(data.items || []);
+            this.renderMeta(data);
         } catch (err) {
             console.error('브랜드 목록 로드 실패:', err);
+            document.getElementById('brandMetaText').textContent = '브랜드 목록 조회 실패';
+            this.setFilterMeta('브랜드 목록을 불러오지 못했습니다.');
+            this.setResultMeta('결과 메타 확인 불가');
         }
     },
 
@@ -77,11 +110,37 @@ const BrandList = {
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="BrandList.openModal(${item.brandNo})">수정</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="BrandList.deleteBrand(${item.brandNo})">삭제</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-brand" data-brand-no="${item.brandNo}">수정</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-brand" data-brand-no="${item.brandNo}">삭제</button>
                 </td>
             </tr>
         `).join('');
+        tbody.querySelectorAll('[data-role="edit-brand"]').forEach((button) => {
+            button.addEventListener('click', () => this.openModal(Number(button.dataset.brandNo)));
+        });
+        tbody.querySelectorAll('[data-role="delete-brand"]').forEach((button) => {
+            button.addEventListener('click', () => this.deleteBrand(Number(button.dataset.brandNo)));
+        });
+    },
+
+    renderMeta(data) {
+        document.getElementById('brandMetaText').textContent = data.resultMeta?.resultLabel || `${(data.items || []).length}건 조회`;
+        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '브랜드명 기준'}`);
+        this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
+    },
+
+    setFilterMeta(message) {
+        document.getElementById('brandFilterMeta').textContent = message;
+    },
+
+    setResultMeta(message) {
+        document.getElementById('brandResultMeta').textContent = message;
+    },
+
+    resetFilters() {
+        document.getElementById('brandKeyword').value = '';
+        document.getElementById('brandIsActiveFilter').value = '';
+        this.getList();
     },
 
     async openModal(brandNo) {

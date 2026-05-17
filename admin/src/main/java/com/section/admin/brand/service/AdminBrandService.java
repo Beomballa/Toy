@@ -1,6 +1,7 @@
 package com.section.admin.brand.service;
 
 import com.section.admin.brand.req.BrandListRequest;
+import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.common.base.exception.BusinessException;
@@ -23,14 +24,15 @@ public class AdminBrandService {
     private final BrandRepository brandRepository;
     private final ProductRepository productRepository;
 
-    public List<BrandResponse> getBrandList(BrandListRequest req) {
-        return brandRepository.findAll().stream()
+    public BrandListResponse getBrandList(BrandListRequest req) {
+        List<BrandResponse> items = brandRepository.findAll().stream()
                 .filter(brand -> req.normalizedKeyword() == null
                         || brand.getNameKo().contains(req.normalizedKeyword())
                         || (brand.getNameEn() != null && brand.getNameEn().contains(req.normalizedKeyword())))
                 .filter(brand -> req.normalizedIsActive() == null || req.normalizedIsActive().equalsIgnoreCase(brand.getIsActive()))
                 .map(BrandResponse::from)
                 .toList();
+        return BrandListResponse.of(items, req);
     }
 
     public BrandResponse getBrand(Long brandNo) {

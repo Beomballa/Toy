@@ -1,6 +1,7 @@
 package com.section.admin.brand.service;
 
 import com.section.admin.brand.req.BrandListRequest;
+import com.section.admin.brand.res.BrandListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Product;
@@ -43,7 +44,11 @@ class AdminBrandServiceTest {
                 Brand.builder().brandNo(2L).nameKo("아디다스").nameEn("Adidas").isActive("N").build()
         ));
 
-        assertEquals(1, adminBrandService.getBrandList(request).size());
+        BrandListResponse response = adminBrandService.getBrandList(request);
+
+        assertEquals(1, response.items().size());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals("브랜드명 기준 · 검색=나이키 · 상태=사용", response.resultMeta().querySignature());
     }
 
     @Test

@@ -53,6 +53,8 @@ class AdminBannerServiceTest {
 
         assertEquals(1, response.items().size());
         assertEquals("메인 배너", response.items().get(0).title());
+        assertEquals("전체 1건", response.resultMeta().resultLabel());
+        assertEquals("정렬 순서 기준", response.resultMeta().querySignature());
     }
 
     @Test

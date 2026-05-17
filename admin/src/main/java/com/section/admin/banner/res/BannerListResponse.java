@@ -8,10 +8,16 @@ import java.util.List;
 
 public record BannerListResponse(
         List<Item> items,
-        AppliedQuery appliedQuery
+        AppliedQuery appliedQuery,
+        ResultMeta resultMeta
 ) {
     public static BannerListResponse of(List<BannerListResDto> items, BannerListQuery query) {
-        return new BannerListResponse(items.stream().map(Item::from).toList(), new AppliedQuery(query.keyword(), query.isActive()));
+        List<Item> mappedItems = items.stream().map(Item::from).toList();
+        return new BannerListResponse(
+                mappedItems,
+                new AppliedQuery(query.keyword(), query.isActive()),
+                ResultMeta.from(mappedItems.size(), query)
+        );
     }
 
     public record Item(
@@ -62,5 +68,41 @@ public record BannerListResponse(
             String keyword,
             String isActive
     ) {
+    }
+
+    public record ResultMeta(
+            String resultLabel,
+            long appliedFilterCount,
+            boolean hasActiveFilters,
+            String querySignature
+    ) {
+        private static ResultMeta from(int size, BannerListQuery query) {
+            long filterCount = appliedFilterCount(query);
+            boolean hasActiveFilters = filterCount > 0;
+            return new ResultMeta(
+                    hasActiveFilters ? String.format("검색 결과 %d건", size) : String.format("전체 %d건", size),
+                    filterCount,
+                    hasActiveFilters,
+                    querySignature(query)
+            );
+        }
+
+        private static long appliedFilterCount(BannerListQuery query) {
+            long count = 0;
+            if (query.keyword() != null) count++;
+            if (query.isActive() != null) count++;
+            return count;
+        }
+
+        private static String querySignature(BannerListQuery query) {
+            StringBuilder builder = new StringBuilder("정렬 순서 기준");
+            if (query.keyword() != null) {
+                builder.append(" · 검색=").append(query.keyword());
+            }
+            if (query.isActive() != null) {
+                builder.append(" · 상태=").append("Y".equalsIgnoreCase(query.isActive()) ? "사용" : "중지");
+            }
+            return builder.toString();
+        }
     }
 }

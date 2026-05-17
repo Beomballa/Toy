@@ -40,6 +40,13 @@ const BannerList = {
         });
 
         document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
+        document.getElementById('btnResetBanner')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('bannerKeyword')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.getList();
+            }
+        });
     },
 
     readStateFromUrl() {
@@ -61,13 +68,17 @@ const BannerList = {
         try {
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setFilterMeta('적용 필터를 계산하는 중입니다...');
+            this.setResultMeta('결과 메타를 계산하는 중입니다...');
             const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
             this.renderList(data.items || []);
-            document.getElementById('bannerMetaText').textContent = `${(data.items || []).length}건 조회`;
+            this.renderMeta(data);
         } catch (err) {
             document.getElementById('bannerMetaText').textContent = err.message;
+            this.setFilterMeta(err.message);
+            this.setResultMeta('결과 메타 확인 불가');
             document.getElementById('bannerListBody').innerHTML =
                 `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
         }
@@ -103,12 +114,42 @@ const BannerList = {
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="BannerList.openEditModal(${JSON.stringify(item).replace(/"/g, '&quot;')})">수정</button>
-                    <button class="btn btn-sm btn-outline-dark me-1" onclick="BannerList.toggleActive(${item.bannerNo}, '${item.isActive === 'Y' ? 'N' : 'Y'}')">${item.isActive === 'Y' ? '중지' : '활성'}</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="BannerList.deleteBanner(${item.bannerNo})">삭제</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-banner" data-banner='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-banner" data-banner-no="${item.bannerNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-banner" data-banner-no="${item.bannerNo}">삭제</button>
                 </td>
             </tr>
         `).join('');
+
+        tbody.querySelectorAll('[data-role="edit-banner"]').forEach((button) => {
+            button.addEventListener('click', () => this.openEditModal(JSON.parse(button.dataset.banner)));
+        });
+        tbody.querySelectorAll('[data-role="toggle-banner"]').forEach((button) => {
+            button.addEventListener('click', () => this.toggleActive(Number(button.dataset.bannerNo), button.dataset.nextActive));
+        });
+        tbody.querySelectorAll('[data-role="delete-banner"]').forEach((button) => {
+            button.addEventListener('click', () => this.deleteBanner(Number(button.dataset.bannerNo)));
+        });
+    },
+
+    renderMeta(data) {
+        document.getElementById('bannerMetaText').textContent = data.resultMeta?.resultLabel || `${(data.items || []).length}건 조회`;
+        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '정렬 순서 기준'}`);
+        this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
+    },
+
+    setFilterMeta(message) {
+        document.getElementById('bannerFilterMeta').textContent = message;
+    },
+
+    setResultMeta(message) {
+        document.getElementById('bannerResultMeta').textContent = message;
+    },
+
+    resetFilters() {
+        document.getElementById('bannerKeyword').value = '';
+        document.getElementById('bannerIsActiveFilter').value = '';
+        this.getList();
     },
 
     openModal() {

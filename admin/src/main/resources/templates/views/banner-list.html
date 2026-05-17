@@ -43,8 +43,9 @@
                         <option value="N">중지</option>
                     </select>
                 </div>
-                <div class="col-md-2 d-grid">
+                <div class="col-md-2 d-grid gap-2">
                     <button type="button" class="btn btn-dark" id="btnSearchBanner">조회</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetBanner">초기화</button>
                 </div>
             </div>
         </div>
@@ -54,6 +55,12 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">배너 목록</h6>
             <div class="small text-muted" id="bannerMetaText">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="card-body border-bottom py-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted" id="bannerFilterMeta">적용 필터를 계산하는 중입니다...</div>
+                <div class="small text-muted" id="bannerResultMeta">결과 메타를 계산하는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

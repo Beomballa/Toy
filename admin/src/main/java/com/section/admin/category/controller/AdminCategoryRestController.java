@@ -4,6 +4,7 @@ import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.req.CategoryStatusUpdateRequest;
+import com.section.admin.category.res.CategoryListResponse;
 import com.section.admin.category.res.CategoryResponse;
 import com.section.admin.category.service.AdminCategoryService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -23,7 +24,7 @@ public class AdminCategoryRestController {
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
-    public ResponseEntity<List<CategoryResponse>> getList(@ModelAttribute CategoryListRequest req) {
+    public ResponseEntity<CategoryListResponse> getList(@ModelAttribute CategoryListRequest req) {
         return ResponseEntity.ok(adminCategoryService.getCategoryListByDepth(req));
     }
 

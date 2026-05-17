@@ -3,6 +3,7 @@ package com.section.admin.category.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.req.CategoryStatusUpdateRequest;
+import com.section.admin.category.res.CategoryListResponse;
 import com.section.admin.category.res.CategoryResponse;
 import com.section.admin.category.service.AdminCategoryService;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
@@ -51,11 +52,16 @@ class AdminCategoryRestControllerTest {
     @DisplayName("카테고리 목록 API는 운영용 목록 응답을 반환한다")
     void getListReturnsCategoryList() throws Exception {
         when(adminCategoryService.getCategoryListByDepth(org.mockito.ArgumentMatchers.any()))
-                .thenReturn(List.of(new CategoryResponse(1L, null, "러닝화", 1, "Y")));
+                .thenReturn(new CategoryListResponse(
+                        List.of(new CategoryResponse(1L, null, "러닝화", 1, "Y")),
+                        new CategoryListResponse.AppliedQuery(null, null, 1),
+                        new CategoryListResponse.ResultMeta("전체 1건", 0, false, "대분류 기준")
+                ));
 
         mockMvc.perform(get("/api/admin/categories/list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("러닝화"));
+                .andExpect(jsonPath("$.items[0].name").value("러닝화"))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
     }
 
     @Test

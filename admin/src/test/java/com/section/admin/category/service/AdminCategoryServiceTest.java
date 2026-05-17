@@ -1,6 +1,7 @@
 package com.section.admin.category.service;
 
 import com.section.admin.category.req.CategoryListRequest;
+import com.section.admin.category.res.CategoryListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.Product;
@@ -43,7 +44,11 @@ class AdminCategoryServiceTest {
                 Category.builder().categoryNo(2L).name("의류").depth(1).isActive("N").build()
         ));
 
-        assertEquals(1, adminCategoryService.getCategoryListByDepth(request).size());
+        CategoryListResponse response = adminCategoryService.getCategoryListByDepth(request);
+
+        assertEquals(1, response.items().size());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals("대분류 기준 · 검색=신발 · 상태=사용", response.resultMeta().querySignature());
     }
 
     @Test

@@ -19,6 +19,7 @@ const CategoryList = {
             console.error('카테고리 모달 엘리먼트를 찾을 수 없습니다.');
         }
         this.bindEvents();
+        this.readStateFromUrl();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getDepth1List();
@@ -37,19 +38,51 @@ const CategoryList = {
     },
 
     bindEvents() {
+        document.getElementById('btnNewRootCategory')?.addEventListener('click', () => this.openModal(1));
+        document.getElementById('btnSearchCategory')?.addEventListener('click', () => this.getDepth1List());
+        document.getElementById('btnResetCategory')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('categoryKeyword')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.getDepth1List();
+            }
+        });
         document.getElementById('btnSaveCategory')?.addEventListener('click', () => {
             this.saveCategory();
         });
     },
 
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        document.getElementById('categoryKeyword').value = params.get('keyword') || '';
+        document.getElementById('categoryIsActiveFilter').value = params.get('isActive') || '';
+    },
+
+    buildParams() {
+        const params = new URLSearchParams();
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value);
+        const isActive = document.getElementById('categoryIsActiveFilter').value;
+        params.set('depth', '1');
+        if (keyword) params.set('keyword', keyword);
+        if (isActive) params.set('isActive', isActive);
+        return params;
+    },
+
     async getDepth1List() {
         try {
-            const res = await fetch('/api/admin/categories/list?depth=1');
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setFilterMeta('적용 필터를 계산하는 중입니다...');
+            this.setResultMeta('결과 메타를 계산하는 중입니다...');
+            const res = await fetch(`/api/admin/categories/list?${params.toString()}`);
             const data = await res.json();
-            this.state.depth1List = data;
+            this.state.depth1List = data.items || [];
             this.renderDepth1();
+            this.renderDepth1Meta(data);
         } catch (err) {
             console.error('1차 카테고리 로드 실패:', err);
+            this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
+            this.setResultMeta('결과 메타 확인 불가');
         }
     },
 
@@ -70,8 +103,10 @@ const CategoryList = {
             const data = await res.json();
             this.state.depth2List = data;
             this.renderDepth2();
+            this.setSubCategoryMeta(`선택된 대분류 ${parentName} · 하위 카테고리 ${data.length}건`);
         } catch (err) {
             console.error('2차 카테고리 로드 실패:', err);
+            this.setSubCategoryMeta('하위 카테고리 메타 확인 불가');
         }
     },
 
@@ -84,18 +119,27 @@ const CategoryList = {
 
         body.innerHTML = this.state.depth1List.map(item => `
             <div class="category-item d-flex justify-content-between align-items-center ${this.state.selectedParentNo === item.categoryNo ? 'active' : ''}" 
-                 onclick="CategoryList.getDepth2List(${item.categoryNo}, '${item.name}')">
+                 data-role="select-parent" data-parent-no="${item.categoryNo}" data-parent-name="${item.name.replace(/"/g, '&quot;')}">
                 <span>${item.name}</span>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
                         ${item.isActive === 'Y' ? '사용중' : '중지'}
                     </span>
-                    <button class="btn btn-xs btn-link p-0 text-muted" onclick="event.stopPropagation(); CategoryList.openModal(1, ${JSON.stringify(item).replace(/"/g, '&quot;')})">
+                    <button class="btn btn-xs btn-link p-0 text-muted" data-role="edit-root-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}'>
                         <i class="fas fa-edit"></i>
                     </button>
                 </div>
             </div>
         `).join('');
+        body.querySelectorAll('[data-role="select-parent"]').forEach((item) => {
+            item.addEventListener('click', () => this.getDepth2List(Number(item.dataset.parentNo), item.dataset.parentName));
+        });
+        body.querySelectorAll('[data-role="edit-root-category"]').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                this.openModal(1, JSON.parse(button.dataset.category));
+            });
+        });
     },
 
     renderDepth2() {
@@ -121,11 +165,40 @@ const CategoryList = {
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="CategoryList.openModal(2, ${JSON.stringify(item).replace(/"/g, '&quot;')})">수정</button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="CategoryList.deleteCategory(${item.categoryNo})">삭제</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-sub-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-sub-category" data-category-no="${item.categoryNo}">삭제</button>
                 </td>
             </tr>
         `).join('');
+        tbody.querySelectorAll('[data-role="edit-sub-category"]').forEach((button) => {
+            button.addEventListener('click', () => this.openModal(2, JSON.parse(button.dataset.category)));
+        });
+        tbody.querySelectorAll('[data-role="delete-sub-category"]').forEach((button) => {
+            button.addEventListener('click', () => this.deleteCategory(Number(button.dataset.categoryNo)));
+        });
+    },
+
+    renderDepth1Meta(data) {
+        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '대분류 기준'}`);
+        this.setResultMeta(data.resultMeta?.resultLabel || `${this.state.depth1List.length}건`);
+    },
+
+    setFilterMeta(message) {
+        document.getElementById('categoryFilterMeta').textContent = message;
+    },
+
+    setResultMeta(message) {
+        document.getElementById('categoryResultMeta').textContent = message;
+    },
+
+    setSubCategoryMeta(message) {
+        document.getElementById('subCategoryMetaText').textContent = message;
+    },
+
+    resetFilters() {
+        document.getElementById('categoryKeyword').value = '';
+        document.getElementById('categoryIsActiveFilter').value = '';
+        this.getDepth1List();
     },
 
     openModal(depth, item) {

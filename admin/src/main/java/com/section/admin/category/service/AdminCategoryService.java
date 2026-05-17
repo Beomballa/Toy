@@ -2,6 +2,7 @@ package com.section.admin.category.service;
 
 import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
+import com.section.admin.category.res.CategoryListResponse;
 import com.section.admin.category.res.CategoryResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -22,12 +23,13 @@ public class AdminCategoryService {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
 
-    public List<CategoryResponse> getCategoryListByDepth(CategoryListRequest req) {
-        return categoryRepository.findByDepth(req.getDepth()).stream()
+    public CategoryListResponse getCategoryListByDepth(CategoryListRequest req) {
+        List<CategoryResponse> items = categoryRepository.findByDepth(req.getDepth()).stream()
                 .filter(category -> req.normalizedKeyword() == null || category.getName().contains(req.normalizedKeyword()))
                 .filter(category -> req.normalizedIsActive() == null || req.normalizedIsActive().equalsIgnoreCase(category.getIsActive()))
                 .map(CategoryResponse::from)
                 .toList();
+        return CategoryListResponse.of(items, req);
     }
 
     public List<CategoryResponse> getSubCategories(Long parentNo) {

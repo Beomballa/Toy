@@ -117,6 +117,13 @@ const ProductHistoryPage = {
                             </a>
                         </div>
                     ` : ''}
+                    ${item.activityLogPath ? `
+                        <div class="small">
+                            <a class="text-decoration-none" href="${item.activityLogPath}">
+                                ${item.activityLogLabel || '활동 로그 보기'}
+                            </a>
+                        </div>
+                    ` : ''}
                     <div class="text-muted small">상태 ${item.statusSnapshot || '-'} · 옵션 ${item.optionCount}개 · 재고 ${item.totalStock}개</div>
                 </td>
                 <td>${item.actorName}${item.actorNo ? ` <span class="text-muted small">(#${item.actorNo})</span>` : ''}</td>

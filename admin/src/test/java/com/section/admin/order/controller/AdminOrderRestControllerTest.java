@@ -161,7 +161,7 @@ class AdminOrderRestControllerTest {
         when(adminOrderService.getOrderHistoryList(org.mockito.ArgumentMatchers.any(OrderHistoryListRequest.class), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new OrderHistoryListResponse(
                         java.util.List.of(new OrderHistoryListResponse.Item(
-                                7L, 3L, "DELIVERY_START", "배송 시작", "배송준비", "배송중", "출고 완료", null, "CJ대한통운", "1234", 1L, "관리자", "2026.05.16 10:00"
+                                7L, 3L, "/admin/logs?actionType=ORDER_DELIVERY_START&targetId=3", "활동 로그 보기", "DELIVERY_START", "배송 시작", "배송준비", "배송중", "출고 완료", null, "CJ대한통운", "1234", 1L, "관리자", "2026.05.16 10:00"
                         )),
                         1L,
                         1,
@@ -177,6 +177,7 @@ class AdminOrderRestControllerTest {
         mockMvc.perform(get("/api/admin/orders/history/list?orderNo=3&actionType=DELIVERY_START&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].historyNo").value(7L))
+                .andExpect(jsonPath("$.items[0].activityLogPath").value("/admin/logs?actionType=ORDER_DELIVERY_START&targetId=3"))
                 .andExpect(jsonPath("$.items[0].actorName").value("관리자"))
                 .andExpect(jsonPath("$.items[0].actionLabel").value("배송 시작"))
                 .andExpect(jsonPath("$.totalElements").value(1L))

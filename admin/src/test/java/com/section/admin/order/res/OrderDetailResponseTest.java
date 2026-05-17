@@ -60,5 +60,6 @@ class OrderDetailResponseTest {
         assertTrue(response.showDeliveryInfo());
         assertEquals("CJ대한통운", response.deliveryCompany());
         assertEquals(1, response.histories().size());
+        assertEquals("/admin/logs?actionType=ORDER_DELIVERY_START&targetId=2", response.histories().get(0).activityLogPath());
     }
 }

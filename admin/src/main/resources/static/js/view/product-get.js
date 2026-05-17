@@ -260,6 +260,11 @@ const ProductDetail = {
                                 ${history.relatedProductLabel} #${history.relatedProductNo}
                             </a>
                         ` : ''}
+                        ${history.activityLogPath ? `
+                            <a class="small text-decoration-none" href="${history.activityLogPath}">
+                                ${history.activityLogLabel || '활동 로그 보기'}
+                            </a>
+                        ` : ''}
                         <span class="small text-muted">작업자 ${history.actorName || '-'}${history.actorNo ? ` (#${history.actorNo})` : ''}</span>
                         <span class="small text-muted">상태 ${history.statusSnapshot || '-'} · 옵션 ${history.optionCount}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
                     </div>

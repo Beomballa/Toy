@@ -1,5 +1,6 @@
 package com.section.admin.product.res;
 
+import com.section.admin.log.res.AdminLogSourceLinkSupport;
 import com.section.common.base.entity.type.ProductHistoryActionType;
 import com.section.common.base.entity.type.ProductHistoryOrderType;
 import com.section.common.commerce.dto.ProductHistoryListQuery;
@@ -48,6 +49,8 @@ public record ProductHistoryListResponse(
             Long productNo,
             Long relatedProductNo,
             String relatedProductLabel,
+            String activityLogPath,
+            String activityLogLabel,
             String actionType,
             String actionLabel,
             String summary,
@@ -66,6 +69,8 @@ public record ProductHistoryListResponse(
                     item.getProductNo(),
                     relatedProductNo,
                     ProductHistoryRelatedProductSupport.resolveRelatedProductLabel(item.getSummary()),
+                    AdminLogSourceLinkSupport.resolveProductHistoryLogPath(item.getProductNo(), actionType.name()),
+                    "활동 로그 보기",
                     actionType.name(),
                     actionType.getDesc(),
                     item.getSummary(),

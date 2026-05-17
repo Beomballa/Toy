@@ -233,6 +233,7 @@ class AdminProductServiceTest {
         assertEquals("관리자", histories.get(0).actorName());
         assertEquals(2L, histories.get(0).relatedProductNo());
         assertEquals("원본 상품", histories.get(0).relatedProductLabel());
+        assertEquals("/admin/logs?actionType=PRODUCT_CREATE&targetId=4", histories.get(0).activityLogPath());
     }
 
     @Test
@@ -265,6 +266,7 @@ class AdminProductServiceTest {
         assertEquals("관리자", response.items().get(0).actorName());
         assertEquals(5L, response.items().get(0).relatedProductNo());
         assertEquals("원본 상품", response.items().get(0).relatedProductLabel());
+        assertEquals("/admin/logs?actionType=PRODUCT_CREATE&targetId=4", response.items().get(0).activityLogPath());
         assertEquals("UPDATED", response.appliedQuery().actionType());
         assertEquals("관리자", response.appliedQuery().actorKeyword());
         assertEquals("oldest", response.appliedQuery().orderType());

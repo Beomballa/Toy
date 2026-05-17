@@ -168,6 +168,7 @@ const OrderDetail = {
                 ${history.reason ? `<div class="small mb-1"><span class="text-muted">사유</span> ${CommonJS.escapeHtml(history.reason)}</div>` : ''}
                 ${history.adminMemoSnapshot ? `<div class="small mb-1"><span class="text-muted">메모</span> ${CommonJS.escapeHtml(history.adminMemoSnapshot)}</div>` : ''}
                 ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
+                ${history.activityLogPath ? `<div class="small mt-1"><a class="text-decoration-none" href="${history.activityLogPath}">${history.activityLogLabel || '활동 로그 보기'}</a></div>` : ''}
             </div>
         `).join('');
     },

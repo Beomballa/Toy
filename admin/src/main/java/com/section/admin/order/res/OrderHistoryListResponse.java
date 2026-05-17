@@ -1,5 +1,6 @@
 package com.section.admin.order.res;
 
+import com.section.admin.log.res.AdminLogSourceLinkSupport;
 import com.section.admin.order.support.OrderViewFormatter;
 import com.section.common.base.entity.type.OrderHistoryOrderType;
 import com.section.common.commerce.dto.OrderHistoryListQuery;
@@ -44,6 +45,8 @@ public record OrderHistoryListResponse(
     public record Item(
             Long historyNo,
             Long orderNo,
+            String activityLogPath,
+            String activityLogLabel,
             String actionType,
             String actionLabel,
             String beforeStatusDesc,
@@ -60,6 +63,8 @@ public record OrderHistoryListResponse(
             return new Item(
                     item.getHistoryNo(),
                     item.getOrderNo(),
+                    AdminLogSourceLinkSupport.resolveOrderHistoryLogPath(item.getOrderNo(), item.getActionType()),
+                    "활동 로그 보기",
                     item.getActionType(),
                     resolveActionLabel(item.getActionType()),
                     OrderViewFormatter.formatStatusDesc(item.getBeforeStatus()),

@@ -109,8 +109,8 @@ class ProductRepositorySearchIntegrationTest {
     }
 
     @Test
-    @DisplayName("저재고 임계값은 목록과 통계 카드 모두 같은 QueryDSL 기준을 사용한다")
-    void lowStockThresholdAffectsListAndStats() {
+    @DisplayName("저재고 카드 통계는 빠른 필터와 분리된 기준 QueryDSL을 사용한다")
+    void lowStockThresholdAffectsListAndBaseStats() {
         Brand stockBrand = brandRepository.save(Brand.builder()
                 .nameKo("재고 테스트 브랜드")
                 .nameEn("Stock Brand")
@@ -158,11 +158,12 @@ class ProductRepositorySearchIntegrationTest {
                 new ProductListQuery(null, null, null, "재고 테스트 브랜드", ProductOrderType.RECENT, true, 30L, false);
 
         Page<ProductListResDto> listResult = productRepository.getProductList(lowStockThresholdQuery, PageRequest.of(0, 10));
-        ProductStatsDto stats = productRepository.getProductStats(lowStockThresholdQuery);
+        ProductStatsDto stats = productRepository.getProductStats(lowStockThresholdQuery.toStatsQuery());
 
         assertEquals(1, listResult.getTotalElements());
         assertEquals(lowStockProduct.getId(), listResult.getContent().getFirst().getProductNo());
-        assertEquals(1L, stats.getTotalCount());
+        assertEquals(2L, stats.getTotalCount());
+        assertEquals(2L, stats.getActiveCount());
         assertEquals(1L, stats.getLowStockCount());
     }
 }

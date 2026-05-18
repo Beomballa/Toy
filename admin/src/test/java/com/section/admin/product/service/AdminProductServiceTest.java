@@ -432,8 +432,8 @@ class AdminProductServiceTest {
     }
 
     @Test
-    @DisplayName("상품 목록 조회는 같은 typed query를 목록과 통계 조회에 재사용한다")
-    void getProductListReusesSameTypedQueryForListAndStats() {
+    @DisplayName("상품 목록 통계 조회는 빠른 필터를 제외한 기준 typed query를 사용한다")
+    void getProductListUsesBaseTypedQueryForStats() {
         ProductListRequest request = new ProductListRequest();
         request.setStatus("ACTIVE");
         request.setLowStockOnly(true);
@@ -454,11 +454,15 @@ class AdminProductServiceTest {
         verify(productService).getProductList(listQueryCaptor.capture(), any(PageRequest.class));
         verify(productService).getProductStats(statsQueryCaptor.capture());
 
-        assertSame(listQueryCaptor.getValue(), statsQueryCaptor.getValue());
         assertEquals(true, listQueryCaptor.getValue().lowStockOnly());
         assertEquals(30L, listQueryCaptor.getValue().effectiveLowStockThreshold());
         assertEquals(true, listQueryCaptor.getValue().createdTodayOnly());
         assertEquals("젤 카야노", listQueryCaptor.getValue().searchKeyword());
+        assertEquals(false, statsQueryCaptor.getValue().lowStockOnly());
+        assertEquals(false, statsQueryCaptor.getValue().createdTodayOnly());
+        assertEquals(null, statsQueryCaptor.getValue().status());
+        assertEquals(30L, statsQueryCaptor.getValue().effectiveLowStockThreshold());
+        assertEquals("젤 카야노", statsQueryCaptor.getValue().searchKeyword());
     }
 
     @Test
@@ -481,8 +485,8 @@ class AdminProductServiceTest {
 
         assertEquals(50L, response.productStats().lowStockThreshold());
         assertEquals(3L, response.productStats().lowStockCount());
-        assertEquals("현재 목록 기준", response.productStats().contextLabel());
-        assertEquals("최신순 · 재고<50", response.productStats().querySignature());
+        assertEquals("기본 필터 기준", response.productStats().contextLabel());
+        assertEquals("최신순", response.productStats().querySignature());
     }
 
     @Test
@@ -551,6 +555,7 @@ class AdminProductServiceTest {
         assertEquals(2L, response.resultMeta().appliedFilterCount());
         assertEquals(true, response.resultMeta().hasActiveFilters());
         assertEquals("발매가순 · 검색=뉴발란스 993 · 상태=ACTIVE", response.resultMeta().querySignature());
-        assertEquals(response.resultMeta().querySignature(), response.productStats().querySignature());
+        assertEquals("기본 필터 기준", response.productStats().contextLabel());
+        assertEquals("발매가순 · 검색=뉴발란스 993", response.productStats().querySignature());
     }
 }

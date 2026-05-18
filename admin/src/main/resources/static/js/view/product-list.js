@@ -151,11 +151,11 @@ const ProductList = {
 
             this.clearFilter(removeButton.dataset.filterRemove);
         });
-        document.getElementById('statTotalCard')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('statTotalCard')?.addEventListener('click', () => this.clearQuickFilters());
         document.getElementById('statActiveCard')?.addEventListener('click', () => this.applyActiveFilter());
         document.getElementById('statLowStockCard')?.addEventListener('click', () => this.applyLowStockFilter());
         document.getElementById('statTodayCard')?.addEventListener('click', () => this.applyTodayFilter());
-        this.bindStatCardKeyboard('statTotalCard', () => this.resetFilters());
+        this.bindStatCardKeyboard('statTotalCard', () => this.clearQuickFilters());
         this.bindStatCardKeyboard('statActiveCard', () => this.applyActiveFilter());
         this.bindStatCardKeyboard('statLowStockCard', () => this.applyLowStockFilter());
         this.bindStatCardKeyboard('statTodayCard', () => this.applyTodayFilter());
@@ -392,6 +392,7 @@ const ProductList = {
         document.getElementById('stat-active-meta')?.replaceChildren(contextLabel);
         document.getElementById('stat-today-meta')?.replaceChildren(contextLabel);
         document.getElementById('stat-low-stock-meta')?.replaceChildren(contextLabel);
+        this._renderStatsNotice(contextLabel, stats.querySignature || '');
 
         const statCardIds = ['statTotalCard', 'statActiveCard', 'statLowStockCard', 'statTodayCard'];
         statCardIds.forEach((id) => {
@@ -404,6 +405,21 @@ const ProductList = {
             cardEl.dataset.querySignature = stats.querySignature || this.lastResultMeta?.querySignature || '';
             cardEl.dataset.contextLabel = contextLabel;
         });
+    },
+
+    _renderStatsNotice(contextLabel, querySignature) {
+        const noticeEl = document.getElementById('productStatsNotice');
+        if (!noticeEl) {
+            return;
+        }
+
+        const normalizedContext = contextLabel || '현재 목록 기준';
+        const message = normalizedContext === '기본 필터 기준'
+            ? '카드 수치는 기본 필터 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+            : '카드 수치는 현재 목록 기준입니다.';
+        noticeEl.textContent = message;
+        noticeEl.dataset.statsContext = normalizedContext;
+        noticeEl.dataset.querySignature = querySignature;
     },
 
     _applyServerAppliedQuery(appliedQuery) {
@@ -501,6 +517,17 @@ const ProductList = {
         this.getList();
     },
 
+    clearQuickFilters() {
+        this.state.page = 0;
+        // 상단 카드는 기본 탐색 문맥(브랜드/카테고리/검색)을 유지한 채 빠른 필터만 걷어내야 합니다.
+        this.state.status = '';
+        this.state.lowStockOnly = false;
+        this.state.createdTodayOnly = false;
+        this._syncFilterInputs();
+        this._renderFilterSummary();
+        this.getList();
+    },
+
     applyLowStockFilter() {
         this.state.page = 0;
         this.state.status = '';
@@ -522,6 +549,7 @@ const ProductList = {
     applyTodayFilter() {
         this.state.page = 0;
         this.state.createdTodayOnly = true;
+        this.state.status = '';
         this.state.lowStockOnly = false;
         this._syncFilterInputs();
         this.getList();

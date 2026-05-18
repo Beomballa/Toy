@@ -73,12 +73,13 @@ public class AdminProductService {
     public ProductListResponse getProductList(ProductListRequest req, Pageable pageable) {
         Pageable normalizedPageable = ProductListPagePolicy.normalize(pageable);
         ProductListQuery query = req.toProductListReqDto().toQuery(resolveLowStockDefaultThreshold());
+        ProductListQuery statsQuery = query.toStatsQuery();
         Page<ProductListResDto> resDto = productService.getProductList(query, normalizedPageable);
-        ProductStatsDto statsDto = productService.getProductStats(query);
+        ProductStatsDto statsDto = productService.getProductStats(statsQuery);
 
         Page<ProductListResponse.ProductListItem> result = resDto.map(ProductListResponse.ProductListItem::from);
         ProductListResponse.ProductStatsItem stats =
-                ProductListResponse.ProductStatsItem.from(statsDto, query);
+                ProductListResponse.ProductStatsItem.from(statsDto, query, statsQuery);
         ProductListResponse.ResultMetaItem resultMeta =
                 ProductListResponse.ResultMetaItem.from(query, result);
         return ProductListResponse.of(result, stats, ProductListResponse.AppliedQueryItem.from(query), resultMeta);

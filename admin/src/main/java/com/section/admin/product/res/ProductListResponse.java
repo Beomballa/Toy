@@ -22,7 +22,7 @@ public record ProductListResponse(
         AppliedQueryItem appliedQuery,
         ResultMetaItem resultMeta
 ) {
-    private static final String DEFAULT_STATS_CONTEXT_LABEL = "현재 목록 기준";
+    private static final String DEFAULT_STATS_CONTEXT_LABEL = "기본 필터 기준";
 
 
     public static ProductListResponse of(
@@ -87,16 +87,17 @@ public record ProductListResponse(
             return new ProductStatsItem(0L, 0L, 0L, 0L, 100L, DEFAULT_STATS_CONTEXT_LABEL, "최신순");
         }
 
-        public static ProductStatsItem from(ProductStatsDto resDto, ProductListQuery query){
+        public static ProductStatsItem from(ProductStatsDto resDto, ProductListQuery listQuery, ProductListQuery statsQuery){
+            String contextLabel = listQuery.equals(statsQuery) ? "현재 목록 기준" : DEFAULT_STATS_CONTEXT_LABEL;
             return Optional.ofNullable(resDto)
                     .map(dto -> new ProductStatsItem(
                             dto.getTotalCount(),
                             dto.getActiveCount(),
                             dto.getLowStockCount(),
                             dto.getTodayCount(),
-                            query.effectiveLowStockThreshold(),
-                            DEFAULT_STATS_CONTEXT_LABEL,
-                            ProductListResponse.querySignature(query)
+                            statsQuery.effectiveLowStockThreshold(),
+                            contextLabel,
+                            ProductListResponse.querySignature(statsQuery)
                     ))
                     .orElseGet(ProductStatsItem::empty);
         }

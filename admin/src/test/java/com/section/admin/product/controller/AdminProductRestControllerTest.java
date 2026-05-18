@@ -90,7 +90,7 @@ class AdminProductRestControllerTest {
                 0,
                 1,
                 2L,
-                new ProductListResponse.ProductStatsItem(2L, 1L, 1L, 0L, 30L, "현재 목록 기준", "재고순 · 검색=뉴발란스 993 · 재고<30"),
+                new ProductListResponse.ProductStatsItem(2L, 1L, 1L, 0L, 30L, "기본 필터 기준", "재고순 · 검색=뉴발란스 993"),
                 ProductListResponse.AppliedQueryItem.from(
                         new ProductListQuery(3L, 7L, null, "뉴발란스 993", ProductOrderType.STOCK_COUNT, true, 30L, false)
                 ),
@@ -116,8 +116,8 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.appliedQuery.categoryNo").value(3L))
                 .andExpect(jsonPath("$.appliedQuery.orderTypeCode").value("c"))
                 .andExpect(jsonPath("$.productStats.lowStockThreshold").value(30L))
-                .andExpect(jsonPath("$.productStats.contextLabel").value("현재 목록 기준"))
-                .andExpect(jsonPath("$.productStats.querySignature").value("재고순 · 검색=뉴발란스 993 · 재고<30"))
+                .andExpect(jsonPath("$.productStats.contextLabel").value("기본 필터 기준"))
+                .andExpect(jsonPath("$.productStats.querySignature").value("재고순 · 검색=뉴발란스 993"))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 2개"))
                 .andExpect(jsonPath("$.resultMeta.pageSize").value(10))
                 .andExpect(jsonPath("$.resultMeta.rangeStart").value(1L))

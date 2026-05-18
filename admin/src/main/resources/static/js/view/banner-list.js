@@ -106,6 +106,7 @@ const BannerList = {
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
+            this.setListStateMeta('loading', '배너 목록을 불러오는 중입니다.', 0, 0, '');
             const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
@@ -120,6 +121,7 @@ const BannerList = {
             document.getElementById('bannerListBody').innerHTML =
                 `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('bannerPagination').innerHTML = '';
+            this.setListStateMeta('error', err.message, 0, 0, '');
         }
     },
 
@@ -129,6 +131,7 @@ const BannerList = {
 
         if (!items || items.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">등록된 배너가 없습니다.</td></tr>';
+            this.setListStateMeta('empty', '등록된 배너가 없습니다.', 0, 0, '');
             return;
         }
 
@@ -159,6 +162,7 @@ const BannerList = {
                 </td>
             </tr>
         `).join('');
+        this.setListStateMeta('ready', '', items.length, null, null);
     },
 
     renderMeta(data) {
@@ -166,6 +170,17 @@ const BannerList = {
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '정렬 순서 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
         this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+        this.setListStateMeta(
+            'ready',
+            '',
+            (data.items || []).length,
+            data.totalElements || 0,
+            data.resultMeta?.querySignature || ''
+        );
+        const metaEl = document.getElementById('bannerListStateMeta');
+        if (metaEl) {
+            metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
+        }
     },
 
     renderPagination(data) {
@@ -203,6 +218,25 @@ const BannerList = {
 
     setPageMeta(message) {
         document.getElementById('bannerPageMeta').textContent = message;
+    },
+
+    setListStateMeta(state, message, visibleCount, totalElements, querySignature) {
+        const metaEl = document.getElementById('bannerListStateMeta');
+        if (!metaEl) {
+            return;
+        }
+
+        metaEl.dataset.listState = state;
+        metaEl.dataset.stateMessage = message || '';
+        if (visibleCount != null) {
+            metaEl.dataset.visibleCount = String(visibleCount);
+        }
+        if (totalElements != null) {
+            metaEl.dataset.totalElements = String(totalElements);
+        }
+        if (querySignature != null) {
+            metaEl.dataset.querySignature = querySignature;
+        }
     },
 
     resetFilters() {

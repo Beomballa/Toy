@@ -116,6 +116,7 @@ const CategoryList = {
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
+            this.setListStateMeta('loading', '카테고리 목록을 불러오는 중입니다.', 0, 0, '');
             const res = await fetch(`/api/admin/categories/list?${params.toString()}`);
             const data = await res.json();
             this.state.depth1List = data.items || [];
@@ -128,6 +129,7 @@ const CategoryList = {
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
             document.getElementById('categoryPagination').innerHTML = '';
+            this.setListStateMeta('error', '카테고리 목록을 불러오지 못했습니다.', 0, 0, '');
         }
     },
 
@@ -159,6 +161,7 @@ const CategoryList = {
         const body = document.getElementById('depth1Body');
         if (!this.state.depth1List || this.state.depth1List.length === 0) {
             body.innerHTML = '<div class="text-center py-5 text-muted">등록된 카테고리가 없습니다.</div>';
+            this.setListStateMeta('empty', '등록된 카테고리가 없습니다.', 0, 0, '');
             return;
         }
 
@@ -176,6 +179,7 @@ const CategoryList = {
                 </div>
             </div>
         `).join('');
+        this.setListStateMeta('ready', '', this.state.depth1List.length, null, null);
     },
 
     renderDepth2() {
@@ -212,6 +216,17 @@ const CategoryList = {
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '대분류 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || `${this.state.depth1List.length}건`);
         this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+        this.setListStateMeta(
+            'ready',
+            '',
+            this.state.depth1List.length,
+            data.totalElements || 0,
+            data.resultMeta?.querySignature || ''
+        );
+        const metaEl = document.getElementById('categoryListStateMeta');
+        if (metaEl) {
+            metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
+        }
     },
 
     renderPagination(data) {
@@ -249,6 +264,25 @@ const CategoryList = {
 
     setPageMeta(message) {
         document.getElementById('categoryPageMeta').textContent = message;
+    },
+
+    setListStateMeta(state, message, visibleCount, totalElements, querySignature) {
+        const metaEl = document.getElementById('categoryListStateMeta');
+        if (!metaEl) {
+            return;
+        }
+
+        metaEl.dataset.listState = state;
+        metaEl.dataset.stateMessage = message || '';
+        if (visibleCount != null) {
+            metaEl.dataset.visibleCount = String(visibleCount);
+        }
+        if (totalElements != null) {
+            metaEl.dataset.totalElements = String(totalElements);
+        }
+        if (querySignature != null) {
+            metaEl.dataset.querySignature = querySignature;
+        }
     },
 
     setSubCategoryMeta(message) {

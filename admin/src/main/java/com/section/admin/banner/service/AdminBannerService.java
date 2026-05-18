@@ -10,10 +10,10 @@ import com.section.common.commerce.dto.BannerListResDto;
 import com.section.common.commerce.entity.DisplayBanner;
 import com.section.common.commerce.repository.BannerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +25,11 @@ public class AdminBannerService {
 
     public BannerListResponse getBannerList(BannerListRequest req) {
         BannerListQuery query = req.toQuery();
-        List<BannerListResDto> items = bannerRepository.getBannerList(query);
-        return BannerListResponse.of(items, query);
+        Page<BannerListResDto> page = bannerRepository.getBannerList(
+                query,
+                PageRequest.of(req.normalizedPage(), req.normalizedSize())
+        );
+        return BannerListResponse.of(page, query);
     }
 
     public DisplayBanner getBanner(Long bannerNo) {

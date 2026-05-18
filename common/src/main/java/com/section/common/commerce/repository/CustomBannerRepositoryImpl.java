@@ -5,6 +5,9 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -19,8 +22,8 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
     }
 
     @Override
-    public List<BannerListResDto> getBannerList(BannerListQuery query) {
-        return queryFactory
+    public Page<BannerListResDto> getBannerList(BannerListQuery query, Pageable pageable) {
+        List<BannerListResDto> content = queryFactory
                 .select(Projections.bean(
                         BannerListResDto.class,
                         displayBanner.bannerNo,
@@ -35,7 +38,17 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
                 .from(displayBanner)
                 .where(keywordLike(query.keyword()), isActiveEq(query.isActive()))
                 .orderBy(displayBanner.sortOrder.asc(), displayBanner.bannerNo.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
+
+        Long total = queryFactory
+                .select(displayBanner.count())
+                .from(displayBanner)
+                .where(keywordLike(query.keyword()), isActiveEq(query.isActive()))
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0L : total);
     }
 
     private BooleanExpression keywordLike(String keyword) {

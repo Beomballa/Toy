@@ -2,21 +2,30 @@ package com.section.admin.banner.res;
 
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public record BannerListResponse(
         List<Item> items,
+        int currentPage,
+        int totalPages,
+        long totalElements,
+        int pageSize,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
-    public static BannerListResponse of(List<BannerListResDto> items, BannerListQuery query) {
-        List<Item> mappedItems = items.stream().map(Item::from).toList();
+    public static BannerListResponse of(Page<BannerListResDto> page, BannerListQuery query) {
+        List<Item> mappedItems = page.getContent().stream().map(Item::from).toList();
         return new BannerListResponse(
                 mappedItems,
+                page.getNumber(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                page.getSize(),
                 new AppliedQuery(query.keyword(), query.isActive()),
-                ResultMeta.from(mappedItems.size(), query)
+                ResultMeta.from(page, query)
         );
     }
 
@@ -72,18 +81,33 @@ public record BannerListResponse(
 
     public record ResultMeta(
             String resultLabel,
+            String pageInfoLabel,
             long appliedFilterCount,
             boolean hasActiveFilters,
-            String querySignature
+            String querySignature,
+            long rangeStart,
+            long rangeEnd
     ) {
-        private static ResultMeta from(int size, BannerListQuery query) {
+        private static ResultMeta from(Page<BannerListResDto> page, BannerListQuery query) {
             long filterCount = appliedFilterCount(query);
             boolean hasActiveFilters = filterCount > 0;
+            long totalElements = page.getTotalElements();
+            long rangeStart = totalElements == 0 ? 0 : (long) page.getNumber() * page.getSize() + 1;
+            long rangeEnd = totalElements == 0 ? 0 : rangeStart + page.getNumberOfElements() - 1;
+            String resultLabel = hasActiveFilters
+                    ? String.format("검색 결과 %d건", totalElements)
+                    : String.format("전체 %d건", totalElements);
+
             return new ResultMeta(
-                    hasActiveFilters ? String.format("검색 결과 %d건", size) : String.format("전체 %d건", size),
+                    resultLabel,
+                    totalElements == 0
+                            ? "조건에 맞는 배너가 없습니다."
+                            : String.format("%d-%d / %d건 · %d페이지", rangeStart, rangeEnd, totalElements, Math.max(page.getTotalPages(), 1)),
                     filterCount,
                     hasActiveFilters,
-                    querySignature(query)
+                    querySignature(query),
+                    rangeStart,
+                    rangeEnd
             );
         }
 

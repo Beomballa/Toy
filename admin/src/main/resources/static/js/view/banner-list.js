@@ -1,7 +1,12 @@
 const BannerList = {
     initialized: false,
     modal: null,
-    state: {},
+    state: {
+        page: 0,
+        size: 10,
+        keyword: '',
+        isActive: '',
+    },
     operationPolicy: null,
 
     init() {
@@ -41,9 +46,33 @@ const BannerList = {
 
         document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBanner')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('bannerPageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this._updateStateFromInputs();
+            this.getList();
+        });
+        document.getElementById('bannerListBody')?.addEventListener('click', (event) => {
+            const editButton = event.target.closest('[data-role="edit-banner"]');
+            if (editButton) {
+                this.openEditModal(JSON.parse(editButton.dataset.banner));
+                return;
+            }
+
+            const toggleButton = event.target.closest('[data-role="toggle-banner"]');
+            if (toggleButton) {
+                this.toggleActive(Number(toggleButton.dataset.bannerNo), toggleButton.dataset.nextActive);
+                return;
+            }
+
+            const deleteButton = event.target.closest('[data-role="delete-banner"]');
+            if (deleteButton) {
+                this.deleteBanner(Number(deleteButton.dataset.bannerNo));
+            }
+        });
         document.getElementById('bannerKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                this.state.page = 0;
                 this.getList();
             }
         });
@@ -51,36 +80,46 @@ const BannerList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('bannerKeyword').value = params.get('keyword') || '';
-        document.getElementById('bannerIsActiveFilter').value = params.get('isActive') || '';
+        this.state.page = Number(params.get('page') || 0);
+        this.state.size = Number(params.get('size') || 10);
+        this.state.keyword = params.get('keyword') || '';
+        this.state.isActive = params.get('isActive') || '';
+        document.getElementById('bannerKeyword').value = this.state.keyword;
+        document.getElementById('bannerIsActiveFilter').value = this.state.isActive;
+        document.getElementById('bannerPageSize').value = String(this.state.size);
     },
 
     buildParams() {
         const params = new URLSearchParams();
-        const keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value);
-        const isActive = document.getElementById('bannerIsActiveFilter').value;
-        if (keyword) params.set('keyword', keyword);
-        if (isActive) params.set('isActive', isActive);
+        params.set('page', String(this.state.page));
+        params.set('size', String(this.state.size));
+        if (this.state.keyword) params.set('keyword', this.state.keyword);
+        if (this.state.isActive) params.set('isActive', this.state.isActive);
         return params;
     },
 
     async getList() {
         try {
+            this._updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
+            this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
             this.renderList(data.items || []);
             this.renderMeta(data);
+            this.renderPagination(data);
         } catch (err) {
             document.getElementById('bannerMetaText').textContent = err.message;
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
+            this.setPageMeta('페이지 메타 확인 불가');
             document.getElementById('bannerListBody').innerHTML =
                 `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            document.getElementById('bannerPagination').innerHTML = '';
         }
     },
 
@@ -120,22 +159,38 @@ const BannerList = {
                 </td>
             </tr>
         `).join('');
-
-        tbody.querySelectorAll('[data-role="edit-banner"]').forEach((button) => {
-            button.addEventListener('click', () => this.openEditModal(JSON.parse(button.dataset.banner)));
-        });
-        tbody.querySelectorAll('[data-role="toggle-banner"]').forEach((button) => {
-            button.addEventListener('click', () => this.toggleActive(Number(button.dataset.bannerNo), button.dataset.nextActive));
-        });
-        tbody.querySelectorAll('[data-role="delete-banner"]').forEach((button) => {
-            button.addEventListener('click', () => this.deleteBanner(Number(button.dataset.bannerNo)));
-        });
     },
 
     renderMeta(data) {
-        document.getElementById('bannerMetaText').textContent = data.resultMeta?.resultLabel || `${(data.items || []).length}건 조회`;
+        document.getElementById('bannerMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || (data.items || []).length}건 조회`;
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '정렬 순서 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
+        this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+    },
+
+    renderPagination(data) {
+        const paginationEl = document.getElementById('bannerPagination');
+        if (!paginationEl) {
+            return;
+        }
+
+        const totalPages = Number(data.totalPages || 0);
+        const currentPage = Number(data.currentPage || 0);
+
+        if (totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        paginationEl.innerHTML = Array.from({ length: totalPages }, (_, index) => `
+            <li class="page-item ${index === currentPage ? 'active' : ''}">
+                <button type="button" class="page-link" data-role="go-banner-page" data-page="${index}">${index + 1}</button>
+            </li>
+        `).join('');
+
+        paginationEl.querySelectorAll('[data-role="go-banner-page"]').forEach((button) => {
+            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+        });
     },
 
     setFilterMeta(message) {
@@ -146,9 +201,20 @@ const BannerList = {
         document.getElementById('bannerResultMeta').textContent = message;
     },
 
+    setPageMeta(message) {
+        document.getElementById('bannerPageMeta').textContent = message;
+    },
+
     resetFilters() {
         document.getElementById('bannerKeyword').value = '';
         document.getElementById('bannerIsActiveFilter').value = '';
+        document.getElementById('bannerPageSize').value = '10';
+        this.state.page = 0;
+        this.getList();
+    },
+
+    goPage(page) {
+        this.state.page = page;
         this.getList();
     },
 
@@ -249,6 +315,12 @@ const BannerList = {
         } catch (err) {
             CommonJS.alert(err.message, '오류', 'error');
         }
+    },
+
+    _updateStateFromInputs() {
+        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value) || '';
+        this.state.isActive = document.getElementById('bannerIsActiveFilter').value || '';
+        this.state.size = Number(document.getElementById('bannerPageSize').value || 10);
     }
 };
 

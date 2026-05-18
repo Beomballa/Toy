@@ -52,14 +52,20 @@ class AdminBannerRestControllerTest {
         when(adminBannerService.getBannerList(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new BannerListResponse(
                         List.of(new BannerListResponse.Item(1L, "메인 배너", "https://example.com/banner.png", null, "2026-05-10 10:00", "2026-05-20 10:00", 1, "Y", "노출중")),
+                        0,
+                        1,
+                        1L,
+                        10,
                         new BannerListResponse.AppliedQuery(null, null),
-                        new BannerListResponse.ResultMeta("전체 1건", 0, false, "정렬 순서 기준")
+                        new BannerListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "정렬 순서 기준", 1L, 1L)
                 ));
 
         mockMvc.perform(get("/api/admin/banners/list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("메인 배너"))
-                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1L));
     }
 
     @Test

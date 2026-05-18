@@ -12,6 +12,8 @@ public class BannerListRequest {
 
     private String keyword;
     private String isActive;
+    private Integer page = 0;
+    private Integer size = 10;
 
     public BannerListQuery toQuery() {
         String normalizedActive = normalize(isActive);
@@ -27,5 +29,19 @@ public class BannerListRequest {
         }
         String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? null : normalized;
+    }
+
+    public int normalizedPage() {
+        return page == null || page < 0 ? 0 : page;
+    }
+
+    public int normalizedSize() {
+        if (size == null || size <= 0) {
+            return 10;
+        }
+        if (size > 100) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return size;
     }
 }

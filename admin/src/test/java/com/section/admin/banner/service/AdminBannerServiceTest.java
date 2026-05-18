@@ -13,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,11 +49,18 @@ class AdminBannerServiceTest {
         row.setStartDtm(LocalDateTime.now().minusDays(1));
         row.setEndDtm(LocalDateTime.now().plusDays(1));
 
-        when(bannerRepository.getBannerList(any())).thenReturn(List.of(row));
+        when(bannerRepository.getBannerList(any(), any())).thenReturn(new PageImpl<>(
+                List.of(row),
+                PageRequest.of(0, 10),
+                1
+        ));
 
         BannerListResponse response = adminBannerService.getBannerList(request);
 
         assertEquals(1, response.items().size());
+        assertEquals(0, response.currentPage());
+        assertEquals(10, response.pageSize());
+        assertEquals(1, response.totalElements());
         assertEquals("메인 배너", response.items().get(0).title());
         assertEquals("전체 1건", response.resultMeta().resultLabel());
         assertEquals("정렬 순서 기준", response.resultMeta().querySignature());

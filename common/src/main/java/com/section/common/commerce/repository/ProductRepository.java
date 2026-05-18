@@ -9,6 +9,10 @@ import org.springframework.data.repository.query.Param;
 
 public interface ProductRepository extends JpaRepository<Product, Long>, CustomProductRepository {
 
+    boolean existsByBrandNo(Long brandNo);
+
+    boolean existsByCategoryNo(Long categoryNo);
+
     @Query("SELECT new com.section.common.commerce.dto.ProductDetailResDto(" +
             "p.id, c.categoryNo, c.name, b.brandNo, b.nameKo, " +
             "p.nameKo, p.modelNum, p.releasePrice, p.releaseDt, p.thumbnailUrl, p.status, p.crtDtm, p.uptDtm) " +

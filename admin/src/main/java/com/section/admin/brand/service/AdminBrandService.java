@@ -7,7 +7,6 @@ import com.section.admin.brand.res.BrandResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Brand;
-import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +24,10 @@ public class AdminBrandService {
     private final ProductRepository productRepository;
 
     public BrandListResponse getBrandList(BrandListRequest req) {
-        List<BrandResponse> items = brandRepository.findAll().stream()
-                .filter(brand -> req.normalizedKeyword() == null
-                        || brand.getNameKo().contains(req.normalizedKeyword())
-                        || (brand.getNameEn() != null && brand.getNameEn().contains(req.normalizedKeyword())))
-                .filter(brand -> req.normalizedIsActive() == null || req.normalizedIsActive().equalsIgnoreCase(brand.getIsActive()))
+        List<BrandResponse> items = brandRepository.getBrandList(
+                        req.normalizedKeyword(),
+                        req.normalizedIsActive()
+                ).stream()
                 .map(BrandResponse::from)
                 .toList();
         return BrandListResponse.of(items, req);
@@ -61,7 +59,7 @@ public class AdminBrandService {
 
     @Transactional
     public void deleteBrand(Long brandNo) {
-        if (productRepository.findAll().stream().anyMatch(product -> product.getBrandNo().equals(brandNo))) {
+        if (productRepository.existsByBrandNo(brandNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         brandRepository.deleteById(brandNo);

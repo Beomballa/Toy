@@ -4,7 +4,6 @@ import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.res.CategoryListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.commerce.entity.Category;
-import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -39,9 +38,8 @@ class AdminCategoryServiceTest {
         request.setKeyword("신발");
         request.setIsActive("Y");
 
-        when(categoryRepository.findByDepth(1)).thenReturn(List.of(
-                Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build(),
-                Category.builder().categoryNo(2L).name("의류").depth(1).isActive("N").build()
+        when(categoryRepository.getCategoryList(1, "신발", "Y")).thenReturn(List.of(
+                Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build()
         ));
 
         CategoryListResponse response = adminCategoryService.getCategoryListByDepth(request);
@@ -54,7 +52,7 @@ class AdminCategoryServiceTest {
     @Test
     @DisplayName("카테고리 삭제는 연결 상품이 있으면 거부한다")
     void deleteCategoryRejectsWhenProductsExist() {
-        when(productRepository.findAll()).thenReturn(List.of(Product.builder().categoryNo(1L).build()));
+        when(productRepository.existsByCategoryNo(1L)).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> adminCategoryService.deleteCategory(1L));
     }

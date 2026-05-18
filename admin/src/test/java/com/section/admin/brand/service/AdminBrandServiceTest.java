@@ -4,7 +4,6 @@ import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.res.BrandListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.commerce.entity.Brand;
-import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -39,9 +38,8 @@ class AdminBrandServiceTest {
         request.setKeyword("나이키");
         request.setIsActive("Y");
 
-        when(brandRepository.findAll()).thenReturn(List.of(
-                Brand.builder().brandNo(1L).nameKo("나이키").nameEn("Nike").isActive("Y").build(),
-                Brand.builder().brandNo(2L).nameKo("아디다스").nameEn("Adidas").isActive("N").build()
+        when(brandRepository.getBrandList("나이키", "Y")).thenReturn(List.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").nameEn("Nike").isActive("Y").build()
         ));
 
         BrandListResponse response = adminBrandService.getBrandList(request);
@@ -54,7 +52,7 @@ class AdminBrandServiceTest {
     @Test
     @DisplayName("브랜드 삭제는 연결 상품이 있으면 거부한다")
     void deleteBrandRejectsWhenProductsExist() {
-        when(productRepository.findAll()).thenReturn(List.of(Product.builder().brandNo(1L).build()));
+        when(productRepository.existsByBrandNo(1L)).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> adminBrandService.deleteBrand(1L));
     }

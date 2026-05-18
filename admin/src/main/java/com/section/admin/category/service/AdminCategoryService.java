@@ -24,16 +24,18 @@ public class AdminCategoryService {
     private final ProductRepository productRepository;
 
     public CategoryListResponse getCategoryListByDepth(CategoryListRequest req) {
-        List<CategoryResponse> items = categoryRepository.findByDepth(req.getDepth()).stream()
-                .filter(category -> req.normalizedKeyword() == null || category.getName().contains(req.normalizedKeyword()))
-                .filter(category -> req.normalizedIsActive() == null || req.normalizedIsActive().equalsIgnoreCase(category.getIsActive()))
+        List<CategoryResponse> items = categoryRepository.getCategoryList(
+                        req.getDepth(),
+                        req.normalizedKeyword(),
+                        req.normalizedIsActive()
+                ).stream()
                 .map(CategoryResponse::from)
                 .toList();
         return CategoryListResponse.of(items, req);
     }
 
     public List<CategoryResponse> getSubCategories(Long parentNo) {
-        return categoryRepository.findByParentNo(parentNo).stream()
+        return categoryRepository.getSubCategoryList(parentNo).stream()
                 .map(CategoryResponse::from)
                 .toList();
     }
@@ -60,7 +62,7 @@ public class AdminCategoryService {
 
     @Transactional
     public void deleteCategory(Long categoryNo) {
-        if (productRepository.findAll().stream().anyMatch(product -> product.getCategoryNo().equals(categoryNo))) {
+        if (productRepository.existsByCategoryNo(categoryNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         categoryRepository.deleteById(categoryNo);

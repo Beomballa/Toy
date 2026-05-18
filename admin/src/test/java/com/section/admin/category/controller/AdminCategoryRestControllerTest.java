@@ -54,14 +54,20 @@ class AdminCategoryRestControllerTest {
         when(adminCategoryService.getCategoryListByDepth(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new CategoryListResponse(
                         List.of(new CategoryResponse(1L, null, "러닝화", 1, "Y")),
+                        0,
+                        1,
+                        1L,
+                        10,
                         new CategoryListResponse.AppliedQuery(null, null, 1),
-                        new CategoryListResponse.ResultMeta("전체 1건", 0, false, "대분류 기준")
+                        new CategoryListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "대분류 기준", 1L, 1L)
                 ));
 
         mockMvc.perform(get("/api/admin/categories/list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].name").value("러닝화"))
-                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1L));
     }
 
     @Test

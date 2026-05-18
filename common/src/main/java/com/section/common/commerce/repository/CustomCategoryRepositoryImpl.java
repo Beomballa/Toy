@@ -3,6 +3,9 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.commerce.entity.Category;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -17,12 +20,22 @@ public class CustomCategoryRepositoryImpl implements CustomCategoryRepository {
     }
 
     @Override
-    public List<Category> getCategoryList(Integer depth, String keyword, String isActive) {
-        return queryFactory
+    public Page<Category> getCategoryList(Integer depth, String keyword, String isActive, Pageable pageable) {
+        List<Category> content = queryFactory
                 .selectFrom(category)
                 .where(depthEq(depth), keywordLike(keyword), isActiveEq(isActive))
                 .orderBy(category.categoryNo.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
+
+        Long total = queryFactory
+                .select(category.count())
+                .from(category)
+                .where(depthEq(depth), keywordLike(keyword), isActiveEq(isActive))
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0L : total);
     }
 
     @Override

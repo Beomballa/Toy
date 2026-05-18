@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,13 +40,18 @@ class AdminCategoryServiceTest {
         request.setKeyword("신발");
         request.setIsActive("Y");
 
-        when(categoryRepository.getCategoryList(1, "신발", "Y")).thenReturn(List.of(
-                Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build()
+        when(categoryRepository.getCategoryList(1, "신발", "Y", PageRequest.of(0, 10))).thenReturn(new PageImpl<>(
+                List.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build()),
+                PageRequest.of(0, 10),
+                1
         ));
 
         CategoryListResponse response = adminCategoryService.getCategoryListByDepth(request);
 
         assertEquals(1, response.items().size());
+        assertEquals(0, response.currentPage());
+        assertEquals(10, response.pageSize());
+        assertEquals(1L, response.totalElements());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
         assertEquals("대분류 기준 · 검색=신발 · 상태=사용", response.resultMeta().querySignature());
     }

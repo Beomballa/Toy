@@ -10,6 +10,8 @@ import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,14 +26,14 @@ public class AdminCategoryService {
     private final ProductRepository productRepository;
 
     public CategoryListResponse getCategoryListByDepth(CategoryListRequest req) {
-        List<CategoryResponse> items = categoryRepository.getCategoryList(
+        Page<Category> categoryPage = categoryRepository.getCategoryList(
                         req.getDepth(),
                         req.normalizedKeyword(),
-                        req.normalizedIsActive()
-                ).stream()
-                .map(CategoryResponse::from)
-                .toList();
-        return CategoryListResponse.of(items, req);
+                        req.normalizedIsActive(),
+                        PageRequest.of(req.normalizedPage(), req.normalizedSize())
+                );
+        Page<CategoryResponse> responsePage = categoryPage.map(CategoryResponse::from);
+        return CategoryListResponse.of(responsePage, req);
     }
 
     public List<CategoryResponse> getSubCategories(Long parentNo) {

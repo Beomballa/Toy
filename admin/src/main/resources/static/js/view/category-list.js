@@ -3,6 +3,10 @@ const CategoryList = {
     modal: null,
     operationPolicy: null,
     state: {
+        page: 0,
+        size: 10,
+        keyword: '',
+        isActive: '',
         selectedParentNo: null,
         selectedParentName: '',
         depth1List: [],
@@ -41,48 +45,89 @@ const CategoryList = {
         document.getElementById('btnNewRootCategory')?.addEventListener('click', () => this.openModal(1));
         document.getElementById('btnSearchCategory')?.addEventListener('click', () => this.getDepth1List());
         document.getElementById('btnResetCategory')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('categoryPageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this._updateStateFromInputs();
+            this.getDepth1List();
+        });
         document.getElementById('categoryKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                this.state.page = 0;
                 this.getDepth1List();
             }
         });
         document.getElementById('btnSaveCategory')?.addEventListener('click', () => {
             this.saveCategory();
         });
+        document.getElementById('depth1Body')?.addEventListener('click', (event) => {
+            const parentItem = event.target.closest('[data-role="select-parent"]');
+            if (parentItem) {
+                this.getDepth2List(Number(parentItem.dataset.parentNo), parentItem.dataset.parentName);
+                return;
+            }
+
+            const editRootButton = event.target.closest('[data-role="edit-root-category"]');
+            if (editRootButton) {
+                event.stopPropagation();
+                this.openModal(1, JSON.parse(editRootButton.dataset.category));
+            }
+        });
+        document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
+            const editSubButton = event.target.closest('[data-role="edit-sub-category"]');
+            if (editSubButton) {
+                this.openModal(2, JSON.parse(editSubButton.dataset.category));
+                return;
+            }
+
+            const deleteSubButton = event.target.closest('[data-role="delete-sub-category"]');
+            if (deleteSubButton) {
+                this.deleteCategory(Number(deleteSubButton.dataset.categoryNo));
+            }
+        });
     },
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('categoryKeyword').value = params.get('keyword') || '';
-        document.getElementById('categoryIsActiveFilter').value = params.get('isActive') || '';
+        this.state.page = Number(params.get('page') || 0);
+        this.state.size = Number(params.get('size') || 10);
+        this.state.keyword = params.get('keyword') || '';
+        this.state.isActive = params.get('isActive') || '';
+        document.getElementById('categoryKeyword').value = this.state.keyword;
+        document.getElementById('categoryIsActiveFilter').value = this.state.isActive;
+        document.getElementById('categoryPageSize').value = String(this.state.size);
     },
 
     buildParams() {
         const params = new URLSearchParams();
-        const keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value);
-        const isActive = document.getElementById('categoryIsActiveFilter').value;
+        params.set('page', String(this.state.page));
+        params.set('size', String(this.state.size));
         params.set('depth', '1');
-        if (keyword) params.set('keyword', keyword);
-        if (isActive) params.set('isActive', isActive);
+        if (this.state.keyword) params.set('keyword', this.state.keyword);
+        if (this.state.isActive) params.set('isActive', this.state.isActive);
         return params;
     },
 
     async getDepth1List() {
         try {
+            this._updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
+            this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             const res = await fetch(`/api/admin/categories/list?${params.toString()}`);
             const data = await res.json();
             this.state.depth1List = data.items || [];
             this.renderDepth1();
             this.renderDepth1Meta(data);
+            this.renderPagination(data);
         } catch (err) {
             console.error('1차 카테고리 로드 실패:', err);
             this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
             this.setResultMeta('결과 메타 확인 불가');
+            this.setPageMeta('페이지 메타 확인 불가');
+            document.getElementById('categoryPagination').innerHTML = '';
         }
     },
 
@@ -131,15 +176,6 @@ const CategoryList = {
                 </div>
             </div>
         `).join('');
-        body.querySelectorAll('[data-role="select-parent"]').forEach((item) => {
-            item.addEventListener('click', () => this.getDepth2List(Number(item.dataset.parentNo), item.dataset.parentName));
-        });
-        body.querySelectorAll('[data-role="edit-root-category"]').forEach((button) => {
-            button.addEventListener('click', (event) => {
-                event.stopPropagation();
-                this.openModal(1, JSON.parse(button.dataset.category));
-            });
-        });
     },
 
     renderDepth2() {
@@ -170,17 +206,37 @@ const CategoryList = {
                 </td>
             </tr>
         `).join('');
-        tbody.querySelectorAll('[data-role="edit-sub-category"]').forEach((button) => {
-            button.addEventListener('click', () => this.openModal(2, JSON.parse(button.dataset.category)));
-        });
-        tbody.querySelectorAll('[data-role="delete-sub-category"]').forEach((button) => {
-            button.addEventListener('click', () => this.deleteCategory(Number(button.dataset.categoryNo)));
-        });
     },
 
     renderDepth1Meta(data) {
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '대분류 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || `${this.state.depth1List.length}건`);
+        this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+    },
+
+    renderPagination(data) {
+        const paginationEl = document.getElementById('categoryPagination');
+        if (!paginationEl) {
+            return;
+        }
+
+        const totalPages = Number(data.totalPages || 0);
+        const currentPage = Number(data.currentPage || 0);
+
+        if (totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        paginationEl.innerHTML = Array.from({ length: totalPages }, (_, index) => `
+            <li class="page-item ${index === currentPage ? 'active' : ''}">
+                <button type="button" class="page-link" data-role="go-category-page" data-page="${index}">${index + 1}</button>
+            </li>
+        `).join('');
+
+        paginationEl.querySelectorAll('[data-role="go-category-page"]').forEach((button) => {
+            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+        });
     },
 
     setFilterMeta(message) {
@@ -191,6 +247,10 @@ const CategoryList = {
         document.getElementById('categoryResultMeta').textContent = message;
     },
 
+    setPageMeta(message) {
+        document.getElementById('categoryPageMeta').textContent = message;
+    },
+
     setSubCategoryMeta(message) {
         document.getElementById('subCategoryMetaText').textContent = message;
     },
@@ -198,6 +258,13 @@ const CategoryList = {
     resetFilters() {
         document.getElementById('categoryKeyword').value = '';
         document.getElementById('categoryIsActiveFilter').value = '';
+        document.getElementById('categoryPageSize').value = '10';
+        this.state.page = 0;
+        this.getDepth1List();
+    },
+
+    goPage(page) {
+        this.state.page = page;
         this.getDepth1List();
     },
 
@@ -291,6 +358,12 @@ const CategoryList = {
         } catch (err) {
             CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    _updateStateFromInputs() {
+        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value) || '';
+        this.state.isActive = document.getElementById('categoryIsActiveFilter').value || '';
+        this.state.size = Number(document.getElementById('categoryPageSize').value || 10);
     }
 };
 

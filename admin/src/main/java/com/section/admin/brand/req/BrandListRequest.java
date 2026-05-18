@@ -9,6 +9,8 @@ public class BrandListRequest {
 
     private String keyword;
     private String isActive;
+    private Integer page = 0;
+    private Integer size = 10;
 
     public String normalizedKeyword() {
         return normalize(keyword);
@@ -24,5 +26,16 @@ public class BrandListRequest {
         }
         String normalized = value.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? null : normalized;
+    }
+
+    public int normalizedPage() {
+        return page == null || page < 0 ? 0 : page;
+    }
+
+    public int normalizedSize() {
+        if (size == null || size <= 0) {
+            return 10;
+        }
+        return Math.min(size, 100);
     }
 }

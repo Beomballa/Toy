@@ -3,6 +3,9 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.commerce.entity.Brand;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 
@@ -17,12 +20,22 @@ public class CustomBrandRepositoryImpl implements CustomBrandRepository {
     }
 
     @Override
-    public List<Brand> getBrandList(String keyword, String isActive) {
-        return queryFactory
+    public Page<Brand> getBrandList(String keyword, String isActive, Pageable pageable) {
+        List<Brand> content = queryFactory
                 .selectFrom(brand)
                 .where(keywordLike(keyword), isActiveEq(isActive))
                 .orderBy(brand.brandNo.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
                 .fetch();
+
+        Long total = queryFactory
+                .select(brand.count())
+                .from(brand)
+                .where(keywordLike(keyword), isActiveEq(isActive))
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0L : total);
     }
 
     private BooleanExpression keywordLike(String keyword) {

@@ -1,9 +1,9 @@
 package com.section.common.commerce.repository;
 
 import com.section.common.commerce.entity.Brand;
-
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface CustomBrandRepository {
-    List<Brand> getBrandList(String keyword, String isActive);
+    Page<Brand> getBrandList(String keyword, String isActive, Pageable pageable);
 }

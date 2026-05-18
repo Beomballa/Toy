@@ -54,14 +54,20 @@ class AdminBrandRestControllerTest {
         when(adminBrandService.getBrandList(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new BrandListResponse(
                         List.of(new BrandResponse(1L, "나이키", "NIKE", "https://example.com/logo.png", "Y")),
+                        0,
+                        1,
+                        1L,
+                        10,
                         new BrandListResponse.AppliedQuery(null, null),
-                        new BrandListResponse.ResultMeta("전체 1건", 0, false, "브랜드명 기준")
+                        new BrandListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "브랜드명 기준", 1L, 1L)
                 ));
 
         mockMvc.perform(get("/api/admin/brands/list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].nameKo").value("나이키"))
-                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
+                .andExpect(jsonPath("$.pageSize").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1L));
     }
 
     @Test

@@ -10,10 +10,10 @@ import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,13 +24,13 @@ public class AdminBrandService {
     private final ProductRepository productRepository;
 
     public BrandListResponse getBrandList(BrandListRequest req) {
-        List<BrandResponse> items = brandRepository.getBrandList(
-                        req.normalizedKeyword(),
-                        req.normalizedIsActive()
-                ).stream()
-                .map(BrandResponse::from)
-                .toList();
-        return BrandListResponse.of(items, req);
+        Page<Brand> brandPage = brandRepository.getBrandList(
+                req.normalizedKeyword(),
+                req.normalizedIsActive(),
+                PageRequest.of(req.normalizedPage(), req.normalizedSize())
+        );
+        Page<BrandResponse> responsePage = brandPage.map(BrandResponse::from);
+        return BrandListResponse.of(responsePage, req);
     }
 
     public BrandResponse getBrand(Long brandNo) {

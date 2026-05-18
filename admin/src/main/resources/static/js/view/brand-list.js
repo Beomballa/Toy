@@ -1,6 +1,12 @@
 const BrandList = {
     initialized: false,
     modal: null,
+    state: {
+        page: 0,
+        size: 10,
+        keyword: '',
+        isActive: '',
+    },
     operationPolicy: null,
 
     init() {
@@ -42,9 +48,27 @@ const BrandList = {
 
         document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('brandPageSize')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this._updateStateFromInputs();
+            this.getList();
+        });
+        document.getElementById('brandListBody')?.addEventListener('click', (event) => {
+            const editButton = event.target.closest('[data-role="edit-brand"]');
+            if (editButton) {
+                this.openModal(Number(editButton.dataset.brandNo));
+                return;
+            }
+
+            const deleteButton = event.target.closest('[data-role="delete-brand"]');
+            if (deleteButton) {
+                this.deleteBrand(Number(deleteButton.dataset.brandNo));
+            }
+        });
         document.getElementById('brandKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
+                this.state.page = 0;
                 this.getList();
             }
         });
@@ -52,35 +76,45 @@ const BrandList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('brandKeyword').value = params.get('keyword') || '';
-        document.getElementById('brandIsActiveFilter').value = params.get('isActive') || '';
+        this.state.page = Number(params.get('page') || 0);
+        this.state.size = Number(params.get('size') || 10);
+        this.state.keyword = params.get('keyword') || '';
+        this.state.isActive = params.get('isActive') || '';
+        document.getElementById('brandKeyword').value = this.state.keyword;
+        document.getElementById('brandIsActiveFilter').value = this.state.isActive;
+        document.getElementById('brandPageSize').value = String(this.state.size);
     },
 
     buildParams() {
         const params = new URLSearchParams();
-        const keyword = CommonJS.normalizeOptionalText(document.getElementById('brandKeyword').value);
-        const isActive = document.getElementById('brandIsActiveFilter').value;
-        if (keyword) params.set('keyword', keyword);
-        if (isActive) params.set('isActive', isActive);
+        params.set('page', String(this.state.page));
+        params.set('size', String(this.state.size));
+        if (this.state.keyword) params.set('keyword', this.state.keyword);
+        if (this.state.isActive) params.set('isActive', this.state.isActive);
         return params;
     },
 
     async getList() {
         try {
+            this._updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
+            this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             const res = await fetch(`/api/admin/brands/list?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             this.renderList(data.items || []);
             this.renderMeta(data);
+            this.renderPagination(data);
         } catch (err) {
             console.error('브랜드 목록 로드 실패:', err);
             document.getElementById('brandMetaText').textContent = '브랜드 목록 조회 실패';
             this.setFilterMeta('브랜드 목록을 불러오지 못했습니다.');
             this.setResultMeta('결과 메타 확인 불가');
+            this.setPageMeta('페이지 메타 확인 불가');
+            document.getElementById('brandPagination').innerHTML = '';
         }
     },
 
@@ -115,18 +149,38 @@ const BrandList = {
                 </td>
             </tr>
         `).join('');
-        tbody.querySelectorAll('[data-role="edit-brand"]').forEach((button) => {
-            button.addEventListener('click', () => this.openModal(Number(button.dataset.brandNo)));
-        });
-        tbody.querySelectorAll('[data-role="delete-brand"]').forEach((button) => {
-            button.addEventListener('click', () => this.deleteBrand(Number(button.dataset.brandNo)));
-        });
     },
 
     renderMeta(data) {
-        document.getElementById('brandMetaText').textContent = data.resultMeta?.resultLabel || `${(data.items || []).length}건 조회`;
+        document.getElementById('brandMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || (data.items || []).length}건 조회`;
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '브랜드명 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
+        this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+    },
+
+    renderPagination(data) {
+        const paginationEl = document.getElementById('brandPagination');
+        if (!paginationEl) {
+            return;
+        }
+
+        const totalPages = Number(data.totalPages || 0);
+        const currentPage = Number(data.currentPage || 0);
+
+        if (totalPages <= 1) {
+            paginationEl.innerHTML = '';
+            return;
+        }
+
+        paginationEl.innerHTML = Array.from({ length: totalPages }, (_, index) => `
+            <li class="page-item ${index === currentPage ? 'active' : ''}">
+                <button type="button" class="page-link" data-role="go-brand-page" data-page="${index}">${index + 1}</button>
+            </li>
+        `).join('');
+
+        paginationEl.querySelectorAll('[data-role="go-brand-page"]').forEach((button) => {
+            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+        });
     },
 
     setFilterMeta(message) {
@@ -137,9 +191,20 @@ const BrandList = {
         document.getElementById('brandResultMeta').textContent = message;
     },
 
+    setPageMeta(message) {
+        document.getElementById('brandPageMeta').textContent = message;
+    },
+
     resetFilters() {
         document.getElementById('brandKeyword').value = '';
         document.getElementById('brandIsActiveFilter').value = '';
+        document.getElementById('brandPageSize').value = '10';
+        this.state.page = 0;
+        this.getList();
+    },
+
+    goPage(page) {
+        this.state.page = page;
         this.getList();
     },
 
@@ -223,6 +288,12 @@ const BrandList = {
         } catch (err) {
             CommonJS.alert('삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)', '오류', 'error');
         }
+    },
+
+    _updateStateFromInputs() {
+        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('brandKeyword').value) || '';
+        this.state.isActive = document.getElementById('brandIsActiveFilter').value || '';
+        this.state.size = Number(document.getElementById('brandPageSize').value || 10);
     }
 };
 

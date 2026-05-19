@@ -7,6 +7,7 @@ import java.util.List;
 
 public record DashboardResponse(
         SummaryCounts summary,
+        List<OperationNotice> operationNotices,
         List<RecentOrder> recentOrders,
         List<LowStockProduct> lowStockProducts,
         List<ChartData> salesChart,
@@ -48,6 +49,14 @@ public record DashboardResponse(
             String productName,
             String brandName,
             long stockCnt
+    ) {}
+
+    public record OperationNotice(
+            Long noticeNo,
+            String title,
+            String content,
+            boolean pinned,
+            String periodLabel
     ) {}
 
     public record ChartData(

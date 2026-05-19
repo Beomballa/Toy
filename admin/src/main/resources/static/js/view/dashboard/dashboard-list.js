@@ -38,6 +38,7 @@ const DashBoardListJS = {
 
             const data = await res.json();
             this.renderSummary(data.summary);
+            this.renderOperationNotices(data.operationNotices);
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
             this.renderSalesChart(data.salesChart);
@@ -46,6 +47,31 @@ const DashBoardListJS = {
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
         }
+    },
+
+    renderOperationNotices(notices) {
+        const body = document.getElementById('operationNoticeBody');
+        if (!body) return;
+
+        if (!notices || notices.length === 0) {
+            body.innerHTML = '<div class="text-muted small">현재 노출중인 운영 공지가 없습니다.</div>';
+            return;
+        }
+
+        body.innerHTML = notices.map((notice) => `
+            <div class="border rounded-3 p-3 ${notice.pinned ? 'mb-3 bg-light' : 'mb-3'}">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            ${notice.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
+                            <div class="fw-bold">${notice.title}</div>
+                        </div>
+                        <div class="text-muted small mb-2">${notice.periodLabel}</div>
+                        <div class="small text-dark">${this.escapeHtml(notice.content).replace(/\n/g, '<br>')}</div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
     },
 
     renderSalesChart(chartData) {
@@ -213,5 +239,14 @@ const DashBoardListJS = {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 };

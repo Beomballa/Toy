@@ -5,6 +5,8 @@ import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.entity.AdminOperationNotice;
+import com.section.common.system.repository.AdminOperationNoticeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,8 @@ class AdminDashBoardServiceTest {
     private ProductRepository productRepository;
     @Mock
     private BrandRepository brandRepository;
+    @Mock
+    private AdminOperationNoticeRepository adminOperationNoticeRepository;
 
     @InjectMocks
     private AdminDashBoardService adminDashBoardService;
@@ -48,6 +52,16 @@ class AdminDashBoardServiceTest {
         when(productRepository.getLowStockProducts(anyInt(), anyInt())).thenReturn(List.of());
         when(orderRepository.getSalesLast7Days()).thenReturn(List.of());
         when(orderRepository.getTopSellingProducts(anyInt())).thenReturn(List.of());
+        when(adminOperationNoticeRepository.getActiveDashboardNotices(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of(
+                        AdminOperationNotice.builder()
+                                .noticeNo(10L)
+                                .title("배송 지연 안내")
+                                .content("센터 점검으로 일부 출고가 늦어집니다.")
+                                .isActive("Y")
+                                .isPinned("Y")
+                                .build()
+                ));
         when(orderRepository.getTopBrandsBySales(anyInt())).thenReturn(List.of(
                 Map.of("brandNo", 1L, "amount", 1000L),
                 Map.of("brandNo", 2L, "amount", 2000L)
@@ -59,6 +73,8 @@ class AdminDashBoardServiceTest {
 
         DashboardResponse response = adminDashBoardService.getDashboardData();
 
+        assertEquals(1, response.operationNotices().size());
+        assertEquals("배송 지연 안내", response.operationNotices().get(0).title());
         assertEquals(2, response.topBrands().size());
         assertEquals("나이키", response.topBrands().get(0).label());
         assertEquals("아디다스", response.topBrands().get(1).label());

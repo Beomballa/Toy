@@ -19,6 +19,16 @@
 <main class="main-content">
     <h1 class="page-title mb-4">운영 현황 대시보드</h1>
 
+    <div class="card border-0 shadow-sm mb-4" id="operationNoticeSection">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">운영 공지</h6>
+            <a href="/admin/settings/notices" class="btn btn-sm btn-outline-secondary">전체보기</a>
+        </div>
+        <div class="card-body" id="operationNoticeBody">
+            <div class="text-muted small">운영 공지를 불러오는 중입니다...</div>
+        </div>
+    </div>
+
     <!-- 통계 카드 섹션 -->
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">오늘의 주문</div><div class="stat-value" id="todayOrderCount">0</div><button type="button" class="btn btn-link btn-sm p-0 summary-card-link" id="summaryTodayOrders">주문 보기</button></div></div></div>

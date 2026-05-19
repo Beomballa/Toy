@@ -63,10 +63,13 @@
 
     <div class="nav-section">
         <div class="nav-section-title">System</div>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/notices') ? 'active' : ''}" href="/admin/settings/notices">
+            <i class="fas fa-bullhorn"></i> 운영 공지
+        </a>
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/logs') ? 'active' : ''}" href="/admin/settings/logs">
             <i class="fas fa-history"></i> 활동 로그 확인
         </a>
-        <a class="nav-link" href="/admin/settings"><i class="fas fa-cog"></i> 시스템 설정</a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.endsWith('/admin/settings') ? 'active' : ''}" href="/admin/settings"><i class="fas fa-cog"></i> 시스템 설정</a>
     </div>
 </nav>
 

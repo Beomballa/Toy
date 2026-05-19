@@ -7,10 +7,13 @@ import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.entity.AdminOperationNotice;
+import com.section.common.system.repository.AdminOperationNoticeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,6 +26,7 @@ public class AdminDashBoardService {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
+    private final AdminOperationNoticeRepository adminOperationNoticeRepository;
 
     public DashboardResponse getDashboardData() {
         // 1. 오늘 요약 정보
@@ -42,6 +46,12 @@ public class AdminDashBoardService {
                 shippingCount.longValue(),
                 cancelledCount.longValue()
         );
+
+        List<DashboardResponse.OperationNotice> operationNotices = adminOperationNoticeRepository
+                .getActiveDashboardNotices(LocalDateTime.now(), 3)
+                .stream()
+                .map(this::toOperationNotice)
+                .toList();
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
@@ -90,6 +100,25 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+    }
+
+    private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
+        return new DashboardResponse.OperationNotice(
+                notice.getNoticeNo(),
+                notice.getTitle(),
+                notice.getContent(),
+                "Y".equalsIgnoreCase(notice.getIsPinned()),
+                buildPeriodLabel(notice)
+        );
+    }
+
+    private String buildPeriodLabel(AdminOperationNotice notice) {
+        if (notice.getStartDtm() == null && notice.getEndDtm() == null) {
+            return "상시 노출";
+        }
+        String start = notice.getStartDtm() == null ? "-" : OrderViewFormatter.formatDateTime(notice.getStartDtm());
+        String end = notice.getEndDtm() == null ? "-" : OrderViewFormatter.formatDateTime(notice.getEndDtm());
+        return start + " ~ " + end;
     }
 }

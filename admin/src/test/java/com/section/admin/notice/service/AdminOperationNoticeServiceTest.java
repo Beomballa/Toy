@@ -1,5 +1,6 @@
 package com.section.admin.notice.service;
 
+import com.section.admin.log.service.AdminLogService;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
@@ -32,6 +33,8 @@ class AdminOperationNoticeServiceTest {
 
     @Mock
     private AdminOperationNoticeRepository adminOperationNoticeRepository;
+    @Mock
+    private AdminLogService adminLogService;
 
     @InjectMocks
     private AdminOperationNoticeService adminOperationNoticeService;
@@ -94,6 +97,7 @@ class AdminOperationNoticeServiceTest {
         adminOperationNoticeService.updateActive(3L, "N");
 
         assertEquals("N", notice.getIsActive());
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_ACTIVE_UPDATE", 3L);
     }
 
     @Test
@@ -108,9 +112,47 @@ class AdminOperationNoticeServiceTest {
                 null,
                 null
         );
+        when(adminOperationNoticeRepository.save(any(AdminOperationNotice.class)))
+                .thenAnswer(invocation -> {
+                    AdminOperationNotice entity = invocation.getArgument(0);
+                    try {
+                        java.lang.reflect.Field noticeNoField = AdminOperationNotice.class.getDeclaredField("noticeNo");
+                        noticeNoField.setAccessible(true);
+                        noticeNoField.set(entity, 15L);
+                    } catch (ReflectiveOperationException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return entity;
+                });
 
         adminOperationNoticeService.saveNotice(request);
 
         verify(adminOperationNoticeRepository).save(any(AdminOperationNotice.class));
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_CREATE", 15L);
+    }
+
+    @Test
+    @DisplayName("기존 운영 공지 수정은 활동 로그를 남긴다")
+    void saveNoticeUpdateRecordsLog() {
+        AdminOperationNotice notice = AdminOperationNotice.builder()
+                .noticeNo(7L)
+                .title("기존")
+                .content("내용")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        when(adminOperationNoticeRepository.findById(7L)).thenReturn(Optional.of(notice));
+
+        adminOperationNoticeService.saveNotice(new AdminOperationNoticeSaveRequest(
+                7L,
+                "수정 공지",
+                "수정 내용",
+                "Y",
+                "Y",
+                null,
+                null
+        ));
+
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_UPDATE", 7L);
     }
 }

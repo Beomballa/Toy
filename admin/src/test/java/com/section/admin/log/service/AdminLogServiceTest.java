@@ -8,6 +8,7 @@ import com.section.common.system.entity.AdminActivityLog;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminActivityLogRepository;
 import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.system.support.AdminRequestContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +37,11 @@ class AdminLogServiceTest {
 
     @InjectMocks
     private AdminLogService adminLogService;
+
+    @org.junit.jupiter.api.AfterEach
+    void tearDown() {
+        AdminRequestContext.clear();
+    }
 
     @Test
     @DisplayName("활동 로그 목록은 작업자명을 포함한 페이지 응답을 반환한다")
@@ -94,5 +101,16 @@ class AdminLogServiceTest {
         assertEquals("BANNER_DELETE", response.actionType());
         assertEquals("배너 #7", response.targetLabel());
         assertEquals("/admin/banner/list", response.targetPath());
+    }
+
+    @Test
+    @DisplayName("현재 요청 컨텍스트 기준 활동 로그를 저장한다")
+    void recordCurrentAdminLogUsesRequestContext() {
+        AdminRequestContext.setCurrentAdminNo(11L);
+        AdminRequestContext.setCurrentIpAddress("10.0.0.5");
+
+        adminLogService.recordCurrentAdminLog("NOTICE_CREATE", 3L);
+
+        verify(adminActivityLogRepository).save(any(AdminActivityLog.class));
     }
 }

@@ -11,6 +11,7 @@ import com.section.common.system.entity.AdminActivityLog;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminActivityLogRepository;
 import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.system.support.AdminRequestContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,16 @@ public class AdminLogService {
                 .ipAddress(ipAddress)
                 .build();
         logRepository.save(log);
+    }
+
+    @Transactional
+    public void recordCurrentAdminLog(String actionType, Long targetId) {
+        recordLog(
+                AdminRequestContext.getCurrentAdminNo().orElse(1L),
+                actionType,
+                targetId,
+                AdminRequestContext.getCurrentIpAddress().orElse("127.0.0.1")
+        );
     }
 
     public Page<AdminActivityLog> getLogList(Pageable pageable) {

@@ -1,6 +1,7 @@
 package com.section.admin.notice.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
@@ -22,6 +23,11 @@ public class AdminOperationNoticeRestController {
     @GetMapping("/list")
     public ResponseEntity<AdminOperationNoticeListResponse> getList(@ModelAttribute AdminOperationNoticeListRequest req) {
         return ResponseEntity.ok(adminOperationNoticeService.getNoticeList(req));
+    }
+
+    @GetMapping("/{no}")
+    public ResponseEntity<AdminOperationNoticeDetailResponse> getDetail(@PathVariable("no") Long noticeNo) {
+        return ResponseEntity.ok(AdminOperationNoticeDetailResponse.from(adminOperationNoticeService.getNotice(noticeNo)));
     }
 
     @PostMapping("/save")

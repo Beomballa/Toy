@@ -7,7 +7,8 @@ const NoticeList = {
         size: 10,
         keyword: '',
         isActive: '',
-        isPinned: ''
+        isPinned: '',
+        noticeNo: ''
     },
 
     init() {
@@ -80,6 +81,7 @@ const NoticeList = {
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.isPinned = params.get('isPinned') || '';
+        this.state.noticeNo = params.get('noticeNo') || '';
         document.getElementById('noticeKeyword').value = this.state.keyword;
         document.getElementById('noticeIsActiveFilter').value = this.state.isActive;
         document.getElementById('noticeIsPinnedFilter').value = this.state.isPinned;
@@ -100,6 +102,7 @@ const NoticeList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
         if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
+        if (this.state.noticeNo) params.set('noticeNo', this.state.noticeNo);
         return params;
     },
 
@@ -120,6 +123,7 @@ const NoticeList = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            await this.openDeepLinkedNoticeIfNeeded(data.items || []);
         } catch (err) {
             document.getElementById('noticeMetaText').textContent = err.message;
             this.setFilterMeta(err.message);
@@ -170,6 +174,30 @@ const NoticeList = {
         `).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
+    },
+
+    async openDeepLinkedNoticeIfNeeded(items) {
+        if (!this.state.noticeNo) {
+            return;
+        }
+
+        const noticeNo = Number(this.state.noticeNo);
+        const target = items.find((item) => item.noticeNo === noticeNo);
+        if (target) {
+            this.openEditModal(target);
+        } else if (noticeNo > 0) {
+            try {
+                const res = await fetch(`/api/admin/settings/notices/${noticeNo}`);
+                if (res.ok) {
+                    this.openEditModal(await res.json());
+                }
+            } catch (error) {
+                console.error('딥링크 공지 상세 로드 실패:', error);
+            }
+        }
+        this.state.noticeNo = '';
+        const params = this.buildParams();
+        history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
     },
 
     renderMeta(data) {
@@ -240,6 +268,7 @@ const NoticeList = {
         document.getElementById('noticeIsPinnedFilter').value = '';
         document.getElementById('noticePageSize').value = '10';
         this.state.page = 0;
+        this.state.noticeNo = '';
         this.getList();
     },
 

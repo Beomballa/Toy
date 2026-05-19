@@ -21,9 +21,10 @@ public class AdminAuditRequestFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
-    ) throws ServletException, IOException {
+        ) throws ServletException, IOException {
         try {
             resolveAdminNo(request).ifPresent(AdminRequestContext::setCurrentAdminNo);
+            AdminRequestContext.setCurrentIpAddress(request.getRemoteAddr());
             filterChain.doFilter(request, response);
         } finally {
             AdminRequestContext.clear();

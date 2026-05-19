@@ -28,10 +28,14 @@ class AdminAuditRequestFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, (req, res) ->
-                assertEquals(7L, AdminRequestContext.getCurrentAdminNo().orElseThrow())
+                {
+                    assertEquals(7L, AdminRequestContext.getCurrentAdminNo().orElseThrow());
+                    assertEquals(request.getRemoteAddr(), AdminRequestContext.getCurrentIpAddress().orElseThrow());
+                }
         );
 
         assertFalse(AdminRequestContext.getCurrentAdminNo().isPresent());
+        assertFalse(AdminRequestContext.getCurrentIpAddress().isPresent());
     }
 
     @Test
@@ -42,7 +46,10 @@ class AdminAuditRequestFilterTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, (req, res) ->
-                assertEquals(9L, AdminRequestContext.getCurrentAdminNo().orElseThrow())
+                {
+                    assertEquals(9L, AdminRequestContext.getCurrentAdminNo().orElseThrow());
+                    assertEquals(request.getRemoteAddr(), AdminRequestContext.getCurrentIpAddress().orElseThrow());
+                }
         );
     }
 }

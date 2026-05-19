@@ -68,6 +68,25 @@ class AdminOperationNoticeRestControllerTest {
     }
 
     @Test
+    @DisplayName("운영 공지 상세 API는 단건 응답을 반환한다")
+    void getDetailReturnsItem() throws Exception {
+        when(adminOperationNoticeService.getNotice(1L))
+                .thenReturn(com.section.common.system.entity.AdminOperationNotice.builder()
+                        .noticeNo(1L)
+                        .title("점검 공지")
+                        .content("점검 안내")
+                        .isActive("Y")
+                        .isPinned("Y")
+                        .build());
+
+        mockMvc.perform(get("/api/admin/settings/notices/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.noticeNo").value(1L))
+                .andExpect(jsonPath("$.title").value("점검 공지"))
+                .andExpect(jsonPath("$.isActive").value("Y"));
+    }
+
+    @Test
     @DisplayName("유지보수 모드에서는 운영 공지 저장이 차단된다")
     void saveReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
         AdminOperationNoticeSaveRequest request = new AdminOperationNoticeSaveRequest(

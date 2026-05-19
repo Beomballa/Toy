@@ -35,6 +35,9 @@ final class AdminLogTargetLinkSupport {
         if (actionType.startsWith("MEMBER_")) {
             return "회원 #" + targetId;
         }
+        if (actionType.startsWith("NOTICE_")) {
+            return "운영 공지 #" + targetId;
+        }
         return "대상 #" + targetId;
     }
 
@@ -63,6 +66,9 @@ final class AdminLogTargetLinkSupport {
         }
         if (actionType.startsWith("MEMBER_")) {
             return "/admin/members";
+        }
+        if (actionType.startsWith("NOTICE_")) {
+            return "/admin/settings/notices?noticeNo=" + targetId;
         }
         return null;
     }

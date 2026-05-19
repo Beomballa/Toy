@@ -1,5 +1,6 @@
 package com.section.admin.notice.service;
 
+import com.section.admin.log.service.AdminLogService;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminOperationNoticeService {
 
     private final AdminOperationNoticeRepository adminOperationNoticeRepository;
+    private final AdminLogService adminLogService;
 
     public AdminOperationNoticeListResponse getNoticeList(AdminOperationNoticeListRequest req) {
         AdminOperationNoticeListQuery query = req.toQuery();
@@ -47,7 +49,7 @@ public class AdminOperationNoticeService {
         }
 
         if (req.noticeNo() == null) {
-            adminOperationNoticeRepository.save(AdminOperationNotice.builder()
+            AdminOperationNotice saved = adminOperationNoticeRepository.save(AdminOperationNotice.builder()
                     .title(normalizedTitle)
                     .content(normalizedContent)
                     .isActive(normalizedActive)
@@ -55,6 +57,7 @@ public class AdminOperationNoticeService {
                     .startDtm(req.startDtm())
                     .endDtm(req.endDtm())
                     .build());
+            adminLogService.recordCurrentAdminLog("NOTICE_CREATE", saved.getNoticeNo());
             return;
         }
 
@@ -67,17 +70,20 @@ public class AdminOperationNoticeService {
                 req.startDtm(),
                 req.endDtm()
         );
+        adminLogService.recordCurrentAdminLog("NOTICE_UPDATE", notice.getNoticeNo());
     }
 
     @Transactional
     public void updateActive(Long noticeNo, String isActive) {
         AdminOperationNotice notice = getNotice(noticeNo);
         notice.updateActive(normalizeFlag(isActive, "Y"));
+        adminLogService.recordCurrentAdminLog("NOTICE_ACTIVE_UPDATE", notice.getNoticeNo());
     }
 
     @Transactional
     public void deleteNotice(Long noticeNo) {
         adminOperationNoticeRepository.deleteById(noticeNo);
+        adminLogService.recordCurrentAdminLog("NOTICE_DELETE", noticeNo);
     }
 
     private String normalizeFlag(String value, String defaultValue) {

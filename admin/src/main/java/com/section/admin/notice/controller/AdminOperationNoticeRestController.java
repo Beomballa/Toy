@@ -2,10 +2,13 @@ package com.section.admin.notice.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
+import com.section.admin.notice.req.AdminOperationNoticeHistoryListRequest;
 import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
+import com.section.admin.notice.res.AdminOperationNoticeHistoryListResponse;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
+import com.section.admin.notice.service.AdminOperationNoticeHistoryService;
 import com.section.admin.notice.service.AdminOperationNoticeService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
@@ -19,11 +22,21 @@ import org.springframework.web.bind.annotation.*;
 public class AdminOperationNoticeRestController {
 
     private final AdminOperationNoticeService adminOperationNoticeService;
+    private final AdminOperationNoticeHistoryService adminOperationNoticeHistoryService;
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<AdminOperationNoticeListResponse> getList(@ModelAttribute AdminOperationNoticeListRequest req) {
         return ResponseEntity.ok(adminOperationNoticeService.getNoticeList(req));
+    }
+
+    @GetMapping("/history/list")
+    public ResponseEntity<AdminOperationNoticeHistoryListResponse> getHistoryList(
+            @ModelAttribute AdminOperationNoticeHistoryListRequest req,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size
+    ) {
+        return ResponseEntity.ok(adminOperationNoticeHistoryService.getNoticeHistoryList(req, page, size));
     }
 
     @GetMapping("/{no}")

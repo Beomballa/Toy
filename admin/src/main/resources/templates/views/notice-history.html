@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운영 공지 이력 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings">시스템 설정</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings/notices" id="noticeHistoryBreadcrumbLink">운영 공지</a></li>
+                <li class="breadcrumb-item active">운영 공지 이력</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <h1 class="page-title">운영 공지 이력</h1>
+                <div class="small text-muted" id="noticeHistoryResultSummary">공지 작업 로그를 기준으로 변경 이력을 조회합니다.</div>
+            </div>
+            <button type="button" class="btn btn-outline-secondary" id="btnBackToNoticeSource">이전 화면으로</button>
+        </div>
+    </div>
+
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">공지 번호</label>
+                    <input type="number" id="noticeHistoryNoticeNo" class="form-control" min="1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">작업 유형</label>
+                    <select id="noticeHistoryActionType" class="form-select">
+                        <option value="NOTICE_">전체</option>
+                        <option value="NOTICE_CREATE">공지 생성</option>
+                        <option value="NOTICE_UPDATE">공지 수정</option>
+                        <option value="NOTICE_ACTIVE_UPDATE">상태 변경</option>
+                        <option value="NOTICE_DELETE">공지 삭제</option>
+                        <option value="NOTICE_BULK_UPDATE">일괄 변경</option>
+                    </select>
+                </div>
+                <div class="col-md-8">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter active" data-action-type="NOTICE_">전체</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter" data-action-type="NOTICE_CREATE">공지 생성</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter" data-action-type="NOTICE_UPDATE">공지 수정</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter" data-action-type="NOTICE_ACTIVE_UPDATE">상태 변경</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter" data-action-type="NOTICE_DELETE">공지 삭제</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter" data-action-type="NOTICE_BULK_UPDATE">일괄 변경</button>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">관리자 번호</label>
+                    <input type="number" id="noticeHistoryAdminNo" class="form-control" min="1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">시작일</label>
+                    <input type="date" id="noticeHistoryStartDate" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">종료일</label>
+                    <input type="date" id="noticeHistoryEndDate" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">페이지 크기</label>
+                    <select id="noticeHistoryPageSize" class="form-select">
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="button" class="btn btn-dark" id="btnSearchNoticeHistory">조회</button>
+                </div>
+                <div class="col-md-1 d-grid">
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetNoticeHistory">초기화</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card animate-in">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">운영 공지 이력 목록</h6>
+            <div class="d-flex align-items-center gap-3">
+                <div class="small text-muted" id="noticeHistoryFilterMeta">적용 필터 0개</div>
+                <div class="small text-muted" id="noticeHistoryMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">로그 번호</th>
+                        <th>공지</th>
+                        <th>작업 유형</th>
+                        <th>작업자</th>
+                        <th>IP 주소</th>
+                        <th class="text-center">상세</th>
+                        <th class="text-end pe-4">작업 일시</th>
+                    </tr>
+                    </thead>
+                    <tbody id="noticeHistoryBody">
+                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3">
+            <div class="small text-muted text-center mb-2" id="noticeHistoryPageMeta">페이지 메타 계산 중</div>
+            <ul class="pagination pagination-sm justify-content-center mb-0" id="noticeHistoryPagination"></ul>
+        </div>
+    </div>
+</main>
+
+<div class="modal fade" id="noticeHistoryDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">로그 상세</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="noticeHistoryDetailBody">데이터를 불러오는 중입니다...</div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/notice-history.js"></script>
+</body>
+</html>

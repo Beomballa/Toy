@@ -3,7 +3,9 @@ package com.section.admin.notice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
+import com.section.admin.notice.res.AdminOperationNoticeHistoryListResponse;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
+import com.section.admin.notice.service.AdminOperationNoticeHistoryService;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
 import com.section.admin.notice.service.AdminOperationNoticeService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -35,6 +37,8 @@ class AdminOperationNoticeRestControllerTest {
     @Mock
     private AdminOperationNoticeService adminOperationNoticeService;
     @Mock
+    private AdminOperationNoticeHistoryService adminOperationNoticeHistoryService;
+    @Mock
     private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
@@ -42,7 +46,7 @@ class AdminOperationNoticeRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationNoticeRestController(adminOperationNoticeService, adminOperationPolicyService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationNoticeRestController(adminOperationNoticeService, adminOperationNoticeHistoryService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -88,6 +92,30 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.noticeNo").value(1L))
                 .andExpect(jsonPath("$.title").value("점검 공지"))
                 .andExpect(jsonPath("$.isActive").value("Y"));
+    }
+
+    @Test
+    @DisplayName("운영 공지 이력 API는 전용 페이지 응답을 반환한다")
+    void getHistoryListReturnsPagedResponse() throws Exception {
+        when(adminOperationNoticeHistoryService.getNoticeHistoryList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationNoticeHistoryListResponse(
+                        List.of(new AdminOperationNoticeHistoryListResponse.Item(5L, 1L, "운영 공지 #1", "/admin/settings/notices?noticeNo=1", "NOTICE_UPDATE", "공지 수정", 2L, "운영자", "127.0.0.1", "2026-05-20 12:00", "/api/admin/logs/get?no=5")),
+                        1L,
+                        1,
+                        0,
+                        20,
+                        1L,
+                        1L,
+                        "1-1 / 1건 · 1페이지",
+                        new AdminOperationNoticeHistoryListResponse.AppliedQuery(1L, "NOTICE_UPDATE", 2L, "2026-05-20", "2026-05-20", "/admin/settings/notices"),
+                        new AdminOperationNoticeHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 4, "1-1 · 작업=NOTICE_UPDATE")
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/notices/history/list").param("noticeNo", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].noticeNo").value(1L))
+                .andExpect(jsonPath("$.items[0].actionLabel").value("공지 수정"))
+                .andExpect(jsonPath("$.resultMeta.filterCount").value(4));
     }
 
     @Test

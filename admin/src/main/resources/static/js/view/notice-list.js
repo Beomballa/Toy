@@ -129,6 +129,7 @@ const NoticeList = {
             this.updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.syncHistoryLink();
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
@@ -242,6 +243,15 @@ const NoticeList = {
         if (metaEl) {
             metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
         }
+    },
+
+    syncHistoryLink() {
+        const historyLink = document.getElementById('btnNoticeHistory');
+        if (!historyLink) {
+            return;
+        }
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        historyLink.href = `/admin/settings/notices/history?returnTo=${returnTo}`;
     },
 
     renderStats(stats) {

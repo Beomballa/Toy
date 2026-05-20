@@ -11,4 +11,9 @@ public class AdminOperationNoticeController {
     public String noticeList() {
         return "views/notice-list";
     }
+
+    @RequestMapping("/history")
+    public String noticeHistory() {
+        return "views/notice-history";
+    }
 }

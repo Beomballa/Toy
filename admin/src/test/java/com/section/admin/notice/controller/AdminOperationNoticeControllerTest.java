@@ -14,4 +14,10 @@ class AdminOperationNoticeControllerTest {
     void noticeListReturnsView() {
         assertEquals("views/notice-list", controller.noticeList());
     }
+
+    @Test
+    @DisplayName("운영 공지 이력 화면은 전용 뷰를 반환한다")
+    void noticeHistoryReturnsView() {
+        assertEquals("views/notice-history", controller.noticeHistory());
+    }
 }

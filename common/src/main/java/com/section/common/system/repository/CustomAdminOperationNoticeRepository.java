@@ -2,6 +2,7 @@ package com.section.common.system.repository;
 
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
 import com.section.common.system.dto.AdminOperationNoticeListResDto;
+import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import com.section.common.system.entity.AdminOperationNotice;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,4 +15,6 @@ public interface CustomAdminOperationNoticeRepository {
     Page<AdminOperationNoticeListResDto> getNoticeList(AdminOperationNoticeListQuery query, Pageable pageable);
 
     List<AdminOperationNotice> getActiveDashboardNotices(LocalDateTime now, int limit);
+
+    AdminOperationNoticeSummaryDto getNoticeSummary(AdminOperationNoticeListQuery query, LocalDateTime now);
 }

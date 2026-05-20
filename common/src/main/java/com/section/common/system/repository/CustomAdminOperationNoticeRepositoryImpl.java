@@ -1,10 +1,12 @@
 package com.section.common.system.repository;
 
+import com.section.common.base.entity.type.AdminNoticeVisibilityStatus;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
 import com.section.common.system.dto.AdminOperationNoticeListResDto;
+import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import com.section.common.system.entity.AdminOperationNotice;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -41,7 +43,8 @@ public class CustomAdminOperationNoticeRepositoryImpl implements CustomAdminOper
                 .where(
                         keywordLike(query.keyword()),
                         isActiveEq(query.isActive()),
-                        isPinnedEq(query.isPinned())
+                        isPinnedEq(query.isPinned()),
+                        visibilityStatusEq(query.visibilityStatus(), LocalDateTime.now())
                 )
                 .orderBy(
                         adminOperationNotice.isPinned.desc(),
@@ -57,7 +60,8 @@ public class CustomAdminOperationNoticeRepositoryImpl implements CustomAdminOper
                 .where(
                         keywordLike(query.keyword()),
                         isActiveEq(query.isActive()),
-                        isPinnedEq(query.isPinned())
+                        isPinnedEq(query.isPinned()),
+                        visibilityStatusEq(query.visibilityStatus(), LocalDateTime.now())
                 )
                 .fetchOne();
 
@@ -81,6 +85,43 @@ public class CustomAdminOperationNoticeRepositoryImpl implements CustomAdminOper
                 .fetch();
     }
 
+    @Override
+    public AdminOperationNoticeSummaryDto getNoticeSummary(AdminOperationNoticeListQuery query, LocalDateTime now) {
+        AdminOperationNoticeListQuery statsQuery = query.toStatsQuery();
+        long totalCount = countBy(statsQuery, null, now);
+        long liveCount = countBy(statsQuery, AdminNoticeVisibilityStatus.LIVE, now);
+        long scheduledCount = countBy(statsQuery, AdminNoticeVisibilityStatus.SCHEDULED, now);
+        long pinnedCount = countPinned(statsQuery, now);
+        return new AdminOperationNoticeSummaryDto(totalCount, liveCount, scheduledCount, pinnedCount);
+    }
+
+    private long countBy(AdminOperationNoticeListQuery query, AdminNoticeVisibilityStatus visibilityStatus, LocalDateTime now) {
+        Long count = queryFactory
+                .select(adminOperationNotice.count())
+                .from(adminOperationNotice)
+                .where(
+                        keywordLike(query.keyword()),
+                        isActiveEq(query.isActive()),
+                        isPinnedEq(query.isPinned()),
+                        visibilityStatusEq(visibilityStatus, now)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private long countPinned(AdminOperationNoticeListQuery query, LocalDateTime now) {
+        Long count = queryFactory
+                .select(adminOperationNotice.count())
+                .from(adminOperationNotice)
+                .where(
+                        keywordLike(query.keyword()),
+                        isActiveEq(query.isActive()),
+                        adminOperationNotice.isPinned.eq("Y")
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
     private BooleanExpression keywordLike(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return null;
@@ -101,6 +142,24 @@ public class CustomAdminOperationNoticeRepositoryImpl implements CustomAdminOper
             return null;
         }
         return adminOperationNotice.isPinned.eq(isPinned.trim().toUpperCase());
+    }
+
+    private BooleanExpression visibilityStatusEq(AdminNoticeVisibilityStatus visibilityStatus, LocalDateTime now) {
+        if (visibilityStatus == null) {
+            return null;
+        }
+        return switch (visibilityStatus) {
+            case LIVE -> adminOperationNotice.isActive.eq("Y")
+                    .and(startedAtOrBefore(now))
+                    .and(endsAtOrAfter(now));
+            case SCHEDULED -> adminOperationNotice.isActive.eq("Y")
+                    .and(adminOperationNotice.startDtm.isNotNull())
+                    .and(adminOperationNotice.startDtm.gt(now));
+            case ENDED -> adminOperationNotice.isActive.eq("Y")
+                    .and(adminOperationNotice.endDtm.isNotNull())
+                    .and(adminOperationNotice.endDtm.lt(now));
+            case INACTIVE -> adminOperationNotice.isActive.eq("N");
+        };
     }
 
     private BooleanExpression startedAtOrBefore(LocalDateTime now) {

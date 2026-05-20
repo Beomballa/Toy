@@ -1,5 +1,6 @@
 package com.section.admin.notice.req;
 
+import com.section.common.base.entity.type.AdminNoticeVisibilityStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
@@ -13,6 +14,7 @@ public class AdminOperationNoticeListRequest {
     private String keyword;
     private String isActive;
     private String isPinned;
+    private String visibilityStatus;
     private Integer page = 0;
     private Integer size = 10;
 
@@ -22,7 +24,8 @@ public class AdminOperationNoticeListRequest {
         return new AdminOperationNoticeListQuery(
                 normalize(keyword),
                 normalizedActive,
-                normalizedPinned
+                normalizedPinned,
+                normalizeVisibilityStatus(visibilityStatus)
         );
     }
 
@@ -57,5 +60,17 @@ public class AdminOperationNoticeListRequest {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized.toUpperCase();
+    }
+
+    private AdminNoticeVisibilityStatus normalizeVisibilityStatus(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return AdminNoticeVisibilityStatus.from(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

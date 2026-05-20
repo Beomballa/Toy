@@ -7,6 +7,7 @@ import com.section.admin.notice.res.AdminOperationNoticeListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
 import com.section.common.system.dto.AdminOperationNoticeListResDto;
+import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -56,6 +57,8 @@ class AdminOperationNoticeServiceTest {
 
         when(adminOperationNoticeRepository.getNoticeList(any(AdminOperationNoticeListQuery.class), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
+        when(adminOperationNoticeRepository.getNoticeSummary(any(AdminOperationNoticeListQuery.class), any()))
+                .thenReturn(new AdminOperationNoticeSummaryDto(4, 2, 1, 1));
 
         AdminOperationNoticeListResponse response = adminOperationNoticeService.getNoticeList(request);
 
@@ -64,6 +67,8 @@ class AdminOperationNoticeServiceTest {
         assertEquals(10, response.pageSize());
         assertEquals(1L, response.totalElements());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals(4L, response.noticeStats().totalCount());
+        assertEquals(2L, response.noticeStats().liveCount());
     }
 
     @Test

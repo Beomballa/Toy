@@ -36,4 +36,11 @@ public final class AdminLogSourceLinkSupport {
         }
         return "/admin/logs?actionType=" + resolvedActionType + "&targetId=" + orderNo;
     }
+
+    public static String resolveNoticeLogPath(Long noticeNo) {
+        if (noticeNo == null) {
+            return null;
+        }
+        return "/admin/settings/logs?actionType=NOTICE_&targetId=" + noticeNo;
+    }
 }

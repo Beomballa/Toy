@@ -51,12 +51,13 @@ class AdminOperationNoticeRestControllerTest {
     void getListReturnsPagedResponse() throws Exception {
         when(adminOperationNoticeService.getNoticeList(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminOperationNoticeListResponse(
-                        List.of(new AdminOperationNoticeListResponse.Item(1L, "점검 공지", "점검 안내", "Y", "Y", "노출중", "-", "-", "2026-05-19 10:00")),
+                        List.of(new AdminOperationNoticeListResponse.Item(1L, "점검 공지", "점검 안내", "Y", "Y", "노출중", "-", "-", "2026-05-19 10:00", "/admin/settings/logs?actionType=NOTICE_&targetId=1", "활동 로그")),
                         0,
                         1,
                         1L,
                         10,
-                        new AdminOperationNoticeListResponse.AppliedQuery(null, null, null),
+                        new AdminOperationNoticeListResponse.NoticeStats(1L, 1L, 0L, 1L, "기본 문맥 기준", "고정 우선 최신순"),
+                        new AdminOperationNoticeListResponse.AppliedQuery(null, null, null, null),
                         new AdminOperationNoticeListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 최신순", 1L, 1L)
                 ));
 
@@ -64,7 +65,9 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("점검 공지"))
                 .andExpect(jsonPath("$.pageSize").value(10))
-                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
+                .andExpect(jsonPath("$.noticeStats.liveCount").value(1L))
+                .andExpect(jsonPath("$.items[0].activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
     }
 
     @Test

@@ -8,6 +8,7 @@ const NoticeList = {
         keyword: '',
         isActive: '',
         isPinned: '',
+        visibilityStatus: '',
         noticeNo: ''
     },
 
@@ -42,6 +43,10 @@ const NoticeList = {
         document.getElementById('btnSaveNotice')?.addEventListener('click', () => this.saveNotice());
         document.getElementById('btnSearchNotice')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetNotice')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('noticeStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
+        document.getElementById('noticeStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
+        document.getElementById('noticeStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
+        document.getElementById('noticeStatPinnedCard')?.addEventListener('click', () => this.applyStatFilter('pinned'));
         document.getElementById('noticePageSize')?.addEventListener('change', () => {
             this.state.page = 0;
             this.updateStateFromInputs();
@@ -81,10 +86,12 @@ const NoticeList = {
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.isPinned = params.get('isPinned') || '';
+        this.state.visibilityStatus = params.get('visibilityStatus') || '';
         this.state.noticeNo = params.get('noticeNo') || '';
         document.getElementById('noticeKeyword').value = this.state.keyword;
         document.getElementById('noticeIsActiveFilter').value = this.state.isActive;
         document.getElementById('noticeIsPinnedFilter').value = this.state.isPinned;
+        document.getElementById('noticeVisibilityStatusFilter').value = this.state.visibilityStatus;
         document.getElementById('noticePageSize').value = String(this.state.size);
     },
 
@@ -92,6 +99,7 @@ const NoticeList = {
         this.state.keyword = document.getElementById('noticeKeyword').value.trim();
         this.state.isActive = document.getElementById('noticeIsActiveFilter').value;
         this.state.isPinned = document.getElementById('noticeIsPinnedFilter').value;
+        this.state.visibilityStatus = document.getElementById('noticeVisibilityStatusFilter').value;
         this.state.size = Number(document.getElementById('noticePageSize').value || 10);
     },
 
@@ -102,6 +110,7 @@ const NoticeList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
         if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
+        if (this.state.visibilityStatus) params.set('visibilityStatus', this.state.visibilityStatus);
         if (this.state.noticeNo) params.set('noticeNo', this.state.noticeNo);
         return params;
     },
@@ -121,6 +130,7 @@ const NoticeList = {
 
             const data = await res.json();
             this.renderList(data.items || []);
+            this.renderStats(data.noticeStats);
             this.renderMeta(data);
             this.renderPagination(data);
             await this.openDeepLinkedNoticeIfNeeded(data.items || []);
@@ -129,6 +139,7 @@ const NoticeList = {
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
+            this.renderStats(null);
             document.getElementById('noticeListBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('noticePagination').innerHTML = '';
             this.setListStateMeta('error', err.message, 0, 0, '');
@@ -167,6 +178,7 @@ const NoticeList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath || '#'}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
                     <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>
                 </td>
@@ -218,6 +230,40 @@ const NoticeList = {
         }
     },
 
+    renderStats(stats) {
+        const totalCountEl = document.getElementById('noticeTotalCount');
+        const liveCountEl = document.getElementById('noticeLiveCount');
+        const scheduledCountEl = document.getElementById('noticeScheduledCount');
+        const pinnedCountEl = document.getElementById('noticePinnedCount');
+        const contextTextEl = document.getElementById('noticeStatsContextText');
+        const noticeEl = document.getElementById('noticeStatsNotice');
+
+        if (!stats) {
+            if (totalCountEl) totalCountEl.innerText = '0';
+            if (liveCountEl) liveCountEl.innerText = '0';
+            if (scheduledCountEl) scheduledCountEl.innerText = '0';
+            if (pinnedCountEl) pinnedCountEl.innerText = '0';
+            if (contextTextEl) contextTextEl.innerText = '카드 기준을 확인할 수 없습니다.';
+            if (noticeEl) {
+                noticeEl.innerText = '카드 기준을 확인할 수 없습니다.';
+                noticeEl.dataset.statsContext = 'error';
+            }
+            return;
+        }
+
+        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
+        liveCountEl.innerText = Number(stats.liveCount || 0).toLocaleString();
+        scheduledCountEl.innerText = Number(stats.scheduledCount || 0).toLocaleString();
+        pinnedCountEl.innerText = Number(stats.pinnedCount || 0).toLocaleString();
+
+        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        const usingQuickFilter = !!this.state.visibilityStatus || this.state.isPinned === 'Y';
+        noticeEl.innerText = usingQuickFilter
+            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+            : '카드 수치는 현재 탐색 문맥 기준입니다.';
+        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+    },
+
     renderPagination(data) {
         const paginationEl = document.getElementById('noticePagination');
         if (!paginationEl) return;
@@ -266,6 +312,7 @@ const NoticeList = {
         document.getElementById('noticeKeyword').value = '';
         document.getElementById('noticeIsActiveFilter').value = '';
         document.getElementById('noticeIsPinnedFilter').value = '';
+        document.getElementById('noticeVisibilityStatusFilter').value = '';
         document.getElementById('noticePageSize').value = '10';
         this.state.page = 0;
         this.state.noticeNo = '';
@@ -388,6 +435,29 @@ const NoticeList = {
             return '';
         }
         return value.substring(0, 16);
+    },
+
+    applyStatFilter(type) {
+        this.state.page = 0;
+        switch (type) {
+            case 'total':
+                document.getElementById('noticeVisibilityStatusFilter').value = '';
+                document.getElementById('noticeIsPinnedFilter').value = '';
+                break;
+            case 'live':
+                document.getElementById('noticeVisibilityStatusFilter').value = 'LIVE';
+                break;
+            case 'scheduled':
+                document.getElementById('noticeVisibilityStatusFilter').value = 'SCHEDULED';
+                break;
+            case 'pinned':
+                document.getElementById('noticeVisibilityStatusFilter').value = '';
+                document.getElementById('noticeIsPinnedFilter').value = 'Y';
+                break;
+            default:
+                break;
+        }
+        this.getList();
     },
 
     escapeHtml(value) {

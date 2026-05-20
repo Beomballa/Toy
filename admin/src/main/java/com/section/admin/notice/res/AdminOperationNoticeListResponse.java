@@ -1,7 +1,10 @@
 package com.section.admin.notice.res;
 
+import com.section.admin.log.res.AdminLogSourceLinkSupport;
+import com.section.common.base.entity.type.AdminNoticeVisibilityStatus;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
 import com.section.common.system.dto.AdminOperationNoticeListResDto;
+import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
@@ -13,17 +16,19 @@ public record AdminOperationNoticeListResponse(
         int totalPages,
         long totalElements,
         int pageSize,
+        NoticeStats noticeStats,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
-    public static AdminOperationNoticeListResponse of(Page<AdminOperationNoticeListResDto> page, AdminOperationNoticeListQuery query) {
+    public static AdminOperationNoticeListResponse of(Page<AdminOperationNoticeListResDto> page, AdminOperationNoticeListQuery query, AdminOperationNoticeSummaryDto summary) {
         return new AdminOperationNoticeListResponse(
                 page.getContent().stream().map(Item::from).toList(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
                 page.getSize(),
-                new AppliedQuery(query.keyword(), query.isActive(), query.isPinned()),
+                NoticeStats.from(summary, query.toStatsQuery()),
+                new AppliedQuery(query.keyword(), query.isActive(), query.isPinned(), query.visibilityStatus() == null ? null : query.visibilityStatus().name()),
                 ResultMeta.from(page, query)
         );
     }
@@ -37,7 +42,9 @@ public record AdminOperationNoticeListResponse(
             String displayStatus,
             String startDtm,
             String endDtm,
-            String crtDtm
+            String crtDtm,
+            String activityLogPath,
+            String activityLogLabel
     ) {
         public static Item from(AdminOperationNoticeListResDto item) {
             return new Item(
@@ -49,7 +56,9 @@ public record AdminOperationNoticeListResponse(
                     resolveDisplayStatus(item),
                     format(item.getStartDtm()),
                     format(item.getEndDtm()),
-                    format(item.getCrtDtm())
+                    format(item.getCrtDtm()),
+                    AdminLogSourceLinkSupport.resolveNoticeLogPath(item.getNoticeNo()),
+                    "활동 로그"
             );
         }
 
@@ -75,8 +84,44 @@ public record AdminOperationNoticeListResponse(
     public record AppliedQuery(
             String keyword,
             String isActive,
-            String isPinned
+            String isPinned,
+            String visibilityStatus
     ) {}
+
+    public record NoticeStats(
+            long totalCount,
+            long liveCount,
+            long scheduledCount,
+            long pinnedCount,
+            String contextLabel,
+            String querySignature
+    ) {
+        static NoticeStats from(AdminOperationNoticeSummaryDto summary, AdminOperationNoticeListQuery query) {
+            return new NoticeStats(
+                    summary.totalCount(),
+                    summary.liveCount(),
+                    summary.scheduledCount(),
+                    summary.pinnedCount(),
+                    buildContextLabel(query),
+                    buildQuerySignature(query)
+            );
+        }
+
+        private static String buildContextLabel(AdminOperationNoticeListQuery query) {
+            return query.keyword() == null ? "기본 문맥 기준" : "검색 문맥 기준";
+        }
+
+        private static String buildQuerySignature(AdminOperationNoticeListQuery query) {
+            StringBuilder builder = new StringBuilder("고정 우선 최신순");
+            if (query.keyword() != null) {
+                builder.append(" · 검색=").append(query.keyword());
+            }
+            if (query.isActive() != null) {
+                builder.append(" · 상태=").append("Y".equals(query.isActive()) ? "활성" : "비활성");
+            }
+            return builder.toString();
+        }
+    }
 
     public record ResultMeta(
             String resultLabel,
@@ -112,6 +157,7 @@ public record AdminOperationNoticeListResponse(
             if (query.keyword() != null) count++;
             if (query.isActive() != null) count++;
             if (query.isPinned() != null) count++;
+            if (query.visibilityStatus() != null) count++;
             return count;
         }
 
@@ -125,6 +171,9 @@ public record AdminOperationNoticeListResponse(
             }
             if (query.isPinned() != null) {
                 builder.append(" · 고정=").append("Y".equals(query.isPinned()) ? "고정" : "일반");
+            }
+            if (query.visibilityStatus() != null) {
+                builder.append(" · 노출=").append(query.visibilityStatus().label());
             }
             return builder.toString();
         }

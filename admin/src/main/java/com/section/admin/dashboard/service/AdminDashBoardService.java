@@ -109,7 +109,8 @@ public class AdminDashBoardService {
                 notice.getTitle(),
                 notice.getContent(),
                 "Y".equalsIgnoreCase(notice.getIsPinned()),
-                buildPeriodLabel(notice)
+                buildPeriodLabel(notice),
+                "/admin/settings/notices?noticeNo=" + notice.getNoticeNo()
         );
     }
 

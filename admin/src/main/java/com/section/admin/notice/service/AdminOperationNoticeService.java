@@ -1,6 +1,7 @@
 package com.section.admin.notice.service;
 
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +41,49 @@ public class AdminOperationNoticeService {
     public AdminOperationNotice getNotice(Long noticeNo) {
         return adminOperationNoticeRepository.findById(noticeNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    @Transactional
+    public BulkOperateResult bulkOperate(AdminOperationNoticeBulkOperateRequest req) {
+        req.validateOperation();
+        List<Long> targetNoticeNos = req.normalizedNoticeNos();
+        String normalizedActive = req.normalizedIsActive();
+        String normalizedPinned = req.normalizedIsPinned();
+
+        List<AdminOperationNotice> notices = adminOperationNoticeRepository.findAllById(targetNoticeNos);
+        if (notices.isEmpty()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        for (AdminOperationNotice notice : notices) {
+            boolean changed = false;
+            if (normalizedActive != null && !normalizedActive.equalsIgnoreCase(notice.getIsActive())) {
+                changed = true;
+            }
+            if (normalizedPinned != null && !normalizedPinned.equalsIgnoreCase(notice.getIsPinned())) {
+                changed = true;
+            }
+
+            if (!changed) {
+                unchangedCount += 1;
+                continue;
+            }
+
+            notice.update(
+                    notice.getTitle(),
+                    notice.getContent(),
+                    normalizedActive == null ? notice.getIsActive() : normalizedActive,
+                    normalizedPinned == null ? notice.getIsPinned() : normalizedPinned,
+                    notice.getStartDtm(),
+                    notice.getEndDtm()
+            );
+            adminLogService.recordCurrentAdminLog("NOTICE_BULK_UPDATE", notice.getNoticeNo());
+            updatedCount += 1;
+        }
+
+        return new BulkOperateResult(targetNoticeNos.size(), updatedCount, unchangedCount);
     }
 
     @Transactional
@@ -107,5 +152,12 @@ public class AdminOperationNoticeService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized;
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount
+    ) {
     }
 }

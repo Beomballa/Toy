@@ -1,6 +1,7 @@
 package com.section.admin.notice.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
@@ -49,5 +50,11 @@ public class AdminOperationNoticeRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOperationNoticeService.deleteNotice(noticeNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-operate")
+    public ResponseEntity<AdminOperationNoticeService.BulkOperateResult> bulkOperate(@RequestBody AdminOperationNoticeBulkOperateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationNoticeService.bulkOperate(req));
     }
 }

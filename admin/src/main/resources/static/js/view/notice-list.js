@@ -11,6 +11,7 @@ const NoticeList = {
         visibilityStatus: '',
         noticeNo: ''
     },
+    selectedNoticeNos: new Set(),
 
     init() {
         if (this.initialized) return;
@@ -43,6 +44,9 @@ const NoticeList = {
         document.getElementById('btnSaveNotice')?.addEventListener('click', () => this.saveNotice());
         document.getElementById('btnSearchNotice')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetNotice')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnApplyNoticeBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnClearNoticeSelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('noticeSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         document.getElementById('noticeStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
         document.getElementById('noticeStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
         document.getElementById('noticeStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
@@ -60,6 +64,11 @@ const NoticeList = {
             }
         });
         document.getElementById('noticeListBody')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-notice"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.noticeNo), checkbox.checked);
+                return;
+            }
             const editButton = event.target.closest('[data-role="edit-notice"]');
             if (editButton) {
                 this.openEditModal(JSON.parse(editButton.dataset.notice));
@@ -151,14 +160,18 @@ const NoticeList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">등록된 운영 공지가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 운영 공지가 없습니다.</td></tr>';
             this.setListStateMeta('empty', '등록된 운영 공지가 없습니다.', 0, 0, '');
+            this.updateSelectionMeta([]);
             return;
         }
 
         tbody.innerHTML = items.map((item) => `
             <tr>
-                <td class="ps-4 text-muted small">${item.noticeNo}</td>
+                <td class="ps-4">
+                    <input type="checkbox" data-role="select-notice" data-notice-no="${item.noticeNo}" ${this.selectedNoticeNos.has(item.noticeNo) ? 'checked' : ''}>
+                </td>
+                <td class="text-muted small">${item.noticeNo}</td>
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
@@ -186,6 +199,7 @@ const NoticeList = {
         `).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
+        this.updateSelectionMeta(items);
     },
 
     async openDeepLinkedNoticeIfNeeded(items) {
@@ -286,6 +300,28 @@ const NoticeList = {
         });
     },
 
+    updateSelectionMeta(items) {
+        const selectionMeta = document.getElementById('noticeSelectionMeta');
+        const selectedCount = this.selectedNoticeNos.size;
+        const currentPageSelectedCount = (items || []).filter((item) => this.selectedNoticeNos.has(item.noticeNo)).length;
+        const selectPage = document.getElementById('noticeSelectPage');
+        if (selectPage && items && items.length > 0) {
+            selectPage.checked = currentPageSelectedCount === items.length;
+            selectPage.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < items.length;
+        } else if (selectPage) {
+            selectPage.checked = false;
+            selectPage.indeterminate = false;
+        }
+
+        if (selectionMeta) {
+            if (selectedCount === 0) {
+                selectionMeta.textContent = '선택된 공지가 없습니다.';
+            } else {
+                selectionMeta.textContent = `선택 ${selectedCount}건 · 현재 페이지 ${currentPageSelectedCount}건`;
+            }
+        }
+    },
+
     setFilterMeta(message) {
         document.getElementById('noticeFilterMeta').textContent = message;
     },
@@ -317,6 +353,14 @@ const NoticeList = {
         this.state.page = 0;
         this.state.noticeNo = '';
         this.getList();
+    },
+
+    clearSelection() {
+        this.selectedNoticeNos.clear();
+        document.querySelectorAll('[data-role="select-notice"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.updateSelectionMeta(this.getCurrentPageItems());
     },
 
     goPage(page) {
@@ -458,6 +502,74 @@ const NoticeList = {
                 break;
         }
         this.getList();
+    },
+
+    toggleSelection(noticeNo, checked) {
+        if (checked) {
+            this.selectedNoticeNos.add(noticeNo);
+        } else {
+            this.selectedNoticeNos.delete(noticeNo);
+        }
+        this.updateSelectionMeta(this.getCurrentPageItems());
+    },
+
+    toggleSelectCurrentPage(checked) {
+        this.getCurrentPageItems().forEach((item) => {
+            if (checked) {
+                this.selectedNoticeNos.add(item.noticeNo);
+            } else {
+                this.selectedNoticeNos.delete(item.noticeNo);
+            }
+        });
+        document.querySelectorAll('[data-role="select-notice"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        this.updateSelectionMeta(this.getCurrentPageItems());
+    },
+
+    getCurrentPageItems() {
+        return Array.from(document.querySelectorAll('[data-role="edit-notice"]')).map((button) => JSON.parse(button.dataset.notice));
+    },
+
+    async applyBulkOperation() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 일괄 변경'), '알림', 'warning');
+            return;
+        }
+
+        if (this.selectedNoticeNos.size === 0) {
+            await CommonJS.alert('일괄 적용할 운영 공지를 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const payload = {
+            noticeNos: Array.from(this.selectedNoticeNos),
+            isActive: document.getElementById('bulkNoticeIsActive').value || null,
+            isPinned: document.getElementById('bulkNoticeIsPinned').value || null
+        };
+
+        if (!payload.isActive && !payload.isPinned) {
+            await CommonJS.alert('일괄 변경할 상태를 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            const res = await fetch('/api/admin/settings/notices/bulk-operate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지 일괄 변경에 실패했습니다.'));
+
+            const result = await res.json();
+            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 유지되었습니다.`, '성공', 'success');
+            this.clearSelection();
+            document.getElementById('bulkNoticeIsActive').value = '';
+            document.getElementById('bulkNoticeIsPinned').value = '';
+            this.getList();
+        } catch (err) {
+            await CommonJS.alert(err.message, '오류', 'error');
+        }
     },
 
     escapeHtml(value) {

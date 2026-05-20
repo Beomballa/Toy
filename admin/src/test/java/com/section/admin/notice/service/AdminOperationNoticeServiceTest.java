@@ -1,6 +1,7 @@
 package com.section.admin.notice.service;
 
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
@@ -159,5 +160,36 @@ class AdminOperationNoticeServiceTest {
         ));
 
         verify(adminLogService).recordCurrentAdminLog("NOTICE_UPDATE", 7L);
+    }
+
+    @Test
+    @DisplayName("운영 공지 일괄 변경은 실제 변경 건수만 집계한다")
+    void bulkOperateReturnsChangedCounts() {
+        AdminOperationNotice activePinned = AdminOperationNotice.builder()
+                .noticeNo(1L)
+                .title("공지1")
+                .content("내용1")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        AdminOperationNotice unchanged = AdminOperationNotice.builder()
+                .noticeNo(2L)
+                .title("공지2")
+                .content("내용2")
+                .isActive("Y")
+                .isPinned("Y")
+                .build();
+
+        when(adminOperationNoticeRepository.findAllById(List.of(1L, 2L)))
+                .thenReturn(List.of(activePinned, unchanged));
+
+        AdminOperationNoticeService.BulkOperateResult result = adminOperationNoticeService.bulkOperate(
+                new AdminOperationNoticeBulkOperateRequest(List.of(1L, 2L), null, "Y")
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_BULK_UPDATE", 1L);
     }
 }

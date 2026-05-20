@@ -64,11 +64,12 @@ const DashBoardListJS = {
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
                             ${notice.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                            <div class="fw-bold">${notice.title}</div>
+                            <a class="fw-bold text-decoration-none" href="${notice.targetPath}">${this.escapeHtml(notice.title)}</a>
                         </div>
                         <div class="text-muted small mb-2">${notice.periodLabel}</div>
                         <div class="small text-dark">${this.escapeHtml(notice.content).replace(/\n/g, '<br>')}</div>
                     </div>
+                    <a class="btn btn-sm btn-outline-secondary" href="${notice.targetPath}">관리</a>
                 </div>
             </div>
         `).join('');

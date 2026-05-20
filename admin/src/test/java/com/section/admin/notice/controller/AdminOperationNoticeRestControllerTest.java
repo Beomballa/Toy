@@ -2,6 +2,7 @@ package com.section.admin.notice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
 import com.section.admin.notice.service.AdminOperationNoticeService;
@@ -125,5 +126,20 @@ class AdminOperationNoticeRestControllerTest {
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/settings/notices/delete").param("no", "3"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("운영 공지 일괄 변경 API는 결과 응답을 반환한다")
+    void bulkOperateReturnsResult() throws Exception {
+        when(adminOperationNoticeService.bulkOperate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationNoticeService.BulkOperateResult(3, 2, 1));
+
+        mockMvc.perform(post("/api/admin/settings/notices/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationNoticeBulkOperateRequest(List.of(1L, 2L, 3L), "Y", null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.updatedCount").value(2))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
     }
 }

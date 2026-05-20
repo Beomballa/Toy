@@ -16,6 +16,9 @@ const AdminLogPage = {
     },
 
     bindEvents() {
+        document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
+            button.addEventListener('click', () => this.applyQuickFilter(button.dataset.logQuickFilter));
+        });
         document.getElementById('btnSearchLog')?.addEventListener('click', () => {
             this.state.page = 0;
             this.getList();
@@ -27,6 +30,12 @@ const AdminLogPage = {
             this.state.page = 0;
             this.state.size = Number(document.getElementById('logPageSize')?.value || 20);
             this.getList();
+        });
+        document.getElementById('logListBody')?.addEventListener('click', (event) => {
+            const detailButton = event.target.closest('[data-role="open-log-detail"]');
+            if (detailButton) {
+                this.openDetail(Number(detailButton.dataset.logNo));
+            }
         });
         ['logAdminNo', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
             document.getElementById(id)?.addEventListener('keydown', (event) => {
@@ -111,7 +120,7 @@ const AdminLogPage = {
                 </td>
                 <td><code class="small">${item.ipAddress}</code></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" onclick="AdminLogPage.openDetail(${item.logNo})">상세</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-log-detail" data-log-no="${item.logNo}">상세</button>
                 </td>
                 <td class="text-end pe-4 small text-muted">${item.actionDtm}</td>
             </tr>
@@ -191,6 +200,12 @@ const AdminLogPage = {
         document.getElementById('logPageSize').value = '20';
         this.state.page = 0;
         this.state.size = 20;
+        this.getList();
+    },
+
+    applyQuickFilter(actionType) {
+        document.getElementById('logActionType').value = actionType || '';
+        this.state.page = 0;
         this.getList();
     }
 };

@@ -57,7 +57,8 @@ public record DashboardResponse(
             String content,
             boolean pinned,
             String periodLabel,
-            String targetPath
+            String targetPath,
+            String historyPath
     ) {}
 
     public record ChartData(

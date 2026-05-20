@@ -192,6 +192,7 @@ const NoticeList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.historyPath || '#'}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath || '#'}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
                     <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>

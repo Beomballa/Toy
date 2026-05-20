@@ -43,6 +43,7 @@ public record AdminOperationNoticeListResponse(
             String startDtm,
             String endDtm,
             String crtDtm,
+            String historyPath,
             String activityLogPath,
             String activityLogLabel
     ) {
@@ -57,6 +58,7 @@ public record AdminOperationNoticeListResponse(
                     format(item.getStartDtm()),
                     format(item.getEndDtm()),
                     format(item.getCrtDtm()),
+                    "/admin/settings/notices/history?noticeNo=" + item.getNoticeNo(),
                     AdminLogSourceLinkSupport.resolveNoticeLogPath(item.getNoticeNo()),
                     "활동 로그"
             );

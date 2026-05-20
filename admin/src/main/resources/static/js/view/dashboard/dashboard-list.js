@@ -69,7 +69,10 @@ const DashBoardListJS = {
                         <div class="text-muted small mb-2">${notice.periodLabel}</div>
                         <div class="small text-dark">${this.escapeHtml(notice.content).replace(/\n/g, '<br>')}</div>
                     </div>
-                    <a class="btn btn-sm btn-outline-secondary" href="${notice.targetPath}">관리</a>
+                    <div class="d-flex flex-column gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="${notice.targetPath}">관리</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${notice.historyPath}">이력</a>
+                    </div>
                 </div>
             </div>
         `).join('');

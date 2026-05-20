@@ -76,6 +76,7 @@ class AdminDashBoardServiceTest {
         assertEquals(1, response.operationNotices().size());
         assertEquals("배송 지연 안내", response.operationNotices().get(0).title());
         assertEquals("/admin/settings/notices?noticeNo=10", response.operationNotices().get(0).targetPath());
+        assertEquals("/admin/settings/notices/history?noticeNo=10", response.operationNotices().get(0).historyPath());
         assertEquals(2, response.topBrands().size());
         assertEquals("나이키", response.topBrands().get(0).label());
         assertEquals("아디다스", response.topBrands().get(1).label());

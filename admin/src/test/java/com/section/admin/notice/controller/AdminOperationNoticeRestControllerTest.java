@@ -56,7 +56,7 @@ class AdminOperationNoticeRestControllerTest {
     void getListReturnsPagedResponse() throws Exception {
         when(adminOperationNoticeService.getNoticeList(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminOperationNoticeListResponse(
-                        List.of(new AdminOperationNoticeListResponse.Item(1L, "점검 공지", "점검 안내", "Y", "Y", "노출중", "-", "-", "2026-05-19 10:00", "/admin/settings/logs?actionType=NOTICE_&targetId=1", "활동 로그")),
+                        List.of(new AdminOperationNoticeListResponse.Item(1L, "점검 공지", "점검 안내", "Y", "Y", "노출중", "-", "-", "2026-05-19 10:00", "/admin/settings/notices/history?noticeNo=1", "/admin/settings/logs?actionType=NOTICE_&targetId=1", "활동 로그")),
                         0,
                         1,
                         1L,
@@ -72,6 +72,7 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.pageSize").value(10))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
                 .andExpect(jsonPath("$.noticeStats.liveCount").value(1L))
+                .andExpect(jsonPath("$.items[0].historyPath").value("/admin/settings/notices/history?noticeNo=1"))
                 .andExpect(jsonPath("$.items[0].activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
     }
 

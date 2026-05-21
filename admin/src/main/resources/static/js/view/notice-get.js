@@ -1,15 +1,24 @@
 const NoticeDetailPage = {
     initialized: false,
+    modal: null,
+    operationPolicy: null,
     state: {
         noticeNo: null,
-        returnTo: '/admin/settings/notices'
+        returnTo: '/admin/settings/notices',
+        currentDetail: null
     },
 
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        const modalEl = document.getElementById('noticeDetailEditModal');
+        if (modalEl) {
+            this.modal = new bootstrap.Modal(modalEl);
+        }
         this.readBootstrapState();
         this.bindEvents();
+        this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
     },
 
@@ -27,6 +36,24 @@ const NoticeDetailPage = {
         document.getElementById('btnBackToNoticeList')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
         });
+        document.getElementById('btnNoticeDetailEdit')?.addEventListener('click', () => this.openEditModal());
+        document.getElementById('btnNoticeDetailSave')?.addEventListener('click', () => this.saveDetail());
+        document.getElementById('btnNoticeDetailToggleActive')?.addEventListener('click', () => this.toggleActive());
+        document.getElementById('btnNoticeDetailDelete')?.addEventListener('click', () => this.deleteNotice());
+    },
+
+    async applyOperationPolicy(settings = null) {
+        try {
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
+            const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
+            const reason = CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제');
+            CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailEdit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailToggleActive'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailDelete'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailSave'), disabled, reason);
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async loadDetail() {
@@ -41,6 +68,7 @@ const NoticeDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지 상세를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            this.state.currentDetail = data;
             this.renderDetail(data);
         } catch (error) {
             this.renderError(error.message);
@@ -62,6 +90,7 @@ const NoticeDetailPage = {
         document.getElementById('btnNoticeDetailHistory').href = historyPath;
         document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
         document.getElementById('btnNoticeDetailLog').href = data.activityLogPath;
+        document.getElementById('btnNoticeDetailToggleActive').textContent = data.isActive === 'Y' ? '비활성' : '활성';
         this.renderRecentHistories(data.recentHistories || []);
 
         const metaEl = document.getElementById('noticeDetailStateMeta');
@@ -70,6 +99,120 @@ const NoticeDetailPage = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.noticeNo = String(data.noticeNo || '');
             metaEl.dataset.displayStatus = data.displayStatus || '';
+        }
+    },
+
+    openEditModal() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail) {
+            return;
+        }
+        document.getElementById('noticeDetailEditTitle').value = detail.title || '';
+        document.getElementById('noticeDetailEditContent').value = detail.content || '';
+        document.getElementById('noticeDetailEditIsActive').value = detail.isActive || 'Y';
+        document.getElementById('noticeDetailEditIsPinned').value = detail.isPinned || 'N';
+        document.getElementById('noticeDetailEditStartDtm').value = this.toDateTimeLocalValue(detail.startDtm);
+        document.getElementById('noticeDetailEditEndDtm').value = this.toDateTimeLocalValue(detail.endDtm);
+        this.modal?.show();
+    },
+
+    async saveDetail() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail) {
+            return;
+        }
+
+        const payload = {
+            noticeNo: detail.noticeNo,
+            title: document.getElementById('noticeDetailEditTitle').value.trim(),
+            content: document.getElementById('noticeDetailEditContent').value.trim(),
+            isActive: document.getElementById('noticeDetailEditIsActive').value,
+            isPinned: document.getElementById('noticeDetailEditIsPinned').value,
+            startDtm: this.toNullableDateTime(document.getElementById('noticeDetailEditStartDtm').value),
+            endDtm: this.toNullableDateTime(document.getElementById('noticeDetailEditEndDtm').value)
+        };
+
+        if (!payload.title || !payload.content) {
+            await CommonJS.alert('공지 제목과 내용을 입력하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/settings/notices/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지를 저장하지 못했습니다.'));
+            }
+
+            await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
+            this.modal?.hide();
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    async toggleActive() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail) {
+            return;
+        }
+
+        const nextActive = detail.isActive === 'Y' ? 'N' : 'Y';
+        try {
+            const response = await fetch(`/api/admin/settings/notices/active/${detail.noticeNo}?isActive=${nextActive}`, {
+                method: 'PATCH'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '공지 상태를 변경하지 못했습니다.'));
+            }
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    async deleteNotice() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail) {
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm('운영 공지를 삭제하시겠습니까?', '삭제 확인');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/settings/notices/delete?no=${detail.noticeNo}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지를 삭제하지 못했습니다.'));
+            }
+            await CommonJS.alert('운영 공지가 삭제되었습니다.', '성공', 'success');
+            window.location.href = this.state.returnTo;
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
         }
     },
 
@@ -141,6 +284,17 @@ const NoticeDetailPage = {
                 ? 'text-bg-warning'
                 : 'badge-n';
         return `<span class="badge rounded-pill ${badgeClass}">${this.escapeHtml(status)}</span>`;
+    },
+
+    toNullableDateTime(value) {
+        return value ? `${value}:00` : null;
+    },
+
+    toDateTimeLocalValue(value) {
+        if (!value || value === '-') {
+            return '';
+        }
+        return value.substring(0, 16);
     },
 
     escapeHtml(value) {

@@ -66,6 +66,9 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/notices') ? 'active' : ''}" href="/admin/settings/notices">
             <i class="fas fa-bullhorn"></i> 운영 공지
         </a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/tasks') ? 'active' : ''}" href="/admin/settings/tasks">
+            <i class="fas fa-list-check"></i> 운영 작업
+        </a>
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/logs') ? 'active' : ''}" href="/admin/settings/logs">
             <i class="fas fa-history"></i> 활동 로그 확인
         </a>

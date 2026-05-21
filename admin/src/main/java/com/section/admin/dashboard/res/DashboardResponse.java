@@ -8,6 +8,7 @@ import java.util.List;
 public record DashboardResponse(
         SummaryCounts summary,
         List<OperationNotice> operationNotices,
+        List<OperationTask> operationTasks,
         List<RecentOrder> recentOrders,
         List<LowStockProduct> lowStockProducts,
         List<ChartData> salesChart,
@@ -59,6 +60,18 @@ public record DashboardResponse(
             String periodLabel,
             String targetPath,
             String historyPath
+    ) {}
+
+    public record OperationTask(
+            Long taskNo,
+            String title,
+            String statusLabel,
+            String priorityLabel,
+            String assigneeName,
+            String dueDateLabel,
+            boolean pinned,
+            String targetPath,
+            String activityLogPath
     ) {}
 
     public record ChartData(

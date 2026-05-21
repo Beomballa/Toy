@@ -7,12 +7,19 @@ import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminOperationNotice;
+import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
+import com.section.common.system.repository.AdminOperationTaskRepository;
+import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.base.entity.type.AdminOperationTaskPriority;
+import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +34,8 @@ public class AdminDashBoardService {
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
     private final AdminOperationNoticeRepository adminOperationNoticeRepository;
+    private final AdminOperationTaskRepository adminOperationTaskRepository;
+    private final AdminUserRepository adminUserRepository;
 
     public DashboardResponse getDashboardData() {
         // 1. 오늘 요약 정보
@@ -51,6 +60,19 @@ public class AdminDashBoardService {
                 .getActiveDashboardNotices(LocalDateTime.now(), 3)
                 .stream()
                 .map(this::toOperationNotice)
+                .toList();
+
+        List<AdminOperationTask> dashboardTasks = adminOperationTaskRepository.getDashboardTasks(LocalDate.now(), 5);
+        Map<Long, String> adminNameMap = adminUserRepository.findAllById(
+                        dashboardTasks.stream()
+                                .map(AdminOperationTask::getAssigneeAdminNo)
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+        List<DashboardResponse.OperationTask> operationTasks = dashboardTasks.stream()
+                .map(task -> toOperationTask(task, adminNameMap))
                 .toList();
 
         // 2. 최근 주문 5건
@@ -100,7 +122,7 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, operationTasks, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
@@ -122,5 +144,35 @@ public class AdminDashBoardService {
         String start = notice.getStartDtm() == null ? "-" : OrderViewFormatter.formatDateTime(notice.getStartDtm());
         String end = notice.getEndDtm() == null ? "-" : OrderViewFormatter.formatDateTime(notice.getEndDtm());
         return start + " ~ " + end;
+    }
+
+    private DashboardResponse.OperationTask toOperationTask(AdminOperationTask task, Map<Long, String> adminNameMap) {
+        return new DashboardResponse.OperationTask(
+                task.getTaskNo(),
+                task.getTitle(),
+                AdminOperationTaskStatus.fromCode(task.getStatus()).getLabel(),
+                AdminOperationTaskPriority.fromCode(task.getPriority()).getLabel(),
+                adminNameMap.getOrDefault(task.getAssigneeAdminNo(), "미지정"),
+                buildTaskDueDateLabel(task),
+                "Y".equalsIgnoreCase(task.getIsPinned()),
+                "/admin/settings/tasks?taskNo=" + task.getTaskNo(),
+                "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
+        );
+    }
+
+    private String buildTaskDueDateLabel(AdminOperationTask task) {
+        if (task.getDueDate() == null) {
+            return "기한 없음";
+        }
+        if ("DONE".equalsIgnoreCase(task.getStatus())) {
+            return "완료";
+        }
+        if (task.getDueDate().isBefore(LocalDate.now())) {
+            return task.getDueDate() + " · 기한 초과";
+        }
+        if (task.getDueDate().isEqual(LocalDate.now())) {
+            return task.getDueDate() + " · 오늘 마감";
+        }
+        return task.getDueDate().toString();
     }
 }

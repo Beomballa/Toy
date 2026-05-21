@@ -41,7 +41,7 @@ public class AdminOperationNoticeRestController {
 
     @GetMapping("/{no}")
     public ResponseEntity<AdminOperationNoticeDetailResponse> getDetail(@PathVariable("no") Long noticeNo) {
-        return ResponseEntity.ok(AdminOperationNoticeDetailResponse.from(adminOperationNoticeService.getNotice(noticeNo)));
+        return ResponseEntity.ok(adminOperationNoticeService.getNoticeDetail(noticeNo));
     }
 
     @PostMapping("/save")

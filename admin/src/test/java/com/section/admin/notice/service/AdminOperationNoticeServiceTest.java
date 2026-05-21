@@ -1,9 +1,12 @@
 package com.section.admin.notice.service;
 
+import com.section.admin.log.req.AdminLogListRequest;
+import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
+import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
@@ -27,6 +30,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -191,5 +195,38 @@ class AdminOperationNoticeServiceTest {
         assertEquals(1, result.updatedCount());
         assertEquals(1, result.unchangedCount());
         verify(adminLogService).recordCurrentAdminLog("NOTICE_BULK_UPDATE", 1L);
+    }
+
+    @Test
+    @DisplayName("운영 공지 상세는 최근 이력 5건을 함께 반환한다")
+    void getNoticeDetailReturnsRecentHistories() {
+        AdminOperationNotice notice = AdminOperationNotice.builder()
+                .noticeNo(9L)
+                .title("점검 공지")
+                .content("점검 내용")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        when(adminOperationNoticeRepository.findById(9L)).thenReturn(Optional.of(notice));
+        when(adminLogService.getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5))))
+                .thenReturn(new AdminLogListResponse(
+                        List.of(new AdminLogListResponse.Item(3L, 2L, "운영자", "NOTICE_UPDATE", 9L, "운영 공지 #9", "/admin/settings/notices?noticeNo=9", "127.0.0.1", "2026-05-21 12:00")),
+                        1L,
+                        1,
+                        0,
+                        5,
+                        1L,
+                        1L,
+                        "1-1 / 1건 · 1페이지",
+                        new AdminLogListResponse.AppliedQuery(2L, "NOTICE_", 9L, null, null),
+                        new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=NOTICE_")
+                ));
+
+        AdminOperationNoticeDetailResponse response = adminOperationNoticeService.getNoticeDetail(9L);
+
+        assertEquals(9L, response.noticeNo());
+        assertEquals(1, response.recentHistories().size());
+        assertEquals("공지 수정", response.recentHistories().get(0).actionLabel());
+        verify(adminLogService).getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5)));
     }
 }

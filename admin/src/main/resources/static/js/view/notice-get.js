@@ -58,8 +58,11 @@ const NoticeDetailPage = {
         document.getElementById('noticeDetailCrtDtm').textContent = data.crtDtm || '-';
         document.getElementById('noticeDetailMeta').textContent = `운영 공지 #${data.noticeNo}`;
         document.getElementById('noticeDetailSummary').textContent = `${data.displayStatus} · ${data.isPinned === 'Y' ? '고정 공지' : '일반 공지'}`;
-        document.getElementById('btnNoticeDetailHistory').href = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const historyPath = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        document.getElementById('btnNoticeDetailHistory').href = historyPath;
+        document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
         document.getElementById('btnNoticeDetailLog').href = data.activityLogPath;
+        this.renderRecentHistories(data.recentHistories || []);
 
         const metaEl = document.getElementById('noticeDetailStateMeta');
         if (metaEl) {
@@ -74,10 +77,59 @@ const NoticeDetailPage = {
         document.getElementById('noticeDetailTitle').textContent = message;
         document.getElementById('noticeDetailMeta').textContent = '상세 확인 불가';
         document.getElementById('noticeDetailSummary').textContent = '운영 공지 상세 조회에 실패했습니다.';
+        const historyList = document.getElementById('noticeDetailRecentHistoryList');
+        if (historyList) {
+            historyList.innerHTML = `<div class="text-danger small">${this.escapeHtml(message)}</div>`;
+        }
         const metaEl = document.getElementById('noticeDetailStateMeta');
         if (metaEl) {
             metaEl.dataset.detailState = 'error';
             metaEl.dataset.stateMessage = message;
+        }
+        const historyMetaEl = document.getElementById('noticeDetailHistoryStateMeta');
+        if (historyMetaEl) {
+            historyMetaEl.dataset.listState = 'error';
+            historyMetaEl.dataset.stateMessage = message;
+            historyMetaEl.dataset.visibleCount = '0';
+        }
+    },
+
+    renderRecentHistories(items) {
+        const listEl = document.getElementById('noticeDetailRecentHistoryList');
+        const metaEl = document.getElementById('noticeDetailHistoryStateMeta');
+        if (!listEl) {
+            return;
+        }
+
+        if (!items.length) {
+            listEl.innerHTML = '<div class="text-muted small">최근 이력이 없습니다.</div>';
+            if (metaEl) {
+                metaEl.dataset.listState = 'empty';
+                metaEl.dataset.stateMessage = '최근 이력이 없습니다.';
+                metaEl.dataset.visibleCount = '0';
+            }
+            return;
+        }
+
+        listEl.innerHTML = items.map((item) => `
+            <div class="list-group-item px-0">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="fw-semibold">${this.escapeHtml(item.actionLabel)}</div>
+                        <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-dark" href="${item.activityLogPath}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        if (metaEl) {
+            metaEl.dataset.listState = 'ready';
+            metaEl.dataset.stateMessage = '';
+            metaEl.dataset.visibleCount = String(items.length);
         }
     },
 

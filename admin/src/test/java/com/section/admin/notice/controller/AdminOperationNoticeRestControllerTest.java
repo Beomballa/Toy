@@ -3,6 +3,7 @@ package com.section.admin.notice.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
+import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.res.AdminOperationNoticeHistoryListResponse;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.service.AdminOperationNoticeHistoryService;
@@ -79,14 +80,29 @@ class AdminOperationNoticeRestControllerTest {
     @Test
     @DisplayName("운영 공지 상세 API는 단건 응답을 반환한다")
     void getDetailReturnsItem() throws Exception {
-        when(adminOperationNoticeService.getNotice(1L))
-                .thenReturn(com.section.common.system.entity.AdminOperationNotice.builder()
-                        .noticeNo(1L)
-                        .title("점검 공지")
-                        .content("점검 안내")
-                        .isActive("Y")
-                        .isPinned("Y")
-                        .build());
+        when(adminOperationNoticeService.getNoticeDetail(1L))
+                .thenReturn(new AdminOperationNoticeDetailResponse(
+                        1L,
+                        "점검 공지",
+                        "점검 안내",
+                        "Y",
+                        "Y",
+                        "노출중",
+                        "-",
+                        "-",
+                        "2026-05-21 10:00",
+                        "/admin/settings/notices/history?noticeNo=1",
+                        "/admin/settings/logs?actionType=NOTICE_&targetId=1",
+                        List.of(new AdminOperationNoticeDetailResponse.RecentHistory(
+                                5L,
+                                "NOTICE_UPDATE",
+                                "공지 수정",
+                                "운영자",
+                                "2026-05-21 12:00",
+                                "/admin/settings/logs?actionType=NOTICE_UPDATE&targetId=1",
+                                "/admin/settings/notices/history?noticeNo=1"
+                        ))
+                ));
 
         mockMvc.perform(get("/api/admin/settings/notices/1"))
                 .andExpect(status().isOk())
@@ -95,7 +111,8 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.isActive").value("Y"))
                 .andExpect(jsonPath("$.displayStatus").isNotEmpty())
                 .andExpect(jsonPath("$.historyPath").value("/admin/settings/notices/history?noticeNo=1"))
-                .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
+                .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"))
+                .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("공지 수정"));
     }
 
     @Test

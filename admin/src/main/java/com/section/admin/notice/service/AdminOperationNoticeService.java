@@ -1,9 +1,12 @@
 package com.section.admin.notice.service;
 
+import com.section.admin.log.req.AdminLogListRequest;
+import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
+import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -12,8 +15,8 @@ import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +44,17 @@ public class AdminOperationNoticeService {
     public AdminOperationNotice getNotice(Long noticeNo) {
         return adminOperationNoticeRepository.findById(noticeNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    public AdminOperationNoticeDetailResponse getNoticeDetail(Long noticeNo) {
+        AdminOperationNotice notice = getNotice(noticeNo);
+
+        AdminLogListRequest request = new AdminLogListRequest();
+        request.setTargetId(noticeNo);
+        request.setActionType("NOTICE_");
+        AdminLogListResponse recentLogs = adminLogService.getLogList(request, PageRequest.of(0, 5));
+
+        return AdminOperationNoticeDetailResponse.from(notice, recentLogs.items());
     }
 
     @Transactional

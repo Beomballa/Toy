@@ -92,7 +92,10 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.noticeNo").value(1L))
                 .andExpect(jsonPath("$.title").value("점검 공지"))
-                .andExpect(jsonPath("$.isActive").value("Y"));
+                .andExpect(jsonPath("$.isActive").value("Y"))
+                .andExpect(jsonPath("$.displayStatus").isNotEmpty())
+                .andExpect(jsonPath("$.historyPath").value("/admin/settings/notices/history?noticeNo=1"))
+                .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
     }
 
     @Test

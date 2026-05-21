@@ -176,7 +176,7 @@ const NoticeList = {
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <span class="fw-bold text-dark">${this.escapeHtml(item.title)}</span>
+                        <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/notices/get?no=${item.noticeNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.title)}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 520px;">${this.escapeHtml(item.content)}</div>
                 </td>

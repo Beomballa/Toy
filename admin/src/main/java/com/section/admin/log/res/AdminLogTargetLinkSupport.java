@@ -74,7 +74,7 @@ final class AdminLogTargetLinkSupport {
             return "/admin/settings/notices?noticeNo=" + targetId;
         }
         if (actionType.startsWith("TASK_")) {
-            return "/admin/settings/tasks?taskNo=" + targetId;
+            return "/admin/settings/tasks/get?no=" + targetId + "&returnTo=/admin/settings/tasks";
         }
         return null;
     }

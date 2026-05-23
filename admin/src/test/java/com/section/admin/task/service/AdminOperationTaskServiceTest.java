@@ -1,5 +1,7 @@
 package com.section.admin.task.service;
 
+import com.section.admin.log.req.AdminLogListRequest;
+import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
@@ -29,6 +31,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -160,6 +163,16 @@ class AdminOperationTaskServiceTest {
                 .isPinned("Y")
                 .build();
         when(adminOperationTaskRepository.findById(11L)).thenReturn(Optional.of(task));
+        when(adminUserRepository.findById(3L)).thenReturn(Optional.of(
+                AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
+        ));
+        when(adminLogService.getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5))))
+                .thenReturn(new AdminLogListResponse(
+                        List.of(new AdminLogListResponse.Item(9L, 1L, "운영자", "TASK_UPDATE", 11L, "운영 작업 #11", "/admin/settings/tasks/get?no=11&returnTo=/admin/settings/tasks", "127.0.0.1", "2026-05-23 10:00")),
+                        1L, 1, 0, 5, 1L, 1L, "1-1 / 1건 · 1페이지",
+                        new AdminLogListResponse.AppliedQuery(null, "TASK_", 11L, null, null),
+                        new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=TASK_ · 대상=11")
+                ));
 
         var result = adminOperationTaskService.getTaskDetail(11L);
 
@@ -167,5 +180,7 @@ class AdminOperationTaskServiceTest {
         assertEquals("배치 정리", result.title());
         assertEquals("IN_PROGRESS", result.status());
         assertEquals("MEDIUM", result.priority());
+        assertEquals("담당자", result.assigneeAdminName());
+        assertEquals(1, result.recentHistories().size());
     }
 }

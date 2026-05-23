@@ -210,7 +210,7 @@ const TaskList = {
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <span class="fw-bold">${this.escapeHtml(item.title)}</span>
+                        <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/tasks/get?no=${item.taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.title)}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 440px;">${this.escapeHtml(item.description || '-')}</div>
                 </td>

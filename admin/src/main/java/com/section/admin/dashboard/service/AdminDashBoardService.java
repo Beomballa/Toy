@@ -155,7 +155,7 @@ public class AdminDashBoardService {
                 adminNameMap.getOrDefault(task.getAssigneeAdminNo(), "미지정"),
                 buildTaskDueDateLabel(task),
                 "Y".equalsIgnoreCase(task.getIsPinned()),
-                "/admin/settings/tasks?taskNo=" + task.getTaskNo(),
+                "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );
     }

@@ -76,14 +76,18 @@ class AdminOperationTaskRestControllerTest {
     void getDetailReturnsItem() throws Exception {
         when(adminOperationTaskService.getTaskDetail(3L))
                 .thenReturn(new AdminOperationTaskDetailResponse(
-                        3L, "정산 확인", "정산 마감", "TODO", "HIGH", 2L, "2026-05-22", "Y"
+                        3L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-23 10:00",
+                        "/admin/settings/logs?actionType=TASK_&targetId=3",
+                        List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3"))
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.taskNo").value(3L))
                 .andExpect(jsonPath("$.title").value("정산 확인"))
-                .andExpect(jsonPath("$.priority").value("HIGH"));
+                .andExpect(jsonPath("$.priority").value("HIGH"))
+                .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=TASK_&targetId=3"))
+                .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
     }
 
     @Test

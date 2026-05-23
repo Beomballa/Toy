@@ -1,5 +1,7 @@
 package com.section.admin.task.service;
 
+import com.section.admin.log.req.AdminLogListRequest;
+import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
@@ -49,7 +51,15 @@ public class AdminOperationTaskService {
     }
 
     public AdminOperationTaskDetailResponse getTaskDetail(Long taskNo) {
-        return AdminOperationTaskDetailResponse.from(getTask(taskNo));
+        AdminOperationTask task = getTask(taskNo);
+        String assigneeAdminName = resolveAssigneeAdminName(task.getAssigneeAdminNo());
+
+        AdminLogListRequest request = new AdminLogListRequest();
+        request.setTargetId(taskNo);
+        request.setActionType("TASK_");
+        AdminLogListResponse recentLogs = adminLogService.getLogList(request, PageRequest.of(0, 5));
+
+        return AdminOperationTaskDetailResponse.from(task, assigneeAdminName, recentLogs.items());
     }
 
     public List<AdminOperationTaskListResponse.AssigneeOption> getAssigneeOptions() {
@@ -111,6 +121,15 @@ public class AdminOperationTaskService {
     private AdminOperationTask getTask(Long taskNo) {
         return adminOperationTaskRepository.findById(taskNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+    }
+
+    private String resolveAssigneeAdminName(Long assigneeAdminNo) {
+        if (assigneeAdminNo == null) {
+            return "미지정";
+        }
+        return adminUserRepository.findById(assigneeAdminNo)
+                .map(AdminUser::getName)
+                .orElse("관리자#" + assigneeAdminNo);
     }
 
     private String normalizeRequiredText(String value, int maxLength) {

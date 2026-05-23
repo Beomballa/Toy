@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>운영 작업 상세 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings">시스템 설정</a></li>
+                <li class="breadcrumb-item"><a id="taskDetailBreadcrumbLink" th:href="${returnTo}">운영 작업</a></li>
+                <li class="breadcrumb-item active">운영 작업 상세</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <h1 class="page-title">운영 작업 상세</h1>
+                <div class="small text-muted" id="taskDetailSummary">운영 작업 정보를 불러오는 중입니다.</div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary" id="btnTaskDetailEdit">수정</button>
+                <button type="button" class="btn btn-outline-dark" id="btnTaskDetailToggleStatus">상태 변경</button>
+                <button type="button" class="btn btn-outline-danger" id="btnTaskDetailDelete">삭제</button>
+                <a class="btn btn-outline-secondary" id="btnTaskDetailLog" href="#">활동 로그</a>
+                <button type="button" class="btn btn-outline-secondary" id="btnBackToTaskList">이전 화면</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card animate-in">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">운영 작업 정보</h6>
+            <div class="small text-muted" id="taskDetailMeta">데이터를 불러오는 중입니다...</div>
+        </div>
+        <div class="card-body">
+            <div id="taskDetailStateMeta"
+                 data-detail-state="loading"
+                 data-state-message="운영 작업 정보를 불러오는 중입니다."
+                 data-task-no=""
+                 data-status=""></div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-8">
+                    <label class="form-label fw-bold text-muted small">작업 제목</label>
+                    <div class="fs-4 fw-bold" id="taskDetailTitle">-</div>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <label class="form-label fw-bold text-muted small">상태</label>
+                    <div id="taskDetailStatus">-</div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-muted small">우선순위</label>
+                    <div id="taskDetailPriority">-</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-muted small">담당자</label>
+                    <div id="taskDetailAssignee">-</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-muted small">기한</label>
+                    <div id="taskDetailDueDate">-</div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-muted small">기한 상태</label>
+                    <div id="taskDetailDueState">-</div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-bold text-muted small">작업 설명</label>
+                <div class="border rounded-3 p-4 bg-light-subtle" id="taskDetailDescription">-</div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">고정 여부</label>
+                    <div id="taskDetailPinned">-</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">등록 일시</label>
+                    <div id="taskDetailCrtDtm">-</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold text-muted small">작업 번호</label>
+                    <div id="taskDetailTaskNo">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card animate-in mt-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">최근 로그</h6>
+            <a class="btn btn-sm btn-outline-secondary" id="btnTaskDetailLogsMore" href="#">전체 로그 보기</a>
+        </div>
+        <div class="card-body">
+            <div id="taskDetailHistoryStateMeta"
+                 data-list-state="loading"
+                 data-visible-count="0"
+                 data-state-message="최근 로그를 불러오는 중입니다."></div>
+            <div class="list-group list-group-flush" id="taskDetailRecentHistoryList">
+                <div class="text-muted small">최근 로그를 불러오는 중입니다.</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal fade" id="taskDetailEditModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">운영 작업 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="taskDetailEditForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">작업 제목</label>
+                        <input type="text" id="taskDetailEditTitle" class="form-control" maxlength="200" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">작업 설명</label>
+                        <textarea id="taskDetailEditDescription" class="form-control" rows="5" maxlength="5000"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">상태</label>
+                            <select id="taskDetailEditStatus" class="form-select">
+                                <option value="TODO">대기</option>
+                                <option value="IN_PROGRESS">진행중</option>
+                                <option value="DONE">완료</option>
+                                <option value="HOLD">보류</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">우선순위</label>
+                            <select id="taskDetailEditPriority" class="form-select">
+                                <option value="HIGH">높음</option>
+                                <option value="MEDIUM">보통</option>
+                                <option value="LOW">낮음</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">담당자</label>
+                            <select id="taskDetailEditAssignee" class="form-select">
+                                <option value="">미지정</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">기한</label>
+                            <input type="date" id="taskDetailEditDueDate" class="form-control">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label fw-bold">고정 여부</label>
+                            <select id="taskDetailEditPinned" class="form-select">
+                                <option value="N">일반</option>
+                                <option value="Y">고정</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" id="btnTaskDetailSave">저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script th:inline="javascript">
+    window.taskDetailBootstrap = {
+        taskNo: [[${taskNo}]],
+        returnTo: [[${returnTo}]]
+    };
+</script>
+<script src="/js/common.js"></script>
+<script src="/js/view/task-get.js"></script>
+</body>
+</html>

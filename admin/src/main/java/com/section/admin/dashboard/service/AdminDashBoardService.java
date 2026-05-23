@@ -156,6 +156,7 @@ public class AdminDashBoardService {
                 buildTaskDueDateLabel(task),
                 "Y".equalsIgnoreCase(task.getIsPinned()),
                 "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
+                "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );
     }

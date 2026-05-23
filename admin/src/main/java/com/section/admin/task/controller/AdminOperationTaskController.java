@@ -15,6 +15,11 @@ public class AdminOperationTaskController {
         return "views/task-list";
     }
 
+    @GetMapping("/history")
+    public String taskHistory() {
+        return "views/task-history";
+    }
+
     @GetMapping("/get")
     public String taskDetail(@RequestParam("no") Long taskNo,
                              @RequestParam(value = "returnTo", required = false) String returnTo,

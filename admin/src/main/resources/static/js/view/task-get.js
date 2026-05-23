@@ -87,7 +87,10 @@ const TaskDetailPage = {
         document.getElementById('taskDetailTaskNo').textContent = data.taskNo || '-';
         document.getElementById('taskDetailMeta').textContent = `운영 작업 #${data.taskNo}`;
         document.getElementById('taskDetailSummary').textContent = `${data.statusLabel} · ${data.priorityLabel} · 담당자 ${data.assigneeAdminName || '미지정'}`;
+        const historyPath = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        document.getElementById('btnTaskDetailHistory').href = historyPath;
         document.getElementById('btnTaskDetailLog').href = data.activityLogPath;
+        document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
         document.getElementById('btnTaskDetailLogsMore').href = data.activityLogPath;
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
         this.renderRecentHistories(data.recentHistories || []);
@@ -227,7 +230,10 @@ const TaskDetailPage = {
                         <div class="fw-semibold">${this.escapeHtml(item.actionLabel)}</div>
                         <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
                     </div>
-                    <a class="btn btn-sm btn-outline-secondary" href="${item.activityLogPath}">활동 로그</a>
+                    <div class="d-flex gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.activityLogPath}">활동 로그</a>
+                    </div>
                 </div>
             </div>
         `).join('');

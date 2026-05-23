@@ -2,10 +2,14 @@ package com.section.admin.task.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.settings.service.AdminOperationPolicyService;
+import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
+import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 public class AdminOperationTaskRestController {
 
     private final AdminOperationTaskService adminOperationTaskService;
+    private final AdminOperationTaskHistoryService adminOperationTaskHistoryService;
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
@@ -28,6 +33,15 @@ public class AdminOperationTaskRestController {
     @GetMapping("/{no}")
     public ResponseEntity<AdminOperationTaskDetailResponse> getDetail(@PathVariable("no") Long taskNo) {
         return ResponseEntity.ok(adminOperationTaskService.getTaskDetail(taskNo));
+    }
+
+    @GetMapping("/history/list")
+    public ResponseEntity<AdminOperationTaskHistoryListResponse> getHistoryList(
+            @ModelAttribute AdminOperationTaskHistoryListRequest req,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size
+    ) {
+        return ResponseEntity.ok(adminOperationTaskHistoryService.getTaskHistoryList(req, page, size));
     }
 
     @PostMapping("/save")
@@ -49,5 +63,11 @@ public class AdminOperationTaskRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOperationTaskService.deleteTask(taskNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-operate")
+    public ResponseEntity<AdminOperationTaskService.BulkOperateResult> bulkOperate(@RequestBody AdminOperationTaskBulkOperateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationTaskService.bulkOperate(req));
     }
 }

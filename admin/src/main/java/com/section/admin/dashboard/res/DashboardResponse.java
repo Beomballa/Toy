@@ -71,6 +71,7 @@ public record DashboardResponse(
             String dueDateLabel,
             boolean pinned,
             String targetPath,
+            String historyPath,
             String activityLogPath
     ) {}
 

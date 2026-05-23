@@ -3,6 +3,7 @@ package com.section.admin.task.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
@@ -118,6 +119,58 @@ public class AdminOperationTaskService {
         adminLogService.recordCurrentAdminLog("TASK_DELETE", taskNo);
     }
 
+    @Transactional
+    public BulkOperateResult bulkOperate(AdminOperationTaskBulkOperateRequest req) {
+        req.validateOperation();
+        List<Long> targetTaskNos = req.normalizedTaskNos();
+        String normalizedStatus = req.normalizedStatus();
+        String normalizedPriority = req.normalizedPriority();
+        Long normalizedAssigneeAdminNo = req.normalizedAssigneeAdminNo() == null ? null : normalizeAssigneeAdminNo(req.normalizedAssigneeAdminNo());
+        String normalizedPinned = req.normalizedIsPinned();
+
+        List<AdminOperationTask> tasks = adminOperationTaskRepository.findAllById(targetTaskNos);
+        if (tasks.isEmpty()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        for (AdminOperationTask task : tasks) {
+            boolean changed = false;
+            if (normalizedStatus != null && !normalizedStatus.equalsIgnoreCase(task.getStatus())) {
+                changed = true;
+            }
+            if (normalizedPriority != null && !normalizedPriority.equalsIgnoreCase(task.getPriority())) {
+                changed = true;
+            }
+            if (normalizedPinned != null && !normalizedPinned.equalsIgnoreCase(task.getIsPinned())) {
+                changed = true;
+            }
+            if (req.normalizedAssigneeAdminNo() != null && !java.util.Objects.equals(normalizedAssigneeAdminNo, task.getAssigneeAdminNo())) {
+                changed = true;
+            }
+
+            if (!changed) {
+                unchangedCount += 1;
+                continue;
+            }
+
+            task.update(
+                    task.getTitle(),
+                    task.getDescription(),
+                    normalizedStatus == null ? task.getStatus() : normalizedStatus,
+                    normalizedPriority == null ? task.getPriority() : normalizedPriority,
+                    req.normalizedAssigneeAdminNo() == null ? task.getAssigneeAdminNo() : normalizedAssigneeAdminNo,
+                    task.getDueDate(),
+                    normalizedPinned == null ? task.getIsPinned() : normalizedPinned
+            );
+            adminLogService.recordCurrentAdminLog("TASK_BULK_UPDATE", task.getTaskNo());
+            updatedCount += 1;
+        }
+
+        return new BulkOperateResult(targetTaskNos.size(), updatedCount, unchangedCount);
+    }
+
     private AdminOperationTask getTask(Long taskNo) {
         return adminOperationTaskRepository.findById(taskNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
@@ -185,5 +238,12 @@ public class AdminOperationTaskService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized;
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount
+    ) {
     }
 }

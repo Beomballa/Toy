@@ -23,6 +23,7 @@ public record AdminOperationTaskDetailResponse(
         String dueState,
         String isPinned,
         String crtDtm,
+        String historyPath,
         String activityLogPath,
         List<RecentHistory> recentHistories
 ) {
@@ -43,6 +44,7 @@ public record AdminOperationTaskDetailResponse(
                 resolveDueState(task),
                 task.getIsPinned(),
                 format(task.getCrtDtm()),
+                "/admin/settings/tasks/history?taskNo=" + task.getTaskNo(),
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo(),
                 recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList()
         );
@@ -54,7 +56,8 @@ public record AdminOperationTaskDetailResponse(
             String actionLabel,
             String adminName,
             String actionDtm,
-            String activityLogPath
+            String activityLogPath,
+            String historyPath
     ) {
         public static RecentHistory from(AdminLogListResponse.Item item) {
             return new RecentHistory(
@@ -63,7 +66,8 @@ public record AdminOperationTaskDetailResponse(
                     resolveActionLabel(item.actionType()),
                     item.adminName(),
                     item.actionDtm(),
-                    "/admin/settings/logs?actionType=" + item.actionType() + "&targetId=" + item.targetId()
+                    "/admin/settings/logs?actionType=" + item.actionType() + "&targetId=" + item.targetId(),
+                    "/admin/settings/tasks/history?taskNo=" + item.targetId()
             );
         }
 
@@ -72,6 +76,7 @@ public record AdminOperationTaskDetailResponse(
                 case "TASK_CREATE" -> "작업 생성";
                 case "TASK_UPDATE" -> "작업 수정";
                 case "TASK_STATUS_UPDATE" -> "상태 변경";
+                case "TASK_BULK_UPDATE" -> "일괄 변경";
                 case "TASK_DELETE" -> "작업 삭제";
                 default -> actionType == null ? "-" : actionType;
             };

@@ -18,6 +18,12 @@ class AdminOperationTaskControllerTest {
     }
 
     @Test
+    @DisplayName("운영 작업 이력 화면은 전용 뷰를 반환한다")
+    void taskHistoryReturnsView() {
+        assertEquals("views/task-history", controller.taskHistory());
+    }
+
+    @Test
     @DisplayName("운영 작업 상세 화면은 작업 번호와 복귀 경로를 모델에 담는다")
     void taskDetailReturnsViewWithModel() {
         Model model = new ExtendedModelMap();

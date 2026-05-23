@@ -103,6 +103,7 @@ class AdminDashBoardServiceTest {
         assertEquals(1, response.operationTasks().size());
         assertEquals("배치 점검", response.operationTasks().get(0).title());
         assertEquals("/admin/settings/tasks/get?no=30&returnTo=/admin/dashboard", response.operationTasks().get(0).targetPath());
+        assertEquals("/admin/settings/tasks/history?taskNo=30&returnTo=/admin/dashboard", response.operationTasks().get(0).historyPath());
         assertEquals("관리자A", response.operationTasks().get(0).assigneeName());
         assertEquals(2, response.topBrands().size());
         assertEquals("나이키", response.topBrands().get(0).label());

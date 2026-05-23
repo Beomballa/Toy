@@ -3,6 +3,7 @@ package com.section.admin.task.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
@@ -181,6 +182,42 @@ class AdminOperationTaskServiceTest {
         assertEquals("IN_PROGRESS", result.status());
         assertEquals("MEDIUM", result.priority());
         assertEquals("담당자", result.assigneeAdminName());
+        assertEquals("/admin/settings/tasks/history?taskNo=11", result.historyPath());
         assertEquals(1, result.recentHistories().size());
+        assertEquals("/admin/settings/tasks/history?taskNo=11", result.recentHistories().get(0).historyPath());
+    }
+
+    @Test
+    @DisplayName("운영 작업 일괄 변경은 실제 변경 건만 로그를 남긴다")
+    void bulkOperateUpdatesChangedTasksOnly() {
+        AdminOperationTask changedTask = AdminOperationTask.builder()
+                .taskNo(21L)
+                .title("배치 점검")
+                .description("설명")
+                .status("TODO")
+                .priority("HIGH")
+                .assigneeAdminNo(null)
+                .isPinned("N")
+                .build();
+        AdminOperationTask unchangedTask = AdminOperationTask.builder()
+                .taskNo(22L)
+                .title("공지 점검")
+                .description("설명")
+                .status("DONE")
+                .priority("HIGH")
+                .assigneeAdminNo(null)
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findAllById(List.of(21L, 22L))).thenReturn(List.of(changedTask, unchangedTask));
+
+        var result = adminOperationTaskService.bulkOperate(
+                new AdminOperationTaskBulkOperateRequest(List.of(21L, 22L), "DONE", null, null, null)
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        assertEquals("DONE", changedTask.getStatus());
+        verify(adminLogService).recordCurrentAdminLog("TASK_BULK_UPDATE", 21L);
     }
 }

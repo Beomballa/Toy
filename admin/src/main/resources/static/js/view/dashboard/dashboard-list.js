@@ -101,6 +101,7 @@ const DashBoardListJS = {
                     </div>
                     <div class="d-flex flex-column gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">관리</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
                     </div>
                 </div>

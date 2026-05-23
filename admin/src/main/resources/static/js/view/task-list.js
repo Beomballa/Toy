@@ -2,6 +2,7 @@ const TaskList = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    selectedTaskNos: new Set(),
     state: {
         page: 0,
         size: 10,
@@ -34,6 +35,7 @@ const TaskList = {
             const reason = CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정');
             CommonJS.setButtonDisabled(document.getElementById('btnNewTask'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveTask'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyTaskBulk'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -44,6 +46,9 @@ const TaskList = {
         document.getElementById('btnSaveTask')?.addEventListener('click', () => this.saveTask());
         document.getElementById('btnSearchTask')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetTask')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnApplyTaskBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnClearTaskSelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('taskSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         document.getElementById('taskPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
             this.updateStateFromInputs();
@@ -61,6 +66,11 @@ const TaskList = {
         document.getElementById('taskStatProgressCard')?.addEventListener('click', () => this.applyStatFilter('IN_PROGRESS'));
         document.getElementById('taskStatOverdueCard')?.addEventListener('click', () => this.applyStatFilter('overdue'));
         document.getElementById('taskListBody')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-task"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.taskNo), checkbox.checked);
+                return;
+            }
             const editButton = event.target.closest('[data-role="edit-task"]');
             if (editButton) {
                 this.openEditModal(JSON.parse(editButton.dataset.task));
@@ -177,7 +187,8 @@ const TaskList = {
     renderAssigneeOptions(options) {
         const filters = document.getElementById('taskAssigneeFilter');
         const form = document.getElementById('taskAssignee');
-        if (!filters || !form) return;
+        const bulkAssignee = document.getElementById('bulkTaskAssignee');
+        if (!filters || !form || !bulkAssignee) return;
 
         const selectedFilter = this.state.assigneeAdminNo || '';
         const selectedForm = form.value || '';
@@ -192,20 +203,30 @@ const TaskList = {
             .join('');
         form.innerHTML = formOptionHtml;
         form.value = selectedForm;
+        const selectedBulk = bulkAssignee.value || '';
+        bulkAssignee.innerHTML = ['<option value="">변경 안 함</option>']
+            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .join('');
+        bulkAssignee.value = selectedBulk;
     },
 
     renderList(items) {
         const tbody = document.getElementById('taskListBody');
         if (!tbody) return;
+        const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 운영 작업이 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">등록된 운영 작업이 없습니다.</td></tr>';
             this.setListStateMeta('empty', '등록된 운영 작업이 없습니다.', 0, 0, '');
+            this.updateSelectionMeta([]);
             return;
         }
 
         tbody.innerHTML = items.map((item) => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox" data-role="select-task" data-task-no="${item.taskNo}" ${this.selectedTaskNos.has(item.taskNo) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4 text-muted small">${item.taskNo}</td>
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
@@ -227,6 +248,7 @@ const TaskList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.historyPath}&returnTo=${currentPath}">${item.historyLabel}</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath}">${item.activityLogLabel}</a>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">상태</button>
@@ -240,6 +262,7 @@ const TaskList = {
         `).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
+        this.updateSelectionMeta(items);
     },
 
     renderStatusMenu(item) {
@@ -425,6 +448,127 @@ const TaskList = {
         }
     },
 
+    async applyBulkOperation() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 일괄 변경'), '알림', 'warning');
+            return;
+        }
+        if (this.selectedTaskNos.size === 0) {
+            await CommonJS.alert('선택된 운영 작업이 없습니다.', '알림', 'warning');
+            return;
+        }
+
+        const payload = {
+            taskNos: Array.from(this.selectedTaskNos),
+            status: document.getElementById('bulkTaskStatus')?.value || null,
+            priority: document.getElementById('bulkTaskPriority')?.value || null,
+            assigneeAdminNo: this.parseOptionalNumber(document.getElementById('bulkTaskAssignee')?.value),
+            isPinned: document.getElementById('bulkTaskPinned')?.value || null
+        };
+
+        if (!payload.status && !payload.priority && !payload.assigneeAdminNo && !payload.isPinned) {
+            await CommonJS.alert('일괄 변경할 항목을 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/settings/tasks/bulk-operate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 일괄 변경에 실패했습니다.'));
+            }
+
+            const result = await response.json();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 · 변경 ${result.updatedCount}건 · 유지 ${result.unchangedCount}건`, '일괄 변경 결과', 'success');
+            if (result.updatedCount > 0) {
+                this.clearSelection(false);
+            }
+            this.getList();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    toggleSelection(taskNo, checked) {
+        if (checked) {
+            this.selectedTaskNos.add(taskNo);
+        } else {
+            this.selectedTaskNos.delete(taskNo);
+        }
+        this.updateSelectionMetaFromDom();
+    },
+
+    toggleSelectCurrentPage(checked) {
+        const currentPageItems = this.getCurrentPageTaskNos();
+        currentPageItems.forEach((taskNo) => {
+            if (checked) {
+                this.selectedTaskNos.add(taskNo);
+            } else {
+                this.selectedTaskNos.delete(taskNo);
+            }
+        });
+        document.querySelectorAll('[data-role="select-task"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        this.updateSelectionMetaFromDom();
+    },
+
+    clearSelection(reload = true) {
+        this.selectedTaskNos.clear();
+        document.querySelectorAll('[data-role="select-task"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        const selectPage = document.getElementById('taskSelectPage');
+        if (selectPage) {
+            selectPage.checked = false;
+            selectPage.indeterminate = false;
+        }
+        this.updateSelectionMetaFromDom();
+        if (reload) {
+            document.getElementById('bulkTaskStatus').value = '';
+            document.getElementById('bulkTaskPriority').value = '';
+            document.getElementById('bulkTaskAssignee').value = '';
+            document.getElementById('bulkTaskPinned').value = '';
+        }
+    },
+
+    updateSelectionMeta(items) {
+        const selectionMeta = document.getElementById('taskSelectionMeta');
+        const selectedCount = this.selectedTaskNos.size;
+        const currentPageSelectedCount = (items || []).filter((item) => this.selectedTaskNos.has(item.taskNo)).length;
+        const selectPage = document.getElementById('taskSelectPage');
+        if (selectPage && items && items.length > 0) {
+            selectPage.checked = currentPageSelectedCount === items.length;
+            selectPage.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < items.length;
+        } else if (selectPage) {
+            selectPage.checked = false;
+            selectPage.indeterminate = false;
+        }
+
+        if (selectionMeta) {
+            if (selectedCount === 0) {
+                selectionMeta.textContent = '선택된 작업이 없습니다.';
+            } else {
+                selectionMeta.textContent = `선택 ${selectedCount}건 · 현재 페이지 ${currentPageSelectedCount}건`;
+            }
+        }
+    },
+
+    updateSelectionMetaFromDom() {
+        const items = Array.from(document.querySelectorAll('[data-role="select-task"]')).map((checkbox) => ({
+            taskNo: Number(checkbox.dataset.taskNo)
+        }));
+        this.updateSelectionMeta(items);
+    },
+
+    getCurrentPageTaskNos() {
+        return Array.from(document.querySelectorAll('[data-role="select-task"]'))
+            .map((checkbox) => Number(checkbox.dataset.taskNo));
+    },
+
     applyStatFilter(type) {
         this.state.page = 0;
         if (type === 'total') {
@@ -463,6 +607,7 @@ const TaskList = {
         this.state.assigneeAdminNo = '';
         this.state.overdueOnly = '';
         this.state.taskNo = '';
+        this.clearSelection(false);
         this.getList();
     },
 

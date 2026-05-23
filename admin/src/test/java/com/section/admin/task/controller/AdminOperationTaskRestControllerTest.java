@@ -3,9 +3,12 @@ package com.section.admin.task.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
+import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
+import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -35,6 +38,8 @@ class AdminOperationTaskRestControllerTest {
     @Mock
     private AdminOperationTaskService adminOperationTaskService;
     @Mock
+    private AdminOperationTaskHistoryService adminOperationTaskHistoryService;
+    @Mock
     private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
@@ -42,7 +47,7 @@ class AdminOperationTaskRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationTaskRestController(adminOperationTaskService, adminOperationPolicyService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationTaskRestController(adminOperationTaskService, adminOperationTaskHistoryService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -52,7 +57,7 @@ class AdminOperationTaskRestControllerTest {
     void getListReturnsPagedResponse() throws Exception {
         when(adminOperationTaskService.getTaskList(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminOperationTaskListResponse(
-                        List.of(new AdminOperationTaskListResponse.Item(1L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-21 10:00", "/admin/settings/logs?actionType=TASK_&targetId=1", "활동 로그")),
+                        List.of(new AdminOperationTaskListResponse.Item(1L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-21 10:00", "/admin/settings/tasks/history?taskNo=1", "이력", "/admin/settings/logs?actionType=TASK_&targetId=1", "활동 로그")),
                         0,
                         1,
                         1L,
@@ -66,6 +71,7 @@ class AdminOperationTaskRestControllerTest {
         mockMvc.perform(get("/api/admin/settings/tasks/list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("정산 확인"))
+                .andExpect(jsonPath("$.items[0].historyPath").value("/admin/settings/tasks/history?taskNo=1"))
                 .andExpect(jsonPath("$.taskStats.todoCount").value(2L))
                 .andExpect(jsonPath("$.assigneeOptions[0].name").value("운영자"))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
@@ -77,8 +83,9 @@ class AdminOperationTaskRestControllerTest {
         when(adminOperationTaskService.getTaskDetail(3L))
                 .thenReturn(new AdminOperationTaskDetailResponse(
                         3L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-23 10:00",
+                        "/admin/settings/tasks/history?taskNo=3",
                         "/admin/settings/logs?actionType=TASK_&targetId=3",
-                        List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3"))
+                        List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3", "/admin/settings/tasks/history?taskNo=3"))
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/3"))
@@ -86,8 +93,33 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.taskNo").value(3L))
                 .andExpect(jsonPath("$.title").value("정산 확인"))
                 .andExpect(jsonPath("$.priority").value("HIGH"))
+                .andExpect(jsonPath("$.historyPath").value("/admin/settings/tasks/history?taskNo=3"))
                 .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=TASK_&targetId=3"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
+    }
+
+    @Test
+    @DisplayName("운영 작업 이력 API는 전용 페이지 응답을 반환한다")
+    void getHistoryListReturnsPagedResponse() throws Exception {
+        when(adminOperationTaskHistoryService.getTaskHistoryList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationTaskHistoryListResponse(
+                        List.of(new AdminOperationTaskHistoryListResponse.Item(5L, 3L, "운영 작업 #3", "/admin/settings/tasks/get?no=3&returnTo=%2Fadmin%2Fsettings%2Ftasks", "TASK_STATUS_UPDATE", "상태 변경", 2L, "운영자", "127.0.0.1", "2026-05-23 12:00", "/api/admin/logs/get?no=5")),
+                        1L,
+                        1,
+                        0,
+                        20,
+                        1L,
+                        1L,
+                        "1-1 / 1건 · 1페이지",
+                        new AdminOperationTaskHistoryListResponse.AppliedQuery(3L, "TASK_STATUS_UPDATE", 2L, "2026-05-23", "2026-05-23", "/admin/settings/tasks"),
+                        new AdminOperationTaskHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 4, "1-1 · 작업=TASK_STATUS_UPDATE")
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/tasks/history/list").param("taskNo", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].taskNo").value(3L))
+                .andExpect(jsonPath("$.items[0].actionLabel").value("상태 변경"))
+                .andExpect(jsonPath("$.resultMeta.filterCount").value(4));
     }
 
     @Test
@@ -119,5 +151,20 @@ class AdminOperationTaskRestControllerTest {
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/settings/tasks/delete").param("no", "3"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("운영 작업 일괄 변경 API는 결과 응답을 반환한다")
+    void bulkOperateReturnsResult() throws Exception {
+        when(adminOperationTaskService.bulkOperate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationTaskService.BulkOperateResult(3, 2, 1));
+
+        mockMvc.perform(post("/api/admin/settings/tasks/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkOperateRequest(List.of(1L, 2L, 3L), "DONE", null, null, null))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.updatedCount").value(2))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
     }
 }

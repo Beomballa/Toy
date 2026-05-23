@@ -121,6 +121,53 @@
         </div>
     </div>
 
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <div class="small text-muted" id="taskSelectionMeta">선택된 작업이 없습니다.</div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">일괄 상태 변경</label>
+                    <select id="bulkTaskStatus" class="form-select">
+                        <option value="">변경 안 함</option>
+                        <option value="TODO">대기</option>
+                        <option value="IN_PROGRESS">진행중</option>
+                        <option value="DONE">완료</option>
+                        <option value="HOLD">보류</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">일괄 우선순위 변경</label>
+                    <select id="bulkTaskPriority" class="form-select">
+                        <option value="">변경 안 함</option>
+                        <option value="HIGH">높음</option>
+                        <option value="MEDIUM">보통</option>
+                        <option value="LOW">낮음</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">일괄 담당자 변경</label>
+                    <select id="bulkTaskAssignee" class="form-select">
+                        <option value="">변경 안 함</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label fw-bold">일괄 고정 변경</label>
+                    <select id="bulkTaskPinned" class="form-select">
+                        <option value="">변경 안 함</option>
+                        <option value="Y">고정</option>
+                        <option value="N">일반</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-grid gap-2">
+                    <button type="button" class="btn btn-outline-dark" id="btnApplyTaskBulk">일괄 적용</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnClearTaskSelection">선택 해제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">운영 작업 목록</h6>
@@ -145,17 +192,20 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                     <tr>
+                        <th class="ps-4 table-col-80">
+                            <input type="checkbox" id="taskSelectPage">
+                        </th>
                         <th class="ps-4 table-col-80">No</th>
                         <th>작업</th>
                         <th class="table-col-120">상태</th>
                         <th class="table-col-100">우선순위</th>
                         <th class="table-col-140">담당자</th>
                         <th class="table-col-140">기한</th>
-                        <th class="text-end pe-4 table-col-220">관리</th>
+                        <th class="text-end pe-4 table-col-260">관리</th>
                     </tr>
                     </thead>
                     <tbody id="taskListBody">
-                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr><td colspan="8" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>

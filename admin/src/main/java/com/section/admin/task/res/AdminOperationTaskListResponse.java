@@ -57,6 +57,8 @@ public record AdminOperationTaskListResponse(
             String dueState,
             String isPinned,
             String crtDtm,
+            String historyPath,
+            String historyLabel,
             String activityLogPath,
             String activityLogLabel
     ) {
@@ -75,6 +77,8 @@ public record AdminOperationTaskListResponse(
                     resolveDueState(item, today),
                     item.getIsPinned(),
                     format(item.getCrtDtm()),
+                    "/admin/settings/tasks/history?taskNo=" + item.getTaskNo(),
+                    "이력",
                     AdminLogSourceLinkSupport.resolveTaskLogPath(item.getTaskNo()),
                     "활동 로그"
             );

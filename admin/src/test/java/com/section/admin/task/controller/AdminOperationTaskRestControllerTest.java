@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
@@ -85,7 +86,8 @@ class AdminOperationTaskRestControllerTest {
                         3L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-23 10:00",
                         "/admin/settings/tasks/history?taskNo=3",
                         "/admin/settings/logs?actionType=TASK_&targetId=3",
-                        List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3", "/admin/settings/tasks/history?taskNo=3"))
+                        List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3", "/admin/settings/tasks/history?taskNo=3")),
+                        List.of(new AdminOperationTaskDetailResponse.Comment(14L, 2L, "운영자", "메모", "2026-05-23 11:05"))
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/3"))
@@ -95,7 +97,8 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.priority").value("HIGH"))
                 .andExpect(jsonPath("$.historyPath").value("/admin/settings/tasks/history?taskNo=3"))
                 .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=TASK_&targetId=3"))
-                .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
+                .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"))
+                .andExpect(jsonPath("$.comments[0].content").value("메모"));
     }
 
     @Test
@@ -166,5 +169,22 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.requestedCount").value(3))
                 .andExpect(jsonPath("$.updatedCount").value(2))
                 .andExpect(jsonPath("$.unchangedCount").value(1));
+    }
+
+    @Test
+    @DisplayName("운영 작업 메모 등록 API는 성공 응답을 반환한다")
+    void addCommentReturnsOk() throws Exception {
+        mockMvc.perform(post("/api/admin/settings/tasks/3/comments")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskCommentSaveRequest("메모"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"));
+    }
+
+    @Test
+    @DisplayName("운영 작업 메모 삭제 API는 성공 응답을 반환한다")
+    void deleteCommentReturnsOk() throws Exception {
+        mockMvc.perform(delete("/api/admin/settings/tasks/3/comments/11"))
+                .andExpect(status().isOk());
     }
 }

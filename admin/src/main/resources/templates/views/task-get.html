@@ -121,6 +121,29 @@
             </div>
         </div>
     </div>
+
+    <div class="card animate-in mt-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0">작업 메모</h6>
+            <div class="small text-muted" id="taskCommentMeta">최근 작업 메모를 불러오는 중입니다.</div>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label class="form-label fw-bold">새 메모</label>
+                <textarea id="taskCommentContent" class="form-control" rows="3" maxlength="2000" placeholder="운영 작업에 남길 메모를 입력하세요."></textarea>
+            </div>
+            <div class="d-flex justify-content-end mb-4">
+                <button type="button" class="btn btn-outline-dark" id="btnTaskCommentSave">메모 등록</button>
+            </div>
+            <div id="taskCommentStateMeta"
+                 data-list-state="loading"
+                 data-visible-count="0"
+                 data-state-message="작업 메모를 불러오는 중입니다."></div>
+            <div class="list-group list-group-flush" id="taskCommentList">
+                <div class="text-muted small">작업 메모를 불러오는 중입니다.</div>
+            </div>
+        </div>
+    </div>
 </main>
 
 <div class="modal fade" id="taskDetailEditModal" tabindex="-1" aria-hidden="true">

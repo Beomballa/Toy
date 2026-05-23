@@ -4,6 +4,7 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
@@ -14,8 +15,10 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
+import com.section.common.system.entity.AdminOperationTaskComment;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.repository.AdminOperationTaskCommentRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,7 @@ import java.util.List;
 public class AdminOperationTaskService {
 
     private final AdminOperationTaskRepository adminOperationTaskRepository;
+    private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     private final AdminUserRepository adminUserRepository;
     private final AdminLogService adminLogService;
 
@@ -60,7 +64,12 @@ public class AdminOperationTaskService {
         request.setActionType("TASK_");
         AdminLogListResponse recentLogs = adminLogService.getLogList(request, PageRequest.of(0, 5));
 
-        return AdminOperationTaskDetailResponse.from(task, assigneeAdminName, recentLogs.items());
+        return AdminOperationTaskDetailResponse.from(
+                task,
+                assigneeAdminName,
+                recentLogs.items(),
+                adminOperationTaskCommentRepository.getTaskComments(taskNo, 20)
+        );
     }
 
     public List<AdminOperationTaskListResponse.AssigneeOption> getAssigneeOptions() {
@@ -117,6 +126,29 @@ public class AdminOperationTaskService {
     public void deleteTask(Long taskNo) {
         adminOperationTaskRepository.deleteById(taskNo);
         adminLogService.recordCurrentAdminLog("TASK_DELETE", taskNo);
+    }
+
+    @Transactional
+    public void addComment(Long taskNo, AdminOperationTaskCommentSaveRequest req) {
+        getTask(taskNo);
+        String normalizedContent = normalizeCommentText(req.content(), 2000);
+        adminOperationTaskCommentRepository.save(AdminOperationTaskComment.builder()
+                .taskNo(taskNo)
+                .content(normalizedContent)
+                .build());
+        adminLogService.recordCurrentAdminLog("TASK_COMMENT_CREATE", taskNo);
+    }
+
+    @Transactional
+    public void deleteComment(Long taskNo, Long commentNo) {
+        getTask(taskNo);
+        AdminOperationTaskComment comment = adminOperationTaskCommentRepository.findById(commentNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+        if (!taskNo.equals(comment.getTaskNo())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        adminOperationTaskCommentRepository.delete(comment);
+        adminLogService.recordCurrentAdminLog("TASK_COMMENT_DELETE", taskNo);
     }
 
     @Transactional
@@ -202,6 +234,17 @@ public class AdminOperationTaskService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private String normalizeCommentText(String value, int maxLength) {
+        if (value == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        String normalized = value.replace("\r\n", "\n").trim();
+        if (normalized.isBlank() || normalized.length() > maxLength) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
     }
 
     private String normalizeStatus(String value) {

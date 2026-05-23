@@ -3,6 +3,7 @@ package com.section.admin.task.controller;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
@@ -51,6 +52,14 @@ public class AdminOperationTaskRestController {
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
+    @PostMapping("/{no}/comments")
+    public ResponseEntity<BaseSimpleResDto> addComment(@PathVariable("no") Long taskNo,
+                                                       @Valid @RequestBody AdminOperationTaskCommentSaveRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminOperationTaskService.addComment(taskNo, req);
+        return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
     @PatchMapping("/status/{no}")
     public ResponseEntity<BaseSimpleResDto> updateStatus(@PathVariable("no") Long taskNo, @RequestParam("status") String status) {
         adminOperationPolicyService.assertAdminWriteAllowed();
@@ -62,6 +71,13 @@ public class AdminOperationTaskRestController {
     public ResponseEntity<Void> delete(@RequestParam("no") Long taskNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOperationTaskService.deleteTask(taskNo);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{taskNo}/comments/{commentNo}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long taskNo, @PathVariable Long commentNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminOperationTaskService.deleteComment(taskNo, commentNo);
         return ResponseEntity.ok().build();
     }
 

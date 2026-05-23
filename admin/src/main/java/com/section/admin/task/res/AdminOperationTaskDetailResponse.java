@@ -3,6 +3,7 @@ package com.section.admin.task.res;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.common.base.entity.type.AdminOperationTaskPriority;
 import com.section.common.base.entity.type.AdminOperationTaskStatus;
+import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.entity.AdminOperationTask;
 
 import java.time.LocalDate;
@@ -25,9 +26,15 @@ public record AdminOperationTaskDetailResponse(
         String crtDtm,
         String historyPath,
         String activityLogPath,
-        List<RecentHistory> recentHistories
+        List<RecentHistory> recentHistories,
+        List<Comment> comments
 ) {
-    public static AdminOperationTaskDetailResponse from(AdminOperationTask task, String assigneeAdminName, List<AdminLogListResponse.Item> recentHistories) {
+    public static AdminOperationTaskDetailResponse from(
+            AdminOperationTask task,
+            String assigneeAdminName,
+            List<AdminLogListResponse.Item> recentHistories,
+            List<AdminOperationTaskCommentResDto> comments
+    ) {
         AdminOperationTaskStatus resolvedStatus = AdminOperationTaskStatus.fromCode(task.getStatus());
         AdminOperationTaskPriority resolvedPriority = AdminOperationTaskPriority.fromCode(task.getPriority());
         return new AdminOperationTaskDetailResponse(
@@ -46,7 +53,8 @@ public record AdminOperationTaskDetailResponse(
                 format(task.getCrtDtm()),
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo(),
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo(),
-                recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList()
+                recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList(),
+                comments == null ? List.of() : comments.stream().map(Comment::from).toList()
         );
     }
 
@@ -77,9 +85,29 @@ public record AdminOperationTaskDetailResponse(
                 case "TASK_UPDATE" -> "작업 수정";
                 case "TASK_STATUS_UPDATE" -> "상태 변경";
                 case "TASK_BULK_UPDATE" -> "일괄 변경";
+                case "TASK_COMMENT_CREATE" -> "댓글 등록";
+                case "TASK_COMMENT_DELETE" -> "댓글 삭제";
                 case "TASK_DELETE" -> "작업 삭제";
                 default -> actionType == null ? "-" : actionType;
             };
+        }
+    }
+
+    public record Comment(
+            Long commentNo,
+            Long adminNo,
+            String adminName,
+            String content,
+            String crtDtm
+    ) {
+        public static Comment from(AdminOperationTaskCommentResDto dto) {
+            return new Comment(
+                    dto.getCommentNo(),
+                    dto.getAdminNo(),
+                    dto.getAdminName() == null ? "관리자#" + dto.getAdminNo() : dto.getAdminName(),
+                    dto.getContent(),
+                    format(dto.getCrtDtm())
+            );
         }
     }
 

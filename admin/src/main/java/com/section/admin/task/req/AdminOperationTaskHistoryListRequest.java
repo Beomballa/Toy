@@ -19,6 +19,8 @@ public class AdminOperationTaskHistoryListRequest {
             "TASK_UPDATE",
             "TASK_STATUS_UPDATE",
             "TASK_BULK_UPDATE",
+            "TASK_COMMENT_CREATE",
+            "TASK_COMMENT_DELETE",
             "TASK_DELETE"
     );
 

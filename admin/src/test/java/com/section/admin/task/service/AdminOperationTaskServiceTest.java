@@ -4,15 +4,19 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
+import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
 import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.entity.AdminOperationTaskComment;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.repository.AdminOperationTaskCommentRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -41,6 +45,8 @@ class AdminOperationTaskServiceTest {
 
     @Mock
     private AdminOperationTaskRepository adminOperationTaskRepository;
+    @Mock
+    private AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     @Mock
     private AdminUserRepository adminUserRepository;
     @Mock
@@ -174,6 +180,14 @@ class AdminOperationTaskServiceTest {
                         new AdminLogListResponse.AppliedQuery(null, "TASK_", 11L, null, null),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=TASK_ · 대상=11")
                 ));
+        AdminOperationTaskCommentResDto comment = new AdminOperationTaskCommentResDto();
+        comment.setCommentNo(30L);
+        comment.setTaskNo(11L);
+        comment.setAdminNo(3L);
+        comment.setAdminName("담당자");
+        comment.setContent("우선 확인 필요");
+        comment.setCrtDtm(LocalDateTime.of(2026, 5, 23, 12, 0));
+        when(adminOperationTaskCommentRepository.getTaskComments(11L, 20)).thenReturn(List.of(comment));
 
         var result = adminOperationTaskService.getTaskDetail(11L);
 
@@ -185,6 +199,8 @@ class AdminOperationTaskServiceTest {
         assertEquals("/admin/settings/tasks/history?taskNo=11", result.historyPath());
         assertEquals(1, result.recentHistories().size());
         assertEquals("/admin/settings/tasks/history?taskNo=11", result.recentHistories().get(0).historyPath());
+        assertEquals(1, result.comments().size());
+        assertEquals("우선 확인 필요", result.comments().get(0).content());
     }
 
     @Test
@@ -219,5 +235,49 @@ class AdminOperationTaskServiceTest {
         assertEquals(1, result.unchangedCount());
         assertEquals("DONE", changedTask.getStatus());
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_UPDATE", 21L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 메모 등록은 로그를 남긴다")
+    void addCommentSavesCommentAndRecordsLog() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(31L)
+                .title("공지 작업")
+                .description("설명")
+                .status("TODO")
+                .priority("MEDIUM")
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(31L)).thenReturn(Optional.of(task));
+
+        adminOperationTaskService.addComment(31L, new AdminOperationTaskCommentSaveRequest("  메모 남김  "));
+
+        verify(adminOperationTaskCommentRepository).save(any(AdminOperationTaskComment.class));
+        verify(adminLogService).recordCurrentAdminLog("TASK_COMMENT_CREATE", 31L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 메모 삭제는 같은 작업 메모만 삭제한다")
+    void deleteCommentDeletesMatchingComment() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(32L)
+                .title("배치 점검")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        AdminOperationTaskComment comment = AdminOperationTaskComment.builder()
+                .commentNo(41L)
+                .taskNo(32L)
+                .content("삭제 대상")
+                .build();
+        when(adminOperationTaskRepository.findById(32L)).thenReturn(Optional.of(task));
+        when(adminOperationTaskCommentRepository.findById(41L)).thenReturn(Optional.of(comment));
+
+        adminOperationTaskService.deleteComment(32L, 41L);
+
+        verify(adminOperationTaskCommentRepository).delete(comment);
+        verify(adminLogService).recordCurrentAdminLog("TASK_COMMENT_DELETE", 32L);
     }
 }

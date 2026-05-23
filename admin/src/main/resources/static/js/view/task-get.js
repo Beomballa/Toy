@@ -40,6 +40,13 @@ const TaskDetailPage = {
         document.getElementById('btnTaskDetailSave')?.addEventListener('click', () => this.saveDetail());
         document.getElementById('btnTaskDetailToggleStatus')?.addEventListener('click', () => this.toggleStatus());
         document.getElementById('btnTaskDetailDelete')?.addEventListener('click', () => this.deleteTask());
+        document.getElementById('btnTaskCommentSave')?.addEventListener('click', () => this.saveComment());
+        document.getElementById('taskCommentList')?.addEventListener('click', (event) => {
+            const deleteButton = event.target.closest('[data-role="delete-task-comment"]');
+            if (deleteButton) {
+                this.deleteComment(Number(deleteButton.dataset.commentNo));
+            }
+        });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -51,6 +58,7 @@ const TaskDetailPage = {
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailToggleStatus'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailDelete'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailSave'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnTaskCommentSave'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -94,6 +102,7 @@ const TaskDetailPage = {
         document.getElementById('btnTaskDetailLogsMore').href = data.activityLogPath;
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
         this.renderRecentHistories(data.recentHistories || []);
+        this.renderComments(data.comments || []);
 
         const metaEl = document.getElementById('taskDetailStateMeta');
         if (metaEl) {
@@ -208,6 +217,57 @@ const TaskDetailPage = {
         }
     },
 
+    async saveComment() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 메모 등록'), '알림', 'warning');
+            return;
+        }
+        const contentEl = document.getElementById('taskCommentContent');
+        const content = (contentEl?.value || '').trim();
+        if (!content) {
+            await CommonJS.alert('메모 내용을 입력하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/admin/settings/tasks/${this.state.taskNo}/comments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 저장하지 못했습니다.'));
+            }
+            contentEl.value = '';
+            await CommonJS.alert('작업 메모가 등록되었습니다.', '성공', 'success');
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    async deleteComment(commentNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 메모 삭제'), '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm('작업 메모를 삭제하시겠습니까?', '삭제 확인');
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/admin/settings/tasks/${this.state.taskNo}/comments/${commentNo}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 삭제하지 못했습니다.'));
+            }
+            await CommonJS.alert('작업 메모가 삭제되었습니다.', '성공', 'success');
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
     renderRecentHistories(items) {
         const listEl = document.getElementById('taskDetailRecentHistoryList');
         const metaEl = document.getElementById('taskDetailHistoryStateMeta');
@@ -242,6 +302,48 @@ const TaskDetailPage = {
             metaEl.dataset.listState = 'ready';
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.visibleCount = String(items.length);
+        }
+    },
+
+    renderComments(items) {
+        const listEl = document.getElementById('taskCommentList');
+        const metaEl = document.getElementById('taskCommentStateMeta');
+        const metaTextEl = document.getElementById('taskCommentMeta');
+        if (!listEl) return;
+
+        if (!items.length) {
+            listEl.innerHTML = '<div class="text-muted small">등록된 작업 메모가 없습니다.</div>';
+            if (metaEl) {
+                metaEl.dataset.listState = 'empty';
+                metaEl.dataset.stateMessage = '등록된 작업 메모가 없습니다.';
+                metaEl.dataset.visibleCount = '0';
+            }
+            if (metaTextEl) {
+                metaTextEl.textContent = '등록된 작업 메모가 없습니다.';
+            }
+            return;
+        }
+
+        listEl.innerHTML = items.map((item) => `
+            <div class="list-group-item px-0">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="fw-semibold">${this.escapeHtml(item.adminName || '-')} <span class="small text-muted">(#${item.adminNo || '-'})</span></div>
+                        <div class="small text-muted mb-2">${this.escapeHtml(item.crtDtm || '-')}</div>
+                        <div class="small text-dark">${this.escapeHtml(item.content || '-').replace(/\n/g, '<br>')}</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" data-role="delete-task-comment" data-comment-no="${item.commentNo}">삭제</button>
+                </div>
+            </div>
+        `).join('');
+
+        if (metaEl) {
+            metaEl.dataset.listState = 'ready';
+            metaEl.dataset.stateMessage = '';
+            metaEl.dataset.visibleCount = String(items.length);
+        }
+        if (metaTextEl) {
+            metaTextEl.textContent = `최근 메모 ${items.length}건`;
         }
     },
 

@@ -20,6 +20,11 @@ public class AdminOperationTaskController {
         return "views/task-history";
     }
 
+    @GetMapping("/workloads")
+    public String taskWorkloads() {
+        return "views/task-workload-list";
+    }
+
     @GetMapping("/get")
     public String taskDetail(@RequestParam("no") Long taskNo,
                              @RequestParam(value = "returnTo", required = false) String returnTo,

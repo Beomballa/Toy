@@ -6,11 +6,14 @@ import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
+import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
 import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
+import com.section.admin.task.service.AdminOperationTaskWorkloadService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +44,8 @@ class AdminOperationTaskRestControllerTest {
     @Mock
     private AdminOperationTaskHistoryService adminOperationTaskHistoryService;
     @Mock
+    private AdminOperationTaskWorkloadService adminOperationTaskWorkloadService;
+    @Mock
     private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
@@ -48,7 +53,7 @@ class AdminOperationTaskRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationTaskRestController(adminOperationTaskService, adminOperationTaskHistoryService, adminOperationPolicyService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOperationTaskRestController(adminOperationTaskService, adminOperationTaskHistoryService, adminOperationTaskWorkloadService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -76,6 +81,28 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.taskStats.todoCount").value(2L))
                 .andExpect(jsonPath("$.assigneeOptions[0].name").value("운영자"))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"));
+    }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 API는 페이지 응답을 반환한다")
+    void getWorkloadsReturnsPagedResponse() throws Exception {
+        when(adminOperationTaskWorkloadService.getWorkloadList(org.mockito.ArgumentMatchers.any(AdminOperationTaskWorkloadListRequest.class)))
+                .thenReturn(new AdminOperationTaskWorkloadListResponse(
+                        List.of(new AdminOperationTaskWorkloadListResponse.Item(2L, "운영자", 6L, 2L, 3L, 1L, "/admin/settings/tasks?assigneeAdminNo=2", "/admin/settings/tasks?assigneeAdminNo=2&overdueOnly=Y")),
+                        0,
+                        1,
+                        1L,
+                        10,
+                        new AdminOperationTaskWorkloadListResponse.Summary(1L, 6L, 1L, 2L, "탐색 문맥 기준", "기한 초과 우선 · 진행중 우선"),
+                        new AdminOperationTaskWorkloadListResponse.AppliedQuery("정산", "HIGH", null),
+                        new AdminOperationTaskWorkloadListResponse.ResultMeta("검색 결과 1명", "1-1 / 1명 · 1페이지", 2L, true, "기한 초과 우선 · 진행중 우선", 1L, 1L)
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/tasks/workloads/list").param("keyword", "정산"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].assigneeAdminName").value("운영자"))
+                .andExpect(jsonPath("$.summary.assignedTaskCount").value(6L))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1명"));
     }
 
     @Test

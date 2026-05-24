@@ -3,6 +3,8 @@ package com.section.common.system.repository;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
+import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
+import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.entity.AdminOperationTask;
 import org.springframework.data.domain.Page;
@@ -16,4 +18,6 @@ public interface CustomAdminOperationTaskRepository {
     AdminOperationTaskSummaryDto getTaskSummary(AdminOperationTaskListQuery query, LocalDate today);
     List<AdminOperationTask> getDashboardTasks(LocalDate today, int limit);
     List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit);
+    Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today);
+    AdminOperationTaskWorkloadSummaryDto getTaskWorkloadSummary(AdminOperationTaskWorkloadListQuery query, LocalDate today);
 }

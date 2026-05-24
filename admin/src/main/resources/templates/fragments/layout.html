@@ -66,8 +66,11 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/notices') ? 'active' : ''}" href="/admin/settings/notices">
             <i class="fas fa-bullhorn"></i> 운영 공지
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/tasks') ? 'active' : ''}" href="/admin/settings/tasks">
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/tasks') && !currentUri.contains('settings/tasks/workloads') ? 'active' : ''}" href="/admin/settings/tasks">
             <i class="fas fa-list-check"></i> 운영 작업
+        </a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/tasks/workloads') ? 'active' : ''}" href="/admin/settings/tasks/workloads">
+            <i class="fas fa-people-arrows"></i> 작업 워크로드
         </a>
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/logs') ? 'active' : ''}" href="/admin/settings/logs">
             <i class="fas fa-history"></i> 활동 로그 확인

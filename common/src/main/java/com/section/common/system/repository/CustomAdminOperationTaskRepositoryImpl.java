@@ -9,6 +9,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
+import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
+import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.entity.AdminOperationTask;
 import org.springframework.data.domain.Page;
@@ -108,47 +110,85 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
 
     @Override
     public List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit) {
-        NumberExpression<Long> todoCase = new CaseBuilder()
-                .when(adminOperationTask.status.eq("TODO")).then(1L)
-                .otherwise(0L);
-        NumberExpression<Long> inProgressCase = new CaseBuilder()
-                .when(adminOperationTask.status.eq("IN_PROGRESS")).then(1L)
-                .otherwise(0L);
-        NumberExpression<Long> overdueCase = new CaseBuilder()
-                .when(
-                        adminOperationTask.dueDate.isNotNull()
-                                .and(adminOperationTask.dueDate.lt(today))
-                                .and(adminOperationTask.status.ne("DONE"))
-                ).then(1L)
-                .otherwise(0L);
-        // 현재 QueryDSL 버전에서는 case expression 합계를 명시적으로 sum(template)으로 감싸는 편이 더 안정적입니다.
-        NumberExpression<Long> todoCount = Expressions.numberTemplate(Long.class, "sum({0})", todoCase);
-        NumberExpression<Long> inProgressCount = Expressions.numberTemplate(Long.class, "sum({0})", inProgressCase);
-        NumberExpression<Long> overdueCount = Expressions.numberTemplate(Long.class, "sum({0})", overdueCase);
-
         return queryFactory
                 .select(Projections.constructor(
                         AdminOperationTaskWorkloadDto.class,
                         adminOperationTask.assigneeAdminNo,
                         adminUser.name,
                         adminOperationTask.count(),
-                        todoCount,
-                        inProgressCount,
-                        overdueCount
+                        sumTodoCount(),
+                        sumInProgressCount(),
+                        sumOverdueCount(today)
                 ))
                 .from(adminOperationTask)
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(adminOperationTask.assigneeAdminNo.isNotNull())
                 .groupBy(adminOperationTask.assigneeAdminNo, adminUser.name)
                 .orderBy(
-                        overdueCount.desc(),
-                        inProgressCount.desc(),
-                        todoCount.desc(),
+                        sumOverdueCount(today).desc(),
+                        sumInProgressCount().desc(),
+                        sumTodoCount().desc(),
                         adminOperationTask.count().desc(),
                         adminOperationTask.assigneeAdminNo.asc()
                 )
                 .limit(limit)
                 .fetch();
+    }
+
+    @Override
+    public Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today) {
+        List<AdminOperationTaskWorkloadDto> content = queryFactory
+                .select(Projections.constructor(
+                        AdminOperationTaskWorkloadDto.class,
+                        adminOperationTask.assigneeAdminNo,
+                        adminUser.name,
+                        adminOperationTask.count(),
+                        sumTodoCount(),
+                        sumInProgressCount(),
+                        sumOverdueCount(today)
+                ))
+                .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNotNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        overdue(query.overdueOnly(), today)
+                )
+                .groupBy(adminOperationTask.assigneeAdminNo, adminUser.name)
+                .orderBy(
+                        sumOverdueCount(today).desc(),
+                        sumInProgressCount().desc(),
+                        sumTodoCount().desc(),
+                        adminOperationTask.count().desc(),
+                        adminOperationTask.assigneeAdminNo.asc()
+                )
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        Long total = queryFactory
+                .select(adminOperationTask.assigneeAdminNo.countDistinct())
+                .from(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNotNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        overdue(query.overdueOnly(), today)
+                )
+                .fetchOne();
+
+        return new PageImpl<>(content, pageable, total == null ? 0L : total);
+    }
+
+    @Override
+    public AdminOperationTaskWorkloadSummaryDto getTaskWorkloadSummary(AdminOperationTaskWorkloadListQuery query, LocalDate today) {
+        return new AdminOperationTaskWorkloadSummaryDto(
+                countDistinctAssignees(query, today),
+                countAssignedTasks(query, today),
+                countOverdueTasks(query, today),
+                countUnassignedTasks(query, today)
+        );
     }
 
     private long countBy(AdminOperationTaskListQuery query, String status, String overdueOnly, LocalDate today) {
@@ -199,5 +239,89 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         return adminOperationTask.dueDate.isNotNull()
                 .and(adminOperationTask.dueDate.lt(today))
                 .and(adminOperationTask.status.ne("DONE"));
+    }
+
+    private NumberExpression<Long> sumTodoCount() {
+        NumberExpression<Long> todoCase = new CaseBuilder()
+                .when(adminOperationTask.status.eq("TODO")).then(1L)
+                .otherwise(0L);
+        return Expressions.numberTemplate(Long.class, "sum({0})", todoCase);
+    }
+
+    private NumberExpression<Long> sumInProgressCount() {
+        NumberExpression<Long> inProgressCase = new CaseBuilder()
+                .when(adminOperationTask.status.eq("IN_PROGRESS")).then(1L)
+                .otherwise(0L);
+        return Expressions.numberTemplate(Long.class, "sum({0})", inProgressCase);
+    }
+
+    private NumberExpression<Long> sumOverdueCount(LocalDate today) {
+        NumberExpression<Long> overdueCase = new CaseBuilder()
+                .when(
+                        adminOperationTask.dueDate.isNotNull()
+                                .and(adminOperationTask.dueDate.lt(today))
+                                .and(adminOperationTask.status.ne("DONE"))
+                ).then(1L)
+                .otherwise(0L);
+        // 집계 화면은 상태별 카운트를 DB group-by 단계에서 끝내야 대시보드/워크로드 화면에서 메모리 재계산이 없습니다.
+        return Expressions.numberTemplate(Long.class, "sum({0})", overdueCase);
+    }
+
+    private long countDistinctAssignees(AdminOperationTaskWorkloadListQuery query, LocalDate today) {
+        Long count = queryFactory
+                .select(adminOperationTask.assigneeAdminNo.countDistinct())
+                .from(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNotNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        overdue(query.overdueOnly(), today)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private long countAssignedTasks(AdminOperationTaskWorkloadListQuery query, LocalDate today) {
+        Long count = queryFactory
+                .select(adminOperationTask.count())
+                .from(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNotNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        overdue(query.overdueOnly(), today)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private long countOverdueTasks(AdminOperationTaskWorkloadListQuery query, LocalDate today) {
+        Long count = queryFactory
+                .select(adminOperationTask.count())
+                .from(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNotNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        adminOperationTask.dueDate.isNotNull(),
+                        adminOperationTask.dueDate.lt(today),
+                        adminOperationTask.status.ne("DONE")
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private long countUnassignedTasks(AdminOperationTaskWorkloadListQuery query, LocalDate today) {
+        Long count = queryFactory
+                .select(adminOperationTask.count())
+                .from(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNull(),
+                        keywordLike(query.keyword()),
+                        priorityEq(query.priority()),
+                        overdue(query.overdueOnly(), today)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
     }
 }

@@ -7,11 +7,14 @@ import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
+import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
 import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
+import com.section.admin.task.service.AdminOperationTaskWorkloadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +27,17 @@ public class AdminOperationTaskRestController {
 
     private final AdminOperationTaskService adminOperationTaskService;
     private final AdminOperationTaskHistoryService adminOperationTaskHistoryService;
+    private final AdminOperationTaskWorkloadService adminOperationTaskWorkloadService;
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
     public ResponseEntity<AdminOperationTaskListResponse> getList(@ModelAttribute AdminOperationTaskListRequest req) {
         return ResponseEntity.ok(adminOperationTaskService.getTaskList(req));
+    }
+
+    @GetMapping("/workloads/list")
+    public ResponseEntity<AdminOperationTaskWorkloadListResponse> getWorkloads(@ModelAttribute AdminOperationTaskWorkloadListRequest req) {
+        return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadList(req));
     }
 
     @GetMapping("/{no}")

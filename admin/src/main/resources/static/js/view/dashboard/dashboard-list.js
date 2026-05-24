@@ -40,6 +40,7 @@ const DashBoardListJS = {
             this.renderSummary(data.summary);
             this.renderOperationNotices(data.operationNotices);
             this.renderOperationTasks(data.operationTasks);
+            this.renderTaskWorkloadSummary(data.taskWorkloadSummary);
             this.renderTaskWorkloads(data.taskWorkloads);
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
@@ -139,6 +140,53 @@ const DashBoardListJS = {
                 </div>
             </div>
         `).join('');
+    },
+
+    renderTaskWorkloadSummary(summary) {
+        const body = document.getElementById('taskWorkloadSummaryBody');
+        if (!body) return;
+
+        if (!summary) {
+            body.innerHTML = '<div class="text-muted small">워크로드 요약을 확인할 수 없습니다.</div>';
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a class="text-decoration-none" href="${summary.workloadPath}">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small mb-1">담당자 수</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.assigneeCount || 0).toLocaleString()}</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a class="text-decoration-none" href="${summary.workloadPath}">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small mb-1">배정 작업</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.assignedTaskCount || 0).toLocaleString()}</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a class="text-decoration-none" href="${summary.workloadPath}?overdueOnly=Y">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small mb-1">기한 초과</div>
+                            <div class="fw-bold fs-5 text-danger">${Number(summary.overdueTaskCount || 0).toLocaleString()}</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a class="text-decoration-none" href="${summary.unassignedPath}">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small mb-1">미지정 작업</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.unassignedTaskCount || 0).toLocaleString()}</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        `;
     },
 
     renderSalesChart(chartData) {

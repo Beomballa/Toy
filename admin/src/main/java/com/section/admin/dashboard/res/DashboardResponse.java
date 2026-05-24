@@ -9,6 +9,7 @@ public record DashboardResponse(
         SummaryCounts summary,
         List<OperationNotice> operationNotices,
         List<OperationTask> operationTasks,
+        TaskWorkloadSummary taskWorkloadSummary,
         List<TaskWorkload> taskWorkloads,
         List<RecentOrder> recentOrders,
         List<LowStockProduct> lowStockProducts,
@@ -85,6 +86,15 @@ public record DashboardResponse(
             long overdueCount,
             String targetPath,
             String overduePath
+    ) {}
+
+    public record TaskWorkloadSummary(
+            long assigneeCount,
+            long assignedTaskCount,
+            long overdueTaskCount,
+            long unassignedTaskCount,
+            String workloadPath,
+            String unassignedPath
     ) {}
 
     public record ChartData(

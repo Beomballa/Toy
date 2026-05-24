@@ -10,7 +10,9 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
+import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -80,6 +82,18 @@ public class AdminDashBoardService {
                 .stream()
                 .map(this::toTaskWorkload)
                 .toList();
+        AdminOperationTaskWorkloadSummaryDto workloadSummary = adminOperationTaskRepository.getTaskWorkloadSummary(
+                new AdminOperationTaskWorkloadListQuery(null, null, null),
+                LocalDate.now()
+        );
+        DashboardResponse.TaskWorkloadSummary taskWorkloadSummary = new DashboardResponse.TaskWorkloadSummary(
+                workloadSummary.assigneeCount(),
+                workloadSummary.assignedTaskCount(),
+                workloadSummary.overdueTaskCount(),
+                workloadSummary.unassignedTaskCount(),
+                "/admin/settings/tasks/workloads",
+                "/admin/settings/tasks?unassignedOnly=Y"
+        );
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
@@ -128,7 +142,7 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, operationTasks, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, operationTasks, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {

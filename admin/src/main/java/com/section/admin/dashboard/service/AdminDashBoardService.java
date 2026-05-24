@@ -10,6 +10,7 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -74,6 +75,11 @@ public class AdminDashBoardService {
         List<DashboardResponse.OperationTask> operationTasks = dashboardTasks.stream()
                 .map(task -> toOperationTask(task, adminNameMap))
                 .toList();
+        List<DashboardResponse.TaskWorkload> taskWorkloads = adminOperationTaskRepository
+                .getDashboardTaskWorkloads(LocalDate.now(), 5)
+                .stream()
+                .map(this::toTaskWorkload)
+                .toList();
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
@@ -122,7 +128,7 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, operationTasks, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, operationTasks, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
@@ -158,6 +164,28 @@ public class AdminDashBoardService {
                 "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
+        );
+    }
+
+    private DashboardResponse.TaskWorkload toTaskWorkload(AdminOperationTaskWorkloadDto item) {
+        String assigneeName = item.assigneeAdminName() == null || item.assigneeAdminName().isBlank()
+                ? "미지정"
+                : item.assigneeAdminName();
+        String targetPath = item.assigneeAdminNo() == null
+                ? "/admin/settings/tasks"
+                : "/admin/settings/tasks?assigneeAdminNo=" + item.assigneeAdminNo();
+        String overduePath = item.assigneeAdminNo() == null
+                ? "/admin/settings/tasks?overdueOnly=Y"
+                : "/admin/settings/tasks?assigneeAdminNo=" + item.assigneeAdminNo() + "&overdueOnly=Y";
+        return new DashboardResponse.TaskWorkload(
+                item.assigneeAdminNo(),
+                assigneeName,
+                item.totalCount(),
+                item.todoCount(),
+                item.inProgressCount(),
+                item.overdueCount(),
+                targetPath,
+                overduePath
         );
     }
 

@@ -1,11 +1,15 @@
 package com.section.common.system.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
+import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.entity.AdminOperationTask;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -97,6 +101,51 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         adminOperationTask.isPinned.desc(),
                         adminOperationTask.dueDate.asc().nullsLast(),
                         adminOperationTask.taskNo.desc()
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit) {
+        NumberExpression<Long> todoCase = new CaseBuilder()
+                .when(adminOperationTask.status.eq("TODO")).then(1L)
+                .otherwise(0L);
+        NumberExpression<Long> inProgressCase = new CaseBuilder()
+                .when(adminOperationTask.status.eq("IN_PROGRESS")).then(1L)
+                .otherwise(0L);
+        NumberExpression<Long> overdueCase = new CaseBuilder()
+                .when(
+                        adminOperationTask.dueDate.isNotNull()
+                                .and(adminOperationTask.dueDate.lt(today))
+                                .and(adminOperationTask.status.ne("DONE"))
+                ).then(1L)
+                .otherwise(0L);
+        // 현재 QueryDSL 버전에서는 case expression 합계를 명시적으로 sum(template)으로 감싸는 편이 더 안정적입니다.
+        NumberExpression<Long> todoCount = Expressions.numberTemplate(Long.class, "sum({0})", todoCase);
+        NumberExpression<Long> inProgressCount = Expressions.numberTemplate(Long.class, "sum({0})", inProgressCase);
+        NumberExpression<Long> overdueCount = Expressions.numberTemplate(Long.class, "sum({0})", overdueCase);
+
+        return queryFactory
+                .select(Projections.constructor(
+                        AdminOperationTaskWorkloadDto.class,
+                        adminOperationTask.assigneeAdminNo,
+                        adminUser.name,
+                        adminOperationTask.count(),
+                        todoCount,
+                        inProgressCount,
+                        overdueCount
+                ))
+                .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(adminOperationTask.assigneeAdminNo.isNotNull())
+                .groupBy(adminOperationTask.assigneeAdminNo, adminUser.name)
+                .orderBy(
+                        overdueCount.desc(),
+                        inProgressCount.desc(),
+                        todoCount.desc(),
+                        adminOperationTask.count().desc(),
+                        adminOperationTask.assigneeAdminNo.asc()
                 )
                 .limit(limit)
                 .fetch();

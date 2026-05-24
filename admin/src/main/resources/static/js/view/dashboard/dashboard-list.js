@@ -40,6 +40,7 @@ const DashBoardListJS = {
             this.renderSummary(data.summary);
             this.renderOperationNotices(data.operationNotices);
             this.renderOperationTasks(data.operationTasks);
+            this.renderTaskWorkloads(data.taskWorkloads);
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
             this.renderSalesChart(data.salesChart);
@@ -103,6 +104,37 @@ const DashBoardListJS = {
                         <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">관리</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    renderTaskWorkloads(items) {
+        const body = document.getElementById('taskWorkloadBody');
+        if (!body) return;
+
+        if (!items || items.length === 0) {
+            body.innerHTML = '<div class="text-muted small">담당자별 워크로드 데이터가 없습니다.</div>';
+            return;
+        }
+
+        body.innerHTML = items.map((item) => `
+            <div class="border rounded-3 p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <a class="fw-bold text-decoration-none" href="${item.targetPath}">${this.escapeHtml(item.assigneeName)}</a>
+                            <span class="badge text-bg-light">전체 ${item.totalCount.toLocaleString()}</span>
+                            ${item.overdueCount > 0 ? `<span class="badge text-bg-danger">기한 초과 ${item.overdueCount.toLocaleString()}</span>` : ''}
+                        </div>
+                        <div class="small text-muted">
+                            대기 ${item.todoCount.toLocaleString()} · 진행중 ${item.inProgressCount.toLocaleString()}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.targetPath}">담당 작업</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.overduePath}">기한 초과</a>
                     </div>
                 </div>
             </div>

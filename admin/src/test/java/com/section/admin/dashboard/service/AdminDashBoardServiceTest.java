@@ -8,6 +8,7 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -82,6 +83,10 @@ class AdminDashBoardServiceTest {
                                 .isPinned("Y")
                                 .build()
                 ));
+        when(adminOperationTaskRepository.getDashboardTaskWorkloads(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of(
+                        new AdminOperationTaskWorkloadDto(4L, "관리자A", 6L, 2L, 3L, 1L)
+                ));
         when(adminUserRepository.findAllById(anyList())).thenReturn(List.of(
                 AdminUser.builder().adminNo(4L).name("관리자A").loginId("adminA").password("pw").build()
         ));
@@ -105,6 +110,11 @@ class AdminDashBoardServiceTest {
         assertEquals("/admin/settings/tasks/get?no=30&returnTo=/admin/dashboard", response.operationTasks().get(0).targetPath());
         assertEquals("/admin/settings/tasks/history?taskNo=30&returnTo=/admin/dashboard", response.operationTasks().get(0).historyPath());
         assertEquals("관리자A", response.operationTasks().get(0).assigneeName());
+        assertEquals(1, response.taskWorkloads().size());
+        assertEquals("관리자A", response.taskWorkloads().get(0).assigneeName());
+        assertEquals(6L, response.taskWorkloads().get(0).totalCount());
+        assertEquals("/admin/settings/tasks?assigneeAdminNo=4", response.taskWorkloads().get(0).targetPath());
+        assertEquals("/admin/settings/tasks?assigneeAdminNo=4&overdueOnly=Y", response.taskWorkloads().get(0).overduePath());
         assertEquals(2, response.topBrands().size());
         assertEquals("나이키", response.topBrands().get(0).label());
         assertEquals("아디다스", response.topBrands().get(1).label());

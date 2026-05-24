@@ -38,7 +38,7 @@ public record AdminOperationTaskListResponse(
                 page.getSize(),
                 TaskStats.from(summary, query.toStatsQuery()),
                 assigneeOptions,
-                new AppliedQuery(query.keyword(), query.status(), query.priority(), query.assigneeAdminNo(), query.overdueOnly()),
+                new AppliedQuery(query.keyword(), query.status(), query.priority(), query.assigneeAdminNo(), query.overdueOnly(), query.unassignedOnly()),
                 ResultMeta.from(page, query)
         );
     }
@@ -110,6 +110,7 @@ public record AdminOperationTaskListResponse(
             long todoCount,
             long inProgressCount,
             long overdueCount,
+            long unassignedCount,
             String contextLabel,
             String querySignature
     ) {
@@ -119,13 +120,14 @@ public record AdminOperationTaskListResponse(
                     summary.todoCount(),
                     summary.inProgressCount(),
                     summary.overdueCount(),
+                    summary.unassignedCount(),
                     buildContextLabel(query),
                     buildQuerySignature(query)
             );
         }
 
         private static String buildContextLabel(AdminOperationTaskListQuery query) {
-            return query.keyword() == null && query.assigneeAdminNo() == null ? "기본 문맥 기준" : "탐색 문맥 기준";
+            return query.keyword() == null && query.assigneeAdminNo() == null && query.unassignedOnly() == null ? "기본 문맥 기준" : "탐색 문맥 기준";
         }
 
         private static String buildQuerySignature(AdminOperationTaskListQuery query) {
@@ -135,6 +137,9 @@ public record AdminOperationTaskListResponse(
             }
             if (query.assigneeAdminNo() != null) {
                 builder.append(" · 담당자=").append(query.assigneeAdminNo());
+            }
+            if ("Y".equalsIgnoreCase(query.unassignedOnly())) {
+                builder.append(" · 미지정만");
             }
             return builder.toString();
         }
@@ -151,7 +156,8 @@ public record AdminOperationTaskListResponse(
             String status,
             String priority,
             Long assigneeAdminNo,
-            String overdueOnly
+            String overdueOnly,
+            String unassignedOnly
     ) {
     }
 
@@ -191,6 +197,7 @@ public record AdminOperationTaskListResponse(
             if (query.priority() != null) count++;
             if (query.assigneeAdminNo() != null) count++;
             if (query.overdueOnly() != null) count++;
+            if (query.unassignedOnly() != null) count++;
             return count;
         }
 
@@ -201,6 +208,7 @@ public record AdminOperationTaskListResponse(
             if (query.priority() != null) builder.append(" · 우선순위=").append(AdminOperationTaskPriority.fromCode(query.priority()).getLabel());
             if (query.assigneeAdminNo() != null) builder.append(" · 담당자=").append(query.assigneeAdminNo());
             if ("Y".equalsIgnoreCase(query.overdueOnly())) builder.append(" · 기한초과만");
+            if ("Y".equalsIgnoreCase(query.unassignedOnly())) builder.append(" · 미지정만");
             return builder.toString();
         }
     }

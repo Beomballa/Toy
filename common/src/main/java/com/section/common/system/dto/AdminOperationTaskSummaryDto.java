@@ -4,6 +4,7 @@ public record AdminOperationTaskSummaryDto(
         long totalCount,
         long todoCount,
         long inProgressCount,
-        long overdueCount
+        long overdueCount,
+        long unassignedCount
 ) {
 }

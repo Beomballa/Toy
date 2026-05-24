@@ -76,7 +76,7 @@ class AdminOperationTaskServiceTest {
         when(adminOperationTaskRepository.getTaskList(any(AdminOperationTaskListQuery.class), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
         when(adminOperationTaskRepository.getTaskSummary(any(AdminOperationTaskListQuery.class), any()))
-                .thenReturn(new AdminOperationTaskSummaryDto(5, 2, 2, 1));
+                .thenReturn(new AdminOperationTaskSummaryDto(5, 2, 2, 1, 1));
         when(adminUserRepository.findAll()).thenReturn(List.of(
                 AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build()
         ));

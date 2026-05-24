@@ -17,16 +17,23 @@ public class AdminOperationTaskListRequest {
     private String priority;
     private Long assigneeAdminNo;
     private String overdueOnly;
+    private String unassignedOnly;
     private Integer page = 0;
     private Integer size = 10;
 
     public AdminOperationTaskListQuery toQuery() {
+        String normalizedUnassignedOnly = normalizeFlag(unassignedOnly);
+        Long normalizedAssigneeAdminNo = normalizeAssigneeAdminNo(assigneeAdminNo);
+        if ("Y".equalsIgnoreCase(normalizedUnassignedOnly)) {
+            normalizedAssigneeAdminNo = null;
+        }
         return new AdminOperationTaskListQuery(
                 normalize(keyword),
                 normalizeStatus(status),
                 normalizePriority(priority),
-                normalizeAssigneeAdminNo(assigneeAdminNo),
-                normalizeFlag(overdueOnly)
+                normalizedAssigneeAdminNo,
+                normalizeFlag(overdueOnly),
+                normalizedUnassignedOnly
         );
     }
 

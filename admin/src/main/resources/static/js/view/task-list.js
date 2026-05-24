@@ -11,6 +11,7 @@ const TaskList = {
         priority: '',
         assigneeAdminNo: '',
         overdueOnly: '',
+        unassignedOnly: '',
         taskNo: ''
     },
 
@@ -65,6 +66,17 @@ const TaskList = {
         document.getElementById('taskStatTodoCard')?.addEventListener('click', () => this.applyStatFilter('TODO'));
         document.getElementById('taskStatProgressCard')?.addEventListener('click', () => this.applyStatFilter('IN_PROGRESS'));
         document.getElementById('taskStatOverdueCard')?.addEventListener('click', () => this.applyStatFilter('overdue'));
+        document.getElementById('taskStatUnassignedCard')?.addEventListener('click', () => this.applyStatFilter('unassigned'));
+        document.getElementById('taskUnassignedOnly')?.addEventListener('change', (event) => {
+            const assigneeFilter = document.getElementById('taskAssigneeFilter');
+            if (!assigneeFilter) return;
+            if (event.target.checked) {
+                assigneeFilter.value = '';
+                assigneeFilter.disabled = true;
+            } else {
+                assigneeFilter.disabled = false;
+            }
+        });
         document.getElementById('taskListBody')?.addEventListener('click', (event) => {
             const checkbox = event.target.closest('[data-role="select-task"]');
             if (checkbox) {
@@ -99,11 +111,13 @@ const TaskList = {
         this.state.priority = params.get('priority') || '';
         this.state.assigneeAdminNo = params.get('assigneeAdminNo') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
+        this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskPageSize').value = String(this.state.size);
+        document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
     },
 
     updateStateFromInputs() {
@@ -112,6 +126,10 @@ const TaskList = {
         this.state.priority = document.getElementById('taskPriorityFilter').value;
         this.state.assigneeAdminNo = document.getElementById('taskAssigneeFilter').value;
         this.state.size = Number(document.getElementById('taskPageSize').value || 10);
+        this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
+        if (this.state.unassignedOnly === 'Y') {
+            this.state.assigneeAdminNo = '';
+        }
     },
 
     buildParams() {
@@ -123,6 +141,7 @@ const TaskList = {
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.assigneeAdminNo) params.set('assigneeAdminNo', this.state.assigneeAdminNo);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
+        if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
         return params;
     },
@@ -197,6 +216,7 @@ const TaskList = {
             .join('');
         filters.innerHTML = optionHtml;
         filters.value = selectedFilter;
+        filters.disabled = this.state.unassignedOnly === 'Y';
 
         const formOptionHtml = ['<option value="">미지정</option>']
             .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
@@ -281,6 +301,7 @@ const TaskList = {
         const todoCountEl = document.getElementById('taskTodoCount');
         const inProgressCountEl = document.getElementById('taskInProgressCount');
         const overdueCountEl = document.getElementById('taskOverdueCount');
+        const unassignedCountEl = document.getElementById('taskUnassignedCount');
         const contextTextEl = document.getElementById('taskStatsContextText');
         const noticeEl = document.getElementById('taskStatsNotice');
 
@@ -289,6 +310,7 @@ const TaskList = {
             todoCountEl.innerText = '0';
             inProgressCountEl.innerText = '0';
             overdueCountEl.innerText = '0';
+            unassignedCountEl.innerText = '0';
             contextTextEl.innerText = '카드 기준을 확인할 수 없습니다.';
             noticeEl.innerText = '카드 기준을 확인할 수 없습니다.';
             noticeEl.dataset.statsContext = 'error';
@@ -299,8 +321,9 @@ const TaskList = {
         todoCountEl.innerText = Number(stats.todoCount || 0).toLocaleString();
         inProgressCountEl.innerText = Number(stats.inProgressCount || 0).toLocaleString();
         overdueCountEl.innerText = Number(stats.overdueCount || 0).toLocaleString();
+        unassignedCountEl.innerText = Number(stats.unassignedCount || 0).toLocaleString();
         contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
-        const usingQuickFilter = !!this.state.status || !!this.state.priority;
+        const usingQuickFilter = !!this.state.status || !!this.state.priority || !!this.state.overdueOnly;
         noticeEl.innerText = usingQuickFilter
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
             : '카드 수치는 현재 탐색 문맥 기준입니다.';
@@ -575,16 +598,34 @@ const TaskList = {
             this.state.status = '';
             this.state.priority = '';
             this.state.overdueOnly = '';
+            this.state.unassignedOnly = '';
         } else if (type === 'overdue') {
             this.state.status = '';
             this.state.priority = '';
             this.state.overdueOnly = 'Y';
+            this.state.unassignedOnly = '';
+        } else if (type === 'unassigned') {
+            this.state.status = '';
+            this.state.priority = '';
+            this.state.overdueOnly = '';
+            this.state.unassignedOnly = 'Y';
+            this.state.assigneeAdminNo = '';
         } else {
             this.state.status = type;
+            this.state.priority = '';
             this.state.overdueOnly = '';
+            this.state.unassignedOnly = '';
         }
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
+        document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
+        const assigneeFilter = document.getElementById('taskAssigneeFilter');
+        if (assigneeFilter) {
+            assigneeFilter.disabled = this.state.unassignedOnly === 'Y';
+            if (this.state.unassignedOnly === 'Y') {
+                assigneeFilter.value = '';
+            }
+        }
         this.getList();
     },
 
@@ -598,6 +639,8 @@ const TaskList = {
         document.getElementById('taskStatusFilter').value = '';
         document.getElementById('taskPriorityFilter').value = '';
         document.getElementById('taskAssigneeFilter').value = '';
+        document.getElementById('taskAssigneeFilter').disabled = false;
+        document.getElementById('taskUnassignedOnly').checked = false;
         document.getElementById('taskPageSize').value = '10';
         this.state.page = 0;
         this.state.size = 10;
@@ -606,6 +649,7 @@ const TaskList = {
         this.state.priority = '';
         this.state.assigneeAdminNo = '';
         this.state.overdueOnly = '';
+        this.state.unassignedOnly = '';
         this.state.taskNo = '';
         this.clearSelection(false);
         this.getList();

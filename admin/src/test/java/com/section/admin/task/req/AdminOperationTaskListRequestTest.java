@@ -37,6 +37,19 @@ class AdminOperationTaskListRequestTest {
     }
 
     @Test
+    @DisplayName("운영 작업 목록 요청은 미지정만 필터가 켜지면 담당자 조건을 비운다")
+    void toQueryClearsAssigneeWhenUnassignedOnly() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setAssigneeAdminNo(7L);
+        request.setUnassignedOnly("Y");
+
+        var query = request.toQuery();
+
+        assertNull(query.assigneeAdminNo());
+        assertEquals("Y", query.unassignedOnly());
+    }
+
+    @Test
     @DisplayName("운영 작업 목록 요청은 잘못된 상태를 거부한다")
     void toQueryRejectsInvalidStatus() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();

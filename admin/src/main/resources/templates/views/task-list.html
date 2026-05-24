@@ -62,6 +62,14 @@
                 </div>
             </div>
         </div>
+        <div class="col-md-6 col-xl">
+            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatUnassignedCard">
+                <div class="card-body">
+                    <div class="text-muted small mb-2">미지정</div>
+                    <div class="stat-value" id="taskUnassignedCount">0</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="card animate-in mb-4">
@@ -104,6 +112,12 @@
                     <select id="taskAssigneeFilter" class="form-select">
                         <option value="">전체</option>
                     </select>
+                </div>
+                <div class="col-md-1">
+                    <div class="form-check mt-4 pt-2">
+                        <input class="form-check-input" type="checkbox" id="taskUnassignedOnly">
+                        <label class="form-check-label" for="taskUnassignedOnly">미지정만</label>
+                    </div>
                 </div>
                 <div class="col-md-1">
                     <label class="form-label fw-bold">크기</label>

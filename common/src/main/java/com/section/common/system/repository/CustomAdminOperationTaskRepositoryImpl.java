@@ -54,6 +54,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        unassigned(query.unassignedOnly()),
                         overdue(query.overdueOnly(), LocalDate.now())
                 )
                 .orderBy(
@@ -73,6 +74,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        unassigned(query.unassignedOnly()),
                         overdue(query.overdueOnly(), LocalDate.now())
                 )
                 .fetchOne();
@@ -87,7 +89,8 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 countBy(statsQuery, null, null, today),
                 countBy(statsQuery, "TODO", null, today),
                 countBy(statsQuery, "IN_PROGRESS", null, today),
-                countBy(statsQuery, null, "Y", today)
+                countBy(statsQuery, null, "Y", today),
+                countUnassigned(statsQuery, today)
         );
     }
 
@@ -200,7 +203,23 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(status != null ? status : query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        unassigned(query.unassignedOnly()),
                         overdue(overdueOnly, today)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private long countUnassigned(AdminOperationTaskListQuery query, LocalDate today) {
+        Long count = queryFactory
+                .select(adminOperationTask.count())
+                .from(adminOperationTask)
+                .where(
+                        keywordLike(query.keyword()),
+                        statusEq(query.status()),
+                        priorityEq(query.priority()),
+                        adminOperationTask.assigneeAdminNo.isNull(),
+                        overdue(query.overdueOnly(), today)
                 )
                 .fetchOne();
         return count == null ? 0L : count;
@@ -230,6 +249,13 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
 
     private BooleanExpression assigneeEq(Long assigneeAdminNo) {
         return assigneeAdminNo == null ? null : adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo);
+    }
+
+    private BooleanExpression unassigned(String unassignedOnly) {
+        if (!"Y".equalsIgnoreCase(unassignedOnly)) {
+            return null;
+        }
+        return adminOperationTask.assigneeAdminNo.isNull();
     }
 
     private BooleanExpression overdue(String overdueOnly, LocalDate today) {

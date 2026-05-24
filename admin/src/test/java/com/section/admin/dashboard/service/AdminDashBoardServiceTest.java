@@ -85,6 +85,18 @@ class AdminDashBoardServiceTest {
                                 .isPinned("Y")
                                 .build()
                 ));
+        when(adminOperationTaskRepository.getDashboardUnassignedTasks(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of(
+                        AdminOperationTask.builder()
+                                .taskNo(31L)
+                                .title("담당자 배정 필요")
+                                .description("긴급 검토")
+                                .status("TODO")
+                                .priority("MEDIUM")
+                                .assigneeAdminNo(null)
+                                .isPinned("N")
+                                .build()
+                ));
         when(adminOperationTaskRepository.getDashboardTaskWorkloads(org.mockito.ArgumentMatchers.any(), anyInt()))
                 .thenReturn(List.of(
                         new AdminOperationTaskWorkloadDto(4L, "관리자A", 6L, 2L, 3L, 1L)
@@ -114,6 +126,11 @@ class AdminDashBoardServiceTest {
         assertEquals("/admin/settings/tasks/get?no=30&returnTo=/admin/dashboard", response.operationTasks().get(0).targetPath());
         assertEquals("/admin/settings/tasks/history?taskNo=30&returnTo=/admin/dashboard", response.operationTasks().get(0).historyPath());
         assertEquals("관리자A", response.operationTasks().get(0).assigneeName());
+        assertEquals(1, response.unassignedTasks().size());
+        assertEquals("담당자 배정 필요", response.unassignedTasks().get(0).title());
+        assertEquals("/admin/settings/tasks/get?no=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).targetPath());
+        assertEquals("/admin/settings/tasks/history?taskNo=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).historyPath());
+        assertEquals("/admin/settings/logs?actionType=TASK_&targetId=31", response.unassignedTasks().get(0).activityLogPath());
         assertEquals(1, response.taskWorkloads().size());
         assertEquals(2L, response.taskWorkloadSummary().unassignedTaskCount());
         assertEquals("/admin/settings/tasks?unassignedOnly=Y", response.taskWorkloadSummary().unassignedPath());

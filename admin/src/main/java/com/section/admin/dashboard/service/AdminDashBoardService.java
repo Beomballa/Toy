@@ -77,6 +77,11 @@ public class AdminDashBoardService {
         List<DashboardResponse.OperationTask> operationTasks = dashboardTasks.stream()
                 .map(task -> toOperationTask(task, adminNameMap))
                 .toList();
+        List<DashboardResponse.UnassignedTask> unassignedTasks = adminOperationTaskRepository
+                .getDashboardUnassignedTasks(LocalDate.now(), 5)
+                .stream()
+                .map(this::toUnassignedTask)
+                .toList();
         List<DashboardResponse.TaskWorkload> taskWorkloads = adminOperationTaskRepository
                 .getDashboardTaskWorkloads(LocalDate.now(), 5)
                 .stream()
@@ -142,7 +147,7 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, operationTasks, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, operationTasks, unassignedTasks, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
@@ -200,6 +205,20 @@ public class AdminDashBoardService {
                 item.overdueCount(),
                 targetPath,
                 overduePath
+        );
+    }
+
+    private DashboardResponse.UnassignedTask toUnassignedTask(AdminOperationTask task) {
+        return new DashboardResponse.UnassignedTask(
+                task.getTaskNo(),
+                task.getTitle(),
+                AdminOperationTaskStatus.fromCode(task.getStatus()).getLabel(),
+                AdminOperationTaskPriority.fromCode(task.getPriority()).getLabel(),
+                buildTaskDueDateLabel(task),
+                "Y".equalsIgnoreCase(task.getIsPinned()),
+                "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
+                "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
+                "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );
     }
 

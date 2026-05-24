@@ -112,6 +112,23 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
     }
 
     @Override
+    public List<AdminOperationTask> getDashboardUnassignedTasks(LocalDate today, int limit) {
+        return queryFactory
+                .selectFrom(adminOperationTask)
+                .where(
+                        adminOperationTask.assigneeAdminNo.isNull(),
+                        adminOperationTask.status.ne("DONE")
+                )
+                .orderBy(
+                        adminOperationTask.isPinned.desc(),
+                        adminOperationTask.dueDate.asc().nullsLast(),
+                        adminOperationTask.taskNo.desc()
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
     public List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit) {
         return queryFactory
                 .select(Projections.constructor(

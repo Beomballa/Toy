@@ -60,6 +60,16 @@
         </div>
     </div>
 
+    <div class="card border-0 shadow-sm mb-4" id="unassignedTaskSection">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0">미지정 작업</h6>
+            <a href="/admin/settings/tasks?unassignedOnly=Y" class="btn btn-sm btn-outline-secondary">목록 보기</a>
+        </div>
+        <div class="card-body" id="unassignedTaskBody">
+            <div class="text-muted small">미지정 작업을 불러오는 중입니다...</div>
+        </div>
+    </div>
+
     <!-- 통계 카드 섹션 -->
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl"><div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">오늘의 주문</div><div class="stat-value" id="todayOrderCount">0</div><button type="button" class="btn btn-link btn-sm p-0 summary-card-link" id="summaryTodayOrders">주문 보기</button></div></div></div>

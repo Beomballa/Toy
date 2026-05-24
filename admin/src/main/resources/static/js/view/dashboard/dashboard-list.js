@@ -40,6 +40,7 @@ const DashBoardListJS = {
             this.renderSummary(data.summary);
             this.renderOperationNotices(data.operationNotices);
             this.renderOperationTasks(data.operationTasks);
+            this.renderUnassignedTasks(data.unassignedTasks);
             this.renderTaskWorkloadSummary(data.taskWorkloadSummary);
             this.renderTaskWorkloads(data.taskWorkloads);
             this.renderRecentOrders(data.recentOrders);
@@ -103,6 +104,36 @@ const DashBoardListJS = {
                     </div>
                     <div class="d-flex flex-column gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">관리</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    renderUnassignedTasks(tasks) {
+        const body = document.getElementById('unassignedTaskBody');
+        if (!body) return;
+
+        if (!tasks || tasks.length === 0) {
+            body.innerHTML = '<div class="text-muted small">현재 미지정 작업이 없습니다.</div>';
+            return;
+        }
+
+        body.innerHTML = tasks.map((task) => `
+            <div class="border rounded-3 p-3 ${task.pinned ? 'mb-3 bg-light' : 'mb-3'}">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            ${task.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
+                            <a class="fw-bold text-decoration-none" href="${task.targetPath}">${this.escapeHtml(task.title)}</a>
+                        </div>
+                        <div class="text-muted small mb-2">${task.statusLabel} · ${task.priorityLabel} · 담당자 미지정</div>
+                        <div class="small text-dark">${this.escapeHtml(task.dueDateLabel)}</div>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">상세</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
                     </div>

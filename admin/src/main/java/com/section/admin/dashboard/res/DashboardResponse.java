@@ -9,6 +9,7 @@ public record DashboardResponse(
         SummaryCounts summary,
         List<OperationNotice> operationNotices,
         List<OperationTask> operationTasks,
+        List<UnassignedTask> unassignedTasks,
         TaskWorkloadSummary taskWorkloadSummary,
         List<TaskWorkload> taskWorkloads,
         List<RecentOrder> recentOrders,
@@ -70,6 +71,18 @@ public record DashboardResponse(
             String statusLabel,
             String priorityLabel,
             String assigneeName,
+            String dueDateLabel,
+            boolean pinned,
+            String targetPath,
+            String historyPath,
+            String activityLogPath
+    ) {}
+
+    public record UnassignedTask(
+            Long taskNo,
+            String title,
+            String statusLabel,
+            String priorityLabel,
             String dueDateLabel,
             boolean pinned,
             String targetPath,

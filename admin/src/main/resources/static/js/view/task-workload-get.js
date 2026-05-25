@@ -19,6 +19,12 @@ const TaskWorkloadDetail = {
     },
 
     bindEvents() {
+        document.getElementById('workloadRecentTasksBody')?.addEventListener('click', (event) => {
+            const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
+            if (reassignButton) {
+                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+            }
+        });
         document.getElementById('workloadOverdueTasksBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-overdue-task"]');
             if (completeButton) {
@@ -31,6 +37,18 @@ const TaskWorkloadDetail = {
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-overdue-task"]');
+            if (reassignButton) {
+                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+            }
+        });
+        document.getElementById('workloadRecentCommentsBody')?.addEventListener('click', (event) => {
+            const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
+            if (reassignButton) {
+                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+            }
+        });
+        document.getElementById('workloadRecentHistoriesBody')?.addEventListener('click', (event) => {
+            const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
                 this.openReassignModal(Number(reassignButton.dataset.taskNo));
             }
@@ -125,11 +143,13 @@ const TaskWorkloadDetail = {
             <div class="border rounded-3 p-3 mb-3">
                 <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
-                <div class="mt-2">
+                <div class="mt-2 d-flex gap-2 flex-wrap">
                     <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">재배정</button>
                 </div>
             </div>
         `).join('');
+        this.syncOverdueActionState();
     },
 
     renderOverdueTasks(items) {
@@ -170,8 +190,12 @@ const TaskWorkloadDetail = {
                 <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskTitle)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.commentDtm)}</div>
                 <div class="small text-dark mt-2">${this.escapeHtml(item.content)}</div>
+                <div class="mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button>
+                </div>
             </div>
         `).join('');
+        this.syncOverdueActionState();
     },
 
     renderRecentHistories(items) {
@@ -188,8 +212,10 @@ const TaskWorkloadDetail = {
                 <div class="small text-dark mt-2">
                     ${item.taskPath ? `<a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
                 </div>
+                ${item.taskNo ? `<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button></div>` : ''}
             </div>
         `).join('');
+        this.syncOverdueActionState();
     },
 
     syncOverdueActionState() {
@@ -202,6 +228,9 @@ const TaskWorkloadDetail = {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
         document.querySelectorAll('[data-role="reassign-overdue-task"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
+        document.querySelectorAll('[data-role="reassign-task-from-context"]').forEach((button) => {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
         CommonJS.setButtonDisabled(document.getElementById('btnTaskReassignApply'), disabled, reason);

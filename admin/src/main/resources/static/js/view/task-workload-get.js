@@ -25,6 +25,11 @@ const TaskWorkloadDetail = {
                 this.completeTask(Number(completeButton.dataset.taskNo));
                 return;
             }
+            const priorityButton = event.target.closest('[data-role="raise-overdue-priority"]');
+            if (priorityButton) {
+                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                return;
+            }
             const reassignButton = event.target.closest('[data-role="reassign-overdue-task"]');
             if (reassignButton) {
                 this.openReassignModal(Number(reassignButton.dataset.taskNo));
@@ -143,6 +148,7 @@ const TaskWorkloadDetail = {
                     </div>
                     <div class="d-flex flex-column gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-overdue-priority" data-task-no="${item.taskNo}">우선순위 높음</button>
                         <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${item.taskNo}">완료 처리</button>
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-overdue-task" data-task-no="${item.taskNo}">재배정</button>
                     </div>
@@ -189,6 +195,9 @@ const TaskWorkloadDetail = {
     syncOverdueActionState() {
         const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy || {});
         const reason = CommonJS.getAdminWriteBlockedReason('기한 초과 작업 직접 조치');
+        document.querySelectorAll('[data-role="raise-overdue-priority"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
         document.querySelectorAll('[data-role="complete-overdue-task"]').forEach((button) => {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
@@ -220,6 +229,38 @@ const TaskWorkloadDetail = {
         }
     },
 
+    async raisePriority(taskNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 우선순위 변경'), '알림', 'warning');
+            return;
+        }
+
+        try {
+            const detail = await this.fetchTaskDetail(taskNo);
+            if (detail.priority === 'HIGH') {
+                await CommonJS.alert('이미 우선순위가 높음입니다.', '알림', 'info');
+                return;
+            }
+            const confirmed = await CommonJS.confirm('이 작업의 우선순위를 높음으로 변경하시겠습니까?', '우선순위 변경');
+            if (!confirmed) return;
+
+            await this.saveTaskDetail({
+                taskNo: detail.taskNo,
+                title: detail.title,
+                description: detail.description,
+                status: detail.status,
+                priority: 'HIGH',
+                assigneeAdminNo: detail.assigneeAdminNo,
+                dueDate: detail.dueDate || null,
+                isPinned: detail.isPinned
+            }, '작업 우선순위를 변경하지 못했습니다.');
+            await CommonJS.alert('우선순위가 높음으로 변경되었습니다.', '성공', 'success');
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
     async openReassignModal(taskNo) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
@@ -235,11 +276,7 @@ const TaskWorkloadDetail = {
         this.reassignModal?.show();
 
         try {
-            const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
-            if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '작업 상세를 불러오지 못했습니다.'));
-            }
-            const data = await response.json();
+            const data = await this.fetchTaskDetail(taskNo);
             this.reassignDetail = data;
             if (metaEl) {
                 metaEl.textContent = `${data.title || '-'} · 현재 담당자 ${data.assigneeAdminName || '미지정'} · ${data.dueState || '-'}`;
@@ -297,28 +334,40 @@ const TaskWorkloadDetail = {
         if (!confirmed) return;
 
         try {
-            const response = await fetch('/api/admin/settings/tasks/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    taskNo: this.reassignDetail.taskNo,
-                    title: this.reassignDetail.title,
-                    description: this.reassignDetail.description,
-                    status: this.reassignDetail.status,
-                    priority: this.reassignDetail.priority,
-                    assigneeAdminNo,
-                    dueDate: this.reassignDetail.dueDate || null,
-                    isPinned: this.reassignDetail.isPinned
-                })
-            });
-            if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '작업을 재배정하지 못했습니다.'));
-            }
+            await this.saveTaskDetail({
+                taskNo: this.reassignDetail.taskNo,
+                title: this.reassignDetail.title,
+                description: this.reassignDetail.description,
+                status: this.reassignDetail.status,
+                priority: this.reassignDetail.priority,
+                assigneeAdminNo,
+                dueDate: this.reassignDetail.dueDate || null,
+                isPinned: this.reassignDetail.isPinned
+            }, '작업을 재배정하지 못했습니다.');
             await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
             this.reassignModal?.hide();
             this.loadDetail();
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    async fetchTaskDetail(taskNo) {
+        const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
+        if (!response.ok) {
+            throw new Error(await CommonJS.extractErrorMessage(response, '작업 상세를 불러오지 못했습니다.'));
+        }
+        return response.json();
+    },
+
+    async saveTaskDetail(payload, fallbackMessage) {
+        const response = await fetch('/api/admin/settings/tasks/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!response.ok) {
+            throw new Error(await CommonJS.extractErrorMessage(response, fallbackMessage));
         }
     },
 

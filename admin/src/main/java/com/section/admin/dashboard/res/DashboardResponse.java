@@ -85,6 +85,9 @@ public record DashboardResponse(
             String priorityLabel,
             String dueDateLabel,
             boolean pinned,
+            String latestCommentContent,
+            String latestCommentAdminName,
+            String latestCommentDtm,
             String targetPath,
             String historyPath,
             String activityLogPath

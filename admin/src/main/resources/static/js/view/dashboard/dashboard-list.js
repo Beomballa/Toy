@@ -131,6 +131,14 @@ const DashBoardListJS = {
                         </div>
                         <div class="text-muted small mb-2">${task.statusLabel} · ${task.priorityLabel} · 담당자 미지정</div>
                         <div class="small text-dark">${this.escapeHtml(task.dueDateLabel)}</div>
+                        ${task.latestCommentContent ? `
+                            <div class="small text-muted mt-2">
+                                최근 메모 · ${this.escapeHtml(task.latestCommentAdminName || '관리자')} · ${this.escapeHtml(task.latestCommentDtm || '-')}
+                            </div>
+                            <div class="small text-dark mt-1">${this.escapeHtml(task.latestCommentContent)}</div>
+                        ` : `
+                            <div class="small text-muted mt-2">최근 메모가 없습니다.</div>
+                        `}
                     </div>
                     <div class="d-flex flex-column gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">상세</a>

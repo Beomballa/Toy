@@ -10,9 +10,11 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
+import com.section.common.system.repository.AdminOperationTaskCommentRepository;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -26,6 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +41,7 @@ public class AdminDashBoardService {
     private final BrandRepository brandRepository;
     private final AdminOperationNoticeRepository adminOperationNoticeRepository;
     private final AdminOperationTaskRepository adminOperationTaskRepository;
+    private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     private final AdminUserRepository adminUserRepository;
 
     public DashboardResponse getDashboardData() {
@@ -77,10 +81,18 @@ public class AdminDashBoardService {
         List<DashboardResponse.OperationTask> operationTasks = dashboardTasks.stream()
                 .map(task -> toOperationTask(task, adminNameMap))
                 .toList();
-        List<DashboardResponse.UnassignedTask> unassignedTasks = adminOperationTaskRepository
-                .getDashboardUnassignedTasks(LocalDate.now(), 5)
-                .stream()
-                .map(this::toUnassignedTask)
+        List<AdminOperationTask> unassignedTaskEntities = adminOperationTaskRepository
+                .getDashboardUnassignedTasks(LocalDate.now(), 5);
+        Map<Long, AdminOperationTaskCommentSummaryDto> latestCommentMap = adminOperationTaskCommentRepository
+                .getLatestCommentsByTaskNos(
+                        unassignedTaskEntities.stream()
+                                .map(AdminOperationTask::getTaskNo)
+                                .filter(Objects::nonNull)
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminOperationTaskCommentSummaryDto::getTaskNo, item -> item));
+        List<DashboardResponse.UnassignedTask> unassignedTaskItems = unassignedTaskEntities.stream()
+                .map(task -> toUnassignedTask(task, latestCommentMap.get(task.getTaskNo())))
                 .toList();
         List<DashboardResponse.TaskWorkload> taskWorkloads = adminOperationTaskRepository
                 .getDashboardTaskWorkloads(LocalDate.now(), 5)
@@ -147,7 +159,7 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, operationTasks, unassignedTasks, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, operationNotices, operationTasks, unassignedTaskItems, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
@@ -208,7 +220,7 @@ public class AdminDashBoardService {
         );
     }
 
-    private DashboardResponse.UnassignedTask toUnassignedTask(AdminOperationTask task) {
+    private DashboardResponse.UnassignedTask toUnassignedTask(AdminOperationTask task, AdminOperationTaskCommentSummaryDto latestComment) {
         return new DashboardResponse.UnassignedTask(
                 task.getTaskNo(),
                 task.getTitle(),
@@ -216,10 +228,24 @@ public class AdminDashBoardService {
                 AdminOperationTaskPriority.fromCode(task.getPriority()).getLabel(),
                 buildTaskDueDateLabel(task),
                 "Y".equalsIgnoreCase(task.getIsPinned()),
+                latestComment == null ? null : latestComment.getContent(),
+                latestComment == null ? null : resolveCommentAdminName(latestComment),
+                latestComment == null ? null : formatDateTime(latestComment.getCrtDtm()),
                 "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );
+    }
+
+    private String resolveCommentAdminName(AdminOperationTaskCommentSummaryDto comment) {
+        if (comment.getAdminName() != null && !comment.getAdminName().isBlank()) {
+            return comment.getAdminName();
+        }
+        return comment.getAdminNo() == null ? "관리자" : "관리자#" + comment.getAdminNo();
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value == null ? "-" : OrderViewFormatter.formatDateTime(value);
     }
 
     private String buildTaskDueDateLabel(AdminOperationTask task) {

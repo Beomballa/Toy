@@ -8,9 +8,11 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
+import com.section.common.system.repository.AdminOperationTaskCommentRepository;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -43,6 +45,8 @@ class AdminDashBoardServiceTest {
     private AdminOperationNoticeRepository adminOperationNoticeRepository;
     @Mock
     private AdminOperationTaskRepository adminOperationTaskRepository;
+    @Mock
+    private AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     @Mock
     private AdminUserRepository adminUserRepository;
 
@@ -97,6 +101,15 @@ class AdminDashBoardServiceTest {
                                 .isPinned("N")
                                 .build()
                 ));
+        AdminOperationTaskCommentSummaryDto latestComment = new AdminOperationTaskCommentSummaryDto();
+        latestComment.setTaskNo(31L);
+        latestComment.setCommentNo(41L);
+        latestComment.setAdminNo(5L);
+        latestComment.setAdminName("관리자B");
+        latestComment.setContent("담당자 확인 후 배정 필요");
+        latestComment.setCrtDtm(java.time.LocalDateTime.of(2026, 5, 24, 9, 30));
+        when(adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(anyList()))
+                .thenReturn(List.of(latestComment));
         when(adminOperationTaskRepository.getDashboardTaskWorkloads(org.mockito.ArgumentMatchers.any(), anyInt()))
                 .thenReturn(List.of(
                         new AdminOperationTaskWorkloadDto(4L, "관리자A", 6L, 2L, 3L, 1L)
@@ -128,6 +141,8 @@ class AdminDashBoardServiceTest {
         assertEquals("관리자A", response.operationTasks().get(0).assigneeName());
         assertEquals(1, response.unassignedTasks().size());
         assertEquals("담당자 배정 필요", response.unassignedTasks().get(0).title());
+        assertEquals("담당자 확인 후 배정 필요", response.unassignedTasks().get(0).latestCommentContent());
+        assertEquals("관리자B", response.unassignedTasks().get(0).latestCommentAdminName());
         assertEquals("/admin/settings/tasks/get?no=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).targetPath());
         assertEquals("/admin/settings/tasks/history?taskNo=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).historyPath());
         assertEquals("/admin/settings/logs?actionType=TASK_&targetId=31", response.unassignedTasks().get(0).activityLogPath());

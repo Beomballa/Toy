@@ -99,7 +99,7 @@ const TaskWorkloadList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조건에 맞는 담당자 워크로드가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">조건에 맞는 담당자 워크로드가 없습니다.</td></tr>';
             this.setStateMeta('empty', '조건에 맞는 담당자 워크로드가 없습니다.', 0, 0, '', '');
             return;
         }
@@ -115,6 +115,13 @@ const TaskWorkloadList = {
                 <td class="text-center">${Number(item.inProgressCount || 0).toLocaleString()}</td>
                 <td class="text-center">
                     <span class="badge ${Number(item.overdueCount || 0) > 0 ? 'text-bg-danger' : 'text-bg-light'}">${Number(item.overdueCount || 0).toLocaleString()}</span>
+                </td>
+                <td>
+                    ${item.latestCommentContent ? `
+                        <div class="small fw-semibold text-dark">${this.escapeHtml(item.latestCommentTaskTitle || '작업')}</div>
+                        <div class="small text-muted">${this.escapeHtml(item.latestCommentAdminName || '관리자')} · ${this.escapeHtml(item.latestCommentDtm || '-')}</div>
+                        <div class="small text-dark mt-1">${this.escapeHtml(item.latestCommentContent)}</div>
+                    ` : '<div class="small text-muted">최근 메모가 없습니다.</div>'}
                 </td>
                 <td class="text-end pe-4">
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.targetPath}">담당 작업</a>
@@ -175,7 +182,7 @@ const TaskWorkloadList = {
     renderListError(message) {
         const tbody = document.getElementById('taskWorkloadListBody');
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
         }
         this.setStateMeta('error', message, 0, 0, '', '');
         document.getElementById('taskWorkloadMetaText').textContent = '조회 실패';

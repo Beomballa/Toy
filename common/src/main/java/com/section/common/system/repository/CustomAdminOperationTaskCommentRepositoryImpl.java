@@ -5,10 +5,12 @@ import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
+import com.section.common.system.dto.AdminOperationTaskWorkloadCommentSummaryDto;
 
 import java.util.List;
 
 import static com.section.common.system.entity.QAdminOperationTaskComment.adminOperationTaskComment;
+import static com.section.common.system.entity.QAdminOperationTask.adminOperationTask;
 import static com.section.common.system.entity.QAdminUser.adminUser;
 
 public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdminOperationTaskCommentRepository {
@@ -68,6 +70,46 @@ public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdmi
                                 JPAExpressions.select(latestComment.commentNo.max())
                                         .from(latestComment)
                                         .where(latestComment.taskNo.eq(adminOperationTaskComment.taskNo))
+                        )
+                )
+                .orderBy(adminOperationTaskComment.commentNo.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<AdminOperationTaskWorkloadCommentSummaryDto> getLatestCommentsByAssigneeAdminNos(List<Long> assigneeAdminNos) {
+        if (assigneeAdminNos == null || assigneeAdminNos.isEmpty()) {
+            return List.of();
+        }
+
+        com.section.common.system.entity.QAdminOperationTaskComment latestComment =
+                new com.section.common.system.entity.QAdminOperationTaskComment("latestComment");
+        com.section.common.system.entity.QAdminOperationTask latestTask =
+                new com.section.common.system.entity.QAdminOperationTask("latestTask");
+
+        return queryFactory
+                .select(Projections.bean(
+                        AdminOperationTaskWorkloadCommentSummaryDto.class,
+                        adminOperationTask.assigneeAdminNo,
+                        adminOperationTask.taskNo,
+                        adminOperationTask.title.as("taskTitle"),
+                        adminOperationTaskComment.commentNo,
+                        adminOperationTaskComment.crtNo.as("adminNo"),
+                        adminUser.name.as("adminName"),
+                        adminOperationTaskComment.content,
+                        adminOperationTaskComment.crtDtm
+                ))
+                .from(adminOperationTaskComment)
+                .join(adminOperationTask).on(adminOperationTaskComment.taskNo.eq(adminOperationTask.taskNo))
+                .leftJoin(adminUser).on(adminOperationTaskComment.crtNo.eq(adminUser.adminNo))
+                .where(
+                        adminOperationTask.assigneeAdminNo.in(assigneeAdminNos),
+                        // 워크로드 화면은 담당자별 최근 메모 1건만 필요하므로 assignee 기준 max(comment_no)로 대표 메모를 자릅니다.
+                        adminOperationTaskComment.commentNo.eq(
+                                JPAExpressions.select(latestComment.commentNo.max())
+                                        .from(latestComment)
+                                        .join(latestTask).on(latestComment.taskNo.eq(latestTask.taskNo))
+                                        .where(latestTask.assigneeAdminNo.eq(adminOperationTask.assigneeAdminNo))
                         )
                 )
                 .orderBy(adminOperationTaskComment.commentNo.desc())

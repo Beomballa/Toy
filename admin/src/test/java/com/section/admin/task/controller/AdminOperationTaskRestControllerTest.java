@@ -88,7 +88,7 @@ class AdminOperationTaskRestControllerTest {
     void getWorkloadsReturnsPagedResponse() throws Exception {
         when(adminOperationTaskWorkloadService.getWorkloadList(org.mockito.ArgumentMatchers.any(AdminOperationTaskWorkloadListRequest.class)))
                 .thenReturn(new AdminOperationTaskWorkloadListResponse(
-                        List.of(new AdminOperationTaskWorkloadListResponse.Item(2L, "운영자", 6L, 2L, 3L, 1L, "/admin/settings/tasks?assigneeAdminNo=2", "/admin/settings/tasks?assigneeAdminNo=2&overdueOnly=Y")),
+                        List.of(new AdminOperationTaskWorkloadListResponse.Item(2L, "운영자", 6L, 2L, 3L, 1L, "정산 점검", "우선 확인 필요", "관리자", "2026-05-25 10:00", "/admin/settings/tasks?assigneeAdminNo=2", "/admin/settings/tasks?assigneeAdminNo=2&overdueOnly=Y")),
                         0,
                         1,
                         1L,
@@ -101,6 +101,7 @@ class AdminOperationTaskRestControllerTest {
         mockMvc.perform(get("/api/admin/settings/tasks/workloads/list").param("keyword", "정산"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].assigneeAdminName").value("운영자"))
+                .andExpect(jsonPath("$.items[0].latestCommentContent").value("우선 확인 필요"))
                 .andExpect(jsonPath("$.summary.assignedTaskCount").value(6L))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1명"));
     }

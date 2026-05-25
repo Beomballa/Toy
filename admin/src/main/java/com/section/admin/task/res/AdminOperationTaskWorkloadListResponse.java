@@ -1,12 +1,14 @@
 package com.section.admin.task.res;
 
 import com.section.common.base.entity.type.AdminOperationTaskPriority;
+import com.section.common.system.dto.AdminOperationTaskWorkloadCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.Map;
 
 public record AdminOperationTaskWorkloadListResponse(
         List<Item> items,
@@ -21,10 +23,11 @@ public record AdminOperationTaskWorkloadListResponse(
     public static AdminOperationTaskWorkloadListResponse of(
             Page<AdminOperationTaskWorkloadDto> page,
             AdminOperationTaskWorkloadListQuery query,
-            AdminOperationTaskWorkloadSummaryDto summary
+            AdminOperationTaskWorkloadSummaryDto summary,
+            Map<Long, AdminOperationTaskWorkloadCommentSummaryDto> latestCommentMap
     ) {
         return new AdminOperationTaskWorkloadListResponse(
-                page.getContent().stream().map(Item::from).toList(),
+                page.getContent().stream().map(item -> Item.from(item, latestCommentMap == null ? null : latestCommentMap.get(item.assigneeAdminNo()))).toList(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
@@ -42,10 +45,14 @@ public record AdminOperationTaskWorkloadListResponse(
             long todoCount,
             long inProgressCount,
             long overdueCount,
+            String latestCommentTaskTitle,
+            String latestCommentContent,
+            String latestCommentAdminName,
+            String latestCommentDtm,
             String targetPath,
             String overduePath
     ) {
-        static Item from(AdminOperationTaskWorkloadDto item) {
+        static Item from(AdminOperationTaskWorkloadDto item, AdminOperationTaskWorkloadCommentSummaryDto latestComment) {
             String assigneeName = item.assigneeAdminName() == null || item.assigneeAdminName().isBlank()
                     ? "미지정"
                     : item.assigneeAdminName();
@@ -62,9 +69,24 @@ public record AdminOperationTaskWorkloadListResponse(
                     item.todoCount(),
                     item.inProgressCount(),
                     item.overdueCount(),
+                    latestComment == null ? null : latestComment.getTaskTitle(),
+                    latestComment == null ? null : latestComment.getContent(),
+                    latestComment == null ? null : latestCommentAdminName(latestComment),
+                    latestComment == null ? null : formatDateTime(latestComment.getCrtDtm()),
                     targetPath,
                     overduePath
             );
+        }
+
+        private static String latestCommentAdminName(AdminOperationTaskWorkloadCommentSummaryDto latestComment) {
+            if (latestComment.getAdminName() != null && !latestComment.getAdminName().isBlank()) {
+                return latestComment.getAdminName();
+            }
+            return latestComment.getAdminNo() == null ? "관리자" : "관리자#" + latestComment.getAdminNo();
+        }
+
+        private static String formatDateTime(java.time.LocalDateTime value) {
+            return value == null ? "-" : value.toString().replace('T', ' ');
         }
     }
 

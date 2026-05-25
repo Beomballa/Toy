@@ -22,65 +22,65 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadRecentTasksBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo));
+                this.completeTask(Number(completeButton.dataset.taskNo), '최근 작업');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 작업');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 작업');
             }
         });
         document.getElementById('workloadOverdueTasksBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-overdue-task"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo));
+                this.completeTask(Number(completeButton.dataset.taskNo), '기한 초과 작업');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-overdue-priority"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                this.raisePriority(Number(priorityButton.dataset.taskNo), '기한 초과 작업');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-overdue-task"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+                this.openReassignModal(Number(reassignButton.dataset.taskNo), '기한 초과 작업');
             }
         });
         document.getElementById('workloadRecentCommentsBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo));
+                this.completeTask(Number(completeButton.dataset.taskNo), '최근 메모');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 메모');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 메모');
             }
         });
         document.getElementById('workloadRecentHistoriesBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo));
+                this.completeTask(Number(completeButton.dataset.taskNo), '최근 활동');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 활동');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo));
+                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 활동');
             }
         });
         document.getElementById('taskReassignRecommendationList')?.addEventListener('click', (event) => {
@@ -127,6 +127,8 @@ const TaskWorkloadDetail = {
                 metaEl.dataset.detailState = 'error';
                 metaEl.dataset.stateMessage = error.message;
                 metaEl.dataset.overdueCount = '0';
+                metaEl.dataset.lastActionTaskPath = '';
+                metaEl.dataset.lastActionHistoryPath = '';
             }
             this.renderLastActionNotice();
         }
@@ -162,8 +164,11 @@ const TaskWorkloadDetail = {
             metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
             if (!metaEl.dataset.lastAction) {
                 metaEl.dataset.lastAction = '';
+                metaEl.dataset.lastActionSource = '';
                 metaEl.dataset.lastActionTaskNo = '';
                 metaEl.dataset.lastActionStatus = '';
+                metaEl.dataset.lastActionTaskPath = '';
+                metaEl.dataset.lastActionHistoryPath = '';
             }
         }
         this.renderLastActionNotice();
@@ -283,7 +288,7 @@ const TaskWorkloadDetail = {
         CommonJS.setButtonDisabled(document.getElementById('btnTaskReassignApply'), disabled, reason);
     },
 
-    async completeTask(taskNo) {
+    async completeTask(taskNo, sourceLabel = '워크로드 상세') {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리'), '알림', 'warning');
             return;
@@ -298,16 +303,16 @@ const TaskWorkloadDetail = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업을 완료 처리하지 못했습니다.'));
             }
-            this.setLastActionMeta('complete', taskNo, 'success');
+            this.setLastActionMeta('complete', taskNo, 'success', sourceLabel);
             await CommonJS.alert('작업이 완료 처리되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
-            this.setLastActionMeta('complete', taskNo, 'error');
+            this.setLastActionMeta('complete', taskNo, 'error', sourceLabel);
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
 
-    async raisePriority(taskNo) {
+    async raisePriority(taskNo, sourceLabel = '워크로드 상세') {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 우선순위 변경'), '알림', 'warning');
             return;
@@ -332,21 +337,21 @@ const TaskWorkloadDetail = {
                 dueDate: detail.dueDate || null,
                 isPinned: detail.isPinned
             }, '작업 우선순위를 변경하지 못했습니다.');
-            this.setLastActionMeta('raise-priority', taskNo, 'success');
+            this.setLastActionMeta('raise-priority', taskNo, 'success', sourceLabel);
             await CommonJS.alert('우선순위가 높음으로 변경되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
-            this.setLastActionMeta('raise-priority', taskNo, 'error');
+            this.setLastActionMeta('raise-priority', taskNo, 'error', sourceLabel);
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
 
-    async openReassignModal(taskNo) {
+    async openReassignModal(taskNo, sourceLabel = '워크로드 상세') {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
             return;
         }
-        this.reassignDetail = null;
+        this.reassignDetail = { sourceLabel };
         const metaEl = document.getElementById('taskReassignModalMeta');
         const listEl = document.getElementById('taskReassignRecommendationList');
         const selectEl = document.getElementById('taskReassignAssignee');
@@ -357,7 +362,7 @@ const TaskWorkloadDetail = {
 
         try {
             const data = await this.fetchTaskDetail(taskNo);
-            this.reassignDetail = data;
+            this.reassignDetail = { ...data, sourceLabel };
             if (metaEl) {
                 metaEl.textContent = `${data.title || '-'} · 현재 담당자 ${data.assigneeAdminName || '미지정'} · ${data.dueState || '-'}`;
             }
@@ -424,39 +429,48 @@ const TaskWorkloadDetail = {
                 dueDate: this.reassignDetail.dueDate || null,
                 isPinned: this.reassignDetail.isPinned
             }, '작업을 재배정하지 못했습니다.');
-            this.setLastActionMeta('reassign', this.reassignDetail.taskNo, 'success');
+            this.setLastActionMeta('reassign', this.reassignDetail.taskNo, 'success', this.reassignDetail.sourceLabel || '워크로드 상세');
             await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
             this.reassignModal?.hide();
             this.loadDetail();
         } catch (error) {
-            this.setLastActionMeta('reassign', this.reassignDetail?.taskNo, 'error');
+            this.setLastActionMeta('reassign', this.reassignDetail?.taskNo, 'error', this.reassignDetail?.sourceLabel || '워크로드 상세');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
 
-    setLastActionMeta(action, taskNo, status) {
+    setLastActionMeta(action, taskNo, status, sourceLabel = '워크로드 상세') {
         const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
         if (!metaEl) return;
         metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionSource = sourceLabel || '워크로드 상세';
         metaEl.dataset.lastActionTaskNo = taskNo == null ? '' : String(taskNo);
         metaEl.dataset.lastActionStatus = status || '';
+        metaEl.dataset.lastActionTaskPath = taskNo == null ? '' : this.buildTaskDetailPath(taskNo);
+        metaEl.dataset.lastActionHistoryPath = taskNo == null ? '' : this.buildTaskHistoryPath(taskNo);
         this.renderLastActionNotice();
     },
 
     renderLastActionNotice() {
         const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
         const noticeEl = document.getElementById('taskWorkloadActionNotice');
-        if (!metaEl || !noticeEl) return;
+        const noticeTextEl = document.getElementById('taskWorkloadActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskWorkloadActionNoticeActions');
+        if (!metaEl || !noticeEl || !noticeTextEl || !noticeActionsEl) return;
 
         const action = metaEl.dataset.lastAction || '';
+        const source = metaEl.dataset.lastActionSource || '';
         const taskNo = metaEl.dataset.lastActionTaskNo || '';
         const status = metaEl.dataset.lastActionStatus || '';
+        const taskPath = metaEl.dataset.lastActionTaskPath || '';
+        const historyPath = metaEl.dataset.lastActionHistoryPath || '';
         const taskLabel = taskNo ? `작업 #${taskNo}` : '작업';
 
         if (!action || !status) {
             noticeEl.classList.add('d-none');
             noticeEl.classList.remove('alert-success', 'alert-danger');
-            noticeEl.textContent = '';
+            noticeTextEl.textContent = '';
+            noticeActionsEl.innerHTML = '';
             noticeEl.dataset.visible = 'N';
             noticeEl.dataset.action = '';
             noticeEl.dataset.taskNo = '';
@@ -474,14 +488,27 @@ const TaskWorkloadDetail = {
         };
 
         const message = templates[`${action}:${status}`] || `${taskLabel} 조치 결과를 확인해 주세요.`;
+        const sourceMessage = source ? `${source}에서 실행` : '워크로드 상세에서 실행';
         const isSuccess = status === 'success';
         noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger');
         noticeEl.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
-        noticeEl.textContent = message;
+        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
+        noticeActionsEl.innerHTML = [
+            taskPath ? `<a class="btn btn-sm ${isSuccess ? 'btn-outline-success' : 'btn-outline-danger'}" href="${taskPath}">작업 상세</a>` : '',
+            historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : ''
+        ].join('');
         noticeEl.dataset.visible = 'Y';
         noticeEl.dataset.action = action;
         noticeEl.dataset.taskNo = taskNo;
         noticeEl.dataset.status = status;
+    },
+
+    buildTaskDetailPath(taskNo) {
+        return `/admin/settings/tasks/get?no=${taskNo}&returnTo=${encodeURIComponent(`/admin/settings/tasks/workloads/get?adminNo=${this.bootstrap.adminNo || 0}`)}`;
+    },
+
+    buildTaskHistoryPath(taskNo) {
+        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(`/admin/settings/tasks/workloads/get?adminNo=${this.bootstrap.adminNo || 0}`)}`;
     },
 
     async fetchTaskDetail(taskNo) {

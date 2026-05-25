@@ -69,12 +69,18 @@
          data-assignee-admin-no=""
          data-overdue-count="0"
          data-last-action=""
+         data-last-action-source=""
          data-last-action-task-no=""
-         data-last-action-status=""></div>
+         data-last-action-status=""
+         data-last-action-task-path=""
+         data-last-action-history-path=""></div>
 
     <div class="alert alert-success d-none mb-4" id="taskWorkloadActionNotice" role="status"
          data-visible="N" data-action="" data-task-no="" data-status="">
-        마지막 조치 결과를 불러오는 중입니다.
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div id="taskWorkloadActionNoticeText">마지막 조치 결과를 불러오는 중입니다.</div>
+            <div class="d-flex gap-2" id="taskWorkloadActionNoticeActions"></div>
+        </div>
     </div>
 
     <div class="row g-4">

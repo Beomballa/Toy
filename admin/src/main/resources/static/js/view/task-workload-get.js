@@ -20,6 +20,16 @@ const TaskWorkloadDetail = {
 
     bindEvents() {
         document.getElementById('workloadRecentTasksBody')?.addEventListener('click', (event) => {
+            const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
+            if (completeButton) {
+                this.completeTask(Number(completeButton.dataset.taskNo));
+                return;
+            }
+            const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
+            if (priorityButton) {
+                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                return;
+            }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
                 this.openReassignModal(Number(reassignButton.dataset.taskNo));
@@ -42,12 +52,32 @@ const TaskWorkloadDetail = {
             }
         });
         document.getElementById('workloadRecentCommentsBody')?.addEventListener('click', (event) => {
+            const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
+            if (completeButton) {
+                this.completeTask(Number(completeButton.dataset.taskNo));
+                return;
+            }
+            const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
+            if (priorityButton) {
+                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                return;
+            }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
                 this.openReassignModal(Number(reassignButton.dataset.taskNo));
             }
         });
         document.getElementById('workloadRecentHistoriesBody')?.addEventListener('click', (event) => {
+            const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
+            if (completeButton) {
+                this.completeTask(Number(completeButton.dataset.taskNo));
+                return;
+            }
+            const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
+            if (priorityButton) {
+                this.raisePriority(Number(priorityButton.dataset.taskNo));
+                return;
+            }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
                 this.openReassignModal(Number(reassignButton.dataset.taskNo));
@@ -145,6 +175,8 @@ const TaskWorkloadDetail = {
                 <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                 <div class="mt-2 d-flex gap-2 flex-wrap">
                     <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button>
                     <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">재배정</button>
                 </div>
             </div>
@@ -190,7 +222,9 @@ const TaskWorkloadDetail = {
                 <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskTitle)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.commentDtm)}</div>
                 <div class="small text-dark mt-2">${this.escapeHtml(item.content)}</div>
-                <div class="mt-2">
+                <div class="mt-2 d-flex gap-2 flex-wrap">
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button>
                     <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button>
                 </div>
             </div>
@@ -212,7 +246,7 @@ const TaskWorkloadDetail = {
                 <div class="small text-dark mt-2">
                     ${item.taskPath ? `<a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
                 </div>
-                ${item.taskNo ? `<div class="mt-2"><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button></div>` : ''}
+                ${item.taskNo ? `<div class="mt-2 d-flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button><button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button></div>` : ''}
             </div>
         `).join('');
         this.syncOverdueActionState();
@@ -224,7 +258,13 @@ const TaskWorkloadDetail = {
         document.querySelectorAll('[data-role="raise-overdue-priority"]').forEach((button) => {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
+        document.querySelectorAll('[data-role="raise-priority-from-context"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
         document.querySelectorAll('[data-role="complete-overdue-task"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
+        document.querySelectorAll('[data-role="complete-task-from-context"]').forEach((button) => {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
         document.querySelectorAll('[data-role="reassign-overdue-task"]').forEach((button) => {

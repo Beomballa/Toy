@@ -19,6 +19,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
         String overduePath,
         String activityLogPath,
         List<RecentTask> recentTasks,
+        List<RecentTask> overdueTasks,
         List<RecentComment> recentComments,
         List<RecentHistory> recentHistories
 ) {
@@ -27,6 +28,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
             String assigneeAdminName,
             AdminOperationTaskWorkloadDto workload,
             List<AdminOperationTaskListResDto> recentTasks,
+            List<AdminOperationTaskListResDto> overdueTasks,
             List<AdminOperationTaskWorkloadCommentSummaryDto> recentComments,
             List<AdminLogListResponse.Item> recentHistories
     ) {
@@ -41,6 +43,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                 "/admin/settings/tasks?assigneeAdminNo=" + assigneeAdminNo + "&overdueOnly=Y",
                 "/admin/settings/logs?adminNo=" + assigneeAdminNo + "&actionType=TASK_",
                 recentTasks == null ? List.of() : recentTasks.stream().map(RecentTask::from).toList(),
+                overdueTasks == null ? List.of() : overdueTasks.stream().map(RecentTask::from).toList(),
                 recentComments == null ? List.of() : recentComments.stream().map(RecentComment::from).toList(),
                 recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList()
         );

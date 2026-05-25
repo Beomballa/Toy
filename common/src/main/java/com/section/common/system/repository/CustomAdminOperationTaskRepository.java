@@ -1,5 +1,6 @@
 package com.section.common.system.repository;
 
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
@@ -21,6 +22,8 @@ public interface CustomAdminOperationTaskRepository {
     List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit);
     AdminOperationTaskWorkloadDto getTaskWorkload(Long assigneeAdminNo, LocalDate today);
     List<AdminOperationTaskListResDto> getRecentTasksByAssigneeAdminNo(Long assigneeAdminNo, int limit);
+    List<AdminOperationTaskListResDto> getOverdueTasksByAssigneeAdminNo(Long assigneeAdminNo, LocalDate today, int limit);
+    List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, int limit);
     Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today);
     AdminOperationTaskWorkloadSummaryDto getTaskWorkloadSummary(AdminOperationTaskWorkloadListQuery query, LocalDate today);
 }

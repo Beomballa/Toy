@@ -8,6 +8,7 @@ import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
@@ -197,6 +198,63 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         adminOperationTask.isPinned.desc(),
                         adminOperationTask.dueDate.asc().nullsLast(),
                         adminOperationTask.taskNo.desc()
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<AdminOperationTaskListResDto> getOverdueTasksByAssigneeAdminNo(Long assigneeAdminNo, LocalDate today, int limit) {
+        return queryFactory
+                .select(Projections.bean(
+                        AdminOperationTaskListResDto.class,
+                        adminOperationTask.taskNo,
+                        adminOperationTask.title,
+                        adminOperationTask.description,
+                        adminOperationTask.status,
+                        adminOperationTask.priority,
+                        adminOperationTask.assigneeAdminNo,
+                        adminUser.name.as("assigneeAdminName"),
+                        adminOperationTask.dueDate,
+                        adminOperationTask.isPinned,
+                        adminOperationTask.crtDtm
+                ))
+                .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(
+                        adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo),
+                        adminOperationTask.dueDate.isNotNull(),
+                        adminOperationTask.dueDate.lt(today),
+                        adminOperationTask.status.ne("DONE")
+                )
+                .orderBy(
+                        adminOperationTask.dueDate.asc(),
+                        adminOperationTask.isPinned.desc(),
+                        adminOperationTask.taskNo.desc()
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, int limit) {
+        return queryFactory
+                .select(Projections.constructor(
+                        AdminOperationTaskAssigneeRecommendationDto.class,
+                        adminUser.adminNo,
+                        adminUser.name,
+                        adminOperationTask.count(),
+                        sumInProgressCount(),
+                        sumOverdueCount(today)
+                ))
+                .from(adminUser)
+                .leftJoin(adminOperationTask).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .groupBy(adminUser.adminNo, adminUser.name)
+                .orderBy(
+                        sumOverdueCount(today).asc(),
+                        sumInProgressCount().asc(),
+                        adminOperationTask.count().asc(),
+                        adminUser.adminNo.asc()
                 )
                 .limit(limit)
                 .fetch();

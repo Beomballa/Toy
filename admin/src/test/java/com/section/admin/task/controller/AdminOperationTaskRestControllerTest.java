@@ -119,6 +119,7 @@ class AdminOperationTaskRestControllerTest {
                         "/admin/settings/tasks?assigneeAdminNo=7&overdueOnly=Y",
                         "/admin/settings/logs?adminNo=7&actionType=TASK_",
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(11L, "정산 점검", "진행중", "높음", "2026-05-26", "/admin/settings/tasks/get?no=11", "/admin/settings/tasks/history?taskNo=11")),
+                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(12L, "배송 지연 확인", "대기", "중간", "기한 초과", "/admin/settings/tasks/get?no=12", "/admin/settings/tasks/history?taskNo=12")),
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentComment(31L, 11L, "정산 점검", "관리자", "우선 확인 필요", "2026-05-25 11:00", "/admin/settings/tasks/get?no=11")),
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentHistory(15L, 11L, "운영 작업 #11", "작업 수정", "운영자", "2026-05-25 12:00", "/admin/settings/tasks/get?no=11", "/api/admin/logs/get?no=15"))
                 ));
@@ -127,6 +128,7 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assigneeAdminName").value("운영자"))
                 .andExpect(jsonPath("$.summary.totalCount").value(6L))
+                .andExpect(jsonPath("$.overdueTasks[0].title").value("배송 지연 확인"))
                 .andExpect(jsonPath("$.recentComments[0].content").value("우선 확인 필요"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
     }
@@ -139,6 +141,8 @@ class AdminOperationTaskRestControllerTest {
                         3L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-23 10:00",
                         "/admin/settings/tasks/history?taskNo=3",
                         "/admin/settings/logs?actionType=TASK_&targetId=3",
+                        List.of(new AdminOperationTaskDetailResponse.AssigneeOption(2L, "운영자")),
+                        List.of(new AdminOperationTaskDetailResponse.AssignmentRecommendation(5L, "지원자", 1L, 0L, 0L, "기한 초과 없이 운영 중입니다.")),
                         List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3", "/admin/settings/tasks/history?taskNo=3")),
                         List.of(new AdminOperationTaskDetailResponse.Comment(14L, 2L, "운영자", "메모", "2026-05-23 11:05"))
                 ));
@@ -150,6 +154,8 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.priority").value("HIGH"))
                 .andExpect(jsonPath("$.historyPath").value("/admin/settings/tasks/history?taskNo=3"))
                 .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=TASK_&targetId=3"))
+                .andExpect(jsonPath("$.assigneeOptions[0].name").value("운영자"))
+                .andExpect(jsonPath("$.assignmentRecommendations[0].adminName").value("지원자"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"))
                 .andExpect(jsonPath("$.comments[0].content").value("메모"));
     }

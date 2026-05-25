@@ -73,6 +73,7 @@ public class AdminOperationTaskWorkloadService {
                 assigneeName,
                 workload,
                 adminOperationTaskRepository.getRecentTasksByAssigneeAdminNo(assigneeAdminNo, 5),
+                adminOperationTaskRepository.getOverdueTasksByAssigneeAdminNo(assigneeAdminNo, today, 5),
                 adminOperationTaskCommentRepository.getRecentCommentsByAssigneeAdminNo(assigneeAdminNo, 5),
                 recentLogs.items()
         );

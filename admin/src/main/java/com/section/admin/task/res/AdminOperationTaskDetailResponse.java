@@ -1,6 +1,7 @@
 package com.section.admin.task.res;
 
 import com.section.admin.log.res.AdminLogListResponse;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.base.entity.type.AdminOperationTaskPriority;
 import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
@@ -26,12 +27,16 @@ public record AdminOperationTaskDetailResponse(
         String crtDtm,
         String historyPath,
         String activityLogPath,
+        List<AssigneeOption> assigneeOptions,
+        List<AssignmentRecommendation> assignmentRecommendations,
         List<RecentHistory> recentHistories,
         List<Comment> comments
 ) {
     public static AdminOperationTaskDetailResponse from(
             AdminOperationTask task,
             String assigneeAdminName,
+            List<AssigneeOption> assigneeOptions,
+            List<AdminOperationTaskAssigneeRecommendationDto> assignmentRecommendations,
             List<AdminLogListResponse.Item> recentHistories,
             List<AdminOperationTaskCommentResDto> comments
     ) {
@@ -53,9 +58,47 @@ public record AdminOperationTaskDetailResponse(
                 format(task.getCrtDtm()),
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo(),
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo(),
+                assigneeOptions == null ? List.of() : assigneeOptions,
+                assignmentRecommendations == null ? List.of() : assignmentRecommendations.stream().map(AssignmentRecommendation::from).toList(),
                 recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList(),
                 comments == null ? List.of() : comments.stream().map(Comment::from).toList()
         );
+    }
+
+    public record AssigneeOption(
+            Long adminNo,
+            String name
+    ) {
+    }
+
+    public record AssignmentRecommendation(
+            Long adminNo,
+            String adminName,
+            long totalCount,
+            long inProgressCount,
+            long overdueCount,
+            String reasonLabel
+    ) {
+        public static AssignmentRecommendation from(AdminOperationTaskAssigneeRecommendationDto dto) {
+            return new AssignmentRecommendation(
+                    dto.adminNo(),
+                    dto.adminName(),
+                    dto.totalCount(),
+                    dto.inProgressCount(),
+                    dto.overdueCount(),
+                    buildReasonLabel(dto)
+            );
+        }
+
+        private static String buildReasonLabel(AdminOperationTaskAssigneeRecommendationDto dto) {
+            if (dto.overdueCount() == 0 && dto.totalCount() == 0) {
+                return "현재 배정 작업이 없습니다.";
+            }
+            if (dto.overdueCount() == 0) {
+                return "기한 초과 없이 운영 중입니다.";
+            }
+            return "기한 초과 " + dto.overdueCount() + "건 · 전체 " + dto.totalCount() + "건";
+        }
     }
 
     public record RecentHistory(

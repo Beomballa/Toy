@@ -98,6 +98,7 @@ class AdminOperationTaskWorkloadServiceTest {
         task.setAssigneeAdminName("운영자");
         task.setDueDate(LocalDate.of(2026, 5, 26));
         when(adminOperationTaskRepository.getRecentTasksByAssigneeAdminNo(7L, 5)).thenReturn(List.of(task));
+        when(adminOperationTaskRepository.getOverdueTasksByAssigneeAdminNo(7L, LocalDate.now(), 5)).thenReturn(List.of(task));
 
         AdminOperationTaskWorkloadCommentSummaryDto comment = new AdminOperationTaskWorkloadCommentSummaryDto();
         comment.setAssigneeAdminNo(7L);
@@ -125,6 +126,7 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals("운영자", response.assigneeAdminName());
         assertEquals(1, response.recentTasks().size());
         assertEquals("정산 점검", response.recentTasks().get(0).title());
+        assertEquals(1, response.overdueTasks().size());
         assertEquals(1, response.recentComments().size());
         assertEquals("우선 확인 필요", response.recentComments().get(0).content());
         assertEquals(1, response.recentHistories().size());

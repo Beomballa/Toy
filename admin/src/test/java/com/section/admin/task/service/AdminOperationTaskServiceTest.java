@@ -7,8 +7,10 @@ import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
+import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
@@ -173,6 +175,15 @@ class AdminOperationTaskServiceTest {
         when(adminUserRepository.findById(3L)).thenReturn(Optional.of(
                 AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
         ));
+        when(adminUserRepository.findAll()).thenReturn(List.of(
+                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build(),
+                AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
+        ));
+        when(adminOperationTaskRepository.getTaskAssignmentRecommendations(any(LocalDate.class), eq(3)))
+                .thenReturn(List.of(
+                        new AdminOperationTaskAssigneeRecommendationDto(2L, "운영자", 0L, 0L, 0L),
+                        new AdminOperationTaskAssigneeRecommendationDto(3L, "담당자", 4L, 2L, 1L)
+                ));
         when(adminLogService.getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5))))
                 .thenReturn(new AdminLogListResponse(
                         List.of(new AdminLogListResponse.Item(9L, 1L, "운영자", "TASK_UPDATE", 11L, "운영 작업 #11", "/admin/settings/tasks/get?no=11&returnTo=/admin/settings/tasks", "127.0.0.1", "2026-05-23 10:00")),
@@ -201,6 +212,12 @@ class AdminOperationTaskServiceTest {
         assertEquals("/admin/settings/tasks/history?taskNo=11", result.recentHistories().get(0).historyPath());
         assertEquals(1, result.comments().size());
         assertEquals("우선 확인 필요", result.comments().get(0).content());
+        assertEquals(2, result.assigneeOptions().size());
+        assertEquals("담당자", result.assigneeOptions().get(0).name());
+        assertEquals("운영자", result.assigneeOptions().get(1).name());
+        assertEquals(2, result.assignmentRecommendations().size());
+        assertEquals("현재 배정 작업이 없습니다.", result.assignmentRecommendations().get(0).reasonLabel());
+        assertEquals("기한 초과 1건 · 전체 4건", result.assignmentRecommendations().get(1).reasonLabel());
     }
 
     @Test

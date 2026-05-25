@@ -24,6 +24,7 @@ const TaskWorkloadDetail = {
             document.getElementById('taskWorkloadDetailTitle').textContent = error.message;
             document.getElementById('workloadDetailMetaText').textContent = '상세 메타 확인 불가';
             document.getElementById('workloadRecentTasksBody').innerHTML = `<div class="text-danger small">${this.escapeHtml(error.message)}</div>`;
+            document.getElementById('workloadOverdueTasksBody').innerHTML = '<div class="text-muted small">기한 초과 작업을 확인할 수 없습니다.</div>';
             document.getElementById('workloadRecentCommentsBody').innerHTML = '<div class="text-muted small">최근 메모를 확인할 수 없습니다.</div>';
             document.getElementById('workloadRecentHistoriesBody').innerHTML = '<div class="text-muted small">최근 활동을 확인할 수 없습니다.</div>';
         }
@@ -44,6 +45,7 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadDetailLogButton').href = data.activityLogPath || '#';
 
         this.renderRecentTasks(data.recentTasks || []);
+        this.renderOverdueTasks(data.overdueTasks || []);
         this.renderRecentComments(data.recentComments || []);
         this.renderRecentHistories(data.recentHistories || []);
     },
@@ -60,6 +62,26 @@ const TaskWorkloadDetail = {
                 <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                 <div class="mt-2">
+                    <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    renderOverdueTasks(items) {
+        const body = document.getElementById('workloadOverdueTasksBody');
+        if (!body) return;
+        if (!items.length) {
+            body.innerHTML = '<div class="text-muted small">기한 초과 작업이 없습니다.</div>';
+            return;
+        }
+        body.innerHTML = items.map((item) => `
+            <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
+                <div class="d-flex justify-content-between align-items-start gap-3">
+                    <div>
+                        <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
+                        <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
+                    </div>
                     <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
                 </div>
             </div>

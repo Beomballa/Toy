@@ -14,6 +14,7 @@ import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
 import com.section.common.system.entity.AdminOperationTaskComment;
 import com.section.common.system.entity.AdminOperationTask;
@@ -67,6 +68,8 @@ public class AdminOperationTaskService {
         return AdminOperationTaskDetailResponse.from(
                 task,
                 assigneeAdminName,
+                getTaskDetailAssigneeOptions(),
+                adminOperationTaskRepository.getTaskAssignmentRecommendations(LocalDate.now(), 3),
                 recentLogs.items(),
                 adminOperationTaskCommentRepository.getTaskComments(taskNo, 20)
         );
@@ -76,6 +79,13 @@ public class AdminOperationTaskService {
         return adminUserRepository.findAll().stream()
                 .sorted(Comparator.comparing(AdminUser::getName))
                 .map(admin -> new AdminOperationTaskListResponse.AssigneeOption(admin.getAdminNo(), admin.getName()))
+                .toList();
+    }
+
+    private List<AdminOperationTaskDetailResponse.AssigneeOption> getTaskDetailAssigneeOptions() {
+        return adminUserRepository.findAll().stream()
+                .sorted(Comparator.comparing(AdminUser::getName))
+                .map(admin -> new AdminOperationTaskDetailResponse.AssigneeOption(admin.getAdminNo(), admin.getName()))
                 .toList();
     }
 

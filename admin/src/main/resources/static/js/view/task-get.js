@@ -47,6 +47,12 @@ const TaskDetailPage = {
                 this.deleteComment(Number(deleteButton.dataset.commentNo));
             }
         });
+        document.getElementById('taskAssignmentRecommendationList')?.addEventListener('click', (event) => {
+            const applyButton = event.target.closest('[data-role="apply-task-recommendation"]');
+            if (applyButton) {
+                this.applyRecommendation(Number(applyButton.dataset.adminNo));
+            }
+        });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -95,6 +101,8 @@ const TaskDetailPage = {
         document.getElementById('taskDetailTaskNo').textContent = data.taskNo || '-';
         document.getElementById('taskDetailMeta').textContent = `운영 작업 #${data.taskNo}`;
         document.getElementById('taskDetailSummary').textContent = `${data.statusLabel} · ${data.priorityLabel} · 담당자 ${data.assigneeAdminName || '미지정'}`;
+        this.renderAssigneeOptions(data.assigneeOptions || []);
+        this.renderAssignmentRecommendations(data.assignmentRecommendations || []);
         const historyPath = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
         document.getElementById('btnTaskDetailHistory').href = historyPath;
         document.getElementById('btnTaskDetailLog').href = data.activityLogPath;
@@ -129,6 +137,42 @@ const TaskDetailPage = {
         document.getElementById('taskDetailEditDueDate').value = detail.dueDate || '';
         document.getElementById('taskDetailEditPinned').value = detail.isPinned || 'N';
         this.modal?.show();
+    },
+
+    renderAssigneeOptions(options) {
+        const select = document.getElementById('taskDetailEditAssignee');
+        if (!select) return;
+        const selected = this.state.currentDetail?.assigneeAdminNo || '';
+        select.innerHTML = ['<option value="">미지정</option>']
+            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .join('');
+        select.value = selected;
+    },
+
+    renderAssignmentRecommendations(items) {
+        const listEl = document.getElementById('taskAssignmentRecommendationList');
+        const metaEl = document.getElementById('taskAssignmentRecommendationMeta');
+        if (!listEl || !metaEl) return;
+
+        if (!items.length) {
+            listEl.innerHTML = '<div class="text-muted small">추천 가능한 담당자가 없습니다.</div>';
+            metaEl.textContent = '추천 가능한 담당자가 없습니다.';
+            return;
+        }
+
+        listEl.innerHTML = items.map((item) => `
+            <div class="col-md-4">
+                <div class="border rounded-3 p-3 h-100">
+                    <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
+                    <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
+                    <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-task-recommendation" data-admin-no="${item.adminNo}">이 담당자로 배정</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        metaEl.textContent = `추천 후보 ${items.length}명`;
     },
 
     async saveDetail() {
@@ -392,6 +436,42 @@ const TaskDetailPage = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    async applyRecommendation(adminNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 배정 추천 적용'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail) return;
+
+        const confirmed = await CommonJS.confirm('추천 담당자로 바로 배정하시겠습니까?', '배정 확인');
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/admin/settings/tasks/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskNo: detail.taskNo,
+                    title: detail.title,
+                    description: detail.description,
+                    status: detail.status,
+                    priority: detail.priority,
+                    assigneeAdminNo: adminNo,
+                    dueDate: detail.dueDate || null,
+                    isPinned: detail.isPinned
+                })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '추천 담당자 배정에 실패했습니다.'));
+            }
+            await CommonJS.alert('추천 담당자로 배정되었습니다.', '성공', 'success');
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
     }
 };
 

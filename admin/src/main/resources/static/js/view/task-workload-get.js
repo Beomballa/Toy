@@ -1,11 +1,33 @@
 const TaskWorkloadDetail = {
     initialized: false,
     bootstrap: window.taskWorkloadDetailBootstrap || {},
+    operationPolicy: null,
 
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        this.bindEvents();
+        this.applyOperationPolicy();
+        window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
+    },
+
+    bindEvents() {
+        document.getElementById('workloadOverdueTasksBody')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-role="complete-overdue-task"]');
+            if (button) {
+                this.completeTask(Number(button.dataset.taskNo));
+            }
+        });
+    },
+
+    async applyOperationPolicy(settings = null) {
+        try {
+            this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
+            this.syncOverdueActionState();
+        } catch (error) {
+            console.error('운영 설정 로드 실패:', error);
+        }
     },
 
     async loadDetail() {
@@ -27,6 +49,12 @@ const TaskWorkloadDetail = {
             document.getElementById('workloadOverdueTasksBody').innerHTML = '<div class="text-muted small">기한 초과 작업을 확인할 수 없습니다.</div>';
             document.getElementById('workloadRecentCommentsBody').innerHTML = '<div class="text-muted small">최근 메모를 확인할 수 없습니다.</div>';
             document.getElementById('workloadRecentHistoriesBody').innerHTML = '<div class="text-muted small">최근 활동을 확인할 수 없습니다.</div>';
+            const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+            if (metaEl) {
+                metaEl.dataset.detailState = 'error';
+                metaEl.dataset.stateMessage = error.message;
+                metaEl.dataset.overdueCount = '0';
+            }
         }
     },
 
@@ -41,13 +69,24 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadDetailOverdueCount').textContent = Number(data.summary?.overdueCount || 0).toLocaleString();
 
         document.getElementById('workloadDetailTaskListButton').href = data.targetPath || '#';
+        document.getElementById('workloadDetailTotalButton').href = data.targetPath || '#';
+        document.getElementById('workloadDetailTodoButton').href = data.todoPath || '#';
+        document.getElementById('workloadDetailInProgressButton').href = data.inProgressPath || '#';
         document.getElementById('workloadDetailOverdueButton').href = data.overduePath || '#';
+        document.getElementById('workloadDetailOverdueSummaryButton').href = data.overduePath || '#';
         document.getElementById('workloadDetailLogButton').href = data.activityLogPath || '#';
 
         this.renderRecentTasks(data.recentTasks || []);
         this.renderOverdueTasks(data.overdueTasks || []);
         this.renderRecentComments(data.recentComments || []);
         this.renderRecentHistories(data.recentHistories || []);
+        const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+        if (metaEl) {
+            metaEl.dataset.detailState = 'ready';
+            metaEl.dataset.stateMessage = '';
+            metaEl.dataset.assigneeAdminNo = String(data.assigneeAdminNo || '');
+            metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
+        }
     },
 
     renderRecentTasks(items) {
@@ -82,10 +121,14 @@ const TaskWorkloadDetail = {
                         <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
                         <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                     </div>
-                    <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                    <div class="d-flex flex-column gap-2">
+                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${item.taskNo}">완료 처리</button>
+                    </div>
                 </div>
             </div>
         `).join('');
+        this.syncOverdueActionState();
     },
 
     renderRecentComments(items) {
@@ -120,6 +163,36 @@ const TaskWorkloadDetail = {
                 </div>
             </div>
         `).join('');
+    },
+
+    syncOverdueActionState() {
+        const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy || {});
+        const reason = CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리');
+        document.querySelectorAll('[data-role="complete-overdue-task"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
+    },
+
+    async completeTask(taskNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리'), '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm('이 작업을 완료 처리하시겠습니까?', '완료 처리');
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`/api/admin/settings/tasks/status/${taskNo}?status=DONE`, {
+                method: 'PATCH'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '작업을 완료 처리하지 못했습니다.'));
+            }
+            await CommonJS.alert('작업이 완료 처리되었습니다.', '성공', 'success');
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
     },
 
     escapeHtml(value) {

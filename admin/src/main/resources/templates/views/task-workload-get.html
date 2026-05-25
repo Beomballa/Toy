@@ -34,26 +34,26 @@
 
     <div class="row g-4 mb-4">
         <div class="col-md-6 col-xl-3">
-            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">전체 작업</div><div class="stat-value" id="workloadDetailTotalCount">0</div></div></div>
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">전체 작업</div><div class="stat-value" id="workloadDetailTotalCount">0</div><a class="btn btn-sm btn-outline-secondary mt-3" id="workloadDetailTotalButton" href="#">목록 보기</a></div></div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">대기</div><div class="stat-value" id="workloadDetailTodoCount">0</div></div></div>
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">대기</div><div class="stat-value" id="workloadDetailTodoCount">0</div><a class="btn btn-sm btn-outline-secondary mt-3" id="workloadDetailTodoButton" href="#">대기 작업</a></div></div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">진행중</div><div class="stat-value" id="workloadDetailInProgressCount">0</div></div></div>
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">진행중</div><div class="stat-value" id="workloadDetailInProgressCount">0</div><a class="btn btn-sm btn-outline-secondary mt-3" id="workloadDetailInProgressButton" href="#">진행중 작업</a></div></div>
         </div>
         <div class="col-md-6 col-xl-3">
-            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">기한 초과</div><div class="stat-value" id="workloadDetailOverdueCount">0</div></div></div>
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">기한 초과</div><div class="stat-value" id="workloadDetailOverdueCount">0</div><a class="btn btn-sm btn-outline-danger mt-3" id="workloadDetailOverdueSummaryButton" href="#">기한 초과 목록</a></div></div>
         </div>
     </div>
 
     <div class="card animate-in mb-4">
         <div class="card-body">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div>
-                    <div class="fw-bold" id="workloadDetailAssigneeName">담당자 정보를 불러오는 중입니다...</div>
-                    <div class="small text-muted" id="workloadDetailMetaText">활동/작업 요약을 불러오는 중입니다...</div>
-                </div>
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <div class="fw-bold" id="workloadDetailAssigneeName">담당자 정보를 불러오는 중입니다...</div>
+                        <div class="small text-muted" id="workloadDetailMetaText">활동/작업 요약을 불러오는 중입니다...</div>
+                    </div>
                 <div class="d-flex gap-2">
                     <a class="btn btn-outline-secondary" id="workloadDetailTaskListButton" href="#">담당 작업</a>
                     <a class="btn btn-outline-secondary" id="workloadDetailOverdueButton" href="#">기한 초과 작업</a>
@@ -62,6 +62,12 @@
             </div>
         </div>
     </div>
+
+    <div id="taskWorkloadDetailStateMeta"
+         data-detail-state="loading"
+         data-state-message=""
+         data-assignee-admin-no=""
+         data-overdue-count="0"></div>
 
     <div class="row g-4">
         <div class="col-12">

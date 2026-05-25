@@ -116,6 +116,8 @@ class AdminOperationTaskRestControllerTest {
                         "운영자",
                         new AdminOperationTaskWorkloadDetailResponse.Summary(6L, 2L, 3L, 1L),
                         "/admin/settings/tasks?assigneeAdminNo=7",
+                        "/admin/settings/tasks?assigneeAdminNo=7&status=TODO",
+                        "/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS",
                         "/admin/settings/tasks?assigneeAdminNo=7&overdueOnly=Y",
                         "/admin/settings/logs?adminNo=7&actionType=TASK_",
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(11L, "정산 점검", "진행중", "높음", "2026-05-26", "/admin/settings/tasks/get?no=11", "/admin/settings/tasks/history?taskNo=11")),
@@ -128,6 +130,8 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assigneeAdminName").value("운영자"))
                 .andExpect(jsonPath("$.summary.totalCount").value(6L))
+                .andExpect(jsonPath("$.todoPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=TODO"))
+                .andExpect(jsonPath("$.inProgressPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS"))
                 .andExpect(jsonPath("$.overdueTasks[0].title").value("배송 지연 확인"))
                 .andExpect(jsonPath("$.recentComments[0].content").value("우선 확인 필요"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));

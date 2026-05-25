@@ -159,6 +159,11 @@ const TaskWorkloadDetail = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.assigneeAdminNo = String(data.assigneeAdminNo || '');
             metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
+            if (!metaEl.dataset.lastAction) {
+                metaEl.dataset.lastAction = '';
+                metaEl.dataset.lastActionTaskNo = '';
+                metaEl.dataset.lastActionStatus = '';
+            }
         }
     },
 
@@ -291,9 +296,11 @@ const TaskWorkloadDetail = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업을 완료 처리하지 못했습니다.'));
             }
+            this.setLastActionMeta('complete', taskNo, 'success');
             await CommonJS.alert('작업이 완료 처리되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('complete', taskNo, 'error');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -323,9 +330,11 @@ const TaskWorkloadDetail = {
                 dueDate: detail.dueDate || null,
                 isPinned: detail.isPinned
             }, '작업 우선순위를 변경하지 못했습니다.');
+            this.setLastActionMeta('raise-priority', taskNo, 'success');
             await CommonJS.alert('우선순위가 높음으로 변경되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('raise-priority', taskNo, 'error');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -413,12 +422,22 @@ const TaskWorkloadDetail = {
                 dueDate: this.reassignDetail.dueDate || null,
                 isPinned: this.reassignDetail.isPinned
             }, '작업을 재배정하지 못했습니다.');
+            this.setLastActionMeta('reassign', this.reassignDetail.taskNo, 'success');
             await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
             this.reassignModal?.hide();
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('reassign', this.reassignDetail?.taskNo, 'error');
             await CommonJS.alert(error.message, '오류', 'error');
         }
+    },
+
+    setLastActionMeta(action, taskNo, status) {
+        const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionTaskNo = taskNo == null ? '' : String(taskNo);
+        metaEl.dataset.lastActionStatus = status || '';
     },
 
     async fetchTaskDetail(taskNo) {

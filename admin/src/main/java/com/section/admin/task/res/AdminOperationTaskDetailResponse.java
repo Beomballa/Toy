@@ -94,10 +94,13 @@ public record AdminOperationTaskDetailResponse(
             if (dto.overdueCount() == 0 && dto.totalCount() == 0) {
                 return "현재 배정 작업이 없습니다.";
             }
-            if (dto.overdueCount() == 0) {
-                return "기한 초과 없이 운영 중입니다.";
+            if (dto.overdueCount() == 0 && dto.inProgressCount() == 0) {
+                return "진행중/기한 초과 없이 여유가 있습니다.";
             }
-            return "기한 초과 " + dto.overdueCount() + "건 · 전체 " + dto.totalCount() + "건";
+            if (dto.overdueCount() == 0) {
+                return "기한 초과 0건 · 진행중 " + dto.inProgressCount() + "건 · 전체 " + dto.totalCount() + "건";
+            }
+            return "기한 초과 " + dto.overdueCount() + "건 · 진행중 " + dto.inProgressCount() + "건 · 전체 " + dto.totalCount() + "건";
         }
     }
 

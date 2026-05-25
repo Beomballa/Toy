@@ -218,7 +218,7 @@ class AdminOperationTaskServiceTest {
         assertEquals(2, result.assignmentRecommendations().size());
         assertEquals(2L, result.assignmentRecommendations().get(0).adminNo());
         assertEquals("현재 배정 작업이 없습니다.", result.assignmentRecommendations().get(0).reasonLabel());
-        assertEquals("기한 초과 1건 · 전체 4건", result.assignmentRecommendations().get(1).reasonLabel());
+        assertEquals("기한 초과 1건 · 진행중 2건 · 전체 4건", result.assignmentRecommendations().get(1).reasonLabel());
         assertEquals(5L, result.assignmentRecommendations().get(1).adminNo());
     }
 

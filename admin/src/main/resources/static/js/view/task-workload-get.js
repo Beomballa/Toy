@@ -128,6 +128,7 @@ const TaskWorkloadDetail = {
                 metaEl.dataset.stateMessage = error.message;
                 metaEl.dataset.overdueCount = '0';
             }
+            this.renderLastActionNotice();
         }
     },
 
@@ -165,6 +166,7 @@ const TaskWorkloadDetail = {
                 metaEl.dataset.lastActionStatus = '';
             }
         }
+        this.renderLastActionNotice();
     },
 
     renderRecentTasks(items) {
@@ -438,6 +440,48 @@ const TaskWorkloadDetail = {
         metaEl.dataset.lastAction = action || '';
         metaEl.dataset.lastActionTaskNo = taskNo == null ? '' : String(taskNo);
         metaEl.dataset.lastActionStatus = status || '';
+        this.renderLastActionNotice();
+    },
+
+    renderLastActionNotice() {
+        const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+        const noticeEl = document.getElementById('taskWorkloadActionNotice');
+        if (!metaEl || !noticeEl) return;
+
+        const action = metaEl.dataset.lastAction || '';
+        const taskNo = metaEl.dataset.lastActionTaskNo || '';
+        const status = metaEl.dataset.lastActionStatus || '';
+        const taskLabel = taskNo ? `작업 #${taskNo}` : '작업';
+
+        if (!action || !status) {
+            noticeEl.classList.add('d-none');
+            noticeEl.classList.remove('alert-success', 'alert-danger');
+            noticeEl.textContent = '';
+            noticeEl.dataset.visible = 'N';
+            noticeEl.dataset.action = '';
+            noticeEl.dataset.taskNo = '';
+            noticeEl.dataset.status = '';
+            return;
+        }
+
+        const templates = {
+            'complete:success': `${taskLabel}을 완료 처리했습니다.`,
+            'complete:error': `${taskLabel} 완료 처리에 실패했습니다.`,
+            'raise-priority:success': `${taskLabel} 우선순위를 높음으로 변경했습니다.`,
+            'raise-priority:error': `${taskLabel} 우선순위 변경에 실패했습니다.`,
+            'reassign:success': `${taskLabel}을 재배정했습니다.`,
+            'reassign:error': `${taskLabel} 재배정에 실패했습니다.`
+        };
+
+        const message = templates[`${action}:${status}`] || `${taskLabel} 조치 결과를 확인해 주세요.`;
+        const isSuccess = status === 'success';
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger');
+        noticeEl.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+        noticeEl.textContent = message;
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.taskNo = taskNo;
+        noticeEl.dataset.status = status;
     },
 
     async fetchTaskDetail(taskNo) {

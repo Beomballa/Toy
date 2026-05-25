@@ -2,10 +2,16 @@ const TaskWorkloadDetail = {
     initialized: false,
     bootstrap: window.taskWorkloadDetailBootstrap || {},
     operationPolicy: null,
+    reassignModal: null,
+    reassignDetail: null,
 
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        const modalEl = document.getElementById('taskReassignModal');
+        if (modalEl) {
+            this.reassignModal = new bootstrap.Modal(modalEl);
+        }
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -14,11 +20,25 @@ const TaskWorkloadDetail = {
 
     bindEvents() {
         document.getElementById('workloadOverdueTasksBody')?.addEventListener('click', (event) => {
-            const button = event.target.closest('[data-role="complete-overdue-task"]');
-            if (button) {
-                this.completeTask(Number(button.dataset.taskNo));
+            const completeButton = event.target.closest('[data-role="complete-overdue-task"]');
+            if (completeButton) {
+                this.completeTask(Number(completeButton.dataset.taskNo));
+                return;
+            }
+            const reassignButton = event.target.closest('[data-role="reassign-overdue-task"]');
+            if (reassignButton) {
+                this.openReassignModal(Number(reassignButton.dataset.taskNo));
             }
         });
+        document.getElementById('taskReassignRecommendationList')?.addEventListener('click', (event) => {
+            const applyButton = event.target.closest('[data-role="apply-reassign-recommendation"]');
+            if (!applyButton) return;
+            const assigneeSelect = document.getElementById('taskReassignAssignee');
+            if (assigneeSelect) {
+                assigneeSelect.value = applyButton.dataset.adminNo || '';
+            }
+        });
+        document.getElementById('btnTaskReassignApply')?.addEventListener('click', () => this.applyReassignment());
     },
 
     async applyOperationPolicy(settings = null) {
@@ -124,6 +144,7 @@ const TaskWorkloadDetail = {
                     <div class="d-flex flex-column gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
                         <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${item.taskNo}">완료 처리</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-overdue-task" data-task-no="${item.taskNo}">재배정</button>
                     </div>
                 </div>
             </div>
@@ -167,10 +188,14 @@ const TaskWorkloadDetail = {
 
     syncOverdueActionState() {
         const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy || {});
-        const reason = CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리');
+        const reason = CommonJS.getAdminWriteBlockedReason('기한 초과 작업 직접 조치');
         document.querySelectorAll('[data-role="complete-overdue-task"]').forEach((button) => {
             CommonJS.setButtonDisabled(button, disabled, reason);
         });
+        document.querySelectorAll('[data-role="reassign-overdue-task"]').forEach((button) => {
+            CommonJS.setButtonDisabled(button, disabled, reason);
+        });
+        CommonJS.setButtonDisabled(document.getElementById('btnTaskReassignApply'), disabled, reason);
     },
 
     async completeTask(taskNo) {
@@ -193,6 +218,113 @@ const TaskWorkloadDetail = {
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         }
+    },
+
+    async openReassignModal(taskNo) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
+            return;
+        }
+        this.reassignDetail = null;
+        const metaEl = document.getElementById('taskReassignModalMeta');
+        const listEl = document.getElementById('taskReassignRecommendationList');
+        const selectEl = document.getElementById('taskReassignAssignee');
+        if (metaEl) metaEl.textContent = '재배정 정보를 불러오는 중입니다...';
+        if (listEl) listEl.innerHTML = '<div class="col-12"><div class="text-muted small">추천 담당자를 불러오는 중입니다...</div></div>';
+        if (selectEl) selectEl.innerHTML = '<option value="">미지정</option>';
+        this.reassignModal?.show();
+
+        try {
+            const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '작업 상세를 불러오지 못했습니다.'));
+            }
+            const data = await response.json();
+            this.reassignDetail = data;
+            if (metaEl) {
+                metaEl.textContent = `${data.title || '-'} · 현재 담당자 ${data.assigneeAdminName || '미지정'} · ${data.dueState || '-'}`;
+            }
+            this.renderReassignAssigneeOptions(data.assigneeOptions || [], data.assigneeAdminNo);
+            this.renderReassignRecommendations(data.assignmentRecommendations || []);
+            this.syncOverdueActionState();
+        } catch (error) {
+            if (metaEl) metaEl.textContent = error.message;
+            if (listEl) listEl.innerHTML = `<div class="col-12"><div class="text-danger small">${this.escapeHtml(error.message)}</div></div>`;
+        }
+    },
+
+    renderReassignAssigneeOptions(options, selectedAssigneeAdminNo) {
+        const select = document.getElementById('taskReassignAssignee');
+        if (!select) return;
+        select.innerHTML = ['<option value="">미지정</option>']
+            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .join('');
+        select.value = selectedAssigneeAdminNo || '';
+    },
+
+    renderReassignRecommendations(items) {
+        const listEl = document.getElementById('taskReassignRecommendationList');
+        if (!listEl) return;
+        if (!items.length) {
+            listEl.innerHTML = '<div class="col-12"><div class="text-muted small">추천 가능한 담당자가 없습니다.</div></div>';
+            return;
+        }
+        listEl.innerHTML = items.map((item) => `
+            <div class="col-md-4">
+                <div class="border rounded-3 p-3 h-100">
+                    <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
+                    <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
+                    <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-reassign-recommendation" data-admin-no="${item.adminNo}">이 담당자로 선택</button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    async applyReassignment() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
+            return;
+        }
+        if (!this.reassignDetail) {
+            await CommonJS.alert('재배정할 작업 정보를 다시 불러와 주세요.', '알림', 'warning');
+            return;
+        }
+        const assigneeAdminNo = this.parseOptionalNumber(document.getElementById('taskReassignAssignee')?.value);
+        const confirmed = await CommonJS.confirm('선택한 담당자로 재배정하시겠습니까?', '재배정 확인');
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch('/api/admin/settings/tasks/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskNo: this.reassignDetail.taskNo,
+                    title: this.reassignDetail.title,
+                    description: this.reassignDetail.description,
+                    status: this.reassignDetail.status,
+                    priority: this.reassignDetail.priority,
+                    assigneeAdminNo,
+                    dueDate: this.reassignDetail.dueDate || null,
+                    isPinned: this.reassignDetail.isPinned
+                })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '작업을 재배정하지 못했습니다.'));
+            }
+            await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
+            this.reassignModal?.hide();
+            this.loadDetail();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    parseOptionalNumber(value) {
+        if (value == null || value === '') return null;
+        return Number(value);
     },
 
     escapeHtml(value) {

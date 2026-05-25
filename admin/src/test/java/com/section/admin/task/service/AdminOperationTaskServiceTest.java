@@ -179,10 +179,10 @@ class AdminOperationTaskServiceTest {
                 AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build(),
                 AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
         ));
-        when(adminOperationTaskRepository.getTaskAssignmentRecommendations(any(LocalDate.class), eq(3)))
+        when(adminOperationTaskRepository.getTaskAssignmentRecommendations(any(LocalDate.class), eq(3L), eq(3)))
                 .thenReturn(List.of(
                         new AdminOperationTaskAssigneeRecommendationDto(2L, "운영자", 0L, 0L, 0L),
-                        new AdminOperationTaskAssigneeRecommendationDto(3L, "담당자", 4L, 2L, 1L)
+                        new AdminOperationTaskAssigneeRecommendationDto(5L, "지원자", 4L, 2L, 1L)
                 ));
         when(adminLogService.getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5))))
                 .thenReturn(new AdminLogListResponse(
@@ -216,8 +216,10 @@ class AdminOperationTaskServiceTest {
         assertEquals("담당자", result.assigneeOptions().get(0).name());
         assertEquals("운영자", result.assigneeOptions().get(1).name());
         assertEquals(2, result.assignmentRecommendations().size());
+        assertEquals(2L, result.assignmentRecommendations().get(0).adminNo());
         assertEquals("현재 배정 작업이 없습니다.", result.assignmentRecommendations().get(0).reasonLabel());
         assertEquals("기한 초과 1건 · 전체 4건", result.assignmentRecommendations().get(1).reasonLabel());
+        assertEquals(5L, result.assignmentRecommendations().get(1).adminNo());
     }
 
     @Test

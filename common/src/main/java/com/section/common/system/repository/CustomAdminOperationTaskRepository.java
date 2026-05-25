@@ -23,7 +23,7 @@ public interface CustomAdminOperationTaskRepository {
     AdminOperationTaskWorkloadDto getTaskWorkload(Long assigneeAdminNo, LocalDate today);
     List<AdminOperationTaskListResDto> getRecentTasksByAssigneeAdminNo(Long assigneeAdminNo, int limit);
     List<AdminOperationTaskListResDto> getOverdueTasksByAssigneeAdminNo(Long assigneeAdminNo, LocalDate today, int limit);
-    List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, int limit);
+    List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, Long excludeAdminNo, int limit);
     Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today);
     AdminOperationTaskWorkloadSummaryDto getTaskWorkloadSummary(AdminOperationTaskWorkloadListQuery query, LocalDate today);
 }

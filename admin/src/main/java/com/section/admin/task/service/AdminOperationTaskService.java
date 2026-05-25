@@ -69,7 +69,7 @@ public class AdminOperationTaskService {
                 task,
                 assigneeAdminName,
                 getTaskDetailAssigneeOptions(),
-                adminOperationTaskRepository.getTaskAssignmentRecommendations(LocalDate.now(), 3),
+                adminOperationTaskRepository.getTaskAssignmentRecommendations(LocalDate.now(), task.getAssigneeAdminNo(), 3),
                 recentLogs.items(),
                 adminOperationTaskCommentRepository.getTaskComments(taskNo, 20)
         );

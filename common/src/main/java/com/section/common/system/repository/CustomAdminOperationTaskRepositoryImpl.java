@@ -237,7 +237,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
     }
 
     @Override
-    public List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, int limit) {
+    public List<AdminOperationTaskAssigneeRecommendationDto> getTaskAssignmentRecommendations(LocalDate today, Long excludeAdminNo, int limit) {
         return queryFactory
                 .select(Projections.constructor(
                         AdminOperationTaskAssigneeRecommendationDto.class,
@@ -249,6 +249,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 ))
                 .from(adminUser)
                 .leftJoin(adminOperationTask).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(adminNoNe(excludeAdminNo))
                 .groupBy(adminUser.adminNo, adminUser.name)
                 .orderBy(
                         sumOverdueCount(today).asc(),
@@ -330,6 +331,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 )
                 .fetchOne();
         return count == null ? 0L : count;
+    }
+
+    private BooleanExpression adminNoNe(Long adminNo) {
+        return adminNo == null ? null : adminUser.adminNo.ne(adminNo);
     }
 
     private long countUnassigned(AdminOperationTaskListQuery query, LocalDate today) {

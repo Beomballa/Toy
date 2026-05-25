@@ -156,6 +156,53 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
     }
 
     @Override
+    public AdminOperationTaskWorkloadDto getTaskWorkload(Long assigneeAdminNo, LocalDate today) {
+        return queryFactory
+                .select(Projections.constructor(
+                        AdminOperationTaskWorkloadDto.class,
+                        adminOperationTask.assigneeAdminNo,
+                        adminUser.name,
+                        adminOperationTask.count(),
+                        sumTodoCount(),
+                        sumInProgressCount(),
+                        sumOverdueCount(today)
+                ))
+                .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo))
+                .groupBy(adminOperationTask.assigneeAdminNo, adminUser.name)
+                .fetchOne();
+    }
+
+    @Override
+    public List<AdminOperationTaskListResDto> getRecentTasksByAssigneeAdminNo(Long assigneeAdminNo, int limit) {
+        return queryFactory
+                .select(Projections.bean(
+                        AdminOperationTaskListResDto.class,
+                        adminOperationTask.taskNo,
+                        adminOperationTask.title,
+                        adminOperationTask.description,
+                        adminOperationTask.status,
+                        adminOperationTask.priority,
+                        adminOperationTask.assigneeAdminNo,
+                        adminUser.name.as("assigneeAdminName"),
+                        adminOperationTask.dueDate,
+                        adminOperationTask.isPinned,
+                        adminOperationTask.crtDtm
+                ))
+                .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
+                .where(adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo))
+                .orderBy(
+                        adminOperationTask.isPinned.desc(),
+                        adminOperationTask.dueDate.asc().nullsLast(),
+                        adminOperationTask.taskNo.desc()
+                )
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
     public Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today) {
         List<AdminOperationTaskWorkloadDto> content = queryFactory
                 .select(Projections.constructor(

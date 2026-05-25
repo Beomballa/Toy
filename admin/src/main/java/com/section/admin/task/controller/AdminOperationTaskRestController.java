@@ -11,6 +11,7 @@ import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.res.AdminOperationTaskWorkloadDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
 import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
@@ -38,6 +39,11 @@ public class AdminOperationTaskRestController {
     @GetMapping("/workloads/list")
     public ResponseEntity<AdminOperationTaskWorkloadListResponse> getWorkloads(@ModelAttribute AdminOperationTaskWorkloadListRequest req) {
         return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadList(req));
+    }
+
+    @GetMapping("/workloads/{adminNo}")
+    public ResponseEntity<AdminOperationTaskWorkloadDetailResponse> getWorkloadDetail(@PathVariable Long adminNo) {
+        return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadDetail(adminNo));
     }
 
     @GetMapping("/{no}")

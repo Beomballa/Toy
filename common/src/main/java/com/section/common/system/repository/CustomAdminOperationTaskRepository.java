@@ -19,6 +19,8 @@ public interface CustomAdminOperationTaskRepository {
     List<AdminOperationTask> getDashboardTasks(LocalDate today, int limit);
     List<AdminOperationTask> getDashboardUnassignedTasks(LocalDate today, int limit);
     List<AdminOperationTaskWorkloadDto> getDashboardTaskWorkloads(LocalDate today, int limit);
+    AdminOperationTaskWorkloadDto getTaskWorkload(Long assigneeAdminNo, LocalDate today);
+    List<AdminOperationTaskListResDto> getRecentTasksByAssigneeAdminNo(Long assigneeAdminNo, int limit);
     Page<AdminOperationTaskWorkloadDto> getTaskWorkloadPage(AdminOperationTaskWorkloadListQuery query, Pageable pageable, LocalDate today);
     AdminOperationTaskWorkloadSummaryDto getTaskWorkloadSummary(AdminOperationTaskWorkloadListQuery query, LocalDate today);
 }

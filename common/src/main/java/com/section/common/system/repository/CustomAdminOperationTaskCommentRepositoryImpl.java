@@ -115,4 +115,27 @@ public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdmi
                 .orderBy(adminOperationTaskComment.commentNo.desc())
                 .fetch();
     }
+
+    @Override
+    public List<AdminOperationTaskWorkloadCommentSummaryDto> getRecentCommentsByAssigneeAdminNo(Long assigneeAdminNo, int limit) {
+        return queryFactory
+                .select(Projections.bean(
+                        AdminOperationTaskWorkloadCommentSummaryDto.class,
+                        adminOperationTask.assigneeAdminNo,
+                        adminOperationTask.taskNo,
+                        adminOperationTask.title.as("taskTitle"),
+                        adminOperationTaskComment.commentNo,
+                        adminOperationTaskComment.crtNo.as("adminNo"),
+                        adminUser.name.as("adminName"),
+                        adminOperationTaskComment.content,
+                        adminOperationTaskComment.crtDtm
+                ))
+                .from(adminOperationTaskComment)
+                .join(adminOperationTask).on(adminOperationTaskComment.taskNo.eq(adminOperationTask.taskNo))
+                .leftJoin(adminUser).on(adminOperationTaskComment.crtNo.eq(adminUser.adminNo))
+                .where(adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo))
+                .orderBy(adminOperationTaskComment.commentNo.desc())
+                .limit(limit)
+                .fetch();
+    }
 }

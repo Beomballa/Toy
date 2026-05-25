@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>담당자 워크로드 상세 | Grade-Stock Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+    <div class="page-header">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings">시스템 설정</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings/tasks">운영 작업</a></li>
+                <li class="breadcrumb-item"><a href="/admin/settings/tasks/workloads">담당자별 워크로드</a></li>
+                <li class="breadcrumb-item active">상세</li>
+            </ol>
+        </nav>
+        <div class="page-title-wrapper">
+            <h1 class="page-title" id="taskWorkloadDetailTitle">담당자 워크로드 상세</h1>
+            <a class="btn btn-outline-secondary" id="taskWorkloadReturnButton" th:href="${returnTo}">
+                <i class="fas fa-arrow-left me-2"></i>이전 화면
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">전체 작업</div><div class="stat-value" id="workloadDetailTotalCount">0</div></div></div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">대기</div><div class="stat-value" id="workloadDetailTodoCount">0</div></div></div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">진행중</div><div class="stat-value" id="workloadDetailInProgressCount">0</div></div></div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card summary-card shadow-sm"><div class="card-body"><div class="text-muted small mb-2">기한 초과</div><div class="stat-value" id="workloadDetailOverdueCount">0</div></div></div>
+        </div>
+    </div>
+
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="fw-bold" id="workloadDetailAssigneeName">담당자 정보를 불러오는 중입니다...</div>
+                    <div class="small text-muted" id="workloadDetailMetaText">활동/작업 요약을 불러오는 중입니다...</div>
+                </div>
+                <div class="d-flex gap-2">
+                    <a class="btn btn-outline-secondary" id="workloadDetailTaskListButton" href="#">담당 작업</a>
+                    <a class="btn btn-outline-secondary" id="workloadDetailOverdueButton" href="#">기한 초과 작업</a>
+                    <a class="btn btn-outline-secondary" id="workloadDetailLogButton" href="#">활동 로그</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 작업</h6></div>
+                <div class="card-body" id="workloadRecentTasksBody">
+                    <div class="text-muted small">최근 작업을 불러오는 중입니다...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 메모</h6></div>
+                <div class="card-body" id="workloadRecentCommentsBody">
+                    <div class="text-muted small">최근 메모를 불러오는 중입니다...</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 활동</h6></div>
+                <div class="card-body" id="workloadRecentHistoriesBody">
+                    <div class="text-muted small">최근 활동을 불러오는 중입니다...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script th:inline="javascript">
+    window.taskWorkloadDetailBootstrap = {
+        adminNo: /*[[${adminNo}]]*/ 0,
+        returnTo: /*[[${returnTo}]]*/ '/admin/settings/tasks/workloads'
+    };
+</script>
+<script src="/js/view/task-workload-get.js"></script>
+<script>document.addEventListener('DOMContentLoaded', () => TaskWorkloadDetail.init());</script>
+</body>
+</html>

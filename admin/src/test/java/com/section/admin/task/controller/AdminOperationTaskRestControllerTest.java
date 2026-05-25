@@ -10,6 +10,7 @@ import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.res.AdminOperationTaskWorkloadDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
 import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
@@ -104,6 +105,30 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.items[0].latestCommentContent").value("우선 확인 필요"))
                 .andExpect(jsonPath("$.summary.assignedTaskCount").value(6L))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1명"));
+    }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 상세 API는 단건 응답을 반환한다")
+    void getWorkloadDetailReturnsItem() throws Exception {
+        when(adminOperationTaskWorkloadService.getWorkloadDetail(7L))
+                .thenReturn(new AdminOperationTaskWorkloadDetailResponse(
+                        7L,
+                        "운영자",
+                        new AdminOperationTaskWorkloadDetailResponse.Summary(6L, 2L, 3L, 1L),
+                        "/admin/settings/tasks?assigneeAdminNo=7",
+                        "/admin/settings/tasks?assigneeAdminNo=7&overdueOnly=Y",
+                        "/admin/settings/logs?adminNo=7&actionType=TASK_",
+                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(11L, "정산 점검", "진행중", "높음", "2026-05-26", "/admin/settings/tasks/get?no=11", "/admin/settings/tasks/history?taskNo=11")),
+                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentComment(31L, 11L, "정산 점검", "관리자", "우선 확인 필요", "2026-05-25 11:00", "/admin/settings/tasks/get?no=11")),
+                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentHistory(15L, 11L, "운영 작업 #11", "작업 수정", "운영자", "2026-05-25 12:00", "/admin/settings/tasks/get?no=11", "/api/admin/logs/get?no=15"))
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/tasks/workloads/7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assigneeAdminName").value("운영자"))
+                .andExpect(jsonPath("$.summary.totalCount").value(6L))
+                .andExpect(jsonPath("$.recentComments[0].content").value("우선 확인 필요"))
+                .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
     }
 
     @Test

@@ -11,4 +11,5 @@ public interface CustomAdminOperationTaskCommentRepository {
     List<AdminOperationTaskCommentResDto> getTaskComments(Long taskNo, int limit);
     List<AdminOperationTaskCommentSummaryDto> getLatestCommentsByTaskNos(List<Long> taskNos);
     List<AdminOperationTaskWorkloadCommentSummaryDto> getLatestCommentsByAssigneeAdminNos(List<Long> assigneeAdminNos);
+    List<AdminOperationTaskWorkloadCommentSummaryDto> getRecentCommentsByAssigneeAdminNo(Long assigneeAdminNo, int limit);
 }

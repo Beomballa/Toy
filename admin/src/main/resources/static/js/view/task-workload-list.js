@@ -108,7 +108,7 @@ const TaskWorkloadList = {
             <tr>
                 <td class="ps-4 text-muted small">${this.state.page * this.state.size + index + 1}</td>
                 <td>
-                    <a class="fw-bold text-dark text-decoration-none" href="${item.targetPath}">${this.escapeHtml(item.assigneeAdminName)}</a>
+                    <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/tasks/workloads/get?adminNo=${item.assigneeAdminNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.assigneeAdminName)}</a>
                 </td>
                 <td class="text-center fw-semibold">${Number(item.totalCount || 0).toLocaleString()}</td>
                 <td class="text-center">${Number(item.todoCount || 0).toLocaleString()}</td>

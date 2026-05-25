@@ -1,13 +1,19 @@
 package com.section.admin.task.service;
 
 import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
+import com.section.admin.task.res.AdminOperationTaskWorkloadDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
+import com.section.admin.log.res.AdminLogListResponse;
+import com.section.admin.log.service.AdminLogService;
 import com.section.common.system.dto.AdminOperationTaskWorkloadCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
+import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.repository.AdminOperationTaskCommentRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
+import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.system.entity.AdminUser;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +37,10 @@ class AdminOperationTaskWorkloadServiceTest {
     private AdminOperationTaskRepository adminOperationTaskRepository;
     @Mock
     private AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
+    @Mock
+    private AdminUserRepository adminUserRepository;
+    @Mock
+    private AdminLogService adminLogService;
 
     @InjectMocks
     private AdminOperationTaskWorkloadService adminOperationTaskWorkloadService;
@@ -69,5 +79,55 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals("우선 확인 필요", response.items().get(0).latestCommentContent());
         assertEquals(6L, response.summary().assignedTaskCount());
         assertEquals("검색 결과 1명", response.resultMeta().resultLabel());
+    }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 상세는 최근 작업 메모 활동을 함께 반환한다")
+    void getWorkloadDetailReturnsRecentContexts() {
+        when(adminUserRepository.findById(7L))
+                .thenReturn(java.util.Optional.of(AdminUser.builder().adminNo(7L).name("운영자").loginId("ops").password("pw").build()));
+        when(adminOperationTaskRepository.getTaskWorkload(7L, LocalDate.now()))
+                .thenReturn(new AdminOperationTaskWorkloadDto(7L, "운영자", 6L, 2L, 3L, 1L));
+
+        AdminOperationTaskListResDto task = new AdminOperationTaskListResDto();
+        task.setTaskNo(11L);
+        task.setTitle("정산 점검");
+        task.setStatus("IN_PROGRESS");
+        task.setPriority("HIGH");
+        task.setAssigneeAdminNo(7L);
+        task.setAssigneeAdminName("운영자");
+        task.setDueDate(LocalDate.of(2026, 5, 26));
+        when(adminOperationTaskRepository.getRecentTasksByAssigneeAdminNo(7L, 5)).thenReturn(List.of(task));
+
+        AdminOperationTaskWorkloadCommentSummaryDto comment = new AdminOperationTaskWorkloadCommentSummaryDto();
+        comment.setAssigneeAdminNo(7L);
+        comment.setTaskNo(11L);
+        comment.setTaskTitle("정산 점검");
+        comment.setAdminNo(3L);
+        comment.setAdminName("관리자");
+        comment.setContent("우선 확인 필요");
+        comment.setCrtDtm(java.time.LocalDateTime.of(2026, 5, 25, 11, 0));
+        when(adminOperationTaskCommentRepository.getRecentCommentsByAssigneeAdminNo(7L, 5)).thenReturn(List.of(comment));
+
+        AdminLogListResponse.Item logItem = new AdminLogListResponse.Item(
+                15L, 7L, "운영자", "TASK_UPDATE", 11L, "운영 작업 #11", "/admin/settings/tasks/get?no=11", "127.0.0.1", "2026-05-25 12:00"
+        );
+        when(adminLogService.getLogList(any(), any(PageRequest.class)))
+                .thenReturn(new AdminLogListResponse(
+                        List.of(logItem),
+                        1L, 1, 0, 5, 1L, 1L, "1-1 / 1건 · 1페이지",
+                        new AdminLogListResponse.AppliedQuery(7L, "TASK_", null, null, null),
+                        new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=TASK_")
+                ));
+
+        AdminOperationTaskWorkloadDetailResponse response = adminOperationTaskWorkloadService.getWorkloadDetail(7L);
+
+        assertEquals("운영자", response.assigneeAdminName());
+        assertEquals(1, response.recentTasks().size());
+        assertEquals("정산 점검", response.recentTasks().get(0).title());
+        assertEquals(1, response.recentComments().size());
+        assertEquals("우선 확인 필요", response.recentComments().get(0).content());
+        assertEquals(1, response.recentHistories().size());
+        assertEquals("작업 수정", response.recentHistories().get(0).actionLabel());
     }
 }

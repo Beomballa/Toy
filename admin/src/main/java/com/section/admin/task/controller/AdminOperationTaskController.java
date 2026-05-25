@@ -25,6 +25,15 @@ public class AdminOperationTaskController {
         return "views/task-workload-list";
     }
 
+    @GetMapping("/workloads/get")
+    public String taskWorkloadDetail(@RequestParam("adminNo") Long adminNo,
+                                     @RequestParam(value = "returnTo", required = false) String returnTo,
+                                     Model model) {
+        model.addAttribute("adminNo", adminNo);
+        model.addAttribute("returnTo", returnTo == null || returnTo.isBlank() ? "/admin/settings/tasks/workloads" : returnTo);
+        return "views/task-workload-get";
+    }
+
     @GetMapping("/get")
     public String taskDetail(@RequestParam("no") Long taskNo,
                              @RequestParam(value = "returnTo", required = false) String returnTo,

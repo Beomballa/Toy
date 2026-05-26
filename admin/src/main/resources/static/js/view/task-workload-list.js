@@ -5,7 +5,8 @@ const TaskWorkloadList = {
         size: 10,
         keyword: '',
         priority: '',
-        overdueOnly: ''
+        overdueOnly: '',
+        adminNo: ''
     },
 
     init() {
@@ -43,6 +44,7 @@ const TaskWorkloadList = {
         this.state.keyword = params.get('keyword') || '';
         this.state.priority = params.get('priority') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
+        this.state.adminNo = params.get('adminNo') || '';
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
@@ -63,6 +65,7 @@ const TaskWorkloadList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
+        if (this.state.adminNo) params.set('adminNo', this.state.adminNo);
         return params;
     },
 
@@ -70,7 +73,7 @@ const TaskWorkloadList = {
         this.updateStateFromInputs();
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-        this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, '', '');
+        this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
 
         try {
             const response = await fetch(`/api/admin/settings/tasks/workloads/list?${params.toString()}`);
@@ -82,6 +85,7 @@ const TaskWorkloadList = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            await this.openDeepLinkedAssigneeIfNeeded(data.items || []);
         } catch (error) {
             this.renderListError(error.message);
         }
@@ -100,7 +104,7 @@ const TaskWorkloadList = {
 
         if (!items || items.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">조건에 맞는 담당자 워크로드가 없습니다.</td></tr>';
-            this.setStateMeta('empty', '조건에 맞는 담당자 워크로드가 없습니다.', 0, 0, '', '');
+            this.setStateMeta('empty', '조건에 맞는 담당자 워크로드가 없습니다.', 0, 0, 0, '', '');
             return;
         }
 
@@ -108,7 +112,7 @@ const TaskWorkloadList = {
             <tr>
                 <td class="ps-4 text-muted small">${this.state.page * this.state.size + index + 1}</td>
                 <td>
-                    <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/tasks/workloads/get?adminNo=${item.assigneeAdminNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.assigneeAdminName)}</a>
+                    <a class="fw-bold text-dark text-decoration-none" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">${this.escapeHtml(item.assigneeAdminName)}</a>
                 </td>
                 <td class="text-center fw-semibold">${Number(item.totalCount || 0).toLocaleString()}</td>
                 <td class="text-center">${Number(item.todoCount || 0).toLocaleString()}</td>
@@ -124,6 +128,7 @@ const TaskWorkloadList = {
                     ` : '<div class="small text-muted">최근 메모가 없습니다.</div>'}
                 </td>
                 <td class="text-end pe-4">
+                    <a class="btn btn-sm btn-outline-dark me-1" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">상세</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.targetPath}">담당 작업</a>
                     <a class="btn btn-sm btn-outline-secondary" href="${item.overduePath}">기한 초과</a>
                 </td>
@@ -136,7 +141,7 @@ const TaskWorkloadList = {
         document.getElementById('taskWorkloadFilterMeta').textContent = `필터 ${data.resultMeta?.filterCount ?? 0}개 · ${data.resultMeta?.querySignature || '기한 초과 우선 · 진행중 우선'}`;
         document.getElementById('taskWorkloadResultMeta').textContent = data.resultMeta?.resultLabel || '결과 메타 없음';
         document.getElementById('taskWorkloadPageMeta').textContent = data.resultMeta?.pageInfoLabel || '페이지 메타 없음';
-        this.setStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || '');
+        this.setStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || '');
     },
 
     renderPagination(data) {
@@ -184,22 +189,47 @@ const TaskWorkloadList = {
         if (tbody) {
             tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
         }
-        this.setStateMeta('error', message, 0, 0, '', '');
+        this.setStateMeta('error', message, 0, 0, 0, '', '');
         document.getElementById('taskWorkloadMetaText').textContent = '조회 실패';
         document.getElementById('taskWorkloadFilterMeta').textContent = '필터 메타 확인 불가';
         document.getElementById('taskWorkloadResultMeta').textContent = '결과 메타 확인 불가';
         document.getElementById('taskWorkloadPageMeta').textContent = '페이지 메타 확인 불가';
     },
 
-    setStateMeta(state, message, visibleCount, totalCount, querySignature, pageInfoLabel) {
+    setStateMeta(state, message, visibleCount, totalCount, filterCount, querySignature, pageInfoLabel) {
         const meta = document.getElementById('taskWorkloadStateMeta');
         if (!meta) return;
         meta.dataset.listState = state;
         meta.dataset.stateMessage = message || '';
         meta.dataset.visibleCount = String(visibleCount || 0);
         meta.dataset.totalElements = String(totalCount || 0);
+        meta.dataset.filterCount = String(filterCount || 0);
         meta.dataset.querySignature = querySignature || '';
         meta.dataset.pageInfoLabel = pageInfoLabel || '';
+    },
+
+    async openDeepLinkedAssigneeIfNeeded(items) {
+        if (!this.state.adminNo) return;
+        const adminNo = Number(this.state.adminNo);
+        if (!adminNo) {
+            this.state.adminNo = '';
+            return;
+        }
+        const target = items.find((item) => Number(item.assigneeAdminNo) === adminNo);
+        if (target || adminNo > 0) {
+            const meta = document.getElementById('taskWorkloadStateMeta');
+            if (meta) {
+                meta.dataset.lastOpenedAdminNo = String(adminNo);
+            }
+            window.location.href = this.buildWorkloadDetailPath(adminNo);
+            return;
+        }
+        this.state.adminNo = '';
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    buildWorkloadDetailPath(adminNo) {
+        return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     },
 
     escapeHtml(value) {

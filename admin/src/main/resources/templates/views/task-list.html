@@ -81,6 +81,17 @@
         </div>
     </div>
 
+    <div class="alert alert-success d-none mb-4" id="taskListActionNotice" role="status"
+         data-visible="N" data-action="" data-status="">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div id="taskListActionNoticeText">마지막 조치 결과를 불러오는 중입니다.</div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex gap-2" id="taskListActionNoticeActions"></div>
+                <button type="button" class="btn-close" aria-label="닫기" id="taskListActionNoticeClose"></button>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -199,7 +210,13 @@
                  data-total-elements="0"
                  data-visible-count="0"
                  data-query-signature=""
-                 data-page-info-label=""></div>
+                 data-page-info-label=""
+                 data-last-action=""
+                 data-last-action-source=""
+                 data-last-action-status=""
+                 data-last-action-task-no=""
+                 data-last-action-history-path=""
+                 data-last-action-log-path=""></div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

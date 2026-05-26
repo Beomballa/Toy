@@ -3,6 +3,7 @@ const TaskList = {
     modal: null,
     operationPolicy: null,
     selectedTaskNos: new Set(),
+    noticeTimer: null,
     state: {
         page: 0,
         size: 10,
@@ -67,6 +68,7 @@ const TaskList = {
         document.getElementById('taskStatProgressCard')?.addEventListener('click', () => this.applyStatFilter('IN_PROGRESS'));
         document.getElementById('taskStatOverdueCard')?.addEventListener('click', () => this.applyStatFilter('overdue'));
         document.getElementById('taskStatUnassignedCard')?.addEventListener('click', () => this.applyStatFilter('unassigned'));
+        document.getElementById('taskListActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
         document.getElementById('taskUnassignedOnly')?.addEventListener('change', (event) => {
             const assigneeFilter = document.getElementById('taskAssigneeFilter');
             if (!assigneeFilter) return;
@@ -429,9 +431,11 @@ const TaskList = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 저장에 실패했습니다.'));
             }
+            this.setLastActionMeta('save-task', 'success', payload.taskNo ? '목록 수정' : '목록 등록', payload.taskNo);
             this.modal?.hide();
             this.getList();
         } catch (error) {
+            this.setLastActionMeta('save-task', 'error', payload.taskNo ? '목록 수정' : '목록 등록', payload.taskNo);
             alert(error.message);
         }
     },
@@ -446,8 +450,10 @@ const TaskList = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상태 변경에 실패했습니다.'));
             }
+            this.setLastActionMeta('update-status', 'success', '목록 상태 변경', taskNo);
             this.getList();
         } catch (error) {
+            this.setLastActionMeta('update-status', 'error', '목록 상태 변경', taskNo);
             alert(error.message);
         }
     },
@@ -465,8 +471,10 @@ const TaskList = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 삭제에 실패했습니다.'));
             }
+            this.setLastActionMeta('delete-task', 'success', '목록 삭제', taskNo);
             this.getList();
         } catch (error) {
+            this.setLastActionMeta('delete-task', 'error', '목록 삭제', taskNo);
             alert(error.message);
         }
     },
@@ -505,12 +513,14 @@ const TaskList = {
             }
 
             const result = await response.json();
+            this.setLastActionMeta('bulk-operate', 'success', '목록 일괄 변경');
             await CommonJS.alert(`요청 ${result.requestedCount}건 · 변경 ${result.updatedCount}건 · 유지 ${result.unchangedCount}건`, '일괄 변경 결과', 'success');
             if (result.updatedCount > 0) {
                 this.clearSelection(false);
             }
             this.getList();
         } catch (error) {
+            this.setLastActionMeta('bulk-operate', 'error', '목록 일괄 변경');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -675,6 +685,122 @@ const TaskList = {
         if (visibleCount != null) metaEl.dataset.visibleCount = String(visibleCount);
         if (totalElements != null) metaEl.dataset.totalElements = String(totalElements);
         if (querySignature != null) metaEl.dataset.querySignature = querySignature;
+    },
+
+    setLastActionMeta(action, status, sourceLabel, taskNo = null) {
+        const metaEl = document.getElementById('taskListStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionSource = sourceLabel || '운영 작업 목록';
+        metaEl.dataset.lastActionStatus = status || '';
+        metaEl.dataset.lastActionTaskNo = taskNo == null ? '' : String(taskNo);
+        metaEl.dataset.lastActionHistoryPath = taskNo == null ? '' : this.buildTaskHistoryPath(taskNo);
+        metaEl.dataset.lastActionLogPath = taskNo == null ? '' : this.buildTaskLogPath(taskNo);
+        this.renderLastActionNotice();
+    },
+
+    renderLastActionNotice() {
+        const metaEl = document.getElementById('taskListStateMeta');
+        const noticeEl = document.getElementById('taskListActionNotice');
+        const noticeTextEl = document.getElementById('taskListActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskListActionNoticeActions');
+        if (!metaEl || !noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        const action = metaEl.dataset.lastAction || '';
+        const source = metaEl.dataset.lastActionSource || '';
+        const status = metaEl.dataset.lastActionStatus || '';
+        const taskNo = metaEl.dataset.lastActionTaskNo || '';
+        const historyPath = metaEl.dataset.lastActionHistoryPath || '';
+        const logPath = metaEl.dataset.lastActionLogPath || '';
+        const taskLabel = taskNo ? `작업 #${taskNo}` : '운영 작업';
+
+        if (!action || !status) {
+            this.hideLastActionNotice(false);
+            return;
+        }
+
+        const templates = {
+            'save-task:success': taskNo ? `${taskLabel} 저장을 반영했습니다.` : '운영 작업 저장을 반영했습니다.',
+            'save-task:error': '운영 작업 저장에 실패했습니다.',
+            'update-status:success': `${taskLabel} 상태를 변경했습니다.`,
+            'update-status:error': `${taskLabel} 상태 변경에 실패했습니다.`,
+            'delete-task:success': `${taskLabel} 삭제를 반영했습니다.`,
+            'delete-task:error': `${taskLabel} 삭제에 실패했습니다.`,
+            'bulk-operate:success': '선택한 운영 작업 일괄 변경을 반영했습니다.',
+            'bulk-operate:error': '운영 작업 일괄 변경에 실패했습니다.'
+        };
+        const variants = {
+            'save-task:success': 'alert-success',
+            'update-status:success': 'alert-primary',
+            'delete-task:success': 'alert-warning',
+            'bulk-operate:success': 'alert-primary',
+            'save-task:error': 'alert-danger',
+            'update-status:error': 'alert-danger',
+            'delete-task:error': 'alert-danger',
+            'bulk-operate:error': 'alert-danger'
+        };
+
+        const sourceMessage = source ? `${source}에서 실행` : '운영 작업 목록에서 실행';
+        const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
+        const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeEl.classList.add(variantClass);
+        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
+        noticeActionsEl.innerHTML = [
+            historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
+            logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
+        ].join('');
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.status = status;
+        this.scheduleLastActionNoticeHide(status);
+    },
+
+    scheduleLastActionNoticeHide(status) {
+        this.clearLastActionNoticeHide();
+        if (status !== 'success') {
+            return;
+        }
+        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
+    },
+
+    clearLastActionNoticeHide() {
+        if (!this.noticeTimer) return;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+    },
+
+    hideLastActionNotice(clearMeta = false) {
+        this.clearLastActionNoticeHide();
+        const metaEl = document.getElementById('taskListStateMeta');
+        const noticeEl = document.getElementById('taskListActionNotice');
+        const noticeTextEl = document.getElementById('taskListActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskListActionNoticeActions');
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        noticeEl.classList.add('d-none');
+        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeTextEl.textContent = '';
+        noticeActionsEl.innerHTML = '';
+        noticeEl.dataset.visible = 'N';
+        noticeEl.dataset.action = '';
+        noticeEl.dataset.status = '';
+
+        if (!clearMeta || !metaEl) return;
+        metaEl.dataset.lastAction = '';
+        metaEl.dataset.lastActionSource = '';
+        metaEl.dataset.lastActionStatus = '';
+        metaEl.dataset.lastActionTaskNo = '';
+        metaEl.dataset.lastActionHistoryPath = '';
+        metaEl.dataset.lastActionLogPath = '';
+    },
+
+    buildTaskHistoryPath(taskNo) {
+        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    },
+
+    buildTaskLogPath(taskNo) {
+        return `/admin/logs?actionType=TASK_&targetId=${taskNo}`;
     },
 
     parseOptionalNumber(value) {

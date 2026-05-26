@@ -49,7 +49,23 @@
                  data-detail-state="loading"
                  data-state-message="운영 작업 정보를 불러오는 중입니다."
                  data-task-no=""
-                 data-status=""></div>
+                 data-status=""
+                 data-last-action=""
+                 data-last-action-source=""
+                 data-last-action-status=""
+                 data-last-action-history-path=""
+                 data-last-action-log-path=""></div>
+
+            <div class="alert alert-success d-none mb-4" id="taskDetailActionNotice" role="status"
+                 data-visible="N" data-action="" data-status="">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div id="taskDetailActionNoticeText">마지막 조치 결과를 불러오는 중입니다.</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex gap-2" id="taskDetailActionNoticeActions"></div>
+                        <button type="button" class="btn-close" aria-label="닫기" id="taskDetailActionNoticeClose"></button>
+                    </div>
+                </div>
+            </div>
 
             <div class="row g-4 mb-4">
                 <div class="col-md-8">

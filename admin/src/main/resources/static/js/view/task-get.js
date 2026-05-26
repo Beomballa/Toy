@@ -2,6 +2,7 @@ const TaskDetailPage = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    noticeTimer: null,
     state: {
         taskNo: null,
         returnTo: '/admin/settings/tasks',
@@ -53,6 +54,7 @@ const TaskDetailPage = {
                 this.applyRecommendation(Number(applyButton.dataset.adminNo));
             }
         });
+        document.getElementById('taskDetailActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
     },
 
     async applyOperationPolicy(settings = null) {
@@ -118,7 +120,15 @@ const TaskDetailPage = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.taskNo = String(data.taskNo || '');
             metaEl.dataset.status = data.status || '';
+            if (!metaEl.dataset.lastAction) {
+                metaEl.dataset.lastAction = '';
+                metaEl.dataset.lastActionSource = '';
+                metaEl.dataset.lastActionStatus = '';
+                metaEl.dataset.lastActionHistoryPath = '';
+                metaEl.dataset.lastActionLogPath = '';
+            }
         }
+        this.renderLastActionNotice();
     },
 
     openEditModal() {
@@ -208,10 +218,12 @@ const TaskDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업을 저장하지 못했습니다.'));
             }
+            this.setLastActionMeta('save-detail', 'success', '상세 수정');
             await CommonJS.alert('운영 작업이 저장되었습니다.', '성공', 'success');
             this.modal?.hide();
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('save-detail', 'error', '상세 수정');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -232,8 +244,10 @@ const TaskDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 상태를 변경하지 못했습니다.'));
             }
+            this.setLastActionMeta('toggle-status', 'success', '상태 변경');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('toggle-status', 'error', '상태 변경');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -283,9 +297,11 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 저장하지 못했습니다.'));
             }
             contentEl.value = '';
+            this.setLastActionMeta('save-comment', 'success', '메모 등록');
             await CommonJS.alert('작업 메모가 등록되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('save-comment', 'error', '메모 등록');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -305,9 +321,11 @@ const TaskDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 삭제하지 못했습니다.'));
             }
+            this.setLastActionMeta('delete-comment', 'success', '메모 삭제');
             await CommonJS.alert('작업 메모가 삭제되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('delete-comment', 'error', '메모 삭제');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -404,6 +422,7 @@ const TaskDetailPage = {
             metaEl.dataset.detailState = 'error';
             metaEl.dataset.stateMessage = message;
         }
+        this.renderLastActionNotice();
         const historyMetaEl = document.getElementById('taskDetailHistoryStateMeta');
         if (historyMetaEl) {
             historyMetaEl.dataset.listState = 'error';
@@ -467,11 +486,127 @@ const TaskDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '추천 담당자 배정에 실패했습니다.'));
             }
+            this.setLastActionMeta('apply-recommendation', 'success', '배정 추천');
             await CommonJS.alert('추천 담당자로 배정되었습니다.', '성공', 'success');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('apply-recommendation', 'error', '배정 추천');
             await CommonJS.alert(error.message, '오류', 'error');
         }
+    },
+
+    setLastActionMeta(action, status, sourceLabel = '운영 작업 상세') {
+        const metaEl = document.getElementById('taskDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionSource = sourceLabel || '운영 작업 상세';
+        metaEl.dataset.lastActionStatus = status || '';
+        metaEl.dataset.lastActionHistoryPath = this.buildHistoryPath();
+        metaEl.dataset.lastActionLogPath = this.state.currentDetail?.activityLogPath || '';
+        this.renderLastActionNotice();
+    },
+
+    renderLastActionNotice() {
+        const metaEl = document.getElementById('taskDetailStateMeta');
+        const noticeEl = document.getElementById('taskDetailActionNotice');
+        const noticeTextEl = document.getElementById('taskDetailActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskDetailActionNoticeActions');
+        if (!metaEl || !noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        const action = metaEl.dataset.lastAction || '';
+        const source = metaEl.dataset.lastActionSource || '';
+        const status = metaEl.dataset.lastActionStatus || '';
+        const historyPath = metaEl.dataset.lastActionHistoryPath || '';
+        const logPath = metaEl.dataset.lastActionLogPath || '';
+
+        if (!action || !status) {
+            this.hideLastActionNotice(false);
+            return;
+        }
+
+        const templates = {
+            'save-detail:success': '운영 작업 수정 내용을 반영했습니다.',
+            'save-detail:error': '운영 작업 수정에 실패했습니다.',
+            'toggle-status:success': '운영 작업 상태를 변경했습니다.',
+            'toggle-status:error': '운영 작업 상태 변경에 실패했습니다.',
+            'save-comment:success': '작업 메모를 등록했습니다.',
+            'save-comment:error': '작업 메모 등록에 실패했습니다.',
+            'delete-comment:success': '작업 메모를 삭제했습니다.',
+            'delete-comment:error': '작업 메모 삭제에 실패했습니다.',
+            'apply-recommendation:success': '추천 담당자 배정을 반영했습니다.',
+            'apply-recommendation:error': '추천 담당자 배정에 실패했습니다.'
+        };
+        const variants = {
+            'save-detail:success': 'alert-success',
+            'toggle-status:success': 'alert-primary',
+            'save-comment:success': 'alert-success',
+            'delete-comment:success': 'alert-warning',
+            'apply-recommendation:success': 'alert-primary',
+            'save-detail:error': 'alert-danger',
+            'toggle-status:error': 'alert-danger',
+            'save-comment:error': 'alert-danger',
+            'delete-comment:error': 'alert-danger',
+            'apply-recommendation:error': 'alert-danger'
+        };
+
+        const sourceMessage = source ? `${source}에서 실행` : '운영 작업 상세에서 실행';
+        const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
+        const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeEl.classList.add(variantClass);
+        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
+        noticeActionsEl.innerHTML = [
+            historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
+            logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
+        ].join('');
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.status = status;
+        this.scheduleLastActionNoticeHide(status);
+    },
+
+    scheduleLastActionNoticeHide(status) {
+        this.clearLastActionNoticeHide();
+        if (status !== 'success') {
+            return;
+        }
+        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
+    },
+
+    clearLastActionNoticeHide() {
+        if (!this.noticeTimer) return;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+    },
+
+    hideLastActionNotice(clearMeta = false) {
+        this.clearLastActionNoticeHide();
+        const metaEl = document.getElementById('taskDetailStateMeta');
+        const noticeEl = document.getElementById('taskDetailActionNotice');
+        const noticeTextEl = document.getElementById('taskDetailActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskDetailActionNoticeActions');
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        noticeEl.classList.add('d-none');
+        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeTextEl.textContent = '';
+        noticeActionsEl.innerHTML = '';
+        noticeEl.dataset.visible = 'N';
+        noticeEl.dataset.action = '';
+        noticeEl.dataset.status = '';
+
+        if (!clearMeta || !metaEl) return;
+        metaEl.dataset.lastAction = '';
+        metaEl.dataset.lastActionSource = '';
+        metaEl.dataset.lastActionStatus = '';
+        metaEl.dataset.lastActionHistoryPath = '';
+        metaEl.dataset.lastActionLogPath = '';
+    },
+
+    buildHistoryPath() {
+        const detail = this.state.currentDetail;
+        if (!detail?.historyPath) return '';
+        return `${detail.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     }
 };
 

@@ -63,6 +63,7 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryAdminNo').value = params.get('adminNo') || '';
         document.getElementById('taskHistoryStartDate').value = params.get('startDate') || '';
         document.getElementById('taskHistoryEndDate').value = params.get('endDate') || '';
+        this.state.logNo = params.get('logNo') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/settings/tasks';
@@ -83,6 +84,7 @@ const TaskHistoryPage = {
         if (adminNo) params.set('adminNo', adminNo);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
+        if (this.state.logNo) params.set('logNo', this.state.logNo);
         if (this.state.returnTo && this.state.returnTo !== '/admin/settings/tasks') params.set('returnTo', this.state.returnTo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
@@ -104,6 +106,8 @@ const TaskHistoryPage = {
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
+            this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
+            await this.openDeepLinkedLogIfNeeded(data.items || []);
         } catch (error) {
             this.renderError(error.message);
         }
@@ -113,6 +117,7 @@ const TaskHistoryPage = {
         const tbody = document.getElementById('taskHistoryBody');
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 운영 작업 이력이 없습니다.</td></tr>';
+            this.setListStateMeta('empty', '조회된 운영 작업 이력이 없습니다.', 0, 0, 0, '', '');
             return;
         }
 
@@ -124,7 +129,11 @@ const TaskHistoryPage = {
                 <td>${item.adminName}${item.adminNo ? ` <span class="text-muted small">(#${item.adminNo})</span>` : ''}</td>
                 <td><code class="small">${item.ipAddress || '-'}</code></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${item.logNo}">상세</button>
+                    <div class="d-flex justify-content-center gap-2 flex-wrap">
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${item.logNo}">상세</button>
+                        ${item.taskPath ? `<a class="btn btn-sm btn-outline-secondary" href="${item.taskPath}">작업</a>` : ''}
+                        <a class="btn btn-sm btn-outline-secondary" href="/admin/logs?actionType=TASK_&targetId=${item.taskNo || ''}">활동 로그</a>
+                    </div>
                 </td>
                 <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
             </tr>
@@ -140,6 +149,12 @@ const TaskHistoryPage = {
         const pageMeta = document.getElementById('taskHistoryPageMeta');
         if (pageMeta) {
             pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
+        }
+        const metaEl = document.getElementById('taskHistoryStateMeta');
+        if (metaEl) {
+            metaEl.dataset.filterCount = String(data.resultMeta?.filterCount ?? 0);
+            metaEl.dataset.querySignature = data.resultMeta?.querySignature || '';
+            metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '';
         }
     },
 
@@ -167,6 +182,7 @@ const TaskHistoryPage = {
 
     async openDetail(logNo) {
         document.getElementById('taskHistoryDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        this.setDetailStateMeta('loading', '로그 상세를 불러오는 중입니다.', logNo, '', '');
         this.modal.show();
         try {
             const response = await fetch(`/api/admin/logs/get?no=${logNo}`);
@@ -174,6 +190,7 @@ const TaskHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            const detailLogPath = `/admin/logs?actionType=TASK_&targetId=${data.targetId || ''}`;
             document.getElementById('taskHistoryDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${data.adminName} (#${data.adminNo})</div>
@@ -182,8 +199,18 @@ const TaskHistoryPage = {
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
+            this.setDetailFooterLinks(data.targetPath || '', detailLogPath);
+            this.setDetailStateMeta('ready', '', logNo, data.targetPath || '', detailLogPath);
+            this.state.logNo = String(logNo);
+            const listMetaEl = document.getElementById('taskHistoryStateMeta');
+            if (listMetaEl) {
+                listMetaEl.dataset.lastOpenedLogNo = String(logNo);
+            }
+            history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
             document.getElementById('taskHistoryDetailBody').innerHTML = `<div class="text-danger">${error.message}</div>`;
+            this.setDetailFooterLinks('', '');
+            this.setDetailStateMeta('error', error.message, logNo, '', '');
         }
     },
 
@@ -195,6 +222,7 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryPageMeta').textContent = '페이지 메타 확인 불가';
         document.getElementById('taskHistoryResultSummary').textContent = '운영 작업 이력 조회에 실패했습니다.';
         document.getElementById('taskHistoryPagination').innerHTML = '';
+        this.setListStateMeta('error', message, 0, 0, 0, '', '');
     },
 
     syncQuickFilterState() {
@@ -239,8 +267,59 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryPageSize').value = '20';
         this.state.page = 0;
         this.state.size = 20;
+        this.state.logNo = '';
         this.syncQuickFilterState();
         this.loadHistory();
+    },
+
+    async openDeepLinkedLogIfNeeded(items) {
+        if (!this.state.logNo) return;
+        const logNo = Number(this.state.logNo);
+        if (!logNo) {
+            this.state.logNo = '';
+            return;
+        }
+        const target = items.find((item) => item.logNo === logNo);
+        if (target || logNo > 0) {
+            await this.openDetail(logNo);
+        }
+        this.state.logNo = '';
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {
+        const metaEl = document.getElementById('taskHistoryStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.listState = state;
+        metaEl.dataset.stateMessage = message || '';
+        metaEl.dataset.visibleCount = String(visibleCount ?? 0);
+        metaEl.dataset.totalElements = String(totalElements ?? 0);
+        metaEl.dataset.filterCount = String(filterCount ?? 0);
+        metaEl.dataset.querySignature = querySignature || '';
+        metaEl.dataset.pageInfoLabel = pageInfoLabel || '';
+    },
+
+    setDetailStateMeta(state, message, logNo, targetPath, logPath) {
+        const metaEl = document.getElementById('taskHistoryDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.detailState = state;
+        metaEl.dataset.stateMessage = message || '';
+        metaEl.dataset.logNo = logNo == null ? '' : String(logNo);
+        metaEl.dataset.targetPath = targetPath || '';
+        metaEl.dataset.logPath = logPath || '';
+    },
+
+    setDetailFooterLinks(targetPath, logPath) {
+        const targetButton = document.getElementById('btnTaskHistoryDetailTarget');
+        const logButton = document.getElementById('btnTaskHistoryDetailLog');
+        if (targetButton) {
+            targetButton.href = targetPath || '#';
+            targetButton.classList.toggle('d-none', !targetPath);
+        }
+        if (logButton) {
+            logButton.href = logPath || '#';
+            logButton.classList.toggle('d-none', !logPath);
+        }
     }
 };
 

@@ -102,6 +102,15 @@
                 <div class="small text-muted" id="taskHistoryMetaText">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
+        <div id="taskHistoryStateMeta"
+             data-list-state="loading"
+             data-state-message="운영 작업 이력을 불러오는 중입니다."
+             data-visible-count="0"
+             data-total-elements="0"
+             data-filter-count="0"
+             data-query-signature=""
+             data-page-info-label=""
+             data-last-opened-log-no=""></div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -112,7 +121,7 @@
                         <th>작업 유형</th>
                         <th>작업자</th>
                         <th>IP 주소</th>
-                        <th class="text-center">상세</th>
+                        <th class="text-center table-col-220">바로가기</th>
                         <th class="text-end pe-4">작업 일시</th>
                     </tr>
                     </thead>
@@ -136,7 +145,17 @@
                 <h5 class="modal-title fw-bold">로그 상세</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
+            <div id="taskHistoryDetailStateMeta"
+                 data-detail-state="loading"
+                 data-state-message="로그 상세를 불러오는 중입니다."
+                 data-log-no=""
+                 data-target-path=""
+                 data-log-path=""></div>
             <div class="modal-body" id="taskHistoryDetailBody">데이터를 불러오는 중입니다...</div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-secondary d-none" id="btnTaskHistoryDetailTarget" href="#">관련 작업</a>
+                <a class="btn btn-outline-secondary d-none" id="btnTaskHistoryDetailLog" href="#">활동 로그</a>
+            </div>
         </div>
     </div>
 </div>

@@ -4,6 +4,7 @@ const TaskWorkloadDetail = {
     operationPolicy: null,
     reassignModal: null,
     reassignDetail: null,
+    noticeTimer: null,
 
     init() {
         if (this.initialized) return;
@@ -92,6 +93,7 @@ const TaskWorkloadDetail = {
             }
         });
         document.getElementById('btnTaskReassignApply')?.addEventListener('click', () => this.applyReassignment());
+        document.getElementById('taskWorkloadActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
     },
 
     async applyOperationPolicy(settings = null) {
@@ -467,31 +469,33 @@ const TaskWorkloadDetail = {
         const taskLabel = taskNo ? `작업 #${taskNo}` : '작업';
 
         if (!action || !status) {
-            noticeEl.classList.add('d-none');
-            noticeEl.classList.remove('alert-success', 'alert-danger');
-            noticeTextEl.textContent = '';
-            noticeActionsEl.innerHTML = '';
-            noticeEl.dataset.visible = 'N';
-            noticeEl.dataset.action = '';
-            noticeEl.dataset.taskNo = '';
-            noticeEl.dataset.status = '';
+            this.hideLastActionNotice(false);
             return;
         }
 
         const templates = {
-            'complete:success': `${taskLabel}을 완료 처리했습니다.`,
+            'complete:success': `${taskLabel} 완료 처리를 반영했습니다.`,
             'complete:error': `${taskLabel} 완료 처리에 실패했습니다.`,
-            'raise-priority:success': `${taskLabel} 우선순위를 높음으로 변경했습니다.`,
+            'raise-priority:success': `${taskLabel} 우선순위를 높음으로 올렸습니다.`,
             'raise-priority:error': `${taskLabel} 우선순위 변경에 실패했습니다.`,
-            'reassign:success': `${taskLabel}을 재배정했습니다.`,
+            'reassign:success': `${taskLabel} 담당자를 변경했습니다.`,
             'reassign:error': `${taskLabel} 재배정에 실패했습니다.`
+        };
+        const variants = {
+            'complete:success': 'alert-success',
+            'raise-priority:success': 'alert-warning',
+            'reassign:success': 'alert-primary',
+            'complete:error': 'alert-danger',
+            'raise-priority:error': 'alert-danger',
+            'reassign:error': 'alert-danger'
         };
 
         const message = templates[`${action}:${status}`] || `${taskLabel} 조치 결과를 확인해 주세요.`;
         const sourceMessage = source ? `${source}에서 실행` : '워크로드 상세에서 실행';
         const isSuccess = status === 'success';
-        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger');
-        noticeEl.classList.add(isSuccess ? 'alert-success' : 'alert-danger');
+        const variantClass = variants[`${action}:${status}`] || (isSuccess ? 'alert-success' : 'alert-danger');
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeEl.classList.add(variantClass);
         noticeTextEl.textContent = `${sourceMessage} · ${message}`;
         noticeActionsEl.innerHTML = [
             taskPath ? `<a class="btn btn-sm ${isSuccess ? 'btn-outline-success' : 'btn-outline-danger'}" href="${taskPath}">작업 상세</a>` : '',
@@ -501,6 +505,49 @@ const TaskWorkloadDetail = {
         noticeEl.dataset.action = action;
         noticeEl.dataset.taskNo = taskNo;
         noticeEl.dataset.status = status;
+        this.scheduleLastActionNoticeHide(status);
+    },
+
+    scheduleLastActionNoticeHide(status) {
+        this.clearLastActionNoticeHide();
+        if (status !== 'success') {
+            return;
+        }
+        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
+    },
+
+    clearLastActionNoticeHide() {
+        if (!this.noticeTimer) return;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+    },
+
+    hideLastActionNotice(clearMeta = false) {
+        this.clearLastActionNoticeHide();
+        const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+        const noticeEl = document.getElementById('taskWorkloadActionNotice');
+        const noticeTextEl = document.getElementById('taskWorkloadActionNoticeText');
+        const noticeActionsEl = document.getElementById('taskWorkloadActionNoticeActions');
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        noticeEl.classList.add('d-none');
+        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeTextEl.textContent = '';
+        noticeActionsEl.innerHTML = '';
+        noticeEl.dataset.visible = 'N';
+        noticeEl.dataset.action = '';
+        noticeEl.dataset.taskNo = '';
+        noticeEl.dataset.status = '';
+
+        if (!clearMeta || !metaEl) {
+            return;
+        }
+        metaEl.dataset.lastAction = '';
+        metaEl.dataset.lastActionSource = '';
+        metaEl.dataset.lastActionTaskNo = '';
+        metaEl.dataset.lastActionStatus = '';
+        metaEl.dataset.lastActionTaskPath = '';
+        metaEl.dataset.lastActionHistoryPath = '';
     },
 
     buildTaskDetailPath(taskNo) {

@@ -101,7 +101,7 @@ public class AdminOperationNoticeService {
     }
 
     @Transactional
-    public void saveNotice(AdminOperationNoticeSaveRequest req) {
+    public Long saveNotice(AdminOperationNoticeSaveRequest req) {
         String normalizedActive = normalizeFlag(req.isActive(), "Y");
         String normalizedPinned = normalizeFlag(req.isPinned(), "N");
         String normalizedTitle = normalizeRequiredText(req.title());
@@ -121,7 +121,7 @@ public class AdminOperationNoticeService {
                     .endDtm(req.endDtm())
                     .build());
             adminLogService.recordCurrentAdminLog("NOTICE_CREATE", saved.getNoticeNo());
-            return;
+            return saved.getNoticeNo();
         }
 
         AdminOperationNotice notice = getNotice(req.noticeNo());
@@ -134,6 +134,7 @@ public class AdminOperationNoticeService {
                 req.endDtm()
         );
         adminLogService.recordCurrentAdminLog("NOTICE_UPDATE", notice.getNoticeNo());
+        return notice.getNoticeNo();
     }
 
     @Transactional

@@ -8,6 +8,7 @@ import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeHistoryListResponse;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
+import com.section.admin.notice.res.AdminOperationNoticeSaveResponse;
 import com.section.admin.notice.service.AdminOperationNoticeHistoryService;
 import com.section.admin.notice.service.AdminOperationNoticeService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -45,10 +46,9 @@ public class AdminOperationNoticeRestController {
     }
 
     @PostMapping("/save")
-    public ResponseEntity<BaseSimpleResDto> save(@Valid @RequestBody AdminOperationNoticeSaveRequest req) {
+    public ResponseEntity<AdminOperationNoticeSaveResponse> save(@Valid @RequestBody AdminOperationNoticeSaveRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();
-        adminOperationNoticeService.saveNotice(req);
-        return ResponseEntity.ok(new BaseSimpleResDto());
+        return ResponseEntity.ok(new AdminOperationNoticeSaveResponse(adminOperationNoticeService.saveNotice(req)));
     }
 
     @PatchMapping("/active/{no}")

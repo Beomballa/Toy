@@ -135,10 +135,11 @@ class AdminOperationNoticeServiceTest {
                     return entity;
                 });
 
-        adminOperationNoticeService.saveNotice(request);
+        Long savedNoticeNo = adminOperationNoticeService.saveNotice(request);
 
         verify(adminOperationNoticeRepository).save(any(AdminOperationNotice.class));
         verify(adminLogService).recordCurrentAdminLog("NOTICE_CREATE", 15L);
+        assertEquals(15L, savedNoticeNo);
     }
 
     @Test
@@ -153,7 +154,7 @@ class AdminOperationNoticeServiceTest {
                 .build();
         when(adminOperationNoticeRepository.findById(7L)).thenReturn(Optional.of(notice));
 
-        adminOperationNoticeService.saveNotice(new AdminOperationNoticeSaveRequest(
+        Long savedNoticeNo = adminOperationNoticeService.saveNotice(new AdminOperationNoticeSaveRequest(
                 7L,
                 "수정 공지",
                 "수정 내용",
@@ -164,6 +165,7 @@ class AdminOperationNoticeServiceTest {
         ));
 
         verify(adminLogService).recordCurrentAdminLog("NOTICE_UPDATE", 7L);
+        assertEquals(7L, savedNoticeNo);
     }
 
     @Test

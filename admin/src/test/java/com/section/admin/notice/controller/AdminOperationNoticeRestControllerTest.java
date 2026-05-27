@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -160,6 +161,28 @@ class AdminOperationNoticeRestControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    @DisplayName("운영 공지 저장 API는 저장된 공지 번호를 반환한다")
+    void saveReturnsSavedNoticeNo() throws Exception {
+        AdminOperationNoticeSaveRequest request = new AdminOperationNoticeSaveRequest(
+                null,
+                "점검 공지",
+                "점검 안내",
+                "Y",
+                "N",
+                null,
+                null
+        );
+        when(adminOperationNoticeService.saveNotice(any())).thenReturn(11L);
+
+        mockMvc.perform(post("/api/admin/settings/notices/save")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"))
+                .andExpect(jsonPath("$.noticeNo").value(11L));
     }
 
     @Test

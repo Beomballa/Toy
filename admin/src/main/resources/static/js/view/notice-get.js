@@ -2,6 +2,7 @@ const NoticeDetailPage = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    noticeTimer: null,
     state: {
         noticeNo: null,
         returnTo: '/admin/settings/notices',
@@ -44,6 +45,7 @@ const NoticeDetailPage = {
         document.getElementById('btnNoticeDetailSave')?.addEventListener('click', () => this.saveDetail());
         document.getElementById('btnNoticeDetailToggleActive')?.addEventListener('click', () => this.toggleActive());
         document.getElementById('btnNoticeDetailDelete')?.addEventListener('click', () => this.deleteNotice());
+        document.getElementById('noticeDetailActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
     },
 
     async applyOperationPolicy(settings = null) {
@@ -106,8 +108,16 @@ const NoticeDetailPage = {
             metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/notices';
             metaEl.dataset.returnContext = this.resolveReturnContext();
             metaEl.dataset.sourceContext = this.state.source || '';
+            if (!metaEl.dataset.lastAction) {
+                metaEl.dataset.lastAction = '';
+                metaEl.dataset.lastActionSource = '';
+                metaEl.dataset.lastActionStatus = '';
+                metaEl.dataset.lastActionHistoryPath = '';
+                metaEl.dataset.lastActionLogPath = '';
+            }
         }
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeDetailSourceContextNotice', source: this.state.source });
+        this.renderLastActionNotice();
     },
 
     openEditModal() {
@@ -163,10 +173,12 @@ const NoticeDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지를 저장하지 못했습니다.'));
             }
 
+            this.setLastActionMeta('save-detail', 'success', '상세 수정');
             await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
             this.modal?.hide();
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('save-detail', 'error', '상세 수정');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -189,8 +201,10 @@ const NoticeDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '공지 상태를 변경하지 못했습니다.'));
             }
+            this.setLastActionMeta('toggle-active', 'success', '상세 상태 변경');
             this.loadDetail();
         } catch (error) {
+            this.setLastActionMeta('toggle-active', 'error', '상세 상태 변경');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -217,9 +231,11 @@ const NoticeDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지를 삭제하지 못했습니다.'));
             }
+            this.setLastActionMeta('delete-notice', 'success', '상세 삭제');
             await CommonJS.alert('운영 공지가 삭제되었습니다.', '성공', 'success');
             window.location.href = this.state.returnTo;
         } catch (error) {
+            this.setLastActionMeta('delete-notice', 'error', '상세 삭제');
             await CommonJS.alert(error.message, '오류', 'error');
         }
     },
@@ -240,6 +256,7 @@ const NoticeDetailPage = {
             metaEl.dataset.returnContext = this.resolveReturnContext();
             metaEl.dataset.sourceContext = this.state.source || '';
         }
+        this.renderLastActionNotice();
         const historyMetaEl = document.getElementById('noticeDetailHistoryStateMeta');
         if (historyMetaEl) {
             historyMetaEl.dataset.listState = 'error';
@@ -322,6 +339,112 @@ const NoticeDetailPage = {
             return '';
         }
         return value.substring(0, 16);
+    },
+
+    setLastActionMeta(action, status, sourceLabel = '운영 공지 상세') {
+        const metaEl = document.getElementById('noticeDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionSource = sourceLabel || '운영 공지 상세';
+        metaEl.dataset.lastActionStatus = status || '';
+        metaEl.dataset.lastActionHistoryPath = this.buildHistoryPath();
+        metaEl.dataset.lastActionLogPath = this.state.currentDetail?.activityLogPath || '';
+        this.renderLastActionNotice();
+    },
+
+    renderLastActionNotice() {
+        const metaEl = document.getElementById('noticeDetailStateMeta');
+        const noticeEl = document.getElementById('noticeDetailActionNotice');
+        const noticeTextEl = document.getElementById('noticeDetailActionNoticeText');
+        const noticeActionsEl = document.getElementById('noticeDetailActionNoticeActions');
+        if (!metaEl || !noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        const action = metaEl.dataset.lastAction || '';
+        const source = metaEl.dataset.lastActionSource || '';
+        const status = metaEl.dataset.lastActionStatus || '';
+        const historyPath = metaEl.dataset.lastActionHistoryPath || '';
+        const logPath = metaEl.dataset.lastActionLogPath || '';
+
+        if (!action || !status) {
+            this.hideLastActionNotice(false);
+            return;
+        }
+
+        const templates = {
+            'save-detail:success': '운영 공지 수정 내용을 반영했습니다.',
+            'save-detail:error': '운영 공지 수정에 실패했습니다.',
+            'toggle-active:success': '운영 공지 상태를 변경했습니다.',
+            'toggle-active:error': '운영 공지 상태 변경에 실패했습니다.',
+            'delete-notice:success': '운영 공지 삭제를 반영했습니다.',
+            'delete-notice:error': '운영 공지 삭제에 실패했습니다.'
+        };
+        const variants = {
+            'save-detail:success': 'alert-success',
+            'toggle-active:success': 'alert-primary',
+            'delete-notice:success': 'alert-warning',
+            'save-detail:error': 'alert-danger',
+            'toggle-active:error': 'alert-danger',
+            'delete-notice:error': 'alert-danger'
+        };
+
+        const sourceMessage = source ? `${source}에서 실행` : '운영 공지 상세에서 실행';
+        const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
+        const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeEl.classList.add(variantClass);
+        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
+        noticeActionsEl.innerHTML = [
+            historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
+            logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
+        ].join('');
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.status = status;
+        this.scheduleLastActionNoticeHide(status);
+    },
+
+    scheduleLastActionNoticeHide(status) {
+        this.clearLastActionNoticeHide();
+        if (status !== 'success') {
+            return;
+        }
+        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
+    },
+
+    clearLastActionNoticeHide() {
+        if (!this.noticeTimer) return;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+    },
+
+    hideLastActionNotice(clearMeta = false) {
+        this.clearLastActionNoticeHide();
+        const metaEl = document.getElementById('noticeDetailStateMeta');
+        const noticeEl = document.getElementById('noticeDetailActionNotice');
+        const noticeTextEl = document.getElementById('noticeDetailActionNoticeText');
+        const noticeActionsEl = document.getElementById('noticeDetailActionNoticeActions');
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        noticeEl.classList.add('d-none');
+        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeTextEl.textContent = '';
+        noticeActionsEl.innerHTML = '';
+        noticeEl.dataset.visible = 'N';
+        noticeEl.dataset.action = '';
+        noticeEl.dataset.status = '';
+
+        if (!clearMeta || !metaEl) return;
+        metaEl.dataset.lastAction = '';
+        metaEl.dataset.lastActionSource = '';
+        metaEl.dataset.lastActionStatus = '';
+        metaEl.dataset.lastActionHistoryPath = '';
+        metaEl.dataset.lastActionLogPath = '';
+    },
+
+    buildHistoryPath() {
+        const detail = this.state.currentDetail;
+        if (!detail?.historyPath) return '';
+        return `${detail.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     },
 
     escapeHtml(value) {

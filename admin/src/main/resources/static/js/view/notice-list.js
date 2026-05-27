@@ -2,6 +2,7 @@ const NoticeList = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    noticeTimer: null,
     state: {
         page: 0,
         size: 10,
@@ -52,6 +53,7 @@ const NoticeList = {
         document.getElementById('noticeStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
         document.getElementById('noticeStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
         document.getElementById('noticeStatPinnedCard')?.addEventListener('click', () => this.applyStatFilter('pinned'));
+        document.getElementById('noticeListActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
         document.getElementById('noticePageSize')?.addEventListener('change', () => {
             this.state.page = 0;
             this.updateStateFromInputs();
@@ -259,6 +261,7 @@ const NoticeList = {
             metaEl.dataset.sourceContext = this.state.source || '';
         }
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
+        this.renderLastActionNotice();
     },
 
     syncHistoryLink() {
@@ -452,10 +455,15 @@ const NoticeList = {
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지를 저장하지 못했습니다.'));
 
+            const savedNotice = await res.json();
+            const savedNoticeNo = Number(savedNotice.noticeNo || formData.noticeNo || 0) || null;
+            this.setLastActionMeta('save-notice', 'success', formData.noticeNo ? '목록 수정' : '목록 등록', savedNoticeNo);
+
             await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
             this.modal.hide();
             this.getList();
         } catch (err) {
+            this.setLastActionMeta('save-notice', 'error', formData.noticeNo ? '목록 수정' : '목록 등록', formData.noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
         }
     },
@@ -470,8 +478,10 @@ const NoticeList = {
                 method: 'PATCH'
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '공지 상태를 변경하지 못했습니다.'));
+            this.setLastActionMeta('toggle-active', 'success', '목록 상태 변경', noticeNo);
             this.getList();
         } catch (err) {
+            this.setLastActionMeta('toggle-active', 'error', '목록 상태 변경', noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
         }
     },
@@ -489,9 +499,11 @@ const NoticeList = {
                 method: 'DELETE'
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지를 삭제하지 못했습니다.'));
+            this.setLastActionMeta('delete-notice', 'success', '목록 삭제', noticeNo);
             await CommonJS.alert('운영 공지가 삭제되었습니다.', '성공', 'success');
             this.getList();
         } catch (err) {
+            this.setLastActionMeta('delete-notice', 'error', '목록 삭제', noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
         }
     },
@@ -588,14 +600,132 @@ const NoticeList = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지 일괄 변경에 실패했습니다.'));
 
             const result = await res.json();
+            this.setLastActionMeta('bulk-operate', 'success', '목록 일괄 변경');
             await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 유지되었습니다.`, '성공', 'success');
             this.clearSelection();
             document.getElementById('bulkNoticeIsActive').value = '';
             document.getElementById('bulkNoticeIsPinned').value = '';
             this.getList();
         } catch (err) {
+            this.setLastActionMeta('bulk-operate', 'error', '목록 일괄 변경');
             await CommonJS.alert(err.message, '오류', 'error');
         }
+    },
+
+    setLastActionMeta(action, status, sourceLabel, noticeNo = null) {
+        const metaEl = document.getElementById('noticeListStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.lastAction = action || '';
+        metaEl.dataset.lastActionSource = sourceLabel || '운영 공지 목록';
+        metaEl.dataset.lastActionStatus = status || '';
+        metaEl.dataset.lastActionNoticeNo = noticeNo == null || noticeNo === '' ? '' : String(noticeNo);
+        metaEl.dataset.lastActionHistoryPath = noticeNo == null || noticeNo === '' ? '' : this.buildNoticeHistoryPath(noticeNo);
+        metaEl.dataset.lastActionLogPath = noticeNo == null || noticeNo === '' ? '' : this.buildNoticeLogPath(noticeNo);
+        this.renderLastActionNotice();
+    },
+
+    renderLastActionNotice() {
+        const metaEl = document.getElementById('noticeListStateMeta');
+        const noticeEl = document.getElementById('noticeListActionNotice');
+        const noticeTextEl = document.getElementById('noticeListActionNoticeText');
+        const noticeActionsEl = document.getElementById('noticeListActionNoticeActions');
+        if (!metaEl || !noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        const action = metaEl.dataset.lastAction || '';
+        const source = metaEl.dataset.lastActionSource || '';
+        const status = metaEl.dataset.lastActionStatus || '';
+        const noticeNo = metaEl.dataset.lastActionNoticeNo || '';
+        const historyPath = metaEl.dataset.lastActionHistoryPath || '';
+        const logPath = metaEl.dataset.lastActionLogPath || '';
+        const noticeLabel = noticeNo ? `운영 공지 #${noticeNo}` : '운영 공지';
+
+        if (!action || !status) {
+            this.hideLastActionNotice(false);
+            return;
+        }
+
+        const templates = {
+            'save-notice:success': `${noticeLabel} 저장을 반영했습니다.`,
+            'save-notice:error': '운영 공지 저장에 실패했습니다.',
+            'toggle-active:success': `${noticeLabel} 상태를 변경했습니다.`,
+            'toggle-active:error': `${noticeLabel} 상태 변경에 실패했습니다.`,
+            'delete-notice:success': `${noticeLabel} 삭제를 반영했습니다.`,
+            'delete-notice:error': `${noticeLabel} 삭제에 실패했습니다.`,
+            'bulk-operate:success': '선택한 운영 공지 일괄 변경을 반영했습니다.',
+            'bulk-operate:error': '운영 공지 일괄 변경에 실패했습니다.'
+        };
+        const variants = {
+            'save-notice:success': 'alert-success',
+            'toggle-active:success': 'alert-primary',
+            'delete-notice:success': 'alert-warning',
+            'bulk-operate:success': 'alert-primary',
+            'save-notice:error': 'alert-danger',
+            'toggle-active:error': 'alert-danger',
+            'delete-notice:error': 'alert-danger',
+            'bulk-operate:error': 'alert-danger'
+        };
+
+        const sourceMessage = source ? `${source}에서 실행` : '운영 공지 목록에서 실행';
+        const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
+        const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeEl.classList.add(variantClass);
+        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
+        noticeActionsEl.innerHTML = [
+            historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
+            logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
+        ].join('');
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.status = status;
+        this.scheduleLastActionNoticeHide(status);
+    },
+
+    scheduleLastActionNoticeHide(status) {
+        this.clearLastActionNoticeHide();
+        if (status !== 'success') {
+            return;
+        }
+        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
+    },
+
+    clearLastActionNoticeHide() {
+        if (!this.noticeTimer) return;
+        window.clearTimeout(this.noticeTimer);
+        this.noticeTimer = null;
+    },
+
+    hideLastActionNotice(clearMeta = false) {
+        this.clearLastActionNoticeHide();
+        const metaEl = document.getElementById('noticeListStateMeta');
+        const noticeEl = document.getElementById('noticeListActionNotice');
+        const noticeTextEl = document.getElementById('noticeListActionNoticeText');
+        const noticeActionsEl = document.getElementById('noticeListActionNoticeActions');
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
+
+        noticeEl.classList.add('d-none');
+        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        noticeTextEl.textContent = '';
+        noticeActionsEl.innerHTML = '';
+        noticeEl.dataset.visible = 'N';
+        noticeEl.dataset.action = '';
+        noticeEl.dataset.status = '';
+
+        if (!clearMeta || !metaEl) return;
+        metaEl.dataset.lastAction = '';
+        metaEl.dataset.lastActionSource = '';
+        metaEl.dataset.lastActionStatus = '';
+        metaEl.dataset.lastActionNoticeNo = '';
+        metaEl.dataset.lastActionHistoryPath = '';
+        metaEl.dataset.lastActionLogPath = '';
+    },
+
+    buildNoticeHistoryPath(noticeNo) {
+        return `/admin/settings/notices/history?noticeNo=${noticeNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    },
+
+    buildNoticeLogPath(noticeNo) {
+        return `/admin/logs?actionType=NOTICE_&targetId=${noticeNo}`;
     },
 
     escapeHtml(value) {

@@ -77,6 +77,16 @@
         </div>
     </div>
 
+    <div class="alert alert-success d-none mb-4" id="noticeListActionNotice" role="alert" data-visible="N" data-action="" data-status="">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="fw-semibold" id="noticeListActionNoticeText"></div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="d-flex gap-2" id="noticeListActionNoticeActions"></div>
+                <button type="button" class="btn-close" aria-label="알림 닫기" id="noticeListActionNoticeClose"></button>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
@@ -174,7 +184,13 @@
                  data-visible-count="0"
                  data-query-signature=""
                  data-page-info-label=""
-                 data-source-context=""></div>
+                 data-source-context=""
+                 data-last-action=""
+                 data-last-action-source=""
+                 data-last-action-status=""
+                 data-last-action-notice-no=""
+                 data-last-action-history-path=""
+                 data-last-action-log-path=""></div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">

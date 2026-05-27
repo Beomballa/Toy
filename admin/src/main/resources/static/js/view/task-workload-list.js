@@ -54,6 +54,7 @@ const TaskWorkloadList = {
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
         document.getElementById('taskWorkloadOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskWorkloadPageSize').value = String(this.state.size);
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
     },
 
     updateStateFromInputs() {
@@ -226,6 +227,7 @@ const TaskWorkloadList = {
         meta.dataset.pageInfoLabel = pageInfoLabel || '';
         meta.dataset.highlightAdminNo = this.state.focusAdminNo || '';
         meta.dataset.sourceContext = this.state.source || '';
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
     },
 
     async openDeepLinkedAssigneeIfNeeded(items) {

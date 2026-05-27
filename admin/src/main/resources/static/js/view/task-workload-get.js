@@ -15,6 +15,7 @@ const TaskWorkloadDetail = {
         }
         this.bindEvents();
         this.syncReturnContextMeta();
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadDetailSourceContextNotice', source: this.bootstrap.source || '' });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
@@ -189,6 +190,7 @@ const TaskWorkloadDetail = {
         metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
         metaEl.dataset.returnContext = this.resolveReturnContext();
         metaEl.dataset.sourceContext = this.bootstrap.source || '';
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadDetailSourceContextNotice', source: this.bootstrap.source || '' });
     },
 
     resolveReturnContext() {

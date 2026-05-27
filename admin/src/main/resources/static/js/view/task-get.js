@@ -33,6 +33,7 @@ const TaskDetailPage = {
             breadcrumbLink.href = this.state.returnTo;
         }
         this.syncReturnContextMeta();
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
     },
 
     bindEvents() {
@@ -431,6 +432,7 @@ const TaskDetailPage = {
             metaEl.dataset.sourceContext = this.state.source || '';
         }
         this.renderLastActionNotice();
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
         const historyMetaEl = document.getElementById('taskDetailHistoryStateMeta');
         if (historyMetaEl) {
             historyMetaEl.dataset.listState = 'error';
@@ -520,6 +522,7 @@ const TaskDetailPage = {
         metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
         metaEl.dataset.returnContext = this.resolveReturnContext();
         metaEl.dataset.sourceContext = this.state.source || '';
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
     },
 
     resolveReturnContext() {

@@ -278,6 +278,43 @@ let CommonJS = {
         }
     },
 
+    describeTaskSourceContext: function(source) {
+        const mapping = {
+            'dashboard-task-title': '대시보드 운영 작업 제목에서 진입',
+            'dashboard-task-manage': '대시보드 운영 작업 관리 버튼에서 진입',
+            'dashboard-task-history': '대시보드 운영 작업 이력 버튼에서 진입',
+            'dashboard-task-activity-log': '대시보드 운영 작업 활동 로그 버튼에서 진입',
+            'dashboard-unassigned-title': '대시보드 미지정 작업 제목에서 진입',
+            'dashboard-unassigned-detail': '대시보드 미지정 작업 상세 버튼에서 진입',
+            'dashboard-unassigned-history': '대시보드 미지정 작업 이력 버튼에서 진입',
+            'dashboard-unassigned-activity-log': '대시보드 미지정 작업 활동 로그 버튼에서 진입',
+            'dashboard-workload-summary': '대시보드 워크로드 요약에서 진입',
+            'dashboard-workload-assigned': '대시보드 배정 작업 카드에서 진입',
+            'dashboard-workload-overdue-summary': '대시보드 기한 초과 카드에서 진입',
+            'dashboard-workload-unassigned-summary': '대시보드 미지정 작업 카드에서 진입',
+            'dashboard-workload-assignee': '대시보드 담당자 워크로드에서 진입',
+            'dashboard-workload-task-list': '대시보드 담당 작업 버튼에서 진입',
+            'dashboard-workload-overdue': '대시보드 기한 초과 작업 버튼에서 진입'
+        };
+        return mapping[source] || '';
+    },
+
+    renderSourceContextNotice: function(config = {}) {
+        const { noticeId, source } = config;
+        const noticeEl = noticeId ? document.getElementById(noticeId) : null;
+        if (!noticeEl) return;
+        const message = this.describeTaskSourceContext(source);
+        if (!message) {
+            noticeEl.classList.add('d-none');
+            noticeEl.textContent = '';
+            noticeEl.dataset.sourceContext = '';
+            return;
+        }
+        noticeEl.classList.remove('d-none');
+        noticeEl.textContent = message;
+        noticeEl.dataset.sourceContext = source || '';
+    },
+
     fetchSystemSettings: async function(forceRefresh = false) {
         if (!forceRefresh && this.systemSettingsCache) {
             return this.systemSettingsCache;

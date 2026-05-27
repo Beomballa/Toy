@@ -124,6 +124,7 @@ const TaskList = {
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskPageSize').value = String(this.state.size);
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
 
     updateStateFromInputs() {
@@ -708,6 +709,7 @@ const TaskList = {
         metaEl.dataset.activeStatFilter = this.resolveActiveStatFilter();
         metaEl.dataset.highlightTaskNo = this.state.focusTaskNo || '';
         metaEl.dataset.sourceContext = this.state.source || '';
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
 
     resolveActiveStatFilter() {

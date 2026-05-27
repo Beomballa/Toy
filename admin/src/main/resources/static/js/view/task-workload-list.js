@@ -144,10 +144,19 @@ const TaskWorkloadList = {
     },
 
     renderMeta(data) {
-        document.getElementById('taskWorkloadMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || 0}명 조회`;
-        document.getElementById('taskWorkloadFilterMeta').textContent = `필터 ${data.resultMeta?.filterCount ?? 0}개 · ${data.resultMeta?.querySignature || '기한 초과 우선 · 진행중 우선'}`;
-        document.getElementById('taskWorkloadResultMeta').textContent = data.resultMeta?.resultLabel || '결과 메타 없음';
-        document.getElementById('taskWorkloadPageMeta').textContent = data.resultMeta?.pageInfoLabel || '페이지 메타 없음';
+        CommonJS.renderListMeta({
+            metaTextId: 'taskWorkloadMetaText',
+            filterMetaId: 'taskWorkloadFilterMeta',
+            resultMetaId: 'taskWorkloadResultMeta',
+            pageMetaId: 'taskWorkloadPageMeta',
+            resultLabel: data.resultMeta?.resultLabel || `${data.totalElements || 0}명 조회`,
+            filterCount: data.resultMeta?.filterCount ?? 0,
+            querySignature: data.resultMeta?.querySignature || '기한 초과 우선 · 진행중 우선',
+            pageInfoLabel: data.resultMeta?.pageInfoLabel || '',
+            filterPrefix: '필터',
+            defaultResultText: '결과 메타 없음',
+            defaultPageText: '페이지 메타 없음'
+        });
         this.setStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || '');
     },
 

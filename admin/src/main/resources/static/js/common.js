@@ -241,6 +241,43 @@ let CommonJS = {
         return normalized ? normalized : null;
     },
 
+    renderListMeta: function(config = {}) {
+        const {
+            metaTextId,
+            filterMetaId,
+            resultMetaId,
+            pageMetaId,
+            resultLabel = '',
+            filterCount = 0,
+            querySignature = '',
+            pageInfoLabel = '',
+            filterPrefix = '필터',
+            defaultResultText = '결과 메타 없음',
+            defaultPageText = '페이지 메타 없음'
+        } = config;
+
+        const metaTextEl = metaTextId ? document.getElementById(metaTextId) : null;
+        const filterMetaEl = filterMetaId ? document.getElementById(filterMetaId) : null;
+        const resultMetaEl = resultMetaId ? document.getElementById(resultMetaId) : null;
+        const pageMetaEl = pageMetaId ? document.getElementById(pageMetaId) : null;
+
+        if (metaTextEl) {
+            metaTextEl.textContent = resultLabel || defaultResultText;
+        }
+        if (filterMetaEl) {
+            const filterText = querySignature
+                ? `${filterPrefix} ${filterCount}개 · ${querySignature}`
+                : `${filterPrefix} ${filterCount}개`;
+            filterMetaEl.textContent = filterText;
+        }
+        if (resultMetaEl) {
+            resultMetaEl.textContent = resultLabel || defaultResultText;
+        }
+        if (pageMetaEl) {
+            pageMetaEl.textContent = pageInfoLabel || defaultPageText;
+        }
+    },
+
     fetchSystemSettings: async function(forceRefresh = false) {
         if (!forceRefresh && this.systemSettingsCache) {
             return this.systemSettingsCache;

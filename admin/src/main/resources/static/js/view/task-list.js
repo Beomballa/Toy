@@ -341,10 +341,19 @@ const TaskList = {
     },
 
     renderMeta(data) {
-        document.getElementById('taskMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || 0}건 조회`;
-        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '고정 우선 · 마감 임박 순'}`);
-        this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
-        this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+        CommonJS.renderListMeta({
+            metaTextId: 'taskMetaText',
+            filterMetaId: 'taskFilterMeta',
+            resultMetaId: 'taskResultMeta',
+            pageMetaId: 'taskPageMeta',
+            resultLabel: data.resultMeta?.resultLabel || `${data.totalElements || 0}건 조회`,
+            filterCount: data.resultMeta?.appliedFilterCount ?? 0,
+            querySignature: data.resultMeta?.querySignature || '고정 우선 · 마감 임박 순',
+            pageInfoLabel: data.resultMeta?.pageInfoLabel || '',
+            filterPrefix: '필터',
+            defaultResultText: '결과 메타 없음',
+            defaultPageText: '페이지 메타 없음'
+        });
         this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.querySignature || '');
         const metaEl = document.getElementById('taskListStateMeta');
         if (metaEl) {

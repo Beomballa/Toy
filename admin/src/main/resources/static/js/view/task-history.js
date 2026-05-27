@@ -141,15 +141,17 @@ const TaskHistoryPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
-        const filterMeta = document.getElementById('taskHistoryFilterMeta');
-        if (filterMeta) {
-            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
-        }
-        const pageMeta = document.getElementById('taskHistoryPageMeta');
-        if (pageMeta) {
-            pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
-        }
+        CommonJS.renderListMeta({
+            metaTextId: 'taskHistoryMetaText',
+            filterMetaId: 'taskHistoryFilterMeta',
+            pageMetaId: 'taskHistoryPageMeta',
+            resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
+            filterCount: data.resultMeta?.filterCount ?? 0,
+            querySignature: '',
+            pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
+            filterPrefix: '적용 필터',
+            defaultPageText: '페이지 메타 없음'
+        });
         const metaEl = document.getElementById('taskHistoryStateMeta');
         if (metaEl) {
             metaEl.dataset.filterCount = String(data.resultMeta?.filterCount ?? 0);

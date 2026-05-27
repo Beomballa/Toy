@@ -14,6 +14,7 @@ const TaskWorkloadDetail = {
             this.reassignModal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
+        this.syncReturnContextMeta();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
@@ -129,6 +130,8 @@ const TaskWorkloadDetail = {
                 metaEl.dataset.detailState = 'error';
                 metaEl.dataset.stateMessage = error.message;
                 metaEl.dataset.overdueCount = '0';
+                metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
+                metaEl.dataset.returnContext = this.resolveReturnContext();
                 metaEl.dataset.lastActionTaskPath = '';
                 metaEl.dataset.lastActionHistoryPath = '';
             }
@@ -164,6 +167,8 @@ const TaskWorkloadDetail = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.assigneeAdminNo = String(data.assigneeAdminNo || '');
             metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
+            metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
+            metaEl.dataset.returnContext = this.resolveReturnContext();
             if (!metaEl.dataset.lastAction) {
                 metaEl.dataset.lastAction = '';
                 metaEl.dataset.lastActionSource = '';
@@ -174,6 +179,22 @@ const TaskWorkloadDetail = {
             }
         }
         this.renderLastActionNotice();
+    },
+
+    syncReturnContextMeta() {
+        const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
+        metaEl.dataset.returnContext = this.resolveReturnContext();
+    },
+
+    resolveReturnContext() {
+        const returnTo = this.bootstrap.returnTo || '';
+        if (returnTo.includes('/tasks/get')) return 'task-detail';
+        if (returnTo.includes('/tasks/history')) return 'task-history';
+        if (returnTo.includes('/tasks/workloads')) return 'workload-list';
+        if (returnTo.includes('/admin')) return 'dashboard-or-task';
+        return 'unknown';
     },
 
     renderRecentTasks(items) {

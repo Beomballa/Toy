@@ -6,7 +6,8 @@ const TaskWorkloadList = {
         keyword: '',
         priority: '',
         overdueOnly: '',
-        adminNo: ''
+        adminNo: '',
+        focusAdminNo: ''
     },
 
     init() {
@@ -45,6 +46,7 @@ const TaskWorkloadList = {
         this.state.priority = params.get('priority') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.adminNo = params.get('adminNo') || '';
+        this.state.focusAdminNo = params.get('focusAdminNo') || '';
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
@@ -66,6 +68,7 @@ const TaskWorkloadList = {
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.adminNo) params.set('adminNo', this.state.adminNo);
+        if (this.state.focusAdminNo) params.set('focusAdminNo', this.state.focusAdminNo);
         return params;
     },
 
@@ -85,6 +88,7 @@ const TaskWorkloadList = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            this.highlightFocusedAdminRow();
             await this.openDeepLinkedAssigneeIfNeeded(data.items || []);
         } catch (error) {
             this.renderListError(error.message);
@@ -109,7 +113,7 @@ const TaskWorkloadList = {
         }
 
         tbody.innerHTML = items.map((item, index) => `
-            <tr>
+            <tr data-admin-row="${item.assigneeAdminNo}">
                 <td class="ps-4 text-muted small">${this.state.page * this.state.size + index + 1}</td>
                 <td>
                     <a class="fw-bold text-dark text-decoration-none" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">${this.escapeHtml(item.assigneeAdminName)}</a>
@@ -175,7 +179,9 @@ const TaskWorkloadList = {
             size: 10,
             keyword: '',
             priority: '',
-            overdueOnly: ''
+            overdueOnly: '',
+            adminNo: '',
+            focusAdminNo: ''
         };
         document.getElementById('taskWorkloadKeyword').value = '';
         document.getElementById('taskWorkloadPriority').value = '';
@@ -206,6 +212,7 @@ const TaskWorkloadList = {
         meta.dataset.filterCount = String(filterCount || 0);
         meta.dataset.querySignature = querySignature || '';
         meta.dataset.pageInfoLabel = pageInfoLabel || '';
+        meta.dataset.highlightAdminNo = this.state.focusAdminNo || '';
     },
 
     async openDeepLinkedAssigneeIfNeeded(items) {
@@ -229,7 +236,32 @@ const TaskWorkloadList = {
     },
 
     buildWorkloadDetailPath(adminNo) {
-        return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const returnParams = this.buildParams();
+        returnParams.set('focusAdminNo', String(adminNo));
+        returnParams.delete('adminNo');
+        return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&returnTo=${encodeURIComponent(`${window.location.pathname}?${returnParams.toString()}`)}`;
+    },
+
+    highlightFocusedAdminRow() {
+        const focusAdminNo = Number(this.state.focusAdminNo || 0);
+        document.querySelectorAll('[data-admin-row]').forEach((row) => {
+            row.classList.remove('table-warning');
+        });
+        if (!focusAdminNo) {
+            return;
+        }
+        const row = document.querySelector(`[data-admin-row="${focusAdminNo}"]`);
+        if (!row) {
+            return;
+        }
+        row.classList.add('table-warning');
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        this.state.focusAdminNo = '';
+        const meta = document.getElementById('taskWorkloadStateMeta');
+        if (meta) {
+            meta.dataset.highlightAdminNo = '';
+        }
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
     },
 
     escapeHtml(value) {

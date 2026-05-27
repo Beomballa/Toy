@@ -31,6 +31,7 @@ const TaskDetailPage = {
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
         }
+        this.syncReturnContextMeta();
     },
 
     bindEvents() {
@@ -120,6 +121,8 @@ const TaskDetailPage = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.taskNo = String(data.taskNo || '');
             metaEl.dataset.status = data.status || '';
+            metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
+            metaEl.dataset.returnContext = this.resolveReturnContext();
             if (!metaEl.dataset.lastAction) {
                 metaEl.dataset.lastAction = '';
                 metaEl.dataset.lastActionSource = '';
@@ -421,6 +424,8 @@ const TaskDetailPage = {
         if (metaEl) {
             metaEl.dataset.detailState = 'error';
             metaEl.dataset.stateMessage = message;
+            metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
+            metaEl.dataset.returnContext = this.resolveReturnContext();
         }
         this.renderLastActionNotice();
         const historyMetaEl = document.getElementById('taskDetailHistoryStateMeta');
@@ -504,6 +509,22 @@ const TaskDetailPage = {
         metaEl.dataset.lastActionHistoryPath = this.buildHistoryPath();
         metaEl.dataset.lastActionLogPath = this.state.currentDetail?.activityLogPath || '';
         this.renderLastActionNotice();
+    },
+
+    syncReturnContextMeta() {
+        const metaEl = document.getElementById('taskDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
+        metaEl.dataset.returnContext = this.resolveReturnContext();
+    },
+
+    resolveReturnContext() {
+        const returnTo = this.state.returnTo || '';
+        if (returnTo.includes('/tasks/workloads/get')) return 'workload-detail';
+        if (returnTo.includes('/tasks/workloads')) return 'workload-list';
+        if (returnTo.includes('/tasks/history')) return 'task-history';
+        if (returnTo.includes('/admin')) return 'task-list';
+        return 'unknown';
     },
 
     renderLastActionNotice() {

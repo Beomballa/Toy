@@ -50,6 +50,10 @@ const DashBoardListJS = {
             this.renderTopBrandsChart(data.topBrands);
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
+            this.setSectionStateMeta('operationTaskStateMeta', 'error', '운영 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
+            this.setSectionStateMeta('unassignedTaskStateMeta', 'error', '미지정 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
+            this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 불러오지 못했습니다.', 0);
+            this.setSectionStateMeta('taskWorkloadStateMeta', 'error', '담당자별 작업 현황을 불러오지 못했습니다.', 0, { overdueRowCount: 0 });
         }
     },
 
@@ -88,6 +92,7 @@ const DashBoardListJS = {
 
         if (!tasks || tasks.length === 0) {
             body.innerHTML = '<div class="text-muted small">현재 관리가 필요한 운영 작업이 없습니다.</div>';
+            this.setSectionStateMeta('operationTaskStateMeta', 'empty', '현재 관리가 필요한 운영 작업이 없습니다.', 0, { pinnedCount: 0 });
             return;
         }
 
@@ -110,6 +115,13 @@ const DashBoardListJS = {
                 </div>
             </div>
         `).join('');
+        this.setSectionStateMeta(
+            'operationTaskStateMeta',
+            'ready',
+            '',
+            tasks.length,
+            { pinnedCount: tasks.filter((task) => !!task.pinned).length }
+        );
     },
 
     renderUnassignedTasks(tasks) {
@@ -118,6 +130,7 @@ const DashBoardListJS = {
 
         if (!tasks || tasks.length === 0) {
             body.innerHTML = '<div class="text-muted small">현재 미지정 작업이 없습니다.</div>';
+            this.setSectionStateMeta('unassignedTaskStateMeta', 'empty', '현재 미지정 작업이 없습니다.', 0, { pinnedCount: 0 });
             return;
         }
 
@@ -148,6 +161,13 @@ const DashBoardListJS = {
                 </div>
             </div>
         `).join('');
+        this.setSectionStateMeta(
+            'unassignedTaskStateMeta',
+            'ready',
+            '',
+            tasks.length,
+            { pinnedCount: tasks.filter((task) => !!task.pinned).length }
+        );
     },
 
     renderTaskWorkloads(items) {
@@ -156,6 +176,7 @@ const DashBoardListJS = {
 
         if (!items || items.length === 0) {
             body.innerHTML = '<div class="text-muted small">담당자별 워크로드 데이터가 없습니다.</div>';
+            this.setSectionStateMeta('taskWorkloadStateMeta', 'empty', '담당자별 워크로드 데이터가 없습니다.', 0, { overdueRowCount: 0 });
             return;
         }
 
@@ -179,6 +200,13 @@ const DashBoardListJS = {
                 </div>
             </div>
         `).join('');
+        this.setSectionStateMeta(
+            'taskWorkloadStateMeta',
+            'ready',
+            '',
+            items.length,
+            { overdueRowCount: items.filter((item) => Number(item.overdueCount || 0) > 0).length }
+        );
     },
 
     renderTaskWorkloadSummary(summary) {
@@ -187,6 +215,7 @@ const DashBoardListJS = {
 
         if (!summary) {
             body.innerHTML = '<div class="text-muted small">워크로드 요약을 확인할 수 없습니다.</div>';
+            this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 확인할 수 없습니다.', 0);
             return;
         }
 
@@ -226,6 +255,18 @@ const DashBoardListJS = {
                 </div>
             </div>
         `;
+        this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'ready', '', 4);
+    },
+
+    setSectionStateMeta(id, state, message, visibleCount, extra = {}) {
+        const metaEl = document.getElementById(id);
+        if (!metaEl) return;
+        metaEl.dataset.listState = state;
+        metaEl.dataset.stateMessage = message || '';
+        metaEl.dataset.visibleCount = String(visibleCount ?? 0);
+        Object.entries(extra).forEach(([key, value]) => {
+            metaEl.dataset[key] = String(value ?? '');
+        });
     },
 
     renderSalesChart(chartData) {

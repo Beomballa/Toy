@@ -13,7 +13,8 @@ const TaskList = {
         assigneeAdminNo: '',
         overdueOnly: '',
         unassignedOnly: '',
-        taskNo: ''
+        taskNo: '',
+        focusTaskNo: ''
     },
 
     init() {
@@ -115,6 +116,7 @@ const TaskList = {
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
+        this.state.focusTaskNo = params.get('focusTaskNo') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
@@ -145,6 +147,7 @@ const TaskList = {
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
+        if (this.state.focusTaskNo) params.set('focusTaskNo', this.state.focusTaskNo);
         return params;
     },
 
@@ -168,6 +171,7 @@ const TaskList = {
             this.renderList(data.items || []);
             this.renderStats(data.taskStats);
             this.renderMeta(data);
+            this.syncStatFilterState();
             this.renderPagination(data);
             await this.openDeepLinkedTaskIfNeeded(data.items || []);
         } catch (error) {
@@ -245,7 +249,7 @@ const TaskList = {
         }
 
         tbody.innerHTML = items.map((item) => `
-            <tr>
+            <tr data-task-row="${item.taskNo}">
                 <td class="ps-4">
                     <input type="checkbox" data-role="select-task" data-task-no="${item.taskNo}" ${this.selectedTaskNos.has(item.taskNo) ? 'checked' : ''}>
                 </td>
@@ -284,6 +288,7 @@ const TaskList = {
         `).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
+        this.highlightFocusedTaskRow();
         this.updateSelectionMeta(items);
     },
 
@@ -626,6 +631,7 @@ const TaskList = {
             this.state.overdueOnly = '';
             this.state.unassignedOnly = '';
         }
+        this.syncStatFilterState(type);
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
@@ -661,7 +667,9 @@ const TaskList = {
         this.state.overdueOnly = '';
         this.state.unassignedOnly = '';
         this.state.taskNo = '';
+        this.state.focusTaskNo = '';
         this.clearSelection(false);
+        this.syncStatFilterState('total');
         this.getList();
     },
 
@@ -685,6 +693,58 @@ const TaskList = {
         if (visibleCount != null) metaEl.dataset.visibleCount = String(visibleCount);
         if (totalElements != null) metaEl.dataset.totalElements = String(totalElements);
         if (querySignature != null) metaEl.dataset.querySignature = querySignature;
+        metaEl.dataset.activeStatFilter = this.resolveActiveStatFilter();
+        metaEl.dataset.highlightTaskNo = this.state.focusTaskNo || '';
+    },
+
+    resolveActiveStatFilter() {
+        if (this.state.unassignedOnly === 'Y') return 'unassigned';
+        if (this.state.overdueOnly === 'Y') return 'overdue';
+        if (this.state.status === 'TODO') return 'TODO';
+        if (this.state.status === 'IN_PROGRESS') return 'IN_PROGRESS';
+        return 'total';
+    },
+
+    syncStatFilterState(activeType = null) {
+        const currentType = activeType || this.resolveActiveStatFilter();
+        const mapping = {
+            total: 'taskStatTotalCard',
+            TODO: 'taskStatTodoCard',
+            IN_PROGRESS: 'taskStatProgressCard',
+            overdue: 'taskStatOverdueCard',
+            unassigned: 'taskStatUnassignedCard'
+        };
+        Object.entries(mapping).forEach(([type, id]) => {
+            const card = document.getElementById(id);
+            if (!card) return;
+            const active = type === currentType;
+            card.classList.toggle('border-dark', active);
+            card.classList.toggle('shadow', active);
+            card.dataset.active = active ? 'Y' : 'N';
+        });
+    },
+
+    highlightFocusedTaskRow() {
+        const focusTaskNo = Number(this.state.focusTaskNo || 0);
+        document.querySelectorAll('[data-task-row]').forEach((row) => {
+            row.classList.remove('table-warning');
+        });
+        if (!focusTaskNo) {
+            return;
+        }
+        const row = document.querySelector(`[data-task-row="${focusTaskNo}"]`);
+        if (!row) {
+            return;
+        }
+        row.classList.add('table-warning');
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        this.state.focusTaskNo = '';
+        const metaEl = document.getElementById('taskListStateMeta');
+        if (metaEl) {
+            metaEl.dataset.highlightTaskNo = '';
+        }
+        const params = this.buildParams();
+        history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
     },
 
     setLastActionMeta(action, status, sourceLabel, taskNo = null) {

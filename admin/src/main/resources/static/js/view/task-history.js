@@ -122,7 +122,7 @@ const TaskHistoryPage = {
         }
 
         tbody.innerHTML = items.map((item) => `
-            <tr>
+            <tr data-log-row="${item.logNo}">
                 <td class="ps-4 text-muted small">${item.logNo}</td>
                 <td>${item.taskPath ? `<a class="text-decoration-none fw-bold" href="${item.taskPath}">${item.taskLabel}</a>` : (item.taskLabel || '-')}</td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
@@ -206,6 +206,7 @@ const TaskHistoryPage = {
             if (listMetaEl) {
                 listMetaEl.dataset.lastOpenedLogNo = String(logNo);
             }
+            this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
             document.getElementById('taskHistoryDetailBody').innerHTML = `<div class="text-danger">${error.message}</div>`;
@@ -285,6 +286,22 @@ const TaskHistoryPage = {
         }
         this.state.logNo = '';
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    highlightLogRow(logNo) {
+        const targetLogNo = Number(logNo || 0);
+        document.querySelectorAll('[data-log-row]').forEach((row) => {
+            row.classList.remove('table-warning');
+        });
+        if (!targetLogNo) {
+            return;
+        }
+        const row = document.querySelector(`[data-log-row="${targetLogNo}"]`);
+        if (!row) {
+            return;
+        }
+        row.classList.add('table-warning');
+        row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     },
 
     setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {

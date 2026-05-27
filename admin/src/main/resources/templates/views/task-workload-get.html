@@ -70,6 +70,7 @@
          data-overdue-count="0"
          data-return-to=""
          data-return-context=""
+         data-source-context=""
          data-last-action=""
          data-last-action-source=""
          data-last-action-task-no=""
@@ -159,7 +160,8 @@
 <script th:inline="javascript">
     window.taskWorkloadDetailBootstrap = {
         adminNo: /*[[${adminNo}]]*/ 0,
-        returnTo: /*[[${returnTo}]]*/ '/admin/settings/tasks/workloads'
+        returnTo: /*[[${returnTo}]]*/ '/admin/settings/tasks/workloads',
+        source: /*[[${param.source != null ? param.source[0] : ''}]]*/ ''
     };
 </script>
 <script src="/js/view/task-workload-get.js"></script>

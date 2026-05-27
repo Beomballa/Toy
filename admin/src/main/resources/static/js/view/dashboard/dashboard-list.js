@@ -4,6 +4,7 @@ const DashBoardListJS = {
         if (this.initialized) return;
         this.initialized = true;
         this.bindSummaryActions();
+        this.bindOperationEntryActions();
         this.getStats();
     },
 
@@ -28,6 +29,26 @@ const DashBoardListJS = {
 
         document.getElementById('summaryCancelledOrders')?.addEventListener('click', () => {
             this.goToOrderList({ status: 'CANCELLED' });
+        });
+    },
+
+    bindOperationEntryActions() {
+        document.getElementById('operationTaskSection')?.addEventListener('click', (event) => {
+            const anchor = event.target.closest('a[href]');
+            if (!anchor) return;
+            this.markSectionEntry('operationTaskStateMeta', anchor.dataset.entrySource || 'dashboard-task', anchor.dataset.entryTarget || 'task', anchor.href);
+        });
+        document.getElementById('taskWorkloadSection')?.addEventListener('click', (event) => {
+            const anchor = event.target.closest('a[href]');
+            if (!anchor) return;
+            const target = anchor.dataset.entryTarget || (anchor.href.includes('overdueOnly=Y') ? 'overdue-workload' : 'workload');
+            this.markSectionEntry('taskWorkloadStateMeta', anchor.dataset.entrySource || 'dashboard-workload', target, anchor.href);
+            this.markSectionEntry('taskWorkloadSummaryStateMeta', anchor.dataset.entrySource || 'dashboard-workload', target, anchor.href);
+        });
+        document.getElementById('unassignedTaskSection')?.addEventListener('click', (event) => {
+            const anchor = event.target.closest('a[href]');
+            if (!anchor) return;
+            this.markSectionEntry('unassignedTaskStateMeta', anchor.dataset.entrySource || 'dashboard-unassigned', anchor.dataset.entryTarget || 'unassigned-task', anchor.href);
         });
     },
 
@@ -102,15 +123,27 @@ const DashBoardListJS = {
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
                             ${task.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                            <a class="fw-bold text-decoration-none" href="${task.targetPath}">${this.escapeHtml(task.title)}</a>
+                            <a class="fw-bold text-decoration-none"
+                               href="${this.buildTaskDetailPath(task.taskNo, 'dashboard-task-title')}"
+                               data-entry-source="dashboard-task-title"
+                               data-entry-target="task-detail">${this.escapeHtml(task.title)}</a>
                         </div>
                         <div class="text-muted small mb-2">${task.statusLabel} · ${task.priorityLabel} · 담당자 ${this.escapeHtml(task.assigneeName)}</div>
                         <div class="small text-dark">${this.escapeHtml(task.dueDateLabel)}</div>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">관리</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskDetailPath(task.taskNo, 'dashboard-task-manage')}"
+                           data-entry-source="dashboard-task-manage"
+                           data-entry-target="task-detail">관리</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskHistoryPath(task.taskNo, 'dashboard-task-history')}"
+                           data-entry-source="dashboard-task-history"
+                           data-entry-target="task-history">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${task.activityLogPath}"
+                           data-entry-source="dashboard-task-activity-log"
+                           data-entry-target="activity-log">활동 로그</a>
                     </div>
                 </div>
             </div>
@@ -140,7 +173,10 @@ const DashBoardListJS = {
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
                             ${task.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                            <a class="fw-bold text-decoration-none" href="${task.targetPath}">${this.escapeHtml(task.title)}</a>
+                            <a class="fw-bold text-decoration-none"
+                               href="${this.buildTaskDetailPath(task.taskNo, 'dashboard-unassigned-title')}"
+                               data-entry-source="dashboard-unassigned-title"
+                               data-entry-target="task-detail">${this.escapeHtml(task.title)}</a>
                         </div>
                         <div class="text-muted small mb-2">${task.statusLabel} · ${task.priorityLabel} · 담당자 미지정</div>
                         <div class="small text-dark">${this.escapeHtml(task.dueDateLabel)}</div>
@@ -154,9 +190,18 @@ const DashBoardListJS = {
                         `}
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.targetPath}">상세</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.historyPath}">이력</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${task.activityLogPath}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskDetailPath(task.taskNo, 'dashboard-unassigned-detail')}"
+                           data-entry-source="dashboard-unassigned-detail"
+                           data-entry-target="task-detail">상세</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskHistoryPath(task.taskNo, 'dashboard-unassigned-history')}"
+                           data-entry-source="dashboard-unassigned-history"
+                           data-entry-target="task-history">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${task.activityLogPath}"
+                           data-entry-source="dashboard-unassigned-activity-log"
+                           data-entry-target="activity-log">활동 로그</a>
                     </div>
                 </div>
             </div>
@@ -185,7 +230,10 @@ const DashBoardListJS = {
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <a class="fw-bold text-decoration-none" href="${item.targetPath}">${this.escapeHtml(item.assigneeName)}</a>
+                            <a class="fw-bold text-decoration-none"
+                               href="${this.buildTaskWorkloadDetailPath(item.assigneeAdminNo, 'dashboard-workload-assignee')}"
+                               data-entry-source="dashboard-workload-assignee"
+                               data-entry-target="workload-detail">${this.escapeHtml(item.assigneeName)}</a>
                             <span class="badge text-bg-light">전체 ${item.totalCount.toLocaleString()}</span>
                             ${item.overdueCount > 0 ? `<span class="badge text-bg-danger">기한 초과 ${item.overdueCount.toLocaleString()}</span>` : ''}
                         </div>
@@ -194,8 +242,14 @@ const DashBoardListJS = {
                         </div>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.targetPath}">담당 작업</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.overduePath}">기한 초과</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskListPath({ assigneeAdminNo: item.assigneeAdminNo }, 'dashboard-workload-task-list')}"
+                           data-entry-source="dashboard-workload-task-list"
+                           data-entry-target="task-list">담당 작업</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildTaskListPath({ assigneeAdminNo: item.assigneeAdminNo, overdueOnly: 'Y' }, 'dashboard-workload-overdue')}"
+                           data-entry-source="dashboard-workload-overdue"
+                           data-entry-target="task-list">기한 초과</a>
                     </div>
                 </div>
             </div>
@@ -222,7 +276,10 @@ const DashBoardListJS = {
         body.innerHTML = `
             <div class="row g-3">
                 <div class="col-md-3">
-                    <a class="text-decoration-none" href="${summary.workloadPath}">
+                    <a class="text-decoration-none"
+                       href="${this.buildTaskWorkloadPath({}, 'dashboard-workload-summary')}"
+                       data-entry-source="dashboard-workload-summary"
+                       data-entry-target="workload-list">
                         <div class="border rounded-3 p-3 h-100">
                             <div class="text-muted small mb-1">담당자 수</div>
                             <div class="fw-bold fs-5 text-dark">${Number(summary.assigneeCount || 0).toLocaleString()}</div>
@@ -230,7 +287,10 @@ const DashBoardListJS = {
                     </a>
                 </div>
                 <div class="col-md-3">
-                    <a class="text-decoration-none" href="${summary.workloadPath}">
+                    <a class="text-decoration-none"
+                       href="${this.buildTaskWorkloadPath({}, 'dashboard-workload-assigned')}"
+                       data-entry-source="dashboard-workload-assigned"
+                       data-entry-target="workload-list">
                         <div class="border rounded-3 p-3 h-100">
                             <div class="text-muted small mb-1">배정 작업</div>
                             <div class="fw-bold fs-5 text-dark">${Number(summary.assignedTaskCount || 0).toLocaleString()}</div>
@@ -238,7 +298,10 @@ const DashBoardListJS = {
                     </a>
                 </div>
                 <div class="col-md-3">
-                    <a class="text-decoration-none" href="${summary.workloadPath}?overdueOnly=Y">
+                    <a class="text-decoration-none"
+                       href="${this.buildTaskWorkloadPath({ overdueOnly: 'Y' }, 'dashboard-workload-overdue-summary')}"
+                       data-entry-source="dashboard-workload-overdue-summary"
+                       data-entry-target="workload-list">
                         <div class="border rounded-3 p-3 h-100">
                             <div class="text-muted small mb-1">기한 초과</div>
                             <div class="fw-bold fs-5 text-danger">${Number(summary.overdueTaskCount || 0).toLocaleString()}</div>
@@ -246,7 +309,10 @@ const DashBoardListJS = {
                     </a>
                 </div>
                 <div class="col-md-3">
-                    <a class="text-decoration-none" href="${summary.unassignedPath}">
+                    <a class="text-decoration-none"
+                       href="${this.buildTaskListPath({ unassignedOnly: 'Y' }, 'dashboard-workload-unassigned-summary')}"
+                       data-entry-source="dashboard-workload-unassigned-summary"
+                       data-entry-target="task-list">
                         <div class="border rounded-3 p-3 h-100">
                             <div class="text-muted small mb-1">미지정 작업</div>
                             <div class="fw-bold fs-5 text-dark">${Number(summary.unassignedTaskCount || 0).toLocaleString()}</div>
@@ -267,6 +333,52 @@ const DashBoardListJS = {
         Object.entries(extra).forEach(([key, value]) => {
             metaEl.dataset[key] = String(value ?? '');
         });
+    },
+
+    markSectionEntry(id, source, target, path) {
+        const metaEl = document.getElementById(id);
+        if (!metaEl) return;
+        metaEl.dataset.lastEntrySource = source || '';
+        metaEl.dataset.lastEntryTarget = target || '';
+        metaEl.dataset.lastEntryPath = path || '';
+    },
+
+    buildTaskListPath(filters = {}, source = 'dashboard-task') {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value != null && value !== '') {
+                params.set(key, String(value));
+            }
+        });
+        params.set('source', source);
+        const query = params.toString();
+        return `/admin/settings/tasks${query ? `?${query}` : ''}`;
+    },
+
+    buildTaskWorkloadPath(filters = {}, source = 'dashboard-workload') {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value != null && value !== '') {
+                params.set(key, String(value));
+            }
+        });
+        params.set('source', source);
+        return `/admin/settings/tasks/workloads?${params.toString()}`;
+    },
+
+    buildTaskDetailPath(taskNo, source = 'dashboard-task-detail') {
+        const returnTo = this.buildTaskListPath({}, source);
+        return `/admin/settings/tasks/get?no=${taskNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
+    },
+
+    buildTaskHistoryPath(taskNo, source = 'dashboard-task-history') {
+        const returnTo = this.buildTaskListPath({}, source);
+        return `/admin/settings/tasks/history?taskNo=${taskNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
+    },
+
+    buildTaskWorkloadDetailPath(adminNo, source = 'dashboard-workload-detail') {
+        const returnTo = this.buildTaskWorkloadPath({}, source);
+        return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     renderSalesChart(chartData) {

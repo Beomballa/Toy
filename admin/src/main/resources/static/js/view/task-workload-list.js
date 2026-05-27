@@ -7,7 +7,8 @@ const TaskWorkloadList = {
         priority: '',
         overdueOnly: '',
         adminNo: '',
-        focusAdminNo: ''
+        focusAdminNo: '',
+        source: ''
     },
 
     init() {
@@ -47,6 +48,7 @@ const TaskWorkloadList = {
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.adminNo = params.get('adminNo') || '';
         this.state.focusAdminNo = params.get('focusAdminNo') || '';
+        this.state.source = params.get('source') || '';
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
@@ -69,6 +71,7 @@ const TaskWorkloadList = {
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.adminNo) params.set('adminNo', this.state.adminNo);
         if (this.state.focusAdminNo) params.set('focusAdminNo', this.state.focusAdminNo);
+        if (this.state.source) params.set('source', this.state.source);
         return params;
     },
 
@@ -213,6 +216,7 @@ const TaskWorkloadList = {
         meta.dataset.querySignature = querySignature || '';
         meta.dataset.pageInfoLabel = pageInfoLabel || '';
         meta.dataset.highlightAdminNo = this.state.focusAdminNo || '';
+        meta.dataset.sourceContext = this.state.source || '';
     },
 
     async openDeepLinkedAssigneeIfNeeded(items) {

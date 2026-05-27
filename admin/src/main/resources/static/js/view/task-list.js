@@ -14,7 +14,8 @@ const TaskList = {
         overdueOnly: '',
         unassignedOnly: '',
         taskNo: '',
-        focusTaskNo: ''
+        focusTaskNo: '',
+        source: ''
     },
 
     init() {
@@ -117,6 +118,7 @@ const TaskList = {
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
         this.state.focusTaskNo = params.get('focusTaskNo') || '';
+        this.state.source = params.get('source') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
@@ -148,6 +150,7 @@ const TaskList = {
         if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
         if (this.state.focusTaskNo) params.set('focusTaskNo', this.state.focusTaskNo);
+        if (this.state.source) params.set('source', this.state.source);
         return params;
     },
 
@@ -695,6 +698,7 @@ const TaskList = {
         if (querySignature != null) metaEl.dataset.querySignature = querySignature;
         metaEl.dataset.activeStatFilter = this.resolveActiveStatFilter();
         metaEl.dataset.highlightTaskNo = this.state.focusTaskNo || '';
+        metaEl.dataset.sourceContext = this.state.source || '';
     },
 
     resolveActiveStatFilter() {

@@ -52,6 +52,7 @@
                  data-status=""
                  data-return-to=""
                  data-return-context=""
+                 data-source-context=""
                  data-last-action=""
                  data-last-action-source=""
                  data-last-action-status=""
@@ -242,7 +243,8 @@
 <script th:inline="javascript">
     window.taskDetailBootstrap = {
         taskNo: [[${taskNo}]],
-        returnTo: [[${returnTo}]]
+        returnTo: [[${returnTo}]],
+        source: [[${param.source != null ? param.source[0] : ''}]]
     };
 </script>
 <script src="/js/common.js"></script>

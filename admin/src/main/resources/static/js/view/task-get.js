@@ -27,6 +27,7 @@ const TaskDetailPage = {
         const bootstrapState = window.taskDetailBootstrap || {};
         this.state.taskNo = Number(bootstrapState.taskNo || 0);
         this.state.returnTo = bootstrapState.returnTo || '/admin/settings/tasks';
+        this.state.source = bootstrapState.source || '';
         const breadcrumbLink = document.getElementById('taskDetailBreadcrumbLink');
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
@@ -123,6 +124,7 @@ const TaskDetailPage = {
             metaEl.dataset.status = data.status || '';
             metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
             metaEl.dataset.returnContext = this.resolveReturnContext();
+            metaEl.dataset.sourceContext = this.state.source || '';
             if (!metaEl.dataset.lastAction) {
                 metaEl.dataset.lastAction = '';
                 metaEl.dataset.lastActionSource = '';
@@ -426,6 +428,7 @@ const TaskDetailPage = {
             metaEl.dataset.stateMessage = message;
             metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
             metaEl.dataset.returnContext = this.resolveReturnContext();
+            metaEl.dataset.sourceContext = this.state.source || '';
         }
         this.renderLastActionNotice();
         const historyMetaEl = document.getElementById('taskDetailHistoryStateMeta');
@@ -516,6 +519,7 @@ const TaskDetailPage = {
         if (!metaEl) return;
         metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/tasks';
         metaEl.dataset.returnContext = this.resolveReturnContext();
+        metaEl.dataset.sourceContext = this.state.source || '';
     },
 
     resolveReturnContext() {

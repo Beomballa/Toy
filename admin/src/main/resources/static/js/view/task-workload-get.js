@@ -132,6 +132,7 @@ const TaskWorkloadDetail = {
                 metaEl.dataset.overdueCount = '0';
                 metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
                 metaEl.dataset.returnContext = this.resolveReturnContext();
+                metaEl.dataset.sourceContext = this.bootstrap.source || '';
                 metaEl.dataset.lastActionTaskPath = '';
                 metaEl.dataset.lastActionHistoryPath = '';
             }
@@ -169,6 +170,7 @@ const TaskWorkloadDetail = {
             metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
             metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
             metaEl.dataset.returnContext = this.resolveReturnContext();
+            metaEl.dataset.sourceContext = this.bootstrap.source || '';
             if (!metaEl.dataset.lastAction) {
                 metaEl.dataset.lastAction = '';
                 metaEl.dataset.lastActionSource = '';
@@ -186,6 +188,7 @@ const TaskWorkloadDetail = {
         if (!metaEl) return;
         metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
         metaEl.dataset.returnContext = this.resolveReturnContext();
+        metaEl.dataset.sourceContext = this.bootstrap.source || '';
     },
 
     resolveReturnContext() {

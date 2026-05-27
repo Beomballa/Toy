@@ -5,6 +5,7 @@ const NoticeDetailPage = {
     state: {
         noticeNo: null,
         returnTo: '/admin/settings/notices',
+        source: '',
         currentDetail: null
     },
 
@@ -26,10 +27,13 @@ const NoticeDetailPage = {
         const bootstrapState = window.noticeDetailBootstrap || {};
         this.state.noticeNo = Number(bootstrapState.noticeNo || 0);
         this.state.returnTo = bootstrapState.returnTo || '/admin/settings/notices';
+        this.state.source = bootstrapState.source || '';
         const breadcrumbLink = document.getElementById('noticeDetailBreadcrumbLink');
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
         }
+        this.syncReturnContextMeta();
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeDetailSourceContextNotice', source: this.state.source });
     },
 
     bindEvents() {
@@ -99,7 +103,11 @@ const NoticeDetailPage = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.noticeNo = String(data.noticeNo || '');
             metaEl.dataset.displayStatus = data.displayStatus || '';
+            metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/notices';
+            metaEl.dataset.returnContext = this.resolveReturnContext();
+            metaEl.dataset.sourceContext = this.state.source || '';
         }
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeDetailSourceContextNotice', source: this.state.source });
     },
 
     openEditModal() {
@@ -228,6 +236,9 @@ const NoticeDetailPage = {
         if (metaEl) {
             metaEl.dataset.detailState = 'error';
             metaEl.dataset.stateMessage = message;
+            metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/notices';
+            metaEl.dataset.returnContext = this.resolveReturnContext();
+            metaEl.dataset.sourceContext = this.state.source || '';
         }
         const historyMetaEl = document.getElementById('noticeDetailHistoryStateMeta');
         if (historyMetaEl) {
@@ -274,6 +285,22 @@ const NoticeDetailPage = {
             metaEl.dataset.stateMessage = '';
             metaEl.dataset.visibleCount = String(items.length);
         }
+    },
+
+    syncReturnContextMeta() {
+        const metaEl = document.getElementById('noticeDetailStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/notices';
+        metaEl.dataset.returnContext = this.resolveReturnContext();
+        metaEl.dataset.sourceContext = this.state.source || '';
+    },
+
+    resolveReturnContext() {
+        const returnTo = this.state.returnTo || '';
+        if (returnTo.includes('/notices/history')) return 'notice-history';
+        if (returnTo.includes('/admin/settings/notices')) return 'notice-list';
+        if (returnTo.includes('/admin')) return 'dashboard-or-notice';
+        return 'unknown';
     },
 
     renderStatusBadge(displayStatus) {

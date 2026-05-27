@@ -23,9 +23,9 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0">운영 공지</h6>
             <div class="d-flex gap-2">
-                <a href="/admin/settings/notices?visibilityStatus=LIVE" class="btn btn-sm btn-outline-secondary">노출중</a>
-                <a href="/admin/settings/notices?isPinned=Y" class="btn btn-sm btn-outline-secondary">고정 공지</a>
-                <a href="/admin/settings/notices" class="btn btn-sm btn-outline-secondary">전체보기</a>
+                <a href="/admin/settings/notices?visibilityStatus=LIVE&source=dashboard-notice-live" data-entry-source="dashboard-notice-live" data-entry-target="notice-list" class="btn btn-sm btn-outline-secondary">노출중</a>
+                <a href="/admin/settings/notices?isPinned=Y&source=dashboard-notice-pinned" data-entry-source="dashboard-notice-pinned" data-entry-target="notice-list" class="btn btn-sm btn-outline-secondary">고정 공지</a>
+                <a href="/admin/settings/notices?source=dashboard-notice-list" data-entry-source="dashboard-notice-list" data-entry-target="notice-list" class="btn btn-sm btn-outline-secondary">전체보기</a>
             </div>
         </div>
         <div class="card-body" id="operationNoticeBody">

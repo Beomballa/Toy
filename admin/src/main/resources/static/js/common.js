@@ -299,11 +299,23 @@ let CommonJS = {
         return mapping[source] || '';
     },
 
+    describeNoticeSourceContext: function(source) {
+        const mapping = {
+            'dashboard-notice-title': '대시보드 운영 공지 제목에서 진입',
+            'dashboard-notice-manage': '대시보드 운영 공지 관리 버튼에서 진입',
+            'dashboard-notice-history': '대시보드 운영 공지 이력 버튼에서 진입',
+            'dashboard-notice-live': '대시보드 노출중 공지 버튼에서 진입',
+            'dashboard-notice-pinned': '대시보드 고정 공지 버튼에서 진입',
+            'dashboard-notice-list': '대시보드 전체 공지 버튼에서 진입'
+        };
+        return mapping[source] || '';
+    },
+
     renderSourceContextNotice: function(config = {}) {
         const { noticeId, source } = config;
         const noticeEl = noticeId ? document.getElementById(noticeId) : null;
         if (!noticeEl) return;
-        const message = this.describeTaskSourceContext(source);
+        const message = this.describeTaskSourceContext(source) || this.describeNoticeSourceContext(source);
         if (!message) {
             noticeEl.classList.add('d-none');
             noticeEl.textContent = '';

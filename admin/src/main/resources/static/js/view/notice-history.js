@@ -4,7 +4,8 @@ const NoticeHistoryPage = {
     state: {
         page: 0,
         size: 20,
-        returnTo: '/admin/settings/notices'
+        returnTo: '/admin/settings/notices',
+        source: ''
     },
 
     init() {
@@ -66,8 +67,10 @@ const NoticeHistoryPage = {
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/settings/notices';
+        this.state.source = params.get('source') || '';
         document.getElementById('noticeHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeHistorySourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -84,6 +87,7 @@ const NoticeHistoryPage = {
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (this.state.returnTo && this.state.returnTo !== '/admin/settings/notices') params.set('returnTo', this.state.returnTo);
+        if (this.state.source) params.set('source', this.state.source);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -113,6 +117,7 @@ const NoticeHistoryPage = {
         const tbody = document.getElementById('noticeHistoryBody');
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 운영 공지 이력이 없습니다.</td></tr>';
+            this.setListStateMeta('empty', '조회된 운영 공지 이력이 없습니다.', 0, 0, 0, '', '');
             return;
         }
 
@@ -132,15 +137,19 @@ const NoticeHistoryPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
-        const filterMeta = document.getElementById('noticeHistoryFilterMeta');
-        if (filterMeta) {
-            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
-        }
-        const pageMeta = document.getElementById('noticeHistoryPageMeta');
-        if (pageMeta) {
-            pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
-        }
+        CommonJS.renderListMeta({
+            metaTextId: 'noticeHistoryMetaText',
+            filterMetaId: 'noticeHistoryFilterMeta',
+            pageMetaId: 'noticeHistoryPageMeta',
+            resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
+            filterCount: data.resultMeta?.filterCount ?? 0,
+            querySignature: '',
+            pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
+            filterPrefix: '적용 필터',
+            defaultPageText: '페이지 메타 없음'
+        });
+        this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeHistorySourceContextNotice', source: this.state.source });
     },
 
     renderPagination(data) {
@@ -195,6 +204,7 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryPageMeta').textContent = '페이지 메타 확인 불가';
         document.getElementById('noticeHistoryResultSummary').textContent = '운영 공지 이력 조회에 실패했습니다.';
         document.getElementById('noticeHistoryPagination').innerHTML = '';
+        this.setListStateMeta('error', message, 0, 0, 0, '', '');
     },
 
     syncQuickFilterState() {
@@ -223,6 +233,19 @@ const NoticeHistoryPage = {
 
     setMetaText(message) {
         document.getElementById('noticeHistoryMetaText').textContent = message;
+    },
+
+    setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {
+        const metaEl = document.getElementById('noticeHistoryStateMeta');
+        if (!metaEl) return;
+        metaEl.dataset.listState = state;
+        metaEl.dataset.stateMessage = message || '';
+        metaEl.dataset.visibleCount = String(visibleCount ?? 0);
+        metaEl.dataset.totalElements = String(totalElements ?? 0);
+        metaEl.dataset.filterCount = String(filterCount ?? 0);
+        metaEl.dataset.querySignature = querySignature || '';
+        metaEl.dataset.pageInfoLabel = pageInfoLabel || '';
+        metaEl.dataset.sourceContext = this.state.source || '';
     },
 
     goPage(page) {

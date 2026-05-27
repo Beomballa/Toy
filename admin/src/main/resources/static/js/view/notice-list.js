@@ -9,7 +9,8 @@ const NoticeList = {
         isActive: '',
         isPinned: '',
         visibilityStatus: '',
-        noticeNo: ''
+        noticeNo: '',
+        source: ''
     },
     selectedNoticeNos: new Set(),
 
@@ -97,11 +98,13 @@ const NoticeList = {
         this.state.isPinned = params.get('isPinned') || '';
         this.state.visibilityStatus = params.get('visibilityStatus') || '';
         this.state.noticeNo = params.get('noticeNo') || '';
+        this.state.source = params.get('source') || '';
         document.getElementById('noticeKeyword').value = this.state.keyword;
         document.getElementById('noticeIsActiveFilter').value = this.state.isActive;
         document.getElementById('noticeIsPinnedFilter').value = this.state.isPinned;
         document.getElementById('noticeVisibilityStatusFilter').value = this.state.visibilityStatus;
         document.getElementById('noticePageSize').value = String(this.state.size);
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
     },
 
     updateStateFromInputs() {
@@ -121,6 +124,7 @@ const NoticeList = {
         if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
         if (this.state.visibilityStatus) params.set('visibilityStatus', this.state.visibilityStatus);
         if (this.state.noticeNo) params.set('noticeNo', this.state.noticeNo);
+        if (this.state.source) params.set('source', this.state.source);
         return params;
     },
 
@@ -229,10 +233,19 @@ const NoticeList = {
     },
 
     renderMeta(data) {
-        document.getElementById('noticeMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || 0}건 조회`;
-        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '고정 우선 최신순'}`);
-        this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
-        this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
+        CommonJS.renderListMeta({
+            metaTextId: 'noticeMetaText',
+            filterMetaId: 'noticeFilterMeta',
+            resultMetaId: 'noticeResultMeta',
+            pageMetaId: 'noticePageMeta',
+            resultLabel: data.resultMeta?.resultLabel || `${data.totalElements || 0}건 조회`,
+            filterCount: data.resultMeta?.appliedFilterCount ?? 0,
+            querySignature: data.resultMeta?.querySignature || '고정 우선 최신순',
+            pageInfoLabel: data.resultMeta?.pageInfoLabel || '',
+            filterPrefix: '필터',
+            defaultResultText: '결과 메타 없음',
+            defaultPageText: '페이지 메타 없음'
+        });
         this.setListStateMeta(
             'ready',
             '',
@@ -243,7 +256,9 @@ const NoticeList = {
         const metaEl = document.getElementById('noticeListStateMeta');
         if (metaEl) {
             metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
+            metaEl.dataset.sourceContext = this.state.source || '';
         }
+        CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
     },
 
     syncHistoryLink() {

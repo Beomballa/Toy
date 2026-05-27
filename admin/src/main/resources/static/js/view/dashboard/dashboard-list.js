@@ -93,14 +93,23 @@ const DashBoardListJS = {
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1">
                             ${notice.pinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                            <a class="fw-bold text-decoration-none" href="${notice.targetPath}">${this.escapeHtml(notice.title)}</a>
+                            <a class="fw-bold text-decoration-none"
+                               href="${this.buildNoticeDetailPath(notice.noticeNo, 'dashboard-notice-title')}"
+                               data-entry-source="dashboard-notice-title"
+                               data-entry-target="notice-detail">${this.escapeHtml(notice.title)}</a>
                         </div>
                         <div class="text-muted small mb-2">${notice.periodLabel}</div>
                         <div class="small text-dark">${this.escapeHtml(notice.content).replace(/\n/g, '<br>')}</div>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${notice.targetPath}">관리</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${notice.historyPath}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildNoticeDetailPath(notice.noticeNo, 'dashboard-notice-manage')}"
+                           data-entry-source="dashboard-notice-manage"
+                           data-entry-target="notice-detail">관리</a>
+                        <a class="btn btn-sm btn-outline-secondary"
+                           href="${this.buildNoticeHistoryPath(notice.noticeNo, 'dashboard-notice-history')}"
+                           data-entry-source="dashboard-notice-history"
+                           data-entry-target="notice-history">이력</a>
                     </div>
                 </div>
             </div>
@@ -341,6 +350,28 @@ const DashBoardListJS = {
         metaEl.dataset.lastEntrySource = source || '';
         metaEl.dataset.lastEntryTarget = target || '';
         metaEl.dataset.lastEntryPath = path || '';
+    },
+
+    buildNoticeListPath(filters = {}, source = 'dashboard-notice-list') {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value != null && value !== '') {
+                params.set(key, String(value));
+            }
+        });
+        params.set('source', source);
+        const query = params.toString();
+        return `/admin/settings/notices${query ? `?${query}` : ''}`;
+    },
+
+    buildNoticeDetailPath(noticeNo, source = 'dashboard-notice-detail') {
+        const returnTo = this.buildNoticeListPath({}, source);
+        return `/admin/settings/notices/get?no=${noticeNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
+    },
+
+    buildNoticeHistoryPath(noticeNo, source = 'dashboard-notice-history') {
+        const returnTo = this.buildNoticeListPath({}, source);
+        return `/admin/settings/notices/history?noticeNo=${noticeNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     buildTaskListPath(filters = {}, source = 'dashboard-task') {

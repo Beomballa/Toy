@@ -27,6 +27,7 @@
             <div>
                 <h1 class="page-title">운영 공지 이력</h1>
                 <div class="small text-muted" id="noticeHistoryResultSummary">공지 작업 로그를 기준으로 변경 이력을 조회합니다.</div>
+                <div class="small text-muted mt-2 d-none" id="noticeHistorySourceContextNotice" data-source-context=""></div>
             </div>
             <button type="button" class="btn btn-outline-secondary" id="btnBackToNoticeSource">이전 화면으로</button>
         </div>
@@ -98,6 +99,15 @@
                 <div class="small text-muted" id="noticeHistoryMetaText">데이터를 불러오는 중입니다...</div>
             </div>
         </div>
+        <div id="noticeHistoryStateMeta"
+             data-list-state="loading"
+             data-state-message="운영 공지 이력을 불러오는 중입니다."
+             data-visible-count="0"
+             data-total-elements="0"
+             data-filter-count="0"
+             data-query-signature=""
+             data-page-info-label=""
+             data-source-context=""></div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">

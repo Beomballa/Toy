@@ -73,7 +73,12 @@ class AdminSettingsRestControllerTest {
                         1,
                         1,
                         0,
-                        5
+                        5,
+                        1,
+                        1,
+                        "1-1 / 1건 · 1페이지",
+                        new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, "2026-05-28", "2026-05-28"),
+                        new AdminSystemSettingHistoryListResponse.ResultMeta("1-1 / 1건", "1-1 / 1건 · 1페이지", 2, "최신 변경순 · 설정=유지보수 모드")
                 ));
 
         mockMvc.perform(get("/api/admin/settings/system/history")

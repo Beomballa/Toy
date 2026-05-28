@@ -87,6 +87,48 @@
                     </button>
                 </div>
                 <div class="card-body p-0">
+                    <div class="border-bottom p-3 bg-light-subtle">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold mb-1">설정 항목</label>
+                                <select id="systemSettingHistorySettingKey" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="SYSTEM_MAINTENANCE_MODE">유지보수 모드</option>
+                                    <option value="COMMUNITY_WRITE_ENABLED">커뮤니티 작성 허용</option>
+                                    <option value="ORDER_EXPORT_ENABLED">주문 Export 허용</option>
+                                    <option value="LOW_STOCK_DEFAULT_THRESHOLD">기본 저재고 임계값</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">관리자 번호</label>
+                                <input type="number" min="1" id="systemSettingHistoryAdminNo" class="form-control form-control-sm" placeholder="예: 1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">시작일</label>
+                                <input type="date" id="systemSettingHistoryStartDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">종료일</label>
+                                <input type="date" id="systemSettingHistoryEndDate" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label fw-bold mb-1">건수</label>
+                                <select id="systemSettingHistoryPageSize" class="form-select form-select-sm">
+                                    <option value="5">5</option>
+                                    <option value="8" selected>8</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end gap-2">
+                                <button class="btn btn-sm btn-dark flex-grow-1" id="btnSearchSystemHistory">조회</button>
+                                <button class="btn btn-sm btn-outline-secondary" id="btnResetSystemHistory">초기화</button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
+                            <span id="systemSettingHistoryFilterMeta">적용 필터 없음</span>
+                            <span id="systemSettingHistoryPageMeta">페이지 메타 없음</span>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
@@ -102,6 +144,12 @@
                             <tr><td colspan="5" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 p-3 border-top">
+                        <div class="small text-muted" id="systemSettingHistoryResultSummary">최신 설정 변경 이력을 조회합니다.</div>
+                        <nav aria-label="설정 변경 이력 페이지 이동">
+                            <ul class="pagination pagination-sm mb-0" id="systemSettingHistoryPagination"></ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -194,6 +242,10 @@
         initialized: false,
         modal: null,
         operationPolicy: null,
+        historyState: {
+            page: 0,
+            size: 8
+        },
         init() {
             if (this.initialized) return;
             this.initialized = true;
@@ -209,6 +261,29 @@
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
             document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
             document.getElementById('btnRefreshSystemHistory').addEventListener('click', () => this.getSystemSettingHistory());
+            document.getElementById('btnSearchSystemHistory').addEventListener('click', () => {
+                this.historyState.page = 0;
+                this.getSystemSettingHistory();
+            });
+            document.getElementById('btnResetSystemHistory').addEventListener('click', () => this.resetSystemSettingHistoryFilters());
+            document.getElementById('systemSettingHistoryPageSize').addEventListener('change', () => {
+                this.historyState.page = 0;
+                this.historyState.size = Number(document.getElementById('systemSettingHistoryPageSize').value || 8);
+                this.getSystemSettingHistory();
+            });
+            ['systemSettingHistoryAdminNo', 'systemSettingHistoryStartDate', 'systemSettingHistoryEndDate'].forEach((id) => {
+                document.getElementById(id)?.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        this.historyState.page = 0;
+                        this.getSystemSettingHistory();
+                    }
+                });
+            });
+            document.getElementById('systemSettingHistorySettingKey').addEventListener('change', () => {
+                this.historyState.page = 0;
+                this.getSystemSettingHistory();
+            });
         },
         async getList() {
             try {
@@ -348,7 +423,8 @@
         },
         async getSystemSettingHistory() {
             try {
-                const res = await fetch('/api/admin/settings/system/history?page=0&size=8');
+                const params = this.buildSystemHistoryParams();
+                const res = await fetch(`/api/admin/settings/system/history?${params.toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 이력을 불러오지 못했습니다.'));
                 }
@@ -360,13 +436,29 @@
                     `<tr><td colspan="5" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             }
         },
+        buildSystemHistoryParams() {
+            const params = new URLSearchParams();
+            const settingKey = document.getElementById('systemSettingHistorySettingKey').value;
+            const adminNo = document.getElementById('systemSettingHistoryAdminNo').value.trim();
+            const startDate = document.getElementById('systemSettingHistoryStartDate').value;
+            const endDate = document.getElementById('systemSettingHistoryEndDate').value;
+
+            if (settingKey) params.set('settingKey', settingKey);
+            if (adminNo) params.set('adminNo', adminNo);
+            if (startDate) params.set('startDate', startDate);
+            if (endDate) params.set('endDate', endDate);
+            params.set('page', String(this.historyState.page));
+            params.set('size', String(this.historyState.size));
+            return params;
+        },
         renderSystemSettingHistory(data) {
             const items = data?.items || [];
             const body = document.getElementById('systemSettingHistoryBody');
 
             if (items.length === 0) {
                 body.innerHTML = '<tr><td colspan="5" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
-                document.getElementById('systemSettingHistoryMetaText').textContent = '최근 설정 변경 이력이 없습니다.';
+                this.renderSystemSettingHistoryMeta(data);
+                this.renderSystemSettingHistoryPagination(data);
                 return;
             }
 
@@ -389,8 +481,54 @@
                 </tr>
             `).join('');
 
+            this.renderSystemSettingHistoryMeta(data);
+            this.renderSystemSettingHistoryPagination(data);
+        },
+        renderSystemSettingHistoryMeta(data) {
             document.getElementById('systemSettingHistoryMetaText').textContent =
-                `최근 ${items.length}건 / 전체 ${data.totalElements || items.length}건`;
+                data?.resultMeta?.resultLabel || `최근 ${data?.items?.length || 0}건 / 전체 ${data?.totalElements || 0}건`;
+            document.getElementById('systemSettingHistoryFilterMeta').textContent =
+                `적용 필터 ${data?.resultMeta?.filterCount ?? 0}개`;
+            document.getElementById('systemSettingHistoryPageMeta').textContent =
+                data?.resultMeta?.pageInfoLabel || data?.pageInfoLabel || '페이지 메타 없음';
+            document.getElementById('systemSettingHistoryResultSummary').textContent =
+                data?.resultMeta?.querySignature || '최신 설정 변경 이력을 조회합니다.';
+        },
+        renderSystemSettingHistoryPagination(data) {
+            const pagination = document.getElementById('systemSettingHistoryPagination');
+            if (!pagination) {
+                return;
+            }
+            if (!data?.totalPages) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < data.totalPages; i += 1) {
+                html += `
+                    <li class="page-item ${i === data.currentPage ? 'active' : ''}">
+                        <button type="button" class="page-link" data-role="go-system-setting-history-page" data-page="${i}">${i + 1}</button>
+                    </li>
+                `;
+            }
+            pagination.innerHTML = html;
+            pagination.querySelectorAll('[data-role="go-system-setting-history-page"]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    this.historyState.page = Number(button.dataset.page);
+                    this.getSystemSettingHistory();
+                });
+            });
+        },
+        resetSystemSettingHistoryFilters() {
+            document.getElementById('systemSettingHistorySettingKey').value = '';
+            document.getElementById('systemSettingHistoryAdminNo').value = '';
+            document.getElementById('systemSettingHistoryStartDate').value = '';
+            document.getElementById('systemSettingHistoryEndDate').value = '';
+            document.getElementById('systemSettingHistoryPageSize').value = '8';
+            this.historyState.page = 0;
+            this.historyState.size = 8;
+            this.getSystemSettingHistory();
         },
         async saveSystemSettings() {
             const lowStockDefaultThreshold = Number(document.getElementById('lowStockDefaultThreshold').value);

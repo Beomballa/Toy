@@ -121,5 +121,6 @@ class AdminSettingsServiceTest {
         assertEquals("운영자", response.items().getFirst().changedAdminName());
         assertEquals("비활성", response.items().getFirst().beforeValueLabel());
         assertEquals("활성", response.items().getFirst().afterValueLabel());
+        assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
     }
 }

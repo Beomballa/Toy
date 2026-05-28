@@ -55,8 +55,9 @@ public class AdminSettingsService {
             Integer page,
             Integer size
     ) {
+        var query = req.toQuery();
         Page<AdminSystemSettingHistoryListResDto> historyPage = adminSystemSettingHistoryRepository.getHistoryList(
-                req.toQuery(),
+                query,
                 PageRequest.of(req.normalizedPage(page), req.normalizedSize(size))
         );
 
@@ -68,7 +69,7 @@ public class AdminSettingsService {
                         .toList()
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
 
-        return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap);
+        return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap, query);
     }
 
     @Transactional

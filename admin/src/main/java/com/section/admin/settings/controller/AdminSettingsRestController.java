@@ -1,7 +1,9 @@
 package com.section.admin.settings.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
+import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.admin.settings.service.AdminSettingsService;
 import jakarta.validation.Valid;
@@ -19,6 +21,15 @@ public class AdminSettingsRestController {
     @GetMapping("/system")
     public ResponseEntity<AdminSystemSettingResponse> getSystemSettings() {
         return ResponseEntity.ok(adminSettingsService.getSystemSettings());
+    }
+
+    @GetMapping("/system/history")
+    public ResponseEntity<AdminSystemSettingHistoryListResponse> getSystemSettingHistory(
+            AdminSystemSettingHistoryListRequest req,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size
+    ) {
+        return ResponseEntity.ok(adminSettingsService.getSystemSettingHistory(req, page, size));
     }
 
     @PostMapping("/system")

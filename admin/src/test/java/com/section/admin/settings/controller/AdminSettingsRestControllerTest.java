@@ -2,6 +2,7 @@ package com.section.admin.settings.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.admin.settings.service.AdminSettingsService;
@@ -48,6 +49,40 @@ class AdminSettingsRestControllerTest {
                 .andExpect(jsonPath("$.communityWriteEnabled").value(false))
                 .andExpect(jsonPath("$.orderExportEnabled").value(true))
                 .andExpect(jsonPath("$.lowStockDefaultThreshold").value(30L));
+    }
+
+    @Test
+    @DisplayName("시스템 설정 이력 조회 API는 최근 변경 내역을 반환한다")
+    void getSystemSettingHistoryReturnsItems() throws Exception {
+        when(adminSettingsService.getSystemSettingHistory(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(5)))
+                .thenReturn(new AdminSystemSettingHistoryListResponse(
+                        java.util.List.of(new AdminSystemSettingHistoryListResponse.Item(
+                                1L,
+                                "SYSTEM_MAINTENANCE_MODE",
+                                "유지보수 모드",
+                                "false",
+                                "true",
+                                "비활성",
+                                "활성",
+                                "유지보수 모드가 비활성에서 활성으로 변경되었습니다.",
+                                9L,
+                                "운영자",
+                                "127.0.0.1",
+                                "2026-05-28 10:00"
+                        )),
+                        1,
+                        1,
+                        0,
+                        5
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/system/history")
+                        .param("page", "0")
+                        .param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].settingKey").value("SYSTEM_MAINTENANCE_MODE"))
+                .andExpect(jsonPath("$.items[0].changedAdminName").value("운영자"))
+                .andExpect(jsonPath("$.totalElements").value(1));
     }
 
     @Test

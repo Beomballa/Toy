@@ -75,6 +75,38 @@
             </div>
         </div>
 
+        <div class="col-lg-12">
+            <div class="card animate-in">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title mb-0">설정 변경 이력</h6>
+                        <div class="small text-muted mt-1" id="systemSettingHistoryMetaText">최근 변경 내역을 불러오는 중입니다...</div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-secondary" id="btnRefreshSystemHistory">
+                        <i class="fas fa-rotate-right me-1"></i>새로고침
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">시간</th>
+                                <th>설정</th>
+                                <th>변경 내용</th>
+                                <th>작업자</th>
+                                <th>IP</th>
+                            </tr>
+                            </thead>
+                            <tbody id="systemSettingHistoryBody">
+                            <tr><td colspan="5" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 관리자 계정 관리 -->
         <div class="col-lg-12">
             <div class="card animate-in">
@@ -170,11 +202,13 @@
             window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
             this.getList();
             this.getSystemSettings();
+            this.getSystemSettingHistory();
         },
         bindEvents() {
             document.getElementById('btnNewAdmin').addEventListener('click', () => this.openModal());
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
             document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
+            document.getElementById('btnRefreshSystemHistory').addEventListener('click', () => this.getSystemSettingHistory());
         },
         async getList() {
             try {
@@ -312,6 +346,52 @@
                 document.getElementById('systemSettingMetaText').textContent = err.message;
             }
         },
+        async getSystemSettingHistory() {
+            try {
+                const res = await fetch('/api/admin/settings/system/history?page=0&size=8');
+                if (!res.ok) {
+                    throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 이력을 불러오지 못했습니다.'));
+                }
+                const data = await res.json();
+                this.renderSystemSettingHistory(data);
+            } catch (err) {
+                document.getElementById('systemSettingHistoryMetaText').textContent = err.message;
+                document.getElementById('systemSettingHistoryBody').innerHTML =
+                    `<tr><td colspan="5" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            }
+        },
+        renderSystemSettingHistory(data) {
+            const items = data?.items || [];
+            const body = document.getElementById('systemSettingHistoryBody');
+
+            if (items.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
+                document.getElementById('systemSettingHistoryMetaText').textContent = '최근 설정 변경 이력이 없습니다.';
+                return;
+            }
+
+            body.innerHTML = items.map(item => `
+                <tr>
+                    <td class="ps-4 text-muted small">${item.changedAt || '-'}</td>
+                    <td>
+                        <div class="fw-bold">${item.settingName}</div>
+                        <div class="small text-muted">${item.settingKey}</div>
+                    </td>
+                    <td>
+                        <div class="small text-muted">${item.beforeValueLabel} → ${item.afterValueLabel}</div>
+                        <div>${item.changeSummary}</div>
+                    </td>
+                    <td>
+                        <div>${item.changedAdminName}</div>
+                        <div class="small text-muted">#${item.changedAdminNo ?? '-'}</div>
+                    </td>
+                    <td class="text-muted small">${item.changedIpAddress}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('systemSettingHistoryMetaText').textContent =
+                `최근 ${items.length}건 / 전체 ${data.totalElements || items.length}건`;
+        },
         async saveSystemSettings() {
             const lowStockDefaultThreshold = Number(document.getElementById('lowStockDefaultThreshold').value);
             if (!Number.isFinite(lowStockDefaultThreshold) || lowStockDefaultThreshold <= 0) {
@@ -343,6 +423,7 @@
                 };
                 document.getElementById('systemSettingMetaText').textContent = '운영 설정이 저장되었습니다.';
                 this.operationPolicy = CommonJS.setSystemSettingsCache(nextSettings);
+                this.getSystemSettingHistory();
                 await CommonJS.alert('운영 설정이 저장되었습니다.', '성공', 'success');
             } catch (err) {
                 document.getElementById('systemSettingMetaText').textContent = err.message;

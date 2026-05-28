@@ -1,12 +1,23 @@
 package com.section.admin.settings.service;
 
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
+import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
+import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
+import com.section.admin.settings.support.AdminSettingDefinition;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.entity.AdminSystemSetting;
+import com.section.common.system.entity.AdminSystemSettingHistory;
+import com.section.common.system.entity.AdminUser;
+import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
 import com.section.common.system.repository.AdminSystemSettingRepository;
+import com.section.common.system.repository.AdminSystemSettingHistoryRepository;
+import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.system.support.AdminRequestContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,31 +31,44 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AdminSettingsService {
 
-    private static final String KEY_MAINTENANCE_MODE = "SYSTEM_MAINTENANCE_MODE";
-    private static final String KEY_COMMUNITY_WRITE = "COMMUNITY_WRITE_ENABLED";
-    private static final String KEY_ORDER_EXPORT = "ORDER_EXPORT_ENABLED";
-    private static final String KEY_LOW_STOCK_THRESHOLD = "LOW_STOCK_DEFAULT_THRESHOLD";
-
     private final AdminSystemSettingRepository adminSystemSettingRepository;
+    private final AdminSystemSettingHistoryRepository adminSystemSettingHistoryRepository;
+    private final AdminUserRepository adminUserRepository;
 
     public AdminSystemSettingResponse getSystemSettings() {
-        Map<String, AdminSystemSetting> settings = adminSystemSettingRepository.findAllBySettingKeyIn(List.of(
-                KEY_MAINTENANCE_MODE,
-                KEY_COMMUNITY_WRITE,
-                KEY_ORDER_EXPORT,
-                KEY_LOW_STOCK_THRESHOLD
-        )).stream().collect(Collectors.toMap(AdminSystemSetting::getSettingKey, Function.identity()));
+        Map<String, AdminSystemSetting> settings = loadSettingMap();
 
         return new AdminSystemSettingResponse(
-                readBoolean(settings, KEY_MAINTENANCE_MODE, false),
-                readBoolean(settings, KEY_COMMUNITY_WRITE, true),
-                readBoolean(settings, KEY_ORDER_EXPORT, true),
-                readLong(settings, KEY_LOW_STOCK_THRESHOLD, 100L)
+                readBoolean(settings, AdminSettingDefinition.MAINTENANCE_MODE),
+                readBoolean(settings, AdminSettingDefinition.COMMUNITY_WRITE_ENABLED),
+                readBoolean(settings, AdminSettingDefinition.ORDER_EXPORT_ENABLED),
+                readLong(settings, AdminSettingDefinition.LOW_STOCK_DEFAULT_THRESHOLD)
         );
     }
 
     public long getLowStockDefaultThreshold() {
         return getSystemSettings().lowStockDefaultThreshold();
+    }
+
+    public AdminSystemSettingHistoryListResponse getSystemSettingHistory(
+            AdminSystemSettingHistoryListRequest req,
+            Integer page,
+            Integer size
+    ) {
+        Page<AdminSystemSettingHistoryListResDto> historyPage = adminSystemSettingHistoryRepository.getHistoryList(
+                req.toQuery(),
+                PageRequest.of(req.normalizedPage(page), req.normalizedSize(size))
+        );
+
+        Map<Long, String> adminNameMap = adminUserRepository.findAllById(
+                historyPage.getContent().stream()
+                        .map(AdminSystemSettingHistoryListResDto::getCrtNo)
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList()
+        ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+
+        return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap);
     }
 
     @Transactional
@@ -53,37 +77,80 @@ public class AdminSettingsService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
-        upsert(KEY_MAINTENANCE_MODE, String.valueOf(req.maintenanceMode()), "관리자 서비스 유지보수 모드");
-        upsert(KEY_COMMUNITY_WRITE, String.valueOf(req.communityWriteEnabled()), "커뮤니티 글쓰기 허용");
-        upsert(KEY_ORDER_EXPORT, String.valueOf(req.orderExportEnabled()), "주문 export 허용");
-        upsert(KEY_LOW_STOCK_THRESHOLD, String.valueOf(req.lowStockDefaultThreshold()), "저재고 기본 임계값");
-    }
+        Map<String, AdminSystemSetting> settings = loadSettingMap();
+        List<SettingChange> changes = List.of(
+                SettingChange.of(AdminSettingDefinition.MAINTENANCE_MODE, String.valueOf(req.maintenanceMode()), settings),
+                SettingChange.of(AdminSettingDefinition.COMMUNITY_WRITE_ENABLED, String.valueOf(req.communityWriteEnabled()), settings),
+                SettingChange.of(AdminSettingDefinition.ORDER_EXPORT_ENABLED, String.valueOf(req.orderExportEnabled()), settings),
+                SettingChange.of(AdminSettingDefinition.LOW_STOCK_DEFAULT_THRESHOLD, String.valueOf(req.lowStockDefaultThreshold()), settings)
+        ).stream().filter(SettingChange::isChanged).toList();
 
-    private boolean readBoolean(Map<String, AdminSystemSetting> settings, String key, boolean defaultValue) {
-        AdminSystemSetting setting = settings.get(key);
-        return setting == null ? defaultValue : Boolean.parseBoolean(setting.getSettingValue());
-    }
-
-    private long readLong(Map<String, AdminSystemSetting> settings, String key, long defaultValue) {
-        AdminSystemSetting setting = settings.get(key);
-        if (setting == null) {
-            return defaultValue;
+        if (changes.isEmpty()) {
+            return;
         }
+
+        String changedIpAddress = AdminRequestContext.getCurrentIpAddress().orElse("127.0.0.1");
+        for (SettingChange change : changes) {
+            upsert(change.definition(), change.afterValue(), settings.get(change.definition().key()));
+        }
+        adminSystemSettingHistoryRepository.saveAll(changes.stream()
+                .map(change -> AdminSystemSettingHistory.builder()
+                        .settingKey(change.definition().key())
+                        .settingName(change.definition().label())
+                        .beforeValue(change.beforeValue())
+                        .afterValue(change.afterValue())
+                        .changeSummary(change.definition().buildChangeSummary(change.beforeValue(), change.afterValue()))
+                        .changedIpAddress(changedIpAddress)
+                        .build())
+                .toList());
+    }
+
+    private Map<String, AdminSystemSetting> loadSettingMap() {
+        return adminSystemSettingRepository.findAllBySettingKeyIn(AdminSettingDefinition.keys()).stream()
+                .collect(Collectors.toMap(AdminSystemSetting::getSettingKey, Function.identity()));
+    }
+
+    private boolean readBoolean(Map<String, AdminSystemSetting> settings, AdminSettingDefinition definition) {
+        AdminSystemSetting setting = settings.get(definition.key());
+        return definition.parseBoolean(setting == null ? definition.defaultValue() : setting.getSettingValue());
+    }
+
+    private long readLong(Map<String, AdminSystemSetting> settings, AdminSettingDefinition definition) {
+        AdminSystemSetting setting = settings.get(definition.key());
         try {
-            return Long.parseLong(setting.getSettingValue());
+            return definition.parseLong(setting == null ? definition.defaultValue() : setting.getSettingValue());
         } catch (NumberFormatException ex) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }
 
-    private void upsert(String key, String value, String description) {
-        AdminSystemSetting setting = adminSystemSettingRepository.findBySettingKey(key)
-                .orElseGet(() -> AdminSystemSetting.builder()
-                        .settingKey(key)
+    private void upsert(AdminSettingDefinition definition, String value, AdminSystemSetting currentSetting) {
+        AdminSystemSetting setting = currentSetting == null
+                ? AdminSystemSetting.builder()
+                        .settingKey(definition.key())
                         .settingValue(value)
-                        .description(description)
-                        .build());
+                        .description(definition.description())
+                        .build()
+                : currentSetting;
         setting.updateValue(value);
         adminSystemSettingRepository.save(setting);
+    }
+
+    private record SettingChange(AdminSettingDefinition definition, String beforeValue, String afterValue) {
+
+        private static SettingChange of(
+                AdminSettingDefinition definition,
+                String requestedValue,
+                Map<String, AdminSystemSetting> settings
+        ) {
+            AdminSystemSetting setting = settings.get(definition.key());
+            String beforeValue = setting == null ? definition.defaultValue() : definition.normalizeStoredValue(setting.getSettingValue());
+            String afterValue = definition.normalizeStoredValue(requestedValue);
+            return new SettingChange(definition, beforeValue, afterValue);
+        }
+
+        private boolean isChanged() {
+            return !beforeValue.equals(afterValue);
+        }
     }
 }

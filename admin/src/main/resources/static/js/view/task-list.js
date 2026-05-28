@@ -3,7 +3,6 @@ const TaskList = {
     modal: null,
     operationPolicy: null,
     selectedTaskNos: new Set(),
-    noticeTimer: null,
     state: {
         page: 0,
         size: 10,
@@ -818,56 +817,37 @@ const TaskList = {
         const sourceMessage = source ? `${source}에서 실행` : '운영 작업 목록에서 실행';
         const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
         const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
-        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
-        noticeEl.classList.add(variantClass);
-        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
-        noticeActionsEl.innerHTML = [
+        CommonJS.renderActionNotice({
+            noticeId: 'taskListActionNotice',
+            textId: 'taskListActionNoticeText',
+            actionsId: 'taskListActionNoticeActions',
+            action,
+            status,
+            variantClass,
+            message: `${sourceMessage} · ${message}`,
+            actionsHtml: [
             historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
             logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
-        ].join('');
-        noticeEl.dataset.visible = 'Y';
-        noticeEl.dataset.action = action;
-        noticeEl.dataset.status = status;
-        this.scheduleLastActionNoticeHide(status);
-    },
-
-    scheduleLastActionNoticeHide(status) {
-        this.clearLastActionNoticeHide();
-        if (status !== 'success') {
-            return;
-        }
-        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
-    },
-
-    clearLastActionNoticeHide() {
-        if (!this.noticeTimer) return;
-        window.clearTimeout(this.noticeTimer);
-        this.noticeTimer = null;
+            ].join('')
+        });
     },
 
     hideLastActionNotice(clearMeta = false) {
-        this.clearLastActionNoticeHide();
-        const metaEl = document.getElementById('taskListStateMeta');
-        const noticeEl = document.getElementById('taskListActionNotice');
-        const noticeTextEl = document.getElementById('taskListActionNoticeText');
-        const noticeActionsEl = document.getElementById('taskListActionNoticeActions');
-        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
-
-        noticeEl.classList.add('d-none');
-        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
-        noticeTextEl.textContent = '';
-        noticeActionsEl.innerHTML = '';
-        noticeEl.dataset.visible = 'N';
-        noticeEl.dataset.action = '';
-        noticeEl.dataset.status = '';
-
-        if (!clearMeta || !metaEl) return;
-        metaEl.dataset.lastAction = '';
-        metaEl.dataset.lastActionSource = '';
-        metaEl.dataset.lastActionStatus = '';
-        metaEl.dataset.lastActionTaskNo = '';
-        metaEl.dataset.lastActionHistoryPath = '';
-        metaEl.dataset.lastActionLogPath = '';
+        CommonJS.hideActionNotice({
+            noticeId: 'taskListActionNotice',
+            textId: 'taskListActionNoticeText',
+            actionsId: 'taskListActionNoticeActions',
+            metaId: 'taskListStateMeta',
+            clearMeta,
+            metaKeys: [
+                'lastAction',
+                'lastActionSource',
+                'lastActionStatus',
+                'lastActionTaskNo',
+                'lastActionHistoryPath',
+                'lastActionLogPath'
+            ]
+        });
     },
 
     buildTaskHistoryPath(taskNo) {

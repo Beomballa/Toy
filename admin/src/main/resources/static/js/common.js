@@ -3,6 +3,7 @@ let CommonJS = {
     initialized: false,
     systemSettingsCache: null,
     systemSettingsEventName: 'admin-system-settings-updated',
+    actionNoticeTimers: {},
     orderStatusMeta: {
         ORDERED: { badgeClass: 'badge-ordered', canCancel: true, showDeliveryInput: false, showDeliveryInfo: false, showCompleteDelivery: false },
         PAID: { badgeClass: 'badge-paid', canCancel: true, showDeliveryInput: true, showDeliveryInfo: false, showCompleteDelivery: false },
@@ -325,6 +326,89 @@ let CommonJS = {
         noticeEl.classList.remove('d-none');
         noticeEl.textContent = message;
         noticeEl.dataset.sourceContext = source || '';
+    },
+
+    renderActionNotice: function(config = {}) {
+        const {
+            noticeId,
+            textId,
+            actionsId,
+            action = '',
+            status = '',
+            variantClass = '',
+            message = '',
+            actionsHtml = '',
+            successDurationMs = 5000
+        } = config;
+        const noticeEl = noticeId ? document.getElementById(noticeId) : null;
+        const noticeTextEl = textId ? document.getElementById(textId) : null;
+        const noticeActionsEl = actionsId ? document.getElementById(actionsId) : null;
+        if (!noticeEl || !noticeTextEl || !noticeActionsEl) {
+            return;
+        }
+
+        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+        if (variantClass) {
+            noticeEl.classList.add(variantClass);
+        }
+        noticeTextEl.textContent = message;
+        noticeActionsEl.innerHTML = actionsHtml;
+        noticeEl.dataset.visible = 'Y';
+        noticeEl.dataset.action = action;
+        noticeEl.dataset.status = status;
+
+        this.clearActionNoticeHide(noticeId);
+        if (status === 'success') {
+            this.actionNoticeTimers[noticeId] = window.setTimeout(() => {
+                this.hideActionNotice({ noticeId, textId, actionsId });
+            }, successDurationMs);
+        }
+    },
+
+    clearActionNoticeHide: function(noticeId) {
+        if (!noticeId || !this.actionNoticeTimers[noticeId]) {
+            return;
+        }
+        window.clearTimeout(this.actionNoticeTimers[noticeId]);
+        delete this.actionNoticeTimers[noticeId];
+    },
+
+    hideActionNotice: function(config = {}) {
+        const {
+            noticeId,
+            textId,
+            actionsId,
+            metaId,
+            clearMeta = false,
+            metaKeys = []
+        } = config;
+        const noticeEl = noticeId ? document.getElementById(noticeId) : null;
+        const noticeTextEl = textId ? document.getElementById(textId) : null;
+        const noticeActionsEl = actionsId ? document.getElementById(actionsId) : null;
+        const metaEl = metaId ? document.getElementById(metaId) : null;
+
+        this.clearActionNoticeHide(noticeId);
+
+        if (noticeEl) {
+            noticeEl.classList.add('d-none');
+            noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
+            noticeEl.dataset.visible = 'N';
+            noticeEl.dataset.action = '';
+            noticeEl.dataset.status = '';
+        }
+        if (noticeTextEl) {
+            noticeTextEl.textContent = '';
+        }
+        if (noticeActionsEl) {
+            noticeActionsEl.innerHTML = '';
+        }
+
+        if (!clearMeta || !metaEl) {
+            return;
+        }
+        metaKeys.forEach((key) => {
+            metaEl.dataset[key] = '';
+        });
     },
 
     fetchSystemSettings: async function(forceRefresh = false) {

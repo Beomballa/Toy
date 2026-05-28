@@ -2,7 +2,6 @@ const NoticeList = {
     initialized: false,
     modal: null,
     operationPolicy: null,
-    noticeTimer: null,
     state: {
         page: 0,
         size: 10,
@@ -668,56 +667,37 @@ const NoticeList = {
         const sourceMessage = source ? `${source}에서 실행` : '운영 공지 목록에서 실행';
         const message = templates[`${action}:${status}`] || '조치 결과를 확인해 주세요.';
         const variantClass = variants[`${action}:${status}`] || (status === 'success' ? 'alert-success' : 'alert-danger');
-        noticeEl.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
-        noticeEl.classList.add(variantClass);
-        noticeTextEl.textContent = `${sourceMessage} · ${message}`;
-        noticeActionsEl.innerHTML = [
+        CommonJS.renderActionNotice({
+            noticeId: 'noticeListActionNotice',
+            textId: 'noticeListActionNoticeText',
+            actionsId: 'noticeListActionNoticeActions',
+            action,
+            status,
+            variantClass,
+            message: `${sourceMessage} · ${message}`,
+            actionsHtml: [
             historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
             logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
-        ].join('');
-        noticeEl.dataset.visible = 'Y';
-        noticeEl.dataset.action = action;
-        noticeEl.dataset.status = status;
-        this.scheduleLastActionNoticeHide(status);
-    },
-
-    scheduleLastActionNoticeHide(status) {
-        this.clearLastActionNoticeHide();
-        if (status !== 'success') {
-            return;
-        }
-        this.noticeTimer = window.setTimeout(() => this.hideLastActionNotice(true), 5000);
-    },
-
-    clearLastActionNoticeHide() {
-        if (!this.noticeTimer) return;
-        window.clearTimeout(this.noticeTimer);
-        this.noticeTimer = null;
+            ].join('')
+        });
     },
 
     hideLastActionNotice(clearMeta = false) {
-        this.clearLastActionNoticeHide();
-        const metaEl = document.getElementById('noticeListStateMeta');
-        const noticeEl = document.getElementById('noticeListActionNotice');
-        const noticeTextEl = document.getElementById('noticeListActionNoticeText');
-        const noticeActionsEl = document.getElementById('noticeListActionNoticeActions');
-        if (!noticeEl || !noticeTextEl || !noticeActionsEl) return;
-
-        noticeEl.classList.add('d-none');
-        noticeEl.classList.remove('alert-success', 'alert-danger', 'alert-warning', 'alert-primary');
-        noticeTextEl.textContent = '';
-        noticeActionsEl.innerHTML = '';
-        noticeEl.dataset.visible = 'N';
-        noticeEl.dataset.action = '';
-        noticeEl.dataset.status = '';
-
-        if (!clearMeta || !metaEl) return;
-        metaEl.dataset.lastAction = '';
-        metaEl.dataset.lastActionSource = '';
-        metaEl.dataset.lastActionStatus = '';
-        metaEl.dataset.lastActionNoticeNo = '';
-        metaEl.dataset.lastActionHistoryPath = '';
-        metaEl.dataset.lastActionLogPath = '';
+        CommonJS.hideActionNotice({
+            noticeId: 'noticeListActionNotice',
+            textId: 'noticeListActionNoticeText',
+            actionsId: 'noticeListActionNoticeActions',
+            metaId: 'noticeListStateMeta',
+            clearMeta,
+            metaKeys: [
+                'lastAction',
+                'lastActionSource',
+                'lastActionStatus',
+                'lastActionNoticeNo',
+                'lastActionHistoryPath',
+                'lastActionLogPath'
+            ]
+        });
     },
 
     buildNoticeHistoryPath(noticeNo) {

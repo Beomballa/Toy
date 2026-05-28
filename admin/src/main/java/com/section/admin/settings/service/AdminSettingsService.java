@@ -11,6 +11,7 @@ import com.section.common.system.entity.AdminSystemSetting;
 import com.section.common.system.entity.AdminSystemSettingHistory;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
+import com.section.common.system.dto.AdminSystemSettingHistorySummaryDto;
 import com.section.common.system.repository.AdminSystemSettingRepository;
 import com.section.common.system.repository.AdminSystemSettingHistoryRepository;
 import com.section.common.system.repository.AdminUserRepository;
@@ -60,6 +61,7 @@ public class AdminSettingsService {
                 query,
                 PageRequest.of(req.normalizedPage(page), req.normalizedSize(size))
         );
+        AdminSystemSettingHistorySummaryDto summary = adminSystemSettingHistoryRepository.getHistorySummary(query);
 
         Map<Long, String> adminNameMap = adminUserRepository.findAllById(
                 historyPage.getContent().stream()
@@ -69,7 +71,7 @@ public class AdminSettingsService {
                         .toList()
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
 
-        return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap, query);
+        return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap, query, summary);
     }
 
     @Transactional

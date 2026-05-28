@@ -77,6 +77,7 @@ class AdminSettingsRestControllerTest {
                         1,
                         1,
                         "1-1 / 1건 · 1페이지",
+                        new AdminSystemSettingHistoryListResponse.Summary(1, 1, 1, 0, 0, 0),
                         new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, "2026-05-28", "2026-05-28"),
                         new AdminSystemSettingHistoryListResponse.ResultMeta("1-1 / 1건", "1-1 / 1건 · 1페이지", 2, "최신 변경순 · 설정=유지보수 모드")
                 ));
@@ -87,6 +88,7 @@ class AdminSettingsRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].settingKey").value("SYSTEM_MAINTENANCE_MODE"))
                 .andExpect(jsonPath("$.items[0].changedAdminName").value("운영자"))
+                .andExpect(jsonPath("$.summary.totalCount").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
     }
 

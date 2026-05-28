@@ -3,6 +3,7 @@ package com.section.admin.settings.res;
 import com.section.admin.settings.support.AdminSettingDefinition;
 import com.section.common.system.dto.AdminSystemSettingHistoryListQuery;
 import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
+import com.section.common.system.dto.AdminSystemSettingHistorySummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.time.format.DateTimeFormatter;
@@ -18,6 +19,7 @@ public record AdminSystemSettingHistoryListResponse(
         long rangeStart,
         long rangeEnd,
         String pageInfoLabel,
+        Summary summary,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
@@ -26,7 +28,8 @@ public record AdminSystemSettingHistoryListResponse(
     public static AdminSystemSettingHistoryListResponse from(
             Page<AdminSystemSettingHistoryListResDto> page,
             Map<Long, String> adminNameMap,
-            AdminSystemSettingHistoryListQuery query
+            AdminSystemSettingHistoryListQuery query,
+            AdminSystemSettingHistorySummaryDto summary
     ) {
         long totalElements = page.getTotalElements();
         long rangeStart = totalElements == 0 ? 0 : (long) page.getNumber() * page.getSize() + 1;
@@ -42,6 +45,7 @@ public record AdminSystemSettingHistoryListResponse(
                 totalElements == 0
                         ? "조건에 맞는 설정 변경 이력이 없습니다."
                         : "%d-%d / %d건 · %d페이지".formatted(rangeStart, rangeEnd, totalElements, Math.max(page.getTotalPages(), 1)),
+                Summary.from(summary),
                 AppliedQuery.from(query),
                 ResultMeta.from(page, query, rangeStart, rangeEnd)
         );
@@ -77,6 +81,29 @@ public record AdminSystemSettingHistoryListResponse(
                     changedAdminNo == null ? "관리자" : adminNameMap.getOrDefault(changedAdminNo, "관리자#" + changedAdminNo),
                     item.getChangedIpAddress(),
                     item.getCrtDtm() == null ? "-" : item.getCrtDtm().format(DATE_TIME_FORMATTER)
+            );
+        }
+    }
+
+    public record Summary(
+            long totalCount,
+            long todayCount,
+            long maintenanceCount,
+            long communityCount,
+            long orderExportCount,
+            long lowStockThresholdCount
+    ) {
+        private static Summary from(AdminSystemSettingHistorySummaryDto summary) {
+            if (summary == null) {
+                return new Summary(0, 0, 0, 0, 0, 0);
+            }
+            return new Summary(
+                    summary.totalCount(),
+                    summary.todayCount(),
+                    summary.maintenanceCount(),
+                    summary.communityCount(),
+                    summary.orderExportCount(),
+                    summary.lowStockThresholdCount()
             );
         }
     }

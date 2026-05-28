@@ -5,6 +5,7 @@ import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
+import com.section.common.system.dto.AdminSystemSettingHistorySummaryDto;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.entity.AdminSystemSetting;
 import com.section.common.system.entity.AdminUser;
@@ -112,6 +113,8 @@ class AdminSettingsServiceTest {
 
         when(adminSystemSettingHistoryRepository.getHistoryList(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(row)));
+        when(adminSystemSettingHistoryRepository.getHistorySummary(any()))
+                .thenReturn(new AdminSystemSettingHistorySummaryDto(1L, 1L, 1L, 0L, 0L, 0L));
         when(adminUserRepository.findAllById(List.of(7L)))
                 .thenReturn(List.of(AdminUser.builder().adminNo(7L).name("운영자").build()));
 
@@ -122,5 +125,6 @@ class AdminSettingsServiceTest {
         assertEquals("비활성", response.items().getFirst().beforeValueLabel());
         assertEquals("활성", response.items().getFirst().afterValueLabel());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
+        assertEquals(1L, response.summary().totalCount());
     }
 }

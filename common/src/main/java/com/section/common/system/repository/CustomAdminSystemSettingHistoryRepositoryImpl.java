@@ -6,6 +6,7 @@ import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminSystemSettingHistoryListQuery;
 import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
+import com.section.common.system.dto.AdminSystemSettingHistorySummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -57,6 +58,18 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
     }
 
+    @Override
+    public AdminSystemSettingHistorySummaryDto getHistorySummary(AdminSystemSettingHistoryListQuery query) {
+        return new AdminSystemSettingHistorySummaryDto(
+                countBy(query, null, null),
+                countBy(query, null, LocalDate.now()),
+                countBy(query, "SYSTEM_MAINTENANCE_MODE", null),
+                countBy(query, "COMMUNITY_WRITE_ENABLED", null),
+                countBy(query, "ORDER_EXPORT_ENABLED", null),
+                countBy(query, "LOW_STOCK_DEFAULT_THRESHOLD", null)
+        );
+    }
+
     private BooleanExpression[] historyConditions(AdminSystemSettingHistoryListQuery query) {
         return new BooleanExpression[]{
                 settingKeyEq(query.settingKey()),
@@ -89,5 +102,20 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
             return adminSystemSettingHistory.crtDtm.goe(startDateTime);
         }
         return adminSystemSettingHistory.crtDtm.loe(endDateTime);
+    }
+
+    private long countBy(AdminSystemSettingHistoryListQuery query, String forcedSettingKey, LocalDate forcedStartDate) {
+        AdminSystemSettingHistoryListQuery effectiveQuery = new AdminSystemSettingHistoryListQuery(
+                forcedSettingKey != null ? forcedSettingKey : query.settingKey(),
+                query.adminNo(),
+                forcedStartDate != null ? forcedStartDate : query.startDate(),
+                forcedStartDate != null ? forcedStartDate : query.endDate()
+        );
+        Long count = queryFactory
+                .select(adminSystemSettingHistory.count())
+                .from(adminSystemSettingHistory)
+                .where(historyConditions(effectiveQuery))
+                .fetchOne();
+        return count == null ? 0L : count;
     }
 }

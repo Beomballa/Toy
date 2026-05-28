@@ -87,6 +87,44 @@
                     </button>
                 </div>
                 <div class="card-body p-0">
+                    <div class="row g-3 p-3 border-bottom bg-body-tertiary">
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">전체 변경</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryTotalCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">오늘 변경</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryTodayCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">유지보수 모드</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryMaintenanceCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">커뮤니티 작성</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryCommunityCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">주문 Export</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryOrderExportCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">저재고 기준</div>
+                                <div class="fs-5 fw-bold" id="systemSettingHistoryLowStockCount">0</div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="border-bottom p-3 bg-light-subtle">
                         <div class="row g-3">
                             <div class="col-md-3">
@@ -457,6 +495,7 @@
 
             if (items.length === 0) {
                 body.innerHTML = '<tr><td colspan="5" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
+                this.renderSystemSettingHistorySummary(data?.summary);
                 this.renderSystemSettingHistoryMeta(data);
                 this.renderSystemSettingHistoryPagination(data);
                 return;
@@ -481,8 +520,18 @@
                 </tr>
             `).join('');
 
+            this.renderSystemSettingHistorySummary(data?.summary);
             this.renderSystemSettingHistoryMeta(data);
             this.renderSystemSettingHistoryPagination(data);
+        },
+        renderSystemSettingHistorySummary(summary) {
+            const safeSummary = summary || {};
+            document.getElementById('systemSettingHistoryTotalCount').textContent = Number(safeSummary.totalCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryTodayCount').textContent = Number(safeSummary.todayCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryMaintenanceCount').textContent = Number(safeSummary.maintenanceCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryCommunityCount').textContent = Number(safeSummary.communityCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryOrderExportCount').textContent = Number(safeSummary.orderExportCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryLowStockCount').textContent = Number(safeSummary.lowStockThresholdCount || 0).toLocaleString();
         },
         renderSystemSettingHistoryMeta(data) {
             document.getElementById('systemSettingHistoryMetaText').textContent =

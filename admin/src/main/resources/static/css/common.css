@@ -19,8 +19,10 @@
     margin-left: 280px;
     min-height: 100vh;
     min-width: 0;
-    padding: 2.5rem;
-    background-color: #ffffff;
+    padding: 2rem 2.5rem 3rem;
+    background:
+        radial-gradient(circle at top, rgba(3, 199, 90, 0.035), transparent 18%),
+        linear-gradient(180deg, #f8fafc 0%, #f5f6f7 100%);
 }
 
 /* 상세/수정 화면은 본문만 가로 스크롤 허용 */
@@ -38,18 +40,19 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1.25rem;
-    padding: 0.95rem 1.1rem;
-    border: 1px solid #dbe4ff;
-    border-radius: 14px;
-    background: #f8fbff;
+    margin-bottom: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #d6f3e0;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8fffb 0%, #f3fbf6 100%);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
 }
 
 .operation-policy-banner__title {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    color: #1d4ed8;
+    color: #047857;
     font-size: 0.9rem;
     font-weight: 700;
     white-space: nowrap;
@@ -67,7 +70,8 @@
     align-items: center;
     padding: 0.45rem 0.7rem;
     border-radius: 999px;
-    background: #eef4ff;
+    background: #ffffff;
+    border: 1px solid #dcfce7;
     color: #334155;
     font-size: 0.82rem;
     font-weight: 600;
@@ -96,11 +100,11 @@
 
 .custom-modal {
     background: #fff;
-    border-radius: 12px;
+    border-radius: 18px;
     width: 90%;
-    max-width: 400px;
+    max-width: 420px;
     padding: 24px;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
     transform: translateY(20px);
     transition: transform 0.2s ease;
 }
@@ -151,13 +155,14 @@
 }
 
 .custom-btn {
+    min-height: 40px;
     padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: 600;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
     cursor: pointer;
-    border: none;
-    transition: all 0.2s;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
 .custom-btn-secondary {
@@ -170,12 +175,15 @@
 }
 
 .custom-btn-primary {
-    background: #2563eb;
+    background: #111827;
+    border-color: #111827;
     color: #fff;
 }
 
 .custom-btn-primary:hover {
-    background: #1d4ed8;
+    background: #000;
+    border-color: #000;
+    transform: translateY(-1px);
 }
 
 .custom-btn-danger {
@@ -229,7 +237,7 @@
 .admin-detail-page {
     display: flex;
     flex-direction: column;
-    gap: 1.75rem;
+    gap: 1.5rem;
 }
 
 .admin-detail-header {
@@ -286,7 +294,7 @@
 }
 
 .admin-detail-actions .btn {
-    min-width: 108px;
+    min-width: 112px;
 }
 
 .admin-detail-layout > [class*="col-"] {
@@ -297,9 +305,9 @@
 
 .admin-detail-card,
 .admin-detail-side-card {
-    border-radius: 20px;
+    border-radius: 18px;
     border-color: #e7eaf0;
-    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .admin-detail-body {

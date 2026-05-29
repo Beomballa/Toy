@@ -2,6 +2,9 @@ const NoticeDetailPage = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    isSavingDetail: false,
+    isTogglingActive: false,
+    isDeletingNotice: false,
     state: {
         noticeNo: null,
         returnTo: '/admin/settings/notices',
@@ -119,9 +122,9 @@ const NoticeDetailPage = {
         this.renderLastActionNotice();
     },
 
-    openEditModal() {
+    async openEditModal() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
             return;
         }
         const detail = this.state.currentDetail;
@@ -138,6 +141,7 @@ const NoticeDetailPage = {
     },
 
     async saveDetail() {
+        if (this.isSavingDetail) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
             return;
@@ -163,6 +167,8 @@ const NoticeDetailPage = {
         }
 
         try {
+            this.isSavingDetail = true;
+            this.setBusyButton(document.getElementById('btnNoticeDetailSave'), true, '저장 중...');
             const response = await fetch('/api/admin/settings/notices/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -171,18 +177,22 @@ const NoticeDetailPage = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지를 저장하지 못했습니다.'));
             }
-
             this.setLastActionMeta('save-detail', 'success', '상세 수정');
-            await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
             this.modal?.hide();
-            this.loadDetail();
+            await this.loadDetail();
+            await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('save-detail', 'error', '상세 수정');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isSavingDetail = false;
+            this.setBusyButton(document.getElementById('btnNoticeDetailSave'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async toggleActive() {
+        if (this.isTogglingActive) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
             return;
@@ -194,6 +204,8 @@ const NoticeDetailPage = {
 
         const nextActive = detail.isActive === 'Y' ? 'N' : 'Y';
         try {
+            this.isTogglingActive = true;
+            this.setBusyButton(document.getElementById('btnNoticeDetailToggleActive'), true, '처리 중...');
             const response = await fetch(`/api/admin/settings/notices/active/${detail.noticeNo}?isActive=${nextActive}`, {
                 method: 'PATCH'
             });
@@ -201,14 +213,20 @@ const NoticeDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '공지 상태를 변경하지 못했습니다.'));
             }
             this.setLastActionMeta('toggle-active', 'success', '상세 상태 변경');
-            this.loadDetail();
+            await this.loadDetail();
+            await CommonJS.alert('운영 공지 상태가 변경되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('toggle-active', 'error', '상세 상태 변경');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isTogglingActive = false;
+            this.setBusyButton(document.getElementById('btnNoticeDetailToggleActive'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteNotice() {
+        if (this.isDeletingNotice) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
             return;
@@ -224,6 +242,8 @@ const NoticeDetailPage = {
         }
 
         try {
+            this.isDeletingNotice = true;
+            this.setBusyButton(document.getElementById('btnNoticeDetailDelete'), true, '삭제 중...');
             const response = await fetch(`/api/admin/settings/notices/delete?no=${detail.noticeNo}`, {
                 method: 'DELETE'
             });
@@ -236,6 +256,10 @@ const NoticeDetailPage = {
         } catch (error) {
             this.setLastActionMeta('delete-notice', 'error', '상세 삭제');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isDeletingNotice = false;
+            this.setBusyButton(document.getElementById('btnNoticeDetailDelete'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -434,6 +458,23 @@ const NoticeDetailPage = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    setBusyButton(button, isBusy, busyText = '처리 중...') {
+        if (!button) return;
+        if (isBusy) {
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = button.textContent;
+            }
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+            delete button.dataset.originalText;
+        }
     }
 };
 

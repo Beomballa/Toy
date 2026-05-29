@@ -1,6 +1,6 @@
 const OrderDetail = {
     initialized: false,
-    init() {
+    async init() {
         if (this.initialized) return;
         this.initialized = true;
         const params = new URLSearchParams(window.location.search);
@@ -9,9 +9,8 @@ const OrderDetail = {
         this.isSubmitting = false;
         this.operationPolicy = null;
         if (!this.orderNo) {
-            CommonJS.alert('잘못된 접근입니다.', '오류', 'error').then(() => {
-                location.href = this.returnTo;
-            });
+            await CommonJS.alert('잘못된 접근입니다.', '오류', 'error');
+            location.href = this.returnTo;
             return;
         }
 
@@ -19,7 +18,7 @@ const OrderDetail = {
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        this.getDetail();
+        await this.getDetail();
     },
 
     bindEvents() {
@@ -68,7 +67,7 @@ const OrderDetail = {
             this.renderDetail(data);
         } catch (err) {
             console.error('주문 상세 로드 실패:', err);
-            CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -79,6 +78,7 @@ const OrderDetail = {
         this.renderOrderItems(data.items);
         this.renderAdminMemo(data.adminMemo);
         this.renderOrderHistory(data.histories || []);
+        void this.applyOperationPolicy(this.operationPolicy);
     },
 
     renderSummary(data) {
@@ -284,14 +284,15 @@ const OrderDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(res, fallbackErrorMessage));
             }
 
-            await CommonJS.alert(successMessage, '성공', 'success');
             await this.getDetail();
+            await CommonJS.alert(successMessage, '성공', 'success');
         } catch (err) {
             console.error(`${logLabel} 실패:`, err);
             await CommonJS.alert(err.message || fallbackErrorMessage, '오류', 'error');
         } finally {
             this.isSubmitting = false;
             this.setActionButtonsDisabled(false);
+            void this.applyOperationPolicy(this.operationPolicy);
         }
     },
 

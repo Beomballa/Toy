@@ -2,6 +2,12 @@ const TaskDetailPage = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    isSavingDetail: false,
+    isTogglingStatus: false,
+    isDeletingTask: false,
+    isSavingComment: false,
+    isDeletingComment: false,
+    isApplyingRecommendation: false,
     state: {
         taskNo: null,
         returnTo: '/admin/settings/tasks',
@@ -136,9 +142,9 @@ const TaskDetailPage = {
         this.renderLastActionNotice();
     },
 
-    openEditModal() {
+    async openEditModal() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 수정 및 삭제'), '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 수정 및 삭제'), '알림', 'warning');
             return;
         }
         const detail = this.state.currentDetail;
@@ -191,6 +197,7 @@ const TaskDetailPage = {
     },
 
     async saveDetail() {
+        if (this.isSavingDetail) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 수정 및 삭제'), '알림', 'warning');
             return;
@@ -215,6 +222,8 @@ const TaskDetailPage = {
         }
 
         try {
+            this.isSavingDetail = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailSave'), true, '저장 중...');
             const response = await fetch('/api/admin/settings/tasks/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -224,16 +233,21 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업을 저장하지 못했습니다.'));
             }
             this.setLastActionMeta('save-detail', 'success', '상세 수정');
-            await CommonJS.alert('운영 작업이 저장되었습니다.', '성공', 'success');
             this.modal?.hide();
-            this.loadDetail();
+            await this.loadDetail();
+            await CommonJS.alert('운영 작업이 저장되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('save-detail', 'error', '상세 수정');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isSavingDetail = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailSave'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async toggleStatus() {
+        if (this.isTogglingStatus) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 상태 변경'), '알림', 'warning');
             return;
@@ -243,6 +257,8 @@ const TaskDetailPage = {
 
         const nextStatus = detail.status === 'DONE' ? 'IN_PROGRESS' : 'DONE';
         try {
+            this.isTogglingStatus = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailToggleStatus'), true, '처리 중...');
             const response = await fetch(`/api/admin/settings/tasks/status/${detail.taskNo}?status=${nextStatus}`, {
                 method: 'PATCH'
             });
@@ -250,14 +266,20 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 상태를 변경하지 못했습니다.'));
             }
             this.setLastActionMeta('toggle-status', 'success', '상태 변경');
-            this.loadDetail();
+            await this.loadDetail();
+            await CommonJS.alert('운영 작업 상태가 변경되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('toggle-status', 'error', '상태 변경');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isTogglingStatus = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailToggleStatus'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteTask() {
+        if (this.isDeletingTask) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 삭제'), '알림', 'warning');
             return;
@@ -269,6 +291,8 @@ const TaskDetailPage = {
         if (!confirmed) return;
 
         try {
+            this.isDeletingTask = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailDelete'), true, '삭제 중...');
             const response = await fetch(`/api/admin/settings/tasks/delete?no=${detail.taskNo}`, { method: 'DELETE' });
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업을 삭제하지 못했습니다.'));
@@ -277,10 +301,15 @@ const TaskDetailPage = {
             window.location.href = this.state.returnTo;
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isDeletingTask = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailDelete'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async saveComment() {
+        if (this.isSavingComment) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 메모 등록'), '알림', 'warning');
             return;
@@ -293,6 +322,8 @@ const TaskDetailPage = {
         }
 
         try {
+            this.isSavingComment = true;
+            this.setBusyButton(document.getElementById('btnTaskCommentSave'), true, '등록 중...');
             const response = await fetch(`/api/admin/settings/tasks/${this.state.taskNo}/comments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -303,15 +334,20 @@ const TaskDetailPage = {
             }
             contentEl.value = '';
             this.setLastActionMeta('save-comment', 'success', '메모 등록');
+            await this.loadDetail();
             await CommonJS.alert('작업 메모가 등록되었습니다.', '성공', 'success');
-            this.loadDetail();
         } catch (error) {
             this.setLastActionMeta('save-comment', 'error', '메모 등록');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isSavingComment = false;
+            this.setBusyButton(document.getElementById('btnTaskCommentSave'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteComment(commentNo) {
+        if (this.isDeletingComment) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 메모 삭제'), '알림', 'warning');
             return;
@@ -320,6 +356,8 @@ const TaskDetailPage = {
         if (!confirmed) return;
 
         try {
+            this.isDeletingComment = true;
+            this.setCollectionButtonsDisabled('[data-role="delete-task-comment"]', true);
             const response = await fetch(`/api/admin/settings/tasks/${this.state.taskNo}/comments/${commentNo}`, {
                 method: 'DELETE'
             });
@@ -327,11 +365,14 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 삭제하지 못했습니다.'));
             }
             this.setLastActionMeta('delete-comment', 'success', '메모 삭제');
+            await this.loadDetail();
             await CommonJS.alert('작업 메모가 삭제되었습니다.', '성공', 'success');
-            this.loadDetail();
         } catch (error) {
             this.setLastActionMeta('delete-comment', 'error', '메모 삭제');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isDeletingComment = false;
+            this.setCollectionButtonsDisabled('[data-role="delete-task-comment"]', false);
         }
     },
 
@@ -467,6 +508,7 @@ const TaskDetailPage = {
     },
 
     async applyRecommendation(adminNo) {
+        if (this.isApplyingRecommendation) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 배정 추천 적용'), '알림', 'warning');
             return;
@@ -478,6 +520,8 @@ const TaskDetailPage = {
         if (!confirmed) return;
 
         try {
+            this.isApplyingRecommendation = true;
+            this.setCollectionButtonsDisabled('[data-role="apply-task-recommendation"]', true);
             const response = await fetch('/api/admin/settings/tasks/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -496,12 +540,38 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '추천 담당자 배정에 실패했습니다.'));
             }
             this.setLastActionMeta('apply-recommendation', 'success', '배정 추천');
+            await this.loadDetail();
             await CommonJS.alert('추천 담당자로 배정되었습니다.', '성공', 'success');
-            this.loadDetail();
         } catch (error) {
             this.setLastActionMeta('apply-recommendation', 'error', '배정 추천');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isApplyingRecommendation = false;
+            this.setCollectionButtonsDisabled('[data-role="apply-task-recommendation"]', false);
         }
+    },
+
+    setBusyButton(button, isBusy, busyText = '처리 중...') {
+        if (!button) return;
+        if (isBusy) {
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = button.textContent;
+            }
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+            delete button.dataset.originalText;
+        }
+    },
+
+    setCollectionButtonsDisabled(selector, disabled) {
+        document.querySelectorAll(selector).forEach((button) => {
+            button.disabled = disabled;
+        });
     },
 
     setLastActionMeta(action, status, sourceLabel = '운영 작업 상세') {

@@ -2,6 +2,7 @@ package com.section.admin.settings.service;
 
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
+import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.admin.settings.support.AdminSettingDefinition;
@@ -72,6 +73,23 @@ public class AdminSettingsService {
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
 
         return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap, query, summary);
+    }
+
+    public AdminSystemSettingHistoryDetailResponse getSystemSettingHistoryDetail(Long historyNo) {
+        if (historyNo == null || historyNo <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        AdminSystemSettingHistory history = adminSystemSettingHistoryRepository.findById(historyNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+
+        String adminName = history.getCrtNo() == null
+                ? "관리자"
+                : adminUserRepository.findById(history.getCrtNo())
+                        .map(AdminUser::getName)
+                        .orElse("관리자#" + history.getCrtNo());
+
+        return AdminSystemSettingHistoryDetailResponse.from(history, adminName);
     }
 
     @Transactional

@@ -2,12 +2,14 @@ package com.section.admin.settings.service;
 
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
+import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.common.system.dto.AdminSystemSettingHistoryListResDto;
 import com.section.common.system.dto.AdminSystemSettingHistorySummaryDto;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.entity.AdminSystemSetting;
+import com.section.common.system.entity.AdminSystemSettingHistory;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminSystemSettingHistoryRepository;
 import com.section.common.system.repository.AdminSystemSettingRepository;
@@ -126,5 +128,32 @@ class AdminSettingsServiceTest {
         assertEquals("활성", response.items().getFirst().afterValueLabel());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
         assertEquals(1L, response.summary().totalCount());
+    }
+
+    @Test
+    @DisplayName("설정 변경 이력 상세 조회는 관리자 이름과 표시값을 함께 응답한다")
+    void getSystemSettingHistoryDetailReturnsResolvedAdminName() {
+        AdminSystemSettingHistory history = AdminSystemSettingHistory.builder()
+                .historyNo(11L)
+                .settingKey("SYSTEM_MAINTENANCE_MODE")
+                .settingName("유지보수 모드")
+                .beforeValue("false")
+                .afterValue("true")
+                .changeSummary("유지보수 모드가 비활성에서 활성으로 변경되었습니다.")
+                .changedIpAddress("127.0.0.1")
+                .build();
+        history.setCrtNo(7L);
+        history.setCrtDtm(java.time.LocalDateTime.of(2026, 5, 29, 10, 0));
+
+        when(adminSystemSettingHistoryRepository.findById(11L)).thenReturn(java.util.Optional.of(history));
+        when(adminUserRepository.findById(7L))
+                .thenReturn(java.util.Optional.of(AdminUser.builder().adminNo(7L).name("운영자").build()));
+
+        AdminSystemSettingHistoryDetailResponse response = adminSettingsService.getSystemSettingHistoryDetail(11L);
+
+        assertEquals(11L, response.historyNo());
+        assertEquals("운영자", response.changedAdminName());
+        assertEquals("비활성", response.beforeValueLabel());
+        assertEquals("활성", response.afterValueLabel());
     }
 }

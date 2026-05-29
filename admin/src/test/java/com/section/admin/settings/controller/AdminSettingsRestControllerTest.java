@@ -2,6 +2,7 @@ package com.section.admin.settings.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
@@ -90,6 +91,32 @@ class AdminSettingsRestControllerTest {
                 .andExpect(jsonPath("$.items[0].changedAdminName").value("운영자"))
                 .andExpect(jsonPath("$.summary.totalCount").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("시스템 설정 이력 상세 조회 API는 단건 상세 정보를 반환한다")
+    void getSystemSettingHistoryDetailReturnsItem() throws Exception {
+        when(adminSettingsService.getSystemSettingHistoryDetail(11L))
+                .thenReturn(new AdminSystemSettingHistoryDetailResponse(
+                        11L,
+                        "SYSTEM_MAINTENANCE_MODE",
+                        "유지보수 모드",
+                        "false",
+                        "true",
+                        "비활성",
+                        "활성",
+                        "유지보수 모드가 비활성에서 활성으로 변경되었습니다.",
+                        7L,
+                        "운영자",
+                        "127.0.0.1",
+                        "2026-05-29 10:00:00"
+                ));
+
+        mockMvc.perform(get("/api/admin/settings/system/history/get").param("historyNo", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.historyNo").value(11))
+                .andExpect(jsonPath("$.settingKey").value("SYSTEM_MAINTENANCE_MODE"))
+                .andExpect(jsonPath("$.changedAdminName").value("운영자"));
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.section.admin.settings.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.settings.req.AdminSystemSettingHistoryListRequest;
+import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
@@ -30,6 +31,11 @@ public class AdminSettingsRestController {
             @RequestParam(required = false) Integer size
     ) {
         return ResponseEntity.ok(adminSettingsService.getSystemSettingHistory(req, page, size));
+    }
+
+    @GetMapping("/system/history/get")
+    public ResponseEntity<AdminSystemSettingHistoryDetailResponse> getSystemSettingHistoryDetail(@RequestParam("historyNo") Long historyNo) {
+        return ResponseEntity.ok(adminSettingsService.getSystemSettingHistoryDetail(historyNo));
     }
 
     @PostMapping("/system")

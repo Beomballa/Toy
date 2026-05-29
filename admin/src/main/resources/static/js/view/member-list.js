@@ -3,6 +3,7 @@ const MemberListPage = {
     modal: null,
     selectedMember: null,
     operationPolicy: null,
+    detailActionInFlight: false,
     state: {
         page: 0,
         size: 20
@@ -47,6 +48,11 @@ const MemberListPage = {
         });
         document.getElementById('btnToggleMasterYn')?.addEventListener('click', () => this.toggleMemberStatus('master'));
         document.getElementById('btnToggleMemberStatus')?.addEventListener('click', () => this.toggleMemberStatus('deleted'));
+        document.getElementById('memberDetailModal')?.addEventListener('hidden.bs.modal', () => {
+            this.selectedMember = null;
+            this.detailActionInFlight = false;
+            this.setDetailActionState(false);
+        });
     },
 
     readStateFromUrl() {
@@ -186,17 +192,29 @@ const MemberListPage = {
     },
 
     async openDetail(memberId) {
-        document.getElementById('memberDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        this.setDetailLoadingState('데이터를 불러오는 중입니다...');
         this.modal.show();
         try {
-            const res = await fetch(`/api/admin/members/get?id=${memberId}`);
-            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 상세를 불러오지 못했습니다.'));
-            const data = await res.json();
-            this.selectedMember = data;
+            const data = await this.fetchMemberDetail(memberId);
             this.renderDetail(data);
         } catch (err) {
             document.getElementById('memberDetailBody').innerHTML = `<div class="text-danger">${err.message}</div>`;
         }
+    },
+
+    async fetchMemberDetail(memberId) {
+        const res = await fetch(`/api/admin/members/get?id=${memberId}`);
+        if (!res.ok) {
+            throw new Error(await CommonJS.extractErrorMessage(res, '회원 상세를 불러오지 못했습니다.'));
+        }
+        const data = await res.json();
+        this.selectedMember = data;
+        return data;
+    },
+
+    setDetailLoadingState(message) {
+        document.getElementById('memberDetailBody').textContent = message;
+        this.setDetailActionState(true);
     },
 
     renderDetail(data) {
@@ -238,8 +256,7 @@ const MemberListPage = {
         document.getElementById('btnToggleMemberStatus').textContent = data.delYn === 'Y' ? '회원 복구' : '탈퇴 처리';
         const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
         const reason = '유지보수 모드에서는 회원 상태 변경이 불가능합니다.';
-        CommonJS.setButtonDisabled(document.getElementById('btnToggleMasterYn'), disabled, reason);
-        CommonJS.setButtonDisabled(document.getElementById('btnToggleMemberStatus'), disabled, reason);
+        this.setDetailActionState(this.detailActionInFlight || disabled, disabled ? reason : '');
     },
 
     renderMemberAvatar(data) {
@@ -304,7 +321,7 @@ const MemberListPage = {
     },
 
     async toggleMemberStatus(type) {
-        if (!this.selectedMember) {
+        if (!this.selectedMember || this.detailActionInFlight) {
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -316,18 +333,39 @@ const MemberListPage = {
             deleted: type === 'deleted' ? this.selectedMember.delYn !== 'Y' : this.selectedMember.delYn === 'Y'
         };
         try {
+            this.detailActionInFlight = true;
+            this.setDetailActionState(true, '상태 변경을 처리하는 중입니다.');
             const res = await fetch(`/api/admin/members/status/${this.selectedMember.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 상태를 변경하지 못했습니다.'));
-            await CommonJS.alert('회원 상태가 변경되었습니다.', '성공', 'success');
-            await this.openDetail(this.selectedMember.id);
+            const refreshed = await this.fetchMemberDetail(this.selectedMember.id);
+            this.renderDetail(refreshed);
+            if (!this.modal._isShown) {
+                this.modal.show();
+            }
             await this.getList();
+            await CommonJS.alert('회원 상태가 변경되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert(err.message, '오류', 'error');
+            await CommonJS.alert(err.message, '오류', 'error');
+            if (this.selectedMember) {
+                this.renderDetail(this.selectedMember);
+            }
+        } finally {
+            this.detailActionInFlight = false;
+            if (this.selectedMember) {
+                this.renderDetail(this.selectedMember);
+            } else {
+                this.setDetailActionState(false);
+            }
         }
+    },
+
+    setDetailActionState(disabled, reason = '') {
+        CommonJS.setButtonDisabled(document.getElementById('btnToggleMasterYn'), disabled, reason);
+        CommonJS.setButtonDisabled(document.getElementById('btnToggleMemberStatus'), disabled, reason);
     },
 
     setMetaText(message) {

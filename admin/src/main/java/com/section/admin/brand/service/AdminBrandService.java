@@ -44,15 +44,22 @@ public class AdminBrandService {
 
     @Transactional
     public void saveBrand(BrandSaveRequest req) {
+        String normalizedNameKo = normalizeRequiredText(req.nameKo());
+        String normalizedNameEn = normalizeOptionalText(req.nameEn());
+        String normalizedLogoUrl = normalizeOptionalText(req.logoUrl());
+        String normalizedIsActive = normalizeYnStatus(req.isActive());
+
+        validateDuplicateBrand(req.brandNo(), normalizedNameKo, normalizedNameEn);
+
         if (req.brandNo() != null) {
             Brand brand = getBrandEntity(req.brandNo());
-            brand.update(req.nameKo(), req.nameEn(), req.logoUrl(), req.isActive() != null ? req.isActive() : "Y");
+            brand.update(normalizedNameKo, normalizedNameEn, normalizedLogoUrl, normalizedIsActive);
         } else {
             brandRepository.save(Brand.builder()
-                    .nameKo(req.nameKo())
-                    .nameEn(req.nameEn())
-                    .logoUrl(req.logoUrl())
-                    .isActive(req.isActive() != null ? req.isActive() : "Y")
+                    .nameKo(normalizedNameKo)
+                    .nameEn(normalizedNameEn)
+                    .logoUrl(normalizedLogoUrl)
+                    .isActive(normalizedIsActive)
                     .build());
         }
     }
@@ -73,5 +80,45 @@ public class AdminBrandService {
         }
         Brand brand = getBrandEntity(brandNo);
         brand.update(brand.getNameKo(), brand.getNameEn(), brand.getLogoUrl(), normalized);
+    }
+
+    private void validateDuplicateBrand(Long brandNo, String nameKo, String nameEn) {
+        boolean duplicatedKo = brandNo == null
+                ? brandRepository.existsByNameKoIgnoreCase(nameKo)
+                : brandRepository.existsByNameKoIgnoreCaseAndBrandNoNot(nameKo, brandNo);
+        if (duplicatedKo) {
+            throw new BusinessException(ErrorCode.BRAND_NAME_DUPLICATED);
+        }
+
+        if (nameEn == null) {
+            return;
+        }
+
+        boolean duplicatedEn = brandNo == null
+                ? brandRepository.existsByNameEnIgnoreCase(nameEn)
+                : brandRepository.existsByNameEnIgnoreCaseAndBrandNoNot(nameEn, brandNo);
+        if (duplicatedEn) {
+            throw new BusinessException(ErrorCode.BRAND_NAME_DUPLICATED);
+        }
+    }
+
+    private String normalizeRequiredText(String value) {
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeOptionalText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private String normalizeYnStatus(String value) {
+        String normalized = value == null ? "Y" : value.trim().toUpperCase();
+        if (!"Y".equals(normalized) && !"N".equals(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
     }
 }

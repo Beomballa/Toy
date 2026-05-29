@@ -14,4 +14,12 @@ public interface CategoryRepository extends JpaRepository<Category,Long>, Custom
 
     // 활성화된 카테고리만 조회
     List<Category> findByIsActive(String isActive);
+
+    List<Category> findByIsActiveOrderByDepthAscNameAscCategoryNoAsc(String isActive);
+
+    boolean existsByParentNoAndDepthAndNameIgnoreCase(Long parentNo, Integer depth, String name);
+
+    boolean existsByParentNoAndDepthAndNameIgnoreCaseAndCategoryNoNot(Long parentNo, Integer depth, String name, Long categoryNo);
+
+    boolean existsByParentNo(Long parentNo);
 }

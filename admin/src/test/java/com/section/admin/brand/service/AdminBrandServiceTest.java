@@ -20,6 +20,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentCaptor.forClass;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,5 +76,29 @@ class AdminBrandServiceTest {
         adminBrandService.updateActive(1L, "N");
 
         assertEquals("N", brand.getIsActive());
+    }
+
+    @Test
+    @DisplayName("브랜드 저장은 한글명 중복을 허용하지 않는다")
+    void saveBrandRejectsDuplicateKoName() {
+        when(brandRepository.existsByNameKoIgnoreCase("나이키")).thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, " 나이키 ", "NIKE", null, "Y")));
+
+        assertEquals(com.section.common.base.exception.ErrorCode.BRAND_NAME_DUPLICATED, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("브랜드 저장은 공백 정규화 후 저장한다")
+    void saveBrandNormalizesFields() {
+        adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, " 뉴   발란스 ", " new  balance ", " https://logo ", "y"));
+
+        var captor = forClass(Brand.class);
+        verify(brandRepository).save(captor.capture());
+        assertEquals("뉴 발란스", captor.getValue().getNameKo());
+        assertEquals("new balance", captor.getValue().getNameEn());
+        assertEquals("https://logo", captor.getValue().getLogoUrl());
+        assertEquals("Y", captor.getValue().getIsActive());
     }
 }

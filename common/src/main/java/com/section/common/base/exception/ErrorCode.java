@@ -18,7 +18,11 @@ public enum ErrorCode {
     // Product & Commerce
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "존재하지 않는 상품입니다."),
     BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "존재하지 않는 브랜드입니다."),
+    BRAND_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "B002", "이미 사용 중인 브랜드명입니다."),
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CA001", "존재하지 않는 카테고리입니다."),
+    CATEGORY_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "CA002", "같은 분류 내에 이미 사용 중인 카테고리명입니다."),
+    CATEGORY_HIERARCHY_INVALID(HttpStatus.BAD_REQUEST, "CA003", "카테고리 계층 정보가 올바르지 않습니다."),
+    CATEGORY_HAS_CHILDREN(HttpStatus.BAD_REQUEST, "CA004", "하위 카테고리가 있어 삭제할 수 없습니다."),
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "O001", "존재하지 않는 주문입니다."),
     ORDER_STATUS_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "O002", "현재 주문 상태에서는 요청한 작업을 수행할 수 없습니다."),
 

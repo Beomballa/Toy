@@ -49,21 +49,30 @@ public class AdminCategoryService {
 
     @Transactional
     public void saveCategory(CategorySaveRequest req) {
+        String normalizedName = normalizeRequiredText(req.name());
+        String normalizedIsActive = normalizeYnStatus(req.isActive());
+
+        validateCategoryHierarchy(req.categoryNo(), req.parentNo(), req.depth());
+        validateDuplicateCategoryName(req.categoryNo(), req.parentNo(), req.depth(), normalizedName);
+
         if (req.categoryNo() != null) {
             Category category = getCategoryEntity(req.categoryNo());
-            category.update(req.name(), req.isActive() != null ? req.isActive() : "Y");
+            category.update(req.parentNo(), normalizedName, req.depth(), normalizedIsActive);
         } else {
             categoryRepository.save(Category.builder()
                     .parentNo(req.parentNo())
-                    .name(req.name())
+                    .name(normalizedName)
                     .depth(req.depth())
-                    .isActive(req.isActive() != null ? req.isActive() : "Y")
+                    .isActive(normalizedIsActive)
                     .build());
         }
     }
 
     @Transactional
     public void deleteCategory(Long categoryNo) {
+        if (categoryRepository.existsByParentNo(categoryNo)) {
+            throw new BusinessException(ErrorCode.CATEGORY_HAS_CHILDREN);
+        }
         if (productRepository.existsByCategoryNo(categoryNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -78,5 +87,55 @@ public class AdminCategoryService {
         }
         Category category = getCategoryEntity(categoryNo);
         category.changeStatus(normalized);
+    }
+
+    private void validateCategoryHierarchy(Long categoryNo, Long parentNo, Integer depth) {
+        if (depth == null || depth < 1 || depth > 2) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+
+        if (depth == 1) {
+            if (parentNo != null) {
+                throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+            }
+            return;
+        }
+
+        if (parentNo == null) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+
+        if (categoryNo != null && categoryRepository.existsByParentNo(categoryNo) && depth != 1) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+
+        Category parent = getCategoryEntity(parentNo);
+        if (parent.getDepth() != 1 || parent.getParentNo() != null) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+        if (categoryNo != null && categoryNo.equals(parentNo)) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+    }
+
+    private void validateDuplicateCategoryName(Long categoryNo, Long parentNo, Integer depth, String name) {
+        boolean duplicated = categoryNo == null
+                ? categoryRepository.existsByParentNoAndDepthAndNameIgnoreCase(parentNo, depth, name)
+                : categoryRepository.existsByParentNoAndDepthAndNameIgnoreCaseAndCategoryNoNot(parentNo, depth, name, categoryNo);
+        if (duplicated) {
+            throw new BusinessException(ErrorCode.CATEGORY_NAME_DUPLICATED);
+        }
+    }
+
+    private String normalizeRequiredText(String value) {
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeYnStatus(String value) {
+        String normalized = value == null ? "Y" : value.trim().toUpperCase();
+        if (!"Y".equals(normalized) && !"N".equals(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
     }
 }

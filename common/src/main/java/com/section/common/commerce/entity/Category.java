@@ -31,8 +31,10 @@ public class Category {
     @Column(name = "is_active", length = 1)
     private String isActive;
 
-    public void update(String name, String isActive) {
+    public void update(Long parentNo, String name, Integer depth, String isActive) {
+        this.parentNo = parentNo;
         this.name = name;
+        this.depth = depth;
         this.isActive = isActive;
     }
 

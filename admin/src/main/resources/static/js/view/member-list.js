@@ -201,14 +201,38 @@ const MemberListPage = {
 
     renderDetail(data) {
         document.getElementById('memberDetailBody').innerHTML = `
-            <div class="mb-2"><strong>ID</strong> ${data.id}</div>
-            <div class="mb-2"><strong>이메일</strong> ${data.email}</div>
-            <div class="mb-2"><strong>이름</strong> ${data.name}</div>
-            <div class="mb-2"><strong>닉네임</strong> ${data.nickname || '-'}</div>
-            <div class="mb-2"><strong>권한</strong> ${data.masterYn}</div>
-            <div class="mb-2"><strong>상태</strong> ${data.delYn === 'Y' ? '탈퇴' : '정상'}</div>
-            <div class="mb-2"><strong>초기화 여부</strong> ${data.initYn || '-'}</div>
-            <div><strong>가입일시</strong> ${data.crtDtm}</div>
+            <div class="member-detail-layout">
+                <section class="member-detail-hero">
+                    ${this.renderMemberAvatar(data)}
+                    <div class="member-detail-summary">
+                        <div class="member-detail-summary-top">
+                            <div class="member-detail-summary-title">
+                                <h3 class="member-detail-name">${this.escapeHtml(data.name || '이름 미등록')}</h3>
+                                <div class="member-detail-email">${this.escapeHtml(data.email || '-')}</div>
+                            </div>
+                            <div class="member-detail-badges">
+                                ${this.renderRoleBadge(data.masterYn)}
+                                ${this.renderStatusBadge(data.delYn)}
+                            </div>
+                        </div>
+                        <div class="member-detail-meta-row">
+                            <span class="member-detail-chip">회원번호 ${this.escapeHtml(String(data.id ?? '-'))}</span>
+                            <span class="member-detail-chip">가입 ${this.escapeHtml(data.crtDtm || '-')}</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="member-detail-grid">
+                    ${this.renderDetailCard('닉네임', data.nickname || '미등록')}
+                    ${this.renderDetailCard('초기화 여부', this.formatInitStatus(data.initYn))}
+                    ${this.renderDetailCard('권한 상태', this.formatRoleText(data.masterYn), '현재 운영 권한 상태입니다.')}
+                    ${this.renderDetailCard('계정 상태', this.formatMemberStatus(data.delYn), '탈퇴 처리 여부를 포함합니다.')}
+                </section>
+
+                <div class="member-detail-note">
+                    회원 상태와 권한 변경은 즉시 반영됩니다. 유지보수 모드에서는 하단 액션 버튼이 비활성화됩니다.
+                </div>
+            </div>
         `;
         document.getElementById('btnToggleMasterYn').textContent = data.masterYn === 'Y' ? '마스터 해제' : '마스터 지정';
         document.getElementById('btnToggleMemberStatus').textContent = data.delYn === 'Y' ? '회원 복구' : '탈퇴 처리';
@@ -216,6 +240,67 @@ const MemberListPage = {
         const reason = '유지보수 모드에서는 회원 상태 변경이 불가능합니다.';
         CommonJS.setButtonDisabled(document.getElementById('btnToggleMasterYn'), disabled, reason);
         CommonJS.setButtonDisabled(document.getElementById('btnToggleMemberStatus'), disabled, reason);
+    },
+
+    renderMemberAvatar(data) {
+        const name = data.name || data.nickname || data.email || '회원';
+        if (data.profileImgPath) {
+            return `<img src="${this.escapeHtml(data.profileImgPath)}" alt="${this.escapeHtml(name)}" class="member-detail-avatar-img">`;
+        }
+        return `<div class="member-detail-avatar">${this.escapeHtml(this.getInitials(name))}</div>`;
+    },
+
+    renderRoleBadge(masterYn) {
+        const isMaster = masterYn === 'Y';
+        return `<span class="badge ${isMaster ? 'badge-master' : 'badge-user'}">${isMaster ? '마스터 권한' : '일반 회원'}</span>`;
+    },
+
+    renderStatusBadge(delYn) {
+        const deleted = delYn === 'Y';
+        return `<span class="badge ${deleted ? 'badge-deleted' : 'badge-normal'}">${deleted ? '탈퇴 처리' : '정상 이용'}</span>`;
+    },
+
+    renderDetailCard(label, value, description = '') {
+        return `
+            <article class="member-detail-card">
+                <div class="member-detail-label">${this.escapeHtml(label)}</div>
+                <div class="member-detail-value">${this.escapeHtml(value)}</div>
+                ${description ? `<div class="member-detail-value member-detail-value--muted">${this.escapeHtml(description)}</div>` : ''}
+            </article>
+        `;
+    },
+
+    formatRoleText(masterYn) {
+        return masterYn === 'Y' ? '마스터 관리자 권한' : '일반 회원 권한';
+    },
+
+    formatMemberStatus(delYn) {
+        return delYn === 'Y' ? '탈퇴 처리 상태' : '정상 활성 상태';
+    },
+
+    formatInitStatus(initYn) {
+        return initYn === 'Y' ? '초기 비밀번호 상태' : '일반 로그인 상태';
+    },
+
+    getInitials(value) {
+        const normalized = String(value || '').trim();
+        if (!normalized) {
+            return 'U';
+        }
+        const parts = normalized.split(/\s+/).filter(Boolean);
+        if (parts.length >= 2) {
+            return parts.slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('');
+        }
+        return normalized.slice(0, 2).toUpperCase();
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     },
 
     async toggleMemberStatus(type) {

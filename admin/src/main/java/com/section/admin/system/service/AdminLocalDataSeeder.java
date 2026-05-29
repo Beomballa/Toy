@@ -41,9 +41,11 @@ import com.section.common.system.repository.AdminSystemSettingRepository;
 import com.section.common.system.repository.AdminUserRepository;
 import com.section.common.system.repository.ApprovalDocumentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Profile("local")
+@Slf4j
 @RequiredArgsConstructor
 @Transactional
 public class AdminLocalDataSeeder implements ApplicationRunner {
@@ -79,6 +82,7 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     private final AdminSystemSettingHistoryRepository adminSystemSettingHistoryRepository;
     private final AdminActivityLogRepository adminActivityLogRepository;
     private final ApprovalDocumentRepository approvalDocumentRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -111,6 +115,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedAccounts() {
+        if (!hasColumns("sy_account", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding sy_account because audit columns are missing.");
+            return;
+        }
         if (accountRepository.count() > 0) {
             return;
         }
@@ -186,6 +194,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedProducts() {
+        if (!hasColumns("product", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding product because audit columns are missing.");
+            return;
+        }
         if (productRepository.count() > 0) {
             return;
         }
@@ -239,6 +251,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedBanners() {
+        if (!hasColumns("display_banner", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding display_banner because audit columns are missing.");
+            return;
+        }
         if (bannerRepository.count() > 0) {
             return;
         }
@@ -275,6 +291,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedDocuments() {
+        if (!hasColumns("CT_DOCUMENT", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding CT_DOCUMENT because audit columns are missing.");
+            return;
+        }
         if (documentRepository.count() > 0) {
             return;
         }
@@ -300,6 +320,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedOrders() {
+        if (!hasColumns("orders", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding orders because audit columns are missing.");
+            return;
+        }
         if (orderRepository.count() > 0) {
             return;
         }
@@ -380,6 +404,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedNotices() {
+        if (!hasColumns("admin_operation_notice", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding admin_operation_notice because audit columns are missing.");
+            return;
+        }
         if (adminOperationNoticeRepository.count() > 0) {
             return;
         }
@@ -405,6 +433,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedTasks() {
+        if (!hasColumns("admin_operation_task", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding admin_operation_task because audit columns are missing.");
+            return;
+        }
         if (adminOperationTaskRepository.count() > 0) {
             return;
         }
@@ -460,6 +492,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedSystemSettings() {
+        if (!hasColumns("admin_system_setting", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding admin_system_setting because audit columns are missing.");
+            return;
+        }
         if (adminSystemSettingRepository.count() == 0) {
             adminSystemSettingRepository.saveAll(List.of(
                     AdminSystemSetting.builder().settingKey("SYSTEM_MAINTENANCE_MODE").settingValue("false").description("관리자 서비스 유지보수 모드").build(),
@@ -467,6 +503,11 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
                     AdminSystemSetting.builder().settingKey("ORDER_EXPORT_ENABLED").settingValue("true").description("주문 export 허용").build(),
                     AdminSystemSetting.builder().settingKey("LOW_STOCK_DEFAULT_THRESHOLD").settingValue("8").description("저재고 기본 임계값").build()
             ));
+        }
+
+        if (!hasColumns("admin_system_setting_history", "history_no", "setting_key", "setting_name", "before_value", "after_value", "change_summary", "changed_ip_address")) {
+            log.warn("Skip seeding admin_system_setting_history because the table or required columns are missing.");
+            return;
         }
 
         if (adminSystemSettingHistoryRepository.count() == 0) {
@@ -491,6 +532,10 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
     }
 
     private void seedApprovalDocuments() {
+        if (!hasColumns("sy_approval_document", "crt_dtm", "crt_no", "upt_dtm", "upt_no")) {
+            log.warn("Skip seeding sy_approval_document because audit columns are missing.");
+            return;
+        }
         if (approvalDocumentRepository.count() > 0) {
             return;
         }
@@ -559,6 +604,34 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
 
     private Long resolvePrimaryAdminNo() {
         return adminUserRepository.findAll().stream().findFirst().map(AdminUser::getAdminNo).orElse(1L);
+    }
+
+    private boolean hasColumns(String tableName, String... columnNames) {
+        try {
+            String sql = """
+                    SELECT COUNT(*)
+                    FROM information_schema.columns
+                    WHERE table_schema = DATABASE()
+                      AND LOWER(table_name) = LOWER(?)
+                      AND LOWER(column_name) IN (%s)
+                    """.formatted(
+                    java.util.Arrays.stream(columnNames)
+                            .map(item -> "?")
+                            .collect(Collectors.joining(", "))
+            );
+
+            Object[] params = new Object[columnNames.length + 1];
+            params[0] = tableName;
+            for (int i = 0; i < columnNames.length; i++) {
+                params[i + 1] = columnNames[i].toLowerCase();
+            }
+
+            Integer matched = jdbcTemplate.queryForObject(sql, Integer.class, params);
+            return matched != null && matched == columnNames.length;
+        } catch (Exception ex) {
+            log.warn("Skip schema validation for {} because metadata lookup failed: {}", tableName, ex.getMessage());
+            return false;
+        }
     }
 
     private record ProductSeed(

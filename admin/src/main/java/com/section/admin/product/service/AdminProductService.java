@@ -47,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 
@@ -109,23 +110,24 @@ public class AdminProductService {
      * @return ProductDefaultResDto
      * */
     public ProductDefaultResDto getProductDefaultInfo() {
-
-        // 1. 모든 브랜드 조회
-        List<Brand> brandList = brandRepository.findAll();
+        List<Brand> brandList = brandRepository.findByIsActiveOrderByNameKoAsc("Y");
         List<ProductDefaultResDto.BrandSimpleDto> brandDtos = brandList.stream()
                 .map(ProductDefaultResDto.BrandSimpleDto::from)
                 .collect(Collectors.toList());
 
-        // 2. 활성화된 카테고리만 조회 (isActive = 'Y')
-        List<Category> categoryList = categoryRepository.findAll().stream()
-                .filter(category -> "Y".equals(category.getIsActive()))
-                .collect(Collectors.toList());
+        List<Category> categoryList = categoryRepository.findByIsActiveOrderByDepthAscNameAscCategoryNoAsc("Y")
+                .stream()
+                .sorted(Comparator
+                        .comparing(Category::getDepth)
+                        .thenComparing(category -> category.getParentNo() == null ? 0L : category.getParentNo())
+                        .thenComparing(Category::getName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Category::getCategoryNo))
+                .toList();
 
         List<ProductDefaultResDto.CategorySimpleDto> categoryDtos = categoryList.stream()
                 .map(ProductDefaultResDto.CategorySimpleDto::from)
                 .collect(Collectors.toList());
 
-        // 3. DTO 생성 및 반환
         return new ProductDefaultResDto(brandDtos, categoryDtos);
     }
 

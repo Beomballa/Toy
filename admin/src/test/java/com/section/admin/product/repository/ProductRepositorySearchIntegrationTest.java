@@ -166,4 +166,43 @@ class ProductRepositorySearchIntegrationTest {
         assertEquals(2L, stats.getActiveCount());
         assertEquals(1L, stats.getLowStockCount());
     }
+
+    @Test
+    @DisplayName("상위 카테고리 필터는 하위 카테고리 상품까지 함께 조회한다")
+    void parentCategoryFilterIncludesChildCategoryProducts() {
+        Category parentCategory = categoryRepository.save(Category.builder()
+                .name("신발")
+                .depth(1)
+                .isActive("Y")
+                .build());
+        Category childCategory = categoryRepository.save(Category.builder()
+                .parentNo(parentCategory.getCategoryNo())
+                .name("러닝화")
+                .depth(2)
+                .isActive("Y")
+                .build());
+        Brand brand = brandRepository.save(Brand.builder()
+                .nameKo("뉴발란스")
+                .nameEn("New Balance")
+                .isActive("Y")
+                .build());
+
+        Product childCategoryProduct = productRepository.save(Product.builder()
+                .brandNo(brand.getBrandNo())
+                .categoryNo(childCategory.getCategoryNo())
+                .nameKo("1080v14")
+                .modelNum("NB-1080")
+                .releasePrice(219000)
+                .releaseDt(LocalDate.of(2026, 5, 20))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        Page<ProductListResDto> result = productRepository.getProductList(
+                new ProductListQuery(parentCategory.getCategoryNo(), null, null, null, ProductOrderType.RECENT, false, null, false),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(childCategoryProduct.getId(), result.getContent().getFirst().getProductNo());
+    }
 }

@@ -158,7 +158,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (categoryNo == null || categoryNo == 0) {
             return null;
         }
-        return product.categoryNo.eq(categoryNo);
+        return category.categoryNo.eq(categoryNo)
+                .or(category.parentNo.eq(categoryNo));
     }
 
     public BooleanExpression brandNoEq(Long brandNo) {
@@ -214,7 +215,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
     private BooleanExpression[] productStatConditions(ProductListQuery query) {
         // 통계 카드도 목록과 같은 빠른 필터 문맥을 따라가야 숫자와 실제 결과가 어긋나지 않습니다.
-        return new BooleanExpression[] {
+        return new BooleanExpression[]{
                 searchKeywordLike(query.searchKeyword()),
                 categoryNoEq(query.categoryNo()),
                 brandNoEq(query.brandNo()),

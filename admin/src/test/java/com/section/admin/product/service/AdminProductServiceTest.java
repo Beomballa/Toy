@@ -4,6 +4,7 @@ import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
+import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.settings.service.AdminSettingsService;
@@ -43,6 +44,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -114,6 +116,25 @@ class AdminProductServiceTest {
                         && history.getSummary().equals("상품이 새로 등록되었습니다.")
                         && history.getStatusSnapshot().equals("ACTIVE")
         ));
+    }
+
+    @Test
+    @DisplayName("상품 기본 선택 데이터는 활성 항목만 정렬해서 반환한다")
+    void getProductDefaultInfoReturnsOnlyActiveAndSortedItems() {
+        when(brandRepository.findByIsActiveOrderByNameKoAsc("Y")).thenReturn(List.of(
+                Brand.builder().brandNo(2L).nameKo("뉴발란스").nameEn("New Balance").isActive("Y").build(),
+                Brand.builder().brandNo(1L).nameKo("나이키").nameEn("Nike").isActive("Y").build()
+        ));
+        when(categoryRepository.findByIsActiveOrderByDepthAscNameAscCategoryNoAsc("Y")).thenReturn(List.of(
+                Category.builder().categoryNo(3L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build(),
+                Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build(),
+                Category.builder().categoryNo(2L).name("의류").depth(1).isActive("Y").build()
+        ));
+
+        var response = adminProductService.getProductDefaultInfo();
+
+        assertIterableEquals(List.of("뉴발란스", "나이키"), response.brands().stream().map(ProductDefaultResDto.BrandSimpleDto::nameKo).toList());
+        assertIterableEquals(List.of("신발", "의류", "러닝화"), response.categories().stream().map(ProductDefaultResDto.CategorySimpleDto::name).toList());
     }
 
     @Test

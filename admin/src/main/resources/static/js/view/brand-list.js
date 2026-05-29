@@ -8,6 +8,8 @@ const BrandList = {
         isActive: '',
     },
     operationPolicy: null,
+    saveInFlight: false,
+    deleteInFlight: new Set(),
 
     init() {
         if (this.initialized) return;
@@ -42,9 +44,7 @@ const BrandList = {
             this.openModal();
         });
 
-        document.getElementById('btnSaveBrand')?.addEventListener('click', () => {
-            this.saveBrand();
-        });
+        document.getElementById('btnSaveBrand')?.addEventListener('click', () => this.saveBrand());
 
         document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
@@ -254,6 +254,7 @@ const BrandList = {
         if (brandNo) {
             try {
                 const res = await fetch(`/api/admin/brands/get?no=${brandNo}`);
+                if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 정보를 불러오지 못했습니다.'));
                 const data = await res.json();
                 document.getElementById('brandNo').value = data.brandNo;
                 document.getElementById('nameKo').value = data.nameKo;
@@ -262,7 +263,7 @@ const BrandList = {
                 document.getElementById('isActive').value = data.isActive || 'Y';
                 document.getElementById('brandModalTitle').innerText = '브랜드 정보 수정';
             } catch (err) {
-                console.error('브랜드 정보 로드 실패:', err);
+                await CommonJS.alert(err.message || '브랜드 정보를 불러오지 못했습니다.', '오류', 'error');
                 return;
             }
         }
@@ -270,6 +271,9 @@ const BrandList = {
     },
 
     async saveBrand() {
+        if (this.saveInFlight) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 브랜드 저장이 불가능합니다.', '알림', 'warning');
             return;
@@ -277,7 +281,7 @@ const BrandList = {
         const brandNo = document.getElementById('brandNo').value;
         const nameKo = document.getElementById('nameKo').value;
         if (!nameKo) {
-            CommonJS.alert('브랜드명을 입력하세요.', '알림', 'warning');
+            await CommonJS.alert('브랜드명을 입력하세요.', '알림', 'warning');
             return;
         }
 
@@ -290,24 +294,31 @@ const BrandList = {
         };
 
         try {
+            this.saveInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveBrand'), true, '저장 중입니다.');
             const res = await fetch('/api/admin/brands/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
 
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '저장 중 오류가 발생했습니다.'));
 
-            CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success', () => {
-                this.modal.hide();
-                this.getList();
-            });
+            this.modal.hide();
+            await this.getList();
+            await CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert('저장 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '저장 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.saveInFlight = false;
+            this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteBrand(brandNo) {
+        if (this.deleteInFlight.has(brandNo)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 브랜드 삭제가 불가능합니다.', '알림', 'warning');
             return;
@@ -316,11 +327,15 @@ const BrandList = {
         if (!confirm) return;
 
         try {
+            this.deleteInFlight.add(brandNo);
             const res = await fetch(`/api/admin/brands/delete?no=${brandNo}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
-            CommonJS.alert('삭제되었습니다.', '성공', 'success', () => this.getList());
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)'));
+            await this.getList();
+            await CommonJS.alert('삭제되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert('삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)', '오류', 'error');
+            await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)', '오류', 'error');
+        } finally {
+            this.deleteInFlight.delete(brandNo);
         }
     },
 

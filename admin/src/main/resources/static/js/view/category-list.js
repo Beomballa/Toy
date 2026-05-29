@@ -12,6 +12,8 @@ const CategoryList = {
         depth1List: [],
         depth2List: []
     },
+    saveInFlight: false,
+    deleteInFlight: new Set(),
 
     init() {
         if (this.initialized) return;
@@ -57,9 +59,7 @@ const CategoryList = {
                 this.getDepth1List();
             }
         });
-        document.getElementById('btnSaveCategory')?.addEventListener('click', () => {
-            this.saveCategory();
-        });
+        document.getElementById('btnSaveCategory')?.addEventListener('click', () => this.saveCategory());
         document.getElementById('depth1Body')?.addEventListener('click', (event) => {
             const parentItem = event.target.closest('[data-role="select-parent"]');
             if (parentItem) {
@@ -302,9 +302,9 @@ const CategoryList = {
         this.getDepth1List();
     },
 
-    openModal(depth, item) {
+    async openModal(depth, item) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert('유지보수 모드에서는 카테고리 등록 및 수정이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert('유지보수 모드에서는 카테고리 등록 및 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
         document.getElementById('categoryForm').reset();
@@ -333,13 +333,16 @@ const CategoryList = {
     },
 
     async saveCategory() {
+        if (this.saveInFlight) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 카테고리 저장이 불가능합니다.', '알림', 'warning');
             return;
         }
         const name = document.getElementById('categoryName').value;
         if (!name) {
-            CommonJS.alert('카테고리명을 입력하세요.', '알림', 'warning');
+            await CommonJS.alert('카테고리명을 입력하세요.', '알림', 'warning');
             return;
         }
 
@@ -352,27 +355,37 @@ const CategoryList = {
         };
 
         try {
+            this.saveInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveCategory'), true, '저장 중입니다.');
             const res = await fetch('/api/admin/categories/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
 
-            if (!res.ok) throw new Error();
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '저장 중 오류가 발생했습니다.'));
 
-            CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success', () => {
-                this.modal.hide();
-                this.getDepth1List();
-                if (data.depth == 2 || this.state.selectedParentNo == data.categoryNo) {
-                    this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
-                }
-            });
+            this.modal.hide();
+            await this.getDepth1List();
+            if (Number(data.depth) === 2 && this.state.selectedParentNo) {
+                await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
+            }
+            if (Number(data.depth) === 1 && this.state.selectedParentNo === Number(data.categoryNo)) {
+                await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
+            }
+            await CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert('저장 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '저장 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.saveInFlight = false;
+            this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteCategory(no) {
+        if (this.deleteInFlight.has(no)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 카테고리 삭제가 불가능합니다.', '알림', 'warning');
             return;
@@ -381,16 +394,18 @@ const CategoryList = {
         if (!confirm) return;
 
         try {
+            this.deleteInFlight.add(no);
             const res = await fetch(`/api/admin/categories/delete?no=${no}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error();
-            CommonJS.alert('삭제되었습니다.', '성공', 'success', () => {
-                this.getDepth1List();
-                if (this.state.selectedParentNo) {
-                    this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
-                }
-            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다.'));
+            await this.getDepth1List();
+            if (this.state.selectedParentNo) {
+                await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
+            }
+            await CommonJS.alert('삭제되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.deleteInFlight.delete(no);
         }
     },
 

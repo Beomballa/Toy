@@ -8,6 +8,9 @@ const BannerList = {
         isActive: '',
     },
     operationPolicy: null,
+    saveInFlight: false,
+    toggleInFlight: new Set(),
+    deleteInFlight: new Set(),
 
     init() {
         if (this.initialized) return;
@@ -40,9 +43,7 @@ const BannerList = {
             this.openModal();
         });
 
-        document.getElementById('btnSaveBanner')?.addEventListener('click', () => {
-            this.saveBanner();
-        });
+        document.getElementById('btnSaveBanner')?.addEventListener('click', () => this.saveBanner());
 
         document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBanner')?.addEventListener('click', () => this.resetFilters());
@@ -252,9 +253,9 @@ const BannerList = {
         this.getList();
     },
 
-    openModal() {
+    async openModal() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert('유지보수 모드에서는 배너 등록이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert('유지보수 모드에서는 배너 등록이 불가능합니다.', '알림', 'warning');
             return;
         }
         document.getElementById('bannerForm').reset();
@@ -263,9 +264,9 @@ const BannerList = {
         this.modal.show();
     },
 
-    openEditModal(item) {
+    async openEditModal(item) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert('유지보수 모드에서는 배너 수정이 불가능합니다.', '알림', 'warning');
+            await CommonJS.alert('유지보수 모드에서는 배너 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
         document.getElementById('bannerNo').value = item.bannerNo;
@@ -281,6 +282,9 @@ const BannerList = {
     },
 
     async saveBanner() {
+        if (this.saveInFlight) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 배너 저장이 불가능합니다.', '알림', 'warning');
             return;
@@ -297,11 +301,13 @@ const BannerList = {
         };
 
         if (!formData.title || !formData.imageUrl || !formData.startDtm || !formData.endDtm) {
-            CommonJS.alert('필수 항목을 모두 입력하세요.', '알림', 'warning');
+            await CommonJS.alert('필수 항목을 모두 입력하세요.', '알림', 'warning');
             return;
         }
 
         try {
+            this.saveInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveBanner'), true, '저장 중입니다.');
             const res = await fetch('/api/admin/banners/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -310,30 +316,42 @@ const BannerList = {
 
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '저장 중 오류가 발생했습니다.'));
 
-            await CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success');
             this.modal.hide();
-            this.getList();
+            await this.getList();
+            await CommonJS.alert('성공적으로 저장되었습니다.', '성공', 'success');
         } catch (err) {
-            CommonJS.alert(err.message, '오류', 'error');
+            await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.saveInFlight = false;
+            this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async toggleActive(no, isActive) {
+        if (this.toggleInFlight.has(no)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 배너 상태 변경이 불가능합니다.', '알림', 'warning');
             return;
         }
         try {
+            this.toggleInFlight.add(no);
             const res = await fetch(`/api/admin/banners/active/${no}?isActive=${isActive}`, { method: 'PATCH' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '상태 변경 중 오류가 발생했습니다.'));
+            await this.getList();
             await CommonJS.alert('배너 상태가 변경되었습니다.', '성공', 'success');
-            this.getList();
         } catch (err) {
-            CommonJS.alert(err.message, '오류', 'error');
+            await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.toggleInFlight.delete(no);
         }
     },
 
     async deleteBanner(no) {
+        if (this.deleteInFlight.has(no)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 배너 삭제가 불가능합니다.', '알림', 'warning');
             return;
@@ -342,12 +360,15 @@ const BannerList = {
         if (!confirm) return;
 
         try {
+            this.deleteInFlight.add(no);
             const res = await fetch(`/api/admin/banners/delete?no=${no}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다.'));
+            await this.getList();
             await CommonJS.alert('삭제되었습니다.', '성공', 'success');
-            this.getList();
         } catch (err) {
-            CommonJS.alert(err.message, '오류', 'error');
+            await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.deleteInFlight.delete(no);
         }
     },
 

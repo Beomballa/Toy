@@ -13,6 +13,10 @@ const NoticeList = {
         source: ''
     },
     selectedNoticeNos: new Set(),
+    saveInFlight: false,
+    bulkInFlight: false,
+    toggleInFlight: new Set(),
+    deleteInFlight: new Set(),
 
     init() {
         if (this.initialized) return;
@@ -396,9 +400,9 @@ const NoticeList = {
         this.getList();
     },
 
-    openModal() {
+    async openModal() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
             return;
         }
         document.getElementById('noticeForm').reset();
@@ -409,9 +413,9 @@ const NoticeList = {
         this.modal.show();
     },
 
-    openEditModal(item) {
+    async openEditModal(item) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
             return;
         }
         document.getElementById('noticeNo').value = item.noticeNo;
@@ -426,6 +430,9 @@ const NoticeList = {
     },
 
     async saveNotice() {
+        if (this.saveInFlight) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
             return;
@@ -447,6 +454,8 @@ const NoticeList = {
         }
 
         try {
+            this.saveInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnSaveNotice'), true, '저장 중입니다.');
             const res = await fetch('/api/admin/settings/notices/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -458,34 +467,46 @@ const NoticeList = {
             const savedNoticeNo = Number(savedNotice.noticeNo || formData.noticeNo || 0) || null;
             this.setLastActionMeta('save-notice', 'success', formData.noticeNo ? '목록 수정' : '목록 등록', savedNoticeNo);
 
-            await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
             this.modal.hide();
-            this.getList();
+            await this.getList();
+            await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
         } catch (err) {
             this.setLastActionMeta('save-notice', 'error', formData.noticeNo ? '목록 수정' : '목록 등록', formData.noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.saveInFlight = false;
+            this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async toggleActive(noticeNo, isActive) {
+        if (this.toggleInFlight.has(noticeNo)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 상태 변경'), '알림', 'warning');
             return;
         }
         try {
+            this.toggleInFlight.add(noticeNo);
             const res = await fetch(`/api/admin/settings/notices/active/${noticeNo}?isActive=${isActive}`, {
                 method: 'PATCH'
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '공지 상태를 변경하지 못했습니다.'));
             this.setLastActionMeta('toggle-active', 'success', '목록 상태 변경', noticeNo);
-            this.getList();
+            await this.getList();
         } catch (err) {
             this.setLastActionMeta('toggle-active', 'error', '목록 상태 변경', noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.toggleInFlight.delete(noticeNo);
         }
     },
 
     async deleteNotice(noticeNo) {
+        if (this.deleteInFlight.has(noticeNo)) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 삭제'), '알림', 'warning');
             return;
@@ -494,16 +515,19 @@ const NoticeList = {
         if (!confirmed) return;
 
         try {
+            this.deleteInFlight.add(noticeNo);
             const res = await fetch(`/api/admin/settings/notices/delete?no=${noticeNo}`, {
                 method: 'DELETE'
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지를 삭제하지 못했습니다.'));
             this.setLastActionMeta('delete-notice', 'success', '목록 삭제', noticeNo);
+            await this.getList();
             await CommonJS.alert('운영 공지가 삭제되었습니다.', '성공', 'success');
-            this.getList();
         } catch (err) {
             this.setLastActionMeta('delete-notice', 'error', '목록 삭제', noticeNo);
             await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.deleteInFlight.delete(noticeNo);
         }
     },
 
@@ -569,6 +593,9 @@ const NoticeList = {
     },
 
     async applyBulkOperation() {
+        if (this.bulkInFlight) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 일괄 변경'), '알림', 'warning');
             return;
@@ -591,6 +618,7 @@ const NoticeList = {
         }
 
         try {
+            this.bulkInFlight = true;
             const res = await fetch('/api/admin/settings/notices/bulk-operate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -600,14 +628,16 @@ const NoticeList = {
 
             const result = await res.json();
             this.setLastActionMeta('bulk-operate', 'success', '목록 일괄 변경');
-            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 유지되었습니다.`, '성공', 'success');
             this.clearSelection();
             document.getElementById('bulkNoticeIsActive').value = '';
             document.getElementById('bulkNoticeIsPinned').value = '';
-            this.getList();
+            await this.getList();
+            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 유지되었습니다.`, '성공', 'success');
         } catch (err) {
             this.setLastActionMeta('bulk-operate', 'error', '목록 일괄 변경');
             await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
         }
     },
 

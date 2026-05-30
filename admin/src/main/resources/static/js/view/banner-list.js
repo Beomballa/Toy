@@ -6,6 +6,7 @@ const BannerList = {
         size: 10,
         keyword: '',
         isActive: '',
+        exposureStatus: '',
     },
     operationPolicy: null,
     saveInFlight: false,
@@ -85,8 +86,10 @@ const BannerList = {
         this.state.size = Number(params.get('size') || 10);
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
+        this.state.exposureStatus = params.get('exposureStatus') || '';
         document.getElementById('bannerKeyword').value = this.state.keyword;
         document.getElementById('bannerIsActiveFilter').value = this.state.isActive;
+        document.getElementById('bannerExposureStatusFilter').value = this.state.exposureStatus;
         document.getElementById('bannerPageSize').value = String(this.state.size);
     },
 
@@ -96,6 +99,7 @@ const BannerList = {
         params.set('size', String(this.state.size));
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
+        if (this.state.exposureStatus) params.set('exposureStatus', this.state.exposureStatus);
         return params;
     },
 
@@ -243,6 +247,7 @@ const BannerList = {
     resetFilters() {
         document.getElementById('bannerKeyword').value = '';
         document.getElementById('bannerIsActiveFilter').value = '';
+        document.getElementById('bannerExposureStatusFilter').value = '';
         document.getElementById('bannerPageSize').value = '10';
         this.state.page = 0;
         this.getList();
@@ -375,6 +380,7 @@ const BannerList = {
     _updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value) || '';
         this.state.isActive = document.getElementById('bannerIsActiveFilter').value || '';
+        this.state.exposureStatus = document.getElementById('bannerExposureStatusFilter').value || '';
         this.state.size = Number(document.getElementById('bannerPageSize').value || 10);
     }
 };

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -64,6 +65,22 @@ class AdminBannerServiceTest {
         assertEquals("메인 배너", response.items().get(0).title());
         assertEquals("전체 1건", response.resultMeta().resultLabel());
         assertEquals("정렬 순서 기준", response.resultMeta().querySignature());
+    }
+
+    @Test
+    @DisplayName("배너 목록 요청은 노출 기간 필터를 Querydsl 조회 경계까지 전달한다")
+    void getBannerListPassesExposureStatusFilter() {
+        BannerListRequest request = new BannerListRequest();
+        request.setExposureStatus("live");
+
+        when(bannerRepository.getBannerList(any(), any())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+
+        adminBannerService.getBannerList(request);
+
+        ArgumentCaptor<com.section.common.commerce.dto.BannerListQuery> queryCaptor =
+                ArgumentCaptor.forClass(com.section.common.commerce.dto.BannerListQuery.class);
+        verify(bannerRepository).getBannerList(queryCaptor.capture(), any());
+        assertEquals("LIVE", queryCaptor.getValue().exposureStatus());
     }
 
     @Test

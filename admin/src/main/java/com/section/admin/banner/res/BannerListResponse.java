@@ -24,7 +24,7 @@ public record BannerListResponse(
                 page.getTotalPages(),
                 page.getTotalElements(),
                 page.getSize(),
-                new AppliedQuery(query.keyword(), query.isActive()),
+                new AppliedQuery(query.keyword(), query.isActive(), query.exposureStatus()),
                 ResultMeta.from(page, query)
         );
     }
@@ -75,7 +75,8 @@ public record BannerListResponse(
 
     public record AppliedQuery(
             String keyword,
-            String isActive
+            String isActive,
+            String exposureStatus
     ) {
     }
 
@@ -115,6 +116,7 @@ public record BannerListResponse(
             long count = 0;
             if (query.keyword() != null) count++;
             if (query.isActive() != null) count++;
+            if (query.exposureStatus() != null) count++;
             return count;
         }
 
@@ -126,7 +128,19 @@ public record BannerListResponse(
             if (query.isActive() != null) {
                 builder.append(" · 상태=").append("Y".equalsIgnoreCase(query.isActive()) ? "사용" : "중지");
             }
+            if (query.exposureStatus() != null) {
+                builder.append(" · 노출기간=").append(resolveExposureStatusLabel(query.exposureStatus()));
+            }
             return builder.toString();
+        }
+
+        private static String resolveExposureStatusLabel(String exposureStatus) {
+            return switch (exposureStatus) {
+                case "SCHEDULED" -> "대기";
+                case "LIVE" -> "진행중";
+                case "ENDED" -> "종료";
+                default -> exposureStatus;
+            };
         }
     }
 }

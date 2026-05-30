@@ -12,6 +12,7 @@ public class BannerListRequest {
 
     private String keyword;
     private String isActive;
+    private String exposureStatus;
     private Integer page = 0;
     private Integer size = 10;
 
@@ -20,7 +21,18 @@ public class BannerListRequest {
         if (normalizedActive != null && !"Y".equalsIgnoreCase(normalizedActive) && !"N".equalsIgnoreCase(normalizedActive)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        return new BannerListQuery(normalize(keyword), normalizedActive);
+        String normalizedExposureStatus = normalize(exposureStatus);
+        if (normalizedExposureStatus != null
+                && !"SCHEDULED".equalsIgnoreCase(normalizedExposureStatus)
+                && !"LIVE".equalsIgnoreCase(normalizedExposureStatus)
+                && !"ENDED".equalsIgnoreCase(normalizedExposureStatus)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return new BannerListQuery(
+                normalize(keyword),
+                normalizedActive,
+                normalizedExposureStatus == null ? null : normalizedExposureStatus.toUpperCase()
+        );
     }
 
     private String normalize(String value) {

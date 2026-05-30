@@ -56,7 +56,7 @@ class AdminBannerRestControllerTest {
                         1,
                         1L,
                         10,
-                        new BannerListResponse.AppliedQuery(null, null),
+                        new BannerListResponse.AppliedQuery(null, null, null),
                         new BannerListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "정렬 순서 기준", 1L, 1L)
                 ));
 
@@ -66,6 +66,27 @@ class AdminBannerRestControllerTest {
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
                 .andExpect(jsonPath("$.pageSize").value(10))
                 .andExpect(jsonPath("$.totalElements").value(1L));
+    }
+
+    @Test
+    @DisplayName("배너 목록 API는 노출 기간 필터도 응답 계약에 반영한다")
+    void getListIncludesExposureStatusFilter() throws Exception {
+        when(adminBannerService.getBannerList(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new BannerListResponse(
+                        List.of(),
+                        0,
+                        0,
+                        0L,
+                        10,
+                        new BannerListResponse.AppliedQuery(null, "Y", "LIVE"),
+                        new BannerListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 배너가 없습니다.", 2, true, "정렬 순서 기준 · 상태=사용 · 노출기간=진행중", 0L, 0L)
+                ));
+
+        mockMvc.perform(get("/api/admin/banners/list").param("isActive", "Y").param("exposureStatus", "LIVE"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.appliedQuery.isActive").value("Y"))
+                .andExpect(jsonPath("$.appliedQuery.exposureStatus").value("LIVE"))
+                .andExpect(jsonPath("$.resultMeta.querySignature").value("정렬 순서 기준 · 상태=사용 · 노출기간=진행중"));
     }
 
     @Test

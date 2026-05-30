@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QDisplayBanner.displayBanner;
@@ -36,7 +37,7 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
                         displayBanner.isActive
                 ))
                 .from(displayBanner)
-                .where(keywordLike(query.keyword()), isActiveEq(query.isActive()))
+                .where(keywordLike(query.keyword()), isActiveEq(query.isActive()), exposureStatusEq(query.exposureStatus()))
                 .orderBy(displayBanner.sortOrder.asc(), displayBanner.bannerNo.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -45,7 +46,7 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
         Long total = queryFactory
                 .select(displayBanner.count())
                 .from(displayBanner)
-                .where(keywordLike(query.keyword()), isActiveEq(query.isActive()))
+                .where(keywordLike(query.keyword()), isActiveEq(query.isActive()), exposureStatusEq(query.exposureStatus()))
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
@@ -63,5 +64,19 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
             return null;
         }
         return displayBanner.isActive.eq(isActive.trim().toUpperCase());
+    }
+
+    private BooleanExpression exposureStatusEq(String exposureStatus) {
+        if (exposureStatus == null || exposureStatus.isBlank()) {
+            return null;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        return switch (exposureStatus.trim().toUpperCase()) {
+            case "SCHEDULED" -> displayBanner.startDtm.after(now);
+            case "LIVE" -> displayBanner.startDtm.loe(now).and(displayBanner.endDtm.goe(now));
+            case "ENDED" -> displayBanner.endDtm.before(now);
+            default -> null;
+        };
     }
 }

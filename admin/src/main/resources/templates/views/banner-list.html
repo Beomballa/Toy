@@ -31,7 +31,7 @@
     <div class="card animate-in mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
-                <div class="col-md-8">
+                <div class="col-md-6">
                     <label class="form-label fw-bold">제목 검색</label>
                     <input type="text" id="bannerKeyword" class="form-control" placeholder="배너 제목 검색">
                 </div>
@@ -41,6 +41,15 @@
                         <option value="">전체</option>
                         <option value="Y">사용</option>
                         <option value="N">중지</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">노출 기간</label>
+                    <select id="bannerExposureStatusFilter" class="form-select">
+                        <option value="">전체</option>
+                        <option value="SCHEDULED">대기</option>
+                        <option value="LIVE">진행중</option>
+                        <option value="ENDED">종료</option>
                     </select>
                 </div>
                 <div class="col-md-1">

@@ -1436,11 +1436,6 @@ body {
     min-width: 0;
 }
 
-.content-board-form-group .form-select,
-.content-board-date-range {
-    min-height: 54px;
-}
-
 .content-board-form-label {
     margin: 0;
     color: #64748b;
@@ -1457,7 +1452,7 @@ body {
 }
 
 .content-board-form-actions .btn {
-    min-height: 54px;
+    min-height: 70px;
     border-radius: 14px;
     font-weight: 700;
 }
@@ -1466,11 +1461,15 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    min-height: 54px;
-    padding: 0 0.35rem;
+    min-height: 70px;
+    padding: 0 1rem;
     color: #334155;
     font-size: 0.92rem;
     font-weight: 600;
+    border: 1px solid #dbe2ea;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .content-board-check .form-check-input {
@@ -1484,9 +1483,26 @@ body {
     background: #f8fafc;
 }
 
+.content-board-form-group .form-select {
+    min-height: 70px;
+    padding: 0 1rem;
+    border-radius: 14px;
+    border-color: #dbe2ea;
+    background-color: #fff;
+    color: #1f2937;
+    font-size: 0.96rem;
+    font-weight: 600;
+}
+
+.content-board-date-range {
+    min-height: 70px;
+}
+
 .content-board-date-range .form-control,
 .content-board-date-range .input-group-text {
-    min-height: 54px;
+    min-height: 70px;
+    border-color: #dbe2ea;
+    background: #fff;
 }
 
 .content-board-search-field {
@@ -1497,7 +1513,7 @@ body {
     border: 1px solid #dbe2ea;
     border-radius: 14px;
     background: #fff;
-    min-height: 54px;
+    min-height: 70px;
 }
 
 .content-board-search-field i {

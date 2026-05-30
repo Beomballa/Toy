@@ -2,6 +2,7 @@ package com.section.admin.log.res;
 
 import com.section.common.system.dto.AdminActivityLogListQuery;
 import com.section.common.system.dto.AdminActivityLogListResDto;
+import com.section.common.system.dto.AdminActivityLogSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -16,10 +17,16 @@ public record AdminLogListResponse(
         long rangeStart,
         long rangeEnd,
         String pageInfoLabel,
+        Summary summary,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
-    public static AdminLogListResponse of(Page<AdminActivityLogListResDto> page, AdminActivityLogListQuery query, Map<Long, String> adminNameMap) {
+    public static AdminLogListResponse of(
+            Page<AdminActivityLogListResDto> page,
+            AdminActivityLogListQuery query,
+            Map<Long, String> adminNameMap,
+            AdminActivityLogSummaryDto summary
+    ) {
         long rangeStart = page.getTotalElements() == 0 ? 0 : page.getNumber() * page.getSize() + 1L;
         long rangeEnd = page.getTotalElements() == 0 ? 0 : Math.min(page.getTotalElements(), rangeStart + page.getNumberOfElements() - 1L);
         String pageInfoLabel = page.getTotalElements() == 0
@@ -34,6 +41,7 @@ public record AdminLogListResponse(
                 rangeStart,
                 rangeEnd,
                 pageInfoLabel,
+                Summary.from(summary),
                 new AppliedQuery(query.adminNo(), query.actionType(), query.targetId(), query.startDate() == null ? null : query.startDate().toString(), query.endDate() == null ? null : query.endDate().toString()),
                 ResultMeta.from(query, rangeStart, rangeEnd, pageInfoLabel, page.getTotalElements())
         );
@@ -72,6 +80,29 @@ public record AdminLogListResponse(
             String startDate,
             String endDate
     ) {
+    }
+
+    public record Summary(
+            long totalCount,
+            long todayCount,
+            long noticeCount,
+            long taskCount,
+            long commerceCount,
+            long adminCount
+    ) {
+        private static Summary from(AdminActivityLogSummaryDto summary) {
+            if (summary == null) {
+                return new Summary(0, 0, 0, 0, 0, 0);
+            }
+            return new Summary(
+                    summary.totalCount(),
+                    summary.todayCount(),
+                    summary.noticeCount(),
+                    summary.taskCount(),
+                    summary.commerceCount(),
+                    summary.adminCount()
+            );
+        }
     }
 
     public record ResultMeta(

@@ -97,6 +97,7 @@ const AdminLogPage = {
                 throw new Error(await CommonJS.extractErrorMessage(res, '로그를 불러오지 못했습니다.'));
             }
             const data = await res.json();
+            this.renderSummary(data.summary);
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
@@ -135,6 +136,23 @@ const AdminLogPage = {
                 <td class="text-end pe-4 small text-muted">${item.actionDtm}</td>
             </tr>
         `).join('');
+    },
+
+    renderSummary(summary) {
+        const safeSummary = summary || {
+            totalCount: 0,
+            todayCount: 0,
+            noticeCount: 0,
+            taskCount: 0,
+            commerceCount: 0,
+            adminCount: 0
+        };
+        this.setSummaryText('logStatTotalCount', safeSummary.totalCount);
+        this.setSummaryText('logStatTodayCount', safeSummary.todayCount);
+        this.setSummaryText('logStatNoticeCount', safeSummary.noticeCount);
+        this.setSummaryText('logStatTaskCount', safeSummary.taskCount);
+        this.setSummaryText('logStatCommerceCount', safeSummary.commerceCount);
+        this.setSummaryText('logStatAdminCount', safeSummary.adminCount);
     },
 
     renderMeta(data) {
@@ -200,6 +218,14 @@ const AdminLogPage = {
 
     setMetaText(message) {
         document.getElementById('logMetaText').textContent = message;
+    },
+
+    setSummaryText(id, value) {
+        const el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+        el.textContent = Number(value || 0).toLocaleString();
     },
 
     goPage(page) {

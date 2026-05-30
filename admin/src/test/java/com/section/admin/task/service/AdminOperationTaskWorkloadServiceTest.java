@@ -117,6 +117,7 @@ class AdminOperationTaskWorkloadServiceTest {
                 .thenReturn(new AdminLogListResponse(
                         List.of(logItem),
                         1L, 1, 0, 5, 1L, 1L, "1-1 / 1건 · 1페이지",
+                        new AdminLogListResponse.Summary(1, 1, 0, 1, 0, 1),
                         new AdminLogListResponse.AppliedQuery(7L, "TASK_", null, null, null),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=TASK_")
                 ));

@@ -1,11 +1,13 @@
 package com.section.common.system.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminActivityLogListQuery;
 import com.section.common.system.dto.AdminActivityLogListResDto;
+import com.section.common.system.dto.AdminActivityLogSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -49,6 +51,47 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
                 .where(logConditions(query));
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public AdminActivityLogSummaryDto getLogSummary(AdminActivityLogListQuery query) {
+        return queryFactory
+                .select(Projections.constructor(
+                        AdminActivityLogSummaryDto.class,
+                        adminActivityLog.count(),
+                        Expressions.numberTemplate(
+                                Long.class,
+                                "coalesce(sum(case when {0} >= {1} then 1 else 0 end), 0)",
+                                adminActivityLog.actionDtm,
+                                LocalDate.now().atStartOfDay()
+                        ),
+                        Expressions.numberTemplate(
+                                Long.class,
+                                "coalesce(sum(case when upper({0}) like {1} then 1 else 0 end), 0)",
+                                adminActivityLog.actionType,
+                                "NOTICE_%"
+                        ),
+                        Expressions.numberTemplate(
+                                Long.class,
+                                "coalesce(sum(case when upper({0}) like {1} then 1 else 0 end), 0)",
+                                adminActivityLog.actionType,
+                                "TASK_%"
+                        ),
+                        Expressions.numberTemplate(
+                                Long.class,
+                                "coalesce(sum(case when upper({0}) like {1} or upper({0}) like {2} or upper({0}) like {3} or upper({0}) like {4} or upper({0}) like {5} then 1 else 0 end), 0)",
+                                adminActivityLog.actionType,
+                                "PRODUCT_%",
+                                "ORDER_%",
+                                "BANNER_%",
+                                "BRAND_%",
+                                "CATEGORY_%"
+                        ),
+                        adminActivityLog.adminNo.countDistinct()
+                ))
+                .from(adminActivityLog)
+                .where(logConditions(query))
+                .fetchOne();
     }
 
     private BooleanExpression[] logConditions(AdminActivityLogListQuery query) {

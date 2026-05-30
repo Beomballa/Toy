@@ -7,6 +7,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminActivityLogListQuery;
 import com.section.common.system.dto.AdminActivityLogListResDto;
+import com.section.common.system.dto.AdminActivityLogSummaryDto;
 import com.section.common.system.entity.AdminActivityLog;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminActivityLogRepository;
@@ -57,10 +58,11 @@ public class AdminLogService {
     public AdminLogListResponse getLogList(AdminLogListRequest req, Pageable pageable) {
         AdminActivityLogListQuery query = req.toQuery();
         Page<AdminActivityLogListResDto> page = logRepository.getLogList(query, pageable);
+        AdminActivityLogSummaryDto summary = logRepository.getLogSummary(query);
         Map<Long, String> adminNameMap = adminUserRepository.findAllById(
                 page.getContent().stream().map(AdminActivityLogListResDto::getAdminNo).distinct().toList()
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
-        return AdminLogListResponse.of(page, query, adminNameMap);
+        return AdminLogListResponse.of(page, query, adminNameMap, summary);
     }
 
     public AdminLogDetailResponse getLogDetail(Long logNo) {

@@ -4,6 +4,7 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogDetailResponse;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.common.system.dto.AdminActivityLogListResDto;
+import com.section.common.system.dto.AdminActivityLogSummaryDto;
 import com.section.common.system.entity.AdminActivityLog;
 import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminActivityLogRepository;
@@ -56,6 +57,8 @@ class AdminLogServiceTest {
 
         when(adminActivityLogRepository.getLogList(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 20), 1));
+        when(adminActivityLogRepository.getLogSummary(any()))
+                .thenReturn(new AdminActivityLogSummaryDto(1, 1, 0, 0, 1, 1));
         when(adminUserRepository.findAllById(any()))
                 .thenReturn(List.of(AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build()));
 
@@ -69,6 +72,8 @@ class AdminLogServiceTest {
         assertEquals(20, response.pageSize());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals(1, response.summary().totalCount());
+        assertEquals(1, response.summary().commerceCount());
     }
 
     @Test

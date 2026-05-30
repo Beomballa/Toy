@@ -43,6 +43,7 @@ class AdminOperationTaskHistoryServiceTest {
                         1L,
                         1L,
                         "1-1 / 1건 · 1페이지",
+                        new AdminLogListResponse.Summary(1, 1, 0, 1, 0, 1),
                         new AdminLogListResponse.AppliedQuery(2L, "TASK_", 7L, "2026-05-23", "2026-05-23"),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 3, "1-1 · 작업=TASK_")
                 ));

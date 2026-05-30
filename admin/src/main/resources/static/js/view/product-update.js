@@ -6,7 +6,7 @@ const ProductUpdate = {
     isSubmitting: false,
     operationPolicy: null,
 
-    init(bootstrapProduct = null) {
+    async init(bootstrapProduct = null) {
         if (this.initialized) {
             return;
         }
@@ -17,9 +17,8 @@ const ProductUpdate = {
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
 
         if (!this.productNo) {
-            CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error').then(() => {
-                window.location.href = this.returnTo;
-            });
+            await CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error');
+            window.location.href = this.returnTo;
             return;
         }
 
@@ -31,7 +30,7 @@ const ProductUpdate = {
             this.fillForm(bootstrapProduct);
             this.updatePreview();
         } else {
-            this.loadProductData();
+            await this.loadProductData();
         }
         this.bindEvents();
 

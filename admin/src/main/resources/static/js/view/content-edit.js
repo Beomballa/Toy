@@ -3,6 +3,7 @@ const ContentEdit = {
     debounceTimer: null,
     statusTimer: null,
     isSaving: false,
+    isDeleting: false,
     operationPolicy: null,
     initialData: {
         title: '',
@@ -13,7 +14,7 @@ const ContentEdit = {
         pinnedYn: 'N'
     },
 
-    init() {
+    async init() {
         if (this.initialized) return;
         this.initialized = true;
         this.id = document.getElementById('contentId').value;
@@ -36,7 +37,7 @@ const ContentEdit = {
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         
         if (this.id) {
-            this.getDetail();
+            await this.getDetail();
         }
     },
 
@@ -99,7 +100,7 @@ const ContentEdit = {
             this.syncVisibilitySummary();
         } catch (err) {
             console.error('콘텐츠 로드 실패:', err);
-            CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
@@ -192,7 +193,7 @@ const ContentEdit = {
         const pinnedYn = document.getElementById('pinnedYn').value || 'N';
 
         if (!title.trim()) {
-            if (!isAutoSave) CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
+            if (!isAutoSave) await CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
             return;
         }
 
@@ -256,6 +257,9 @@ const ContentEdit = {
     },
 
     async deleteContent() {
+        if (this.isDeleting) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(
                 CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 삭제'),
@@ -268,6 +272,8 @@ const ContentEdit = {
         if (!confirm) return;
 
         try {
+            this.isDeleting = true;
+            this.setDeleteDisabled(true);
             const res = await fetch(`/api/admin/content/delete?id=${this.id}`, {
                 method: 'DELETE'
             });
@@ -278,7 +284,29 @@ const ContentEdit = {
             location.href = this.getListPath();
         } catch (err) {
             console.error('삭제 실패:', err);
-            CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert('삭제 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isDeleting = false;
+            this.setDeleteDisabled(false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    setDeleteDisabled(disabled) {
+        const deleteButton = document.getElementById('btnDelete');
+        if (!deleteButton) return;
+        if (disabled) {
+            if (!deleteButton.dataset.originalText) {
+                deleteButton.dataset.originalText = deleteButton.textContent;
+            }
+            deleteButton.disabled = true;
+            deleteButton.textContent = '삭제 중...';
+            return;
+        }
+        deleteButton.disabled = false;
+        if (deleteButton.dataset.originalText) {
+            deleteButton.textContent = deleteButton.dataset.originalText;
+            delete deleteButton.dataset.originalText;
         }
     },
 

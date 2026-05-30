@@ -2,6 +2,7 @@
 let CommonJS = {
     initialized: false,
     systemSettingsCache: null,
+    systemSettingsRequestPromise: null,
     systemSettingsEventName: 'admin-system-settings-updated',
     actionNoticeTimers: {},
     orderStatusMeta: {
@@ -416,12 +417,23 @@ let CommonJS = {
             return this.systemSettingsCache;
         }
 
-        const response = await fetch('/api/admin/settings/system');
-        if (!response.ok) {
-            throw new Error(await this.extractErrorMessage(response, '운영 설정을 불러오지 못했습니다.'));
+        if (!forceRefresh && this.systemSettingsRequestPromise) {
+            return this.systemSettingsRequestPromise;
         }
 
-        return this.setSystemSettingsCache(await response.json());
+        this.systemSettingsRequestPromise = (async () => {
+            const response = await fetch('/api/admin/settings/system');
+            if (!response.ok) {
+                throw new Error(await this.extractErrorMessage(response, '운영 설정을 불러오지 못했습니다.'));
+            }
+            return this.setSystemSettingsCache(await response.json());
+        })();
+
+        try {
+            return await this.systemSettingsRequestPromise;
+        } finally {
+            this.systemSettingsRequestPromise = null;
+        }
     },
 
     setSystemSettingsCache: function(settings) {

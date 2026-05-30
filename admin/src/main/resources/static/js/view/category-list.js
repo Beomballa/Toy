@@ -166,16 +166,25 @@ const CategoryList = {
         }
 
         body.innerHTML = this.state.depth1List.map(item => `
-            <div class="category-item d-flex justify-content-between align-items-center ${this.state.selectedParentNo === item.categoryNo ? 'active' : ''}" 
+            <div class="category-item ${this.state.selectedParentNo === item.categoryNo ? 'active' : ''}" 
                  data-role="select-parent" data-parent-no="${item.categoryNo}" data-parent-name="${item.name.replace(/"/g, '&quot;')}">
-                <span>${item.name}</span>
-                <div class="d-flex align-items-center gap-2">
+                <div class="category-item__top">
+                    <div class="category-item__title-wrap">
+                        <div class="category-item__eyebrow">ROOT CATEGORY</div>
+                        <div class="category-item__title">${item.name}</div>
+                    </div>
+                    <button class="btn btn-xs btn-link category-item__edit" data-role="edit-root-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}' aria-label="${item.name} 수정">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                </div>
+                <div class="category-item__bottom">
+                    <div class="category-item__meta">
+                        <span class="category-item__code">#${item.categoryNo}</span>
+                        <span class="category-item__hint">선택 시 중분류 목록을 오른쪽에서 확인합니다.</span>
+                    </div>
                     <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
                         ${item.isActive === 'Y' ? '사용중' : '중지'}
                     </span>
-                    <button class="btn btn-xs btn-link p-0 text-muted" data-role="edit-root-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}'>
-                        <i class="fas fa-edit"></i>
-                    </button>
                 </div>
             </div>
         `).join('');

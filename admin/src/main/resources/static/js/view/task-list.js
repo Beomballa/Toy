@@ -2,6 +2,10 @@ const TaskList = {
     initialized: false,
     modal: null,
     operationPolicy: null,
+    isSavingTask: false,
+    isUpdatingStatus: false,
+    isDeletingTask: false,
+    isApplyingBulk: false,
     selectedTaskNos: new Set(),
     state: {
         page: 0,
@@ -45,7 +49,9 @@ const TaskList = {
     },
 
     bindEvents() {
-        document.getElementById('btnNewTask')?.addEventListener('click', () => this.openModal());
+        document.getElementById('btnNewTask')?.addEventListener('click', () => {
+            void this.openModal();
+        });
         document.getElementById('btnSaveTask')?.addEventListener('click', () => this.saveTask());
         document.getElementById('btnSearchTask')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetTask')?.addEventListener('click', () => this.resetFilters());
@@ -88,7 +94,7 @@ const TaskList = {
             }
             const editButton = event.target.closest('[data-role="edit-task"]');
             if (editButton) {
-                this.openEditModal(JSON.parse(editButton.dataset.task));
+                void this.openEditModal(JSON.parse(editButton.dataset.task));
                 return;
             }
 
@@ -382,9 +388,9 @@ const TaskList = {
         });
     },
 
-    openModal() {
+    async openModal() {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'));
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'), '알림', 'warning');
             return;
         }
         document.getElementById('taskModalTitle').textContent = '운영 작업 등록';
@@ -399,9 +405,9 @@ const TaskList = {
         this.modal?.show();
     },
 
-    openEditModal(task) {
+    async openEditModal(task) {
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'));
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'), '알림', 'warning');
             return;
         }
         document.getElementById('taskModalTitle').textContent = '운영 작업 수정';
@@ -417,14 +423,17 @@ const TaskList = {
     },
 
     async saveTask() {
+        if (this.isSavingTask) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'));
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 등록 및 수정'), '알림', 'warning');
             return;
         }
 
         const title = CommonJS.normalizeRequiredText(document.getElementById('taskTitle')?.value || '');
         if (!title) {
-            alert('작업 제목을 입력해주세요.');
+            await CommonJS.alert('작업 제목을 입력해주세요.', '알림', 'warning');
             return;
         }
 
@@ -440,6 +449,8 @@ const TaskList = {
         };
 
         try {
+            this.isSavingTask = true;
+            this.setBusyButton(document.getElementById('btnSaveTask'), true, '저장 중...');
             const response = await fetch('/api/admin/settings/tasks/save', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -450,53 +461,82 @@ const TaskList = {
             }
             this.setLastActionMeta('save-task', 'success', payload.taskNo ? '목록 수정' : '목록 등록', payload.taskNo);
             this.modal?.hide();
-            this.getList();
+            await this.getList();
+            await CommonJS.alert(payload.taskNo ? '운영 작업이 수정되었습니다.' : '운영 작업이 등록되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('save-task', 'error', payload.taskNo ? '목록 수정' : '목록 등록', payload.taskNo);
-            alert(error.message);
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isSavingTask = false;
+            this.setBusyButton(document.getElementById('btnSaveTask'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async updateStatus(taskNo, status) {
+        if (this.isUpdatingStatus) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            alert(CommonJS.getAdminWriteBlockedReason('운영 작업 상태 변경'));
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 상태 변경'), '알림', 'warning');
             return;
         }
         try {
+            this.isUpdatingStatus = true;
+            this.setCollectionButtonsDisabled('[data-role="update-task-status"]', true);
             const response = await fetch(`/api/admin/settings/tasks/status/${taskNo}?status=${encodeURIComponent(status)}`, {method: 'PATCH'});
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상태 변경에 실패했습니다.'));
             }
             this.setLastActionMeta('update-status', 'success', '목록 상태 변경', taskNo);
-            this.getList();
+            await this.getList();
+            await CommonJS.alert('운영 작업 상태가 변경되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('update-status', 'error', '목록 상태 변경', taskNo);
-            alert(error.message);
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isUpdatingStatus = false;
+            this.setCollectionButtonsDisabled('[data-role="update-task-status"]', false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async deleteTask(taskNo) {
-        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-            alert(CommonJS.getAdminWriteBlockedReason('운영 작업 삭제'));
+        if (this.isDeletingTask) {
             return;
         }
-        if (!confirm('운영 작업을 삭제하시겠습니까?')) {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 삭제'), '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm('운영 작업을 삭제하시겠습니까?', '삭제 확인');
+        if (!confirmed) {
             return;
         }
         try {
+            this.isDeletingTask = true;
+            this.setCollectionButtonsDisabled('[data-role="delete-task"]', true);
             const response = await fetch(`/api/admin/settings/tasks/delete?no=${taskNo}`, {method: 'DELETE'});
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 삭제에 실패했습니다.'));
             }
             this.setLastActionMeta('delete-task', 'success', '목록 삭제', taskNo);
-            this.getList();
+            await this.getList();
+            await CommonJS.alert('운영 작업이 삭제되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('delete-task', 'error', '목록 삭제', taskNo);
-            alert(error.message);
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isDeletingTask = false;
+            this.setCollectionButtonsDisabled('[data-role="delete-task"]', false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
     async applyBulkOperation() {
+        if (this.isApplyingBulk) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 일괄 변경'), '알림', 'warning');
             return;
@@ -520,6 +560,8 @@ const TaskList = {
         }
 
         try {
+            this.isApplyingBulk = true;
+            this.setBusyButton(document.getElementById('btnApplyTaskBulk'), true, '적용 중...');
             const response = await fetch('/api/admin/settings/tasks/bulk-operate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -531,14 +573,18 @@ const TaskList = {
 
             const result = await response.json();
             this.setLastActionMeta('bulk-operate', 'success', '목록 일괄 변경');
-            await CommonJS.alert(`요청 ${result.requestedCount}건 · 변경 ${result.updatedCount}건 · 유지 ${result.unchangedCount}건`, '일괄 변경 결과', 'success');
             if (result.updatedCount > 0) {
                 this.clearSelection(false);
             }
-            this.getList();
+            await this.getList();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 · 변경 ${result.updatedCount}건 · 유지 ${result.unchangedCount}건`, '일괄 변경 결과', 'success');
         } catch (error) {
             this.setLastActionMeta('bulk-operate', 'error', '목록 일괄 변경');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isApplyingBulk = false;
+            this.setBusyButton(document.getElementById('btnApplyTaskBulk'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -863,6 +909,29 @@ const TaskList = {
             return null;
         }
         return Number(value);
+    },
+
+    setBusyButton(button, isBusy, busyText = '처리 중...') {
+        if (!button) return;
+        if (isBusy) {
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = button.textContent;
+            }
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+            delete button.dataset.originalText;
+        }
+    },
+
+    setCollectionButtonsDisabled(selector, disabled) {
+        document.querySelectorAll(selector).forEach((button) => {
+            button.disabled = disabled;
+        });
     },
 
     resolveStatusBadgeClass(status) {

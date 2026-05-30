@@ -2,6 +2,7 @@ package com.section.common.commerce.repository;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.OrderStatus;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -248,10 +250,34 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;
         }
-        return orders.orderNum.containsIgnoreCase(searchKeyword)
-                .or(orders.buyerName.containsIgnoreCase(searchKeyword))
-                .or(orders.buyerPhone.containsIgnoreCase(searchKeyword))
-                .or(orderItem.productName.containsIgnoreCase(searchKeyword));
+
+        List<String> terms = Arrays.stream(searchKeyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = orders.orderNum.containsIgnoreCase(term)
+                    .or(orders.buyerName.containsIgnoreCase(term))
+                    .or(orderItem.productName.containsIgnoreCase(term));
+
+            String digitTerm = term.replaceAll("[^0-9]", "");
+            if (!digitTerm.isBlank()) {
+                termPredicate = termPredicate.or(normalizedBuyerPhone().contains(digitTerm));
+            } else {
+                termPredicate = termPredicate.or(orders.buyerPhone.containsIgnoreCase(term));
+            }
+
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+        return predicate;
+    }
+
+    private com.querydsl.core.types.dsl.StringExpression normalizedBuyerPhone() {
+        return Expressions.stringTemplate(
+                "replace(replace(replace(replace(replace({0}, '-', ''), ' ', ''), '+', ''), '(', ''), ')', '')",
+                orders.buyerPhone
+        );
     }
 
     private BooleanExpression statusEq(OrderStatus status) {

@@ -19,14 +19,14 @@ class OrderListReqDtoTest {
     void toQueryReturnsTypedQuery() {
         OrderListReqDto reqDto = new OrderListReqDto();
         reqDto.setStatus("PAID");
-        reqDto.setSearchKeyword("  함장님   삼바  ");
+        reqDto.setSearchKeyword("  함장님   010-1234-5678  삼바  ");
         reqDto.setStartDate("2026-04-01");
         reqDto.setEndDate("2026-04-30");
 
         OrderListQuery query = reqDto.toQuery();
 
         assertEquals(OrderStatus.PAID, query.status());
-        assertEquals("함장님 삼바", query.searchKeyword());
+        assertEquals("함장님 010-1234-5678 삼바", query.searchKeyword());
         assertEquals("2026-04-01T00:00", query.startDateTime().toString());
         assertEquals("2026-04-30T23:59:59.999999999", query.endDateTime().toString());
     }

@@ -252,6 +252,7 @@ const MemberListPage = {
                 </div>
             </div>
         `;
+        this.bindDetailAvatarFallback(data);
         document.getElementById('btnToggleMasterYn').textContent = data.masterYn === 'Y' ? '마스터 해제' : '마스터 지정';
         document.getElementById('btnToggleMemberStatus').textContent = data.delYn === 'Y' ? '회원 복구' : '탈퇴 처리';
         const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
@@ -262,9 +263,24 @@ const MemberListPage = {
     renderMemberAvatar(data) {
         const name = data.name || data.nickname || data.email || '회원';
         if (data.profileImgPath) {
-            return `<img src="${this.escapeHtml(data.profileImgPath)}" alt="${this.escapeHtml(name)}" class="member-detail-avatar-img">`;
+            return `
+                <div class="member-detail-avatar-shell">
+                    <img src="${this.escapeHtml(data.profileImgPath)}" alt="${this.escapeHtml(name)}" class="member-detail-avatar-img" id="memberDetailAvatarImage">
+                </div>
+            `;
         }
         return `<div class="member-detail-avatar">${this.escapeHtml(this.getInitials(name))}</div>`;
+    },
+
+    bindDetailAvatarFallback(data) {
+        const avatarImage = document.getElementById('memberDetailAvatarImage');
+        if (!avatarImage) {
+            return;
+        }
+        const name = data.name || data.nickname || data.email || '회원';
+        avatarImage.addEventListener('error', () => {
+            avatarImage.outerHTML = `<div class="member-detail-avatar">${this.escapeHtml(this.getInitials(name))}</div>`;
+        }, { once: true });
     },
 
     renderRoleBadge(masterYn) {

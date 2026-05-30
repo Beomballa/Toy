@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +68,8 @@ class AdminMemberServiceTest {
         account.setNickname("유저");
         account.setMasterYn(YN.Y);
         account.setDelYn(YN.N);
+        account.setProfileImgPath("/images/profiles/");
+        account.setProfileImgName("user-3.png");
 
         when(accountRepository.findById(3L)).thenReturn(Optional.of(account));
 
@@ -74,6 +77,22 @@ class AdminMemberServiceTest {
 
         assertEquals("user@test.com", response.email());
         assertEquals("Y", response.masterYn());
+        assertEquals("/images/profiles/user-3.png", response.profileImgPath());
+    }
+
+    @Test
+    @DisplayName("회원 상세는 파일명이 없는 프로필 디렉터리 경로를 이미지 경로로 노출하지 않는다")
+    void getMemberDetailIgnoresDirectoryOnlyProfilePath() {
+        Account account = new Account();
+        account.setId(4L);
+        account.setEmail("user2@test.com");
+        account.setProfileImgPath("/images/profiles/");
+
+        when(accountRepository.findById(4L)).thenReturn(Optional.of(account));
+
+        AdminMemberDetailResponse response = adminMemberService.getMemberDetail(4L);
+
+        assertNull(response.profileImgPath());
     }
 
     @Test

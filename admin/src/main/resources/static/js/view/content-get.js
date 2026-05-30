@@ -1,5 +1,6 @@
 const ContentDetail = {
     initialized: false,
+    isDeleting: false,
     state: {
         id: null,
         boardType: 'NOTICE',
@@ -7,7 +8,7 @@ const ContentDetail = {
     },
     operationPolicy: null,
 
-    init() {
+    async init() {
         if (this.initialized) return;
         this.initialized = true;
         const params = new URLSearchParams(window.location.search);
@@ -17,9 +18,8 @@ const ContentDetail = {
         );
 
         if (!this.state.id) {
-            CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error').then(() => {
-                window.location.href = this.getListPath();
-            });
+            await CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error');
+            window.location.href = this.getListPath();
             return;
         }
 
@@ -27,7 +27,7 @@ const ContentDetail = {
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        this.loadDetail();
+        await this.loadDetail();
     },
 
     bindEvents() {
@@ -35,9 +35,9 @@ const ContentDetail = {
             window.location.href = this.getListPath();
         });
 
-        document.getElementById('btnEditContent')?.addEventListener('click', () => {
+        document.getElementById('btnEditContent')?.addEventListener('click', async () => {
             if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
-                CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정'), '알림', 'warning');
+                await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정'), '알림', 'warning');
                 return;
             }
             window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}`;
@@ -112,6 +112,7 @@ const ContentDetail = {
     },
 
     async deleteContent() {
+        if (this.isDeleting) return;
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 삭제'), '알림', 'warning');
             return;
@@ -121,6 +122,8 @@ const ContentDetail = {
         if (!isConfirm) return;
 
         try {
+            this.isDeleting = true;
+            this.setBusyButton(document.getElementById('btnDeleteContent'), true, '삭제 중...');
             const response = await fetch(`/api/admin/content/delete?id=${this.state.id}`, {
                 method: 'DELETE'
             });
@@ -134,6 +137,10 @@ const ContentDetail = {
         } catch (error) {
             console.error('콘텐츠 삭제 실패:', error);
             await CommonJS.alert('삭제 처리 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isDeleting = false;
+            this.setBusyButton(document.getElementById('btnDeleteContent'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -145,6 +152,23 @@ const ContentDetail = {
         const el = document.getElementById(id);
         if (el) {
             el.textContent = value;
+        }
+    },
+
+    setBusyButton(button, isBusy, busyText = '처리 중...') {
+        if (!button) return;
+        if (isBusy) {
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = button.textContent;
+            }
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+            delete button.dataset.originalText;
         }
     }
 };

@@ -4,6 +4,9 @@ const TaskWorkloadDetail = {
     operationPolicy: null,
     reassignModal: null,
     reassignDetail: null,
+    isCompletingTask: false,
+    isRaisingPriority: false,
+    isApplyingReassignment: false,
 
     init() {
         if (this.initialized) return;
@@ -315,7 +318,41 @@ const TaskWorkloadDetail = {
         CommonJS.setButtonDisabled(document.getElementById('btnTaskReassignApply'), disabled, reason);
     },
 
+    setContextActionButtonsDisabled(disabled) {
+        [
+            '[data-role="raise-overdue-priority"]',
+            '[data-role="raise-priority-from-context"]',
+            '[data-role="complete-overdue-task"]',
+            '[data-role="complete-task-from-context"]',
+            '[data-role="reassign-overdue-task"]',
+            '[data-role="reassign-task-from-context"]'
+        ].forEach((selector) => {
+            document.querySelectorAll(selector).forEach((button) => {
+                button.disabled = disabled;
+            });
+        });
+    },
+
+    setReassignBusyState(isBusy) {
+        const applyButton = document.getElementById('btnTaskReassignApply');
+        if (!applyButton) return;
+        if (isBusy) {
+            if (!applyButton.dataset.originalText) {
+                applyButton.dataset.originalText = applyButton.textContent;
+            }
+            applyButton.disabled = true;
+            applyButton.textContent = '재배정 중...';
+            return;
+        }
+        applyButton.disabled = false;
+        if (applyButton.dataset.originalText) {
+            applyButton.textContent = applyButton.dataset.originalText;
+            delete applyButton.dataset.originalText;
+        }
+    },
+
     async completeTask(taskNo, sourceLabel = '워크로드 상세') {
+        if (this.isCompletingTask) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리'), '알림', 'warning');
             return;
@@ -324,6 +361,8 @@ const TaskWorkloadDetail = {
         if (!confirmed) return;
 
         try {
+            this.isCompletingTask = true;
+            this.setContextActionButtonsDisabled(true);
             const response = await fetch(`/api/admin/settings/tasks/status/${taskNo}?status=DONE`, {
                 method: 'PATCH'
             });
@@ -331,21 +370,28 @@ const TaskWorkloadDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업을 완료 처리하지 못했습니다.'));
             }
             this.setLastActionMeta('complete', taskNo, 'success', sourceLabel);
+            await this.loadDetail();
             await CommonJS.alert('작업이 완료 처리되었습니다.', '성공', 'success');
-            this.loadDetail();
         } catch (error) {
             this.setLastActionMeta('complete', taskNo, 'error', sourceLabel);
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isCompletingTask = false;
+            this.setContextActionButtonsDisabled(false);
+            this.syncOverdueActionState();
         }
     },
 
     async raisePriority(taskNo, sourceLabel = '워크로드 상세') {
+        if (this.isRaisingPriority) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 우선순위 변경'), '알림', 'warning');
             return;
         }
 
         try {
+            this.isRaisingPriority = true;
+            this.setContextActionButtonsDisabled(true);
             const detail = await this.fetchTaskDetail(taskNo);
             if (detail.priority === 'HIGH') {
                 await CommonJS.alert('이미 우선순위가 높음입니다.', '알림', 'info');
@@ -365,11 +411,15 @@ const TaskWorkloadDetail = {
                 isPinned: detail.isPinned
             }, '작업 우선순위를 변경하지 못했습니다.');
             this.setLastActionMeta('raise-priority', taskNo, 'success', sourceLabel);
+            await this.loadDetail();
             await CommonJS.alert('우선순위가 높음으로 변경되었습니다.', '성공', 'success');
-            this.loadDetail();
         } catch (error) {
             this.setLastActionMeta('raise-priority', taskNo, 'error', sourceLabel);
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isRaisingPriority = false;
+            this.setContextActionButtonsDisabled(false);
+            this.syncOverdueActionState();
         }
     },
 
@@ -433,6 +483,7 @@ const TaskWorkloadDetail = {
     },
 
     async applyReassignment() {
+        if (this.isApplyingReassignment) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
             return;
@@ -446,6 +497,8 @@ const TaskWorkloadDetail = {
         if (!confirmed) return;
 
         try {
+            this.isApplyingReassignment = true;
+            this.setReassignBusyState(true);
             await this.saveTaskDetail({
                 taskNo: this.reassignDetail.taskNo,
                 title: this.reassignDetail.title,
@@ -457,12 +510,16 @@ const TaskWorkloadDetail = {
                 isPinned: this.reassignDetail.isPinned
             }, '작업을 재배정하지 못했습니다.');
             this.setLastActionMeta('reassign', this.reassignDetail.taskNo, 'success', this.reassignDetail.sourceLabel || '워크로드 상세');
-            await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
             this.reassignModal?.hide();
-            this.loadDetail();
+            await this.loadDetail();
+            await CommonJS.alert('작업이 재배정되었습니다.', '성공', 'success');
         } catch (error) {
             this.setLastActionMeta('reassign', this.reassignDetail?.taskNo, 'error', this.reassignDetail?.sourceLabel || '워크로드 상세');
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isApplyingReassignment = false;
+            this.setReassignBusyState(false);
+            this.syncOverdueActionState();
         }
     },
 

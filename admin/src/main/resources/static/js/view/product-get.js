@@ -4,8 +4,10 @@ const ProductDetail = {
     productData: null,
     returnTo: '/admin/products',
     operationPolicy: null,
+    isCloning: false,
+    isDeleting: false,
 
-    init(bootstrapProduct = null) {
+    async init(bootstrapProduct = null) {
         if (this.initialized) {
             return;
         }
@@ -16,9 +18,8 @@ const ProductDetail = {
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
 
         if (!this.productNo) {
-            CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error').then(() => {
-                window.location.href = this.returnTo;
-            });
+            await CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error');
+            window.location.href = this.returnTo;
             return;
         }
 
@@ -28,9 +29,9 @@ const ProductDetail = {
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
             this.renderProduct(bootstrapProduct);
-            this.loadProductHistory();
+            await this.loadProductHistory();
         } else {
-            this.loadProductDetail();
+            await this.loadProductDetail();
         }
         this.bindEvents();
 
@@ -96,6 +97,9 @@ const ProductDetail = {
     },
 
     async cloneProduct() {
+        if (this.isCloning) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 복제'), '알림', 'warning');
             return;
@@ -106,6 +110,8 @@ const ProductDetail = {
         }
 
         try {
+            this.isCloning = true;
+            this.setBusyButton(document.getElementById('btnCloneProduct'), true, '복제 중...');
             const response = await fetch(`/api/admin/product/clone/${this.productNo}`, { method: 'POST' });
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상품 복제에 실패했습니다.'));
@@ -114,7 +120,11 @@ const ProductDetail = {
             await CommonJS.alert('상품이 복제되었습니다.', '성공', 'success');
             window.location.href = `/admin/products/get?no=${data.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
         } catch (error) {
-            CommonJS.alert(error.message, '오류', 'error');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isCloning = false;
+            this.setBusyButton(document.getElementById('btnCloneProduct'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -134,13 +144,12 @@ const ProductDetail = {
 
             const data = await response.json();
             this.renderProduct(data);
-            this.loadProductHistory();
+            await this.loadProductHistory();
 
         } catch (error) {
             console.error('Error:', error);
-            CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error').then(() => {
-                window.location.href = this.returnTo;
-            });
+            await CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            window.location.href = this.returnTo;
         }
     },
 
@@ -286,6 +295,9 @@ const ProductDetail = {
     },
 
     async deleteProduct() {
+        if (this.isDeleting) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 삭제'), '알림', 'warning');
             return;
@@ -294,6 +306,8 @@ const ProductDetail = {
         if (!isConfirm) return;
 
         try {
+            this.isDeleting = true;
+            this.setBusyButton(document.getElementById('btnDelete'), true, '삭제 중...');
             const response = await fetch(`/api/admin/product/delete/${this.productNo}`, {
                 method: 'PATCH'
             });
@@ -308,6 +322,10 @@ const ProductDetail = {
         } catch (error) {
             console.error('Delete Error:', error);
             await CommonJS.alert('삭제 처리 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isDeleting = false;
+            this.setBusyButton(document.getElementById('btnDelete'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -337,6 +355,23 @@ const ProductDetail = {
             returnContextMeta.dataset.returnTo = this.returnTo;
             returnContextMeta.dataset.returnLabel = returnContext.label;
             returnContextMeta.dataset.returnButtonLabel = returnContext.buttonLabel;
+        }
+    },
+
+    setBusyButton(button, isBusy, busyText = '처리 중...') {
+        if (!button) return;
+        if (isBusy) {
+            if (!button.dataset.originalText) {
+                button.dataset.originalText = button.textContent;
+            }
+            button.disabled = true;
+            button.textContent = busyText;
+            return;
+        }
+        button.disabled = false;
+        if (button.dataset.originalText) {
+            button.textContent = button.dataset.originalText;
+            delete button.dataset.originalText;
         }
     }
 };

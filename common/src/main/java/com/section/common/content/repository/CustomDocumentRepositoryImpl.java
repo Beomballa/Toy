@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import static com.section.common.content.entity.QDocument.document;
@@ -43,7 +44,8 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         keywordLike(query.keyword()),
                         statusEq(query.status()),
                         publicYnEq(query.publicYn()),
-                        pinnedOnly(query.pinnedOnly())
+                        pinnedOnly(query.pinnedOnly()),
+                        createdAtBetween(query.startDateTime(), query.endDateTime())
                 )
                 .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
                 .offset(pageable.getOffset())
@@ -58,7 +60,8 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         keywordLike(query.keyword()),
                         statusEq(query.status()),
                         publicYnEq(query.publicYn()),
-                        pinnedOnly(query.pinnedOnly())
+                        pinnedOnly(query.pinnedOnly()),
+                        createdAtBetween(query.startDateTime(), query.endDateTime())
                 );
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
@@ -100,5 +103,18 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
             return null;
         }
         return document.pinnedYn.eq(YN.Y);
+    }
+
+    private BooleanExpression createdAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        if (startDateTime == null && endDateTime == null) {
+            return null;
+        }
+        if (startDateTime != null && endDateTime != null) {
+            return document.crtDtm.between(startDateTime, endDateTime);
+        }
+        if (startDateTime != null) {
+            return document.crtDtm.goe(startDateTime);
+        }
+        return document.crtDtm.loe(endDateTime);
     }
 }

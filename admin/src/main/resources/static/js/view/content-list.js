@@ -9,6 +9,8 @@ const ContentList = {
         keyword: new URLSearchParams(window.location.search).get('keyword') || '',
         status: new URLSearchParams(window.location.search).get('status') || '',
         publicYn: new URLSearchParams(window.location.search).get('publicYn') || '',
+        startDate: new URLSearchParams(window.location.search).get('startDate') || '',
+        endDate: new URLSearchParams(window.location.search).get('endDate') || '',
         pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
         selectedIds: new Set(),
         currentPageIds: [],
@@ -73,6 +75,8 @@ const ContentList = {
             this.state.keyword = params.get('keyword') || '';
             this.state.status = params.get('status') || '';
             this.state.publicYn = params.get('publicYn') || '';
+            this.state.startDate = params.get('startDate') || '';
+            this.state.endDate = params.get('endDate') || '';
             this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
             this.state.page = 0;
             this.syncSearchField();
@@ -92,6 +96,8 @@ const ContentList = {
             this.state.keyword = document.getElementById('contentSearchKeyword')?.value.trim() || '';
             this.state.status = document.getElementById('contentStatusFilter')?.value || '';
             this.state.publicYn = document.getElementById('contentPublicFilter')?.value || '';
+            this.state.startDate = document.getElementById('contentStartDate')?.value || '';
+            this.state.endDate = document.getElementById('contentEndDate')?.value || '';
             this.state.pinnedOnly = document.getElementById('contentPinnedOnly')?.checked || false;
             this.state.page = 0;
             this.pushState();
@@ -102,6 +108,8 @@ const ContentList = {
             this.state.keyword = '';
             this.state.status = '';
             this.state.publicYn = '';
+            this.state.startDate = '';
+            this.state.endDate = '';
             this.state.pinnedOnly = false;
             this.state.page = 0;
             this.syncSearchField();
@@ -171,6 +179,12 @@ const ContentList = {
         }
         if (this.state.publicYn) {
             params.set('publicYn', this.state.publicYn);
+        }
+        if (this.state.startDate) {
+            params.set('startDate', this.state.startDate);
+        }
+        if (this.state.endDate) {
+            params.set('endDate', this.state.endDate);
         }
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
@@ -277,6 +291,12 @@ const ContentList = {
         if (this.state.publicYn) {
             params.set('publicYn', this.state.publicYn);
         }
+        if (this.state.startDate) {
+            params.set('startDate', this.state.startDate);
+        }
+        if (this.state.endDate) {
+            params.set('endDate', this.state.endDate);
+        }
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
         }
@@ -296,6 +316,14 @@ const ContentList = {
         const publicInput = document.getElementById('contentPublicFilter');
         if (publicInput) {
             publicInput.value = this.state.publicYn;
+        }
+        const startDateInput = document.getElementById('contentStartDate');
+        if (startDateInput) {
+            startDateInput.value = this.state.startDate;
+        }
+        const endDateInput = document.getElementById('contentEndDate');
+        if (endDateInput) {
+            endDateInput.value = this.state.endDate;
         }
         const pinnedInput = document.getElementById('contentPinnedOnly');
         if (pinnedInput) {

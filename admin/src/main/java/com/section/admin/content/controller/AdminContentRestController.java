@@ -15,8 +15,13 @@ import com.section.common.content.service.DocumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,15 +38,25 @@ public class AdminContentRestController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "publicYn", required = false) String publicYn,
             @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
-            @org.springframework.data.web.PageableDefault(size = 9) org.springframework.data.domain.Pageable pageable
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate,
+            @PageableDefault(size = 9) Pageable pageable
     ) {
+        LocalDateTime startDateTime = parseStartDate(startDate);
+        LocalDateTime endDateTime = parseEndDate(endDate);
+        if (startDateTime != null && endDateTime != null && startDateTime.isAfter(endDateTime)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
         return ResponseEntity.ok(ContentListResponse.of(
                 documentService.getDocumentList(new DocumentListQuery(
                         parseBoardType(boardType),
                         keyword,
                         parseStatus(status),
                         parseYn(publicYn),
-                        pinnedOnly
+                        pinnedOnly,
+                        startDateTime,
+                        endDateTime
                 ), pageable)
         ));
     }
@@ -112,6 +127,30 @@ public class AdminContentRestController {
         try {
             return YN.valueOf(value);
         } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private LocalDateTime parseStartDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return LocalDate.parse(value.trim()).atStartOfDay();
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private LocalDateTime parseEndDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            return LocalDate.parse(value.trim()).atTime(LocalTime.MAX);
+        } catch (Exception e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

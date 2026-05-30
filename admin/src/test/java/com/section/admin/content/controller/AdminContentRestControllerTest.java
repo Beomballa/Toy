@@ -79,6 +79,8 @@ class AdminContentRestControllerTest {
                         .param("status", "PUBLISHED")
                         .param("publicYn", "Y")
                         .param("pinnedOnly", "true")
+                        .param("startDate", "2026-05-01")
+                        .param("endDate", "2026-05-31")
                         .param("keyword", "공지"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].status").value("PUBLISHED"))
@@ -91,6 +93,8 @@ class AdminContentRestControllerTest {
         assertEquals(Document.PublishStatus.PUBLISHED, captor.getValue().status());
         assertEquals(YN.Y, captor.getValue().publicYn());
         assertEquals(true, captor.getValue().pinnedOnly());
+        assertEquals("2026-05-01T00:00", captor.getValue().startDateTime().toString());
+        assertEquals("2026-05-31T23:59:59.999999999", captor.getValue().endDateTime().toString());
     }
 
     @Test
@@ -99,6 +103,17 @@ class AdminContentRestControllerTest {
         mockMvc.perform(get("/api/admin/content/list")
                         .param("boardType", "NOTICE")
                         .param("status", "UNKNOWN"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 목록은 잘못된 생성일 범위를 400 INVALID_INPUT_VALUE로 반환한다")
+    void getListReturnsBadRequestWhenDateRangeInvalid() throws Exception {
+        mockMvc.perform(get("/api/admin/content/list")
+                        .param("boardType", "NOTICE")
+                        .param("startDate", "2026-05-31")
+                        .param("endDate", "2026-05-01"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }

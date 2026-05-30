@@ -22,6 +22,7 @@ const ProductList = {
     lastErrorMessage: '',
     lastTotalElements: 0,
     operationPolicy: null,
+    isDeletingProduct: false,
 
     init(brands = [], categories = [], initialLowStockThreshold = 100) {
         if (this.initialized) {
@@ -111,7 +112,7 @@ const ProductList = {
             const editButton = e.target.closest('[data-role="edit-product"]');
             if (editButton) {
                 if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
-                    CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
+                    void CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
                     return;
                 }
                 location.href = `/admin/products/update?no=${editButton.dataset.productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
@@ -562,6 +563,9 @@ const ProductList = {
     },
 
     async deleteProduct(no) {
+        if (this.isDeletingProduct) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 삭제'), '알림', 'warning');
             return;
@@ -571,13 +575,15 @@ const ProductList = {
         if (!isConfirm) return;
 
         try {
+            this.isDeletingProduct = true;
+            this._setDeleteButtonsDisabled(true);
             const response = await fetch(`/api/admin/product/delete/${no}`, {
                 method: 'PATCH'
             });
 
             if (response.ok) {
+                await this.getList();
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
-                this.getList();
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '삭제에 실패했습니다.');
                 await CommonJS.alert(message, '오류', 'error');
@@ -585,7 +591,16 @@ const ProductList = {
         } catch (error) {
             console.error('Delete Error:', error);
             await CommonJS.alert('삭제 처리 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isDeletingProduct = false;
+            this._setDeleteButtonsDisabled(false);
         }
+    },
+
+    _setDeleteButtonsDisabled(disabled) {
+        document.querySelectorAll('[data-role="delete-product"]').forEach((button) => {
+            button.disabled = disabled;
+        });
     },
 
     getReturnTo() {
@@ -850,7 +865,7 @@ const ProductList = {
     validateState() {
         // 검색/다운로드가 같은 요청 경계를 타므로 프런트에서도 같은 길이 제한을 먼저 맞춥니다.
         if (this.state.searchKeyword && this.state.searchKeyword.length > 50) {
-            CommonJS.alert('검색어는 50자 이하로 입력해주세요.', '알림', 'warning');
+            void CommonJS.alert('검색어는 50자 이하로 입력해주세요.', '알림', 'warning');
             return false;
         }
 

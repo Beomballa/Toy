@@ -5,6 +5,7 @@ const OrderList = {
     state: null,
     operationPolicy: null,
     isLoading: false,
+    isExporting: false,
 
     init() {
         if (this.initialized) return;
@@ -43,6 +44,9 @@ const OrderList = {
         });
 
         document.getElementById('btnExportOrders')?.addEventListener('click', async () => {
+            if (this.isExporting) {
+                return;
+            }
             if (this.operationPolicy && CommonJS.isOrderExportBlocked(this.operationPolicy)) {
                 await CommonJS.alert(CommonJS.getOrderExportBlockedReason(), '알림', 'warning');
                 return;
@@ -51,7 +55,14 @@ const OrderList = {
             if (!this.validateDateRange()) {
                 return;
             }
-            window.location.href = `/api/admin/orders/export?${this.buildStateParams().toString()}`;
+            try {
+                this.isExporting = true;
+                this.setBusyExportButton(true);
+                window.location.href = `/api/admin/orders/export?${this.buildStateParams().toString()}`;
+            } finally {
+                this.isExporting = false;
+                this.setBusyExportButton(false);
+            }
         });
 
         document.querySelectorAll('[data-date-preset]').forEach((button) => {
@@ -279,6 +290,24 @@ const OrderList = {
         }
 
         return true;
+    },
+
+    setBusyExportButton(isBusy) {
+        const exportButton = document.getElementById('btnExportOrders');
+        if (!exportButton) return;
+        if (isBusy) {
+            if (!exportButton.dataset.originalText) {
+                exportButton.dataset.originalText = exportButton.textContent;
+            }
+            exportButton.disabled = true;
+            exportButton.textContent = '내보내는 중...';
+            return;
+        }
+        exportButton.disabled = false;
+        if (exportButton.dataset.originalText) {
+            exportButton.textContent = exportButton.dataset.originalText;
+            delete exportButton.dataset.originalText;
+        }
     },
 
     formatDate(date) {

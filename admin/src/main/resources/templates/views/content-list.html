@@ -40,63 +40,92 @@
         <a class="content-board-tab" href="#" data-board-type="QNA">문의사항</a>
     </div>
 
-    <div class="content-board-toolbar">
+    <div class="content-board-toolbar content-board-toolbar--search">
         <form id="contentSearchForm" class="content-board-search-form">
-            <div class="content-board-search-field">
-                <i class="fas fa-search"></i>
-                <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
+            <div class="content-board-form-group content-board-form-group--search">
+                <label class="content-board-form-label" for="contentSearchKeyword">검색어</label>
+                <div class="content-board-search-field">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
+                </div>
             </div>
-            <select id="contentStatusFilter" class="form-select select-auto-width">
-                <option value="">전체 상태</option>
-                <option value="DRAFT">임시저장</option>
-                <option value="PUBLISHED">게시중</option>
-            </select>
-            <select id="contentPublicFilter" class="form-select select-auto-width">
-                <option value="">전체 공개</option>
-                <option value="Y">공개</option>
-                <option value="N">비공개</option>
-            </select>
-            <div class="form-check d-flex align-items-center ms-2">
-                <input class="form-check-input me-2" type="checkbox" id="contentPinnedOnly">
-                <label class="form-check-label" for="contentPinnedOnly">고정글만</label>
+            <div class="content-board-form-group">
+                <label class="content-board-form-label" for="contentStatusFilter">상태</label>
+                <select id="contentStatusFilter" class="form-select">
+                    <option value="">전체 상태</option>
+                    <option value="DRAFT">임시저장</option>
+                    <option value="PUBLISHED">게시중</option>
+                </select>
             </div>
-            <button type="submit" class="btn btn-light">검색</button>
-            <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
+            <div class="content-board-form-group">
+                <label class="content-board-form-label" for="contentPublicFilter">공개 여부</label>
+                <select id="contentPublicFilter" class="form-select">
+                    <option value="">전체 공개</option>
+                    <option value="Y">공개</option>
+                    <option value="N">비공개</option>
+                </select>
+            </div>
+            <div class="content-board-form-group content-board-form-group--range">
+                <label class="content-board-form-label">기간</label>
+                <div class="input-group input-group-sm content-board-date-range">
+                    <input type="date" id="contentStartDate" class="form-control" aria-label="시작일">
+                    <span class="input-group-text">~</span>
+                    <input type="date" id="contentEndDate" class="form-control" aria-label="종료일">
+                </div>
+            </div>
+            <div class="content-board-form-group content-board-form-group--toggle">
+                <label class="content-board-form-label" for="contentPinnedOnly">옵션</label>
+                <label class="content-board-check">
+                    <input class="form-check-input" type="checkbox" id="contentPinnedOnly">
+                    <span>고정글만</span>
+                </label>
+            </div>
+            <div class="content-board-form-actions">
+                <button type="submit" class="btn btn-dark">검색</button>
+                <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
+            </div>
         </form>
     </div>
 
-    <div class="content-board-toolbar">
-        <div class="d-flex flex-wrap align-items-center gap-2 w-100">
-            <label class="small text-muted mb-0">선택 작업</label>
-            <div class="form-check d-flex align-items-center ms-1">
-                <input class="form-check-input me-2" type="checkbox" id="contentSelectAllOnPage">
-                <label class="form-check-label" for="contentSelectAllOnPage">현재 페이지 전체 선택</label>
+    <div class="content-board-toolbar content-board-toolbar--bulk">
+        <div class="content-board-bulk-panel">
+            <div class="content-board-bulk-head">
+                <div>
+                    <div class="content-board-bulk-title">선택 작업</div>
+                    <div class="content-board-bulk-description">여러 게시글의 상태, 공개 여부, 고정 여부를 한 번에 정리합니다.</div>
+                </div>
+                <div class="content-board-selection-summary" id="contentSelectionMeta">선택된 게시글 0건</div>
             </div>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectCurrentPage">현재 페이지 선택</button>
-            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectCurrentPage">현재 페이지 해제</button>
-            <select id="contentBulkStatus" class="form-select select-auto-width">
-                <option value="">상태 유지</option>
-                <option value="DRAFT">임시저장</option>
-                <option value="PUBLISHED">게시중</option>
-            </select>
-            <select id="contentBulkPublicYn" class="form-select select-auto-width">
-                <option value="">공개 유지</option>
-                <option value="Y">공개</option>
-                <option value="N">비공개</option>
-            </select>
-            <select id="contentBulkPinnedYn" class="form-select select-auto-width">
-                <option value="">고정 유지</option>
-                <option value="Y">고정</option>
-                <option value="N">고정 해제</option>
-            </select>
-            <button type="button" class="btn btn-outline-primary" id="btnApplyBulkOperate">선택 적용</button>
-            <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
-            <span class="small text-muted ms-auto" id="contentSelectionMeta">선택된 게시글 0건</span>
+            <div class="content-board-bulk-controls">
+                <label class="content-board-check content-board-check--boxed" for="contentSelectAllOnPage">
+                    <input class="form-check-input" type="checkbox" id="contentSelectAllOnPage">
+                    <span>현재 페이지 전체 선택</span>
+                </label>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectCurrentPage">현재 페이지 선택</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectCurrentPage">현재 페이지 해제</button>
+                <select id="contentBulkStatus" class="form-select">
+                    <option value="">상태 유지</option>
+                    <option value="DRAFT">임시저장</option>
+                    <option value="PUBLISHED">게시중</option>
+                </select>
+                <select id="contentBulkPublicYn" class="form-select">
+                    <option value="">공개 유지</option>
+                    <option value="Y">공개</option>
+                    <option value="N">비공개</option>
+                </select>
+                <select id="contentBulkPinnedYn" class="form-select">
+                    <option value="">고정 유지</option>
+                    <option value="Y">고정</option>
+                    <option value="N">고정 해제</option>
+                </select>
+                <button type="button" class="btn btn-outline-primary" id="btnApplyBulkOperate">선택 적용</button>
+                <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
+            </div>
         </div>
     </div>
 
-    <div class="content-board-toolbar">
-        <div class="small text-muted w-100" id="contentBulkResultMeta">아직 일괄 적용 결과가 없습니다.</div>
+    <div class="content-board-toolbar content-board-toolbar--result">
+        <div class="content-board-result-meta" id="contentBulkResultMeta">아직 일괄 적용 결과가 없습니다.</div>
     </div>
 
     <div class="row g-4 content-board-grid" id="contentGrid">

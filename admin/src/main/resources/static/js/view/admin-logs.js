@@ -1,6 +1,8 @@
 const AdminLogPage = {
     initialized: false,
     modal: null,
+    isLoading: false,
+    isOpeningDetail: false,
     state: {
         page: 0,
         size: 20
@@ -79,11 +81,17 @@ const AdminLogPage = {
     },
 
     async getList() {
+        if (this.isLoading) {
+            return;
+        }
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
+        document.getElementById('logListBody').innerHTML =
+            '<tr><td colspan="7" class="text-center py-5 text-muted">활동 로그를 불러오는 중입니다.</td></tr>';
 
         try {
+            this.isLoading = true;
             const res = await fetch(`/api/admin/logs/list?${params.toString()}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '로그를 불러오지 못했습니다.'));
@@ -99,6 +107,8 @@ const AdminLogPage = {
             document.getElementById('logFilterMeta').textContent = '적용 필터 확인 불가';
             document.getElementById('logPageMeta').textContent = '페이지 메타 확인 불가';
             document.getElementById('logPagination').innerHTML = '';
+        } finally {
+            this.isLoading = false;
         }
     },
 
@@ -161,9 +171,13 @@ const AdminLogPage = {
     },
 
     async openDetail(logNo) {
+        if (this.isOpeningDetail) {
+            return;
+        }
         document.getElementById('logDetailBody').textContent = '데이터를 불러오는 중입니다...';
         this.modal.show();
         try {
+            this.isOpeningDetail = true;
             const res = await fetch(`/api/admin/logs/get?no=${logNo}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '상세 로그를 불러오지 못했습니다.'));
@@ -179,6 +193,8 @@ const AdminLogPage = {
             `;
         } catch (err) {
             document.getElementById('logDetailBody').innerHTML = `<div class="text-danger">${err.message}</div>`;
+        } finally {
+            this.isOpeningDetail = false;
         }
     },
 

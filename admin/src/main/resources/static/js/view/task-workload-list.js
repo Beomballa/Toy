@@ -1,5 +1,6 @@
 const TaskWorkloadList = {
     initialized: false,
+    isLoading: false,
     state: {
         page: 0,
         size: 10,
@@ -77,12 +78,20 @@ const TaskWorkloadList = {
     },
 
     async getList() {
+        if (this.isLoading) {
+            return;
+        }
         this.updateStateFromInputs();
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
+        const tbody = document.getElementById('taskWorkloadListBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">담당자별 워크로드를 불러오는 중입니다.</td></tr>';
+        }
 
         try {
+            this.isLoading = true;
             const response = await fetch(`/api/admin/settings/tasks/workloads/list?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '담당자별 워크로드 조회에 실패했습니다.'));
@@ -96,6 +105,8 @@ const TaskWorkloadList = {
             await this.openDeepLinkedAssigneeIfNeeded(data.items || []);
         } catch (error) {
             this.renderListError(error.message);
+        } finally {
+            this.isLoading = false;
         }
     },
 

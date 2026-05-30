@@ -191,6 +191,7 @@ const ProductCreate = {
         try {
             this.isSubmitting = true;
             this.setSubmitDisabled(true);
+            this.setBusySubmitText(true);
             const response = await fetch('/api/admin/product/set', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -212,6 +213,7 @@ const ProductCreate = {
         } finally {
             this.isSubmitting = false;
             this.setSubmitDisabled(false);
+            this.setBusySubmitText(false);
         }
     },
 
@@ -219,6 +221,22 @@ const ProductCreate = {
         document.getElementById('btnSubmit').disabled = disabled;
         document.getElementById('btnBackToProductList').disabled = disabled;
         document.getElementById('btnAddOption').disabled = disabled;
+    },
+
+    setBusySubmitText(isBusy) {
+        const submitButton = document.getElementById('btnSubmit');
+        if (!submitButton) return;
+        if (isBusy) {
+            if (!submitButton.dataset.originalText) {
+                submitButton.dataset.originalText = submitButton.textContent;
+            }
+            submitButton.textContent = '등록 중...';
+            return;
+        }
+        if (submitButton.dataset.originalText) {
+            submitButton.textContent = submitButton.dataset.originalText;
+            delete submitButton.dataset.originalText;
+        }
     },
 
     validateFormInputs() {

@@ -4,6 +4,7 @@ const OrderList = {
     maxKeywordLength: 50,
     state: null,
     operationPolicy: null,
+    isLoading: false,
 
     init() {
         if (this.initialized) return;
@@ -41,9 +42,9 @@ const OrderList = {
             this.getList();
         });
 
-        document.getElementById('btnExportOrders')?.addEventListener('click', () => {
+        document.getElementById('btnExportOrders')?.addEventListener('click', async () => {
             if (this.operationPolicy && CommonJS.isOrderExportBlocked(this.operationPolicy)) {
-                CommonJS.alert(CommonJS.getOrderExportBlockedReason(), '알림', 'warning');
+                await CommonJS.alert(CommonJS.getOrderExportBlockedReason(), '알림', 'warning');
                 return;
             }
             this.captureFilterState();
@@ -96,6 +97,9 @@ const OrderList = {
     },
 
     async getList() {
+        if (this.isLoading) {
+            return;
+        }
         this.captureFilterState();
         const params = new URLSearchParams({
             page: this.state.page,
@@ -105,8 +109,13 @@ const OrderList = {
             endDate: this.state.endDate,
             searchKeyword: this.state.searchKeyword
         });
+        const tbody = document.getElementById('orderListTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">주문 내역을 불러오는 중입니다.</td></tr>';
+        }
 
         try {
+            this.isLoading = true;
             const res = await fetch(`/api/admin/orders/list?${params}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '데이터를 불러오는 중 오류가 발생했습니다.'));
@@ -117,7 +126,9 @@ const OrderList = {
             this.renderPagination(data);
         } catch (err) {
             console.error('주문 목록 로드 실패:', err);
-            CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isLoading = false;
         }
     },
 
@@ -245,7 +256,7 @@ const OrderList = {
 
     validateDateRange() {
         if (this.state.searchKeyword && this.state.searchKeyword.length > this.maxKeywordLength) {
-            CommonJS.alert(`검색어는 ${this.maxKeywordLength}자 이내로 입력할 수 있습니다.`, '알림', 'warning');
+            void CommonJS.alert(`검색어는 ${this.maxKeywordLength}자 이내로 입력할 수 있습니다.`, '알림', 'warning');
             return false;
         }
 
@@ -254,7 +265,7 @@ const OrderList = {
         }
 
         if (this.state.startDate > this.state.endDate) {
-            CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
+            void CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
             return false;
         }
 
@@ -263,7 +274,7 @@ const OrderList = {
         const diffDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
 
         if (diffDays > this.maxDateRangeDays) {
-            CommonJS.alert(`조회 기간은 ${this.maxDateRangeDays + 1}일 이내로만 설정할 수 있습니다.`, '알림', 'warning');
+            void CommonJS.alert(`조회 기간은 ${this.maxDateRangeDays + 1}일 이내로만 설정할 수 있습니다.`, '알림', 'warning');
             return false;
         }
 

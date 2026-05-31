@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -156,5 +157,12 @@ class AdminBannerRestControllerTest {
         mockMvc.perform(patch("/api/admin/banners/active/3?isActive=N"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    @DisplayName("배너 삭제 API는 성공 응답을 반환한다")
+    void deleteReturnsOk() throws Exception {
+        mockMvc.perform(delete("/api/admin/banners/delete").param("no", "3"))
+                .andExpect(status().isOk());
     }
 }

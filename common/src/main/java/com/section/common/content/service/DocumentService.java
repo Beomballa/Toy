@@ -58,7 +58,8 @@ public class DocumentService {
 
     @Transactional
     public void deleteDocument(Long id) {
-        documentRepository.deleteById(id);
+        Document document = getDocument(id);
+        documentRepository.delete(document);
     }
 
     @Transactional

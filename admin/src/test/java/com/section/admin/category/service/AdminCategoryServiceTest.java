@@ -21,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -129,5 +130,18 @@ class AdminCategoryServiceTest {
         assertEquals(2, category.getDepth());
         assertEquals("러닝 화", category.getName());
         assertEquals("N", category.getIsActive());
+    }
+
+    @Test
+    @DisplayName("카테고리 삭제는 존재하는 카테고리 엔티티를 삭제한다")
+    void deleteCategoryDeletesExistingEntity() {
+        Category category = Category.builder().categoryNo(5L).name("액세서리").depth(1).isActive("Y").build();
+        when(categoryRepository.existsByParentNo(5L)).thenReturn(false);
+        when(productRepository.existsByCategoryNo(5L)).thenReturn(false);
+        when(categoryRepository.findById(5L)).thenReturn(Optional.of(category));
+
+        adminCategoryService.deleteCategory(5L);
+
+        verify(categoryRepository).delete(argThat(item -> item.getCategoryNo().equals(5L)));
     }
 }

@@ -59,6 +59,8 @@ public class AdminUserService {
 
     @Transactional
     public void deleteAdmin(Long adminNo) {
-        adminUserRepository.deleteById(adminNo);
+        AdminUser adminUser = adminUserRepository.findById(adminNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+        adminUserRepository.delete(adminUser);
     }
 }

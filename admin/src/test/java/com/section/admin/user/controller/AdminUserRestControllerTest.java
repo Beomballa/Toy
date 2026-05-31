@@ -83,4 +83,11 @@ class AdminUserRestControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"));
     }
+
+    @Test
+    @DisplayName("관리자 삭제 API는 성공 응답을 반환한다")
+    void deleteReturnsOk() throws Exception {
+        mockMvc.perform(delete("/api/admin/users/delete").param("no", "1"))
+                .andExpect(status().isOk());
+    }
 }

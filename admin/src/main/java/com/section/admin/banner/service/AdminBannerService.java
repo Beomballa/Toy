@@ -82,6 +82,7 @@ public class AdminBannerService {
 
     @Transactional
     public void deleteBanner(Long bannerNo) {
-        bannerRepository.deleteById(bannerNo);
+        DisplayBanner banner = getBanner(bannerNo);
+        bannerRepository.delete(banner);
     }
 }

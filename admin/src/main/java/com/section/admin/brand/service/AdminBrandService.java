@@ -69,7 +69,8 @@ public class AdminBrandService {
         if (productRepository.existsByBrandNo(brandNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        brandRepository.deleteById(brandNo);
+        Brand brand = getBrandEntity(brandNo);
+        brandRepository.delete(brand);
     }
 
     @Transactional

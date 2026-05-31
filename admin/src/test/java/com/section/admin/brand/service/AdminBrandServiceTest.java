@@ -21,6 +21,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,5 +101,17 @@ class AdminBrandServiceTest {
         assertEquals("new balance", captor.getValue().getNameEn());
         assertEquals("https://logo", captor.getValue().getLogoUrl());
         assertEquals("Y", captor.getValue().getIsActive());
+    }
+
+    @Test
+    @DisplayName("브랜드 삭제는 존재하는 브랜드 엔티티를 삭제한다")
+    void deleteBrandDeletesExistingEntity() {
+        Brand brand = Brand.builder().brandNo(3L).nameKo("아식스").isActive("Y").build();
+        when(productRepository.existsByBrandNo(3L)).thenReturn(false);
+        when(brandRepository.findById(3L)).thenReturn(Optional.of(brand));
+
+        adminBrandService.deleteBrand(3L);
+
+        verify(brandRepository).delete(argThat(item -> item.getBrandNo().equals(3L)));
     }
 }

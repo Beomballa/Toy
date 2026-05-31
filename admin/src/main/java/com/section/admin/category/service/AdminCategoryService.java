@@ -76,7 +76,8 @@ public class AdminCategoryService {
         if (productRepository.existsByCategoryNo(categoryNo)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
-        categoryRepository.deleteById(categoryNo);
+        Category category = getCategoryEntity(categoryNo);
+        categoryRepository.delete(category);
     }
 
     @Transactional

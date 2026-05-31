@@ -24,6 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -120,5 +121,26 @@ class AdminBannerServiceTest {
         adminBannerService.updateActive(3L, "N");
 
         assertEquals("N", banner.getIsActive());
+    }
+
+    @Test
+    @DisplayName("배너 삭제는 존재하는 배너만 삭제한다")
+    void deleteBannerDeletesExistingEntity() {
+        DisplayBanner banner = DisplayBanner.builder()
+                .bannerNo(9L)
+                .title("삭제 배너")
+                .imageUrl("https://example.com/delete.png")
+                .targetUrl(null)
+                .startDtm(LocalDateTime.of(2026, 5, 11, 10, 0))
+                .endDtm(LocalDateTime.of(2026, 5, 20, 10, 0))
+                .sortOrder(2)
+                .isActive("Y")
+                .crtAdminNo(1L)
+                .build();
+        when(bannerRepository.findById(9L)).thenReturn(Optional.of(banner));
+
+        adminBannerService.deleteBanner(9L);
+
+        verify(bannerRepository).delete(argThat(item -> item.getBannerNo().equals(9L)));
     }
 }

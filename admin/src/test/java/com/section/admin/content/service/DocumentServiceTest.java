@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -126,5 +127,17 @@ class DocumentServiceTest {
         assertEquals(1, result.requestedCount());
         assertEquals(0, result.updatedCount());
         assertEquals(1, result.unchangedCount());
+    }
+
+    @Test
+    @DisplayName("게시글 삭제는 존재하는 엔티티를 조회 후 삭제한다")
+    void deleteDocumentDeletesExistingEntity() {
+        Document document = new Document();
+        document.setId(9L);
+        when(documentRepository.findById(9L)).thenReturn(Optional.of(document));
+
+        documentService.deleteDocument(9L);
+
+        verify(documentRepository).delete(argThat(item -> item.getId().equals(9L)));
     }
 }

@@ -111,4 +111,11 @@ class AdminCategoryRestControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"));
     }
+
+    @Test
+    @DisplayName("카테고리 삭제 API는 성공 응답을 반환한다")
+    void deleteReturnsOk() throws Exception {
+        mockMvc.perform(delete("/api/admin/categories/delete").param("no", "1"))
+                .andExpect(status().isOk());
+    }
 }

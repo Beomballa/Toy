@@ -25,6 +25,7 @@ class AdminOperationTaskListRequestTest {
         assertEquals("IN_PROGRESS", query.status());
         assertEquals("HIGH", query.priority());
         assertEquals(7L, query.assigneeAdminNo());
+        assertNull(query.isPinned());
     }
 
     @Test
@@ -56,5 +57,14 @@ class AdminOperationTaskListRequestTest {
         request.setStatus("WRONG");
 
         assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 요청은 고정 여부 필터를 정규화한다")
+    void toQueryNormalizesPinnedFlag() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setIsPinned("y");
+
+        assertEquals("Y", request.toQuery().isPinned());
     }
 }

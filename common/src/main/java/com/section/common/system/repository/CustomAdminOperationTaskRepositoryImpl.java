@@ -55,6 +55,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         overdue(query.overdueOnly(), LocalDate.now())
                 )
@@ -75,6 +76,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         overdue(query.overdueOnly(), LocalDate.now())
                 )
@@ -326,6 +328,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(status != null ? status : query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
+                        isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         overdue(overdueOnly, today)
                 )
@@ -345,6 +348,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         keywordLike(query.keyword()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
+                        isPinnedEq(query.isPinned()),
                         adminOperationTask.assigneeAdminNo.isNull(),
                         overdue(query.overdueOnly(), today)
                 )
@@ -376,6 +380,13 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
 
     private BooleanExpression assigneeEq(Long assigneeAdminNo) {
         return assigneeAdminNo == null ? null : adminOperationTask.assigneeAdminNo.eq(assigneeAdminNo);
+    }
+
+    private BooleanExpression isPinnedEq(String isPinned) {
+        if (isPinned == null || isPinned.isBlank()) {
+            return null;
+        }
+        return adminOperationTask.isPinned.eq(isPinned.trim().toUpperCase());
     }
 
     private BooleanExpression unassigned(String unassignedOnly) {

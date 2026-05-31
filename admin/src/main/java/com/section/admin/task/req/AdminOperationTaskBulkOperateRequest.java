@@ -12,6 +12,7 @@ public record AdminOperationTaskBulkOperateRequest(
         String status,
         String priority,
         Long assigneeAdminNo,
+        String assigneeMode,
         String isPinned
 ) {
     public List<Long> normalizedTaskNos() {
@@ -60,6 +61,21 @@ public record AdminOperationTaskBulkOperateRequest(
         return assigneeAdminNo;
     }
 
+    public String normalizedAssigneeMode() {
+        if (assigneeMode == null || assigneeMode.isBlank()) {
+            return null;
+        }
+        String normalized = assigneeMode.trim().toUpperCase();
+        if (!"CLEAR".equals(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
+    }
+
+    public boolean hasAssigneeChange() {
+        return normalizedAssigneeAdminNo() != null || "CLEAR".equals(normalizedAssigneeMode());
+    }
+
     public String normalizedIsPinned() {
         if (isPinned == null || isPinned.isBlank()) {
             return null;
@@ -75,7 +91,7 @@ public record AdminOperationTaskBulkOperateRequest(
         normalizedTaskNos();
         if (normalizedStatus() == null
                 && normalizedPriority() == null
-                && normalizedAssigneeAdminNo() == null
+                && !hasAssigneeChange()
                 && normalizedIsPinned() == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }

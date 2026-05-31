@@ -5,10 +5,11 @@ public record AdminOperationTaskListQuery(
         String status,
         String priority,
         Long assigneeAdminNo,
+        String isPinned,
         String overdueOnly,
         String unassignedOnly
 ) {
     public AdminOperationTaskListQuery toStatsQuery() {
-        return new AdminOperationTaskListQuery(keyword, null, null, assigneeAdminNo, null, unassignedOnly);
+        return new AdminOperationTaskListQuery(keyword, null, null, assigneeAdminNo, isPinned, null, unassignedOnly);
     }
 }

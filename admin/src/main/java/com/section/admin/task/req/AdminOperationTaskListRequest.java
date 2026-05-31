@@ -16,6 +16,7 @@ public class AdminOperationTaskListRequest {
     private String status;
     private String priority;
     private Long assigneeAdminNo;
+    private String isPinned;
     private String overdueOnly;
     private String unassignedOnly;
     private Integer page = 0;
@@ -32,6 +33,7 @@ public class AdminOperationTaskListRequest {
                 normalizeStatus(status),
                 normalizePriority(priority),
                 normalizedAssigneeAdminNo,
+                normalizeFlag(isPinned),
                 normalizeFlag(overdueOnly),
                 normalizedUnassignedOnly
         );

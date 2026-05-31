@@ -96,7 +96,7 @@
     <div class="card animate-in mb-4">
         <div class="card-body">
             <div class="row g-3 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-bold">제목/설명 검색</label>
                     <input type="text" id="taskKeyword" class="form-control" placeholder="운영 작업 검색">
                 </div>
@@ -126,9 +126,23 @@
                     </select>
                 </div>
                 <div class="col-md-1">
-                    <div class="form-check mt-4 pt-2">
-                        <input class="form-check-input" type="checkbox" id="taskUnassignedOnly">
-                        <label class="form-check-label" for="taskUnassignedOnly">미지정만</label>
+                    <label class="form-label fw-bold">고정</label>
+                    <select id="taskPinnedFilter" class="form-select">
+                        <option value="">전체</option>
+                        <option value="Y">고정만</option>
+                        <option value="N">일반만</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="d-flex flex-column gap-2 mt-4 pt-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="taskOverdueOnly">
+                            <label class="form-check-label" for="taskOverdueOnly">기한 초과만</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="taskUnassignedOnly">
+                            <label class="form-check-label" for="taskUnassignedOnly">미지정만</label>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-1">
@@ -176,6 +190,7 @@
                     <label class="form-label fw-bold">일괄 담당자 변경</label>
                     <select id="bulkTaskAssignee" class="form-select">
                         <option value="">변경 안 함</option>
+                        <option value="__UNASSIGN__">담당 해제</option>
                     </select>
                 </div>
                 <div class="col-md-1">

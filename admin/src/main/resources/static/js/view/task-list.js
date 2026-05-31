@@ -14,6 +14,7 @@ const TaskList = {
         status: '',
         priority: '',
         assigneeAdminNo: '',
+        isPinned: '',
         overdueOnly: '',
         unassignedOnly: '',
         taskNo: '',
@@ -119,6 +120,7 @@ const TaskList = {
         this.state.status = params.get('status') || '';
         this.state.priority = params.get('priority') || '';
         this.state.assigneeAdminNo = params.get('assigneeAdminNo') || '';
+        this.state.isPinned = params.get('isPinned') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
@@ -127,7 +129,9 @@ const TaskList = {
         document.getElementById('taskKeyword').value = this.state.keyword;
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
+        document.getElementById('taskPinnedFilter').value = this.state.isPinned;
         document.getElementById('taskPageSize').value = String(this.state.size);
+        document.getElementById('taskOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
         CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
@@ -137,7 +141,9 @@ const TaskList = {
         this.state.status = document.getElementById('taskStatusFilter').value;
         this.state.priority = document.getElementById('taskPriorityFilter').value;
         this.state.assigneeAdminNo = document.getElementById('taskAssigneeFilter').value;
+        this.state.isPinned = document.getElementById('taskPinnedFilter').value;
         this.state.size = Number(document.getElementById('taskPageSize').value || 10);
+        this.state.overdueOnly = document.getElementById('taskOverdueOnly')?.checked ? 'Y' : '';
         this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
         if (this.state.unassignedOnly === 'Y') {
             this.state.assigneeAdminNo = '';
@@ -152,6 +158,7 @@ const TaskList = {
         if (this.state.status) params.set('status', this.state.status);
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.assigneeAdminNo) params.set('assigneeAdminNo', this.state.assigneeAdminNo);
+        if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
@@ -239,7 +246,7 @@ const TaskList = {
         form.innerHTML = formOptionHtml;
         form.value = selectedForm;
         const selectedBulk = bulkAssignee.value || '';
-        bulkAssignee.innerHTML = ['<option value="">변경 안 함</option>']
+        bulkAssignee.innerHTML = ['<option value="">변경 안 함</option>', '<option value="__UNASSIGN__">담당 해제</option>']
             .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
             .join('');
         bulkAssignee.value = selectedBulk;
@@ -339,7 +346,7 @@ const TaskList = {
         overdueCountEl.innerText = Number(stats.overdueCount || 0).toLocaleString();
         unassignedCountEl.innerText = Number(stats.unassignedCount || 0).toLocaleString();
         contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
-        const usingQuickFilter = !!this.state.status || !!this.state.priority || !!this.state.overdueOnly;
+        const usingQuickFilter = !!this.state.status || !!this.state.priority || !!this.state.isPinned || !!this.state.overdueOnly;
         noticeEl.innerText = usingQuickFilter
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
             : '카드 수치는 현재 탐색 문맥 기준입니다.';
@@ -550,11 +557,12 @@ const TaskList = {
             taskNos: Array.from(this.selectedTaskNos),
             status: document.getElementById('bulkTaskStatus')?.value || null,
             priority: document.getElementById('bulkTaskPriority')?.value || null,
-            assigneeAdminNo: this.parseOptionalNumber(document.getElementById('bulkTaskAssignee')?.value),
+            assigneeAdminNo: this.resolveBulkAssigneeAdminNo(),
+            assigneeMode: this.resolveBulkAssigneeMode(),
             isPinned: document.getElementById('bulkTaskPinned')?.value || null
         };
 
-        if (!payload.status && !payload.priority && !payload.assigneeAdminNo && !payload.isPinned) {
+        if (!payload.status && !payload.priority && !payload.assigneeAdminNo && !payload.assigneeMode && !payload.isPinned) {
             await CommonJS.alert('일괄 변경할 항목을 선택하세요.', '알림', 'warning');
             return;
         }
@@ -692,6 +700,7 @@ const TaskList = {
         this.syncStatFilterState(type);
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
+        document.getElementById('taskOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
         const assigneeFilter = document.getElementById('taskAssigneeFilter');
         if (assigneeFilter) {
@@ -713,7 +722,9 @@ const TaskList = {
         document.getElementById('taskStatusFilter').value = '';
         document.getElementById('taskPriorityFilter').value = '';
         document.getElementById('taskAssigneeFilter').value = '';
+        document.getElementById('taskPinnedFilter').value = '';
         document.getElementById('taskAssigneeFilter').disabled = false;
+        document.getElementById('taskOverdueOnly').checked = false;
         document.getElementById('taskUnassignedOnly').checked = false;
         document.getElementById('taskPageSize').value = '10';
         this.state.page = 0;
@@ -722,6 +733,7 @@ const TaskList = {
         this.state.status = '';
         this.state.priority = '';
         this.state.assigneeAdminNo = '';
+        this.state.isPinned = '';
         this.state.overdueOnly = '';
         this.state.unassignedOnly = '';
         this.state.taskNo = '';
@@ -909,6 +921,18 @@ const TaskList = {
             return null;
         }
         return Number(value);
+    },
+
+    resolveBulkAssigneeAdminNo() {
+        const value = document.getElementById('bulkTaskAssignee')?.value;
+        if (value == null || value === '' || value === '__UNASSIGN__') {
+            return null;
+        }
+        return this.parseOptionalNumber(value);
+    },
+
+    resolveBulkAssigneeMode() {
+        return document.getElementById('bulkTaskAssignee')?.value === '__UNASSIGN__' ? 'CLEAR' : null;
     },
 
     setBusyButton(button, isBusy, busyText = '처리 중...') {

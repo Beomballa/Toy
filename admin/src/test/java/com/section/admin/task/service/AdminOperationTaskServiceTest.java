@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -247,7 +249,7 @@ class AdminOperationTaskServiceTest {
         when(adminOperationTaskRepository.findAllById(List.of(21L, 22L))).thenReturn(List.of(changedTask, unchangedTask));
 
         var result = adminOperationTaskService.bulkOperate(
-                new AdminOperationTaskBulkOperateRequest(List.of(21L, 22L), "DONE", null, null, null)
+                new AdminOperationTaskBulkOperateRequest(List.of(21L, 22L), "DONE", null, null, null, null)
         );
 
         assertEquals(2, result.requestedCount());
@@ -255,6 +257,47 @@ class AdminOperationTaskServiceTest {
         assertEquals(1, result.unchangedCount());
         assertEquals("DONE", changedTask.getStatus());
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_UPDATE", 21L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 일괄 변경은 담당 해제를 반영한다")
+    void bulkOperateClearsAssignee() {
+        AdminOperationTask assignedTask = AdminOperationTask.builder()
+                .taskNo(31L)
+                .title("배정 해제 테스트")
+                .description("설명")
+                .status("IN_PROGRESS")
+                .priority("MEDIUM")
+                .assigneeAdminNo(7L)
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findAllById(List.of(31L))).thenReturn(List.of(assignedTask));
+
+        var result = adminOperationTaskService.bulkOperate(
+                new AdminOperationTaskBulkOperateRequest(List.of(31L), null, null, null, "CLEAR", null)
+        );
+
+        assertEquals(1, result.updatedCount());
+        assertNull(assignedTask.getAssigneeAdminNo());
+    }
+
+    @Test
+    @DisplayName("운영 작업 삭제는 존재하는 작업만 삭제하고 로그를 남긴다")
+    void deleteTaskDeletesExistingEntity() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(99L)
+                .title("삭제 대상")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(99L)).thenReturn(Optional.of(task));
+
+        adminOperationTaskService.deleteTask(99L);
+
+        verify(adminOperationTaskRepository).delete(argThat(item -> item.getTaskNo().equals(99L)));
+        verify(adminLogService).recordCurrentAdminLog("TASK_DELETE", 99L);
     }
 
     @Test

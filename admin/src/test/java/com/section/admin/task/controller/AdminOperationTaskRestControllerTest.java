@@ -71,7 +71,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(4L, 2L, 1L, 1L, 1L, "기본 문맥 기준", "고정 우선 · 마감 임박 순"),
                         List.of(new AdminOperationTaskListResponse.AssigneeOption(2L, "운영자")),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null),
                         new AdminOperationTaskListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 · 마감 임박 순", 1L, 1L)
                 ));
 
@@ -227,7 +227,7 @@ class AdminOperationTaskRestControllerTest {
 
         mockMvc.perform(post("/api/admin/settings/tasks/bulk-operate")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkOperateRequest(List.of(1L, 2L, 3L), "DONE", null, null, null))))
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkOperateRequest(List.of(1L, 2L, 3L), "DONE", null, null, null, null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestedCount").value(3))
                 .andExpect(jsonPath("$.updatedCount").value(2))

@@ -134,7 +134,8 @@ public class AdminOperationTaskService {
 
     @Transactional
     public void deleteTask(Long taskNo) {
-        adminOperationTaskRepository.deleteById(taskNo);
+        AdminOperationTask task = getTask(taskNo);
+        adminOperationTaskRepository.delete(task);
         adminLogService.recordCurrentAdminLog("TASK_DELETE", taskNo);
     }
 
@@ -167,6 +168,7 @@ public class AdminOperationTaskService {
         List<Long> targetTaskNos = req.normalizedTaskNos();
         String normalizedStatus = req.normalizedStatus();
         String normalizedPriority = req.normalizedPriority();
+        boolean hasAssigneeChange = req.hasAssigneeChange();
         Long normalizedAssigneeAdminNo = req.normalizedAssigneeAdminNo() == null ? null : normalizeAssigneeAdminNo(req.normalizedAssigneeAdminNo());
         String normalizedPinned = req.normalizedIsPinned();
 
@@ -188,7 +190,7 @@ public class AdminOperationTaskService {
             if (normalizedPinned != null && !normalizedPinned.equalsIgnoreCase(task.getIsPinned())) {
                 changed = true;
             }
-            if (req.normalizedAssigneeAdminNo() != null && !java.util.Objects.equals(normalizedAssigneeAdminNo, task.getAssigneeAdminNo())) {
+            if (hasAssigneeChange && !java.util.Objects.equals(normalizedAssigneeAdminNo, task.getAssigneeAdminNo())) {
                 changed = true;
             }
 
@@ -202,7 +204,7 @@ public class AdminOperationTaskService {
                     task.getDescription(),
                     normalizedStatus == null ? task.getStatus() : normalizedStatus,
                     normalizedPriority == null ? task.getPriority() : normalizedPriority,
-                    req.normalizedAssigneeAdminNo() == null ? task.getAssigneeAdminNo() : normalizedAssigneeAdminNo,
+                    hasAssigneeChange ? normalizedAssigneeAdminNo : task.getAssigneeAdminNo(),
                     task.getDueDate(),
                     normalizedPinned == null ? task.getIsPinned() : normalizedPinned
             );

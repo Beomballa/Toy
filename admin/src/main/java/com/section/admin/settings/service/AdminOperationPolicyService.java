@@ -1,5 +1,6 @@
 package com.section.admin.settings.service;
 
+import com.section.admin.settings.support.AdminSettingDefinition;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.entity.AdminSystemSetting;
@@ -8,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -25,29 +25,39 @@ public class AdminOperationPolicyService {
     private final AdminSystemSettingRepository adminSystemSettingRepository;
 
     public void assertAdminWriteAllowed() {
-        if (isEnabled(KEY_MAINTENANCE_MODE, false)) {
+        Map<String, AdminSystemSetting> settings = loadPolicySettings();
+        if (isEnabled(settings, AdminSettingDefinition.MAINTENANCE_MODE)) {
             throw new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE);
         }
     }
 
     public void assertCommunityWriteAllowed() {
-        assertAdminWriteAllowed();
-        if (!isEnabled(KEY_COMMUNITY_WRITE, true)) {
+        Map<String, AdminSystemSetting> settings = loadPolicySettings();
+        if (isEnabled(settings, AdminSettingDefinition.MAINTENANCE_MODE)) {
+            throw new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE);
+        }
+        if (!isEnabled(settings, AdminSettingDefinition.COMMUNITY_WRITE_ENABLED)) {
             throw new BusinessException(ErrorCode.ADMIN_FEATURE_DISABLED);
         }
     }
 
     public void assertOrderExportAllowed() {
-        if (!isEnabled(KEY_ORDER_EXPORT, true)) {
+        Map<String, AdminSystemSetting> settings = loadPolicySettings();
+        if (!isEnabled(settings, AdminSettingDefinition.ORDER_EXPORT_ENABLED)) {
             throw new BusinessException(ErrorCode.ADMIN_FEATURE_DISABLED);
         }
     }
 
-    private boolean isEnabled(String key, boolean defaultValue) {
-        Map<String, AdminSystemSetting> settings = adminSystemSettingRepository.findAllBySettingKeyIn(List.of(key))
+    private Map<String, AdminSystemSetting> loadPolicySettings() {
+        return adminSystemSettingRepository.findAllBySettingKeyIn(
+                        java.util.List.of(KEY_MAINTENANCE_MODE, KEY_COMMUNITY_WRITE, KEY_ORDER_EXPORT)
+                )
                 .stream()
                 .collect(Collectors.toMap(AdminSystemSetting::getSettingKey, Function.identity()));
-        AdminSystemSetting setting = settings.get(key);
-        return setting == null ? defaultValue : Boolean.parseBoolean(setting.getSettingValue());
+    }
+
+    private boolean isEnabled(Map<String, AdminSystemSetting> settings, AdminSettingDefinition definition) {
+        AdminSystemSetting setting = settings.get(definition.key());
+        return definition.parseBoolean(setting == null ? definition.defaultValue() : setting.getSettingValue());
     }
 }

@@ -303,7 +303,7 @@ const NoticeList = {
         pinnedCountEl.innerText = Number(stats.pinnedCount || 0).toLocaleString();
 
         contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
-        const usingQuickFilter = !!this.state.visibilityStatus || this.state.isPinned === 'Y';
+        const usingQuickFilter = !!this.state.visibilityStatus || !!this.state.isPinned;
         noticeEl.innerText = usingQuickFilter
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
             : '카드 수치는 현재 탐색 문맥 기준입니다.';

@@ -29,6 +29,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -74,6 +75,7 @@ class AdminOperationNoticeServiceTest {
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
         assertEquals(4L, response.noticeStats().totalCount());
         assertEquals(2L, response.noticeStats().liveCount());
+        assertEquals("검색 문맥 기준", response.noticeStats().contextLabel());
     }
 
     @Test
@@ -108,6 +110,24 @@ class AdminOperationNoticeServiceTest {
 
         assertEquals("N", notice.getIsActive());
         verify(adminLogService).recordCurrentAdminLog("NOTICE_ACTIVE_UPDATE", 3L);
+    }
+
+    @Test
+    @DisplayName("운영 공지 삭제는 존재하는 공지만 삭제하고 로그를 남긴다")
+    void deleteNoticeDeletesExistingEntity() {
+        AdminOperationNotice notice = AdminOperationNotice.builder()
+                .noticeNo(13L)
+                .title("삭제 대상")
+                .content("내용")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        when(adminOperationNoticeRepository.findById(13L)).thenReturn(Optional.of(notice));
+
+        adminOperationNoticeService.deleteNotice(13L);
+
+        verify(adminOperationNoticeRepository).delete(argThat(item -> item.getNoticeNo().equals(13L)));
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_DELETE", 13L);
     }
 
     @Test

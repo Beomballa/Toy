@@ -110,7 +110,10 @@ public record AdminOperationNoticeListResponse(
         }
 
         private static String buildContextLabel(AdminOperationNoticeListQuery query) {
-            return query.keyword() == null ? "기본 문맥 기준" : "검색 문맥 기준";
+            return query.keyword() == null
+                    && query.isActive() == null
+                    ? "기본 문맥 기준"
+                    : "검색 문맥 기준";
         }
 
         private static String buildQuerySignature(AdminOperationNoticeListQuery query) {

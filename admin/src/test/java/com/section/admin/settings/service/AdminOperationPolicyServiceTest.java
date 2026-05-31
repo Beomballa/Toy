@@ -17,6 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,6 +58,7 @@ class AdminOperationPolicyServiceTest {
         BusinessException exception = assertThrows(BusinessException.class, adminOperationPolicyService::assertCommunityWriteAllowed);
 
         assertEquals(ErrorCode.ADMIN_FEATURE_DISABLED, exception.getErrorCode());
+        verify(adminSystemSettingRepository, times(1)).findAllBySettingKeyIn(anyList());
     }
 
     @Test
@@ -69,5 +72,27 @@ class AdminOperationPolicyServiceTest {
                         .build()));
 
         assertDoesNotThrow(() -> adminOperationPolicyService.assertOrderExportAllowed());
+    }
+
+    @Test
+    @DisplayName("커뮤니티 쓰기 검사는 유지보수와 기능 플래그를 한 번에 조회한다")
+    void assertCommunityWriteAllowedLoadsPolicySettingsOnce() {
+        when(adminSystemSettingRepository.findAllBySettingKeyIn(anyList()))
+                .thenReturn(List.of(
+                        AdminSystemSetting.builder()
+                                .settingKey(AdminOperationPolicyService.KEY_MAINTENANCE_MODE)
+                                .settingValue("false")
+                                .description("유지보수")
+                                .build(),
+                        AdminSystemSetting.builder()
+                                .settingKey(AdminOperationPolicyService.KEY_COMMUNITY_WRITE)
+                                .settingValue("true")
+                                .description("커뮤니티 작성")
+                                .build()
+                ));
+
+        assertDoesNotThrow(() -> adminOperationPolicyService.assertCommunityWriteAllowed());
+
+        verify(adminSystemSettingRepository, times(1)).findAllBySettingKeyIn(anyList());
     }
 }

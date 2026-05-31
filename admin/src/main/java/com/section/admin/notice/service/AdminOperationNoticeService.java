@@ -146,7 +146,8 @@ public class AdminOperationNoticeService {
 
     @Transactional
     public void deleteNotice(Long noticeNo) {
-        adminOperationNoticeRepository.deleteById(noticeNo);
+        AdminOperationNotice notice = getNotice(noticeNo);
+        adminOperationNoticeRepository.delete(notice);
         adminLogService.recordCurrentAdminLog("NOTICE_DELETE", noticeNo);
     }
 

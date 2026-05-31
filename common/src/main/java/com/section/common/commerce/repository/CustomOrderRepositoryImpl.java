@@ -3,6 +3,7 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.OrderStatus;
@@ -20,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -162,18 +164,20 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     public List<Map<String, Object>> getSalesLast7Days() {
         LocalDateTime sevenDaysAgo = LocalDate.now().minusDays(6).atStartOfDay();
 
-        // Querydsl로 날짜별 합계 구하기 (상태가 CANCELLED가 아닌 주문만)
         return jpaQueryFactory
-                .select(orders.crtDtm, orders.totalAmount.sumLong())
+                .select(
+                        Expressions.stringTemplate("DATE_FORMAT({0}, {1})", orders.crtDtm, Expressions.constant("%Y-%m-%d")),
+                        orders.totalAmount.sumLong()
+                )
                 .from(orders)
                 .where(orders.crtDtm.goe(sevenDaysAgo), orders.status.ne("CANCELLED"))
-                .groupBy(orders.crtDtm)
-                .orderBy(orders.crtDtm.asc())
+                .groupBy(Expressions.stringTemplate("DATE({0})", orders.crtDtm))
+                .orderBy(Expressions.stringTemplate("DATE({0})", orders.crtDtm).asc())
                 .fetch()
                 .stream()
                 .map(tuple -> {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("date", tuple.get(orders.crtDtm).toLocalDate().toString());
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("date", tuple.get(0, String.class));
                     map.put("amount", tuple.get(orders.totalAmount.sumLong()));
                     return map;
                 }).toList();
@@ -199,21 +203,27 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
 
     @Override
     public List<Map<String, Object>> getTopBrandsBySales(int limit) {
+        NumberExpression<Long> brandSalesAmount = Expressions.numberTemplate(
+                Long.class,
+                "sum({0} * {1})",
+                orderItem.orderPrice,
+                orderItem.count
+        );
         return jpaQueryFactory
-                .select(product.brandNo, orders.totalAmount.sumLong())
-                .from(orders)
-                .join(orderItem).on(orderItem.orderNo.eq(orders.id))
+                .select(product.brandNo, brandSalesAmount)
+                .from(orderItem)
+                .join(orders).on(orderItem.orderNo.eq(orders.id))
                 .join(product).on(product.id.eq(orderItem.productNo))
                 .where(orders.status.ne("CANCELLED"))
                 .groupBy(product.brandNo)
-                .orderBy(orders.totalAmount.sumLong().desc())
+                .orderBy(brandSalesAmount.desc(), product.brandNo.asc())
                 .limit(limit)
                 .fetch()
                 .stream()
                 .map(tuple -> {
-                    Map<String, Object> map = new HashMap<>();
+                    Map<String, Object> map = new LinkedHashMap<>();
                     map.put("brandNo", tuple.get(product.brandNo));
-                    map.put("amount", tuple.get(orders.totalAmount.sumLong()));
+                    map.put("amount", tuple.get(brandSalesAmount));
                     return map;
                 }).toList();
     }

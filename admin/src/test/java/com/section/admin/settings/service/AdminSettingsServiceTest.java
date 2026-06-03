@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,14 +64,15 @@ class AdminSettingsServiceTest {
     }
 
     @Test
-    @DisplayName("시스템 설정 저장은 실제 변경된 항목만 upsert 한다")
+    @DisplayName("시스템 설정 저장은 실제 변경된 항목만 일괄 upsert 한다")
     void saveSystemSettingsUpsertsAllKeys() {
         AdminSystemSettingSaveRequest request = new AdminSystemSettingSaveRequest(true, false, true, 30L);
         when(adminSystemSettingRepository.findAllBySettingKeyIn(any())).thenReturn(List.of());
 
         adminSettingsService.saveSystemSettings(request);
 
-        verify(adminSystemSettingRepository, times(3)).save(any(AdminSystemSetting.class));
+        verify(adminSystemSettingRepository, times(1)).saveAll(any());
+        verify(adminSystemSettingRepository, never()).save(any(AdminSystemSetting.class));
         verify(adminSystemSettingHistoryRepository, times(1)).saveAll(any());
     }
 
@@ -95,6 +97,7 @@ class AdminSettingsServiceTest {
 
         adminSettingsService.saveSystemSettings(request);
 
+        verify(adminSystemSettingRepository, times(0)).saveAll(any());
         verify(adminSystemSettingRepository, times(0)).save(any(AdminSystemSetting.class));
         verify(adminSystemSettingHistoryRepository, times(0)).saveAll(any());
     }

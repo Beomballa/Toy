@@ -136,9 +136,10 @@ public class AdminSettingsService {
         }
 
         String changedIpAddress = AdminRequestContext.getCurrentIpAddress().orElse("127.0.0.1");
-        for (SettingChange change : changes) {
-            upsert(change.definition(), change.afterValue(), settings.get(change.definition().key()));
-        }
+        List<AdminSystemSetting> changedSettings = changes.stream()
+                .map(change -> prepareSetting(change.definition(), change.afterValue(), settings.get(change.definition().key())))
+                .toList();
+        adminSystemSettingRepository.saveAll(changedSettings);
         adminSystemSettingHistoryRepository.saveAll(changes.stream()
                 .map(change -> AdminSystemSettingHistory.builder()
                         .settingKey(change.definition().key())
@@ -170,7 +171,11 @@ public class AdminSettingsService {
         }
     }
 
-    private void upsert(AdminSettingDefinition definition, String value, AdminSystemSetting currentSetting) {
+    private AdminSystemSetting prepareSetting(
+            AdminSettingDefinition definition,
+            String value,
+            AdminSystemSetting currentSetting
+    ) {
         AdminSystemSetting setting = currentSetting == null
                 ? AdminSystemSetting.builder()
                         .settingKey(definition.key())
@@ -179,7 +184,7 @@ public class AdminSettingsService {
                         .build()
                 : currentSetting;
         setting.updateValue(value);
-        adminSystemSettingRepository.save(setting);
+        return setting;
     }
 
     private record SettingChange(AdminSettingDefinition definition, String beforeValue, String afterValue) {

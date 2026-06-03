@@ -116,6 +116,19 @@ class AdminOrderServiceTest {
     }
 
     @Test
+    @DisplayName("관리 메모 저장은 공백만 다른 동일 메모면 이력을 남기지 않는다")
+    void saveAdminMemoSkipsUnchangedNormalizedMemo() {
+        Orders order = Orders.createOrder("ORD-3", "홍길동", "010", 1000);
+        order.updateAdminMemo("고객 요청 확인");
+        when(orderRepository.findById(3L)).thenReturn(Optional.of(order));
+
+        adminOrderService.saveAdminMemo(3L, "  고객   요청 확인 ");
+
+        assertEquals("고객 요청 확인", order.getAdminMemo());
+        verify(orderStatusHistoryRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("존재하지 않는 주문의 메모 저장은 ORDER_NOT_FOUND를 던진다")
     void saveAdminMemoThrowsWhenOrderMissing() {
         when(orderRepository.findById(999L)).thenReturn(Optional.empty());

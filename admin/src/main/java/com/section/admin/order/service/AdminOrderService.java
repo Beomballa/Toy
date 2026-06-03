@@ -139,7 +139,12 @@ public class AdminOrderService {
     @Transactional
     public void saveAdminMemo(Long orderNo, String adminMemo) {
         Orders order = findOrder(orderNo);
-        order.updateAdminMemo(adminMemo);
+        String normalizedMemo = normalizeAdminMemo(adminMemo);
+        String currentMemo = normalizeAdminMemo(order.getAdminMemo());
+        if (java.util.Objects.equals(currentMemo, normalizedMemo)) {
+            return;
+        }
+        order.updateAdminMemo(normalizedMemo);
         saveHistory(order, "ADMIN_MEMO", order.getStatus(), order.getStatus(), "관리 메모 저장");
     }
 
@@ -159,5 +164,13 @@ public class AdminOrderService {
                 order.getDeliveryCompany(),
                 order.getTrackingNum()
         ));
+    }
+
+    private String normalizeAdminMemo(String adminMemo) {
+        if (adminMemo == null) {
+            return null;
+        }
+        String normalized = adminMemo.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
     }
 }

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -130,6 +131,12 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     public Map<String, Object> getTodaySummary() {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+        List<String> paidStatuses = List.of(
+                OrderStatus.PAID.name(),
+                OrderStatus.PREPARING.name(),
+                OrderStatus.SHIPPED.name(),
+                OrderStatus.DELIVERED.name()
+        );
 
         Map<String, Object> summary = new HashMap<>();
 
@@ -141,13 +148,13 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .fetchOne();
         summary.put("todayOrderCount", count != null ? count : 0L);
 
-        // 오늘 매출 합계 (결제완료 이상)
+        // 오늘 매출 합계는 미결제 주문을 제외하고 결제 이후 상태만 집계합니다.
         Long sum = jpaQueryFactory
                 .select(orders.totalAmount.sumLong())
                 .from(orders)
                 .where(
                         orders.crtDtm.between(startOfDay, endOfDay),
-                        orders.status.ne("CANCELLED")
+                        orders.status.in(paidStatuses)
                 )
                 .fetchOne();
         summary.put("todayTotalAmount", sum != null ? sum : 0);
@@ -164,7 +171,7 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     public List<Map<String, Object>> getSalesLast7Days() {
         LocalDateTime sevenDaysAgo = LocalDate.now().minusDays(6).atStartOfDay();
 
-        return jpaQueryFactory
+        Map<String, Long> salesByDate = jpaQueryFactory
                 .select(
                         Expressions.stringTemplate("DATE_FORMAT({0}, {1})", orders.crtDtm, Expressions.constant("%Y-%m-%d")),
                         orders.totalAmount.sumLong()
@@ -175,12 +182,21 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 .orderBy(Expressions.stringTemplate("DATE({0})", orders.crtDtm).asc())
                 .fetch()
                 .stream()
-                .map(tuple -> {
+                .collect(
+                        LinkedHashMap::new,
+                        (map, tuple) -> map.put(tuple.get(0, String.class), tuple.get(orders.totalAmount.sumLong())),
+                        LinkedHashMap::putAll
+                );
+
+        return LocalDate.now().minusDays(6).datesUntil(LocalDate.now().plusDays(1))
+                .map(date -> {
                     Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("date", tuple.get(0, String.class));
-                    map.put("amount", tuple.get(orders.totalAmount.sumLong()));
+                    String key = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                    map.put("date", key);
+                    map.put("amount", salesByDate.getOrDefault(key, 0L));
                     return map;
-                }).toList();
+                })
+                .toList();
     }
 
     @Override
@@ -188,8 +204,10 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         return jpaQueryFactory
                 .select(orderItem.productName, orderItem.count.sumLong())
                 .from(orderItem)
+                .join(orders).on(orderItem.orderNo.eq(orders.id))
+                .where(orders.status.ne(OrderStatus.CANCELLED.name()))
                 .groupBy(orderItem.productName)
-                .orderBy(orderItem.count.sumLong().desc())
+                .orderBy(orderItem.count.sumLong().desc(), orderItem.productName.asc())
                 .limit(limit)
                 .fetch()
                 .stream()
@@ -269,11 +287,16 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         for (String term : terms) {
             BooleanExpression termPredicate = orders.orderNum.containsIgnoreCase(term)
                     .or(orders.buyerName.containsIgnoreCase(term))
+                    .or(orders.trackingNum.containsIgnoreCase(term))
+                    .or(orders.adminMemo.containsIgnoreCase(term))
                     .or(orderItem.productName.containsIgnoreCase(term));
 
             String digitTerm = term.replaceAll("[^0-9]", "");
             if (!digitTerm.isBlank()) {
-                termPredicate = termPredicate.or(normalizedBuyerPhone().contains(digitTerm));
+                termPredicate = termPredicate
+                        .or(normalizedBuyerPhone().contains(digitTerm))
+                        .or(normalizedOrderNum().contains(digitTerm))
+                        .or(normalizedTrackingNum().contains(digitTerm));
             } else {
                 termPredicate = termPredicate.or(orders.buyerPhone.containsIgnoreCase(term));
             }
@@ -287,6 +310,20 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
         return Expressions.stringTemplate(
                 "replace(replace(replace(replace(replace({0}, '-', ''), ' ', ''), '+', ''), '(', ''), ')', '')",
                 orders.buyerPhone
+        );
+    }
+
+    private com.querydsl.core.types.dsl.StringExpression normalizedOrderNum() {
+        return Expressions.stringTemplate(
+                "replace(replace(replace({0}, '-', ''), ' ', ''), '_', '')",
+                orders.orderNum
+        );
+    }
+
+    private com.querydsl.core.types.dsl.StringExpression normalizedTrackingNum() {
+        return Expressions.stringTemplate(
+                "replace(replace(replace({0}, '-', ''), ' ', ''), '_', '')",
+                orders.trackingNum
         );
     }
 

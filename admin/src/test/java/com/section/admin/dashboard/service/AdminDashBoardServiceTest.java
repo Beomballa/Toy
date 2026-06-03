@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -157,5 +158,51 @@ class AdminDashBoardServiceTest {
         assertEquals("나이키", response.topBrands().get(0).label());
         assertEquals("아디다스", response.topBrands().get(1).label());
         verify(brandRepository).findAllById(anyList());
+    }
+
+    @Test
+    @DisplayName("매출 차트는 최근 7일을 빠짐없이 채우고 비어 있는 날짜는 0으로 보정한다")
+    void getDashboardDataBackfillsMissingSalesDates() {
+        when(orderRepository.getTodaySummary()).thenReturn(Map.of(
+                "todayOrderCount", 0L,
+                "todayTotalAmount", 0L,
+                "preparingCount", 0L,
+                "shippingCount", 0L,
+                "cancelledCount", 0L
+        ));
+        when(orderRepository.getRecentOrders(anyInt())).thenReturn(List.of());
+        when(productRepository.getLowStockProducts(anyInt(), anyInt())).thenReturn(List.of());
+        when(orderRepository.getSalesLast7Days()).thenReturn(List.of(
+                Map.of("date", LocalDate.now().minusDays(6).toString(), "amount", 1500L),
+                Map.of("date", LocalDate.now().minusDays(2).toString(), "amount", 3200L),
+                Map.of("date", LocalDate.now().toString(), "amount", 900L)
+        ));
+        when(orderRepository.getTopSellingProducts(anyInt())).thenReturn(List.of());
+        when(orderRepository.getTopBrandsBySales(anyInt())).thenReturn(List.of());
+        when(adminOperationNoticeRepository.getActiveDashboardNotices(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of());
+        when(adminOperationTaskRepository.getDashboardTasks(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of());
+        when(adminOperationTaskRepository.getDashboardUnassignedTasks(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of());
+        when(adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(anyList())).thenReturn(List.of());
+        when(adminOperationTaskRepository.getDashboardTaskWorkloads(org.mockito.ArgumentMatchers.any(), anyInt()))
+                .thenReturn(List.of());
+        when(adminOperationTaskRepository.getTaskWorkloadSummary(org.mockito.ArgumentMatchers.any(AdminOperationTaskWorkloadListQuery.class), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationTaskWorkloadSummaryDto(0L, 0L, 0L, 0L));
+        when(adminUserRepository.findAllById(anyList())).thenReturn(List.of());
+        when(brandRepository.findAllById(anyList())).thenReturn(List.of());
+
+        DashboardResponse response = adminDashBoardService.getDashboardData();
+
+        assertEquals(7, response.salesChart().size());
+        assertEquals(LocalDate.now().minusDays(6).toString(), response.salesChart().get(0).label());
+        assertEquals(1500L, response.salesChart().get(0).value());
+        assertEquals(LocalDate.now().minusDays(5).toString(), response.salesChart().get(1).label());
+        assertEquals(0L, response.salesChart().get(1).value());
+        assertEquals(LocalDate.now().minusDays(2).toString(), response.salesChart().get(4).label());
+        assertEquals(3200L, response.salesChart().get(4).value());
+        assertEquals(LocalDate.now().toString(), response.salesChart().get(6).label());
+        assertEquals(900L, response.salesChart().get(6).value());
     }
 }

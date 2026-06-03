@@ -26,6 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -128,11 +130,7 @@ public class AdminDashBoardService {
                 )).toList();
 
         // 4. 최근 7일 매출 차트
-        List<DashboardResponse.ChartData> salesChart = orderRepository.getSalesLast7Days().stream()
-                .map(m -> new DashboardResponse.ChartData(
-                        (String) m.get("date"),
-                        ((Number) m.get("amount")).longValue()
-                )).toList();
+        List<DashboardResponse.ChartData> salesChart = normalizeSalesChart(orderRepository.getSalesLast7Days());
 
         // 5. 인기 상품 Top 5
         List<DashboardResponse.ChartData> topProducts = orderRepository.getTopSellingProducts(5).stream()
@@ -160,6 +158,24 @@ public class AdminDashBoardService {
                 }).toList();
 
         return new DashboardResponse(summary, operationNotices, operationTasks, unassignedTaskItems, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+    }
+
+    private List<DashboardResponse.ChartData> normalizeSalesChart(List<Map<String, Object>> rawChart) {
+        Map<String, Long> salesByDate = rawChart.stream()
+                .filter(item -> item.get("date") instanceof String)
+                .collect(Collectors.toMap(
+                        item -> (String) item.get("date"),
+                        item -> ((Number) item.getOrDefault("amount", 0L)).longValue(),
+                        Long::sum,
+                        LinkedHashMap::new
+                ));
+
+        return LocalDate.now().minusDays(6).datesUntil(LocalDate.now().plusDays(1))
+                .map(date -> {
+                    String label = date.format(DateTimeFormatter.ISO_LOCAL_DATE);
+                    return new DashboardResponse.ChartData(label, salesByDate.getOrDefault(label, 0L));
+                })
+                .toList();
     }
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {

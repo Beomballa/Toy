@@ -5,6 +5,7 @@ import com.section.common.commerce.dto.OrderListItemDto;
 import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
+import com.section.common.commerce.dto.OrderStatusSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -13,6 +14,7 @@ import java.util.Map;
 
 public interface CustomOrderRepository {
     Page<OrderListItemDto> getOrderList(OrderListQuery query, Pageable pageable);
+    List<OrderStatusSummaryDto> getOrderStatusSummaries(OrderListQuery query);
 
     OrderListResDto getOrderDetail(Long orderNo);
 

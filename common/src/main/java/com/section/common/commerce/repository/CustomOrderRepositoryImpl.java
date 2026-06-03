@@ -11,6 +11,7 @@ import com.section.common.commerce.dto.OrderListItemDto;
 import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
+import com.section.common.commerce.dto.OrderStatusSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
@@ -88,6 +89,26 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
                 );
 
         return PageableExecutionUtils.getPage(list, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public List<OrderStatusSummaryDto> getOrderStatusSummaries(OrderListQuery query) {
+        return jpaQueryFactory
+                .select(Projections.bean(
+                        OrderStatusSummaryDto.class,
+                        orders.status.as("status"),
+                        orders.id.countDistinct().as("count")
+                ))
+                .from(orders)
+                .leftJoin(orderItem).on(orderItem.orderNo.eq(orders.id))
+                .where(
+                        searchKeywordLike(query.searchKeyword()),
+                        statusEq(query.status()),
+                        crtDtmBetween(query.startDateTime(), query.endDateTime())
+                )
+                .groupBy(orders.status)
+                .orderBy(orders.status.asc())
+                .fetch();
     }
 
     @Override

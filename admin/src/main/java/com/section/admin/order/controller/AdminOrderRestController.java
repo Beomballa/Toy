@@ -59,6 +59,16 @@ public class AdminOrderRestController {
         return ResponseEntity.ok(adminOrderService.getOrderHistoryList(request, pageable));
     }
 
+    @GetMapping("/history/export")
+    public ResponseEntity<byte[]> exportOrderHistoryList(@ModelAttribute OrderHistoryListRequest request) {
+        adminOperationPolicyService.assertOrderExportAllowed();
+        String fileName = "order-history-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOrderService.exportOrderHistoryListCsv(request));
+    }
+
     @PatchMapping("/status")
     public ResponseEntity<Void> updateStatus(@Valid @RequestBody OrderStatusUpdateRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();

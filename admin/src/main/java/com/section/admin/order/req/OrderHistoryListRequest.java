@@ -13,6 +13,8 @@ import java.util.Set;
 @Getter
 @Setter
 public class OrderHistoryListRequest {
+    private static final long MAX_DATE_RANGE_DAYS = 92L;
+    private static final int MAX_KEYWORD_LENGTH = 50;
     private static final Set<String> ALLOWED_ACTION_TYPES = Set.of(
             "STATUS_CHANGE",
             "DELIVERY_START",
@@ -34,6 +36,9 @@ public class OrderHistoryListRequest {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (startDate != null && endDate != null && startDate.plusDays(MAX_DATE_RANGE_DAYS).isBefore(endDate)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
 
@@ -64,6 +69,9 @@ public class OrderHistoryListRequest {
             return null;
         }
         String normalized = keyword.trim().replaceAll("\\s+", " ");
+        if (normalized.length() > MAX_KEYWORD_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         return normalized.isBlank() ? null : normalized;
     }
 

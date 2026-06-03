@@ -88,6 +88,7 @@ public record OrderDetailResponse(
             String activityLogPath,
             String activityLogLabel,
             String actionType,
+            String actionLabel,
             String beforeStatusDesc,
             String afterStatusDesc,
             String reason,
@@ -98,15 +99,16 @@ public record OrderDetailResponse(
     ) {
         public static OrderHistoryItem from(OrderStatusHistory history) {
             return new OrderHistoryItem(
-                    history.getId(),
-                    AdminLogSourceLinkSupport.resolveOrderHistoryLogPath(history.getOrderNo(), history.getActionType()),
-                    "활동 로그 보기",
-                    history.getActionType(),
-                    OrderViewFormatter.formatStatusDesc(history.getBeforeStatus()),
-                    OrderViewFormatter.formatStatusDesc(history.getAfterStatus()),
-                    history.getReason(),
-                    history.getAdminMemoSnapshot(),
-                    history.getDeliveryCompany(),
+                history.getId(),
+                AdminLogSourceLinkSupport.resolveOrderHistoryLogPath(history.getOrderNo(), history.getActionType()),
+                "활동 로그 보기",
+                history.getActionType(),
+                OrderViewFormatter.formatActionLabel(history.getActionType()),
+                OrderViewFormatter.formatStatusDesc(history.getBeforeStatus()),
+                OrderViewFormatter.formatStatusDesc(history.getAfterStatus()),
+                history.getReason(),
+                history.getAdminMemoSnapshot(),
+                history.getDeliveryCompany(),
                     history.getTrackingNum(),
                     OrderViewFormatter.formatDateTime(history.getCrtDtm())
             );

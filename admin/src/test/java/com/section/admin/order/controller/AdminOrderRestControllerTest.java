@@ -134,6 +134,23 @@ class AdminOrderRestControllerTest {
     }
 
     @Test
+    @DisplayName("주문 이력 CSV 다운로드는 현재 필터 기준 파일 응답을 반환한다")
+    void exportOrderHistoryListReturnsCsvAttachment() throws Exception {
+        when(adminOrderService.exportOrderHistoryListCsv(org.mockito.ArgumentMatchers.any(OrderHistoryListRequest.class)))
+                .thenReturn("이력번호\n11".getBytes());
+
+        mockMvc.perform(get("/api/admin/orders/history/export")
+                        .param("orderNo", "7")
+                        .param("actionType", "DELIVERY_START"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", Matchers.containsString("attachment; filename=\"order-history-")))
+                .andExpect(content().bytes("이력번호\n11".getBytes()));
+
+        verify(adminOrderService).exportOrderHistoryListCsv(org.mockito.ArgumentMatchers.any(OrderHistoryListRequest.class));
+    }
+
+    @Test
     @DisplayName("관리 메모 저장 요청 필수값이 없으면 400 INVALID_INPUT_VALUE를 반환한다")
     void saveAdminMemoReturnsBadRequestWhenOrderNoMissing() throws Exception {
         mockMvc.perform(patch("/api/admin/orders/memo")
@@ -151,6 +168,18 @@ class AdminOrderRestControllerTest {
                 .assertOrderExportAllowed();
 
         mockMvc.perform(get("/api/admin/orders/export"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("A002"));
+    }
+
+    @Test
+    @DisplayName("주문 이력 export 설정이 비활성화되면 400 ADMIN_FEATURE_DISABLED를 반환한다")
+    void exportOrderHistoryListReturnsBadRequestWhenOrderExportDisabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_FEATURE_DISABLED))
+                .when(adminOperationPolicyService)
+                .assertOrderExportAllowed();
+
+        mockMvc.perform(get("/api/admin/orders/history/export"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("A002"));
     }

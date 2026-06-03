@@ -162,7 +162,7 @@ const OrderDetail = {
         container.innerHTML = histories.map((history) => `
             <div class="border rounded-3 p-3">
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-                    <div class="fw-semibold text-dark">${history.actionType}</div>
+                    <div class="fw-semibold text-dark">${history.actionLabel || history.actionType}</div>
                     <div class="text-muted small">${history.crtDtm || '-'}</div>
                 </div>
                 <div class="small text-muted mb-2">

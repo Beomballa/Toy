@@ -8,6 +8,7 @@ import com.section.common.commerce.dto.OrderListQuery;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderListResDto;
 import com.section.common.commerce.dto.OrderItemResDto;
+import com.section.common.commerce.dto.OrderStatusSummaryDto;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,10 @@ public class OrderService {
      */
     public Page<OrderListItemDto> getOrderList(OrderListReqDto reqDto, Pageable pageable) {
         return orderRepository.getOrderList(reqDto.toQuery(), pageable);
+    }
+
+    public List<OrderStatusSummaryDto> getOrderStatusSummaries(OrderListReqDto reqDto) {
+        return orderRepository.getOrderStatusSummaries(reqDto.toQuery());
     }
 
     /**

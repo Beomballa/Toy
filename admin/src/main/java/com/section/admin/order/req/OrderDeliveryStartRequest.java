@@ -25,7 +25,7 @@ public record OrderDeliveryStartRequest(
 
     public String normalizedTrackingNum() {
         // 운송장 번호는 외부 연동 키로 쓰일 수 있어 저장 전 공백을 제거합니다.
-        return this.trackingNum().trim();
+        return this.trackingNum().replaceAll("\\s+", "");
     }
 
     public String normalizedReason() {

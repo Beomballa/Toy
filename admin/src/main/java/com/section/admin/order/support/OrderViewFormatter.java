@@ -22,6 +22,21 @@ public final class OrderViewFormatter {
         return dateTime != null ? DateUtil.localDateTimeToStr(dateTime) : "";
     }
 
+    public static String formatActionLabel(String actionType) {
+        if (actionType == null || actionType.isBlank()) {
+            return "상태 변경";
+        }
+
+        return switch (actionType) {
+            case "STATUS_CHANGE" -> "상태 변경";
+            case "DELIVERY_START" -> "배송 시작";
+            case "DELIVERY_COMPLETE" -> "배송 완료";
+            case "CANCEL" -> "주문 취소";
+            case "ADMIN_MEMO" -> "메모 저장";
+            default -> actionType;
+        };
+    }
+
     public static String buildProductSummary(String firstProductName, Long itemCount) {
         if (firstProductName == null || firstProductName.isBlank()) {
             return "-";

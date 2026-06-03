@@ -5,6 +5,7 @@ const OrderHistoryPage = {
         size: 20,
         returnTo: '/admin/orders/list'
     },
+    isExporting: false,
 
     init() {
         if (this.initialized) return;
@@ -54,6 +55,18 @@ const OrderHistoryPage = {
         document.getElementById('btnBackToOrderHistorySource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
         });
+        document.getElementById('btnExportOrderHistory')?.addEventListener('click', async () => {
+            if (this.isExporting) {
+                return;
+            }
+
+            try {
+                this.isExporting = true;
+                window.location.href = `/api/admin/orders/history/export?${this.buildExportParams().toString()}`;
+            } finally {
+                this.isExporting = false;
+            }
+        });
     },
 
     readStateFromUrl() {
@@ -92,6 +105,13 @@ const OrderHistoryPage = {
         if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
+        return params;
+    },
+
+    buildExportParams() {
+        const params = this.buildParams();
+        params.delete('page');
+        params.delete('size');
         return params;
     },
 

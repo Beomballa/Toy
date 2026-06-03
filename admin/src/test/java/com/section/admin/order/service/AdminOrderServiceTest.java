@@ -1,16 +1,19 @@
 package com.section.admin.order.service;
 
-import com.section.admin.order.support.OrderExportCsvWriter;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderHistoryListResDto;
+import com.section.common.commerce.dto.OrderListItemDto;
+import com.section.common.commerce.dto.OrderListReqDto;
+import com.section.common.commerce.dto.OrderStatusSummaryDto;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.repository.*;
 import com.section.common.commerce.service.OrderService;
 import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.admin.order.res.OrderHistoryListResponse;
+import com.section.admin.order.res.OrderListResponse;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.junit.jupiter.api.DisplayName;
@@ -19,13 +22,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -43,6 +46,39 @@ class AdminOrderServiceTest {
 
     @InjectMocks
     private AdminOrderService adminOrderService;
+
+    @Test
+    @DisplayName("주문 목록은 필터 결과와 상태별 집계를 함께 반환한다")
+    void getOrderListReturnsStatusSummaries() {
+        OrderListReqDto request = new OrderListReqDto();
+
+        OrderListItemDto row = new OrderListItemDto();
+        row.setOrderNo(1L);
+        row.setOrderNum("ORD-1");
+        row.setBuyerName("함장님");
+        row.setBuyerPhone("010-1111-2222");
+        row.setTotalAmount(12000);
+        row.setStatus("PAID");
+        row.setFirstProductName("삼바");
+        row.setItemCount(1L);
+
+        OrderStatusSummaryDto summary = new OrderStatusSummaryDto();
+        summary.setStatus("PAID");
+        summary.setCount(3L);
+
+        when(orderService.getOrderList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
+        when(orderService.getOrderStatusSummaries(any()))
+                .thenReturn(List.of(summary));
+
+        OrderListResponse response = adminOrderService.getOrderList(request, PageRequest.of(0, 10));
+
+        assertEquals(1, response.orders().size());
+        assertEquals(1, response.statusSummaries().size());
+        assertEquals("PAID", response.statusSummaries().get(0).statusCode());
+        assertEquals("결제완료", response.statusSummaries().get(0).statusDesc());
+        assertEquals(3L, response.statusSummaries().get(0).count());
+    }
 
     @Test
     @DisplayName("일반 주문 상태 변경은 상태 이력을 남긴다")
@@ -130,5 +166,29 @@ class AdminOrderServiceTest {
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
         assertEquals(4, response.resultMeta().filterCount());
         assertEquals("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자=관리자 · 정렬=오래된순", response.resultMeta().querySignature());
+    }
+
+    @Test
+    @DisplayName("주문 처리 이력 CSV는 현재 필터에 맞는 내역을 변환한다")
+    void exportOrderHistoryListCsvUsesFilteredRows() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setOrderNo(7L);
+        request.setActionType("DELIVERY_START");
+
+        OrderHistoryListResDto row = new OrderHistoryListResDto();
+        row.setHistoryNo(11L);
+        row.setOrderNo(7L);
+        row.setActionType("DELIVERY_START");
+        row.setBeforeStatus("PAID");
+        row.setAfterStatus("SHIPPED");
+        row.setActorName("운영자");
+
+        when(orderStatusHistoryRepository.getOrderHistoryList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 2000), 1));
+
+        byte[] result = adminOrderService.exportOrderHistoryListCsv(request);
+
+        verify(orderStatusHistoryRepository).getOrderHistoryList(any(), eq(PageRequest.of(0, 2000)));
+        assertTrue(new String(result).contains("배송 시작"));
     }
 }

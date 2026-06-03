@@ -133,14 +133,35 @@ const OrderList = {
             }
 
             const data = await res.json();
+            this.renderStatusSummaries(data.statusSummaries || []);
             this.renderList(data.orders);
             this.renderPagination(data);
         } catch (err) {
             console.error('주문 목록 로드 실패:', err);
+            this.renderStatusSummaries([]);
             await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         } finally {
             this.isLoading = false;
         }
+    },
+
+    renderStatusSummaries(items) {
+        const container = document.getElementById('orderStatusSummaryRow');
+        if (!container) return;
+
+        if (!items.length) {
+            container.innerHTML = '<div class="col-12 text-muted small">현재 필터에 해당하는 상태별 집계가 없습니다.</div>';
+            return;
+        }
+
+        container.innerHTML = items.map((item) => `
+            <div class="col-6 col-lg-2">
+                <div class="border rounded-3 bg-white px-3 py-2 h-100">
+                    <div class="small text-muted">${item.statusDesc}</div>
+                    <div class="fw-bold fs-5">${Number(item.count || 0).toLocaleString()}건</div>
+                </div>
+            </div>
+        `).join('');
     },
 
     renderList(items) {

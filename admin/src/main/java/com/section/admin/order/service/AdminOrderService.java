@@ -3,6 +3,7 @@ package com.section.admin.order.service;
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.admin.order.res.OrderListResponse;
+import com.section.admin.order.support.OrderHistoryExportCsvWriter;
 import com.section.admin.order.support.OrderListPagePolicy;
 import com.section.admin.order.support.OrderExportCsvWriter;
 import com.section.common.base.entity.type.OrderStatus;
@@ -36,6 +37,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class AdminOrderService {
     private static final int ORDER_EXPORT_MAX_SIZE = 1000;
+    private static final int ORDER_HISTORY_EXPORT_MAX_SIZE = 2000;
 
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
@@ -48,7 +50,7 @@ public class AdminOrderService {
      */
     public OrderListResponse getOrderList(OrderListReqDto reqDto, Pageable pageable) {
         Page<OrderListItemDto> result = orderService.getOrderList(reqDto, OrderListPagePolicy.normalize(pageable));
-        return OrderListResponse.of(result);
+        return OrderListResponse.of(result, orderService.getOrderStatusSummaries(reqDto));
     }
 
     public byte[] exportOrderListCsv(OrderListReqDto reqDto) {
@@ -73,6 +75,16 @@ public class AdminOrderService {
         return OrderHistoryListResponse.of(
                 orderStatusHistoryRepository.getOrderHistoryList(query, OrderListPagePolicy.normalize(pageable)),
                 query
+        );
+    }
+
+    public byte[] exportOrderHistoryListCsv(OrderHistoryListRequest request) {
+        OrderHistoryListQuery query = request.toQuery();
+        return OrderHistoryExportCsvWriter.write(
+                orderStatusHistoryRepository.getOrderHistoryList(
+                        query,
+                        PageRequest.of(0, ORDER_HISTORY_EXPORT_MAX_SIZE)
+                ).getContent()
         );
     }
 

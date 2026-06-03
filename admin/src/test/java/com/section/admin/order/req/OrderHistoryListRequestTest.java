@@ -2,6 +2,7 @@ package com.section.admin.order.req;
 
 import com.section.common.base.entity.type.OrderHistoryOrderType;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.OrderHistoryListQuery;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,5 +54,39 @@ class OrderHistoryListRequestTest {
         request.setActionType("unknown");
 
         assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("주문 이력 기간이 92일을 초과하면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsWhenDateRangeTooLarge() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setStartDate(LocalDate.of(2026, 1, 1));
+        request.setEndDate(LocalDate.of(2026, 4, 10));
+
+        BusinessException exception = assertThrows(BusinessException.class, request::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("주문 이력 검색어가 50자를 초과하면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsWhenKeywordTooLong() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setKeyword("a".repeat(51));
+
+        BusinessException exception = assertThrows(BusinessException.class, request::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("주문 이력 작업자 검색어가 50자를 초과하면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsWhenActorKeywordTooLong() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setActorKeyword("a".repeat(51));
+
+        BusinessException exception = assertThrows(BusinessException.class, request::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 }

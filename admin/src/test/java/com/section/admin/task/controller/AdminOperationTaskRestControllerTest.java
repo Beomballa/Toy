@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
@@ -73,7 +74,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(4L, 2L, 1L, 1L, 1L, "기본 문맥 기준", "고정 우선 · 마감 임박 순"),
                         List.of(new AdminOperationTaskListResponse.AssigneeOption(2L, "운영자")),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                         new AdminOperationTaskListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 · 마감 임박 순 · 정렬=고정 우선 · 마감 임박 순", 1L, 1L)
                 ));
 
@@ -100,7 +101,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(0L, 0L, 0L, 0L, 0L, "탐색 문맥 기준", "고정 우선 · 마감 임박 순 · 기한=2026-06-01~2026-06-30"),
                         List.of(),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, "Y", "PRIORITY_DESC", "2026-06-01", "2026-06-30"),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, "Y", null, "PRIORITY_DESC", "2026-06-01", "2026-06-30"),
                         new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모있는 작업만 · 기한=2026-06-01~2026-06-30 · 정렬=우선순위 높은 순", 0L, 0L)
                 ));
 
@@ -284,11 +285,38 @@ class AdminOperationTaskRestControllerTest {
 
         mockMvc.perform(post("/api/admin/settings/tasks/bulk-operate")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkOperateRequest(List.of(1L, 2L, 3L), "DONE", null, null, null, null))))
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkOperateRequest(List.of(1L, 2L, 3L), "DONE", null, null, null, null, null, null))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestedCount").value(3))
                 .andExpect(jsonPath("$.updatedCount").value(2))
                 .andExpect(jsonPath("$.unchangedCount").value(1));
+    }
+
+    @Test
+    @DisplayName("운영 작업 복제 API는 신규 작업 번호를 반환한다")
+    void duplicateReturnsCreatedTaskNo() throws Exception {
+        when(adminOperationTaskService.duplicateTask(3L))
+                .thenReturn(new AdminOperationTaskService.DuplicateTaskResult(33L));
+
+        mockMvc.perform(post("/api/admin/settings/tasks/3/duplicate"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taskNo").value(33L));
+    }
+
+    @Test
+    @DisplayName("운영 작업 일괄 복제 API는 복제 결과 응답을 반환한다")
+    void bulkDuplicateReturnsResult() throws Exception {
+        when(adminOperationTaskService.bulkDuplicate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationTaskService.BulkDuplicateResult(3, 2, 1, List.of(31L, 32L)));
+
+        mockMvc.perform(post("/api/admin/settings/tasks/bulk-duplicate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskBulkDuplicateRequest(List.of(1L, 2L, 3L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.createdCount").value(2))
+                .andExpect(jsonPath("$.missingCount").value(1))
+                .andExpect(jsonPath("$.createdTaskNos[0]").value(31L));
     }
 
     @Test

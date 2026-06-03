@@ -145,6 +145,16 @@
                     <input type="date" id="taskDueDateTo" class="form-control">
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label fw-bold">기한 상태</label>
+                    <select id="taskDueStateFilter" class="form-select">
+                        <option value="">전체</option>
+                        <option value="OVERDUE">기한 초과</option>
+                        <option value="TODAY">오늘 마감</option>
+                        <option value="UPCOMING">예정 작업</option>
+                        <option value="NO_DUE">기한 없음</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label fw-bold">정렬</label>
                     <select id="taskSortBy" class="form-select">
                         <option value="PINNED_DUE">고정 우선 · 마감 임박 순</option>
@@ -225,8 +235,17 @@
                         <option value="N">일반</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold">일괄 마감일 변경</label>
+                    <input type="date" id="bulkTaskDueDate" class="form-control">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="bulkTaskDueDateClear">
+                        <label class="form-check-label" for="bulkTaskDueDateClear">마감일 해제</label>
+                    </div>
+                </div>
                 <div class="col-md-2 d-grid gap-2">
                     <button type="button" class="btn btn-outline-dark" id="btnApplyTaskBulk">일괄 적용</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnBulkDuplicateTask">선택 복제</button>
                     <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteTask">일괄 삭제</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnClearTaskSelection">선택 해제</button>
                 </div>

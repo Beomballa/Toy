@@ -4,6 +4,7 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
@@ -321,7 +322,7 @@ class AdminOperationTaskServiceTest {
         when(adminOperationTaskRepository.findAllById(List.of(21L, 22L))).thenReturn(List.of(changedTask, unchangedTask));
 
         var result = adminOperationTaskService.bulkOperate(
-                new AdminOperationTaskBulkOperateRequest(List.of(21L, 22L), "DONE", null, null, null, null)
+                new AdminOperationTaskBulkOperateRequest(List.of(21L, 22L), "DONE", null, null, null, null, null, null)
         );
 
         assertEquals(2, result.requestedCount());
@@ -346,7 +347,7 @@ class AdminOperationTaskServiceTest {
         when(adminOperationTaskRepository.findAllById(List.of(31L))).thenReturn(List.of(assignedTask));
 
         var result = adminOperationTaskService.bulkOperate(
-                new AdminOperationTaskBulkOperateRequest(List.of(31L), null, null, null, "CLEAR", null)
+                new AdminOperationTaskBulkOperateRequest(List.of(31L), null, null, null, "CLEAR", null, null, null)
         );
 
         assertEquals(1, result.updatedCount());
@@ -451,6 +452,143 @@ class AdminOperationTaskServiceTest {
     }
 
     @Test
+    @DisplayName("운영 작업 일괄 변경은 마감일 변경을 반영한다")
+    void bulkOperateUpdatesDueDate() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(61L)
+                .title("마감일 변경")
+                .description("설명")
+                .status("TODO")
+                .priority("HIGH")
+                .dueDate(LocalDate.of(2026, 6, 10))
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findAllById(List.of(61L))).thenReturn(List.of(task));
+
+        var result = adminOperationTaskService.bulkOperate(
+                new AdminOperationTaskBulkOperateRequest(List.of(61L), null, null, null, null, null, LocalDate.of(2026, 6, 20), null)
+        );
+
+        assertEquals(1, result.updatedCount());
+        assertEquals(LocalDate.of(2026, 6, 20), task.getDueDate());
+    }
+
+    @Test
+    @DisplayName("운영 작업 복제는 대기 상태 신규 작업을 생성하고 로그를 남긴다")
+    void duplicateTaskCreatesTodoCopy() {
+        AdminOperationTask source = AdminOperationTask.builder()
+                .taskNo(71L)
+                .title("정산 점검")
+                .description("설명")
+                .status("DONE")
+                .priority("MEDIUM")
+                .assigneeAdminNo(4L)
+                .dueDate(LocalDate.of(2026, 6, 15))
+                .isPinned("Y")
+                .build();
+        when(adminOperationTaskRepository.findById(71L)).thenReturn(Optional.of(source));
+        when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
+                .thenAnswer(invocation -> {
+                    AdminOperationTask entity = invocation.getArgument(0);
+                    try {
+                        java.lang.reflect.Field taskNoField = AdminOperationTask.class.getDeclaredField("taskNo");
+                        taskNoField.setAccessible(true);
+                        taskNoField.set(entity, 72L);
+                    } catch (ReflectiveOperationException exception) {
+                        throw new RuntimeException(exception);
+                    }
+                    return entity;
+                });
+
+        AdminOperationTaskService.DuplicateTaskResult result = adminOperationTaskService.duplicateTask(71L);
+
+        assertEquals(72L, result.taskNo());
+        verify(adminOperationTaskRepository).save(argThat(task ->
+                "정산 점검 (복제)".equals(task.getTitle())
+                        && "TODO".equals(task.getStatus())
+                        && "MEDIUM".equals(task.getPriority())
+                        && Long.valueOf(4L).equals(task.getAssigneeAdminNo())
+                        && LocalDate.of(2026, 6, 15).equals(task.getDueDate())
+                        && "Y".equals(task.getIsPinned())
+        ));
+        verify(adminLogService).recordCurrentAdminLog("TASK_DUPLICATE", 72L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 복제는 지난 마감일을 신규 작업에 그대로 넘기지 않는다")
+    void duplicateTaskClearsPastDueDate() {
+        AdminOperationTask source = AdminOperationTask.builder()
+                .taskNo(73L)
+                .title("이월 작업")
+                .description("설명")
+                .status("DONE")
+                .priority("HIGH")
+                .dueDate(LocalDate.now().minusDays(1))
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(73L)).thenReturn(Optional.of(source));
+        when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        adminOperationTaskService.duplicateTask(73L);
+
+        verify(adminOperationTaskRepository).save(argThat(task -> task.getDueDate() == null));
+    }
+
+    @Test
+    @DisplayName("운영 작업 일괄 복제는 존재하는 작업만 복제하고 누락 건수를 반환한다")
+    void bulkDuplicateCreatesCopiesAndReturnsMissingCounts() {
+        AdminOperationTask first = AdminOperationTask.builder()
+                .taskNo(91L)
+                .title("배치 점검")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        AdminOperationTask third = AdminOperationTask.builder()
+                .taskNo(93L)
+                .title("공지 점검")
+                .description("설명")
+                .status("DONE")
+                .priority("HIGH")
+                .dueDate(LocalDate.now().minusDays(2))
+                .isPinned("Y")
+                .build();
+        when(adminOperationTaskRepository.findAllById(List.of(91L, 92L, 93L))).thenReturn(List.of(first, third));
+        when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
+                .thenAnswer(new org.mockito.stubbing.Answer<AdminOperationTask>() {
+                    private long sequence = 190L;
+
+                    @Override
+                    public AdminOperationTask answer(org.mockito.invocation.InvocationOnMock invocation) throws Throwable {
+                        AdminOperationTask entity = invocation.getArgument(0);
+                        java.lang.reflect.Field taskNoField = AdminOperationTask.class.getDeclaredField("taskNo");
+                        taskNoField.setAccessible(true);
+                        taskNoField.set(entity, ++sequence);
+                        return entity;
+                    }
+                });
+
+        AdminOperationTaskService.BulkDuplicateResult result = adminOperationTaskService.bulkDuplicate(
+                new AdminOperationTaskBulkDuplicateRequest(List.of(91L, 92L, 93L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(2, result.createdCount());
+        assertEquals(1, result.missingCount());
+        assertEquals(List.of(191L, 192L), result.createdTaskNos());
+        verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 191L);
+        verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 192L);
+        verify(adminOperationTaskRepository).save(argThat(task ->
+                "배치 점검 (복제)".equals(task.getTitle()) && task.getDueDate() == null
+        ));
+        verify(adminOperationTaskRepository).save(argThat(task ->
+                "공지 점검 (복제)".equals(task.getTitle()) && task.getDueDate() == null
+        ));
+    }
+
+    @Test
     @DisplayName("운영 작업 메모 수정은 같은 작업 메모만 갱신하고 로그를 남긴다")
     void updateCommentUpdatesMatchingComment() {
         AdminOperationTask task = AdminOperationTask.builder()
@@ -473,5 +611,24 @@ class AdminOperationTaskServiceTest {
 
         assertEquals("수정 후 메모", comment.getContent());
         verify(adminLogService).recordCurrentAdminLog("TASK_COMMENT_UPDATE", 33L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 삭제는 연결된 메모를 먼저 정리한다")
+    void deleteTaskRemovesTaskCommentsBeforeDelete() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(81L)
+                .title("삭제 대상")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(81L)).thenReturn(Optional.of(task));
+
+        adminOperationTaskService.deleteTask(81L);
+
+        verify(adminOperationTaskCommentRepository).deleteByTaskNo(81L);
+        verify(adminOperationTaskRepository).delete(task);
     }
 }

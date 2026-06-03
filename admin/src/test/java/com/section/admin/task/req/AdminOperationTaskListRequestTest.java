@@ -46,4 +46,24 @@ class AdminOperationTaskListRequestTest {
         assertEquals("Y", query.commentedOnly());
         assertEquals("PRIORITY_DESC", query.sortBy());
     }
+
+    @Test
+    @DisplayName("운영 작업 목록 요청은 기한 상태 필터를 정규화한다")
+    void toQueryNormalizesDueState() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setDueState("today");
+
+        var query = request.toQuery();
+
+        assertEquals("TODAY", query.dueState());
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 요청은 잘못된 기한 상태를 거부한다")
+    void toQueryRejectsInvalidDueState() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setDueState("LATER");
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
 }

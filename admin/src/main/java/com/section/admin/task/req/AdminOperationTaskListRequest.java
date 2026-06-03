@@ -22,6 +22,7 @@ public class AdminOperationTaskListRequest {
     private String overdueOnly;
     private String unassignedOnly;
     private String commentedOnly;
+    private String dueState;
     private String sortBy;
     private LocalDate dueDateFrom;
     private LocalDate dueDateTo;
@@ -43,6 +44,7 @@ public class AdminOperationTaskListRequest {
                 normalizeFlag(overdueOnly),
                 normalizedUnassignedOnly,
                 normalizeFlag(commentedOnly),
+                normalizeDueState(dueState),
                 normalizeSortBy(sortBy),
                 normalizeDueDateFrom(dueDateFrom, dueDateTo),
                 normalizeDueDateTo(dueDateFrom, dueDateTo)
@@ -141,5 +143,16 @@ public class AdminOperationTaskListRequest {
         if (from != null && to != null && from.isAfter(to)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private String normalizeDueState(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return null;
+        }
+        return switch (normalized.toUpperCase()) {
+            case "OVERDUE", "TODAY", "UPCOMING", "NO_DUE" -> normalized.toUpperCase();
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
     }
 }

@@ -62,6 +62,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueStateEq(query.dueState(), LocalDate.now()),
                         overdue(query.overdueOnly(), LocalDate.now()),
                         dueDateOnOrAfter(query.dueDateFrom()),
                         dueDateOnOrBefore(query.dueDateTo())
@@ -82,6 +83,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueStateEq(query.dueState(), LocalDate.now()),
                         overdue(query.overdueOnly(), LocalDate.now()),
                         dueDateOnOrAfter(query.dueDateFrom()),
                         dueDateOnOrBefore(query.dueDateTo())
@@ -337,6 +339,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueStateEq(query.dueState(), today),
                         overdue(overdueOnly, today),
                         dueDateOnOrAfter(query.dueDateFrom()),
                         dueDateOnOrBefore(query.dueDateTo())
@@ -359,6 +362,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         priorityEq(query.priority()),
                         isPinnedEq(query.isPinned()),
                         commented(query.commentedOnly()),
+                        dueStateEq(query.dueState(), today),
                         adminOperationTask.assigneeAdminNo.isNull(),
                         overdue(query.overdueOnly(), today),
                         dueDateOnOrAfter(query.dueDateFrom()),
@@ -425,6 +429,24 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         return adminOperationTask.dueDate.isNotNull()
                 .and(adminOperationTask.dueDate.lt(today))
                 .and(adminOperationTask.status.ne("DONE"));
+    }
+
+    private BooleanExpression dueStateEq(String dueState, LocalDate today) {
+        if (dueState == null || dueState.isBlank()) {
+            return null;
+        }
+        return switch (dueState.trim().toUpperCase()) {
+            case "OVERDUE" -> adminOperationTask.dueDate.isNotNull()
+                    .and(adminOperationTask.dueDate.lt(today))
+                    .and(adminOperationTask.status.ne("DONE"));
+            case "TODAY" -> adminOperationTask.dueDate.eq(today)
+                    .and(adminOperationTask.status.ne("DONE"));
+            case "UPCOMING" -> adminOperationTask.dueDate.isNotNull()
+                    .and(adminOperationTask.dueDate.gt(today))
+                    .and(adminOperationTask.status.ne("DONE"));
+            case "NO_DUE" -> adminOperationTask.dueDate.isNull();
+            default -> null;
+        };
     }
 
     private BooleanExpression dueDateOnOrAfter(LocalDate dueDateFrom) {

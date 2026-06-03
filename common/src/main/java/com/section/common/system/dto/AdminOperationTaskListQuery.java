@@ -11,6 +11,7 @@ public record AdminOperationTaskListQuery(
         String overdueOnly,
         String unassignedOnly,
         String commentedOnly,
+        String dueState,
         String sortBy,
         LocalDate dueDateFrom,
         LocalDate dueDateTo
@@ -25,6 +26,7 @@ public record AdminOperationTaskListQuery(
                 null,
                 unassignedOnly,
                 commentedOnly,
+                dueState,
                 sortBy,
                 dueDateFrom,
                 dueDateTo

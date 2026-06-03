@@ -4,6 +4,7 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
@@ -39,6 +40,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -201,8 +203,48 @@ public class AdminOperationTaskService {
     @Transactional
     public void deleteTask(Long taskNo) {
         AdminOperationTask task = getTask(taskNo);
+        adminOperationTaskCommentRepository.deleteByTaskNo(taskNo);
         adminOperationTaskRepository.delete(task);
         adminLogService.recordCurrentAdminLog("TASK_DELETE", taskNo);
+    }
+
+    @Transactional
+    public DuplicateTaskResult duplicateTask(Long taskNo) {
+        AdminOperationTask source = getTask(taskNo);
+        AdminOperationTask duplicated = saveDuplicatedTask(source, LocalDate.now());
+        adminLogService.recordCurrentAdminLog("TASK_DUPLICATE", duplicated.getTaskNo());
+        return new DuplicateTaskResult(duplicated.getTaskNo());
+    }
+
+    @Transactional
+    public BulkDuplicateResult bulkDuplicate(AdminOperationTaskBulkDuplicateRequest req) {
+        List<Long> targetTaskNos = req.normalizedTaskNos();
+        List<AdminOperationTask> tasks = adminOperationTaskRepository.findAllById(targetTaskNos);
+        if (tasks.isEmpty()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
+
+        Map<Long, AdminOperationTask> taskMap = tasks.stream()
+                .collect(Collectors.toMap(AdminOperationTask::getTaskNo, task -> task));
+        LocalDate today = LocalDate.now();
+        List<AdminOperationTask> duplicatedTasks = targetTaskNos.stream()
+                .map(taskMap::get)
+                .filter(Objects::nonNull)
+                .map(task -> saveDuplicatedTask(task, today))
+                .toList();
+        duplicatedTasks.forEach(task -> adminLogService.recordCurrentAdminLog("TASK_BULK_DUPLICATE", task.getTaskNo()));
+
+        HashSet<Long> existingTaskNoSet = new HashSet<>(taskMap.keySet());
+        long missingCount = targetTaskNos.stream()
+                .filter(taskNo -> !existingTaskNoSet.contains(taskNo))
+                .count();
+
+        return new BulkDuplicateResult(
+                targetTaskNos.size(),
+                duplicatedTasks.size(),
+                (int) missingCount,
+                duplicatedTasks.stream().map(AdminOperationTask::getTaskNo).toList()
+        );
     }
 
     @Transactional
@@ -249,6 +291,8 @@ public class AdminOperationTaskService {
         boolean hasAssigneeChange = req.hasAssigneeChange();
         Long normalizedAssigneeAdminNo = req.normalizedAssigneeAdminNo() == null ? null : normalizeAssigneeAdminNo(req.normalizedAssigneeAdminNo());
         String normalizedPinned = req.normalizedIsPinned();
+        boolean hasDueDateChange = req.hasDueDateChange();
+        LocalDate normalizedDueDate = "CLEAR".equals(req.normalizedDueDateMode()) ? null : req.normalizedDueDate();
 
         List<AdminOperationTask> tasks = adminOperationTaskRepository.findAllById(targetTaskNos);
         if (tasks.isEmpty()) {
@@ -271,6 +315,9 @@ public class AdminOperationTaskService {
             if (hasAssigneeChange && !java.util.Objects.equals(normalizedAssigneeAdminNo, task.getAssigneeAdminNo())) {
                 changed = true;
             }
+            if (hasDueDateChange && !Objects.equals(normalizedDueDate, task.getDueDate())) {
+                changed = true;
+            }
 
             if (!changed) {
                 unchangedCount += 1;
@@ -283,7 +330,7 @@ public class AdminOperationTaskService {
                     normalizedStatus == null ? task.getStatus() : normalizedStatus,
                     normalizedPriority == null ? task.getPriority() : normalizedPriority,
                     hasAssigneeChange ? normalizedAssigneeAdminNo : task.getAssigneeAdminNo(),
-                    task.getDueDate(),
+                    hasDueDateChange ? normalizedDueDate : task.getDueDate(),
                     normalizedPinned == null ? task.getIsPinned() : normalizedPinned
             );
             adminLogService.recordCurrentAdminLog("TASK_BULK_UPDATE", task.getTaskNo());
@@ -395,10 +442,52 @@ public class AdminOperationTaskService {
         return normalized;
     }
 
+    private String buildDuplicateTitle(String title) {
+        String baseTitle = normalizeRequiredText(title, 200);
+        String suffix = " (복제)";
+        if (baseTitle.length() + suffix.length() <= 200) {
+            return baseTitle + suffix;
+        }
+        return baseTitle.substring(0, 200 - suffix.length()).trim() + suffix;
+    }
+
+    private AdminOperationTask saveDuplicatedTask(AdminOperationTask source, LocalDate today) {
+        return adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title(buildDuplicateTitle(source.getTitle()))
+                .description(source.getDescription())
+                .status(AdminOperationTaskStatus.TODO.name())
+                .priority(source.getPriority())
+                .assigneeAdminNo(source.getAssigneeAdminNo())
+                // 이미 지난 마감일을 그대로 복제하면 신규 작업이 즉시 지연 상태가 되어 운영 노이즈가 커집니다.
+                .dueDate(resolveDuplicatedDueDate(source.getDueDate(), today))
+                .isPinned(source.getIsPinned())
+                .build());
+    }
+
+    private LocalDate resolveDuplicatedDueDate(LocalDate dueDate, LocalDate today) {
+        if (dueDate == null || !dueDate.isBefore(today)) {
+            return dueDate;
+        }
+        return null;
+    }
+
     public record BulkOperateResult(
             int requestedCount,
             int updatedCount,
             int unchangedCount
+    ) {
+    }
+
+    public record DuplicateTaskResult(
+            Long taskNo
+    ) {
+    }
+
+    public record BulkDuplicateResult(
+            int requestedCount,
+            int createdCount,
+            int missingCount,
+            List<Long> createdTaskNos
     ) {
     }
 

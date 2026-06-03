@@ -4,6 +4,7 @@ import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
@@ -105,6 +106,12 @@ public class AdminOperationTaskRestController {
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
+    @PostMapping("/{no}/duplicate")
+    public ResponseEntity<AdminOperationTaskService.DuplicateTaskResult> duplicate(@PathVariable("no") Long taskNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationTaskService.duplicateTask(taskNo));
+    }
+
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("no") Long taskNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();
@@ -132,6 +139,12 @@ public class AdminOperationTaskRestController {
     public ResponseEntity<AdminOperationTaskService.BulkOperateResult> bulkOperate(@RequestBody AdminOperationTaskBulkOperateRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         return ResponseEntity.ok(adminOperationTaskService.bulkOperate(req));
+    }
+
+    @PostMapping("/bulk-duplicate")
+    public ResponseEntity<AdminOperationTaskService.BulkDuplicateResult> bulkDuplicate(@RequestBody AdminOperationTaskBulkDuplicateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationTaskService.bulkDuplicate(req));
     }
 
     @PostMapping("/bulk-delete")

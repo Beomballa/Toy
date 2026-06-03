@@ -5,6 +5,7 @@ import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public record AdminOperationTaskBulkOperateRequest(
@@ -13,7 +14,9 @@ public record AdminOperationTaskBulkOperateRequest(
         String priority,
         Long assigneeAdminNo,
         String assigneeMode,
-        String isPinned
+        String isPinned,
+        LocalDate dueDate,
+        String dueDateMode
 ) {
     public List<Long> normalizedTaskNos() {
         if (taskNos == null || taskNos.isEmpty()) {
@@ -87,12 +90,32 @@ public record AdminOperationTaskBulkOperateRequest(
         return normalized;
     }
 
+    public LocalDate normalizedDueDate() {
+        return dueDate;
+    }
+
+    public String normalizedDueDateMode() {
+        if (dueDateMode == null || dueDateMode.isBlank()) {
+            return null;
+        }
+        String normalized = dueDateMode.trim().toUpperCase();
+        if (!"CLEAR".equals(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
+    }
+
+    public boolean hasDueDateChange() {
+        return normalizedDueDate() != null || "CLEAR".equals(normalizedDueDateMode());
+    }
+
     public void validateOperation() {
         normalizedTaskNos();
         if (normalizedStatus() == null
                 && normalizedPriority() == null
                 && !hasAssigneeChange()
-                && normalizedIsPinned() == null) {
+                && normalizedIsPinned() == null
+                && !hasDueDateChange()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

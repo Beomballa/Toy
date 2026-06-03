@@ -99,6 +99,25 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 목록은 소문자와 여분 공백으로 들어온 필터도 정규화해서 처리한다")
+    void getListNormalizesEnumStyleFilters() throws Exception {
+        when(documentService.getDocumentList(any(DocumentListQuery.class), any()))
+                .thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 9), 0));
+
+        mockMvc.perform(get("/api/admin/content/list")
+                        .param("boardType", " notice ")
+                        .param("status", " published ")
+                        .param("publicYn", " y "))
+                .andExpect(status().isOk());
+
+        ArgumentCaptor<DocumentListQuery> captor = ArgumentCaptor.forClass(DocumentListQuery.class);
+        verify(documentService).getDocumentList(captor.capture(), any());
+        assertEquals(Document.BoardType.NOTICE, captor.getValue().boardType());
+        assertEquals(Document.PublishStatus.PUBLISHED, captor.getValue().status());
+        assertEquals(YN.Y, captor.getValue().publicYn());
+    }
+
+    @Test
     @DisplayName("콘텐츠 CSV 내보내기는 동일한 QueryDSL 필터와 다운로드 헤더를 사용한다")
     void exportPassesFiltersAndReturnsAttachmentHeaders() throws Exception {
         DocumentListItemDto item = new DocumentListItemDto();

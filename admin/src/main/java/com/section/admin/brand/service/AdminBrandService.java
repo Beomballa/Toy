@@ -119,7 +119,14 @@ public class AdminBrandService {
     }
 
     private String normalizeRequiredText(String value) {
-        return value.trim().replaceAll("\\s+", " ");
+        if (value == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        if (normalized.isBlank()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
     }
 
     private String normalizeOptionalText(String value) {

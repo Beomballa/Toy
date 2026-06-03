@@ -27,6 +27,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @RestController
 @RequiredArgsConstructor
@@ -121,7 +122,7 @@ public class AdminContentRestController {
 
     private Document.BoardType parseBoardType(String boardType) {
         try {
-            return Document.BoardType.valueOf(boardType);
+            return Document.BoardType.valueOf(normalizeEnumValue(boardType));
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -133,7 +134,7 @@ public class AdminContentRestController {
         }
 
         try {
-            return Document.PublishStatus.valueOf(status);
+            return Document.PublishStatus.valueOf(normalizeEnumValue(status));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -145,7 +146,7 @@ public class AdminContentRestController {
         }
 
         try {
-            return YN.valueOf(value);
+            return YN.valueOf(normalizeEnumValue(value));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -198,5 +199,9 @@ public class AdminContentRestController {
                 startDateTime,
                 endDateTime
         );
+    }
+
+    private String normalizeEnumValue(String value) {
+        return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 }

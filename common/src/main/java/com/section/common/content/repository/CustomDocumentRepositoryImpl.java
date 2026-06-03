@@ -14,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.section.common.content.entity.QDocument.document;
@@ -79,9 +80,17 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
             return null;
         }
 
-        String normalizedKeyword = keyword.trim();
-        return document.title.containsIgnoreCase(normalizedKeyword)
-                .or(document.content.containsIgnoreCase(normalizedKeyword));
+        List<String> terms = Arrays.stream(keyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = document.title.containsIgnoreCase(term)
+                    .or(document.content.containsIgnoreCase(term));
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+        return predicate;
     }
 
     private BooleanExpression statusEq(Document.PublishStatus status) {

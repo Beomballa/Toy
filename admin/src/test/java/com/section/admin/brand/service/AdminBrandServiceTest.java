@@ -105,6 +105,15 @@ class AdminBrandServiceTest {
     }
 
     @Test
+    @DisplayName("브랜드 저장은 공백뿐인 한글명을 거부한다")
+    void saveBrandRejectsBlankKoName() {
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, "   ", "NIKE", null, "Y")));
+
+        assertEquals(com.section.common.base.exception.ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("브랜드 CSV 내보내기는 필터 조건과 목록을 함께 기록한다")
     void exportBrandListCsvIncludesSummaryAndRows() {
         BrandListRequest request = new BrandListRequest();

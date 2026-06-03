@@ -131,4 +131,42 @@ class DocumentRepositorySearchIntegrationTest {
         assertEquals(1, result.getTotalElements());
         assertEquals("이번 주 공지", result.getContent().getFirst().getTitle());
     }
+
+    @Test
+    @DisplayName("콘텐츠 목록 키워드 검색은 다중 검색어를 모두 만족하는 문서만 조회한다")
+    void getDocumentListMatchesAllKeywordTerms() {
+        Document matchedDocument = new Document();
+        matchedDocument.applyEditorValues(
+                Document.BoardType.NOTICE,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                "여름 배송 공지",
+                "오늘 배송 일정과 공지 내용을 안내합니다.",
+                null
+        );
+        documentRepository.save(matchedDocument);
+
+        Document partialDocument = new Document();
+        partialDocument.applyEditorValues(
+                Document.BoardType.NOTICE,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                "여름 이벤트",
+                "공지와 무관한 이벤트 소식입니다.",
+                null
+        );
+        documentRepository.save(partialDocument);
+        entityManager.flush();
+        entityManager.clear();
+
+        Page<DocumentListItemDto> result = documentRepository.getDocumentList(
+                new DocumentListQuery(Document.BoardType.NOTICE, "여름 배송", Document.PublishStatus.PUBLISHED, YN.Y, false, null, null),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals("여름 배송 공지", result.getContent().getFirst().getTitle());
+    }
 }

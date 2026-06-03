@@ -118,6 +118,15 @@ class AdminCategoryServiceTest {
     }
 
     @Test
+    @DisplayName("카테고리 저장은 공백뿐인 이름을 거부한다")
+    void saveCategoryRejectsBlankName() {
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(null, null, "   ", 1, "Y")));
+
+        assertEquals(com.section.common.base.exception.ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("카테고리 수정은 부모와 depth 변경을 반영한다")
     void saveCategoryUpdatesHierarchyOnEdit() {
         Category parent = Category.builder().categoryNo(10L).name("신발").depth(1).isActive("Y").build();

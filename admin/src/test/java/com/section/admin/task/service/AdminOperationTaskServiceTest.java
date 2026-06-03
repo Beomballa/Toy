@@ -3,6 +3,7 @@ package com.section.admin.task.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
@@ -11,8 +12,10 @@ import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
+import com.section.common.system.dto.AdminOperationTaskCommentCountDto;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
+import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
 import com.section.common.system.entity.AdminOperationTask;
@@ -43,6 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class AdminOperationTaskServiceTest {
@@ -64,6 +68,8 @@ class AdminOperationTaskServiceTest {
     void getTaskListReturnsPagedResponse() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
         request.setKeyword("정리");
+        request.setDueDateFrom(LocalDate.of(2026, 6, 1));
+        request.setDueDateTo(LocalDate.of(2026, 6, 30));
 
         AdminOperationTaskListResDto row = new AdminOperationTaskListResDto();
         row.setTaskNo(1L);
@@ -84,6 +90,16 @@ class AdminOperationTaskServiceTest {
         when(adminUserRepository.findAll()).thenReturn(List.of(
                 AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build()
         ));
+        AdminOperationTaskCommentSummaryDto latestComment = new AdminOperationTaskCommentSummaryDto();
+        latestComment.setTaskNo(1L);
+        latestComment.setAdminName("운영자");
+        latestComment.setContent("우선 확인이 필요한 작업입니다.");
+        latestComment.setCrtDtm(LocalDateTime.of(2026, 6, 1, 8, 0));
+        AdminOperationTaskCommentCountDto commentCount = new AdminOperationTaskCommentCountDto();
+        commentCount.setTaskNo(1L);
+        commentCount.setCommentCount(3L);
+        when(adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(List.of(1L))).thenReturn(List.of(latestComment));
+        when(adminOperationTaskCommentRepository.getCommentCountsByTaskNos(List.of(1L))).thenReturn(List.of(commentCount));
 
         AdminOperationTaskListResponse response = adminOperationTaskService.getTaskList(request);
 
@@ -91,6 +107,62 @@ class AdminOperationTaskServiceTest {
         assertEquals(1L, response.totalElements());
         assertEquals(5L, response.taskStats().totalCount());
         assertEquals("운영자", response.assigneeOptions().get(0).name());
+        assertEquals(3L, response.items().get(0).commentCount());
+        assertEquals("운영자 · 2026-06-01 08:00", response.items().get(0).latestCommentMeta());
+        verify(adminOperationTaskRepository).getTaskList(
+                argThat(query -> LocalDate.of(2026, 6, 1).equals(query.dueDateFrom())
+                        && LocalDate.of(2026, 6, 30).equals(query.dueDateTo())),
+                any()
+        );
+    }
+
+    @Test
+    @DisplayName("운영 작업 CSV 내보내기는 필터 결과를 기반으로 파일 바이트를 만든다")
+    void exportTaskListCsvReturnsCsvBytes() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setStatus("TODO");
+        request.setAssigneeAdminNo(2L);
+        request.setCommentedOnly("Y");
+        request.setSortBy("PRIORITY_DESC");
+        request.setDueDateFrom(LocalDate.of(2026, 6, 1));
+        request.setDueDateTo(LocalDate.of(2026, 6, 30));
+
+        AdminOperationTaskListResDto row = new AdminOperationTaskListResDto();
+        row.setTaskNo(1L);
+        row.setTitle("정산 확인");
+        row.setDescription("정산 마감 확인");
+        row.setStatus("TODO");
+        row.setPriority("HIGH");
+        row.setAssigneeAdminNo(2L);
+        row.setAssigneeAdminName("운영자");
+        row.setDueDate(LocalDate.now());
+        row.setIsPinned("Y");
+        row.setCrtDtm(LocalDateTime.of(2026, 6, 1, 9, 0));
+
+        when(adminOperationTaskRepository.getTaskList(any(AdminOperationTaskListQuery.class), eq(PageRequest.of(0, 1000))))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 1000), 1));
+        when(adminUserRepository.findAllById(List.of(2L))).thenReturn(List.of(
+                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build()
+        ));
+        AdminOperationTaskCommentSummaryDto latestComment = new AdminOperationTaskCommentSummaryDto();
+        latestComment.setTaskNo(1L);
+        latestComment.setAdminName("운영자");
+        latestComment.setContent("최근 메모입니다.");
+        latestComment.setCrtDtm(LocalDateTime.of(2026, 6, 1, 8, 30));
+        AdminOperationTaskCommentCountDto commentCount = new AdminOperationTaskCommentCountDto();
+        commentCount.setTaskNo(1L);
+        commentCount.setCommentCount(2L);
+        when(adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(List.of(1L))).thenReturn(List.of(latestComment));
+        when(adminOperationTaskCommentRepository.getCommentCountsByTaskNos(List.of(1L))).thenReturn(List.of(commentCount));
+
+        byte[] result = adminOperationTaskService.exportTaskListCsv(request);
+        String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(csv.contains("\"조회조건\",\"상태: 대기 | 담당자: 운영자 | 메모있는 작업만 | 기한: 2026-06-01 ~ 2026-06-30\""));
+        assertTrue(csv.contains("\"정렬\",\"우선순위 높은 순\""));
+        assertTrue(csv.contains("메모있는 작업만"));
+        assertTrue(csv.contains("\"정산 확인\""));
+        assertTrue(csv.contains("\"2\",\"최근 메모입니다.\",\"운영자\",\"2026-06-01 08:30\""));
     }
 
     @Test
@@ -301,6 +373,40 @@ class AdminOperationTaskServiceTest {
     }
 
     @Test
+    @DisplayName("운영 작업 일괄 삭제는 코멘트를 함께 정리하고 누락 건수를 반환한다")
+    void bulkDeleteRemovesCommentsAndReturnsMissingCounts() {
+        AdminOperationTask first = AdminOperationTask.builder()
+                .taskNo(41L)
+                .title("배치 점검")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        AdminOperationTask third = AdminOperationTask.builder()
+                .taskNo(43L)
+                .title("공지 점검")
+                .description("설명")
+                .status("DONE")
+                .priority("HIGH")
+                .isPinned("Y")
+                .build();
+        when(adminOperationTaskRepository.findAllById(List.of(41L, 42L, 43L))).thenReturn(List.of(first, third));
+
+        AdminOperationTaskService.BulkDeleteResult result = adminOperationTaskService.bulkDelete(
+                new AdminOperationTaskBulkDeleteRequest(List.of(41L, 42L, 43L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(2, result.deletedCount());
+        assertEquals(1, result.missingCount());
+        verify(adminOperationTaskCommentRepository).deleteByTaskNoIn(List.of(41L, 43L));
+        verify(adminOperationTaskRepository).deleteAll(List.of(first, third));
+        verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DELETE", 41L);
+        verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DELETE", 43L);
+    }
+
+    @Test
     @DisplayName("운영 작업 메모 등록은 로그를 남긴다")
     void addCommentSavesCommentAndRecordsLog() {
         AdminOperationTask task = AdminOperationTask.builder()
@@ -342,5 +448,30 @@ class AdminOperationTaskServiceTest {
 
         verify(adminOperationTaskCommentRepository).delete(comment);
         verify(adminLogService).recordCurrentAdminLog("TASK_COMMENT_DELETE", 32L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 메모 수정은 같은 작업 메모만 갱신하고 로그를 남긴다")
+    void updateCommentUpdatesMatchingComment() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(33L)
+                .title("배치 점검")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build();
+        AdminOperationTaskComment comment = AdminOperationTaskComment.builder()
+                .commentNo(51L)
+                .taskNo(33L)
+                .content("수정 전")
+                .build();
+        when(adminOperationTaskRepository.findById(33L)).thenReturn(Optional.of(task));
+        when(adminOperationTaskCommentRepository.findById(51L)).thenReturn(Optional.of(comment));
+
+        adminOperationTaskService.updateComment(33L, 51L, new AdminOperationTaskCommentSaveRequest("  수정 후 메모  "));
+
+        assertEquals("수정 후 메모", comment.getContent());
+        verify(adminLogService).recordCurrentAdminLog("TASK_COMMENT_UPDATE", 33L);
     }
 }

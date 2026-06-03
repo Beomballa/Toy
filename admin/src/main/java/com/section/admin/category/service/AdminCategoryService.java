@@ -4,6 +4,8 @@ import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.res.CategoryListResponse;
 import com.section.admin.category.res.CategoryResponse;
+import com.section.admin.category.support.CategoryExportCsvWriter;
+import com.section.admin.category.support.CategoryExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Category;
@@ -21,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminCategoryService {
+    private static final int CATEGORY_EXPORT_MAX_SIZE = 1000;
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
@@ -34,6 +37,19 @@ public class AdminCategoryService {
                 );
         Page<CategoryResponse> responsePage = categoryPage.map(CategoryResponse::from);
         return CategoryListResponse.of(responsePage, req);
+    }
+
+    public byte[] exportCategoryListCsv(CategoryListRequest req) {
+        Page<Category> categoryPage = categoryRepository.getCategoryList(
+                req.getDepth(),
+                req.normalizedKeyword(),
+                req.normalizedIsActive(),
+                PageRequest.of(0, CATEGORY_EXPORT_MAX_SIZE)
+        );
+        return CategoryExportCsvWriter.write(
+                CategoryExportSummary.of(req, java.time.LocalDateTime.now()),
+                categoryPage.getContent().stream().map(CategoryResponse::from).toList()
+        );
     }
 
     public List<CategoryResponse> getSubCategories(Long parentNo) {

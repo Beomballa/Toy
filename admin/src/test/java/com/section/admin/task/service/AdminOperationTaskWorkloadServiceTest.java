@@ -133,4 +133,32 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals(1, response.recentHistories().size());
         assertEquals("작업 수정", response.recentHistories().get(0).actionLabel());
     }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 상세는 댓글 수정과 일괄 삭제 라벨을 노출한다")
+    void getWorkloadDetailMapsAdditionalHistoryLabels() {
+        when(adminUserRepository.findById(7L))
+                .thenReturn(java.util.Optional.of(AdminUser.builder().adminNo(7L).name("운영자").loginId("ops").password("pw").build()));
+        when(adminOperationTaskRepository.getTaskWorkload(7L, LocalDate.now()))
+                .thenReturn(new AdminOperationTaskWorkloadDto(7L, "운영자", 0L, 0L, 0L, 0L));
+        when(adminOperationTaskRepository.getRecentTasksByAssigneeAdminNo(7L, 5)).thenReturn(List.of());
+        when(adminOperationTaskRepository.getOverdueTasksByAssigneeAdminNo(7L, LocalDate.now(), 5)).thenReturn(List.of());
+        when(adminOperationTaskCommentRepository.getRecentCommentsByAssigneeAdminNo(7L, 5)).thenReturn(List.of());
+        when(adminLogService.getLogList(any(), any(PageRequest.class)))
+                .thenReturn(new AdminLogListResponse(
+                        List.of(
+                                new AdminLogListResponse.Item(15L, 7L, "운영자", "TASK_COMMENT_UPDATE", 11L, "운영 작업 #11", "/admin/settings/tasks/get?no=11", "127.0.0.1", "2026-05-25 12:00"),
+                                new AdminLogListResponse.Item(16L, 7L, "운영자", "TASK_BULK_DELETE", 12L, "운영 작업 #12", "/admin/settings/tasks/get?no=12", "127.0.0.1", "2026-05-25 12:10")
+                        ),
+                        2L, 1, 0, 5, 1L, 2L, "1-2 / 2건 · 1페이지",
+                        new AdminLogListResponse.Summary(2, 2, 0, 2, 0, 2),
+                        new AdminLogListResponse.AppliedQuery(7L, "TASK_", null, null, null),
+                        new AdminLogListResponse.ResultMeta("검색 결과 2건", "1-2 / 2건 · 1페이지", 2, "1-2 · 작업=TASK_")
+                ));
+
+        AdminOperationTaskWorkloadDetailResponse response = adminOperationTaskWorkloadService.getWorkloadDetail(7L);
+
+        assertEquals("댓글 수정", response.recentHistories().get(0).actionLabel());
+        assertEquals("일괄 삭제", response.recentHistories().get(1).actionLabel());
+    }
 }

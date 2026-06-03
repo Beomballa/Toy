@@ -10,8 +10,12 @@ import com.section.admin.brand.service.AdminBrandService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +28,15 @@ public class AdminBrandRestController {
     @GetMapping("/list")
     public ResponseEntity<BrandListResponse> getList(@ModelAttribute BrandListRequest req) {
         return ResponseEntity.ok(adminBrandService.getBrandList(req));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@ModelAttribute BrandListRequest req) {
+        String fileName = "brands-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminBrandService.exportBrandListCsv(req));
     }
 
     @GetMapping("/get")

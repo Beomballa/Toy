@@ -52,6 +52,22 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
     }
 
+    @Override
+    public boolean existsActiveBannerScheduleConflict(Long bannerNo, Integer sortOrder, LocalDateTime startDtm, LocalDateTime endDtm) {
+        Integer fetched = queryFactory
+                .selectOne()
+                .from(displayBanner)
+                .where(
+                        displayBanner.isActive.eq("Y"),
+                        displayBanner.sortOrder.eq(sortOrder),
+                        bannerNoNe(bannerNo),
+                        displayBanner.startDtm.loe(endDtm),
+                        displayBanner.endDtm.goe(startDtm)
+                )
+                .fetchFirst();
+        return fetched != null;
+    }
+
     private BooleanExpression keywordLike(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return null;
@@ -78,5 +94,12 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
             case "ENDED" -> displayBanner.endDtm.before(now);
             default -> null;
         };
+    }
+
+    private BooleanExpression bannerNoNe(Long bannerNo) {
+        if (bannerNo == null) {
+            return null;
+        }
+        return displayBanner.bannerNo.ne(bannerNo);
     }
 }

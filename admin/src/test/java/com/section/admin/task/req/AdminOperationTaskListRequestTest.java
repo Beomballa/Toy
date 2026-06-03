@@ -4,67 +4,46 @@ import com.section.common.base.exception.BusinessException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.time.LocalDate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AdminOperationTaskListRequestTest {
 
     @Test
-    @DisplayName("운영 작업 목록 요청은 검색 조건을 정규화한다")
-    void toQueryNormalizesValues() {
+    @DisplayName("운영 작업 목록 요청은 기한 시작일과 종료일을 정규화한다")
+    void toQueryIncludesDueDateRange() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setKeyword("  운영   작업  ");
-        request.setStatus("in_progress");
-        request.setPriority("high");
-        request.setAssigneeAdminNo(7L);
+        request.setDueDateFrom(LocalDate.of(2026, 6, 1));
+        request.setDueDateTo(LocalDate.of(2026, 6, 30));
 
         var query = request.toQuery();
 
-        assertEquals("운영 작업", query.keyword());
-        assertEquals("IN_PROGRESS", query.status());
-        assertEquals("HIGH", query.priority());
-        assertEquals(7L, query.assigneeAdminNo());
-        assertNull(query.isPinned());
+        assertEquals(LocalDate.of(2026, 6, 1), query.dueDateFrom());
+        assertEquals(LocalDate.of(2026, 6, 30), query.dueDateTo());
     }
 
     @Test
-    @DisplayName("운영 작업 목록 요청은 0 담당자를 null로 본다")
-    void toQueryTreatsZeroAssigneeAsNull() {
+    @DisplayName("운영 작업 목록 요청은 역전된 기한 범위를 거부한다")
+    void toQueryRejectsInvalidDueDateRange() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setAssigneeAdminNo(0L);
-
-        assertNull(request.toQuery().assigneeAdminNo());
-    }
-
-    @Test
-    @DisplayName("운영 작업 목록 요청은 미지정만 필터가 켜지면 담당자 조건을 비운다")
-    void toQueryClearsAssigneeWhenUnassignedOnly() {
-        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setAssigneeAdminNo(7L);
-        request.setUnassignedOnly("Y");
-
-        var query = request.toQuery();
-
-        assertNull(query.assigneeAdminNo());
-        assertEquals("Y", query.unassignedOnly());
-    }
-
-    @Test
-    @DisplayName("운영 작업 목록 요청은 잘못된 상태를 거부한다")
-    void toQueryRejectsInvalidStatus() {
-        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setStatus("WRONG");
+        request.setDueDateFrom(LocalDate.of(2026, 6, 30));
+        request.setDueDateTo(LocalDate.of(2026, 6, 1));
 
         assertThrows(BusinessException.class, request::toQuery);
     }
 
     @Test
-    @DisplayName("운영 작업 목록 요청은 고정 여부 필터를 정규화한다")
-    void toQueryNormalizesPinnedFlag() {
+    @DisplayName("운영 작업 목록 요청은 메모 필터와 정렬 조건을 정규화한다")
+    void toQueryNormalizesCommentedOnlyAndSortBy() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setIsPinned("y");
+        request.setCommentedOnly("y");
+        request.setSortBy("priority_desc");
 
-        assertEquals("Y", request.toQuery().isPinned());
+        var query = request.toQuery();
+
+        assertEquals("Y", query.commentedOnly());
+        assertEquals("PRIORITY_DESC", query.sortBy());
     }
 }

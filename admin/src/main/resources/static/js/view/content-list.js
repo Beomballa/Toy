@@ -90,6 +90,8 @@ const ContentList = {
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
             location.href = `/admin/content/edit?boardType=${this.state.boardType}`;
         });
+        document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
+        document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
 
         document.getElementById('contentSearchForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -148,12 +150,14 @@ const ContentList = {
     async applyOperationPolicy(settings = null) {
         const createButton = document.getElementById('btnNewContent');
         const bulkButton = document.getElementById('btnApplyBulkOperate');
+        const bulkDeleteButton = document.getElementById('btnBulkDeleteContent');
         try {
             const resolvedSettings = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isCommunityWriteBlocked(resolvedSettings);
             const reason = CommonJS.getCommunityWriteBlockedReason(resolvedSettings, '커뮤니티 작성');
             CommonJS.setButtonDisabled(createButton, disabled, reason);
             CommonJS.setButtonDisabled(bulkButton, disabled, reason);
+            CommonJS.setButtonDisabled(bulkDeleteButton, disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSelectCurrentPage'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnDeselectCurrentPage'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('contentSelectAllOnPage'), disabled, reason);
@@ -281,6 +285,12 @@ const ContentList = {
     },
 
     pushState() {
+        const params = this.buildQueryParams();
+        const newUrl = `${window.location.pathname}?${params.toString()}`;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+    },
+
+    buildQueryParams() {
         const params = new URLSearchParams({ boardType: this.state.boardType });
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
@@ -300,8 +310,7 @@ const ContentList = {
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
         }
-        const newUrl = `${window.location.pathname}?${params.toString()}`;
-        window.history.pushState({ path: newUrl }, '', newUrl);
+        return params;
     },
 
     syncSearchField() {
@@ -442,6 +451,76 @@ const ContentList = {
         this.syncSelectionState();
         await CommonJS.alert(this.state.lastBulkResultMessage, '성공', 'success');
         this.getList();
+    },
+
+    async applyBulkDelete() {
+        if (!this.state.selectedIds.size) {
+            await CommonJS.alert('삭제할 게시글을 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 게시글 ${this.state.selectedIds.size}건을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        const response = await fetch('/api/admin/content/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ids: Array.from(this.state.selectedIds) })
+        });
+
+        if (!response.ok) {
+            await CommonJS.alert(await CommonJS.extractErrorMessage(response, '일괄 삭제에 실패했습니다.'), '오류', 'error');
+            return;
+        }
+
+        const result = await response.json();
+        this.state.selectedIds.clear();
+        this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건 중 ${result.deletedCount}건을 삭제했습니다. 누락 ${result.missingCount}건은 이미 삭제되었거나 찾을 수 없습니다.`;
+        this.syncSelectionState();
+        await CommonJS.alert(this.state.lastBulkResultMessage, '성공', 'success');
+        this.getList();
+    },
+
+    async exportCsv() {
+        const button = document.getElementById('btnExportContentCsv');
+        if (button) {
+            button.disabled = true;
+        }
+        try {
+            const response = await fetch(`/api/admin/content/export?${this.buildQueryParams().toString()}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '콘텐츠 CSV 내보내기에 실패했습니다.'));
+            }
+            const blob = await response.blob();
+            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), `contents-${this.state.boardType}.csv`);
+            this.downloadBlob(blob, fileName);
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
+    },
+
+    extractFileName(contentDisposition, fallback) {
+        const matched = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
+        return matched?.[1] || fallback;
+    },
+
+    downloadBlob(blob, fileName) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     }
 };
 

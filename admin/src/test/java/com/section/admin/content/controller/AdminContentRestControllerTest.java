@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -95,6 +96,36 @@ class AdminContentRestControllerTest {
         assertEquals(true, captor.getValue().pinnedOnly());
         assertEquals("2026-05-01T00:00", captor.getValue().startDateTime().toString());
         assertEquals("2026-05-31T23:59:59.999999999", captor.getValue().endDateTime().toString());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 CSV 내보내기는 동일한 QueryDSL 필터와 다운로드 헤더를 사용한다")
+    void exportPassesFiltersAndReturnsAttachmentHeaders() throws Exception {
+        DocumentListItemDto item = new DocumentListItemDto();
+        item.setId(8L);
+        item.setBoardType("NOTICE");
+        item.setStatus("PUBLISHED");
+        item.setPublicYn("Y");
+        item.setPinnedYn("N");
+        item.setTitle("배포 공지");
+        item.setContentPreview("<p>점검 안내</p>");
+        item.setCrtDtm(LocalDateTime.of(2026, 6, 1, 12, 0));
+        when(documentService.getDocumentExportList(any(DocumentListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
+                .thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/admin/content/export")
+                        .param("boardType", "NOTICE")
+                        .param("publicYn", "Y")
+                        .param("keyword", "공지"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"contents-")));
+
+        ArgumentCaptor<DocumentListQuery> captor = ArgumentCaptor.forClass(DocumentListQuery.class);
+        verify(documentService).getDocumentExportList(captor.capture(), org.mockito.ArgumentMatchers.eq(1000));
+        assertEquals(Document.BoardType.NOTICE, captor.getValue().boardType());
+        assertEquals(YN.Y, captor.getValue().publicYn());
+        assertEquals("공지", captor.getValue().keyword());
     }
 
     @Test
@@ -195,6 +226,21 @@ class AdminContentRestControllerTest {
                 .andExpect(jsonPath("$.code").value("C001"));
     }
 
+    @Test
+    @DisplayName("콘텐츠 일괄 삭제는 삭제 결과 집계를 반환한다")
+    void bulkDeleteReturnsDeletedCounts() throws Exception {
+        when(documentService.bulkDeleteDocuments(any()))
+                .thenReturn(new DocumentService.BulkDeleteResult(3, 2, 1));
+
+        mockMvc.perform(post("/api/admin/content/bulk-delete")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BulkDeletePayload(List.of(1L, 2L, 3L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.deletedCount").value(2))
+                .andExpect(jsonPath("$.missingCount").value(1));
+    }
+
     private record SavePayload(
             Long id,
             String boardType,
@@ -212,6 +258,11 @@ class AdminContentRestControllerTest {
             String status,
             String publicYn,
             String pinnedYn
+    ) {
+    }
+
+    private record BulkDeletePayload(
+            List<Long> ids
     ) {
     }
 }

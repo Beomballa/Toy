@@ -13,6 +13,7 @@ const CategoryList = {
         depth2List: []
     },
     saveInFlight: false,
+    exportInFlight: false,
     deleteInFlight: new Set(),
 
     init() {
@@ -36,6 +37,7 @@ const CategoryList = {
             this.operationPolicy = settings || await CommonJS.fetchSystemSettings();
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = '유지보수 모드에서는 카테고리 등록, 수정, 삭제가 불가능합니다.';
+            CommonJS.setButtonDisabled(document.getElementById('btnNewRootCategory'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnNewSubCategory'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveCategory'), disabled, reason);
         } catch (error) {
@@ -45,6 +47,7 @@ const CategoryList = {
 
     bindEvents() {
         document.getElementById('btnNewRootCategory')?.addEventListener('click', () => this.openModal(1));
+        document.getElementById('btnExportCategory')?.addEventListener('click', () => this.exportList());
         document.getElementById('btnSearchCategory')?.addEventListener('click', () => this.getDepth1List());
         document.getElementById('btnResetCategory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('categoryPageSize')?.addEventListener('change', () => {
@@ -261,6 +264,24 @@ const CategoryList = {
         paginationEl.querySelectorAll('[data-role="go-category-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
         });
+    },
+
+    async exportList() {
+        if (this.exportInFlight) {
+            return;
+        }
+        this._updateStateFromInputs();
+        try {
+            this.exportInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportCategory'), true, '내보내는 중입니다.');
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            window.location.href = `/api/admin/categories/export?${params.toString()}`;
+        } finally {
+            this.exportInFlight = false;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportCategory'), false);
+        }
     },
 
     setFilterMeta(message) {

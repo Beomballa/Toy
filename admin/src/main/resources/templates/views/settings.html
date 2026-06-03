@@ -82,9 +82,14 @@
                         <h6 class="card-title mb-0">설정 변경 이력</h6>
                         <div class="small text-muted mt-1" id="systemSettingHistoryMetaText">최근 변경 내역을 불러오는 중입니다...</div>
                     </div>
-                    <button class="btn btn-sm btn-outline-secondary" id="btnRefreshSystemHistory">
-                        <i class="fas fa-rotate-right me-1"></i>새로고침
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-success" id="btnExportSystemHistory">
+                            <i class="fas fa-file-csv me-1"></i>CSV 내보내기
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnRefreshSystemHistory">
+                            <i class="fas fa-rotate-right me-1"></i>새로고침
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="row g-3 p-3 border-bottom bg-body-tertiary">
@@ -319,6 +324,7 @@
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
             document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
             document.getElementById('btnRefreshSystemHistory').addEventListener('click', () => this.getSystemSettingHistory());
+            document.getElementById('btnExportSystemHistory').addEventListener('click', () => this.exportSystemSettingHistory());
             document.getElementById('btnSearchSystemHistory').addEventListener('click', () => {
                 this.historyState.page = 0;
                 this.getSystemSettingHistory();
@@ -515,6 +521,12 @@
             params.set('size', String(this.historyState.size));
             return params;
         },
+        buildSystemHistoryExportParams() {
+            const params = this.buildSystemHistoryParams();
+            params.delete('page');
+            params.delete('size');
+            return params;
+        },
         renderSystemSettingHistory(data) {
             const items = data?.items || [];
             const body = document.getElementById('systemSettingHistoryBody');
@@ -668,6 +680,10 @@
             this.historyState.page = 0;
             this.historyState.size = 8;
             this.getSystemSettingHistory();
+        },
+        exportSystemSettingHistory() {
+            const params = this.buildSystemHistoryExportParams();
+            window.location.href = `/api/admin/settings/system/history/export?${params.toString()}`;
         },
         async saveSystemSettings() {
             const lowStockDefaultThreshold = Number(document.getElementById('lowStockDefaultThreshold').value);

@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -130,6 +131,26 @@ class AdminCategoryServiceTest {
         assertEquals(2, category.getDepth());
         assertEquals("러닝 화", category.getName());
         assertEquals("N", category.getIsActive());
+    }
+
+    @Test
+    @DisplayName("카테고리 CSV 내보내기는 현재 필터와 루트 목록을 기록한다")
+    void exportCategoryListCsvIncludesSummaryAndRows() {
+        CategoryListRequest request = new CategoryListRequest();
+        request.setKeyword("신발");
+        request.setIsActive("Y");
+        request.setDepth(1);
+
+        when(categoryRepository.getCategoryList(1, "신발", "Y", PageRequest.of(0, 1000))).thenReturn(new PageImpl<>(
+                List.of(Category.builder().categoryNo(11L).parentNo(null).name("신발").depth(1).isActive("Y").build()),
+                PageRequest.of(0, 1000),
+                1
+        ));
+
+        String csv = new String(adminCategoryService.exportCategoryListCsv(request), UTF_8);
+
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("대분류 기준 · 검색=신발 · 상태=사용"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("\"11\",\"-\",\"신발\",\"1\",\"사용중\""));
     }
 
     @Test

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +23,10 @@ public class DocumentService {
 
     public Page<DocumentListItemDto> getDocumentList(DocumentListQuery query, Pageable pageable) {
         return documentRepository.getDocumentList(query, pageable);
+    }
+
+    public List<DocumentListItemDto> getDocumentExportList(DocumentListQuery query, int limit) {
+        return documentRepository.getDocumentList(query, Pageable.ofSize(limit)).getContent();
     }
 
     public Document getDocument(Long id) {
@@ -79,6 +84,24 @@ public class DocumentService {
         return BulkOperateResult.of(ids.size(), updatedCount);
     }
 
+    @Transactional
+    public BulkDeleteResult bulkDeleteDocuments(Set<Long> ids) {
+        List<Document> documents = documentRepository.findAllById(ids);
+        if (documents.isEmpty()) {
+            throw new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND);
+        }
+
+        documentRepository.deleteAll(documents);
+        Set<Long> deletedIds = documents.stream()
+                .map(Document::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        long missingCount = ids.stream()
+                .filter(id -> !deletedIds.contains(id))
+                .count();
+
+        return new BulkDeleteResult(ids.size(), documents.size(), (int) missingCount);
+    }
+
     public record BulkOperateResult(
             int requestedCount,
             int updatedCount,
@@ -87,5 +110,12 @@ public class DocumentService {
         public static BulkOperateResult of(int requestedCount, int updatedCount) {
             return new BulkOperateResult(requestedCount, updatedCount, requestedCount - updatedCount);
         }
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int missingCount
+    ) {
     }
 }

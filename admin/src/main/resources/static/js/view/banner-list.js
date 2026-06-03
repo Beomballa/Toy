@@ -7,9 +7,13 @@ const BannerList = {
         keyword: '',
         isActive: '',
         exposureStatus: '',
+        bannerNo: '',
+        source: '',
     },
     operationPolicy: null,
     saveInFlight: false,
+    bulkInFlight: false,
+    selectedBannerNos: new Set(),
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
 
@@ -34,6 +38,8 @@ const BannerList = {
             const reason = '유지보수 모드에서는 배너 등록, 수정, 상태 변경, 삭제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnNewBanner'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveBanner'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyBannerBulk'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteBanner'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -45,6 +51,11 @@ const BannerList = {
         });
 
         document.getElementById('btnSaveBanner')?.addEventListener('click', () => this.saveBanner());
+        document.getElementById('btnExportBannerCsv')?.addEventListener('click', () => this.exportCsv());
+        document.getElementById('btnApplyBannerBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDeleteBanner')?.addEventListener('click', () => this.applyBulkDelete());
+        document.getElementById('btnClearBannerSelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('bannerSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
 
         document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBanner')?.addEventListener('click', () => this.resetFilters());
@@ -54,9 +65,20 @@ const BannerList = {
             this.getList();
         });
         document.getElementById('bannerListBody')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-banner"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.bannerNo), checkbox.checked);
+                return;
+            }
             const editButton = event.target.closest('[data-role="edit-banner"]');
             if (editButton) {
                 this.openEditModal(JSON.parse(editButton.dataset.banner));
+                return;
+            }
+
+            const detailButton = event.target.closest('[data-role="open-banner-detail"]');
+            if (detailButton) {
+                this.openBannerDetail(Number(detailButton.dataset.bannerNo), '목록 제목');
                 return;
             }
 
@@ -87,6 +109,8 @@ const BannerList = {
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.exposureStatus = params.get('exposureStatus') || '';
+        this.state.bannerNo = params.get('bannerNo') || '';
+        this.state.source = params.get('source') || '';
         document.getElementById('bannerKeyword').value = this.state.keyword;
         document.getElementById('bannerIsActiveFilter').value = this.state.isActive;
         document.getElementById('bannerExposureStatusFilter').value = this.state.exposureStatus;
@@ -100,6 +124,8 @@ const BannerList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
         if (this.state.exposureStatus) params.set('exposureStatus', this.state.exposureStatus);
+        if (this.state.bannerNo) params.set('bannerNo', this.state.bannerNo);
+        if (this.state.source) params.set('source', this.state.source);
         return params;
     },
 
@@ -118,13 +144,14 @@ const BannerList = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            await this.openDeepLinkedBannerIfNeeded(data.items || []);
         } catch (err) {
             document.getElementById('bannerMetaText').textContent = err.message;
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
             document.getElementById('bannerListBody').innerHTML =
-                `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+                `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('bannerPagination').innerHTML = '';
             this.setListStateMeta('error', err.message, 0, 0, '');
         }
@@ -135,20 +162,24 @@ const BannerList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">등록된 배너가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 배너가 없습니다.</td></tr>';
             this.setListStateMeta('empty', '등록된 배너가 없습니다.', 0, 0, '');
+            this.updateSelectionMeta([]);
             return;
         }
 
         tbody.innerHTML = items.map(item => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox" data-role="select-banner" data-banner-no="${item.bannerNo}" ${this.selectedBannerNos.has(item.bannerNo) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4 text-center fw-bold">${item.sortOrder}</td>
                 <td>
                     <img src="${item.imageUrl}" class="banner-preview-img" alt="banner" 
                          onerror="CommonJS.handleImageError(this)">
                 </td>
                 <td>
-                    <div class="fw-bold text-dark">${item.title}</div>
+                    <button type="button" class="btn btn-link p-0 fw-bold text-dark text-decoration-none" data-role="open-banner-detail" data-banner-no="${item.bannerNo}">${this.escapeHtml(item.title)}</button>
                     <div class="text-muted small">${item.targetUrl || '이동 링크 없음'}</div>
                 </td>
                 <td>
@@ -168,6 +199,7 @@ const BannerList = {
             </tr>
         `).join('');
         this.setListStateMeta('ready', '', items.length, null, null);
+        this.updateSelectionMeta(items);
     },
 
     renderMeta(data) {
@@ -250,12 +282,202 @@ const BannerList = {
         document.getElementById('bannerExposureStatusFilter').value = '';
         document.getElementById('bannerPageSize').value = '10';
         this.state.page = 0;
+        this.state.bannerNo = '';
+        this.state.source = '';
         this.getList();
+    },
+
+    async exportCsv() {
+        try {
+            this._updateStateFromInputs();
+            const params = this.buildParams();
+            const response = await fetch(`/api/admin/banners/export?${params.toString()}`);
+            if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, '배너 CSV 내보내기에 실패했습니다.'));
+            const blob = await response.blob();
+            const disposition = response.headers.get('Content-Disposition') || '';
+            const fileNameMatch = disposition.match(/filename="([^"]+)"/);
+            const fileName = fileNameMatch ? fileNameMatch[1] : 'banners.csv';
+            const objectUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        }
+    },
+
+    toggleSelection(bannerNo, checked) {
+        if (!Number.isFinite(bannerNo) || bannerNo <= 0) {
+            return;
+        }
+        if (checked) {
+            this.selectedBannerNos.add(bannerNo);
+        } else {
+            this.selectedBannerNos.delete(bannerNo);
+        }
+        const items = Array.from(document.querySelectorAll('[data-role="select-banner"]'))
+            .map((checkbox) => ({ bannerNo: Number(checkbox.dataset.bannerNo) }))
+            .filter((item) => Number.isFinite(item.bannerNo));
+        this.updateSelectionMeta(items);
+    },
+
+    toggleSelectCurrentPage(checked) {
+        document.querySelectorAll('[data-role="select-banner"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+            const bannerNo = Number(checkbox.dataset.bannerNo);
+            if (checked) {
+                this.selectedBannerNos.add(bannerNo);
+            } else {
+                this.selectedBannerNos.delete(bannerNo);
+            }
+        });
+        const items = Array.from(document.querySelectorAll('[data-role="select-banner"]'))
+            .map((checkbox) => ({ bannerNo: Number(checkbox.dataset.bannerNo) }))
+            .filter((item) => Number.isFinite(item.bannerNo));
+        this.updateSelectionMeta(items);
+    },
+
+    clearSelection() {
+        this.selectedBannerNos.clear();
+        const selectPage = document.getElementById('bannerSelectPage');
+        if (selectPage) {
+            selectPage.checked = false;
+        }
+        document.querySelectorAll('[data-role="select-banner"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.updateSelectionMeta([]);
+    },
+
+    updateSelectionMeta(items) {
+        const totalSelected = this.selectedBannerNos.size;
+        const visibleBannerNos = new Set((items || []).map((item) => item.bannerNo));
+        const visibleSelected = Array.from(this.selectedBannerNos).filter((bannerNo) => visibleBannerNos.has(bannerNo)).length;
+        const metaEl = document.getElementById('bannerSelectionMeta');
+        if (metaEl) {
+            metaEl.textContent = totalSelected === 0
+                ? '선택된 배너가 없습니다.'
+                : `총 ${totalSelected}건 선택됨 · 현재 페이지 ${visibleSelected}건`;
+        }
+        const selectPage = document.getElementById('bannerSelectPage');
+        if (selectPage) {
+            selectPage.checked = items.length > 0 && visibleSelected === items.length;
+        }
+    },
+
+    async applyBulkOperation() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배너 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedBannerNos.size === 0) {
+            await CommonJS.alert('일괄 변경할 배너를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const isActive = document.getElementById('bulkBannerIsActive').value;
+        if (!isActive) {
+            await CommonJS.alert('적용할 상태를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        try {
+            this.bulkInFlight = true;
+            const response = await fetch('/api/admin/banners/bulk-operate', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bannerNos: Array.from(this.selectedBannerNos),
+                    isActive
+                })
+            });
+            if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, '배너 일괄 변경에 실패했습니다.'));
+            const result = await response.json();
+            await this.getList();
+            await CommonJS.alert(`일괄 상태 변경이 완료되었습니다. 변경 ${result.updatedCount}건 / 유지 ${result.unchangedCount}건`, '성공', 'success');
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
+    async applyBulkDelete() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 배너 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedBannerNos.size === 0) {
+            await CommonJS.alert('삭제할 배너를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm(`선택한 배너 ${this.selectedBannerNos.size}건을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+        try {
+            this.bulkInFlight = true;
+            const response = await fetch('/api/admin/banners/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bannerNos: Array.from(this.selectedBannerNos)
+                })
+            });
+            if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, '배너 일괄 삭제에 실패했습니다.'));
+            const result = await response.json();
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(`일괄 삭제가 완료되었습니다. 삭제 ${result.deletedCount}건`, '성공', 'success');
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
     },
 
     goPage(page) {
         this.state.page = page;
         this.getList();
+    },
+
+    async openDeepLinkedBannerIfNeeded(items) {
+        if (!this.state.bannerNo) {
+            return;
+        }
+        const bannerNo = Number(this.state.bannerNo);
+        const target = items.find((item) => item.bannerNo === bannerNo);
+        if (target) {
+            await this.openEditModal(target);
+        } else if (bannerNo > 0) {
+            await this.openBannerDetail(bannerNo, this.state.source || '딥링크');
+        }
+        this.state.bannerNo = '';
+        const params = this.buildParams();
+        history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+    },
+
+    async openBannerDetail(bannerNo, source = '목록') {
+        try {
+            this.state.bannerNo = String(bannerNo);
+            this.state.source = source;
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+
+            const res = await fetch(`/api/admin/banners/${bannerNo}`);
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 상세를 불러오지 못했습니다.'));
+            await this.openEditModal(await res.json());
+        } catch (err) {
+            await CommonJS.alert(err.message, '오류', 'error');
+        }
     },
 
     async openModal() {
@@ -368,6 +590,7 @@ const BannerList = {
             this.deleteInFlight.add(no);
             const res = await fetch(`/api/admin/banners/delete?no=${no}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다.'));
+            this.selectedBannerNos.delete(no);
             await this.getList();
             await CommonJS.alert('삭제되었습니다.', '성공', 'success');
         } catch (err) {
@@ -382,6 +605,15 @@ const BannerList = {
         this.state.isActive = document.getElementById('bannerIsActiveFilter').value || '';
         this.state.exposureStatus = document.getElementById('bannerExposureStatusFilter').value || '';
         this.state.size = Number(document.getElementById('bannerPageSize').value || 10);
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 };
 

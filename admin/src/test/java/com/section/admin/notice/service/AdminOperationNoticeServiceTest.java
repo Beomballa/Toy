@@ -3,6 +3,7 @@ package com.section.admin.notice.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.notice.req.AdminOperationNoticeBulkDeleteRequest;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
@@ -29,9 +30,11 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,6 +79,33 @@ class AdminOperationNoticeServiceTest {
         assertEquals(4L, response.noticeStats().totalCount());
         assertEquals(2L, response.noticeStats().liveCount());
         assertEquals("검색 문맥 기준", response.noticeStats().contextLabel());
+    }
+
+    @Test
+    @DisplayName("운영 공지 CSV 내보내기는 조회 조건과 공지 제목을 포함한다")
+    void exportNoticeListCsvReturnsCsvBytes() {
+        AdminOperationNoticeListRequest request = new AdminOperationNoticeListRequest();
+        request.setIsActive("Y");
+        request.setVisibilityStatus("LIVE");
+
+        AdminOperationNoticeListResDto row = new AdminOperationNoticeListResDto();
+        row.setNoticeNo(1L);
+        row.setTitle("점검 공지");
+        row.setContent("서비스 점검 안내");
+        row.setIsActive("Y");
+        row.setIsPinned("N");
+        row.setStartDtm(LocalDateTime.of(2026, 6, 1, 8, 0));
+        row.setEndDtm(LocalDateTime.of(2026, 6, 1, 23, 0));
+        row.setCrtDtm(LocalDateTime.of(2026, 5, 31, 18, 0));
+
+        when(adminOperationNoticeRepository.getNoticeList(any(AdminOperationNoticeListQuery.class), eq(PageRequest.of(0, 1000))))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 1000), 1));
+
+        byte[] result = adminOperationNoticeService.exportNoticeListCsv(request);
+        String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(csv.contains("\"조회조건\",\"상태: 활성 | 노출 상태: 노출중\""));
+        assertTrue(csv.contains("\"점검 공지\""));
     }
 
     @Test
@@ -251,5 +281,48 @@ class AdminOperationNoticeServiceTest {
         assertEquals(1, response.recentHistories().size());
         assertEquals("공지 수정", response.recentHistories().get(0).actionLabel());
         verify(adminLogService).getLogList(any(AdminLogListRequest.class), eq(PageRequest.of(0, 5)));
+    }
+
+    @Test
+    @DisplayName("운영 공지 일괄 삭제는 존재하는 항목만 삭제하고 누락 건수를 반환한다")
+    void bulkDeleteReturnsDeletedAndMissingCounts() {
+        AdminOperationNotice first = AdminOperationNotice.builder()
+                .noticeNo(1L)
+                .title("공지1")
+                .content("내용1")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        AdminOperationNotice third = AdminOperationNotice.builder()
+                .noticeNo(3L)
+                .title("공지3")
+                .content("내용3")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        when(adminOperationNoticeRepository.findAllById(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(first, third));
+
+        AdminOperationNoticeService.BulkDeleteResult result = adminOperationNoticeService.bulkDelete(
+                new AdminOperationNoticeBulkDeleteRequest(List.of(1L, 2L, 3L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(2, result.deletedCount());
+        assertEquals(1, result.missingCount());
+        verify(adminOperationNoticeRepository).deleteAll(List.of(first, third));
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_BULK_DELETE", 1L);
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_BULK_DELETE", 3L);
+    }
+
+    @Test
+    @DisplayName("운영 공지 일괄 삭제는 대상이 전부 없으면 예외를 던진다")
+    void bulkDeleteRejectsMissingTargets() {
+        when(adminOperationNoticeRepository.findAllById(List.of(99L))).thenReturn(List.of());
+
+        assertThrows(BusinessException.class, () -> adminOperationNoticeService.bulkDelete(
+                new AdminOperationNoticeBulkDeleteRequest(List.of(99L))
+        ));
+        verify(adminOperationNoticeRepository, never()).deleteAll(any());
     }
 }

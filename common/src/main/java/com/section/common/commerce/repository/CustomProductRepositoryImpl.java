@@ -3,6 +3,7 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -148,10 +149,27 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;
         }
-        return product.nameKo.containsIgnoreCase(searchKeyword)
-                .or(product.modelNum.containsIgnoreCase(searchKeyword))
-                .or(brand.nameKo.containsIgnoreCase(searchKeyword))
-                .or(category.name.containsIgnoreCase(searchKeyword));
+
+        List<String> terms = Arrays.stream(searchKeyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = product.nameKo.containsIgnoreCase(term)
+                    .or(product.modelNum.containsIgnoreCase(term))
+                    .or(brand.nameKo.containsIgnoreCase(term))
+                    .or(category.name.containsIgnoreCase(term));
+
+            String normalizedModelTerm = term.replaceAll("[^A-Za-z0-9]", "");
+            if (!normalizedModelTerm.isBlank()) {
+                termPredicate = termPredicate.or(normalizedModelNum().containsIgnoreCase(normalizedModelTerm));
+            }
+
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+
+        return predicate;
     }
 
     public BooleanExpression categoryNoEq(Long categoryNo) {
@@ -257,15 +275,22 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
         return product.crtDtm.goe(startOfToday);
     }
 
-    public OrderSpecifier<?> orderTypeEq(ProductOrderType orderType) {
+    private StringExpression normalizedModelNum() {
+        return com.querydsl.core.types.dsl.Expressions.stringTemplate(
+                "replace(replace(replace({0}, '-', ''), ' ', ''), '_', '')",
+                product.modelNum
+        );
+    }
+
+    public OrderSpecifier<?>[] orderTypeEq(ProductOrderType orderType) {
         if (orderType == null) {
-            return product.crtDtm.desc();
+            return new OrderSpecifier<?>[]{product.crtDtm.desc(), product.id.desc()};
         }
         return switch (orderType) {
-            case RECENT -> product.crtDtm.desc();
-            case RELEASE_PRICE -> product.releasePrice.desc();
-            case STOCK_COUNT -> productOption.stockCnt.sumLong().desc();
-            default -> product.crtDtm.desc();
+            case RECENT -> new OrderSpecifier<?>[]{product.crtDtm.desc(), product.id.desc()};
+            case RELEASE_PRICE -> new OrderSpecifier<?>[]{product.releasePrice.desc(), product.id.desc()};
+            case STOCK_COUNT -> new OrderSpecifier<?>[]{productOption.stockCnt.sumLong().desc(), product.id.desc()};
+            default -> new OrderSpecifier<?>[]{product.crtDtm.desc(), product.id.desc()};
         };
     }
 }

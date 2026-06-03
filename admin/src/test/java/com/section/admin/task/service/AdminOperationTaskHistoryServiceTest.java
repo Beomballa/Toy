@@ -63,4 +63,23 @@ class AdminOperationTaskHistoryServiceTest {
         assertEquals("상태 변경", response.items().get(0).actionLabel());
         assertEquals("/admin/settings/tasks?page=1", response.appliedQuery().returnTo());
     }
+
+    @Test
+    @DisplayName("운영 작업 이력 CSV 내보내기는 작업 로그 필터를 그대로 전달한다")
+    void exportTaskHistoryCsvDelegatesToLogExport() {
+        when(adminLogService.exportLogListCsv(any(AdminLogListRequest.class)))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        AdminOperationTaskHistoryListRequest request = new AdminOperationTaskHistoryListRequest();
+        request.setTaskNo(9L);
+        request.setActionType(" task_comment_update ");
+
+        byte[] response = adminOperationTaskHistoryService.exportTaskHistoryCsv(request);
+
+        ArgumentCaptor<AdminLogListRequest> requestCaptor = ArgumentCaptor.forClass(AdminLogListRequest.class);
+        verify(adminLogService).exportLogListCsv(requestCaptor.capture());
+        assertEquals(9L, requestCaptor.getValue().getTargetId());
+        assertEquals("TASK_COMMENT_UPDATE", requestCaptor.getValue().getActionType());
+        assertEquals("csv", new String(response, java.nio.charset.StandardCharsets.UTF_8));
+    }
 }

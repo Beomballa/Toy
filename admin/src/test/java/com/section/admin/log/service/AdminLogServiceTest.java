@@ -19,11 +19,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -117,5 +119,28 @@ class AdminLogServiceTest {
         adminLogService.recordCurrentAdminLog("NOTICE_CREATE", 3L);
 
         verify(adminActivityLogRepository).save(any(AdminActivityLog.class));
+    }
+
+    @Test
+    @DisplayName("활동 로그 CSV 내보내기는 필터 메타와 링크 정보를 함께 포함한다")
+    void exportLogListCsvIncludesMetadata() {
+        AdminActivityLogListResDto row = new AdminActivityLogListResDto();
+        row.setLogNo(12L);
+        row.setAdminNo(5L);
+        row.setActionType("NOTICE_UPDATE");
+        row.setTargetId(44L);
+        row.setIpAddress("10.0.0.5");
+        row.setActionDtm(LocalDateTime.of(2026, 6, 3, 12, 0));
+
+        when(adminActivityLogRepository.getLogList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 1000), 1));
+        when(adminUserRepository.findAllById(any()))
+                .thenReturn(List.of(AdminUser.builder().adminNo(5L).name("공지담당").loginId("notice").password("pw").build()));
+
+        byte[] result = adminLogService.exportLogListCsv(new AdminLogListRequest());
+        String csv = new String(result, StandardCharsets.UTF_8);
+
+        assertTrue(csv.contains("로그번호,관리자번호,관리자명,작업종류,대상ID,대상라벨,대상이동경로,IP주소,작업일시"));
+        assertTrue(csv.contains("\"12\",\"5\",\"공지담당\",\"NOTICE_UPDATE\",\"44\",\"운영 공지 #44\",\"/admin/settings/notices?noticeNo=44\",\"10.0.0.5\",\"2026-06-03 12:00:00\""));
     }
 }

@@ -22,9 +22,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -65,6 +67,20 @@ class AdminMemberRestControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(1L))
                 .andExpect(jsonPath("$.pageSize").value(20))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1명"));
+    }
+
+    @Test
+    @DisplayName("회원 CSV 내보내기 API는 첨부 헤더와 본문을 반환한다")
+    void exportReturnsAttachmentResponse() throws Exception {
+        when(adminMemberService.exportMemberListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("csv".getBytes());
+
+        mockMvc.perform(get("/api/admin/members/export").param("keyword", "member"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("members-")));
+
+        verify(adminMemberService).exportMemberListCsv(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

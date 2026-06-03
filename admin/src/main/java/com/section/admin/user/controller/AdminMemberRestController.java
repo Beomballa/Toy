@@ -10,6 +10,7 @@ import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,6 +20,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,6 +35,15 @@ public class AdminMemberRestController {
     @GetMapping("/list")
     public ResponseEntity<AdminMemberListResponse> getList(@ModelAttribute AdminMemberListRequest req, Pageable pageable) {
         return ResponseEntity.ok(adminMemberService.getMemberList(req, pageable));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@ModelAttribute AdminMemberListRequest req) {
+        String fileName = "members-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminMemberService.exportMemberListCsv(req));
     }
 
     @GetMapping("/get")

@@ -109,6 +109,49 @@ class ProductRepositorySearchIntegrationTest {
     }
 
     @Test
+    @DisplayName("상품 목록 검색은 공백 단위 다중 키워드와 모델번호 정규화 검색을 함께 지원한다")
+    void getProductListSupportsTokenizedKeywordAndNormalizedModelSearch() {
+        Brand brandEntity = brandRepository.save(Brand.builder()
+                .nameKo("아식스 퍼포먼스")
+                .nameEn("Asics Performance")
+                .isActive("Y")
+                .build());
+        Category categoryEntity = categoryRepository.save(Category.builder()
+                .name("러닝화")
+                .depth(1)
+                .isActive("Y")
+                .build());
+
+        Product matchedProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("젤 카야노 14")
+                .modelNum("1201A-019")
+                .releasePrice(189000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("젤 님버스 27")
+                .modelNum("1203A-777")
+                .releasePrice(199000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        Page<ProductListResDto> result = productRepository.getProductList(
+                new ProductListQuery(null, null, null, "아식스 카야노 1201A019", ProductOrderType.RECENT, false, null, false),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(matchedProduct.getId(), result.getContent().getFirst().getProductNo());
+    }
+
+    @Test
     @DisplayName("저재고 카드 통계는 빠른 필터와 분리된 기준 QueryDSL을 사용한다")
     void lowStockThresholdAffectsListAndBaseStats() {
         Brand stockBrand = brandRepository.save(Brand.builder()
@@ -204,5 +247,85 @@ class ProductRepositorySearchIntegrationTest {
 
         assertEquals(1, result.getTotalElements());
         assertEquals(childCategoryProduct.getId(), result.getContent().getFirst().getProductNo());
+    }
+
+    @Test
+    @DisplayName("상품 목록 정렬은 동일 값일 때도 최신 상품이 먼저 오도록 안정적으로 유지한다")
+    void productListOrderingStaysStableWhenSortValuesTie() {
+        Brand brandEntity = brandRepository.save(Brand.builder()
+                .nameKo("정렬 테스트 브랜드")
+                .nameEn("Sorting Brand")
+                .isActive("Y")
+                .build());
+        Category categoryEntity = categoryRepository.save(Category.builder()
+                .name("정렬 테스트 카테고리")
+                .depth(1)
+                .isActive("Y")
+                .build());
+
+        Product firstReleasePriceProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("릴리즈 프라이스 A")
+                .modelNum("REL-A")
+                .releasePrice(129000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        Product secondReleasePriceProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("릴리즈 프라이스 B")
+                .modelNum("REL-B")
+                .releasePrice(129000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        Product firstStockProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("재고 A")
+                .modelNum("STOCK-A")
+                .releasePrice(99000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(firstStockProduct.getId())
+                .optionName("260")
+                .stockCnt(12)
+                .additionalPrice(0)
+                .build());
+
+        Product secondStockProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("재고 B")
+                .modelNum("STOCK-B")
+                .releasePrice(99000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(secondStockProduct.getId())
+                .optionName("265")
+                .stockCnt(12)
+                .additionalPrice(0)
+                .build());
+
+        Page<ProductListResDto> releasePriceResult = productRepository.getProductList(
+                new ProductListQuery(null, brandEntity.getBrandNo(), null, "릴리즈 프라이스", ProductOrderType.RELEASE_PRICE, false, null, false),
+                PageRequest.of(0, 10)
+        );
+        Page<ProductListResDto> stockCountResult = productRepository.getProductList(
+                new ProductListQuery(null, brandEntity.getBrandNo(), null, "재고", ProductOrderType.STOCK_COUNT, false, null, false),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(secondReleasePriceProduct.getId(), releasePriceResult.getContent().getFirst().getProductNo());
+        assertEquals(secondStockProduct.getId(), stockCountResult.getContent().getFirst().getProductNo());
+        assertTrue(secondReleasePriceProduct.getId() > firstReleasePriceProduct.getId());
+        assertTrue(secondStockProduct.getId() > firstStockProduct.getId());
     }
 }

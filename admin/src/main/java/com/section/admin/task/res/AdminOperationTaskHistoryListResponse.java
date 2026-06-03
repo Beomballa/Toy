@@ -69,7 +69,9 @@ public record AdminOperationTaskHistoryListResponse(
                 case "TASK_STATUS_UPDATE" -> "상태 변경";
                 case "TASK_BULK_UPDATE" -> "일괄 변경";
                 case "TASK_COMMENT_CREATE" -> "댓글 등록";
+                case "TASK_COMMENT_UPDATE" -> "댓글 수정";
                 case "TASK_COMMENT_DELETE" -> "댓글 삭제";
+                case "TASK_BULK_DELETE" -> "일괄 삭제";
                 case "TASK_DELETE" -> "작업 삭제";
                 default -> actionType == null ? "-" : actionType;
             };

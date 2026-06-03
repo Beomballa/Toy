@@ -65,7 +65,7 @@ public record AdminSystemSettingHistoryListResponse(
             String changedIpAddress,
             String changedAt
     ) {
-        private static Item from(AdminSystemSettingHistoryListResDto item, Map<Long, String> adminNameMap) {
+        public static Item from(AdminSystemSettingHistoryListResDto item, Map<Long, String> adminNameMap) {
             AdminSettingDefinition definition = AdminSettingDefinition.fromKey(item.getSettingKey());
             Long changedAdminNo = item.getCrtNo();
             return new Item(

@@ -20,6 +20,7 @@ import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -109,5 +110,30 @@ class AdminMemberServiceTest {
 
         assertEquals(YN.Y, account.getMasterYn());
         assertEquals(YN.Y, account.getDelYn());
+    }
+
+    @Test
+    @DisplayName("회원 CSV 내보내기는 현재 필터와 회원 행을 기록한다")
+    void exportMemberListCsvIncludesSummaryAndRows() {
+        AdminMemberListRequest request = new AdminMemberListRequest();
+        request.setKeyword("member");
+        request.setMasterYn("Y");
+
+        AccountListResDto row = new AccountListResDto();
+        row.setId(1L);
+        row.setEmail("member@test.com");
+        row.setName("회원");
+        row.setNickname("닉네임");
+        row.setMasterYn(YN.Y);
+        row.setInitYn(YN.N);
+        row.setDelYn(YN.N);
+
+        when(accountRepository.getAccountList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 1000), 1));
+
+        String csv = new String(adminMemberService.exportMemberListCsv(request), UTF_8);
+
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("최신 가입순 · 검색=member · 권한=Y"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("\"1\",\"회원\",\"닉네임\",\"member@test.com\",\"마스터\",\"정상\",\"정상\""));
     }
 }

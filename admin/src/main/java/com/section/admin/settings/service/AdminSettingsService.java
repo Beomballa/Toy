@@ -6,6 +6,8 @@ import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.admin.settings.support.AdminSettingDefinition;
+import com.section.admin.settings.support.AdminSystemSettingHistoryExportCsvWriter;
+import com.section.admin.settings.support.AdminSystemSettingHistoryExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.entity.AdminSystemSetting;
@@ -32,6 +34,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminSettingsService {
+    private static final int SETTING_HISTORY_EXPORT_MAX_SIZE = 1000;
 
     private final AdminSystemSettingRepository adminSystemSettingRepository;
     private final AdminSystemSettingHistoryRepository adminSystemSettingHistoryRepository;
@@ -73,6 +76,28 @@ public class AdminSettingsService {
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
 
         return AdminSystemSettingHistoryListResponse.from(historyPage, adminNameMap, query, summary);
+    }
+
+    public byte[] exportSystemSettingHistoryCsv(AdminSystemSettingHistoryListRequest req) {
+        var query = req.toQuery();
+        Page<AdminSystemSettingHistoryListResDto> historyPage = adminSystemSettingHistoryRepository.getHistoryList(
+                query,
+                PageRequest.of(0, SETTING_HISTORY_EXPORT_MAX_SIZE)
+        );
+        Map<Long, String> adminNameMap = adminUserRepository.findAllById(
+                historyPage.getContent().stream()
+                        .map(AdminSystemSettingHistoryListResDto::getCrtNo)
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList()
+        ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+        var items = historyPage.getContent().stream()
+                .map(item -> AdminSystemSettingHistoryListResponse.Item.from(item, adminNameMap))
+                .toList();
+        return AdminSystemSettingHistoryExportCsvWriter.write(
+                AdminSystemSettingHistoryExportSummary.of(query, java.time.LocalDateTime.now()),
+                items
+        );
     }
 
     public AdminSystemSettingHistoryDetailResponse getSystemSettingHistoryDetail(Long historyNo) {

@@ -3,6 +3,7 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.OrderHistoryOrderType;
@@ -14,6 +15,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QOrderStatusHistory.orderStatusHistory;
@@ -88,17 +90,44 @@ public class CustomOrderStatusHistoryRepositoryImpl implements CustomOrderStatus
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
-        return orderStatusHistory.reason.containsIgnoreCase(keyword)
-                .or(orderStatusHistory.adminMemoSnapshot.containsIgnoreCase(keyword))
-                .or(orderStatusHistory.deliveryCompany.containsIgnoreCase(keyword))
-                .or(orderStatusHistory.trackingNum.containsIgnoreCase(keyword));
+
+        List<String> terms = Arrays.stream(keyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = orderStatusHistory.reason.containsIgnoreCase(term)
+                    .or(orderStatusHistory.adminMemoSnapshot.containsIgnoreCase(term))
+                    .or(orderStatusHistory.deliveryCompany.containsIgnoreCase(term))
+                    .or(orderStatusHistory.trackingNum.containsIgnoreCase(term));
+
+            String digitTerm = term.replaceAll("[^0-9]", "");
+            if (!digitTerm.isBlank()) {
+                termPredicate = termPredicate.or(normalizedTrackingNum().contains(digitTerm));
+            }
+
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+
+        return predicate;
     }
 
     private BooleanExpression actorKeywordLike(String actorKeyword) {
         if (actorKeyword == null || actorKeyword.isBlank()) {
             return null;
         }
-        return adminUser.name.containsIgnoreCase(actorKeyword);
+
+        List<String> terms = Arrays.stream(actorKeyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = adminUser.name.containsIgnoreCase(term);
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+        return predicate;
     }
 
     private BooleanExpression actionDateBetween(java.time.LocalDate startDate, java.time.LocalDate endDate) {
@@ -123,5 +152,12 @@ public class CustomOrderStatusHistoryRepositoryImpl implements CustomOrderStatus
             return orderStatusHistory.id.asc();
         }
         return orderStatusHistory.id.desc();
+    }
+
+    private StringExpression normalizedTrackingNum() {
+        return com.querydsl.core.types.dsl.Expressions.stringTemplate(
+                "replace(replace(replace({0}, '-', ''), ' ', ''), '_', '')",
+                orderStatusHistory.trackingNum
+        );
     }
 }

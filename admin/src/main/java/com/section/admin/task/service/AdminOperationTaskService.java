@@ -4,17 +4,22 @@ import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
+import com.section.admin.task.support.AdminOperationTaskExportCsvWriter;
+import com.section.admin.task.support.AdminOperationTaskExportSummary;
 import com.section.common.base.entity.type.AdminOperationTaskPriority;
 import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
+import com.section.common.system.dto.AdminOperationTaskCommentCountDto;
+import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskSummaryDto;
 import com.section.common.system.entity.AdminOperationTaskComment;
 import com.section.common.system.entity.AdminOperationTask;
@@ -24,18 +29,23 @@ import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminOperationTaskService {
+    private static final int TASK_EXPORT_MAX_SIZE = 1000;
 
     private final AdminOperationTaskRepository adminOperationTaskRepository;
     private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
@@ -48,12 +58,40 @@ public class AdminOperationTaskService {
                 query,
                 PageRequest.of(req.normalizedPage(), req.normalizedSize())
         );
+        Page<com.section.common.system.dto.AdminOperationTaskListResDto> enrichedPage = new PageImpl<>(
+                enrichTaskListRows(page.getContent()),
+                page.getPageable(),
+                page.getTotalElements()
+        );
         AdminOperationTaskSummaryDto summary = adminOperationTaskRepository.getTaskSummary(query, LocalDate.now());
-        return AdminOperationTaskListResponse.of(page, query, summary, getAssigneeOptions(), LocalDate.now());
+        return AdminOperationTaskListResponse.of(enrichedPage, query, summary, getAssigneeOptions(), LocalDate.now());
     }
 
     public List<AdminOperationTask> getDashboardTasks(int limit) {
         return adminOperationTaskRepository.getDashboardTasks(LocalDate.now(), limit);
+    }
+
+    public byte[] exportTaskListCsv(AdminOperationTaskListRequest req) {
+        AdminOperationTaskListQuery query = req.toQuery();
+        Page<com.section.common.system.dto.AdminOperationTaskListResDto> page = adminOperationTaskRepository.getTaskList(
+                query,
+                PageRequest.of(0, TASK_EXPORT_MAX_SIZE)
+        );
+        List<com.section.common.system.dto.AdminOperationTaskListResDto> enrichedRows = enrichTaskListRows(page.getContent());
+        Map<Long, String> assigneeNameMap = adminUserRepository.findAllById(
+                        enrichedRows.stream()
+                                .map(com.section.common.system.dto.AdminOperationTaskListResDto::getAssigneeAdminNo)
+                                .filter(java.util.Objects::nonNull)
+                                .distinct()
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+
+        return AdminOperationTaskExportCsvWriter.write(
+                AdminOperationTaskExportSummary.from(query, assigneeNameMap),
+                enrichedRows,
+                LocalDate.now()
+        );
     }
 
     public AdminOperationTaskDetailResponse getTaskDetail(Long taskNo) {
@@ -87,6 +125,34 @@ public class AdminOperationTaskService {
                 .sorted(Comparator.comparing(AdminUser::getName))
                 .map(admin -> new AdminOperationTaskDetailResponse.AssigneeOption(admin.getAdminNo(), admin.getName()))
                 .toList();
+    }
+
+    private List<com.section.common.system.dto.AdminOperationTaskListResDto> enrichTaskListRows(
+            List<com.section.common.system.dto.AdminOperationTaskListResDto> rows
+    ) {
+        if (rows == null || rows.isEmpty()) {
+            return rows == null ? List.of() : rows;
+        }
+
+        List<Long> taskNos = rows.stream()
+                .map(com.section.common.system.dto.AdminOperationTaskListResDto::getTaskNo)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Map<Long, AdminOperationTaskCommentSummaryDto> latestCommentMap = adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(taskNos)
+                .stream()
+                .collect(Collectors.toMap(AdminOperationTaskCommentSummaryDto::getTaskNo, item -> item));
+        Map<Long, Long> commentCountMap = adminOperationTaskCommentRepository.getCommentCountsByTaskNos(taskNos)
+                .stream()
+                .collect(Collectors.toMap(AdminOperationTaskCommentCountDto::getTaskNo, AdminOperationTaskCommentCountDto::getCommentCount));
+
+        rows.forEach(row -> {
+            AdminOperationTaskCommentSummaryDto latestComment = latestCommentMap.get(row.getTaskNo());
+            row.setLatestCommentContent(latestComment == null ? null : latestComment.getContent());
+            row.setLatestCommentAdminName(latestComment == null ? null : latestComment.getAdminName());
+            row.setLatestCommentDtm(latestComment == null ? null : latestComment.getCrtDtm());
+            row.setCommentCount(commentCountMap.getOrDefault(row.getTaskNo(), 0L));
+        });
+        return rows;
     }
 
     @Transactional
@@ -163,6 +229,18 @@ public class AdminOperationTaskService {
     }
 
     @Transactional
+    public void updateComment(Long taskNo, Long commentNo, AdminOperationTaskCommentSaveRequest req) {
+        getTask(taskNo);
+        AdminOperationTaskComment comment = adminOperationTaskCommentRepository.findById(commentNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+        if (!taskNo.equals(comment.getTaskNo())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        comment.updateContent(normalizeCommentText(req.content(), 2000));
+        adminLogService.recordCurrentAdminLog("TASK_COMMENT_UPDATE", taskNo);
+    }
+
+    @Transactional
     public BulkOperateResult bulkOperate(AdminOperationTaskBulkOperateRequest req) {
         req.validateOperation();
         List<Long> targetTaskNos = req.normalizedTaskNos();
@@ -213,6 +291,28 @@ public class AdminOperationTaskService {
         }
 
         return new BulkOperateResult(targetTaskNos.size(), updatedCount, unchangedCount);
+    }
+
+    @Transactional
+    public BulkDeleteResult bulkDelete(AdminOperationTaskBulkDeleteRequest req) {
+        List<Long> targetTaskNos = req.normalizedTaskNos();
+        List<AdminOperationTask> tasks = adminOperationTaskRepository.findAllById(targetTaskNos);
+        if (tasks.isEmpty()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
+
+        List<Long> existingTaskNos = tasks.stream()
+                .map(AdminOperationTask::getTaskNo)
+                .toList();
+        adminOperationTaskCommentRepository.deleteByTaskNoIn(existingTaskNos);
+        adminOperationTaskRepository.deleteAll(tasks);
+        tasks.forEach(task -> adminLogService.recordCurrentAdminLog("TASK_BULK_DELETE", task.getTaskNo()));
+
+        HashSet<Long> existingTaskNoSet = new HashSet<>(existingTaskNos);
+        long missingCount = targetTaskNos.stream()
+                .filter(taskNo -> !existingTaskNoSet.contains(taskNo))
+                .count();
+        return new BulkDeleteResult(targetTaskNos.size(), tasks.size(), (int) missingCount);
     }
 
     private AdminOperationTask getTask(Long taskNo) {
@@ -299,6 +399,13 @@ public class AdminOperationTaskService {
             int requestedCount,
             int updatedCount,
             int unchangedCount
+    ) {
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int missingCount
     ) {
     }
 }

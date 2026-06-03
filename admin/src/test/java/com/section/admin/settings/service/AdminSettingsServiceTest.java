@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -155,5 +156,32 @@ class AdminSettingsServiceTest {
         assertEquals("운영자", response.changedAdminName());
         assertEquals("비활성", response.beforeValueLabel());
         assertEquals("활성", response.afterValueLabel());
+    }
+
+    @Test
+    @DisplayName("설정 변경 이력 CSV 내보내기는 표시값과 관리자명을 함께 포함한다")
+    void exportSystemSettingHistoryCsvIncludesFormattedValues() {
+        AdminSystemSettingHistoryListRequest request = new AdminSystemSettingHistoryListRequest();
+        AdminSystemSettingHistoryListResDto row = new AdminSystemSettingHistoryListResDto();
+        row.setHistoryNo(13L);
+        row.setSettingKey("ORDER_EXPORT_ENABLED");
+        row.setSettingName("주문 Export 허용");
+        row.setBeforeValue("true");
+        row.setAfterValue("false");
+        row.setChangeSummary("주문 Export 허용이 활성에서 비활성으로 변경되었습니다.");
+        row.setChangedIpAddress("127.0.0.1");
+        row.setCrtNo(2L);
+        row.setCrtDtm(java.time.LocalDateTime.of(2026, 6, 3, 12, 10));
+
+        when(adminSystemSettingHistoryRepository.getHistoryList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row)));
+        when(adminUserRepository.findAllById(List.of(2L)))
+                .thenReturn(List.of(AdminUser.builder().adminNo(2L).name("설정담당").build()));
+
+        byte[] result = adminSettingsService.exportSystemSettingHistoryCsv(request);
+        String csv = new String(result, StandardCharsets.UTF_8);
+
+        assertTrue(csv.contains("이력번호,변경시각,설정키,설정명,변경전(raw),변경후(raw),변경전(표시값),변경후(표시값),변경요약,관리자번호,관리자명,IP주소"));
+        assertTrue(csv.contains("\"13\",\"2026-06-03 12:10\",\"ORDER_EXPORT_ENABLED\",\"주문 Export 허용\",\"true\",\"false\",\"활성\",\"비활성\",\"주문 Export 허용이 활성에서 비활성으로 변경되었습니다.\",\"2\",\"설정담당\",\"127.0.0.1\""));
     }
 }

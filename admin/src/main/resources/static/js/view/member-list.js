@@ -4,6 +4,7 @@ const MemberListPage = {
     selectedMember: null,
     operationPolicy: null,
     detailActionInFlight: false,
+    exportInFlight: false,
     state: {
         page: 0,
         size: 20
@@ -33,6 +34,7 @@ const MemberListPage = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('btnExportMember')?.addEventListener('click', () => this.exportList());
         document.getElementById('btnResetMember')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('memberPageSize')?.addEventListener('change', (event) => {
             this.state.size = Number(event.target.value || 20);
@@ -189,6 +191,23 @@ const MemberListPage = {
         this.state.page = 0;
         this.state.size = 20;
         this.getList();
+    },
+
+    async exportList() {
+        if (this.exportInFlight) {
+            return;
+        }
+        try {
+            this.exportInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportMember'), true, '내보내는 중입니다.');
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            window.location.href = `/api/admin/members/export?${params.toString()}`;
+        } finally {
+            this.exportInFlight = false;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportMember'), false);
+        }
     },
 
     async openDetail(memberId) {

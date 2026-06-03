@@ -11,7 +11,8 @@ const TaskDetailPage = {
     state: {
         taskNo: null,
         returnTo: '/admin/settings/tasks',
-        currentDetail: null
+        currentDetail: null,
+        editingCommentNo: null
     },
 
     init() {
@@ -50,7 +51,13 @@ const TaskDetailPage = {
         document.getElementById('btnTaskDetailToggleStatus')?.addEventListener('click', () => this.toggleStatus());
         document.getElementById('btnTaskDetailDelete')?.addEventListener('click', () => this.deleteTask());
         document.getElementById('btnTaskCommentSave')?.addEventListener('click', () => this.saveComment());
+        document.getElementById('btnTaskCommentCancelEdit')?.addEventListener('click', () => this.resetCommentEditor());
         document.getElementById('taskCommentList')?.addEventListener('click', (event) => {
+            const editButton = event.target.closest('[data-role="edit-task-comment"]');
+            if (editButton) {
+                this.startCommentEdit(Number(editButton.dataset.commentNo));
+                return;
+            }
             const deleteButton = event.target.closest('[data-role="delete-task-comment"]');
             if (deleteButton) {
                 this.deleteComment(Number(deleteButton.dataset.commentNo));
@@ -321,27 +328,36 @@ const TaskDetailPage = {
             return;
         }
 
+        let shouldResetCommentEditor = false;
         try {
             this.isSavingComment = true;
-            this.setBusyButton(document.getElementById('btnTaskCommentSave'), true, '등록 중...');
-            const response = await fetch(`/api/admin/settings/tasks/${this.state.taskNo}/comments`, {
-                method: 'POST',
+            const isEditing = this.state.editingCommentNo != null;
+            this.setBusyButton(document.getElementById('btnTaskCommentSave'), true, isEditing ? '수정 중...' : '등록 중...');
+            const response = await fetch(
+                isEditing
+                    ? `/api/admin/settings/tasks/${this.state.taskNo}/comments/${this.state.editingCommentNo}`
+                    : `/api/admin/settings/tasks/${this.state.taskNo}/comments`,
+                {
+                method: isEditing ? 'PATCH' : 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content })
             });
             if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 저장하지 못했습니다.'));
+                throw new Error(await CommonJS.extractErrorMessage(response, isEditing ? '작업 메모를 수정하지 못했습니다.' : '작업 메모를 저장하지 못했습니다.'));
             }
-            contentEl.value = '';
-            this.setLastActionMeta('save-comment', 'success', '메모 등록');
+            this.setLastActionMeta(isEditing ? 'update-comment' : 'save-comment', 'success', isEditing ? '메모 수정' : '메모 등록');
+            shouldResetCommentEditor = true;
             await this.loadDetail();
-            await CommonJS.alert('작업 메모가 등록되었습니다.', '성공', 'success');
+            await CommonJS.alert(isEditing ? '작업 메모가 수정되었습니다.' : '작업 메모가 등록되었습니다.', '성공', 'success');
         } catch (error) {
-            this.setLastActionMeta('save-comment', 'error', '메모 등록');
+            this.setLastActionMeta(this.state.editingCommentNo != null ? 'update-comment' : 'save-comment', 'error', this.state.editingCommentNo != null ? '메모 수정' : '메모 등록');
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
             this.isSavingComment = false;
             this.setBusyButton(document.getElementById('btnTaskCommentSave'), false);
+            if (shouldResetCommentEditor) {
+                this.resetCommentEditor();
+            }
             await this.applyOperationPolicy(this.operationPolicy);
         }
     },
@@ -355,6 +371,7 @@ const TaskDetailPage = {
         const confirmed = await CommonJS.confirm('작업 메모를 삭제하시겠습니까?', '삭제 확인');
         if (!confirmed) return;
 
+        let shouldResetCommentEditor = false;
         try {
             this.isDeletingComment = true;
             this.setCollectionButtonsDisabled('[data-role="delete-task-comment"]', true);
@@ -365,6 +382,7 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '작업 메모를 삭제하지 못했습니다.'));
             }
             this.setLastActionMeta('delete-comment', 'success', '메모 삭제');
+            shouldResetCommentEditor = true;
             await this.loadDetail();
             await CommonJS.alert('작업 메모가 삭제되었습니다.', '성공', 'success');
         } catch (error) {
@@ -373,6 +391,9 @@ const TaskDetailPage = {
         } finally {
             this.isDeletingComment = false;
             this.setCollectionButtonsDisabled('[data-role="delete-task-comment"]', false);
+            if (shouldResetCommentEditor) {
+                this.resetCommentEditor();
+            }
         }
     },
 
@@ -440,7 +461,10 @@ const TaskDetailPage = {
                         <div class="small text-muted mb-2">${this.escapeHtml(item.crtDtm || '-')}</div>
                         <div class="small text-dark">${this.escapeHtml(item.content || '-').replace(/\n/g, '<br>')}</div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-outline-danger" data-role="delete-task-comment" data-comment-no="${item.commentNo}">삭제</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="edit-task-comment" data-comment-no="${item.commentNo}">수정</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-role="delete-task-comment" data-comment-no="${item.commentNo}">삭제</button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -452,6 +476,49 @@ const TaskDetailPage = {
         }
         if (metaTextEl) {
             metaTextEl.textContent = `최근 메모 ${items.length}건`;
+        }
+    },
+
+    startCommentEdit(commentNo) {
+        const targetComment = this.state.currentDetail?.comments?.find((item) => Number(item.commentNo) === commentNo);
+        if (!targetComment) {
+            return;
+        }
+        this.state.editingCommentNo = commentNo;
+        const contentEl = document.getElementById('taskCommentContent');
+        if (contentEl) {
+            contentEl.value = targetComment.content || '';
+            contentEl.focus();
+        }
+        this.syncCommentEditorState();
+    },
+
+    resetCommentEditor() {
+        this.state.editingCommentNo = null;
+        const contentEl = document.getElementById('taskCommentContent');
+        if (contentEl) {
+            contentEl.value = '';
+        }
+        this.syncCommentEditorState();
+    },
+
+    syncCommentEditorState() {
+        const isEditing = this.state.editingCommentNo != null;
+        const saveButton = document.getElementById('btnTaskCommentSave');
+        const cancelButton = document.getElementById('btnTaskCommentCancelEdit');
+        const metaEl = document.getElementById('taskCommentEditMeta');
+        const inputLabel = document.querySelector('label[for="taskCommentContent"]');
+        if (saveButton) {
+            saveButton.textContent = isEditing ? '메모 수정' : '메모 등록';
+        }
+        if (cancelButton) {
+            cancelButton.classList.toggle('d-none', !isEditing);
+        }
+        if (metaEl) {
+            metaEl.classList.toggle('d-none', !isEditing);
+        }
+        if (inputLabel) {
+            inputLabel.textContent = isEditing ? '메모 수정' : '새 메모';
         }
     },
 
@@ -628,6 +695,8 @@ const TaskDetailPage = {
             'toggle-status:error': '운영 작업 상태 변경에 실패했습니다.',
             'save-comment:success': '작업 메모를 등록했습니다.',
             'save-comment:error': '작업 메모 등록에 실패했습니다.',
+            'update-comment:success': '작업 메모를 수정했습니다.',
+            'update-comment:error': '작업 메모 수정에 실패했습니다.',
             'delete-comment:success': '작업 메모를 삭제했습니다.',
             'delete-comment:error': '작업 메모 삭제에 실패했습니다.',
             'apply-recommendation:success': '추천 담당자 배정을 반영했습니다.',
@@ -637,11 +706,13 @@ const TaskDetailPage = {
             'save-detail:success': 'alert-success',
             'toggle-status:success': 'alert-primary',
             'save-comment:success': 'alert-success',
+            'update-comment:success': 'alert-success',
             'delete-comment:success': 'alert-warning',
             'apply-recommendation:success': 'alert-primary',
             'save-detail:error': 'alert-danger',
             'toggle-status:error': 'alert-danger',
             'save-comment:error': 'alert-danger',
+            'update-comment:error': 'alert-danger',
             'delete-comment:error': 'alert-danger',
             'apply-recommendation:error': 'alert-danger'
         };

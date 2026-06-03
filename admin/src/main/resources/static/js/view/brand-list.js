@@ -9,6 +9,7 @@ const BrandList = {
     },
     operationPolicy: null,
     saveInFlight: false,
+    exportInFlight: false,
     deleteInFlight: new Set(),
 
     init() {
@@ -45,6 +46,7 @@ const BrandList = {
         });
 
         document.getElementById('btnSaveBrand')?.addEventListener('click', () => this.saveBrand());
+        document.getElementById('btnExportBrand')?.addEventListener('click', () => this.exportList());
 
         document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
@@ -240,6 +242,21 @@ const BrandList = {
     goPage(page) {
         this.state.page = page;
         this.getList();
+    },
+
+    async exportList() {
+        if (this.exportInFlight) {
+            return;
+        }
+        this._updateStateFromInputs();
+        try {
+            this.exportInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportBrand'), true, '내보내는 중입니다.');
+            window.location.href = `/api/admin/brands/export?${this.buildParams().toString()}`;
+        } finally {
+            this.exportInFlight = false;
+            CommonJS.setButtonDisabled(document.getElementById('btnExportBrand'), false);
+        }
     },
 
     async openModal(brandNo) {

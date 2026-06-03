@@ -39,6 +39,8 @@ const NoticeList = {
             const reason = CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정');
             CommonJS.setButtonDisabled(document.getElementById('btnNewNotice'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveNotice'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyNoticeBulk'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteNotice'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -49,7 +51,9 @@ const NoticeList = {
         document.getElementById('btnSaveNotice')?.addEventListener('click', () => this.saveNotice());
         document.getElementById('btnSearchNotice')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetNotice')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnExportNoticeCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnApplyNoticeBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDeleteNotice')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearNoticeSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('noticeSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         document.getElementById('noticeStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
@@ -265,6 +269,44 @@ const NoticeList = {
         }
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
         this.renderLastActionNotice();
+    },
+
+    async exportCsv() {
+        const button = document.getElementById('btnExportNoticeCsv');
+        if (button) {
+            button.disabled = true;
+        }
+        try {
+            const response = await fetch(`/api/admin/settings/notices/export?${this.buildParams().toString()}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지 CSV 내보내기에 실패했습니다.'));
+            }
+            const blob = await response.blob();
+            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), 'notices.csv');
+            this.downloadBlob(blob, fileName);
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
+    },
+
+    extractFileName(contentDisposition, fallback) {
+        const matched = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
+        return matched?.[1] || fallback;
+    },
+
+    downloadBlob(blob, fileName) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     },
 
     syncHistoryLink() {
@@ -641,6 +683,46 @@ const NoticeList = {
         }
     },
 
+    async applyBulkDelete() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 일괄 삭제'), '알림', 'warning');
+            return;
+        }
+        if (this.selectedNoticeNos.size === 0) {
+            await CommonJS.alert('삭제할 운영 공지를 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 운영 공지 ${this.selectedNoticeNos.size}건을 삭제하시겠습니까?`, '일괄 삭제 확인');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const res = await fetch('/api/admin/settings/notices/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ noticeNos: Array.from(this.selectedNoticeNos) })
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지 일괄 삭제에 실패했습니다.'));
+
+            const result = await res.json();
+            this.setLastActionMeta('bulk-delete', 'success', '목록 일괄 삭제');
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.missingCount}건은 이미 없었습니다.`, '성공', 'success');
+        } catch (err) {
+            this.setLastActionMeta('bulk-delete', 'error', '목록 일괄 삭제');
+            await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
     setLastActionMeta(action, status, sourceLabel, noticeNo = null) {
         const metaEl = document.getElementById('noticeListStateMeta');
         if (!metaEl) return;
@@ -681,17 +763,21 @@ const NoticeList = {
             'delete-notice:success': `${noticeLabel} 삭제를 반영했습니다.`,
             'delete-notice:error': `${noticeLabel} 삭제에 실패했습니다.`,
             'bulk-operate:success': '선택한 운영 공지 일괄 변경을 반영했습니다.',
-            'bulk-operate:error': '운영 공지 일괄 변경에 실패했습니다.'
+            'bulk-operate:error': '운영 공지 일괄 변경에 실패했습니다.',
+            'bulk-delete:success': '선택한 운영 공지 일괄 삭제를 반영했습니다.',
+            'bulk-delete:error': '운영 공지 일괄 삭제에 실패했습니다.'
         };
         const variants = {
             'save-notice:success': 'alert-success',
             'toggle-active:success': 'alert-primary',
             'delete-notice:success': 'alert-warning',
             'bulk-operate:success': 'alert-primary',
+            'bulk-delete:success': 'alert-warning',
             'save-notice:error': 'alert-danger',
             'toggle-active:error': 'alert-danger',
             'delete-notice:error': 'alert-danger',
-            'bulk-operate:error': 'alert-danger'
+            'bulk-operate:error': 'alert-danger',
+            'bulk-delete:error': 'alert-danger'
         };
 
         const sourceMessage = source ? `${source}에서 실행` : '운영 공지 목록에서 실행';

@@ -19,4 +19,8 @@ public class AdminOperationTaskListResDto {
     private LocalDate dueDate;
     private String isPinned;
     private LocalDateTime crtDtm;
+    private String latestCommentContent;
+    private String latestCommentAdminName;
+    private LocalDateTime latestCommentDtm;
+    private Long commentCount;
 }

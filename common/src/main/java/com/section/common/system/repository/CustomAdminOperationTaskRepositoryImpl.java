@@ -1,10 +1,12 @@
 package com.section.common.system.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
@@ -19,9 +21,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.section.common.system.entity.QAdminOperationTask.adminOperationTask;
+import static com.section.common.system.entity.QAdminOperationTaskComment.adminOperationTaskComment;
 import static com.section.common.system.entity.QAdminUser.adminUser;
 
 public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperationTaskRepository {
@@ -57,13 +61,12 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         assigneeEq(query.assigneeAdminNo()),
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
-                        overdue(query.overdueOnly(), LocalDate.now())
+                        commented(query.commentedOnly()),
+                        overdue(query.overdueOnly(), LocalDate.now()),
+                        dueDateOnOrAfter(query.dueDateFrom()),
+                        dueDateOnOrBefore(query.dueDateTo())
                 )
-                .orderBy(
-                        adminOperationTask.isPinned.desc(),
-                        adminOperationTask.dueDate.asc().nullsLast(),
-                        adminOperationTask.taskNo.desc()
-                )
+                .orderBy(resolveOrderSpecifiers(query.sortBy()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -78,7 +81,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         assigneeEq(query.assigneeAdminNo()),
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
-                        overdue(query.overdueOnly(), LocalDate.now())
+                        commented(query.commentedOnly()),
+                        overdue(query.overdueOnly(), LocalDate.now()),
+                        dueDateOnOrAfter(query.dueDateFrom()),
+                        dueDateOnOrBefore(query.dueDateTo())
                 )
                 .fetchOne();
 
@@ -330,7 +336,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         assigneeEq(query.assigneeAdminNo()),
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
-                        overdue(overdueOnly, today)
+                        commented(query.commentedOnly()),
+                        overdue(overdueOnly, today),
+                        dueDateOnOrAfter(query.dueDateFrom()),
+                        dueDateOnOrBefore(query.dueDateTo())
                 )
                 .fetchOne();
         return count == null ? 0L : count;
@@ -349,8 +358,11 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         isPinnedEq(query.isPinned()),
+                        commented(query.commentedOnly()),
                         adminOperationTask.assigneeAdminNo.isNull(),
-                        overdue(query.overdueOnly(), today)
+                        overdue(query.overdueOnly(), today),
+                        dueDateOnOrAfter(query.dueDateFrom()),
+                        dueDateOnOrBefore(query.dueDateTo())
                 )
                 .fetchOne();
         return count == null ? 0L : count;
@@ -396,6 +408,16 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         return adminOperationTask.assigneeAdminNo.isNull();
     }
 
+    private BooleanExpression commented(String commentedOnly) {
+        if (!"Y".equalsIgnoreCase(commentedOnly)) {
+            return null;
+        }
+        return JPAExpressions.selectOne()
+                .from(adminOperationTaskComment)
+                .where(adminOperationTaskComment.taskNo.eq(adminOperationTask.taskNo))
+                .exists();
+    }
+
     private BooleanExpression overdue(String overdueOnly, LocalDate today) {
         if (!"Y".equalsIgnoreCase(overdueOnly)) {
             return null;
@@ -403,6 +425,46 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         return adminOperationTask.dueDate.isNotNull()
                 .and(adminOperationTask.dueDate.lt(today))
                 .and(adminOperationTask.status.ne("DONE"));
+    }
+
+    private BooleanExpression dueDateOnOrAfter(LocalDate dueDateFrom) {
+        return dueDateFrom == null ? null : adminOperationTask.dueDate.goe(dueDateFrom);
+    }
+
+    private BooleanExpression dueDateOnOrBefore(LocalDate dueDateTo) {
+        return dueDateTo == null ? null : adminOperationTask.dueDate.loe(dueDateTo);
+    }
+
+    private OrderSpecifier<?>[] resolveOrderSpecifiers(String sortBy) {
+        String normalizedSort = sortBy == null || sortBy.isBlank() ? "PINNED_DUE" : sortBy.trim().toUpperCase();
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+
+        switch (normalizedSort) {
+            case "DUE_DATE_DESC" -> {
+                orderSpecifiers.add(adminOperationTask.dueDate.desc().nullsLast());
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+            }
+            case "PRIORITY_DESC" -> {
+                NumberExpression<Integer> priorityRank = new CaseBuilder()
+                        .when(adminOperationTask.priority.eq("HIGH")).then(0)
+                        .when(adminOperationTask.priority.eq("MEDIUM")).then(1)
+                        .otherwise(2);
+                orderSpecifiers.add(priorityRank.asc());
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+                orderSpecifiers.add(adminOperationTask.dueDate.asc().nullsLast());
+            }
+            case "CREATED_DESC" -> {
+                orderSpecifiers.add(adminOperationTask.crtDtm.desc());
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+            }
+            default -> {
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+                orderSpecifiers.add(adminOperationTask.dueDate.asc().nullsLast());
+            }
+        }
+
+        orderSpecifiers.add(adminOperationTask.taskNo.desc());
+        return orderSpecifiers.toArray(new OrderSpecifier[0]);
     }
 
     private NumberExpression<Long> sumTodoCount() {

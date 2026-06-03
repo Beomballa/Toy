@@ -3,11 +3,14 @@ package com.section.admin.notice.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
+import com.section.admin.notice.req.AdminOperationNoticeBulkDeleteRequest;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeListRequest;
 import com.section.admin.notice.req.AdminOperationNoticeSaveRequest;
 import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
 import com.section.admin.notice.res.AdminOperationNoticeListResponse;
+import com.section.admin.notice.support.AdminOperationNoticeExportCsvWriter;
+import com.section.admin.notice.support.AdminOperationNoticeExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
@@ -21,12 +24,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminOperationNoticeService {
+    private static final int NOTICE_EXPORT_MAX_SIZE = 1000;
 
     private final AdminOperationNoticeRepository adminOperationNoticeRepository;
     private final AdminLogService adminLogService;
@@ -55,6 +61,19 @@ public class AdminOperationNoticeService {
         AdminLogListResponse recentLogs = adminLogService.getLogList(request, PageRequest.of(0, 5));
 
         return AdminOperationNoticeDetailResponse.from(notice, recentLogs.items());
+    }
+
+    public byte[] exportNoticeListCsv(AdminOperationNoticeListRequest req) {
+        AdminOperationNoticeListQuery query = req.toQuery();
+        Page<com.section.common.system.dto.AdminOperationNoticeListResDto> page = adminOperationNoticeRepository.getNoticeList(
+                query,
+                PageRequest.of(0, NOTICE_EXPORT_MAX_SIZE)
+        );
+        return AdminOperationNoticeExportCsvWriter.write(
+                AdminOperationNoticeExportSummary.from(query),
+                page.getContent(),
+                LocalDateTime.now()
+        );
     }
 
     @Transactional
@@ -98,6 +117,26 @@ public class AdminOperationNoticeService {
         }
 
         return new BulkOperateResult(targetNoticeNos.size(), updatedCount, unchangedCount);
+    }
+
+    @Transactional
+    public BulkDeleteResult bulkDelete(AdminOperationNoticeBulkDeleteRequest req) {
+        List<Long> targetNoticeNos = req.normalizedNoticeNos();
+        List<AdminOperationNotice> notices = adminOperationNoticeRepository.findAllById(targetNoticeNos);
+        if (notices.isEmpty()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
+        }
+
+        adminOperationNoticeRepository.deleteAll(notices);
+        notices.forEach(notice -> adminLogService.recordCurrentAdminLog("NOTICE_BULK_DELETE", notice.getNoticeNo()));
+
+        Set<Long> deletedIds = new HashSet<>();
+        notices.forEach(notice -> deletedIds.add(notice.getNoticeNo()));
+        long missingCount = targetNoticeNos.stream()
+                .filter(noticeNo -> !deletedIds.contains(noticeNo))
+                .count();
+
+        return new BulkDeleteResult(targetNoticeNos.size(), notices.size(), (int) missingCount);
     }
 
     @Transactional
@@ -174,6 +213,13 @@ public class AdminOperationNoticeService {
             int requestedCount,
             int updatedCount,
             int unchangedCount
+    ) {
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int missingCount
     ) {
     }
 }

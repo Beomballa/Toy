@@ -3,6 +3,8 @@ package com.section.admin.log.service;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogDetailResponse;
 import com.section.admin.log.res.AdminLogListResponse;
+import com.section.admin.log.support.AdminLogExportCsvWriter;
+import com.section.admin.log.support.AdminLogExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminActivityLogListQuery;
@@ -15,6 +17,7 @@ import com.section.common.system.repository.AdminUserRepository;
 import com.section.common.system.support.AdminRequestContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminLogService {
+    private static final int LOG_EXPORT_MAX_SIZE = 1000;
 
     private final AdminActivityLogRepository logRepository;
     private final AdminUserRepository adminUserRepository;
@@ -63,6 +67,18 @@ public class AdminLogService {
                 page.getContent().stream().map(AdminActivityLogListResDto::getAdminNo).distinct().toList()
         ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
         return AdminLogListResponse.of(page, query, adminNameMap, summary);
+    }
+
+    public byte[] exportLogListCsv(AdminLogListRequest req) {
+        AdminActivityLogListQuery query = req.toQuery();
+        Page<AdminActivityLogListResDto> page = logRepository.getLogList(query, PageRequest.of(0, LOG_EXPORT_MAX_SIZE));
+        Map<Long, String> adminNameMap = adminUserRepository.findAllById(
+                page.getContent().stream().map(AdminActivityLogListResDto::getAdminNo).distinct().toList()
+        ).stream().collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
+        var items = page.getContent().stream()
+                .map(item -> AdminLogListResponse.Item.from(item, adminNameMap.getOrDefault(item.getAdminNo(), "관리자#" + item.getAdminNo())))
+                .toList();
+        return AdminLogExportCsvWriter.write(AdminLogExportSummary.of(query, java.time.LocalDateTime.now()), items);
     }
 
     public AdminLogDetailResponse getLogDetail(Long logNo) {

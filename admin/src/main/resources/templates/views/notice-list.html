@@ -27,6 +27,7 @@
             <h1 class="page-title">운영 공지</h1>
             <div class="d-flex gap-2">
                 <a class="btn btn-outline-secondary" id="btnNoticeHistory" href="/admin/settings/notices/history"><i class="fas fa-clock-rotate-left me-2"></i>이력 보기</a>
+                <button type="button" class="btn btn-outline-dark" id="btnExportNoticeCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
                 <button type="button" class="btn btn-primary" id="btnNewNotice"><i class="fas fa-plus me-2"></i>신규 공지 등록</button>
             </div>
         </div>
@@ -160,6 +161,7 @@
                 </div>
                 <div class="col-md-2 d-grid gap-2">
                     <button type="button" class="btn btn-outline-dark" id="btnApplyNoticeBulk">일괄 적용</button>
+                    <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteNotice">일괄 삭제</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnClearNoticeSelection">선택 해제</button>
                 </div>
             </div>

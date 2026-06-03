@@ -10,9 +10,12 @@ import com.section.admin.category.service.AdminCategoryService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -26,6 +29,15 @@ public class AdminCategoryRestController {
     @GetMapping("/list")
     public ResponseEntity<CategoryListResponse> getList(@ModelAttribute CategoryListRequest req) {
         return ResponseEntity.ok(adminCategoryService.getCategoryListByDepth(req));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@ModelAttribute CategoryListRequest req) {
+        String fileName = "categories-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminCategoryService.exportCategoryListCsv(req));
     }
 
     @GetMapping("/sub")

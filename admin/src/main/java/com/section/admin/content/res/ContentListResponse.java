@@ -1,5 +1,6 @@
 package com.section.admin.content.res;
 
+import com.section.admin.content.support.ContentPreviewSanitizer;
 import com.section.common.content.dto.DocumentListItemDto;
 import org.springframework.data.domain.Page;
 
@@ -47,11 +48,10 @@ public record ContentListResponse(
     }
 
     private static String buildPreview(String content) {
-        if (content == null || content.isBlank()) {
+        String normalized = ContentPreviewSanitizer.sanitize(content);
+        if (normalized.isBlank()) {
             return "내용 미리보기가 없습니다.";
         }
-
-        String normalized = content.replaceAll("\\s+", " ").trim();
         if (normalized.length() <= 88) {
             return normalized;
         }

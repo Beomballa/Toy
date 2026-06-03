@@ -22,11 +22,13 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,6 +70,20 @@ class AdminBrandRestControllerTest {
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
                 .andExpect(jsonPath("$.pageSize").value(10))
                 .andExpect(jsonPath("$.totalElements").value(1L));
+    }
+
+    @Test
+    @DisplayName("브랜드 CSV 내보내기 API는 첨부 헤더와 본문을 반환한다")
+    void exportReturnsAttachmentResponse() throws Exception {
+        when(adminBrandService.exportBrandListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("csv".getBytes());
+
+        mockMvc.perform(get("/api/admin/brands/export").param("keyword", "나이키"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("brands-")));
+
+        verify(adminBrandService).exportBrandListCsv(org.mockito.ArgumentMatchers.any());
     }
 
     @Test

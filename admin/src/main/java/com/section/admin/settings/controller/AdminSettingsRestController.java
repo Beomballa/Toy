@@ -9,8 +9,12 @@ import com.section.admin.settings.res.AdminSystemSettingResponse;
 import com.section.admin.settings.service.AdminSettingsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -31,6 +35,15 @@ public class AdminSettingsRestController {
             @RequestParam(required = false) Integer size
     ) {
         return ResponseEntity.ok(adminSettingsService.getSystemSettingHistory(req, page, size));
+    }
+
+    @GetMapping("/system/history/export")
+    public ResponseEntity<byte[]> exportSystemSettingHistory(AdminSystemSettingHistoryListRequest req) {
+        String fileName = "system-setting-history-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminSettingsService.exportSystemSettingHistoryCsv(req));
     }
 
     @GetMapping("/system/history/get")

@@ -3,6 +3,7 @@ package com.section.common.system.repository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.system.dto.AdminOperationTaskCommentCountDto;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadCommentSummaryDto;
@@ -73,6 +74,24 @@ public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdmi
                         )
                 )
                 .orderBy(adminOperationTaskComment.commentNo.desc())
+                .fetch();
+    }
+
+    @Override
+    public List<AdminOperationTaskCommentCountDto> getCommentCountsByTaskNos(List<Long> taskNos) {
+        if (taskNos == null || taskNos.isEmpty()) {
+            return List.of();
+        }
+
+        return queryFactory
+                .select(Projections.bean(
+                        AdminOperationTaskCommentCountDto.class,
+                        adminOperationTaskComment.taskNo,
+                        adminOperationTaskComment.count().as("commentCount")
+                ))
+                .from(adminOperationTaskComment)
+                .where(adminOperationTaskComment.taskNo.in(taskNos))
+                .groupBy(adminOperationTaskComment.taskNo)
                 .fetch();
     }
 

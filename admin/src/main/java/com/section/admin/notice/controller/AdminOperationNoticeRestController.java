@@ -1,6 +1,7 @@
 package com.section.admin.notice.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.notice.req.AdminOperationNoticeBulkDeleteRequest;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.req.AdminOperationNoticeHistoryListRequest;
 import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
@@ -14,8 +15,12 @@ import com.section.admin.notice.service.AdminOperationNoticeService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -29,6 +34,15 @@ public class AdminOperationNoticeRestController {
     @GetMapping("/list")
     public ResponseEntity<AdminOperationNoticeListResponse> getList(@ModelAttribute AdminOperationNoticeListRequest req) {
         return ResponseEntity.ok(adminOperationNoticeService.getNoticeList(req));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@ModelAttribute AdminOperationNoticeListRequest req) {
+        String fileName = "notices-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOperationNoticeService.exportNoticeListCsv(req));
     }
 
     @GetMapping("/history/list")
@@ -69,5 +83,11 @@ public class AdminOperationNoticeRestController {
     public ResponseEntity<AdminOperationNoticeService.BulkOperateResult> bulkOperate(@RequestBody AdminOperationNoticeBulkOperateRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         return ResponseEntity.ok(adminOperationNoticeService.bulkOperate(req));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<AdminOperationNoticeService.BulkDeleteResult> bulkDelete(@RequestBody AdminOperationNoticeBulkDeleteRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationNoticeService.bulkDelete(req));
     }
 }

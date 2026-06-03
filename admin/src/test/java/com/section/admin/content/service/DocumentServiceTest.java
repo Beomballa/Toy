@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.common.base.entity.type.YN;
+import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.content.service.DocumentService;
@@ -10,12 +11,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,5 +144,40 @@ class DocumentServiceTest {
         documentService.deleteDocument(9L);
 
         verify(documentRepository).delete(argThat(item -> item.getId().equals(9L)));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 CSV 조회는 첫 페이지 기준 제한 건수만 가져온다")
+    void getDocumentExportListUsesFirstPageLimit() {
+        DocumentListItemDto item = new DocumentListItemDto();
+        item.setId(1L);
+        when(documentRepository.getDocumentList(any(), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(item)));
+
+        var result = documentService.getDocumentExportList(
+                new com.section.common.content.dto.DocumentListQuery(Document.BoardType.NOTICE, null, null, null, null, null, null),
+                500
+        );
+
+        assertEquals(1, result.size());
+        verify(documentRepository).getDocumentList(any(), argThat(pageable -> pageable.getPageNumber() == 0 && pageable.getPageSize() == 500));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 일괄 삭제는 존재하는 문서만 삭제하고 누락 건수를 반환한다")
+    void bulkDeleteDocumentsReturnsDeletedAndMissingCounts() {
+        Document first = new Document();
+        first.setId(1L);
+        Document third = new Document();
+        third.setId(3L);
+
+        when(documentRepository.findAllById(Set.of(1L, 2L, 3L))).thenReturn(List.of(first, third));
+
+        DocumentService.BulkDeleteResult result = documentService.bulkDeleteDocuments(Set.of(1L, 2L, 3L));
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(2, result.deletedCount());
+        assertEquals(1, result.missingCount());
+        verify(documentRepository).deleteAll(List.of(first, third));
     }
 }

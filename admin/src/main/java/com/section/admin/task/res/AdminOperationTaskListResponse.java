@@ -38,7 +38,19 @@ public record AdminOperationTaskListResponse(
                 page.getSize(),
                 TaskStats.from(summary, query.toStatsQuery()),
                 assigneeOptions,
-                new AppliedQuery(query.keyword(), query.status(), query.priority(), query.assigneeAdminNo(), query.isPinned(), query.overdueOnly(), query.unassignedOnly()),
+                new AppliedQuery(
+                        query.keyword(),
+                        query.status(),
+                        query.priority(),
+                        query.assigneeAdminNo(),
+                        query.isPinned(),
+                        query.overdueOnly(),
+                        query.unassignedOnly(),
+                        query.commentedOnly(),
+                        query.sortBy(),
+                        formatDate(query.dueDateFrom()),
+                        formatDate(query.dueDateTo())
+                ),
                 ResultMeta.from(page, query)
         );
     }
@@ -56,6 +68,9 @@ public record AdminOperationTaskListResponse(
             String dueDate,
             String dueState,
             String isPinned,
+            Long commentCount,
+            String latestCommentPreview,
+            String latestCommentMeta,
             String crtDtm,
             String historyPath,
             String historyLabel,
@@ -76,6 +91,9 @@ public record AdminOperationTaskListResponse(
                     item.getDueDate() == null ? "-" : item.getDueDate().toString(),
                     resolveDueState(item, today),
                     item.getIsPinned(),
+                    item.getCommentCount() == null ? 0L : item.getCommentCount(),
+                    summarizeComment(item.getLatestCommentContent()),
+                    formatCommentMeta(item),
                     format(item.getCrtDtm()),
                     "/admin/settings/tasks/history?taskNo=" + item.getTaskNo(),
                     "이력",
@@ -102,6 +120,24 @@ public record AdminOperationTaskListResponse(
 
         private static String format(LocalDateTime value) {
             return value == null ? "-" : value.toString().replace('T', ' ');
+        }
+
+        private static String summarizeComment(String content) {
+            if (content == null || content.isBlank()) {
+                return null;
+            }
+            String normalized = content.trim().replaceAll("\\s+", " ");
+            return normalized.length() > 80 ? normalized.substring(0, 80) + "..." : normalized;
+        }
+
+        private static String formatCommentMeta(AdminOperationTaskListResDto item) {
+            if (item.getLatestCommentDtm() == null && (item.getLatestCommentAdminName() == null || item.getLatestCommentAdminName().isBlank())) {
+                return null;
+            }
+            String adminName = item.getLatestCommentAdminName() == null || item.getLatestCommentAdminName().isBlank()
+                    ? "관리자"
+                    : item.getLatestCommentAdminName();
+            return adminName + " · " + format(item.getLatestCommentDtm());
         }
     }
 
@@ -131,6 +167,10 @@ public record AdminOperationTaskListResponse(
                     && query.assigneeAdminNo() == null
                     && query.isPinned() == null
                     && query.unassignedOnly() == null
+                    && query.commentedOnly() == null
+                    && query.dueDateFrom() == null
+                    && query.dueDateTo() == null
+                    && (query.sortBy() == null || "PINNED_DUE".equalsIgnoreCase(query.sortBy()))
                     ? "기본 문맥 기준"
                     : "탐색 문맥 기준";
         }
@@ -151,6 +191,16 @@ public record AdminOperationTaskListResponse(
             if ("Y".equalsIgnoreCase(query.unassignedOnly())) {
                 builder.append(" · 미지정만");
             }
+            if ("Y".equalsIgnoreCase(query.commentedOnly())) {
+                builder.append(" · 메모있는 작업만");
+            }
+            if (query.dueDateFrom() != null || query.dueDateTo() != null) {
+                builder.append(" · 기한=");
+                builder.append(query.dueDateFrom() == null ? "시작없음" : query.dueDateFrom());
+                builder.append("~");
+                builder.append(query.dueDateTo() == null ? "종료없음" : query.dueDateTo());
+            }
+            builder.append(" · 정렬=").append(resolveSortLabel(query.sortBy()));
             return builder.toString();
         }
     }
@@ -168,7 +218,11 @@ public record AdminOperationTaskListResponse(
             Long assigneeAdminNo,
             String isPinned,
             String overdueOnly,
-            String unassignedOnly
+            String unassignedOnly,
+            String commentedOnly,
+            String sortBy,
+            String dueDateFrom,
+            String dueDateTo
     ) {
     }
 
@@ -210,6 +264,9 @@ public record AdminOperationTaskListResponse(
             if (query.isPinned() != null) count++;
             if (query.overdueOnly() != null) count++;
             if (query.unassignedOnly() != null) count++;
+            if (query.commentedOnly() != null) count++;
+            if (query.dueDateFrom() != null) count++;
+            if (query.dueDateTo() != null) count++;
             return count;
         }
 
@@ -223,7 +280,31 @@ public record AdminOperationTaskListResponse(
             if ("N".equalsIgnoreCase(query.isPinned())) builder.append(" · 일반만");
             if ("Y".equalsIgnoreCase(query.overdueOnly())) builder.append(" · 기한초과만");
             if ("Y".equalsIgnoreCase(query.unassignedOnly())) builder.append(" · 미지정만");
+            if ("Y".equalsIgnoreCase(query.commentedOnly())) builder.append(" · 메모있는 작업만");
+            if (query.dueDateFrom() != null || query.dueDateTo() != null) {
+                builder.append(" · 기한=");
+                builder.append(query.dueDateFrom() == null ? "시작없음" : query.dueDateFrom());
+                builder.append("~");
+                builder.append(query.dueDateTo() == null ? "종료없음" : query.dueDateTo());
+            }
+            builder.append(" · 정렬=").append(resolveSortLabel(query.sortBy()));
             return builder.toString();
         }
+    }
+
+    private static String formatDate(LocalDate value) {
+        return value == null ? null : value.toString();
+    }
+
+    private static String resolveSortLabel(String sortBy) {
+        if (sortBy == null || sortBy.isBlank() || "PINNED_DUE".equalsIgnoreCase(sortBy)) {
+            return "고정 우선 · 마감 임박 순";
+        }
+        return switch (sortBy.toUpperCase()) {
+            case "DUE_DATE_DESC" -> "마감일 늦은 순";
+            case "PRIORITY_DESC" -> "우선순위 높은 순";
+            case "CREATED_DESC" -> "최근 등록 순";
+            default -> "고정 우선 · 마감 임박 순";
+        };
     }
 }

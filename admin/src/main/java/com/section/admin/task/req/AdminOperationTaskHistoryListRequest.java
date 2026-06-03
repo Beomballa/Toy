@@ -20,7 +20,9 @@ public class AdminOperationTaskHistoryListRequest {
             "TASK_STATUS_UPDATE",
             "TASK_BULK_UPDATE",
             "TASK_COMMENT_CREATE",
+            "TASK_COMMENT_UPDATE",
             "TASK_COMMENT_DELETE",
+            "TASK_BULK_DELETE",
             "TASK_DELETE"
     );
 
@@ -82,7 +84,7 @@ public class AdminOperationTaskHistoryListRequest {
         if (actionType == null) {
             return "TASK_";
         }
-        String normalized = actionType.trim().replaceAll("\\s+", " ");
+        String normalized = actionType.trim().replaceAll("\\s+", " ").toUpperCase();
         return normalized.isBlank() ? "TASK_" : normalized;
     }
 }

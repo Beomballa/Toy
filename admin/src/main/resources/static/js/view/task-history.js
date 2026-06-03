@@ -23,6 +23,7 @@ const TaskHistoryPage = {
             this.loadHistory();
         });
         document.getElementById('btnResetTaskHistory')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnExportTaskHistoryCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('taskHistoryPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
             this.state.size = Number(document.getElementById('taskHistoryPageSize')?.value || 20);
@@ -261,6 +262,33 @@ const TaskHistoryPage = {
         this.loadHistory();
     },
 
+    async exportCsv() {
+        const button = document.getElementById('btnExportTaskHistoryCsv');
+        if (button) {
+            button.disabled = true;
+        }
+        try {
+            const startDate = document.getElementById('taskHistoryStartDate')?.value || '';
+            const endDate = document.getElementById('taskHistoryEndDate')?.value || '';
+            if (startDate && endDate && startDate > endDate) {
+                throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+            }
+            const response = await fetch(`/api/admin/settings/tasks/history/export?${this.buildParams().toString()}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 이력 CSV 내보내기에 실패했습니다.'));
+            }
+            const blob = await response.blob();
+            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), 'task-history.csv');
+            this.downloadBlob(blob, fileName);
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
+    },
+
     resetFilters() {
         document.getElementById('taskHistoryTaskNo').value = '';
         document.getElementById('taskHistoryActionType').value = 'TASK_';
@@ -339,6 +367,22 @@ const TaskHistoryPage = {
             logButton.href = logPath || '#';
             logButton.classList.toggle('d-none', !logPath);
         }
+    },
+
+    extractFileName(contentDisposition, fallback) {
+        const matched = /filename=\"?([^"]+)\"?/i.exec(contentDisposition || '');
+        return matched?.[1] || fallback;
+    },
+
+    downloadBlob(blob, fileName) {
+        const url = window.URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        window.URL.revokeObjectURL(url);
     }
 };
 

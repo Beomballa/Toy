@@ -2,9 +2,12 @@ package com.section.admin.content.controller;
 
 import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.req.ContentBulkOperateRequest;
+import com.section.admin.content.req.ContentBulkDeleteRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
+import com.section.admin.content.support.ContentExportCsvWriter;
+import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
@@ -16,17 +19,20 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/content")
 public class AdminContentRestController {
+    private static final int CONTENT_EXPORT_MAX_SIZE = 1000;
 
     private final DocumentService documentService;
     private final AdminOperationPolicyService adminOperationPolicyService;
@@ -42,23 +48,31 @@ public class AdminContentRestController {
             @RequestParam(value = "endDate", required = false) String endDate,
             @PageableDefault(size = 9) Pageable pageable
     ) {
-        LocalDateTime startDateTime = parseStartDate(startDate);
-        LocalDateTime endDateTime = parseEndDate(endDate);
-        if (startDateTime != null && endDateTime != null && startDateTime.isAfter(endDateTime)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
-
+        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, startDate, endDate);
         return ResponseEntity.ok(ContentListResponse.of(
-                documentService.getDocumentList(new DocumentListQuery(
-                        parseBoardType(boardType),
-                        keyword,
-                        parseStatus(status),
-                        parseYn(publicYn),
-                        pinnedOnly,
-                        startDateTime,
-                        endDateTime
-                ), pageable)
+                documentService.getDocumentList(query, pageable)
         ));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(
+            @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "publicYn", required = false) String publicYn,
+            @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate
+    ) {
+        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, startDate, endDate);
+        String fileName = "contents-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(ContentExportCsvWriter.write(
+                        ContentExportSummary.from(query),
+                        documentService.getDocumentExportList(query, CONTENT_EXPORT_MAX_SIZE)
+                ));
     }
 
     @GetMapping("/get")
@@ -97,6 +111,12 @@ public class AdminContentRestController {
                 request.normalizedPublicYn(),
                 request.normalizedPinnedYn()
         ));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<DocumentService.BulkDeleteResult> bulkDelete(@RequestBody ContentBulkDeleteRequest request) {
+        adminOperationPolicyService.assertCommunityWriteAllowed();
+        return ResponseEntity.ok(documentService.bulkDeleteDocuments(request.normalizedIds()));
     }
 
     private Document.BoardType parseBoardType(String boardType) {
@@ -153,5 +173,30 @@ public class AdminContentRestController {
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private DocumentListQuery buildQuery(
+            String boardType,
+            String keyword,
+            String status,
+            String publicYn,
+            Boolean pinnedOnly,
+            String startDate,
+            String endDate
+    ) {
+        LocalDateTime startDateTime = parseStartDate(startDate);
+        LocalDateTime endDateTime = parseEndDate(endDate);
+        if (startDateTime != null && endDateTime != null && startDateTime.isAfter(endDateTime)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return new DocumentListQuery(
+                parseBoardType(boardType),
+                keyword,
+                parseStatus(status),
+                parseYn(publicYn),
+                pinnedOnly,
+                startDateTime,
+                endDateTime
+        );
     }
 }

@@ -3,6 +3,7 @@ package com.section.admin.task.controller;
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
+import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
@@ -18,8 +19,12 @@ import com.section.admin.task.service.AdminOperationTaskService;
 import com.section.admin.task.service.AdminOperationTaskWorkloadService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,6 +39,15 @@ public class AdminOperationTaskRestController {
     @GetMapping("/list")
     public ResponseEntity<AdminOperationTaskListResponse> getList(@ModelAttribute AdminOperationTaskListRequest req) {
         return ResponseEntity.ok(adminOperationTaskService.getTaskList(req));
+    }
+
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@ModelAttribute AdminOperationTaskListRequest req) {
+        String fileName = "tasks-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOperationTaskService.exportTaskListCsv(req));
     }
 
     @GetMapping("/workloads/list")
@@ -58,6 +72,15 @@ public class AdminOperationTaskRestController {
             @RequestParam(value = "size", required = false) Integer size
     ) {
         return ResponseEntity.ok(adminOperationTaskHistoryService.getTaskHistoryList(req, page, size));
+    }
+
+    @GetMapping("/history/export")
+    public ResponseEntity<byte[]> exportHistory(@ModelAttribute AdminOperationTaskHistoryListRequest req) {
+        String fileName = "task-history-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOperationTaskHistoryService.exportTaskHistoryCsv(req));
     }
 
     @PostMapping("/save")
@@ -96,9 +119,24 @@ public class AdminOperationTaskRestController {
         return ResponseEntity.ok().build();
     }
 
+    @PatchMapping("/{taskNo}/comments/{commentNo}")
+    public ResponseEntity<BaseSimpleResDto> updateComment(@PathVariable Long taskNo,
+                                                          @PathVariable Long commentNo,
+                                                          @Valid @RequestBody AdminOperationTaskCommentSaveRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminOperationTaskService.updateComment(taskNo, commentNo, req);
+        return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
     @PostMapping("/bulk-operate")
     public ResponseEntity<AdminOperationTaskService.BulkOperateResult> bulkOperate(@RequestBody AdminOperationTaskBulkOperateRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         return ResponseEntity.ok(adminOperationTaskService.bulkOperate(req));
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<AdminOperationTaskService.BulkDeleteResult> bulkDelete(@RequestBody AdminOperationTaskBulkDeleteRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminOperationTaskService.bulkDelete(req));
     }
 }

@@ -21,6 +21,8 @@ import java.util.List;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -89,5 +91,18 @@ class AdminLogRestControllerTest {
         mockMvc.perform(get("/api/admin/logs/list?adminNo=-1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("활동 로그 export API는 CSV 다운로드 헤더를 반환한다")
+    void exportLogListReturnsCsvAttachment() throws Exception {
+        when(adminLogService.exportLogListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("로그번호\n1".getBytes());
+
+        mockMvc.perform(get("/api/admin/logs/export").param("actionType", "NOTICE"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"admin-logs-")))
+                .andExpect(content().bytes("로그번호\n1".getBytes()));
     }
 }

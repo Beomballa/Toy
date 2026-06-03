@@ -2,6 +2,7 @@ package com.section.admin.banner.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.banner.req.BannerSaveRequest;
+import com.section.admin.banner.res.BannerDetailResponse;
 import com.section.admin.banner.res.BannerListResponse;
 import com.section.admin.banner.service.AdminBannerService;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
@@ -26,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -91,6 +93,41 @@ class AdminBannerRestControllerTest {
     }
 
     @Test
+    @DisplayName("배너 CSV 내보내기 API는 첨부 헤더와 본문을 반환한다")
+    void exportReturnsAttachmentResponse() throws Exception {
+        when(adminBannerService.exportBannerListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/banners/export").param("isActive", "Y"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("banners-")));
+    }
+
+    @Test
+    @DisplayName("배너 상세 API는 수정용 상세 응답을 반환한다")
+    void getDetailReturnsBannerResponse() throws Exception {
+        when(adminBannerService.getBannerDetail(4L))
+                .thenReturn(new BannerDetailResponse(
+                        4L,
+                        "메인 띠 배너",
+                        "https://example.com/detail.png",
+                        "/products/4",
+                        "2026-06-01 09:00",
+                        "2026-06-10 09:00",
+                        2,
+                        "Y",
+                        "노출중"
+                ));
+
+        mockMvc.perform(get("/api/admin/banners/4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.bannerNo").value(4L))
+                .andExpect(jsonPath("$.title").value("메인 띠 배너"))
+                .andExpect(jsonPath("$.displayStatus").value("노출중"));
+    }
+
+    @Test
     @DisplayName("배너 저장 API는 잘못된 요청을 400으로 변환한다")
     void saveReturnsBadRequestWhenInvalid() throws Exception {
         BannerSaveRequest request = new BannerSaveRequest(
@@ -120,6 +157,23 @@ class AdminBannerRestControllerTest {
         mockMvc.perform(patch("/api/admin/banners/active/3?isActive=N"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"));
+    }
+
+    @Test
+    @DisplayName("배너 일괄 상태 변경 API는 작업 결과를 반환한다")
+    void bulkOperateReturnsResult() throws Exception {
+        when(adminBannerService.bulkOperate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminBannerService.BulkOperateResult(2, 1, 1));
+
+        mockMvc.perform(patch("/api/admin/banners/bulk-operate")
+                        .contentType("application/json")
+                        .content("""
+                                {"bannerNos":[1,2],"isActive":"Y"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(2))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
     }
 
     @Test
@@ -164,5 +218,21 @@ class AdminBannerRestControllerTest {
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/banners/delete").param("no", "3"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("배너 일괄 삭제 API는 삭제 결과를 반환한다")
+    void bulkDeleteReturnsOk() throws Exception {
+        when(adminBannerService.bulkDelete(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminBannerService.BulkDeleteResult(2, 1, 1));
+
+        mockMvc.perform(post("/api/admin/banners/bulk-delete")
+                        .contentType("application/json")
+                        .content("""
+                                {"bannerNos":[3,4]}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deletedCount").value(1))
+                .andExpect(jsonPath("$.missingCount").value(1));
     }
 }

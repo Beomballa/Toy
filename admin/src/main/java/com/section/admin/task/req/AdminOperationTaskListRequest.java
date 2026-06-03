@@ -8,6 +8,8 @@ import com.section.common.system.dto.AdminOperationTaskListQuery;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Getter
 @Setter
 public class AdminOperationTaskListRequest {
@@ -19,6 +21,10 @@ public class AdminOperationTaskListRequest {
     private String isPinned;
     private String overdueOnly;
     private String unassignedOnly;
+    private String commentedOnly;
+    private String sortBy;
+    private LocalDate dueDateFrom;
+    private LocalDate dueDateTo;
     private Integer page = 0;
     private Integer size = 10;
 
@@ -35,7 +41,11 @@ public class AdminOperationTaskListRequest {
                 normalizedAssigneeAdminNo,
                 normalizeFlag(isPinned),
                 normalizeFlag(overdueOnly),
-                normalizedUnassignedOnly
+                normalizedUnassignedOnly,
+                normalizeFlag(commentedOnly),
+                normalizeSortBy(sortBy),
+                normalizeDueDateFrom(dueDateFrom, dueDateTo),
+                normalizeDueDateTo(dueDateFrom, dueDateTo)
         );
     }
 
@@ -104,5 +114,32 @@ public class AdminOperationTaskListRequest {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized.toUpperCase();
+    }
+
+    private String normalizeSortBy(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return "PINNED_DUE";
+        }
+        return switch (normalized.toUpperCase()) {
+            case "PINNED_DUE", "DUE_DATE_DESC", "PRIORITY_DESC", "CREATED_DESC" -> normalized.toUpperCase();
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
+    }
+
+    private LocalDate normalizeDueDateFrom(LocalDate from, LocalDate to) {
+        validateDueDateRange(from, to);
+        return from;
+    }
+
+    private LocalDate normalizeDueDateTo(LocalDate from, LocalDate to) {
+        validateDueDateRange(from, to);
+        return to;
+    }
+
+    private void validateDueDateRange(LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 }

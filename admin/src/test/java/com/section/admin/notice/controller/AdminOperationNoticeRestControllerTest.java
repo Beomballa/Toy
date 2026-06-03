@@ -1,6 +1,7 @@
 package com.section.admin.notice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.section.admin.notice.req.AdminOperationNoticeBulkDeleteRequest;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.notice.req.AdminOperationNoticeBulkOperateRequest;
 import com.section.admin.notice.res.AdminOperationNoticeDetailResponse;
@@ -30,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -76,6 +78,18 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.noticeStats.liveCount").value(1L))
                 .andExpect(jsonPath("$.items[0].historyPath").value("/admin/settings/notices/history?noticeNo=1"))
                 .andExpect(jsonPath("$.items[0].activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
+    }
+
+    @Test
+    @DisplayName("운영 공지 CSV 내보내기는 첨부 헤더를 반환한다")
+    void exportReturnsAttachmentHeaders() throws Exception {
+        when(adminOperationNoticeService.exportNoticeListCsv(any()))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/settings/notices/export").param("isActive", "Y"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"notices-")));
     }
 
     @Test
@@ -213,5 +227,20 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.requestedCount").value(3))
                 .andExpect(jsonPath("$.updatedCount").value(2))
                 .andExpect(jsonPath("$.unchangedCount").value(1));
+    }
+
+    @Test
+    @DisplayName("운영 공지 일괄 삭제 API는 삭제 결과 응답을 반환한다")
+    void bulkDeleteReturnsResult() throws Exception {
+        when(adminOperationNoticeService.bulkDelete(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationNoticeService.BulkDeleteResult(3, 2, 1));
+
+        mockMvc.perform(post("/api/admin/settings/notices/bulk-delete")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationNoticeBulkDeleteRequest(List.of(1L, 2L, 3L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.deletedCount").value(2))
+                .andExpect(jsonPath("$.missingCount").value(1));
     }
 }

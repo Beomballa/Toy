@@ -24,7 +24,10 @@
         </nav>
         <div class="page-title-wrapper">
             <h1 class="page-title">배너 관리</h1>
-            <button type="button" class="btn btn-primary" id="btnNewBanner"><i class="fas fa-plus me-2"></i>신규 배너 등록</button>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-dark" id="btnExportBannerCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
+                <button type="button" class="btn btn-primary" id="btnNewBanner"><i class="fas fa-plus me-2"></i>신규 배너 등록</button>
+            </div>
         </div>
     </div>
 
@@ -68,6 +71,29 @@
         </div>
     </div>
 
+    <div class="card animate-in mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <div class="small text-muted" id="bannerSelectionMeta">선택된 배너가 없습니다.</div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">일괄 상태 변경</label>
+                    <select id="bulkBannerIsActive" class="form-select">
+                        <option value="">변경 안 함</option>
+                        <option value="Y">사용</option>
+                        <option value="N">중지</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-grid gap-2">
+                    <button type="button" class="btn btn-outline-dark" id="btnApplyBannerBulk">일괄 적용</button>
+                    <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteBanner">일괄 삭제</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnClearBannerSelection">선택 해제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">배너 목록</h6>
@@ -92,16 +118,19 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <th class="ps-4 table-col-80">
+                                <input type="checkbox" id="bannerSelectPage">
+                            </th>
                             <th class="ps-4 table-col-80">순서</th>
                             <th class="table-col-150">미리보기</th>
                             <th>제목</th>
                             <th>노출 기간</th>
                             <th class="text-center table-col-100">상태</th>
-                            <th class="text-end pe-4 table-col-150">관리</th>
+                            <th class="text-end pe-4 table-col-180">관리</th>
                         </tr>
                     </thead>
                     <tbody id="bannerListBody">
-                        <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                        <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>

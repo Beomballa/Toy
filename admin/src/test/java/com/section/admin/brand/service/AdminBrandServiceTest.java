@@ -18,6 +18,7 @@ import org.springframework.data.domain.PageRequest;
 import java.util.List;
 import java.util.Optional;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -101,6 +102,26 @@ class AdminBrandServiceTest {
         assertEquals("new balance", captor.getValue().getNameEn());
         assertEquals("https://logo", captor.getValue().getLogoUrl());
         assertEquals("Y", captor.getValue().getIsActive());
+    }
+
+    @Test
+    @DisplayName("브랜드 CSV 내보내기는 필터 조건과 목록을 함께 기록한다")
+    void exportBrandListCsvIncludesSummaryAndRows() {
+        BrandListRequest request = new BrandListRequest();
+        request.setKeyword("나이키");
+        request.setIsActive("Y");
+
+        when(brandRepository.getBrandList("나이키", "Y", PageRequest.of(0, 1000))).thenReturn(new PageImpl<>(
+                List.of(Brand.builder().brandNo(1L).nameKo("나이키").nameEn("NIKE").logoUrl("https://logo").isActive("Y").build()),
+                PageRequest.of(0, 1000),
+                1
+        ));
+
+        String csv = new String(adminBrandService.exportBrandListCsv(request), UTF_8);
+
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("조회조건"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("브랜드명 기준 · 검색=나이키 · 상태=사용"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("\"1\",\"나이키\",\"NIKE\",\"사용중\",\"https://logo\""));
     }
 
     @Test

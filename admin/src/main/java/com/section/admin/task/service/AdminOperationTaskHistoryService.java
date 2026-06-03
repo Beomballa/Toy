@@ -27,4 +27,8 @@ public class AdminOperationTaskHistoryService {
         );
         return AdminOperationTaskHistoryListResponse.from(response, req.normalizedReturnTo());
     }
+
+    public byte[] exportTaskHistoryCsv(AdminOperationTaskHistoryListRequest req) {
+        return adminLogService.exportLogListCsv(req.toLogListRequest());
+    }
 }

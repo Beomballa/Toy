@@ -25,6 +25,9 @@ const AdminLogPage = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('btnExportLog')?.addEventListener('click', () => {
+            this.exportList();
+        });
         document.getElementById('btnResetLog')?.addEventListener('click', () => {
             this.resetFilters();
         });
@@ -77,6 +80,13 @@ const AdminLogPage = {
         if (endDate) params.set('endDate', endDate);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
+        return params;
+    },
+
+    buildExportParams() {
+        const params = this.buildParams();
+        params.delete('page');
+        params.delete('size');
         return params;
     },
 
@@ -249,6 +259,11 @@ const AdminLogPage = {
         document.getElementById('logActionType').value = actionType || '';
         this.state.page = 0;
         this.getList();
+    },
+
+    exportList() {
+        const params = this.buildExportParams();
+        window.location.href = `/api/admin/logs/export?${params.toString()}`;
     }
 };
 

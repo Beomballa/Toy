@@ -28,7 +28,10 @@
                 <h1 class="page-title">운영 작업 이력</h1>
                 <div class="small text-muted" id="taskHistoryResultSummary">운영 작업 로그를 기준으로 변경 이력을 조회합니다.</div>
             </div>
-            <button type="button" class="btn btn-outline-secondary" id="btnBackToTaskSource">이전 화면</button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-dark" id="btnExportTaskHistoryCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
+                <button type="button" class="btn btn-outline-secondary" id="btnBackToTaskSource">이전 화면</button>
+            </div>
         </div>
     </div>
 
@@ -48,7 +51,9 @@
                         <option value="TASK_STATUS_UPDATE">상태 변경</option>
                         <option value="TASK_BULK_UPDATE">일괄 변경</option>
                         <option value="TASK_COMMENT_CREATE">댓글 등록</option>
+                        <option value="TASK_COMMENT_UPDATE">댓글 수정</option>
                         <option value="TASK_COMMENT_DELETE">댓글 삭제</option>
+                        <option value="TASK_BULK_DELETE">일괄 삭제</option>
                         <option value="TASK_DELETE">작업 삭제</option>
                     </select>
                 </div>
@@ -60,7 +65,9 @@
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_STATUS_UPDATE">상태 변경</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_BULK_UPDATE">일괄 변경</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_COMMENT_CREATE">댓글 등록</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_COMMENT_UPDATE">댓글 수정</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_COMMENT_DELETE">댓글 삭제</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_BULK_DELETE">일괄 삭제</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_DELETE">작업 삭제</button>
                     </div>
                 </div>

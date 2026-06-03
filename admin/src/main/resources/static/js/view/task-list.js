@@ -15,6 +15,10 @@ const TaskList = {
         priority: '',
         assigneeAdminNo: '',
         isPinned: '',
+        commentedOnly: '',
+        sortBy: 'PINNED_DUE',
+        dueDateFrom: '',
+        dueDateTo: '',
         overdueOnly: '',
         unassignedOnly: '',
         taskNo: '',
@@ -44,6 +48,7 @@ const TaskList = {
             CommonJS.setButtonDisabled(document.getElementById('btnNewTask'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveTask'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnApplyTaskBulk'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteTask'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -54,9 +59,14 @@ const TaskList = {
             void this.openModal();
         });
         document.getElementById('btnSaveTask')?.addEventListener('click', () => this.saveTask());
-        document.getElementById('btnSearchTask')?.addEventListener('click', () => this.getList());
+        document.getElementById('btnSearchTask')?.addEventListener('click', () => {
+            this.state.page = 0;
+            this.getList();
+        });
         document.getElementById('btnResetTask')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnExportTaskCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnApplyTaskBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDeleteTask')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearTaskSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('taskSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         document.getElementById('taskPageSize')?.addEventListener('change', () => {
@@ -121,6 +131,10 @@ const TaskList = {
         this.state.priority = params.get('priority') || '';
         this.state.assigneeAdminNo = params.get('assigneeAdminNo') || '';
         this.state.isPinned = params.get('isPinned') || '';
+        this.state.commentedOnly = params.get('commentedOnly') || '';
+        this.state.sortBy = params.get('sortBy') || 'PINNED_DUE';
+        this.state.dueDateFrom = params.get('dueDateFrom') || '';
+        this.state.dueDateTo = params.get('dueDateTo') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
@@ -130,9 +144,13 @@ const TaskList = {
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskPinnedFilter').value = this.state.isPinned;
+        document.getElementById('taskSortBy').value = this.state.sortBy;
+        document.getElementById('taskDueDateFrom').value = this.state.dueDateFrom;
+        document.getElementById('taskDueDateTo').value = this.state.dueDateTo;
         document.getElementById('taskPageSize').value = String(this.state.size);
         document.getElementById('taskOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
+        document.getElementById('taskCommentedOnly').checked = this.state.commentedOnly === 'Y';
         CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
 
@@ -142,9 +160,13 @@ const TaskList = {
         this.state.priority = document.getElementById('taskPriorityFilter').value;
         this.state.assigneeAdminNo = document.getElementById('taskAssigneeFilter').value;
         this.state.isPinned = document.getElementById('taskPinnedFilter').value;
+        this.state.sortBy = document.getElementById('taskSortBy').value || 'PINNED_DUE';
+        this.state.dueDateFrom = document.getElementById('taskDueDateFrom').value;
+        this.state.dueDateTo = document.getElementById('taskDueDateTo').value;
         this.state.size = Number(document.getElementById('taskPageSize').value || 10);
         this.state.overdueOnly = document.getElementById('taskOverdueOnly')?.checked ? 'Y' : '';
         this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
+        this.state.commentedOnly = document.getElementById('taskCommentedOnly')?.checked ? 'Y' : '';
         if (this.state.unassignedOnly === 'Y') {
             this.state.assigneeAdminNo = '';
         }
@@ -159,6 +181,10 @@ const TaskList = {
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.assigneeAdminNo) params.set('assigneeAdminNo', this.state.assigneeAdminNo);
         if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
+        if (this.state.commentedOnly) params.set('commentedOnly', this.state.commentedOnly);
+        if (this.state.sortBy && this.state.sortBy !== 'PINNED_DUE') params.set('sortBy', this.state.sortBy);
+        if (this.state.dueDateFrom) params.set('dueDateFrom', this.state.dueDateFrom);
+        if (this.state.dueDateTo) params.set('dueDateTo', this.state.dueDateTo);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
@@ -170,6 +196,9 @@ const TaskList = {
     async getList() {
         try {
             this.updateStateFromInputs();
+            if (this.hasInvalidDueDateRange()) {
+                throw new Error('기한 시작일은 종료일보다 늦을 수 없습니다.');
+            }
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
@@ -195,7 +224,7 @@ const TaskList = {
             this.setFilterMeta(error.message);
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
-            document.getElementById('taskListBody').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${error.message}</td></tr>`;
+            document.getElementById('taskListBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">${error.message}</td></tr>`;
             document.getElementById('taskPagination').innerHTML = '';
             this.renderStats(null);
             this.setListStateMeta('error', error.message, 0, 0, '');
@@ -276,6 +305,11 @@ const TaskList = {
                         <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/tasks/get?no=${item.taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.title)}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 440px;">${this.escapeHtml(item.description || '-')}</div>
+                    ${Number(item.commentCount || 0) > 0 ? `
+                        <div class="small text-muted mt-2">최근 메모 ${Number(item.commentCount || 0).toLocaleString()}건</div>
+                        <div class="small text-dark text-truncate" style="max-width: 440px;">${this.escapeHtml(item.latestCommentPreview || '-')}</div>
+                        <div class="small text-muted">${this.escapeHtml(item.latestCommentMeta || '-')}</div>
+                    ` : ''}
                 </td>
                 <td class="text-center">
                     <span class="badge rounded-pill ${this.resolveStatusBadgeClass(item.status)}">${item.statusLabel}</span>
@@ -346,7 +380,12 @@ const TaskList = {
         overdueCountEl.innerText = Number(stats.overdueCount || 0).toLocaleString();
         unassignedCountEl.innerText = Number(stats.unassignedCount || 0).toLocaleString();
         contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
-        const usingQuickFilter = !!this.state.status || !!this.state.priority || !!this.state.isPinned || !!this.state.overdueOnly;
+        const usingQuickFilter = !!this.state.status
+            || !!this.state.priority
+            || !!this.state.isPinned
+            || !!this.state.overdueOnly
+            || !!this.state.commentedOnly
+            || this.state.sortBy !== 'PINNED_DUE';
         noticeEl.innerText = usingQuickFilter
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
             : '카드 수치는 현재 탐색 문맥 기준입니다.';
@@ -596,6 +635,51 @@ const TaskList = {
         }
     },
 
+    async applyBulkDelete() {
+        if (this.isApplyingBulk) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 일괄 삭제'), '알림', 'warning');
+            return;
+        }
+        if (this.selectedTaskNos.size === 0) {
+            await CommonJS.alert('삭제할 운영 작업을 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 운영 작업 ${this.selectedTaskNos.size}건을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.isApplyingBulk = true;
+            this.setBusyButton(document.getElementById('btnBulkDeleteTask'), true, '삭제 중...');
+            const response = await fetch('/api/admin/settings/tasks/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ taskNos: Array.from(this.selectedTaskNos) })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 일괄 삭제에 실패했습니다.'));
+            }
+
+            const result = await response.json();
+            this.setLastActionMeta('bulk-delete', 'success', '목록 일괄 삭제');
+            this.clearSelection(false);
+            await this.getList();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 · 삭제 ${result.deletedCount}건 · 누락 ${result.missingCount}건`, '일괄 삭제 결과', 'success');
+        } catch (error) {
+            this.setLastActionMeta('bulk-delete', 'error', '목록 일괄 삭제');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isApplyingBulk = false;
+            this.setBusyButton(document.getElementById('btnBulkDeleteTask'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
     toggleSelection(taskNo, checked) {
         if (checked) {
             this.selectedTaskNos.add(taskNo);
@@ -723,9 +807,13 @@ const TaskList = {
         document.getElementById('taskPriorityFilter').value = '';
         document.getElementById('taskAssigneeFilter').value = '';
         document.getElementById('taskPinnedFilter').value = '';
+        document.getElementById('taskSortBy').value = 'PINNED_DUE';
+        document.getElementById('taskDueDateFrom').value = '';
+        document.getElementById('taskDueDateTo').value = '';
         document.getElementById('taskAssigneeFilter').disabled = false;
         document.getElementById('taskOverdueOnly').checked = false;
         document.getElementById('taskUnassignedOnly').checked = false;
+        document.getElementById('taskCommentedOnly').checked = false;
         document.getElementById('taskPageSize').value = '10';
         this.state.page = 0;
         this.state.size = 10;
@@ -734,6 +822,10 @@ const TaskList = {
         this.state.priority = '';
         this.state.assigneeAdminNo = '';
         this.state.isPinned = '';
+        this.state.commentedOnly = '';
+        this.state.sortBy = 'PINNED_DUE';
+        this.state.dueDateFrom = '';
+        this.state.dueDateTo = '';
         this.state.overdueOnly = '';
         this.state.unassignedOnly = '';
         this.state.taskNo = '';
@@ -741,6 +833,32 @@ const TaskList = {
         this.clearSelection(false);
         this.syncStatFilterState('total');
         this.getList();
+    },
+
+    async exportCsv() {
+        const button = document.getElementById('btnExportTaskCsv');
+        if (button) {
+            button.disabled = true;
+        }
+        try {
+            this.updateStateFromInputs();
+            if (this.hasInvalidDueDateRange()) {
+                throw new Error('기한 시작일은 종료일보다 늦을 수 없습니다.');
+            }
+            const response = await fetch(`/api/admin/settings/tasks/export?${this.buildParams().toString()}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 CSV 내보내기에 실패했습니다.'));
+            }
+            const blob = await response.blob();
+            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), 'tasks.csv');
+            this.downloadBlob(blob, fileName);
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
     },
 
     setFilterMeta(message) {
@@ -767,6 +885,10 @@ const TaskList = {
         metaEl.dataset.highlightTaskNo = this.state.focusTaskNo || '';
         metaEl.dataset.sourceContext = this.state.source || '';
         CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
+    },
+
+    hasInvalidDueDateRange() {
+        return !!this.state.dueDateFrom && !!this.state.dueDateTo && this.state.dueDateFrom > this.state.dueDateTo;
     },
 
     resolveActiveStatFilter() {
@@ -859,17 +981,21 @@ const TaskList = {
             'delete-task:success': `${taskLabel} 삭제를 반영했습니다.`,
             'delete-task:error': `${taskLabel} 삭제에 실패했습니다.`,
             'bulk-operate:success': '선택한 운영 작업 일괄 변경을 반영했습니다.',
-            'bulk-operate:error': '운영 작업 일괄 변경에 실패했습니다.'
+            'bulk-operate:error': '운영 작업 일괄 변경에 실패했습니다.',
+            'bulk-delete:success': '선택한 운영 작업 일괄 삭제를 반영했습니다.',
+            'bulk-delete:error': '운영 작업 일괄 삭제에 실패했습니다.'
         };
         const variants = {
             'save-task:success': 'alert-success',
             'update-status:success': 'alert-primary',
             'delete-task:success': 'alert-warning',
             'bulk-operate:success': 'alert-primary',
+            'bulk-delete:success': 'alert-warning',
             'save-task:error': 'alert-danger',
             'update-status:error': 'alert-danger',
             'delete-task:error': 'alert-danger',
-            'bulk-operate:error': 'alert-danger'
+            'bulk-operate:error': 'alert-danger',
+            'bulk-delete:error': 'alert-danger'
         };
 
         const sourceMessage = source ? `${source}에서 실행` : '운영 작업 목록에서 실행';
@@ -921,6 +1047,22 @@ const TaskList = {
             return null;
         }
         return Number(value);
+    },
+
+    extractFileName(contentDisposition, fallback) {
+        const matched = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
+        return matched?.[1] || fallback;
+    },
+
+    downloadBlob(blob, fileName) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
     },
 
     resolveBulkAssigneeAdminNo() {

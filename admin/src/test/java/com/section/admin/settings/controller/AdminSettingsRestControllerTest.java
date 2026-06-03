@@ -17,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -91,6 +93,19 @@ class AdminSettingsRestControllerTest {
                 .andExpect(jsonPath("$.items[0].changedAdminName").value("운영자"))
                 .andExpect(jsonPath("$.summary.totalCount").value(1))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("시스템 설정 이력 export API는 CSV 다운로드 헤더를 반환한다")
+    void exportSystemSettingHistoryReturnsCsvAttachment() throws Exception {
+        when(adminSettingsService.exportSystemSettingHistoryCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("이력번호\n1".getBytes());
+
+        mockMvc.perform(get("/api/admin/settings/system/history/export").param("settingKey", "SYSTEM_MAINTENANCE_MODE"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"system-setting-history-")))
+                .andExpect(content().bytes("이력번호\n1".getBytes()));
     }
 
     @Test

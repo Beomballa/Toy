@@ -4,6 +4,8 @@ import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.res.BrandResponse;
+import com.section.admin.brand.support.BrandExportCsvWriter;
+import com.section.admin.brand.support.BrandExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Brand;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminBrandService {
+    private static final int BRAND_EXPORT_MAX_SIZE = 1000;
 
     private final BrandRepository brandRepository;
     private final ProductRepository productRepository;
@@ -31,6 +34,18 @@ public class AdminBrandService {
         );
         Page<BrandResponse> responsePage = brandPage.map(BrandResponse::from);
         return BrandListResponse.of(responsePage, req);
+    }
+
+    public byte[] exportBrandListCsv(BrandListRequest req) {
+        Page<Brand> brandPage = brandRepository.getBrandList(
+                req.normalizedKeyword(),
+                req.normalizedIsActive(),
+                PageRequest.of(0, BRAND_EXPORT_MAX_SIZE)
+        );
+        return BrandExportCsvWriter.write(
+                BrandExportSummary.of(req, java.time.LocalDateTime.now()),
+                brandPage.getContent().stream().map(BrandResponse::from).toList()
+        );
     }
 
     public BrandResponse getBrand(Long brandNo) {

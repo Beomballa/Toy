@@ -1,6 +1,8 @@
 package com.section.admin.brand.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.section.admin.brand.req.BrandBulkDeleteRequest;
+import com.section.admin.brand.req.BrandBulkOperateRequest;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.req.BrandStatusUpdateRequest;
 import com.section.admin.brand.res.BrandListResponse;
@@ -117,6 +119,21 @@ class AdminBrandRestControllerTest {
     }
 
     @Test
+    @DisplayName("브랜드 일괄 상태 변경 API는 작업 결과를 반환한다")
+    void bulkOperateReturnsResult() throws Exception {
+        when(adminBrandService.bulkOperate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminBrandService.BulkOperateResult(2, 1, 1));
+
+        mockMvc.perform(patch("/api/admin/brands/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new BrandBulkOperateRequest(List.of(1L, 2L), "Y"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(2))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
+    }
+
+    @Test
     @DisplayName("유지보수 모드에서는 브랜드 삭제가 차단된다")
     void deleteReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
         doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
@@ -133,5 +150,21 @@ class AdminBrandRestControllerTest {
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/brands/delete").param("no", "1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("브랜드 일괄 삭제 API는 삭제 결과를 반환한다")
+    void bulkDeleteReturnsResult() throws Exception {
+        when(adminBrandService.bulkDelete(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminBrandService.BulkDeleteResult(3, 1, 1, 1));
+
+        mockMvc.perform(post("/api/admin/brands/bulk-delete")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new BrandBulkDeleteRequest(List.of(1L, 2L, 9L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.deletedCount").value(1))
+                .andExpect(jsonPath("$.blockedCount").value(1))
+                .andExpect(jsonPath("$.missingCount").value(1));
     }
 }

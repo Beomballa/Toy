@@ -10,6 +10,8 @@ const BrandList = {
     operationPolicy: null,
     saveInFlight: false,
     exportInFlight: false,
+    bulkInFlight: false,
+    selectedBrandNos: new Set(),
     deleteInFlight: new Set(),
 
     init() {
@@ -35,6 +37,8 @@ const BrandList = {
             const reason = '유지보수 모드에서는 브랜드 등록, 수정, 삭제가 불가능합니다.';
             CommonJS.setButtonDisabled(document.getElementById('btnNewBrand'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveBrand'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyBrandBulk'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteBrand'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -47,6 +51,10 @@ const BrandList = {
 
         document.getElementById('btnSaveBrand')?.addEventListener('click', () => this.saveBrand());
         document.getElementById('btnExportBrand')?.addEventListener('click', () => this.exportList());
+        document.getElementById('btnApplyBrandBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDeleteBrand')?.addEventListener('click', () => this.applyBulkDelete());
+        document.getElementById('btnClearBrandSelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('brandSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
 
         document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
@@ -56,6 +64,12 @@ const BrandList = {
             this.getList();
         });
         document.getElementById('brandListBody')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-brand"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.brandNo), checkbox.checked);
+                return;
+            }
+
             const editButton = event.target.closest('[data-role="edit-brand"]');
             if (editButton) {
                 this.openModal(Number(editButton.dataset.brandNo));
@@ -127,13 +141,17 @@ const BrandList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">등록된 브랜드가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 브랜드가 없습니다.</td></tr>';
             this.setListStateMeta('empty', '등록된 브랜드가 없습니다.', 0, 0, '');
+            this.updateSelectionMeta([]);
             return;
         }
 
         tbody.innerHTML = items.map(item => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox" data-role="select-brand" data-brand-no="${item.brandNo}" ${this.selectedBrandNos.has(item.brandNo) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4 text-muted">${item.brandNo}</td>
                 <td>
                     <div class="brand-logo-wrapper">
@@ -155,6 +173,7 @@ const BrandList = {
             </tr>
         `).join('');
         this.setListStateMeta('ready', '', items.length, null, null);
+        this.updateSelectionMeta(items);
     },
 
     renderMeta(data) {
@@ -228,6 +247,66 @@ const BrandList = {
         }
         if (querySignature != null) {
             metaEl.dataset.querySignature = querySignature;
+        }
+    },
+
+    toggleSelection(brandNo, checked) {
+        if (!Number.isFinite(brandNo) || brandNo <= 0) {
+            return;
+        }
+        if (checked) {
+            this.selectedBrandNos.add(brandNo);
+        } else {
+            this.selectedBrandNos.delete(brandNo);
+        }
+        const items = Array.from(document.querySelectorAll('[data-role="select-brand"]'))
+            .map((checkbox) => ({ brandNo: Number(checkbox.dataset.brandNo) }))
+            .filter((item) => Number.isFinite(item.brandNo));
+        this.updateSelectionMeta(items);
+    },
+
+    toggleSelectCurrentPage(checked) {
+        document.querySelectorAll('[data-role="select-brand"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+            const brandNo = Number(checkbox.dataset.brandNo);
+            if (checked) {
+                this.selectedBrandNos.add(brandNo);
+            } else {
+                this.selectedBrandNos.delete(brandNo);
+            }
+        });
+        const items = Array.from(document.querySelectorAll('[data-role="select-brand"]'))
+            .map((checkbox) => ({ brandNo: Number(checkbox.dataset.brandNo) }))
+            .filter((item) => Number.isFinite(item.brandNo));
+        this.updateSelectionMeta(items);
+    },
+
+    clearSelection() {
+        this.selectedBrandNos.clear();
+        const selectPage = document.getElementById('brandSelectPage');
+        if (selectPage) {
+            selectPage.checked = false;
+        }
+        document.querySelectorAll('[data-role="select-brand"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.updateSelectionMeta([]);
+    },
+
+    updateSelectionMeta(items) {
+        const totalSelected = this.selectedBrandNos.size;
+        const visibleBrandNos = new Set((items || []).map((item) => item.brandNo));
+        const visibleSelected = Array.from(this.selectedBrandNos).filter((brandNo) => visibleBrandNos.has(brandNo)).length;
+        const metaEl = document.getElementById('brandSelectionMeta');
+        if (metaEl) {
+            metaEl.textContent = totalSelected === 0
+                ? '선택된 브랜드가 없습니다.'
+                : `총 ${totalSelected}건 선택 · 현재 페이지 ${visibleSelected}건`;
+        }
+        const selectPage = document.getElementById('brandSelectPage');
+        if (selectPage) {
+            const selectableCount = visibleBrandNos.size;
+            selectPage.checked = selectableCount > 0 && visibleSelected === selectableCount;
         }
     },
 
@@ -353,6 +432,83 @@ const BrandList = {
             await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)', '오류', 'error');
         } finally {
             this.deleteInFlight.delete(brandNo);
+        }
+    },
+
+    async applyBulkOperation() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedBrandNos.size === 0) {
+            await CommonJS.alert('일괄 적용할 브랜드를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const isActive = document.getElementById('bulkBrandIsActive').value;
+        if (!isActive) {
+            await CommonJS.alert('변경할 상태를 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const res = await fetch('/api/admin/brands/bulk-operate', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brandNos: Array.from(this.selectedBrandNos),
+                    isActive: isActive
+                })
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 일괄 상태 변경에 실패했습니다.'));
+            const result = await res.json();
+            await this.getList();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 동일 상태입니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '브랜드 일괄 상태 변경에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
+    async applyBulkDelete() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedBrandNos.size === 0) {
+            await CommonJS.alert('일괄 삭제할 브랜드를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm(`선택한 브랜드 ${this.selectedBrandNos.size}건을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const res = await fetch('/api/admin/brands/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    brandNos: Array.from(this.selectedBrandNos)
+                })
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 일괄 삭제에 실패했습니다.'));
+            const result = await res.json();
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.blockedCount}건 상품 연관으로 유지, ${result.missingCount}건 미존재입니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '브랜드 일괄 삭제에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
         }
     },
 

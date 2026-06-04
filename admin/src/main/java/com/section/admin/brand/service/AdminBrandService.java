@@ -1,8 +1,10 @@
 package com.section.admin.brand.service;
 
+import com.section.admin.brand.req.BrandBulkDeleteRequest;
+import com.section.admin.brand.req.BrandBulkOperateRequest;
 import com.section.admin.brand.req.BrandListRequest;
-import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.req.BrandSaveRequest;
+import com.section.admin.brand.res.BrandListResponse;
 import com.section.admin.brand.res.BrandResponse;
 import com.section.admin.brand.support.BrandExportCsvWriter;
 import com.section.admin.brand.support.BrandExportSummary;
@@ -16,6 +18,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -98,6 +103,31 @@ public class AdminBrandService {
         brand.update(brand.getNameKo(), brand.getNameEn(), brand.getLogoUrl(), normalized);
     }
 
+    @Transactional
+    public BulkOperateResult bulkOperate(BrandBulkOperateRequest req) {
+        req.validateOperation();
+        List<Long> targetBrandNos = req.normalizedBrandNos();
+        String normalizedIsActive = req.normalizedIsActive();
+
+        List<Brand> brands = brandRepository.findAllById(targetBrandNos);
+        if (brands.isEmpty()) {
+            throw new BusinessException(ErrorCode.BRAND_NOT_FOUND);
+        }
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        for (Brand brand : brands) {
+            if (normalizedIsActive.equals(brand.getIsActive())) {
+                unchangedCount += 1;
+                continue;
+            }
+            brand.update(brand.getNameKo(), brand.getNameEn(), brand.getLogoUrl(), normalizedIsActive);
+            updatedCount += 1;
+        }
+
+        return new BulkOperateResult(targetBrandNos.size(), updatedCount, unchangedCount);
+    }
+
     private void validateDuplicateBrand(Long brandNo, String nameKo, String nameEn) {
         boolean duplicatedKo = brandNo == null
                 ? brandRepository.existsByNameKoIgnoreCase(nameKo)
@@ -143,5 +173,48 @@ public class AdminBrandService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized;
+    }
+
+    @Transactional
+    public BulkDeleteResult bulkDelete(BrandBulkDeleteRequest req) {
+        List<Long> targetBrandNos = req.normalizedBrandNos();
+        List<Brand> brands = brandRepository.findAllById(targetBrandNos);
+        if (brands.isEmpty()) {
+            throw new BusinessException(ErrorCode.BRAND_NOT_FOUND);
+        }
+
+        int deletedCount = 0;
+        int blockedCount = 0;
+        for (Brand brand : brands) {
+            if (productRepository.existsByBrandNo(brand.getBrandNo())) {
+                blockedCount += 1;
+                continue;
+            }
+            brandRepository.delete(brand);
+            deletedCount += 1;
+        }
+
+        HashSet<Long> existingBrandNoSet = new HashSet<>(brands.stream()
+                .map(Brand::getBrandNo)
+                .toList());
+        long missingCount = targetBrandNos.stream()
+                .filter(no -> !existingBrandNoSet.contains(no))
+                .count();
+        return new BulkDeleteResult(targetBrandNos.size(), deletedCount, blockedCount, (int) missingCount);
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount
+    ) {
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int blockedCount,
+            int missingCount
+    ) {
     }
 }

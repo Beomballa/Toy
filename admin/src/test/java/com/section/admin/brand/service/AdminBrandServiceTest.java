@@ -1,5 +1,7 @@
 package com.section.admin.brand.service;
 
+import com.section.admin.brand.req.BrandBulkDeleteRequest;
+import com.section.admin.brand.req.BrandBulkOperateRequest;
 import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.res.BrandListResponse;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentCaptor.forClass;
@@ -80,6 +83,24 @@ class AdminBrandServiceTest {
         adminBrandService.updateActive(1L, "N");
 
         assertEquals("N", brand.getIsActive());
+    }
+
+    @Test
+    @DisplayName("브랜드 일괄 상태 변경은 변경 건수와 동일 상태 건수를 구분한다")
+    void bulkOperateCountsUpdatedAndUnchanged() {
+        Brand brand1 = Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build();
+        Brand brand2 = Brand.builder().brandNo(2L).nameKo("아식스").isActive("N").build();
+        when(brandRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(brand1, brand2));
+
+        AdminBrandService.BulkOperateResult result = adminBrandService.bulkOperate(
+                new BrandBulkOperateRequest(List.of(1L, 2L), "N")
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        assertEquals("N", brand1.getIsActive());
+        assertEquals("N", brand2.getIsActive());
     }
 
     @Test
@@ -145,5 +166,26 @@ class AdminBrandServiceTest {
         adminBrandService.deleteBrand(3L);
 
         verify(brandRepository).delete(argThat(item -> item.getBrandNo().equals(3L)));
+    }
+
+    @Test
+    @DisplayName("브랜드 일괄 삭제는 연관 상품이 있는 브랜드를 건너뛴다")
+    void bulkDeleteSkipsBrandsLinkedToProducts() {
+        Brand brand1 = Brand.builder().brandNo(3L).nameKo("아식스").isActive("Y").build();
+        Brand brand2 = Brand.builder().brandNo(4L).nameKo("뉴발란스").isActive("Y").build();
+        when(brandRepository.findAllById(List.of(3L, 4L, 9L))).thenReturn(List.of(brand1, brand2));
+        when(productRepository.existsByBrandNo(3L)).thenReturn(false);
+        when(productRepository.existsByBrandNo(4L)).thenReturn(true);
+
+        AdminBrandService.BulkDeleteResult result = adminBrandService.bulkDelete(
+                new BrandBulkDeleteRequest(List.of(3L, 4L, 9L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(1, result.deletedCount());
+        assertEquals(1, result.blockedCount());
+        assertEquals(1, result.missingCount());
+        verify(brandRepository).delete(argThat(item -> item.getBrandNo().equals(3L)));
+        assertTrue(result.blockedCount() > 0);
     }
 }

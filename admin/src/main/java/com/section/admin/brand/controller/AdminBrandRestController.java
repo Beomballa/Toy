@@ -1,6 +1,8 @@
 package com.section.admin.brand.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.brand.req.BrandBulkDeleteRequest;
+import com.section.admin.brand.req.BrandBulkOperateRequest;
 import com.section.admin.brand.req.BrandListRequest;
 import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.req.BrandStatusUpdateRequest;
@@ -58,10 +60,22 @@ public class AdminBrandRestController {
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
+    @PatchMapping("/bulk-operate")
+    public ResponseEntity<AdminBrandService.BulkOperateResult> bulkOperate(@RequestBody BrandBulkOperateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminBrandService.bulkOperate(req));
+    }
+
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("no") Long brandNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminBrandService.deleteBrand(brandNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<AdminBrandService.BulkDeleteResult> bulkDelete(@RequestBody BrandBulkDeleteRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminBrandService.bulkDelete(req));
     }
 }

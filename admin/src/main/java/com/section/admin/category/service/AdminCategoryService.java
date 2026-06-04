@@ -1,5 +1,7 @@
 package com.section.admin.category.service;
 
+import com.section.admin.category.req.CategoryBulkDeleteRequest;
+import com.section.admin.category.req.CategoryBulkOperateRequest;
 import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.res.CategoryListResponse;
@@ -17,6 +19,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -106,6 +109,30 @@ public class AdminCategoryService {
         category.changeStatus(normalized);
     }
 
+    @Transactional
+    public BulkOperateResult bulkOperate(CategoryBulkOperateRequest req) {
+        req.validateOperation();
+        List<Long> targetCategoryNos = req.normalizedCategoryNos();
+        String normalizedIsActive = req.normalizedIsActive();
+
+        List<Category> categories = categoryRepository.findAllById(targetCategoryNos);
+        if (categories.isEmpty()) {
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        for (Category category : categories) {
+            if (normalizedIsActive.equals(category.getIsActive())) {
+                unchangedCount += 1;
+                continue;
+            }
+            category.changeStatus(normalizedIsActive);
+            updatedCount += 1;
+        }
+        return new BulkOperateResult(targetCategoryNos.size(), updatedCount, unchangedCount);
+    }
+
     private void validateCategoryHierarchy(Long categoryNo, Long parentNo, Integer depth) {
         if (depth == null || depth < 1 || depth > 2) {
             throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
@@ -161,5 +188,49 @@ public class AdminCategoryService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized;
+    }
+
+    @Transactional
+    public BulkDeleteResult bulkDelete(CategoryBulkDeleteRequest req) {
+        List<Long> targetCategoryNos = req.normalizedCategoryNos();
+        List<Category> categories = categoryRepository.findAllById(targetCategoryNos);
+        if (categories.isEmpty()) {
+            throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
+        }
+
+        int deletedCount = 0;
+        int blockedCount = 0;
+        for (Category category : categories) {
+            if (categoryRepository.existsByParentNo(category.getCategoryNo())
+                    || productRepository.existsByCategoryNo(category.getCategoryNo())) {
+                blockedCount += 1;
+                continue;
+            }
+            categoryRepository.delete(category);
+            deletedCount += 1;
+        }
+
+        HashSet<Long> existingCategoryNoSet = new HashSet<>(categories.stream()
+                .map(Category::getCategoryNo)
+                .toList());
+        long missingCount = targetCategoryNos.stream()
+                .filter(no -> !existingCategoryNoSet.contains(no))
+                .count();
+        return new BulkDeleteResult(targetCategoryNos.size(), deletedCount, blockedCount, (int) missingCount);
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount
+    ) {
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int blockedCount,
+            int missingCount
+    ) {
     }
 }

@@ -1,6 +1,8 @@
 package com.section.admin.category.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.category.req.CategoryBulkDeleteRequest;
+import com.section.admin.category.req.CategoryBulkOperateRequest;
 import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.req.CategoryStatusUpdateRequest;
@@ -59,10 +61,22 @@ public class AdminCategoryRestController {
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
+    @PatchMapping("/bulk-operate")
+    public ResponseEntity<AdminCategoryService.BulkOperateResult> bulkOperate(@RequestBody CategoryBulkOperateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminCategoryService.bulkOperate(req));
+    }
+
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("no") Long categoryNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminCategoryService.deleteCategory(categoryNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<AdminCategoryService.BulkDeleteResult> bulkDelete(@RequestBody CategoryBulkDeleteRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminCategoryService.bulkDelete(req));
     }
 }

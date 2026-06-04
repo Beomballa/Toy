@@ -1,5 +1,7 @@
 package com.section.admin.category.service;
 
+import com.section.admin.category.req.CategoryBulkDeleteRequest;
+import com.section.admin.category.req.CategoryBulkOperateRequest;
 import com.section.admin.category.req.CategoryListRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.res.CategoryListResponse;
@@ -79,6 +81,24 @@ class AdminCategoryServiceTest {
         adminCategoryService.updateActive(1L, "N");
 
         assertEquals("N", category.getIsActive());
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 상태 변경은 변경 건수와 동일 상태 건수를 구분한다")
+    void bulkOperateCountsUpdatedAndUnchanged() {
+        Category category1 = Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build();
+        Category category2 = Category.builder().categoryNo(2L).name("러닝화").depth(2).isActive("N").build();
+        when(categoryRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(category1, category2));
+
+        AdminCategoryService.BulkOperateResult result = adminCategoryService.bulkOperate(
+                new CategoryBulkOperateRequest(List.of(1L, 2L), "N")
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        assertEquals("N", category1.getIsActive());
+        assertEquals("N", category2.getIsActive());
     }
 
     @Test
@@ -174,6 +194,28 @@ class AdminCategoryServiceTest {
 
         adminCategoryService.deleteCategory(5L);
 
+        verify(categoryRepository).delete(argThat(item -> item.getCategoryNo().equals(5L)));
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 삭제는 하위 카테고리나 상품 연관이 있는 대상을 건너뛴다")
+    void bulkDeleteSkipsBlockedCategories() {
+        Category category1 = Category.builder().categoryNo(5L).name("액세서리").depth(1).isActive("Y").build();
+        Category category2 = Category.builder().categoryNo(6L).name("러닝화").depth(2).isActive("Y").build();
+        when(categoryRepository.findAllById(List.of(5L, 6L, 9L))).thenReturn(List.of(category1, category2));
+        when(categoryRepository.existsByParentNo(5L)).thenReturn(false);
+        when(productRepository.existsByCategoryNo(5L)).thenReturn(false);
+        when(categoryRepository.existsByParentNo(6L)).thenReturn(false);
+        when(productRepository.existsByCategoryNo(6L)).thenReturn(true);
+
+        AdminCategoryService.BulkDeleteResult result = adminCategoryService.bulkDelete(
+                new CategoryBulkDeleteRequest(List.of(5L, 6L, 9L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(1, result.deletedCount());
+        assertEquals(1, result.blockedCount());
+        assertEquals(1, result.missingCount());
         verify(categoryRepository).delete(argThat(item -> item.getCategoryNo().equals(5L)));
     }
 }

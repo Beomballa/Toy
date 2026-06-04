@@ -1,6 +1,8 @@
 package com.section.admin.category.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.section.admin.category.req.CategoryBulkDeleteRequest;
+import com.section.admin.category.req.CategoryBulkOperateRequest;
 import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.req.CategoryStatusUpdateRequest;
 import com.section.admin.category.res.CategoryListResponse;
@@ -117,6 +119,21 @@ class AdminCategoryRestControllerTest {
     }
 
     @Test
+    @DisplayName("카테고리 일괄 상태 변경 API는 작업 결과를 반환한다")
+    void bulkOperateReturnsResult() throws Exception {
+        when(adminCategoryService.bulkOperate(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminCategoryService.BulkOperateResult(2, 1, 1));
+
+        mockMvc.perform(patch("/api/admin/categories/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new CategoryBulkOperateRequest(List.of(1L, 2L), "Y"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(2))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
+    }
+
+    @Test
     @DisplayName("유지보수 모드에서는 카테고리 삭제가 차단된다")
     void deleteReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
         doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
@@ -133,5 +150,21 @@ class AdminCategoryRestControllerTest {
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/categories/delete").param("no", "1"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 삭제 API는 삭제 결과를 반환한다")
+    void bulkDeleteReturnsResult() throws Exception {
+        when(adminCategoryService.bulkDelete(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminCategoryService.BulkDeleteResult(3, 1, 1, 1));
+
+        mockMvc.perform(post("/api/admin/categories/bulk-delete")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new CategoryBulkDeleteRequest(List.of(1L, 2L, 9L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.deletedCount").value(1))
+                .andExpect(jsonPath("$.blockedCount").value(1))
+                .andExpect(jsonPath("$.missingCount").value(1));
     }
 }

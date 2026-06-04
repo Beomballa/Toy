@@ -14,6 +14,8 @@ const CategoryList = {
     },
     saveInFlight: false,
     exportInFlight: false,
+    bulkInFlight: false,
+    selectedCategoryNos: new Set(),
     deleteInFlight: new Set(),
 
     init() {
@@ -40,6 +42,8 @@ const CategoryList = {
             CommonJS.setButtonDisabled(document.getElementById('btnNewRootCategory'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnNewSubCategory'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveCategory'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyCategoryBulk'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteCategory'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -48,6 +52,10 @@ const CategoryList = {
     bindEvents() {
         document.getElementById('btnNewRootCategory')?.addEventListener('click', () => this.openModal(1));
         document.getElementById('btnExportCategory')?.addEventListener('click', () => this.exportList());
+        document.getElementById('btnApplyCategoryBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDeleteCategory')?.addEventListener('click', () => this.applyBulkDelete());
+        document.getElementById('btnClearCategorySelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('categorySelectSubPage')?.addEventListener('change', (event) => this.toggleSelectVisibleSubPage(event.target.checked));
         document.getElementById('btnSearchCategory')?.addEventListener('click', () => this.getDepth1List());
         document.getElementById('btnResetCategory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('categoryPageSize')?.addEventListener('change', () => {
@@ -64,6 +72,13 @@ const CategoryList = {
         });
         document.getElementById('btnSaveCategory')?.addEventListener('click', () => this.saveCategory());
         document.getElementById('depth1Body')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-root-category"]');
+            if (checkbox) {
+                event.stopPropagation();
+                this.toggleSelection(Number(checkbox.dataset.categoryNo), checkbox.checked);
+                return;
+            }
+
             const parentItem = event.target.closest('[data-role="select-parent"]');
             if (parentItem) {
                 this.getDepth2List(Number(parentItem.dataset.parentNo), parentItem.dataset.parentName);
@@ -77,6 +92,12 @@ const CategoryList = {
             }
         });
         document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
+            const checkbox = event.target.closest('[data-role="select-sub-category"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.categoryNo), checkbox.checked);
+                return;
+            }
+
             const editSubButton = event.target.closest('[data-role="edit-sub-category"]');
             if (editSubButton) {
                 this.openModal(2, JSON.parse(editSubButton.dataset.category));
@@ -165,6 +186,7 @@ const CategoryList = {
         if (!this.state.depth1List || this.state.depth1List.length === 0) {
             body.innerHTML = '<div class="text-center py-5 text-muted">등록된 카테고리가 없습니다.</div>';
             this.setListStateMeta('empty', '등록된 카테고리가 없습니다.', 0, 0, '');
+            this.updateSelectionMeta();
             return;
         }
 
@@ -173,6 +195,9 @@ const CategoryList = {
                  data-role="select-parent" data-parent-no="${item.categoryNo}" data-parent-name="${item.name.replace(/"/g, '&quot;')}">
                 <div class="category-item__top">
                     <div class="category-item__title-wrap">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" data-role="select-root-category" data-category-no="${item.categoryNo}" ${this.selectedCategoryNos.has(item.categoryNo) ? 'checked' : ''}>
+                        </div>
                         <div class="category-item__eyebrow">ROOT CATEGORY</div>
                         <div class="category-item__title">${item.name}</div>
                     </div>
@@ -192,6 +217,7 @@ const CategoryList = {
             </div>
         `).join('');
         this.setListStateMeta('ready', '', this.state.depth1List.length, null, null);
+        this.updateSelectionMeta();
     },
 
     renderDepth2() {
@@ -203,12 +229,16 @@ const CategoryList = {
         wrapper.classList.remove('d-none');
 
         if (!this.state.depth2List || this.state.depth2List.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted">하위 카테고리가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">하위 카테고리가 없습니다.</td></tr>';
+            this.updateSelectionMeta();
             return;
         }
 
         tbody.innerHTML = this.state.depth2List.map(item => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox" data-role="select-sub-category" data-category-no="${item.categoryNo}" ${this.selectedCategoryNos.has(item.categoryNo) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4 text-muted small">${item.categoryNo}</td>
                 <td class="fw-bold">${item.name}</td>
                 <td class="text-center">
@@ -222,6 +252,7 @@ const CategoryList = {
                 </td>
             </tr>
         `).join('');
+        this.updateSelectionMeta();
     },
 
     renderDepth1Meta(data) {
@@ -312,6 +343,62 @@ const CategoryList = {
         }
         if (querySignature != null) {
             metaEl.dataset.querySignature = querySignature;
+        }
+    },
+
+    toggleSelection(categoryNo, checked) {
+        if (!Number.isFinite(categoryNo) || categoryNo <= 0) {
+            return;
+        }
+        if (checked) {
+            this.selectedCategoryNos.add(categoryNo);
+        } else {
+            this.selectedCategoryNos.delete(categoryNo);
+        }
+        this.updateSelectionMeta();
+    },
+
+    toggleSelectVisibleSubPage(checked) {
+        document.querySelectorAll('[data-role="select-sub-category"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+            const categoryNo = Number(checkbox.dataset.categoryNo);
+            if (checked) {
+                this.selectedCategoryNos.add(categoryNo);
+            } else {
+                this.selectedCategoryNos.delete(categoryNo);
+            }
+        });
+        this.updateSelectionMeta();
+    },
+
+    clearSelection() {
+        this.selectedCategoryNos.clear();
+        const subPageCheckbox = document.getElementById('categorySelectSubPage');
+        if (subPageCheckbox) {
+            subPageCheckbox.checked = false;
+        }
+        document.querySelectorAll('[data-role="select-root-category"], [data-role="select-sub-category"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.updateSelectionMeta();
+    },
+
+    updateSelectionMeta() {
+        const totalSelected = this.selectedCategoryNos.size;
+        const visibleSubNos = Array.from(document.querySelectorAll('[data-role="select-sub-category"]'))
+                .map((checkbox) => Number(checkbox.dataset.categoryNo))
+                .filter((categoryNo) => Number.isFinite(categoryNo));
+        const visibleSubNoSet = new Set(visibleSubNos);
+        const visibleSubSelected = Array.from(this.selectedCategoryNos).filter((categoryNo) => visibleSubNoSet.has(categoryNo)).length;
+        const metaEl = document.getElementById('categorySelectionMeta');
+        if (metaEl) {
+            metaEl.textContent = totalSelected === 0
+                    ? '선택된 카테고리가 없습니다.'
+                    : `총 ${totalSelected}건 선택 · 현재 중분류 목록 ${visibleSubSelected}건`;
+        }
+        const subPageCheckbox = document.getElementById('categorySelectSubPage');
+        if (subPageCheckbox) {
+            subPageCheckbox.checked = visibleSubNoSet.size > 0 && visibleSubSelected === visibleSubNoSet.size;
         }
     },
 
@@ -436,6 +523,89 @@ const CategoryList = {
             await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다.', '오류', 'error');
         } finally {
             this.deleteInFlight.delete(no);
+        }
+    },
+
+    async applyBulkOperation() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 카테고리 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedCategoryNos.size === 0) {
+            await CommonJS.alert('일괄 적용할 카테고리를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const isActive = document.getElementById('bulkCategoryIsActive').value;
+        if (!isActive) {
+            await CommonJS.alert('변경할 상태를 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const res = await fetch('/api/admin/categories/bulk-operate', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    categoryNos: Array.from(this.selectedCategoryNos),
+                    isActive: isActive
+                })
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '카테고리 일괄 상태 변경에 실패했습니다.'));
+            const result = await res.json();
+            await this.getDepth1List();
+            if (this.state.selectedParentNo) {
+                await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
+            }
+            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 동일 상태입니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '카테고리 일괄 상태 변경에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
+    async applyBulkDelete() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 카테고리 삭제가 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (this.selectedCategoryNos.size === 0) {
+            await CommonJS.alert('일괄 삭제할 카테고리를 선택하세요.', '알림', 'warning');
+            return;
+        }
+        const confirmed = await CommonJS.confirm(`선택한 카테고리 ${this.selectedCategoryNos.size}건을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const res = await fetch('/api/admin/categories/bulk-delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    categoryNos: Array.from(this.selectedCategoryNos)
+                })
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '카테고리 일괄 삭제에 실패했습니다.'));
+            const result = await res.json();
+            this.clearSelection();
+            await this.getDepth1List();
+            if (this.state.selectedParentNo) {
+                await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
+            }
+            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.blockedCount}건 하위/상품 연관으로 유지, ${result.missingCount}건 미존재입니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '카테고리 일괄 삭제에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
         }
     },
 

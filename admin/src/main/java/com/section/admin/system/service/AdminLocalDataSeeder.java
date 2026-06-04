@@ -2,6 +2,7 @@ package com.section.admin.system.service;
 
 import com.section.common.base.entity.type.ProductHistoryActionType;
 import com.section.common.base.entity.type.YN;
+import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.entity.DisplayBanner;
@@ -350,7 +351,7 @@ public class AdminLocalDataSeeder implements ApplicationRunner {
         paid.pay();
         Orders preparing = orders.get(2);
         preparing.pay();
-        preparing.changeStatus(com.section.common.base.entity.type.OrderStatus.PREPARING);
+        preparing.changeStatus(OrderStatus.PREPARING);
         Orders shipped = orders.get(3);
         shipped.pay();
         shipped.startDelivery("CJ대한통운", "650012341234");

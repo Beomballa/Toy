@@ -7,6 +7,8 @@ import com.section.common.system.dto.AdminOperationTaskCommentCountDto;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadCommentSummaryDto;
+import com.section.common.system.entity.QAdminOperationTask;
+import com.section.common.system.entity.QAdminOperationTaskComment;
 
 import java.util.List;
 
@@ -49,8 +51,8 @@ public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdmi
             return List.of();
         }
 
-        com.section.common.system.entity.QAdminOperationTaskComment latestComment =
-                new com.section.common.system.entity.QAdminOperationTaskComment("latestComment");
+        QAdminOperationTaskComment latestComment =
+                new QAdminOperationTaskComment("latestComment");
 
         return queryFactory
                 .select(Projections.bean(
@@ -101,10 +103,10 @@ public class CustomAdminOperationTaskCommentRepositoryImpl implements CustomAdmi
             return List.of();
         }
 
-        com.section.common.system.entity.QAdminOperationTaskComment latestComment =
-                new com.section.common.system.entity.QAdminOperationTaskComment("latestComment");
-        com.section.common.system.entity.QAdminOperationTask latestTask =
-                new com.section.common.system.entity.QAdminOperationTask("latestTask");
+        QAdminOperationTaskComment latestComment =
+                new QAdminOperationTaskComment("latestComment");
+        QAdminOperationTask latestTask =
+                new QAdminOperationTask("latestTask");
 
         return queryFactory
                 .select(Projections.bean(

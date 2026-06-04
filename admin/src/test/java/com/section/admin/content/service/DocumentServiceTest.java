@@ -2,6 +2,7 @@ package com.section.admin.content.service;
 
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
+import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.content.service.DocumentService;
@@ -155,7 +156,7 @@ class DocumentServiceTest {
                 .thenReturn(new PageImpl<>(List.of(item)));
 
         var result = documentService.getDocumentExportList(
-                new com.section.common.content.dto.DocumentListQuery(Document.BoardType.NOTICE, null, null, null, null, null, null),
+                new DocumentListQuery(Document.BoardType.NOTICE, null, null, null, null, null, null),
                 500
         );
 

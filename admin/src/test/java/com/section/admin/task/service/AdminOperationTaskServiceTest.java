@@ -36,6 +36,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +45,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -88,8 +91,8 @@ class AdminOperationTaskServiceTest {
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
         when(adminOperationTaskRepository.getTaskSummary(any(AdminOperationTaskListQuery.class), any()))
                 .thenReturn(new AdminOperationTaskSummaryDto(5, 2, 2, 1, 1));
-        when(adminUserRepository.findAll()).thenReturn(List.of(
-                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build()
+        when(adminUserRepository.findAllByStatusOrderByNameAsc("ACTIVE")).thenReturn(List.of(
+                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").status("ACTIVE").build()
         ));
         AdminOperationTaskCommentSummaryDto latestComment = new AdminOperationTaskCommentSummaryDto();
         latestComment.setTaskNo(1L);
@@ -115,6 +118,20 @@ class AdminOperationTaskServiceTest {
                         && LocalDate.of(2026, 6, 30).equals(query.dueDateTo())),
                 any()
         );
+    }
+
+    @Test
+    @DisplayName("운영 작업 담당자 옵션은 활성 관리자만 노출한다")
+    void getAssigneeOptionsReturnsOnlyActiveAdmins() {
+        when(adminUserRepository.findAllByStatusOrderByNameAsc("ACTIVE")).thenReturn(List.of(
+                AdminUser.builder().adminNo(2L).name("가나다").loginId("active-1").password("pw").status("ACTIVE").build(),
+                AdminUser.builder().adminNo(3L).name("라마바").loginId("active-2").password("pw").status("ACTIVE").build()
+        ));
+
+        var result = adminOperationTaskService.getAssigneeOptions();
+
+        assertEquals(2, result.size());
+        assertEquals("가나다", result.get(0).name());
     }
 
     @Test
@@ -250,9 +267,9 @@ class AdminOperationTaskServiceTest {
         when(adminUserRepository.findById(3L)).thenReturn(Optional.of(
                 AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
         ));
-        when(adminUserRepository.findAll()).thenReturn(List.of(
-                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").build(),
-                AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").build()
+        when(adminUserRepository.findAllByStatusOrderByNameAsc("ACTIVE")).thenReturn(List.of(
+                AdminUser.builder().adminNo(2L).name("운영자").loginId("ops").password("pw").status("ACTIVE").build(),
+                AdminUser.builder().adminNo(3L).name("담당자").loginId("assignee").password("pw").status("ACTIVE").build()
         ));
         when(adminOperationTaskRepository.getTaskAssignmentRecommendations(any(LocalDate.class), eq(3L), eq(3)))
                 .thenReturn(List.of(
@@ -487,6 +504,12 @@ class AdminOperationTaskServiceTest {
                 .isPinned("Y")
                 .build();
         when(adminOperationTaskRepository.findById(71L)).thenReturn(Optional.of(source));
+        when(adminOperationTaskCommentRepository.findByTaskNoOrderByCommentNoAsc(71L)).thenReturn(List.of(
+                AdminOperationTaskComment.builder().commentNo(801L).taskNo(71L).content("첫 번째 메모").build(),
+                AdminOperationTaskComment.builder().commentNo(802L).taskNo(71L).content("두 번째 메모").build()
+        ));
+        when(adminOperationTaskCommentRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
                 .thenAnswer(invocation -> {
                     AdminOperationTask entity = invocation.getArgument(0);
@@ -510,6 +533,13 @@ class AdminOperationTaskServiceTest {
                         && Long.valueOf(4L).equals(task.getAssigneeAdminNo())
                         && LocalDate.of(2026, 6, 15).equals(task.getDueDate())
                         && "Y".equals(task.getIsPinned())
+        ));
+        verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
+                comments.size() == 3
+                        && comments.stream().allMatch(comment -> Long.valueOf(72L).equals(comment.getTaskNo()))
+                        && comments.stream().anyMatch(comment -> "원본 작업 #71 메모 2건을 복제했습니다.".equals(comment.getContent()))
+                        && comments.stream().anyMatch(comment -> "첫 번째 메모".equals(comment.getContent()))
+                        && comments.stream().anyMatch(comment -> "두 번째 메모".equals(comment.getContent()))
         ));
         verify(adminLogService).recordCurrentAdminLog("TASK_DUPLICATE", 72L);
     }
@@ -556,6 +586,12 @@ class AdminOperationTaskServiceTest {
                 .isPinned("Y")
                 .build();
         when(adminOperationTaskRepository.findAllById(List.of(91L, 92L, 93L))).thenReturn(List.of(first, third));
+        when(adminOperationTaskCommentRepository.findByTaskNoInOrderByTaskNoAscCommentNoAsc(List.of(91L, 93L))).thenReturn(List.of(
+                AdminOperationTaskComment.builder().commentNo(901L).taskNo(91L).content("배치 메모").build(),
+                AdminOperationTaskComment.builder().commentNo(903L).taskNo(93L).content("공지 메모").build()
+        ));
+        when(adminOperationTaskCommentRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
                 .thenAnswer(new org.mockito.stubbing.Answer<AdminOperationTask>() {
                     private long sequence = 190L;
@@ -580,6 +616,20 @@ class AdminOperationTaskServiceTest {
         assertEquals(List.of(191L, 192L), result.createdTaskNos());
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 191L);
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 192L);
+        verify(adminOperationTaskCommentRepository, times(2)).saveAll(anyList());
+        verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
+                comments.size() == 2
+                        && comments.stream().allMatch(comment -> Long.valueOf(191L).equals(comment.getTaskNo()))
+                        && comments.stream().anyMatch(comment -> "원본 작업 #91 메모 1건을 복제했습니다.".equals(comment.getContent()))
+                        && comments.stream().anyMatch(comment -> "배치 메모".equals(comment.getContent()))
+        ));
+        verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
+                comments.size() == 2
+                        && comments.stream().allMatch(comment -> Long.valueOf(192L).equals(comment.getTaskNo()))
+                        && comments.stream().anyMatch(comment -> "원본 작업 #93 메모 1건을 복제했습니다.".equals(comment.getContent()))
+                        && comments.stream().anyMatch(comment -> "공지 메모".equals(comment.getContent()))
+        ));
+        verify(adminOperationTaskCommentRepository).findByTaskNoInOrderByTaskNoAscCommentNoAsc(List.of(91L, 93L));
         verify(adminOperationTaskRepository).save(argThat(task ->
                 "배치 점검 (복제)".equals(task.getTitle()) && task.getDueDate() == null
         ));

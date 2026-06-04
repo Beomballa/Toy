@@ -18,6 +18,7 @@ import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
+import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.dto.AdminOperationTaskCommentCountDto;
 import com.section.common.system.dto.AdminOperationTaskCommentSummaryDto;
@@ -36,8 +37,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,11 +59,11 @@ public class AdminOperationTaskService {
 
     public AdminOperationTaskListResponse getTaskList(AdminOperationTaskListRequest req) {
         AdminOperationTaskListQuery query = req.toQuery();
-        Page<com.section.common.system.dto.AdminOperationTaskListResDto> page = adminOperationTaskRepository.getTaskList(
+        Page<AdminOperationTaskListResDto> page = adminOperationTaskRepository.getTaskList(
                 query,
                 PageRequest.of(req.normalizedPage(), req.normalizedSize())
         );
-        Page<com.section.common.system.dto.AdminOperationTaskListResDto> enrichedPage = new PageImpl<>(
+        Page<AdminOperationTaskListResDto> enrichedPage = new PageImpl<>(
                 enrichTaskListRows(page.getContent()),
                 page.getPageable(),
                 page.getTotalElements()
@@ -75,14 +78,14 @@ public class AdminOperationTaskService {
 
     public byte[] exportTaskListCsv(AdminOperationTaskListRequest req) {
         AdminOperationTaskListQuery query = req.toQuery();
-        Page<com.section.common.system.dto.AdminOperationTaskListResDto> page = adminOperationTaskRepository.getTaskList(
+        Page<AdminOperationTaskListResDto> page = adminOperationTaskRepository.getTaskList(
                 query,
                 PageRequest.of(0, TASK_EXPORT_MAX_SIZE)
         );
-        List<com.section.common.system.dto.AdminOperationTaskListResDto> enrichedRows = enrichTaskListRows(page.getContent());
+        List<AdminOperationTaskListResDto> enrichedRows = enrichTaskListRows(page.getContent());
         Map<Long, String> assigneeNameMap = adminUserRepository.findAllById(
                         enrichedRows.stream()
-                                .map(com.section.common.system.dto.AdminOperationTaskListResDto::getAssigneeAdminNo)
+                                .map(AdminOperationTaskListResDto::getAssigneeAdminNo)
                                 .filter(java.util.Objects::nonNull)
                                 .distinct()
                                 .toList()
@@ -116,28 +119,26 @@ public class AdminOperationTaskService {
     }
 
     public List<AdminOperationTaskListResponse.AssigneeOption> getAssigneeOptions() {
-        return adminUserRepository.findAll().stream()
-                .sorted(Comparator.comparing(AdminUser::getName))
+        return adminUserRepository.findAllByStatusOrderByNameAsc("ACTIVE").stream()
                 .map(admin -> new AdminOperationTaskListResponse.AssigneeOption(admin.getAdminNo(), admin.getName()))
                 .toList();
     }
 
     private List<AdminOperationTaskDetailResponse.AssigneeOption> getTaskDetailAssigneeOptions() {
-        return adminUserRepository.findAll().stream()
-                .sorted(Comparator.comparing(AdminUser::getName))
+        return adminUserRepository.findAllByStatusOrderByNameAsc("ACTIVE").stream()
                 .map(admin -> new AdminOperationTaskDetailResponse.AssigneeOption(admin.getAdminNo(), admin.getName()))
                 .toList();
     }
 
-    private List<com.section.common.system.dto.AdminOperationTaskListResDto> enrichTaskListRows(
-            List<com.section.common.system.dto.AdminOperationTaskListResDto> rows
+    private List<AdminOperationTaskListResDto> enrichTaskListRows(
+            List<AdminOperationTaskListResDto> rows
     ) {
         if (rows == null || rows.isEmpty()) {
             return rows == null ? List.of() : rows;
         }
 
         List<Long> taskNos = rows.stream()
-                .map(com.section.common.system.dto.AdminOperationTaskListResDto::getTaskNo)
+                .map(AdminOperationTaskListResDto::getTaskNo)
                 .filter(java.util.Objects::nonNull)
                 .toList();
         Map<Long, AdminOperationTaskCommentSummaryDto> latestCommentMap = adminOperationTaskCommentRepository.getLatestCommentsByTaskNos(taskNos)
@@ -212,6 +213,7 @@ public class AdminOperationTaskService {
     public DuplicateTaskResult duplicateTask(Long taskNo) {
         AdminOperationTask source = getTask(taskNo);
         AdminOperationTask duplicated = saveDuplicatedTask(source, LocalDate.now());
+        copyTaskComments(source, duplicated, adminOperationTaskCommentRepository.findByTaskNoOrderByCommentNoAsc(source.getTaskNo()));
         adminLogService.recordCurrentAdminLog("TASK_DUPLICATE", duplicated.getTaskNo());
         return new DuplicateTaskResult(duplicated.getTaskNo());
     }
@@ -227,10 +229,15 @@ public class AdminOperationTaskService {
         Map<Long, AdminOperationTask> taskMap = tasks.stream()
                 .collect(Collectors.toMap(AdminOperationTask::getTaskNo, task -> task));
         LocalDate today = LocalDate.now();
+        Map<Long, List<AdminOperationTaskComment>> commentsByTaskNo = groupCommentsByTaskNo(taskMap.keySet());
         List<AdminOperationTask> duplicatedTasks = targetTaskNos.stream()
                 .map(taskMap::get)
                 .filter(Objects::nonNull)
-                .map(task -> saveDuplicatedTask(task, today))
+                .map(sourceTask -> {
+                    AdminOperationTask duplicatedTask = saveDuplicatedTask(sourceTask, today);
+                    copyTaskComments(sourceTask, duplicatedTask, commentsByTaskNo.get(sourceTask.getTaskNo()));
+                    return duplicatedTask;
+                })
                 .toList();
         duplicatedTasks.forEach(task -> adminLogService.recordCurrentAdminLog("TASK_BULK_DUPLICATE", task.getTaskNo()));
 
@@ -469,6 +476,35 @@ public class AdminOperationTaskService {
             return dueDate;
         }
         return null;
+    }
+
+    private Map<Long, List<AdminOperationTaskComment>> groupCommentsByTaskNo(Collection<Long> taskNos) {
+        if (taskNos == null || taskNos.isEmpty()) {
+            return Map.of();
+        }
+        return adminOperationTaskCommentRepository.findByTaskNoInOrderByTaskNoAscCommentNoAsc(taskNos).stream()
+                .collect(Collectors.groupingBy(
+                        AdminOperationTaskComment::getTaskNo,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+    }
+
+    private void copyTaskComments(AdminOperationTask source, AdminOperationTask duplicated, List<AdminOperationTaskComment> sourceComments) {
+        if (sourceComments == null || sourceComments.isEmpty()) {
+            return;
+        }
+
+        List<AdminOperationTaskComment> duplicatedComments = new ArrayList<>(sourceComments.size() + 1);
+        duplicatedComments.add(AdminOperationTaskComment.builder()
+                .taskNo(duplicated.getTaskNo())
+                .content("원본 작업 #" + source.getTaskNo() + " 메모 " + sourceComments.size() + "건을 복제했습니다.")
+                .build());
+        sourceComments.forEach(comment -> duplicatedComments.add(AdminOperationTaskComment.builder()
+                .taskNo(duplicated.getTaskNo())
+                .content(comment.getContent())
+                .build()));
+        adminOperationTaskCommentRepository.saveAll(duplicatedComments);
     }
 
     public record BulkOperateResult(

@@ -6,8 +6,10 @@ import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.admin.product.res.ProductHistoryListResponse;
+import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.settings.service.AdminSettingsService;
+import com.section.common.base.entity.type.ProductHistoryActionType;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductHistoryListResDto;
@@ -234,7 +236,7 @@ class AdminProductServiceTest {
     void getProductHistoryIncludesActorName() {
         ProductChangeHistory history = ProductChangeHistory.of(
                 4L,
-                com.section.common.base.entity.type.ProductHistoryActionType.CREATED,
+                ProductHistoryActionType.CREATED,
                 "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: 2",
                 "ACTIVE",
                 2,
@@ -248,7 +250,7 @@ class AdminProductServiceTest {
                 AdminUser.builder().adminNo(1L).name("관리자").loginId("admin").password("pw").build()
         ));
 
-        List<com.section.admin.product.res.ProductHistoryResponse> histories = adminProductService.getProductHistory(4L);
+        List<ProductHistoryResponse> histories = adminProductService.getProductHistory(4L);
 
         assertEquals(1, histories.size());
         assertEquals("관리자", histories.get(0).actorName());

@@ -1,8 +1,10 @@
 package com.section.admin.category.service;
 
 import com.section.admin.category.req.CategoryListRequest;
+import com.section.admin.category.req.CategorySaveRequest;
 import com.section.admin.category.res.CategoryListResponse;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Category;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -85,18 +87,18 @@ class AdminCategoryServiceTest {
         when(categoryRepository.existsByParentNoAndDepthAndNameIgnoreCase(null, 1, "신발")).thenReturn(true);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(null, null, " 신발 ", 1, "Y")));
+                adminCategoryService.saveCategory(new CategorySaveRequest(null, null, " 신발 ", 1, "Y")));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.CATEGORY_NAME_DUPLICATED, exception.getErrorCode());
+        assertEquals(ErrorCode.CATEGORY_NAME_DUPLICATED, exception.getErrorCode());
     }
 
     @Test
     @DisplayName("2뎁스 카테고리는 1뎁스 부모가 필수다")
     void saveCategoryRejectsMissingParentForDepthTwo() {
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(null, null, "러닝화", 2, "Y")));
+                adminCategoryService.saveCategory(new CategorySaveRequest(null, null, "러닝화", 2, "Y")));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.CATEGORY_HIERARCHY_INVALID, exception.getErrorCode());
+        assertEquals(ErrorCode.CATEGORY_HIERARCHY_INVALID, exception.getErrorCode());
     }
 
     @Test
@@ -106,13 +108,13 @@ class AdminCategoryServiceTest {
 
         BusinessException exception = assertThrows(BusinessException.class, () -> adminCategoryService.deleteCategory(1L));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.CATEGORY_HAS_CHILDREN, exception.getErrorCode());
+        assertEquals(ErrorCode.CATEGORY_HAS_CHILDREN, exception.getErrorCode());
     }
 
     @Test
     @DisplayName("카테고리 저장은 공백 정규화 후 저장한다")
     void saveCategoryNormalizesName() {
-        adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(null, null, " 러닝   화 ", 1, "y"));
+        adminCategoryService.saveCategory(new CategorySaveRequest(null, null, " 러닝   화 ", 1, "y"));
 
         verify(categoryRepository).save(any(Category.class));
     }
@@ -121,9 +123,9 @@ class AdminCategoryServiceTest {
     @DisplayName("카테고리 저장은 공백뿐인 이름을 거부한다")
     void saveCategoryRejectsBlankName() {
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(null, null, "   ", 1, "Y")));
+                adminCategoryService.saveCategory(new CategorySaveRequest(null, null, "   ", 1, "Y")));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 
     @Test
@@ -134,7 +136,7 @@ class AdminCategoryServiceTest {
         when(categoryRepository.findById(10L)).thenReturn(Optional.of(parent));
         when(categoryRepository.findById(2L)).thenReturn(Optional.of(category));
 
-        adminCategoryService.saveCategory(new com.section.admin.category.req.CategorySaveRequest(2L, 10L, " 러닝 화 ", 2, "n"));
+        adminCategoryService.saveCategory(new CategorySaveRequest(2L, 10L, " 러닝 화 ", 2, "n"));
 
         assertEquals(10L, category.getParentNo());
         assertEquals(2, category.getDepth());

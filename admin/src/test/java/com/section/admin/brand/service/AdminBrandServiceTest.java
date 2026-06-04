@@ -1,8 +1,10 @@
 package com.section.admin.brand.service;
 
 import com.section.admin.brand.req.BrandListRequest;
+import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.res.BrandListResponse;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -86,15 +88,15 @@ class AdminBrandServiceTest {
         when(brandRepository.existsByNameKoIgnoreCase("나이키")).thenReturn(true);
 
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, " 나이키 ", "NIKE", null, "Y")));
+                adminBrandService.saveBrand(new BrandSaveRequest(null, " 나이키 ", "NIKE", null, "Y")));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.BRAND_NAME_DUPLICATED, exception.getErrorCode());
+        assertEquals(ErrorCode.BRAND_NAME_DUPLICATED, exception.getErrorCode());
     }
 
     @Test
     @DisplayName("브랜드 저장은 공백 정규화 후 저장한다")
     void saveBrandNormalizesFields() {
-        adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, " 뉴   발란스 ", " new  balance ", " https://logo ", "y"));
+        adminBrandService.saveBrand(new BrandSaveRequest(null, " 뉴   발란스 ", " new  balance ", " https://logo ", "y"));
 
         var captor = forClass(Brand.class);
         verify(brandRepository).save(captor.capture());
@@ -108,9 +110,9 @@ class AdminBrandServiceTest {
     @DisplayName("브랜드 저장은 공백뿐인 한글명을 거부한다")
     void saveBrandRejectsBlankKoName() {
         BusinessException exception = assertThrows(BusinessException.class, () ->
-                adminBrandService.saveBrand(new com.section.admin.brand.req.BrandSaveRequest(null, "   ", "NIKE", null, "Y")));
+                adminBrandService.saveBrand(new BrandSaveRequest(null, "   ", "NIKE", null, "Y")));
 
-        assertEquals(com.section.common.base.exception.ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 
     @Test

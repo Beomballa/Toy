@@ -2,6 +2,7 @@ package com.section.common.content.service;
 
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
@@ -71,8 +72,8 @@ public class DocumentService {
     public BulkOperateResult bulkOperateDocuments(
             Set<Long> ids,
             Document.PublishStatus status,
-            com.section.common.base.entity.type.YN publicYn,
-            com.section.common.base.entity.type.YN pinnedYn
+            YN publicYn,
+            YN pinnedYn
     ) {
         int updatedCount = 0;
         for (Long id : ids) {

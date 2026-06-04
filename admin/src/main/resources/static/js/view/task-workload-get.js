@@ -115,7 +115,11 @@ const TaskWorkloadDetail = {
             if (!adminNo) {
                 throw new Error('담당자 번호가 올바르지 않습니다.');
             }
-            const response = await fetch(`/api/admin/settings/tasks/workloads/${adminNo}`);
+            const params = new URLSearchParams();
+            if (this.bootstrap.returnTo) {
+                params.set('returnTo', this.bootstrap.returnTo);
+            }
+            const response = await fetch(`/api/admin/settings/tasks/workloads/${adminNo}${params.toString() ? `?${params.toString()}` : ''}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '담당자 워크로드 상세를 불러오지 못했습니다.'));
             }
@@ -615,11 +619,20 @@ const TaskWorkloadDetail = {
     },
 
     buildTaskDetailPath(taskNo) {
-        return `/admin/settings/tasks/get?no=${taskNo}&returnTo=${encodeURIComponent(`/admin/settings/tasks/workloads/get?adminNo=${this.bootstrap.adminNo || 0}`)}`;
+        return `/admin/settings/tasks/get?no=${taskNo}&returnTo=${encodeURIComponent(this.buildCurrentDetailPath())}`;
     },
 
     buildTaskHistoryPath(taskNo) {
-        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(`/admin/settings/tasks/workloads/get?adminNo=${this.bootstrap.adminNo || 0}`)}`;
+        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(this.buildCurrentDetailPath())}`;
+    },
+
+    buildCurrentDetailPath() {
+        const params = new URLSearchParams();
+        params.set('adminNo', String(this.bootstrap.adminNo || 0));
+        if (this.bootstrap.returnTo) {
+            params.set('returnTo', this.bootstrap.returnTo);
+        }
+        return `/admin/settings/tasks/workloads/get?${params.toString()}`;
     },
 
     async fetchTaskDetail(taskNo) {

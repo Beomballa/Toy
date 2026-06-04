@@ -3,6 +3,8 @@ package com.section.admin.task.service;
 import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskWorkloadDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
+import com.section.admin.task.support.AdminOperationTaskWorkloadExportCsvWriter;
+import com.section.admin.task.support.AdminOperationTaskWorkloadExportSummary;
 import com.section.admin.log.req.AdminLogListRequest;
 import com.section.admin.log.res.AdminLogListResponse;
 import com.section.admin.log.service.AdminLogService;
@@ -30,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminOperationTaskWorkloadService {
+    private static final int WORKLOAD_EXPORT_MAX_SIZE = 1000;
 
     private final AdminOperationTaskRepository adminOperationTaskRepository;
     private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
@@ -56,7 +59,35 @@ public class AdminOperationTaskWorkloadService {
         return AdminOperationTaskWorkloadListResponse.of(page, query, summary, latestCommentMap);
     }
 
-    public AdminOperationTaskWorkloadDetailResponse getWorkloadDetail(Long assigneeAdminNo) {
+    public byte[] exportWorkloadListCsv(AdminOperationTaskWorkloadListRequest req) {
+        AdminOperationTaskWorkloadListQuery query = req.toQuery();
+        LocalDate today = LocalDate.now();
+        Page<AdminOperationTaskWorkloadDto> page = adminOperationTaskRepository.getTaskWorkloadPage(
+                query,
+                PageRequest.of(0, WORKLOAD_EXPORT_MAX_SIZE),
+                today
+        );
+        Map<Long, AdminOperationTaskWorkloadCommentSummaryDto> latestCommentMap = adminOperationTaskCommentRepository
+                .getLatestCommentsByAssigneeAdminNos(
+                        page.getContent().stream()
+                                .map(AdminOperationTaskWorkloadDto::assigneeAdminNo)
+                                .filter(Objects::nonNull)
+                                .toList()
+                ).stream()
+                .collect(Collectors.toMap(AdminOperationTaskWorkloadCommentSummaryDto::getAssigneeAdminNo, item -> item));
+
+        return AdminOperationTaskWorkloadExportCsvWriter.write(
+                AdminOperationTaskWorkloadExportSummary.of(query, today),
+                AdminOperationTaskWorkloadListResponse.of(
+                        page,
+                        query,
+                        adminOperationTaskRepository.getTaskWorkloadSummary(query, today),
+                        latestCommentMap
+                ).items()
+        );
+    }
+
+    public AdminOperationTaskWorkloadDetailResponse getWorkloadDetail(Long assigneeAdminNo, String returnTo) {
         String assigneeName = adminUserRepository.findById(assigneeAdminNo)
                 .map(adminUser -> adminUser.getName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
@@ -71,6 +102,7 @@ public class AdminOperationTaskWorkloadService {
         return AdminOperationTaskWorkloadDetailResponse.of(
                 assigneeAdminNo,
                 assigneeName,
+                returnTo,
                 workload,
                 adminOperationTaskRepository.getRecentTasksByAssigneeAdminNo(assigneeAdminNo, 5),
                 adminOperationTaskRepository.getOverdueTasksByAssigneeAdminNo(assigneeAdminNo, today, 5),

@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AdminOperationTaskCommentRepository extends JpaRepository<AdminOperationTaskComment, Long>, CustomAdminOperationTaskCommentRepository {
     void deleteByTaskNo(Long taskNo);
     void deleteByTaskNoIn(java.util.Collection<Long> taskNos);
+    java.util.List<AdminOperationTaskComment> findByTaskNoOrderByCommentNoAsc(Long taskNo);
+    java.util.List<AdminOperationTaskComment> findByTaskNoInOrderByTaskNoAscCommentNoAsc(java.util.Collection<Long> taskNos);
 }

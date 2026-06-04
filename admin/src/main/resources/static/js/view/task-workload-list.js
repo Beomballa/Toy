@@ -25,6 +25,7 @@ const TaskWorkloadList = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('btnExportTaskWorkloadCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnResetTaskWorkload')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('taskWorkloadPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
@@ -75,6 +76,14 @@ const TaskWorkloadList = {
         if (this.state.focusAdminNo) params.set('focusAdminNo', this.state.focusAdminNo);
         if (this.state.source) params.set('source', this.state.source);
         return params;
+    },
+
+    exportCsv() {
+        this.updateStateFromInputs();
+        const params = this.buildParams();
+        params.delete('page');
+        params.delete('size');
+        window.location.href = `/api/admin/settings/tasks/workloads/export?${params.toString()}`;
     },
 
     async getList() {
@@ -205,7 +214,8 @@ const TaskWorkloadList = {
             priority: '',
             overdueOnly: '',
             adminNo: '',
-            focusAdminNo: ''
+            focusAdminNo: '',
+            source: this.state.source || ''
         };
         document.getElementById('taskWorkloadKeyword').value = '';
         document.getElementById('taskWorkloadPriority').value = '';

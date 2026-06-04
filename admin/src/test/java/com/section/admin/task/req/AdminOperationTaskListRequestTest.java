@@ -39,12 +39,12 @@ class AdminOperationTaskListRequestTest {
     void toQueryNormalizesCommentedOnlyAndSortBy() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
         request.setCommentedOnly("y");
-        request.setSortBy("priority_desc");
+        request.setSortBy("latest_comment_desc");
 
         var query = request.toQuery();
 
         assertEquals("Y", query.commentedOnly());
-        assertEquals("PRIORITY_DESC", query.sortBy());
+        assertEquals("LATEST_COMMENT_DESC", query.sortBy());
     }
 
     @Test

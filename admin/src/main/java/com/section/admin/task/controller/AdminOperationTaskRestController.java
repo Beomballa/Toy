@@ -56,9 +56,21 @@ public class AdminOperationTaskRestController {
         return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadList(req));
     }
 
+    @GetMapping("/workloads/export")
+    public ResponseEntity<byte[]> exportWorkloads(@ModelAttribute AdminOperationTaskWorkloadListRequest req) {
+        String fileName = "task-workloads-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOperationTaskWorkloadService.exportWorkloadListCsv(req));
+    }
+
     @GetMapping("/workloads/{adminNo}")
-    public ResponseEntity<AdminOperationTaskWorkloadDetailResponse> getWorkloadDetail(@PathVariable Long adminNo) {
-        return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadDetail(adminNo));
+    public ResponseEntity<AdminOperationTaskWorkloadDetailResponse> getWorkloadDetail(
+            @PathVariable Long adminNo,
+            @RequestParam(value = "returnTo", required = false) String returnTo
+    ) {
+        return ResponseEntity.ok(adminOperationTaskWorkloadService.getWorkloadDetail(adminNo, returnTo));
     }
 
     @GetMapping("/{no}")

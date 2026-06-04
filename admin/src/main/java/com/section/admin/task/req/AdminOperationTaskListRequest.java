@@ -124,7 +124,7 @@ public class AdminOperationTaskListRequest {
             return "PINNED_DUE";
         }
         return switch (normalized.toUpperCase()) {
-            case "PINNED_DUE", "DUE_DATE_DESC", "PRIORITY_DESC", "CREATED_DESC" -> normalized.toUpperCase();
+            case "PINNED_DUE", "DUE_DATE_DESC", "PRIORITY_DESC", "CREATED_DESC", "LATEST_COMMENT_DESC" -> normalized.toUpperCase();
             default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         };
     }

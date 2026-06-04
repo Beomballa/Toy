@@ -16,6 +16,8 @@ import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
 import com.section.common.system.dto.AdminOperationTaskWorkloadSummaryDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.entity.QAdminOperationTaskComment;
+import com.section.common.system.entity.QAdminUser;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,10 @@ import static com.section.common.system.entity.QAdminOperationTaskComment.adminO
 import static com.section.common.system.entity.QAdminUser.adminUser;
 
 public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperationTaskRepository {
+    private static final QAdminOperationTaskComment keywordComment =
+            new QAdminOperationTaskComment("keywordComment");
+    private static final QAdminUser keywordCommentAuthor =
+            new QAdminUser("keywordCommentAuthor");
 
     private final JPAQueryFactory queryFactory;
 
@@ -55,7 +61,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .from(adminOperationTask)
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
-                        keywordLike(query.keyword()),
+                        listKeywordLike(query.keyword()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -75,8 +81,9 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long total = queryFactory
                 .select(adminOperationTask.count())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
-                        keywordLike(query.keyword()),
+                        listKeywordLike(query.keyword()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -259,7 +266,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 ))
                 .from(adminUser)
                 .leftJoin(adminOperationTask).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
-                .where(adminNoNe(excludeAdminNo))
+                .where(
+                        adminNoNe(excludeAdminNo),
+                        adminUser.status.eq("ACTIVE")
+                )
                 .groupBy(adminUser.adminNo, adminUser.name)
                 .orderBy(
                         sumOverdueCount(today).asc(),
@@ -287,7 +297,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         adminOperationTask.assigneeAdminNo.isNotNull(),
-                        keywordLike(query.keyword()),
+                        workloadKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         overdue(query.overdueOnly(), today)
                 )
@@ -306,9 +316,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long total = queryFactory
                 .select(adminOperationTask.assigneeAdminNo.countDistinct())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         adminOperationTask.assigneeAdminNo.isNotNull(),
-                        keywordLike(query.keyword()),
+                        workloadKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         overdue(query.overdueOnly(), today)
                 )
@@ -331,8 +342,9 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long count = queryFactory
                 .select(adminOperationTask.count())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
-                        keywordLike(query.keyword()),
+                        listKeywordLike(query.keyword()),
                         statusEq(status != null ? status : query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -356,8 +368,9 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long count = queryFactory
                 .select(adminOperationTask.count())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
-                        keywordLike(query.keyword()),
+                        listKeywordLike(query.keyword()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         isPinnedEq(query.isPinned()),
@@ -372,12 +385,48 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         return count == null ? 0L : count;
     }
 
-    private BooleanExpression keywordLike(String keyword) {
+    private BooleanExpression listKeywordLike(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
-        return adminOperationTask.title.containsIgnoreCase(keyword.trim())
-                .or(adminOperationTask.description.isNotNull().and(adminOperationTask.description.containsIgnoreCase(keyword.trim())));
+        return buildTaskKeywordLike(keyword.trim(), true);
+    }
+
+    private BooleanExpression workloadKeywordLike(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return buildTaskKeywordLike(keyword.trim(), true);
+    }
+
+    private BooleanExpression buildTaskKeywordLike(String keyword, boolean includeAssigneeName) {
+        String[] tokens = keyword.split("\\s+");
+        BooleanExpression expression = null;
+        for (String token : tokens) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            BooleanExpression tokenExpression = adminOperationTask.title.containsIgnoreCase(token)
+                    .or(adminOperationTask.description.isNotNull().and(adminOperationTask.description.containsIgnoreCase(token)))
+                    .or(commentKeywordExists(token));
+            if (includeAssigneeName) {
+                tokenExpression = tokenExpression.or(adminUser.name.containsIgnoreCase(token));
+            }
+            expression = expression == null ? tokenExpression : expression.and(tokenExpression);
+        }
+        return expression;
+    }
+
+    private BooleanExpression commentKeywordExists(String keyword) {
+        return JPAExpressions.selectOne()
+                .from(keywordComment)
+                .leftJoin(keywordCommentAuthor).on(keywordComment.crtNo.eq(keywordCommentAuthor.adminNo))
+                .where(
+                        keywordComment.taskNo.eq(adminOperationTask.taskNo),
+                        keywordComment.content.containsIgnoreCase(keyword)
+                                .or(keywordCommentAuthor.name.containsIgnoreCase(keyword))
+                )
+                .exists();
     }
 
     private BooleanExpression statusEq(String status) {
@@ -460,6 +509,8 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
     private OrderSpecifier<?>[] resolveOrderSpecifiers(String sortBy) {
         String normalizedSort = sortBy == null || sortBy.isBlank() ? "PINNED_DUE" : sortBy.trim().toUpperCase();
         List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+        QAdminOperationTaskComment latestComment =
+                new QAdminOperationTaskComment("latestCommentOrder");
 
         switch (normalizedSort) {
             case "DUE_DATE_DESC" -> {
@@ -478,6 +529,18 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
             case "CREATED_DESC" -> {
                 orderSpecifiers.add(adminOperationTask.crtDtm.desc());
                 orderSpecifiers.add(adminOperationTask.isPinned.desc());
+            }
+            case "LATEST_COMMENT_DESC" -> {
+                NumberExpression<Long> latestCommentNo = Expressions.numberTemplate(
+                        Long.class,
+                        "coalesce({0}, 0)",
+                        JPAExpressions.select(latestComment.commentNo.max())
+                                .from(latestComment)
+                                .where(latestComment.taskNo.eq(adminOperationTask.taskNo))
+                );
+                orderSpecifiers.add(latestCommentNo.desc());
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+                orderSpecifiers.add(adminOperationTask.dueDate.asc().nullsLast());
             }
             default -> {
                 orderSpecifiers.add(adminOperationTask.isPinned.desc());
@@ -519,9 +582,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long count = queryFactory
                 .select(adminOperationTask.assigneeAdminNo.countDistinct())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         adminOperationTask.assigneeAdminNo.isNotNull(),
-                        keywordLike(query.keyword()),
+                        workloadKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         overdue(query.overdueOnly(), today)
                 )
@@ -533,9 +597,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long count = queryFactory
                 .select(adminOperationTask.count())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         adminOperationTask.assigneeAdminNo.isNotNull(),
-                        keywordLike(query.keyword()),
+                        workloadKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         overdue(query.overdueOnly(), today)
                 )
@@ -547,9 +612,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
         Long count = queryFactory
                 .select(adminOperationTask.count())
                 .from(adminOperationTask)
+                .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         adminOperationTask.assigneeAdminNo.isNotNull(),
-                        keywordLike(query.keyword()),
+                        workloadKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         adminOperationTask.dueDate.isNotNull(),
                         adminOperationTask.dueDate.lt(today),
@@ -565,7 +631,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .from(adminOperationTask)
                 .where(
                         adminOperationTask.assigneeAdminNo.isNull(),
-                        keywordLike(query.keyword()),
+                        listKeywordLike(query.keyword()),
                         priorityEq(query.priority()),
                         overdue(query.overdueOnly(), today)
                 )

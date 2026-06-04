@@ -7,6 +7,7 @@ import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
+import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -94,7 +95,7 @@ class AdminOrderRestControllerTest {
     void updateStatusReturnsBadRequestWhenTransitionInvalid() throws Exception {
         doThrow(new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED))
                 .when(adminOrderService)
-                .updateOrderStatus(1L, com.section.common.base.entity.type.OrderStatus.DELIVERED, null);
+                .updateOrderStatus(1L, OrderStatus.DELIVERED, null);
 
         mockMvc.perform(patch("/api/admin/orders/status")
                         .contentType(MediaType.APPLICATION_JSON)

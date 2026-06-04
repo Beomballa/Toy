@@ -28,9 +28,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -101,18 +103,18 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(0L, 0L, 0L, 0L, 0L, "탐색 문맥 기준", "고정 우선 · 마감 임박 순 · 기한=2026-06-01~2026-06-30"),
                         List.of(),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, "Y", null, "PRIORITY_DESC", "2026-06-01", "2026-06-30"),
-                        new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모있는 작업만 · 기한=2026-06-01~2026-06-30 · 정렬=우선순위 높은 순", 0L, 0L)
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, "Y", null, "LATEST_COMMENT_DESC", "2026-06-01", "2026-06-30"),
+                        new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모있는 작업만 · 기한=2026-06-01~2026-06-30 · 정렬=최근 메모 순", 0L, 0L)
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/list")
                         .param("commentedOnly", "Y")
-                        .param("sortBy", "PRIORITY_DESC")
+                        .param("sortBy", "LATEST_COMMENT_DESC")
                         .param("dueDateFrom", "2026-06-01")
                         .param("dueDateTo", "2026-06-30"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.appliedQuery.commentedOnly").value("Y"))
-                .andExpect(jsonPath("$.appliedQuery.sortBy").value("PRIORITY_DESC"))
+                .andExpect(jsonPath("$.appliedQuery.sortBy").value("LATEST_COMMENT_DESC"))
                 .andExpect(jsonPath("$.appliedQuery.dueDateFrom").value("2026-06-01"))
                 .andExpect(jsonPath("$.appliedQuery.dueDateTo").value("2026-06-30"))
                 .andExpect(jsonPath("$.resultMeta.appliedFilterCount").value(4));
@@ -122,7 +124,7 @@ class AdminOperationTaskRestControllerTest {
     @DisplayName("운영 작업 CSV 내보내기는 다운로드 헤더를 반환한다")
     void exportReturnsAttachmentHeaders() throws Exception {
         when(adminOperationTaskService.exportTaskListCsv(org.mockito.ArgumentMatchers.any()))
-                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                .thenReturn("csv".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(get("/api/admin/settings/tasks/export").param("status", "TODO"))
                 .andExpect(status().isOk())
@@ -154,17 +156,29 @@ class AdminOperationTaskRestControllerTest {
     }
 
     @Test
+    @DisplayName("운영 작업 워크로드 CSV 내보내기는 다운로드 헤더를 반환한다")
+    void exportWorkloadsReturnsAttachmentHeaders() throws Exception {
+        when(adminOperationTaskWorkloadService.exportWorkloadListCsv(org.mockito.ArgumentMatchers.any(AdminOperationTaskWorkloadListRequest.class)))
+                .thenReturn("csv".getBytes(StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/settings/tasks/workloads/export").param("keyword", "정산"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"task-workloads-")));
+    }
+
+    @Test
     @DisplayName("운영 작업 워크로드 상세 API는 단건 응답을 반환한다")
     void getWorkloadDetailReturnsItem() throws Exception {
-        when(adminOperationTaskWorkloadService.getWorkloadDetail(7L))
+        when(adminOperationTaskWorkloadService.getWorkloadDetail(7L, "/admin/settings/tasks/workloads?keyword=%EC%A0%95%EC%82%B0"))
                 .thenReturn(new AdminOperationTaskWorkloadDetailResponse(
                         7L,
                         "운영자",
                         new AdminOperationTaskWorkloadDetailResponse.Summary(6L, 2L, 3L, 1L),
-                        "/admin/settings/tasks?assigneeAdminNo=7",
-                        "/admin/settings/tasks?assigneeAdminNo=7&status=TODO",
-                        "/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS",
-                        "/admin/settings/tasks?assigneeAdminNo=7&overdueOnly=Y",
+                        "/admin/settings/tasks?assigneeAdminNo=7&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail",
+                        "/admin/settings/tasks?assigneeAdminNo=7&status=TODO&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail",
+                        "/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail",
+                        "/admin/settings/tasks?assigneeAdminNo=7&overdueOnly=Y&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail",
                         "/admin/settings/logs?adminNo=7&actionType=TASK_",
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(11L, "정산 점검", "진행중", "높음", "2026-05-26", "/admin/settings/tasks/get?no=11", "/admin/settings/tasks/history?taskNo=11")),
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(12L, "배송 지연 확인", "대기", "중간", "기한 초과", "/admin/settings/tasks/get?no=12", "/admin/settings/tasks/history?taskNo=12")),
@@ -172,15 +186,17 @@ class AdminOperationTaskRestControllerTest {
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentHistory(15L, 11L, "운영 작업 #11", "작업 수정", "운영자", "2026-05-25 12:00", "/admin/settings/tasks/get?no=11", "/api/admin/logs/get?no=15"))
                 ));
 
-        mockMvc.perform(get("/api/admin/settings/tasks/workloads/7"))
+        mockMvc.perform(get("/api/admin/settings/tasks/workloads/7")
+                        .param("returnTo", "/admin/settings/tasks/workloads?keyword=%EC%A0%95%EC%82%B0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.assigneeAdminName").value("운영자"))
                 .andExpect(jsonPath("$.summary.totalCount").value(6L))
-                .andExpect(jsonPath("$.todoPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=TODO"))
-                .andExpect(jsonPath("$.inProgressPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS"))
+                .andExpect(jsonPath("$.todoPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=TODO&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail"))
+                .andExpect(jsonPath("$.inProgressPath").value("/admin/settings/tasks?assigneeAdminNo=7&status=IN_PROGRESS&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail"))
                 .andExpect(jsonPath("$.overdueTasks[0].title").value("배송 지연 확인"))
                 .andExpect(jsonPath("$.recentComments[0].content").value("우선 확인 필요"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"));
+        verify(adminOperationTaskWorkloadService).getWorkloadDetail(7L, "/admin/settings/tasks/workloads?keyword=%EC%A0%95%EC%82%B0");
     }
 
     @Test
@@ -238,7 +254,7 @@ class AdminOperationTaskRestControllerTest {
     @DisplayName("운영 작업 이력 CSV 내보내기는 다운로드 헤더를 반환한다")
     void exportHistoryReturnsAttachmentHeaders() throws Exception {
         when(adminOperationTaskHistoryService.exportTaskHistoryCsv(org.mockito.ArgumentMatchers.any()))
-                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                .thenReturn("csv".getBytes(StandardCharsets.UTF_8));
 
         mockMvc.perform(get("/api/admin/settings/tasks/history/export").param("taskNo", "3"))
                 .andExpect(status().isOk())

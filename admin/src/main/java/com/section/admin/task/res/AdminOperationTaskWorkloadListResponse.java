@@ -27,7 +27,9 @@ public record AdminOperationTaskWorkloadListResponse(
             Map<Long, AdminOperationTaskWorkloadCommentSummaryDto> latestCommentMap
     ) {
         return new AdminOperationTaskWorkloadListResponse(
-                page.getContent().stream().map(item -> Item.from(item, latestCommentMap == null ? null : latestCommentMap.get(item.assigneeAdminNo()))).toList(),
+                page.getContent().stream()
+                        .map(item -> Item.from(item, latestCommentMap == null ? null : latestCommentMap.get(item.assigneeAdminNo()), query))
+                        .toList(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
@@ -52,16 +54,16 @@ public record AdminOperationTaskWorkloadListResponse(
             String targetPath,
             String overduePath
     ) {
-        static Item from(AdminOperationTaskWorkloadDto item, AdminOperationTaskWorkloadCommentSummaryDto latestComment) {
+        static Item from(
+                AdminOperationTaskWorkloadDto item,
+                AdminOperationTaskWorkloadCommentSummaryDto latestComment,
+                AdminOperationTaskWorkloadListQuery query
+        ) {
             String assigneeName = item.assigneeAdminName() == null || item.assigneeAdminName().isBlank()
                     ? "미지정"
                     : item.assigneeAdminName();
-            String targetPath = item.assigneeAdminNo() == null
-                    ? "/admin/settings/tasks?unassignedOnly=Y"
-                    : "/admin/settings/tasks?assigneeAdminNo=" + item.assigneeAdminNo();
-            String overduePath = item.assigneeAdminNo() == null
-                    ? "/admin/settings/tasks?unassignedOnly=Y&overdueOnly=Y"
-                    : "/admin/settings/tasks?assigneeAdminNo=" + item.assigneeAdminNo() + "&overdueOnly=Y";
+            String targetPath = buildTaskListPath(item.assigneeAdminNo(), query, false);
+            String overduePath = buildTaskListPath(item.assigneeAdminNo(), query, true);
             return new Item(
                     item.assigneeAdminNo(),
                     assigneeName,
@@ -87,6 +89,28 @@ public record AdminOperationTaskWorkloadListResponse(
 
         private static String formatDateTime(java.time.LocalDateTime value) {
             return value == null ? "-" : value.toString().replace('T', ' ');
+        }
+
+        private static String buildTaskListPath(Long assigneeAdminNo, AdminOperationTaskWorkloadListQuery query, boolean overdueOnly) {
+            java.util.LinkedHashMap<String, String> params = new java.util.LinkedHashMap<>();
+            if (assigneeAdminNo == null) {
+                params.put("unassignedOnly", "Y");
+            } else {
+                params.put("assigneeAdminNo", String.valueOf(assigneeAdminNo));
+            }
+            if (query != null && query.keyword() != null && !query.keyword().isBlank()) {
+                params.put("keyword", query.keyword());
+            }
+            if (query != null && query.priority() != null && !query.priority().isBlank()) {
+                params.put("priority", query.priority());
+            }
+            if (overdueOnly || (query != null && "Y".equalsIgnoreCase(query.overdueOnly()))) {
+                params.put("overdueOnly", "Y");
+            }
+            return "/admin/settings/tasks?" + params.entrySet().stream()
+                    .map(entry -> entry.getKey() + "=" + java.net.URLEncoder.encode(entry.getValue(), java.nio.charset.StandardCharsets.UTF_8))
+                    .reduce((left, right) -> left + "&" + right)
+                    .orElse("");
         }
     }
 

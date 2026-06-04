@@ -28,6 +28,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
     public static AdminOperationTaskWorkloadDetailResponse of(
             Long assigneeAdminNo,
             String assigneeAdminName,
+            String returnTo,
             AdminOperationTaskWorkloadDto workload,
             List<AdminOperationTaskListResDto> recentTasks,
             List<AdminOperationTaskListResDto> overdueTasks,
@@ -37,19 +38,21 @@ public record AdminOperationTaskWorkloadDetailResponse(
         String resolvedAssigneeName = assigneeAdminName == null || assigneeAdminName.isBlank()
                 ? "관리자#" + assigneeAdminNo
                 : assigneeAdminName;
+        String detailReturnTo = buildDetailReturnTo(assigneeAdminNo, returnTo);
+        String taskListReturnTo = encode(detailReturnTo);
         return new AdminOperationTaskWorkloadDetailResponse(
                 assigneeAdminNo,
                 resolvedAssigneeName,
                 Summary.from(workload),
-                "/admin/settings/tasks?assigneeAdminNo=" + assigneeAdminNo,
-                "/admin/settings/tasks?assigneeAdminNo=" + assigneeAdminNo + "&status=TODO",
-                "/admin/settings/tasks?assigneeAdminNo=" + assigneeAdminNo + "&status=IN_PROGRESS",
-                "/admin/settings/tasks?assigneeAdminNo=" + assigneeAdminNo + "&overdueOnly=Y",
+                buildTaskListPath(assigneeAdminNo, null, false, taskListReturnTo),
+                buildTaskListPath(assigneeAdminNo, "TODO", false, taskListReturnTo),
+                buildTaskListPath(assigneeAdminNo, "IN_PROGRESS", false, taskListReturnTo),
+                buildTaskListPath(assigneeAdminNo, null, true, taskListReturnTo),
                 "/admin/settings/logs?adminNo=" + assigneeAdminNo + "&actionType=TASK_",
-                recentTasks == null ? List.of() : recentTasks.stream().map(RecentTask::from).toList(),
-                overdueTasks == null ? List.of() : overdueTasks.stream().map(RecentTask::from).toList(),
-                recentComments == null ? List.of() : recentComments.stream().map(RecentComment::from).toList(),
-                recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList()
+                recentTasks == null ? List.of() : recentTasks.stream().map(item -> RecentTask.from(item, detailReturnTo)).toList(),
+                overdueTasks == null ? List.of() : overdueTasks.stream().map(item -> RecentTask.from(item, detailReturnTo)).toList(),
+                recentComments == null ? List.of() : recentComments.stream().map(item -> RecentComment.from(item, detailReturnTo)).toList(),
+                recentHistories == null ? List.of() : recentHistories.stream().map(item -> RecentHistory.from(item, detailReturnTo)).toList()
         );
     }
 
@@ -78,15 +81,15 @@ public record AdminOperationTaskWorkloadDetailResponse(
             String taskPath,
             String historyPath
     ) {
-        static RecentTask from(AdminOperationTaskListResDto item) {
+        static RecentTask from(AdminOperationTaskListResDto item, String detailReturnTo) {
             return new RecentTask(
                     item.getTaskNo(),
                     item.getTitle(),
                     AdminOperationTaskStatus.fromCode(item.getStatus()).getLabel(),
                     AdminOperationTaskPriority.fromCode(item.getPriority()).getLabel(),
                     resolveDueState(item, LocalDate.now()),
-                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode("/admin/settings/tasks/workloads/get?adminNo=" + item.getAssigneeAdminNo()),
-                    "/admin/settings/tasks/history?taskNo=" + item.getTaskNo() + "&returnTo=" + encode("/admin/settings/tasks/workloads/get?adminNo=" + item.getAssigneeAdminNo())
+                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo),
+                    "/admin/settings/tasks/history?taskNo=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo)
             );
         }
 
@@ -116,7 +119,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
             String commentDtm,
             String taskPath
     ) {
-        static RecentComment from(AdminOperationTaskWorkloadCommentSummaryDto item) {
+        static RecentComment from(AdminOperationTaskWorkloadCommentSummaryDto item, String detailReturnTo) {
             return new RecentComment(
                     item.getCommentNo(),
                     item.getTaskNo(),
@@ -124,7 +127,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                     resolveAdminName(item),
                     item.getContent(),
                     format(item.getCrtDtm()),
-                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode("/admin/settings/tasks/workloads/get?adminNo=" + item.getAssigneeAdminNo())
+                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo)
             );
         }
 
@@ -146,7 +149,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
             String taskPath,
             String logDetailPath
     ) {
-        static RecentHistory from(AdminLogListResponse.Item item) {
+        static RecentHistory from(AdminLogListResponse.Item item, String detailReturnTo) {
             Long taskNo = item.targetId();
             return new RecentHistory(
                     item.logNo(),
@@ -155,7 +158,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                     resolveActionLabel(item.actionType()),
                     item.adminName(),
                     item.actionDtm(),
-                    taskNo == null ? null : "/admin/settings/tasks/get?no=" + taskNo + "&returnTo=" + encode("/admin/settings/tasks/workloads/get?adminNo=" + item.adminNo()),
+                    taskNo == null ? null : "/admin/settings/tasks/get?no=" + taskNo + "&returnTo=" + encode(detailReturnTo),
                     "/api/admin/logs/get?no=" + item.logNo()
             );
         }
@@ -180,6 +183,27 @@ public record AdminOperationTaskWorkloadDetailResponse(
 
     private static String format(LocalDateTime value) {
         return value == null ? "-" : value.toString().replace('T', ' ');
+    }
+
+    private static String buildDetailReturnTo(Long assigneeAdminNo, String returnTo) {
+        StringBuilder builder = new StringBuilder("/admin/settings/tasks/workloads/get?adminNo=").append(assigneeAdminNo);
+        if (returnTo != null && !returnTo.isBlank()) {
+            builder.append("&returnTo=").append(encode(returnTo));
+        }
+        return builder.toString();
+    }
+
+    private static String buildTaskListPath(Long assigneeAdminNo, String status, boolean overdueOnly, String returnTo) {
+        StringBuilder builder = new StringBuilder("/admin/settings/tasks?assigneeAdminNo=").append(assigneeAdminNo);
+        if (status != null && !status.isBlank()) {
+            builder.append("&status=").append(status);
+        }
+        if (overdueOnly) {
+            builder.append("&overdueOnly=Y");
+        }
+        builder.append("&returnTo=").append(returnTo);
+        builder.append("&source=task-workload-detail");
+        return builder.toString();
     }
 
     private static String encode(String value) {

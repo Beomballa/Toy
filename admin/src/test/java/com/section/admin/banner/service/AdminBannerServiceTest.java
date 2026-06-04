@@ -1,10 +1,13 @@
 package com.section.admin.banner.service;
 
 import com.section.admin.banner.req.BannerListRequest;
+import com.section.admin.banner.req.BannerBulkDeleteRequest;
+import com.section.admin.banner.req.BannerBulkOperateRequest;
 import com.section.admin.banner.req.BannerSaveRequest;
 import com.section.admin.banner.res.BannerDetailResponse;
 import com.section.admin.banner.res.BannerListResponse;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
 import com.section.common.commerce.entity.DisplayBanner;
 import com.section.common.commerce.repository.BannerRepository;
@@ -82,8 +85,8 @@ class AdminBannerServiceTest {
 
         adminBannerService.getBannerList(request);
 
-        ArgumentCaptor<com.section.common.commerce.dto.BannerListQuery> queryCaptor =
-                ArgumentCaptor.forClass(com.section.common.commerce.dto.BannerListQuery.class);
+        ArgumentCaptor<BannerListQuery> queryCaptor =
+                ArgumentCaptor.forClass(BannerListQuery.class);
         verify(bannerRepository).getBannerList(queryCaptor.capture(), any());
         assertEquals("LIVE", queryCaptor.getValue().exposureStatus());
     }
@@ -278,7 +281,7 @@ class AdminBannerServiceTest {
                 .thenReturn(false);
 
         AdminBannerService.BulkOperateResult result = adminBannerService.bulkOperate(
-                new com.section.admin.banner.req.BannerBulkOperateRequest(List.of(4L, 5L), "Y")
+                new BannerBulkOperateRequest(List.of(4L, 5L), "Y")
         );
 
         assertEquals(2, result.requestedCount());
@@ -303,7 +306,7 @@ class AdminBannerServiceTest {
         when(bannerRepository.findAllById(List.of(9L, 10L))).thenReturn(List.of(banner));
 
         AdminBannerService.BulkDeleteResult result = adminBannerService.bulkDelete(
-                new com.section.admin.banner.req.BannerBulkDeleteRequest(List.of(9L, 10L))
+                new BannerBulkDeleteRequest(List.of(9L, 10L))
         );
 
         assertEquals(2, result.requestedCount());

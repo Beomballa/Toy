@@ -69,8 +69,8 @@
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-5">
-                    <label class="form-label fw-bold">제목/설명 검색</label>
-                    <input type="text" id="taskWorkloadKeyword" class="form-control" placeholder="워크로드 기준 작업 검색">
+                    <label class="form-label fw-bold">담당자/작업/메모 검색</label>
+                    <input type="text" id="taskWorkloadKeyword" class="form-control" placeholder="담당자명, 작업명, 메모 검색">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold">우선순위</label>
@@ -99,6 +99,9 @@
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">담당자별 작업 분배</h6>
             <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-success btn-sm" id="btnExportTaskWorkloadCsv">
+                    <i class="fas fa-file-csv me-1"></i>CSV 내보내기
+                </button>
                 <span class="small text-muted" id="taskWorkloadMetaText">데이터를 불러오는 중입니다...</span>
                 <select id="taskWorkloadPageSize" class="form-select form-select-sm" style="width: auto;">
                     <option value="10">10개</option>

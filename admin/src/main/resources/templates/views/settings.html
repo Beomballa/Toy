@@ -203,10 +203,104 @@
         <div class="col-lg-12">
             <div class="card animate-in">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">관리자 계정 관리</h6>
-                    <button class="btn btn-sm btn-primary" id="btnNewAdmin"><i class="fas fa-user-plus me-1"></i>계정 추가</button>
+                    <div>
+                        <h6 class="card-title mb-0">관리자 계정 관리</h6>
+                        <div class="small text-muted mt-1" id="adminListMetaText">관리자 계정을 불러오는 중입니다...</div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-success" id="btnExportAdminCsv"><i class="fas fa-file-csv me-1"></i>CSV 내보내기</button>
+                        <button class="btn btn-sm btn-primary" id="btnNewAdmin"><i class="fas fa-user-plus me-1"></i>계정 추가</button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
+                    <div class="row g-3 p-3 border-bottom bg-body-tertiary">
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">전체 관리자</div>
+                                <div class="fs-5 fw-bold" id="adminSummaryTotalCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">활성</div>
+                                <div class="fs-5 fw-bold" id="adminSummaryActiveCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">정지</div>
+                                <div class="fs-5 fw-bold" id="adminSummarySuspendedCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">최고 관리자</div>
+                                <div class="fs-5 fw-bold" id="adminSummarySuperCount">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-12">
+                            <div class="border rounded p-3 h-100">
+                                <div class="small text-muted">7일 이상 미접속</div>
+                                <div class="fs-5 fw-bold" id="adminSummaryInactiveCount">0</div>
+                                <div class="small text-muted mt-1">로그인 이력이 없거나 최근 7일간 접속이 없는 계정</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-bottom p-3 bg-light-subtle">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold mb-1">검색</label>
+                                <input type="text" id="adminKeyword" class="form-control form-control-sm" placeholder="로그인 ID 또는 관리자명">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">권한</label>
+                                <select id="adminRoleFilter" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="ROLE_SUPER">최고 관리자</option>
+                                    <option value="ROLE_ADMIN">일반 관리자</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">상태</label>
+                                <select id="adminStatusFilter" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="ACTIVE">활성</option>
+                                    <option value="SUSPENDED">정지</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">미접속 기준</label>
+                                <select id="adminInactiveDaysFilter" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="7">7일 이상</option>
+                                    <option value="14">14일 이상</option>
+                                    <option value="30">30일 이상</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-bold mb-1">로그인 이력</label>
+                                <select id="adminNeverLoggedInFilter" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="Y">없음만</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label fw-bold mb-1">건수</label>
+                                <select id="adminPageSize" class="form-select form-select-sm">
+                                    <option value="5">5</option>
+                                    <option value="10" selected>10</option>
+                                    <option value="20">20</option>
+                                </select>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
+                            <span id="adminFilterMeta">적용 필터 없음</span>
+                            <span id="adminPageMeta">페이지 메타 없음</span>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
@@ -224,6 +318,12 @@
                                 <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 p-3 border-top">
+                        <div class="small text-muted" id="adminResultSummary">관리자 계정 현황을 조회합니다.</div>
+                        <nav aria-label="관리자 계정 페이지 이동">
+                            <ul class="pagination pagination-sm mb-0" id="adminPagination"></ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -304,6 +404,10 @@
         modal: null,
         historyDetailModal: null,
         operationPolicy: null,
+        adminState: {
+            page: 0,
+            size: 10
+        },
         historyState: {
             page: 0,
             size: 8
@@ -321,8 +425,30 @@
         },
         bindEvents() {
             document.getElementById('btnNewAdmin').addEventListener('click', () => this.openModal());
+            document.getElementById('btnExportAdminCsv').addEventListener('click', () => this.exportAdminList());
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
             document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
+            document.getElementById('btnResetAdminFilters').addEventListener('click', () => this.resetAdminFilters());
+            document.getElementById('adminPageSize').addEventListener('change', () => {
+                this.adminState.page = 0;
+                this.adminState.size = Number(document.getElementById('adminPageSize').value || 10);
+                this.getList();
+            });
+            ['adminKeyword'].forEach((id) => {
+                document.getElementById(id)?.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        this.adminState.page = 0;
+                        this.getList();
+                    }
+                });
+            });
+            ['adminRoleFilter', 'adminStatusFilter', 'adminInactiveDaysFilter', 'adminNeverLoggedInFilter'].forEach((id) => {
+                document.getElementById(id)?.addEventListener('change', () => {
+                    this.adminState.page = 0;
+                    this.getList();
+                });
+            });
             document.getElementById('btnRefreshSystemHistory').addEventListener('click', () => this.getSystemSettingHistory());
             document.getElementById('btnExportSystemHistory').addEventListener('click', () => this.exportSystemSettingHistory());
             document.getElementById('btnSearchSystemHistory').addEventListener('click', () => {
@@ -354,20 +480,58 @@
                     this.openSystemSettingHistoryDetail(Number(detailButton.dataset.historyNo));
                 }
             });
+            document.getElementById('adminListBody').addEventListener('click', (event) => {
+                const deleteButton = event.target.closest('[data-role="delete-admin"]');
+                if (deleteButton) {
+                    this.deleteAdmin(Number(deleteButton.dataset.adminNo), deleteButton.dataset.adminName);
+                }
+            });
         },
         async getList() {
             try {
-                const res = await fetch('/api/admin/users/list');
+                const res = await fetch(`/api/admin/users/list?${this.buildAdminListParams().toString()}`);
+                if (!res.ok) {
+                    throw new Error(await CommonJS.extractErrorMessage(res, '관리자 목록을 불러오지 못했습니다.'));
+                }
                 const data = await res.json();
                 this.renderList(data);
             } catch (err) {
-                console.error('관리자 목록 로드 실패:', err);
+                document.getElementById('adminListMetaText').textContent = err.message;
+                document.getElementById('adminListBody').innerHTML =
+                    `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             }
         },
-        renderList(items) {
+        buildAdminListParams() {
+            const params = new URLSearchParams();
+            const keyword = document.getElementById('adminKeyword').value.trim();
+            const role = document.getElementById('adminRoleFilter').value;
+            const status = document.getElementById('adminStatusFilter').value;
+            const inactiveDays = document.getElementById('adminInactiveDaysFilter').value;
+            const neverLoggedInOnly = document.getElementById('adminNeverLoggedInFilter').value;
+
+            if (keyword) params.set('keyword', keyword);
+            if (role) params.set('role', role);
+            if (status) params.set('status', status);
+            if (inactiveDays) params.set('inactiveDays', inactiveDays);
+            if (neverLoggedInOnly) params.set('neverLoggedInOnly', neverLoggedInOnly);
+            params.set('page', String(this.adminState.page));
+            params.set('size', String(this.adminState.size));
+            return params;
+        },
+        exportAdminList() {
+            const params = this.buildAdminListParams();
+            params.delete('page');
+            params.delete('size');
+            window.location.href = `/api/admin/users/export?${params.toString()}`;
+        },
+        renderList(data) {
             const tbody = document.getElementById('adminListBody');
+            const items = data?.items || [];
             if (!items || items.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5">등록된 관리자가 없습니다.</td></tr>';
+                this.renderAdminSummary(data?.summary);
+                this.renderAdminMeta(data);
+                this.renderAdminPagination(data);
                 return;
             }
             tbody.innerHTML = items.map(item => `
@@ -375,17 +539,68 @@
                     <td class="ps-4 text-muted small">${item.adminNo}</td>
                     <td class="fw-bold">${item.loginId}</td>
                     <td>${item.name}</td>
-                    <td><span class="badge ${item.role === 'ROLE_SUPER' ? 'bg-danger' : 'bg-primary'}">${item.role}</span></td>
-                    <td><span class="badge ${item.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">${item.status}</span></td>
-                    <td class="text-muted small">${item.lastLoginDtm ? item.lastLoginDtm.replace('T', ' ') : '-'}</td>
+                    <td><span class="badge ${item.role === 'ROLE_SUPER' ? 'bg-danger' : 'bg-primary'}">${item.roleLabel}</span></td>
+                    <td><span class="badge ${item.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}">${item.statusLabel}</span></td>
+                    <td class="text-muted small">${item.lastLoginDtm || '-'}</td>
                     <td class="text-end pe-4">
                         <button class="btn btn-sm btn-outline-primary"
                                 data-role="edit-admin"
                                 onclick='AdminUser.openModal(${JSON.stringify(item)})'>수정</button>
+                        <button class="btn btn-sm btn-outline-danger ms-1"
+                                data-role="delete-admin"
+                                data-admin-no="${item.adminNo}"
+                                data-admin-name="${item.name}">삭제</button>
                     </td>
                 </tr>
             `).join('');
+            this.renderAdminSummary(data?.summary);
+            this.renderAdminMeta(data);
+            this.renderAdminPagination(data);
             this.updateAdminActionState();
+        },
+        renderAdminSummary(summary) {
+            const safeSummary = summary || {};
+            document.getElementById('adminSummaryTotalCount').textContent = Number(safeSummary.totalCount || 0).toLocaleString();
+            document.getElementById('adminSummaryActiveCount').textContent = Number(safeSummary.activeCount || 0).toLocaleString();
+            document.getElementById('adminSummarySuspendedCount').textContent = Number(safeSummary.suspendedCount || 0).toLocaleString();
+            document.getElementById('adminSummarySuperCount').textContent = Number(safeSummary.superCount || 0).toLocaleString();
+            document.getElementById('adminSummaryInactiveCount').textContent = Number(safeSummary.inactiveCount || 0).toLocaleString();
+        },
+        renderAdminMeta(data) {
+            document.getElementById('adminListMetaText').textContent =
+                data?.resultMeta?.resultLabel || `최근 ${data?.items?.length || 0}건 / 전체 ${data?.totalElements || 0}건`;
+            document.getElementById('adminFilterMeta').textContent =
+                `적용 필터 ${data?.resultMeta?.appliedFilterCount ?? 0}개`;
+            document.getElementById('adminPageMeta').textContent =
+                data?.resultMeta?.pageInfoLabel || '페이지 메타 없음';
+            document.getElementById('adminResultSummary').textContent =
+                data?.resultMeta?.querySignature || '관리자 계정 현황을 조회합니다.';
+        },
+        renderAdminPagination(data) {
+            const pagination = document.getElementById('adminPagination');
+            if (!pagination) {
+                return;
+            }
+            if (!data?.totalPages) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+            for (let i = 0; i < data.totalPages; i += 1) {
+                html += `
+                    <li class="page-item ${i === data.currentPage ? 'active' : ''}">
+                        <button type="button" class="page-link" data-role="go-admin-page" data-page="${i}">${i + 1}</button>
+                    </li>
+                `;
+            }
+            pagination.innerHTML = html;
+            pagination.querySelectorAll('[data-role="go-admin-page"]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    this.adminState.page = Number(button.dataset.page);
+                    this.getList();
+                });
+            });
         },
         applyOperationPolicy(settings) {
             this.operationPolicy = settings;
@@ -409,7 +624,11 @@
 
             CommonJS.setButtonDisabled(document.getElementById('btnNewAdmin'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnExportAdminCsv'), false);
             document.querySelectorAll('[data-role="edit-admin"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
+            document.querySelectorAll('[data-role="delete-admin"]').forEach((button) => {
                 CommonJS.setButtonDisabled(button, disabled, reason);
             });
         },
@@ -476,6 +695,40 @@
             } catch (err) {
                 CommonJS.alert(err.message, '오류', 'error');
             }
+        },
+        async deleteAdmin(adminNo, adminName) {
+            if (!Number.isFinite(adminNo) || adminNo <= 0) {
+                return;
+            }
+            if (this.operationPolicy?.maintenanceMode) {
+                await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리자 계정 삭제'), '알림', 'warning');
+                return;
+            }
+            const confirmed = await CommonJS.confirm(`${adminName || '선택한 관리자'} 계정을 삭제할까요?`, '관리자 삭제');
+            if (!confirmed) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/admin/users/delete?no=${adminNo}`, { method: 'DELETE' });
+                if (!res.ok) {
+                    throw new Error(await CommonJS.extractErrorMessage(res, '관리자 삭제에 실패했습니다.'));
+                }
+                await CommonJS.alert('관리자 계정이 삭제되었습니다.', '성공', 'success');
+                this.getList();
+            } catch (err) {
+                CommonJS.alert(err.message, '오류', 'error');
+            }
+        },
+        resetAdminFilters() {
+            document.getElementById('adminKeyword').value = '';
+            document.getElementById('adminRoleFilter').value = '';
+            document.getElementById('adminStatusFilter').value = '';
+            document.getElementById('adminInactiveDaysFilter').value = '';
+            document.getElementById('adminNeverLoggedInFilter').value = '';
+            document.getElementById('adminPageSize').value = '10';
+            this.adminState.page = 0;
+            this.adminState.size = 10;
+            this.getList();
         },
         async getSystemSettings() {
             try {

@@ -312,6 +312,7 @@ public record AdminOperationTaskListResponse(
             case "DUE_DATE_DESC" -> "마감일 늦은 순";
             case "PRIORITY_DESC" -> "우선순위 높은 순";
             case "CREATED_DESC" -> "최근 등록 순";
+            case "LATEST_COMMENT_DESC" -> "최근 메모 순";
             default -> "고정 우선 · 마감 임박 순";
         };
     }

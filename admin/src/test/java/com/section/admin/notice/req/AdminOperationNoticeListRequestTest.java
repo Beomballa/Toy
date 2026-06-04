@@ -1,5 +1,6 @@
 package com.section.admin.notice.req;
 
+import com.section.common.base.entity.type.AdminNoticeVisibilityStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
 import org.junit.jupiter.api.DisplayName;
@@ -24,7 +25,7 @@ class AdminOperationNoticeListRequestTest {
         assertEquals("점검 공지", query.keyword());
         assertEquals("Y", query.isActive());
         assertEquals("N", query.isPinned());
-        assertEquals(com.section.common.base.entity.type.AdminNoticeVisibilityStatus.LIVE, query.visibilityStatus());
+        assertEquals(AdminNoticeVisibilityStatus.LIVE, query.visibilityStatus());
     }
 
     @Test

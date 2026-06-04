@@ -14,6 +14,7 @@ import com.section.admin.notice.support.AdminOperationNoticeExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.system.dto.AdminOperationNoticeListQuery;
+import com.section.common.system.dto.AdminOperationNoticeListResDto;
 import com.section.common.system.dto.AdminOperationNoticeSummaryDto;
 import com.section.common.system.entity.AdminOperationNotice;
 import com.section.common.system.repository.AdminOperationNoticeRepository;
@@ -39,7 +40,7 @@ public class AdminOperationNoticeService {
 
     public AdminOperationNoticeListResponse getNoticeList(AdminOperationNoticeListRequest req) {
         AdminOperationNoticeListQuery query = req.toQuery();
-        Page<com.section.common.system.dto.AdminOperationNoticeListResDto> page = adminOperationNoticeRepository.getNoticeList(
+        Page<AdminOperationNoticeListResDto> page = adminOperationNoticeRepository.getNoticeList(
                 query,
                 PageRequest.of(req.normalizedPage(), req.normalizedSize())
         );
@@ -65,7 +66,7 @@ public class AdminOperationNoticeService {
 
     public byte[] exportNoticeListCsv(AdminOperationNoticeListRequest req) {
         AdminOperationNoticeListQuery query = req.toQuery();
-        Page<com.section.common.system.dto.AdminOperationNoticeListResDto> page = adminOperationNoticeRepository.getNoticeList(
+        Page<AdminOperationNoticeListResDto> page = adminOperationNoticeRepository.getNoticeList(
                 query,
                 PageRequest.of(0, NOTICE_EXPORT_MAX_SIZE)
         );

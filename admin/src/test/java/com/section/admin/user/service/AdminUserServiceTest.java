@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -126,6 +127,19 @@ class AdminUserServiceTest {
         assertEquals("운영 총괄", captor.getValue().getName());
         assertEquals("ROLE_SUPER", captor.getValue().getRole());
         assertEquals("ACTIVE", captor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("관리자 저장은 로그인 ID를 대소문자 구분 없이 중복 검사한다")
+    void saveAdminRejectsDuplicateLoginIdIgnoringCase() {
+        when(adminUserRepository.existsByLoginIdIgnoreCase("Master")).thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminUserService.saveAdmin(
+                new AdminUserSaveRequest(null, " Master ", "pass1234", "운영 총괄", "ROLE_SUPER", "ACTIVE")
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+        verify(adminUserRepository, never()).save(any(AdminUser.class));
     }
 
     @Test

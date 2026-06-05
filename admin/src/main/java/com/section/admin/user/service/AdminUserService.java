@@ -63,9 +63,9 @@ public class AdminUserService {
         String normalizedStatus = normalizeStatus(req.status());
 
         if (req.isNewAdmin()) {
-            adminUserRepository.findByLoginId(normalizedLoginId).ifPresent(u -> {
+            if (adminUserRepository.existsByLoginIdIgnoreCase(normalizedLoginId)) {
                 throw new BusinessException("이미 사용중인 ID입니다.", ErrorCode.INVALID_INPUT_VALUE);
-            });
+            }
 
             String normalizedPassword = normalizePassword(req.password());
             if (normalizedPassword == null) {

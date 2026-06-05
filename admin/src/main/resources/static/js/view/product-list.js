@@ -23,6 +23,9 @@ const ProductList = {
     lastTotalElements: 0,
     operationPolicy: null,
     isDeletingProduct: false,
+    isCloningProduct: false,
+    bulkInFlight: false,
+    selectedProductNos: new Set(),
 
     init(brands = [], categories = [], initialLowStockThreshold = 100) {
         if (this.initialized) {
@@ -56,6 +59,11 @@ const ProductList = {
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {
             window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
         });
+        document.getElementById('btnApplyProductBulk')?.addEventListener('click', () => this.applyBulkOperation());
+        document.getElementById('btnBulkDuplicateProduct')?.addEventListener('click', () => this.applyBulkDuplicate());
+        document.getElementById('btnBulkDeleteProduct')?.addEventListener('click', () => this.applyBulkDelete());
+        document.getElementById('btnClearProductSelection')?.addEventListener('click', () => this.clearSelection());
+        document.getElementById('productSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         CommonJS.bindMainLogoNavigation('/admin/products');
     },
 
@@ -99,6 +107,12 @@ const ProductList = {
                 return;
             }
 
+            const checkbox = e.target.closest('[data-role="select-product"]');
+            if (checkbox) {
+                this.toggleSelection(Number(checkbox.dataset.productNo), checkbox.checked);
+                return;
+            }
+
             const imageSearchBtn = e.target.closest('.btn-image-search');
             if (imageSearchBtn) {
                 CommonJS.openImageSearch(
@@ -116,6 +130,12 @@ const ProductList = {
                     return;
                 }
                 location.href = `/admin/products/update?no=${editButton.dataset.productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+                return;
+            }
+
+            const cloneButton = e.target.closest('[data-role="clone-product"]');
+            if (cloneButton) {
+                this.cloneProduct(cloneButton.dataset.productNo);
                 return;
             }
 
@@ -176,6 +196,21 @@ const ProductList = {
                 document.getElementById('new-product'),
                 disabled,
                 CommonJS.getAdminWriteBlockedReason('상품 등록, 수정, 삭제')
+            );
+            CommonJS.setButtonDisabled(
+                document.getElementById('btnApplyProductBulk'),
+                disabled,
+                CommonJS.getAdminWriteBlockedReason('상품 일괄 변경')
+            );
+            CommonJS.setButtonDisabled(
+                document.getElementById('btnBulkDuplicateProduct'),
+                disabled,
+                CommonJS.getAdminWriteBlockedReason('상품 일괄 복제')
+            );
+            CommonJS.setButtonDisabled(
+                document.getElementById('btnBulkDeleteProduct'),
+                disabled,
+                CommonJS.getAdminWriteBlockedReason('상품 일괄 삭제')
             );
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
@@ -263,7 +298,7 @@ const ProductList = {
             const emptyMessage = this._buildEmptyStateMessage();
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="9" class="text-center py-5 text-muted">
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품이 없습니다.</strong>
@@ -276,11 +311,18 @@ const ProductList = {
                 </tr>
             `;
             this._setListStateMeta('empty', emptyMessage, 0);
+            this.updateSelectionMeta([]);
             return;
         }
 
         tbody.innerHTML = items.map(item => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox"
+                           data-role="select-product"
+                           data-product-no="${item.productNo}"
+                           ${this.selectedProductNos.has(item.productNo) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4">
                     <div class="product-info">
                         <div class="product-thumb-container" style="width:56px; height:56px;">
@@ -317,6 +359,13 @@ const ProductList = {
                     </button>
                     <button type="button"
                             class="btn btn-icon btn-secondary me-1"
+                            data-role="clone-product"
+                            data-product-no="${item.productNo}"
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 복제')}"` : ''}>
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button type="button"
+                            class="btn btn-icon btn-secondary me-1"
                             data-role="edit-product"
                             data-product-no="${item.productNo}"
                             ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 수정')}"` : ''}>
@@ -333,6 +382,7 @@ const ProductList = {
             </tr>
         `).join('');
         this._setListStateMeta('ready', '', items.length);
+        this.updateSelectionMeta(items);
     },
 
     _renderPagination(data) {
@@ -366,6 +416,7 @@ const ProductList = {
                 : `페이지 크기 ${this.state.size} · 0-0`;
             pageMetaText.textContent = pageMetaLabel;
         }
+        this.updateSelectionMeta(Array.isArray(data.products) ? data.products : []);
     },
 
     _updateStats(stats) {
@@ -448,7 +499,7 @@ const ProductList = {
 
     _showError(message = '데이터 로드 중 오류가 발생했습니다.') {
         document.getElementById('productListTableBody').innerHTML = `
-            <tr><td colspan="8" class="text-center py-5 text-danger">${message}</td></tr>`;
+            <tr><td colspan="9" class="text-center py-5 text-danger">${message}</td></tr>`;
         const pageInfoText = document.getElementById('pageInfoText');
         const totalElementsCount = document.getElementById('totalElementsCount');
         const pageMetaText = document.getElementById('pageMetaText');
@@ -472,7 +523,7 @@ const ProductList = {
         if (isLoading) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="9" class="text-center py-5 text-muted">
                         <div class="product-loading-state">
                             <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                             <strong>상품 목록을 다시 불러오는 중입니다.</strong>
@@ -582,6 +633,7 @@ const ProductList = {
             });
 
             if (response.ok) {
+                this.selectedProductNos.delete(Number(no));
                 await this.getList();
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
             } else {
@@ -601,6 +653,270 @@ const ProductList = {
         document.querySelectorAll('[data-role="delete-product"]').forEach((button) => {
             button.disabled = disabled;
         });
+    },
+
+    async cloneProduct(productNo) {
+        if (this.isCloningProduct) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 복제'), '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm('선택한 상품을 복제하시겠습니까?', '상품 복제', 'info');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.isCloningProduct = true;
+            this._setCloneButtonsDisabled(true);
+            const response = await fetch(`/api/admin/product/clone/${productNo}`, {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                const message = await CommonJS.extractErrorMessage(response, '상품 복제에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            await this.getList();
+            await CommonJS.alert(`상품이 복제되었습니다. 생성 번호: ${result.productNo}`, '성공', 'success');
+        } catch (error) {
+            console.error('Clone Error:', error);
+            await CommonJS.alert('복제 처리 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.isCloningProduct = false;
+            this._setCloneButtonsDisabled(false);
+        }
+    },
+
+    _setCloneButtonsDisabled(disabled) {
+        document.querySelectorAll('[data-role="clone-product"]').forEach((button) => {
+            button.disabled = disabled;
+        });
+    },
+
+    toggleSelection(productNo, checked) {
+        if (!Number.isFinite(productNo) || productNo <= 0) {
+            return;
+        }
+
+        if (checked) {
+            this.selectedProductNos.add(productNo);
+        } else {
+            this.selectedProductNos.delete(productNo);
+        }
+
+        const items = Array.from(document.querySelectorAll('[data-role="select-product"]'))
+            .map((checkbox) => ({productNo: Number(checkbox.dataset.productNo)}))
+            .filter((item) => Number.isFinite(item.productNo));
+        this.updateSelectionMeta(items);
+    },
+
+    toggleSelectCurrentPage(checked) {
+        document.querySelectorAll('[data-role="select-product"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+            const productNo = Number(checkbox.dataset.productNo);
+            if (checked) {
+                this.selectedProductNos.add(productNo);
+                return;
+            }
+            this.selectedProductNos.delete(productNo);
+        });
+
+        const items = Array.from(document.querySelectorAll('[data-role="select-product"]'))
+            .map((checkbox) => ({productNo: Number(checkbox.dataset.productNo)}))
+            .filter((item) => Number.isFinite(item.productNo));
+        this.updateSelectionMeta(items);
+    },
+
+    clearSelection() {
+        this.selectedProductNos.clear();
+        const selectPage = document.getElementById('productSelectPage');
+        if (selectPage) {
+            selectPage.checked = false;
+        }
+        document.querySelectorAll('[data-role="select-product"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.updateSelectionMeta([]);
+    },
+
+    updateSelectionMeta(items) {
+        const totalSelected = this.selectedProductNos.size;
+        const visibleProductNos = new Set((items || []).map((item) => item.productNo));
+        const visibleSelected = Array.from(this.selectedProductNos).filter((productNo) => visibleProductNos.has(productNo)).length;
+        const metaEl = document.getElementById('productSelectionMeta');
+        if (metaEl) {
+            metaEl.textContent = totalSelected === 0
+                ? '선택된 상품이 없습니다.'
+                : `총 ${totalSelected}건 선택 · 현재 페이지 ${visibleSelected}건`;
+        }
+
+        const selectPage = document.getElementById('productSelectPage');
+        if (selectPage) {
+            const selectableCount = visibleProductNos.size;
+            selectPage.checked = selectableCount > 0 && visibleSelected === selectableCount;
+        }
+    },
+
+    async applyBulkOperation() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 일괄 변경'), '알림', 'warning');
+            return;
+        }
+        if (!this.selectedProductNos.size) {
+            await CommonJS.alert('일괄 변경할 상품을 선택해주세요.', '알림', 'warning');
+            return;
+        }
+
+        const status = document.getElementById('bulkProductStatus')?.value || '';
+        if (!status) {
+            await CommonJS.alert('변경할 상태를 선택해주세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 상품 ${this.selectedProductNos.size}건의 상태를 일괄 변경하시겠습니까?`, '상품 일괄 변경', 'warning');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const response = await fetch('/api/admin/product/bulk-operate', {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    productNos: Array.from(this.selectedProductNos),
+                    status
+                })
+            });
+            if (!response.ok) {
+                const message = await CommonJS.extractErrorMessage(response, '상품 일괄 변경에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            document.getElementById('bulkProductStatus').value = '';
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(
+                `일괄 변경 완료\n변경 ${result.updatedCount}건 · 동일 상태 ${result.unchangedCount}건 · 삭제 제외 ${result.blockedCount}건 · 누락 ${result.missingCount}건`,
+                '성공',
+                'success'
+            );
+        } catch (error) {
+            console.error('상품 일괄 변경 실패:', error);
+            await CommonJS.alert('상품 일괄 변경 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
+    async applyBulkDelete() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 일괄 삭제'), '알림', 'warning');
+            return;
+        }
+        if (!this.selectedProductNos.size) {
+            await CommonJS.alert('일괄 삭제할 상품을 선택해주세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 상품 ${this.selectedProductNos.size}건을 일괄 삭제하시겠습니까?`, '상품 일괄 삭제', 'error');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const response = await fetch('/api/admin/product/bulk-delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    productNos: Array.from(this.selectedProductNos)
+                })
+            });
+            if (!response.ok) {
+                const message = await CommonJS.extractErrorMessage(response, '상품 일괄 삭제에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(
+                `일괄 삭제 완료\n삭제 ${result.deletedCount}건 · 기삭제 ${result.alreadyDeletedCount}건 · 누락 ${result.missingCount}건`,
+                '성공',
+                'success'
+            );
+        } catch (error) {
+            console.error('상품 일괄 삭제 실패:', error);
+            await CommonJS.alert('상품 일괄 삭제 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
+    },
+
+    async applyBulkDuplicate() {
+        if (this.bulkInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 일괄 복제'), '알림', 'warning');
+            return;
+        }
+        if (!this.selectedProductNos.size) {
+            await CommonJS.alert('복제할 상품을 선택해주세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 상품 ${this.selectedProductNos.size}건을 복제하시겠습니까?`, '상품 일괄 복제', 'info');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.bulkInFlight = true;
+            const response = await fetch('/api/admin/product/bulk-duplicate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    productNos: Array.from(this.selectedProductNos)
+                })
+            });
+            if (!response.ok) {
+                const message = await CommonJS.extractErrorMessage(response, '상품 일괄 복제에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            this.clearSelection();
+            await this.getList();
+            await CommonJS.alert(
+                `일괄 복제 완료\n생성 ${result.createdCount}건 · 삭제 제외 ${result.blockedCount}건 · 누락 ${result.missingCount}건`,
+                '성공',
+                'success'
+            );
+        } catch (error) {
+            console.error('상품 일괄 복제 실패:', error);
+            await CommonJS.alert('상품 일괄 복제 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.bulkInFlight = false;
+        }
     },
 
     getReturnTo() {

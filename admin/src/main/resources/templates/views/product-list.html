@@ -184,12 +184,37 @@
         </ul>
       </div>
     </div>
+    <div class="card-body border-bottom py-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <div class="small text-muted" id="productSelectionMeta">선택된 상품이 없습니다.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold" for="bulkProductStatus">일괄 상태 변경</label>
+          <select class="form-select" id="bulkProductStatus">
+            <option value="">변경 안 함</option>
+            <option value="ACTIVE">판매중</option>
+            <option value="HIDDEN">숨김</option>
+            <option value="SOLD_OUT">품절</option>
+          </select>
+        </div>
+        <div class="col-md-4 d-grid gap-2">
+          <button class="btn btn-outline-dark" type="button" id="btnApplyProductBulk">일괄 적용</button>
+          <button class="btn btn-outline-secondary" type="button" id="btnBulkDuplicateProduct">선택 복제</button>
+          <button class="btn btn-outline-danger" type="button" id="btnBulkDeleteProduct">일괄 삭제</button>
+          <button class="btn btn-outline-secondary" type="button" id="btnClearProductSelection">선택 해제</button>
+        </div>
+      </div>
+    </div>
 
     <div class="card-body p-0">
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
           <tr>
+            <th class="ps-4 table-col-80">
+              <input type="checkbox" id="productSelectPage">
+            </th>
             <th class="ps-4">상품 정보</th>
             <th>모델번호</th>
             <th>브랜드</th>
@@ -202,7 +227,7 @@
           </thead>
           <tbody id="productListTableBody">
           <tr>
-            <td colspan="8" class="text-center py-5">
+            <td colspan="9" class="text-center py-5">
               <div class="spinner-border spinner-border-sm text-primary me-2"></div>
               데이터를 불러오는 중입니다...
             </td>

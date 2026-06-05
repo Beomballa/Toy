@@ -1,6 +1,9 @@
 package com.section.admin.product.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
+import com.section.admin.product.req.ProductBulkDeleteRequest;
+import com.section.admin.product.req.ProductBulkDuplicateRequest;
+import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
@@ -97,6 +100,24 @@ public class AdminProductRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminProductService.deleteProduct(productNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/product/bulk-operate")
+    public ResponseEntity<AdminProductService.BulkOperateResult> bulkOperateProduct(@RequestBody ProductBulkOperateRequest reqDto) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminProductService.bulkOperateProducts(reqDto));
+    }
+
+    @PostMapping("/product/bulk-delete")
+    public ResponseEntity<AdminProductService.BulkDeleteResult> bulkDeleteProduct(@RequestBody ProductBulkDeleteRequest reqDto) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminProductService.bulkDeleteProducts(reqDto));
+    }
+
+    @PostMapping("/product/bulk-duplicate")
+    public ResponseEntity<AdminProductService.BulkDuplicateResult> bulkDuplicateProduct(@RequestBody ProductBulkDuplicateRequest reqDto) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminProductService.bulkDuplicateProducts(reqDto));
     }
 
     @PostMapping("/product/clone/{no}")

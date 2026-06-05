@@ -1,6 +1,9 @@
 package com.section.admin.product.controller;
 
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
+import com.section.admin.product.req.ProductBulkDeleteRequest;
+import com.section.admin.product.req.ProductBulkDuplicateRequest;
+import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
@@ -362,6 +365,87 @@ class AdminProductRestControllerTest {
     }
 
     @Test
+    @DisplayName("유지보수 모드에서는 상품 일괄 상태 변경이 차단된다")
+    void bulkOperateProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(patch("/api/admin/product/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkOperateRequest(List.of(1L, 2L), "ACTIVE"))))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 상태 변경 API는 집계 결과를 반환한다")
+    void bulkOperateProductReturnsSummary() throws Exception {
+        when(adminProductService.bulkOperateProducts(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminProductService.BulkOperateResult(4, 2, 1, 0, 1));
+
+        mockMvc.perform(patch("/api/admin/product/bulk-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkOperateRequest(List.of(1L, 2L, 3L, 4L), "HIDDEN"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(4))
+                .andExpect(jsonPath("$.updatedCount").value(2))
+                .andExpect(jsonPath("$.unchangedCount").value(1))
+                .andExpect(jsonPath("$.blockedCount").value(0))
+                .andExpect(jsonPath("$.missingCount").value(1));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 삭제 API는 집계 결과를 반환한다")
+    void bulkDeleteProductReturnsSummary() throws Exception {
+        when(adminProductService.bulkDeleteProducts(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminProductService.BulkDeleteResult(3, 2, 0, 1));
+
+        mockMvc.perform(post("/api/admin/product/bulk-delete")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkDeleteRequest(List.of(1L, 2L, 3L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.deletedCount").value(2))
+                .andExpect(jsonPath("$.alreadyDeletedCount").value(0))
+                .andExpect(jsonPath("$.missingCount").value(1));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 일괄 삭제가 차단된다")
+    void bulkDeleteProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/product/bulk-delete")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkDeleteRequest(List.of(1L, 2L)))))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 복제 API는 생성 결과를 반환한다")
+    void bulkDuplicateProductReturnsSummary() throws Exception {
+        when(adminProductService.bulkDuplicateProducts(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminProductService.BulkDuplicateResult(3, 2, 1, 0, List.of(10L, 11L)));
+
+        mockMvc.perform(post("/api/admin/product/bulk-duplicate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkDuplicateRequest(List.of(1L, 2L, 3L)))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.createdCount").value(2))
+                .andExpect(jsonPath("$.blockedCount").value(1))
+                .andExpect(jsonPath("$.missingCount").value(0))
+                .andExpect(jsonPath("$.createdProductNos[0]").value(10L))
+                .andExpect(jsonPath("$.createdProductNos[1]").value(11L));
+    }
+
+    @Test
     @DisplayName("유지보수 모드에서는 상품 복제가 차단된다")
     void cloneProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
         doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
@@ -369,6 +453,21 @@ class AdminProductRestControllerTest {
                 .assertAdminWriteAllowed();
 
         mockMvc.perform(post("/api/admin/product/clone/5"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"))
+                .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("유지보수 모드에서는 상품 일괄 복제가 차단된다")
+    void bulkDuplicateProductReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/product/bulk-duplicate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductBulkDuplicateRequest(List.of(1L, 2L)))))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"))
                 .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));

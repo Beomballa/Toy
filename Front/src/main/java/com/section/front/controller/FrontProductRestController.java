@@ -1,5 +1,6 @@
 package com.section.front.controller;
 
+import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,8 @@ public class FrontProductRestController {
     }
 
     @GetMapping("/{productId}")
-    public FrontProductResponse getProduct(@PathVariable long productId) {
-        return frontProductCatalogService.findProduct(productId)
+    public FrontProductDetailResponse getProduct(@PathVariable long productId) {
+        return frontProductCatalogService.findProductDetail(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 }

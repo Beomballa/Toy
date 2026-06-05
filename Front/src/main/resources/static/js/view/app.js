@@ -377,7 +377,22 @@
                     `).join("")}
                 </div>
             </div>
+            ${Array.isArray(product.relatedProducts) && product.relatedProducts.length ? `
+            <div class="product-drawer__group">
+                <strong>연관 상품</strong>
+                <div class="product-drawer__related-list">
+                    ${product.relatedProducts.map((related) => `
+                        <button class="product-drawer__related-card" type="button" data-product-id="${related.id}">
+                            <span class="product-drawer__related-brand">${related.brand}</span>
+                            <strong>${related.name}</strong>
+                            <span class="product-drawer__related-meta">${related.model} · ${formatPrice(related.price)} · 재고 ${related.stock}개</span>
+                        </button>
+                    `).join("")}
+                </div>
+            </div>
+            ` : ""}
         `;
+            bindProductButtons(elements.drawerBody);
         } catch (error) {
             elements.drawerBody.innerHTML = `
                 <p class="eyebrow">Detail</p>

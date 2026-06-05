@@ -51,4 +51,15 @@ class FrontProductCatalogServiceTest {
 
         assertTrue(product.isEmpty());
     }
+
+    @Test
+    @DisplayName("프론트 상품 상세는 같은 브랜드와 카테고리 기준 연관 상품을 함께 반환한다")
+    void findProductDetailIncludesRelatedProducts() {
+        var detail = frontProductCatalogService.findProductDetail(101L);
+
+        assertTrue(detail.isPresent());
+        assertEquals(2, detail.get().relatedProducts().size());
+        assertEquals(103L, detail.get().relatedProducts().getFirst().id());
+        assertEquals(106L, detail.get().relatedProducts().get(1).id());
+    }
 }

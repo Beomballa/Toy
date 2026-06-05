@@ -3,11 +3,15 @@ package com.section.front.product.service;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
+import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.dto.FrontRelatedProductResponse;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class FrontProductCatalogService {
@@ -151,5 +155,64 @@ public class FrontProductCatalogService {
         return getCatalog().stream()
                 .filter(product -> product.id() == productId)
                 .findFirst();
+    }
+
+    public Optional<FrontProductDetailResponse> findProductDetail(long productId) {
+        List<FrontProductResponse> catalog = getCatalog();
+        return catalog.stream()
+                .filter(product -> product.id() == productId)
+                .findFirst()
+                .map(product -> new FrontProductDetailResponse(
+                        product.id(),
+                        product.brand(),
+                        product.category(),
+                        product.name(),
+                        product.model(),
+                        product.price(),
+                        product.stock(),
+                        product.createdDate(),
+                        product.description(),
+                        product.mood(),
+                        product.featured(),
+                        product.options(),
+                        buildRelatedProducts(catalog, product)
+                ));
+    }
+
+    private List<FrontRelatedProductResponse> buildRelatedProducts(List<FrontProductResponse> catalog, FrontProductResponse target) {
+        Set<Long> relatedIds = new LinkedHashSet<>();
+        List<FrontRelatedProductResponse> relatedProducts = new java.util.ArrayList<>();
+
+        catalog.stream()
+                .filter(product -> product.id() != target.id())
+                .filter(product -> product.brand().equals(target.brand()))
+                .sorted(java.util.Comparator.comparingInt(FrontProductResponse::stock))
+                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product));
+
+        catalog.stream()
+                .filter(product -> product.id() != target.id())
+                .filter(product -> product.category().equals(target.category()))
+                .sorted(java.util.Comparator.comparingInt(FrontProductResponse::stock))
+                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product));
+
+        return relatedProducts.stream().limit(3).toList();
+    }
+
+    private void appendRelatedProduct(
+            Set<Long> relatedIds,
+            List<FrontRelatedProductResponse> relatedProducts,
+            FrontProductResponse product
+    ) {
+        if (!relatedIds.add(product.id()) || relatedProducts.size() >= 3) {
+            return;
+        }
+        relatedProducts.add(new FrontRelatedProductResponse(
+                product.id(),
+                product.brand(),
+                product.name(),
+                product.model(),
+                product.price(),
+                product.stock()
+        ));
     }
 }

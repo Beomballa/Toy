@@ -1,6 +1,8 @@
 package com.section.front.controller;
 
+import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
+import com.section.front.product.dto.FrontRelatedProductResponse;
 import com.section.front.product.dto.FrontProductResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,8 +64,8 @@ class FrontProductRestControllerTest {
     @Test
     @DisplayName("프론트 상품 상세 API는 단건 응답을 반환한다")
     void getProductReturnsDetail() throws Exception {
-        when(frontProductCatalogService.findProduct(101L)).thenReturn(java.util.Optional.of(
-                new FrontProductResponse(
+        when(frontProductCatalogService.findProductDetail(101L)).thenReturn(java.util.Optional.of(
+                new FrontProductDetailResponse(
                         101L,
                         "New Balance",
                         "러닝화",
@@ -75,20 +77,22 @@ class FrontProductRestControllerTest {
                         "설명",
                         "Grey precision",
                         true,
-                        List.of(new FrontProductOptionResponse("260", 4))
+                        List.of(new FrontProductOptionResponse("260", 4)),
+                        List.of(new FrontRelatedProductResponse(103L, "ASICS", "Gel-Kayano 14 Oyster", "1201A019-200", 179000, 12))
                 )
         ));
 
         mockMvc.perform(get("/api/front/products/101"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(101L))
-                .andExpect(jsonPath("$.name").value("990v6 Grey Day"));
+                .andExpect(jsonPath("$.name").value("990v6 Grey Day"))
+                .andExpect(jsonPath("$.relatedProducts[0].id").value(103L));
     }
 
     @Test
     @DisplayName("프론트 상품 상세 API는 없는 상품 번호면 404를 반환한다")
     void getProductReturnsNotFoundWhenMissing() throws Exception {
-        when(frontProductCatalogService.findProduct(999L)).thenReturn(java.util.Optional.empty());
+        when(frontProductCatalogService.findProductDetail(999L)).thenReturn(java.util.Optional.empty());
 
         mockMvc.perform(get("/api/front/products/999"))
                 .andExpect(status().isNotFound());

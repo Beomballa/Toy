@@ -75,14 +75,24 @@ public class DocumentService {
             YN publicYn,
             YN pinnedYn
     ) {
+        List<Document> documents = documentRepository.findAllById(ids);
+        if (documents.isEmpty()) {
+            throw new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND);
+        }
+
+        Set<Long> existingIds = documents.stream()
+                .map(Document::getId)
+                .collect(java.util.stream.Collectors.toSet());
         int updatedCount = 0;
-        for (Long id : ids) {
-            Document document = getDocument(id);
+        for (Document document : documents) {
             if (document.applyOperateValues(status, publicYn, pinnedYn)) {
                 updatedCount += 1;
             }
         }
-        return BulkOperateResult.of(ids.size(), updatedCount);
+        long missingCount = ids.stream()
+                .filter(id -> !existingIds.contains(id))
+                .count();
+        return BulkOperateResult.of(ids.size(), updatedCount, (int) missingCount);
     }
 
     @Transactional
@@ -106,10 +116,16 @@ public class DocumentService {
     public record BulkOperateResult(
             int requestedCount,
             int updatedCount,
-            int unchangedCount
+            int unchangedCount,
+            int missingCount
     ) {
-        public static BulkOperateResult of(int requestedCount, int updatedCount) {
-            return new BulkOperateResult(requestedCount, updatedCount, requestedCount - updatedCount);
+        public static BulkOperateResult of(int requestedCount, int updatedCount, int missingCount) {
+            return new BulkOperateResult(
+                    requestedCount,
+                    updatedCount,
+                    Math.max(requestedCount - updatedCount - missingCount, 0),
+                    missingCount
+            );
         }
     }
 

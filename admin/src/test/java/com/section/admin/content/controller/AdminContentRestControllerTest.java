@@ -220,7 +220,7 @@ class AdminContentRestControllerTest {
     @DisplayName("콘텐츠 일괄 운영은 선택한 게시글 수를 반환한다")
     void bulkOperateReturnsUpdatedCount() throws Exception {
         when(documentService.bulkOperateDocuments(any(), any(), any(), any()))
-                .thenReturn(DocumentService.BulkOperateResult.of(2, 1));
+                .thenReturn(DocumentService.BulkOperateResult.of(2, 1, 0));
 
         mockMvc.perform(patch("/api/admin/content/bulk-operate")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -230,7 +230,8 @@ class AdminContentRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.requestedCount").value(2))
                 .andExpect(jsonPath("$.updatedCount").value(1))
-                .andExpect(jsonPath("$.unchangedCount").value(1));
+                .andExpect(jsonPath("$.unchangedCount").value(1))
+                .andExpect(jsonPath("$.missingCount").value(0));
     }
 
     @Test

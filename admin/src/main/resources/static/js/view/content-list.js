@@ -444,9 +444,9 @@ const ContentList = {
         const result = await response.json();
         if (result.updatedCount > 0) {
             this.state.selectedIds.clear();
-            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건 중 ${result.updatedCount}건을 변경했습니다. ${result.unchangedCount}건은 기존 상태를 유지했고, 적용 후 선택을 해제했습니다.`;
+            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건 중 ${result.updatedCount}건을 변경했습니다. ${result.unchangedCount}건은 기존 상태를 유지했고, 누락 ${result.missingCount}건은 건너뛰었으며, 적용 후 선택을 해제했습니다.`;
         } else {
-            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건이 모두 현재 상태와 같아서 변경하지 않았습니다. 선택은 유지됩니다.`;
+            this.state.lastBulkResultMessage = `선택 ${result.requestedCount}건 중 변경할 항목이 없습니다. 동일 상태 ${result.unchangedCount}건, 누락 ${result.missingCount}건이며 선택은 유지됩니다.`;
         }
         this.syncSelectionState();
         await CommonJS.alert(this.state.lastBulkResultMessage, '성공', 'success');

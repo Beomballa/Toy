@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -91,8 +92,7 @@ class DocumentServiceTest {
         second.setPublicYn(YN.Y);
         second.setPinnedYn(YN.N);
 
-        when(documentRepository.findById(1L)).thenReturn(Optional.of(first));
-        when(documentRepository.findById(2L)).thenReturn(Optional.of(second));
+        when(documentRepository.findAllById(Set.of(1L, 2L))).thenReturn(List.of(first, second));
 
         DocumentService.BulkOperateResult result = documentService.bulkOperateDocuments(
                 Set.of(1L, 2L),
@@ -104,6 +104,7 @@ class DocumentServiceTest {
         assertEquals(2, result.requestedCount());
         assertEquals(2, result.updatedCount());
         assertEquals(0, result.unchangedCount());
+        assertEquals(0, result.missingCount());
         assertEquals(Document.PublishStatus.PUBLISHED, first.getStatus());
         assertEquals(YN.N, first.getPublicYn());
         assertEquals(YN.Y, first.getPinnedYn());
@@ -121,7 +122,7 @@ class DocumentServiceTest {
         unchanged.setPublicYn(YN.N);
         unchanged.setPinnedYn(YN.Y);
 
-        when(documentRepository.findById(1L)).thenReturn(Optional.of(unchanged));
+        when(documentRepository.findAllById(Set.of(1L))).thenReturn(List.of(unchanged));
 
         DocumentService.BulkOperateResult result = documentService.bulkOperateDocuments(
                 Set.of(1L),
@@ -133,6 +134,49 @@ class DocumentServiceTest {
         assertEquals(1, result.requestedCount());
         assertEquals(0, result.updatedCount());
         assertEquals(1, result.unchangedCount());
+        assertEquals(0, result.missingCount());
+    }
+
+    @Test
+    @DisplayName("커뮤니티 일괄 운영은 누락된 문서를 건너뛰고 누락 건수를 반환한다")
+    void bulkOperateDocumentsReturnsMissingCount() {
+        Document existing = new Document();
+        existing.setId(1L);
+        existing.setStatus(Document.PublishStatus.DRAFT);
+        existing.setPublicYn(YN.Y);
+        existing.setPinnedYn(YN.N);
+
+        when(documentRepository.findAllById(Set.of(1L, 2L))).thenReturn(List.of(existing));
+
+        DocumentService.BulkOperateResult result = documentService.bulkOperateDocuments(
+                Set.of(1L, 2L),
+                Document.PublishStatus.PUBLISHED,
+                null,
+                null
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
+        assertEquals(1, result.missingCount());
+    }
+
+    @Test
+    @DisplayName("커뮤니티 일괄 운영은 대상이 전부 없으면 DOCUMENT_NOT_FOUND를 던진다")
+    void bulkOperateDocumentsThrowsWhenAllTargetsMissing() {
+        when(documentRepository.findAllById(Set.of(1L, 2L))).thenReturn(List.of());
+
+        var exception = assertThrows(
+                com.section.common.base.exception.BusinessException.class,
+                () -> documentService.bulkOperateDocuments(
+                        Set.of(1L, 2L),
+                        Document.PublishStatus.PUBLISHED,
+                        YN.N,
+                        null
+                )
+        );
+
+        assertEquals(com.section.common.base.exception.ErrorCode.DOCUMENT_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test

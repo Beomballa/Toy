@@ -326,13 +326,27 @@
         });
     }
 
-    function openDrawer(productId) {
-        const product = products.find((candidate) => candidate.id === productId);
-        if (!product || !elements.productDrawer || !elements.drawerBody) {
+    async function openDrawer(productId) {
+        if (!elements.productDrawer || !elements.drawerBody) {
             return;
         }
 
+        elements.productDrawer.classList.add("is-open");
+        elements.productDrawer.setAttribute("aria-hidden", "false");
         elements.drawerBody.innerHTML = `
+            <p class="eyebrow">Detail</p>
+            <h3>상품 상세를 불러오는 중입니다.</h3>
+            <p class="product-drawer__description">선택한 상품 데이터를 확인하고 있습니다.</p>
+        `;
+
+        try {
+            const response = await fetch(`/api/front/products/${productId}`);
+            if (!response.ok) {
+                throw new Error("상품 상세를 불러오지 못했습니다.");
+            }
+            const product = await response.json();
+
+            elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
             <div class="product-drawer__meta">
                 <span class="product-drawer__pill ${stockClassName(product.stock)}">${stockLabel(product.stock)}</span>
@@ -364,9 +378,13 @@
                 </div>
             </div>
         `;
-
-        elements.productDrawer.classList.add("is-open");
-        elements.productDrawer.setAttribute("aria-hidden", "false");
+        } catch (error) {
+            elements.drawerBody.innerHTML = `
+                <p class="eyebrow">Detail</p>
+                <h3>상품 상세를 불러오지 못했습니다.</h3>
+                <p class="product-drawer__description">잠시 후 다시 시도해주세요.</p>
+            `;
+        }
     }
 
     function closeDrawer() {

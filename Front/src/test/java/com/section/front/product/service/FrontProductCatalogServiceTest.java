@@ -34,4 +34,21 @@ class FrontProductCatalogServiceTest {
         assertEquals(3, bootstrap.metrics().featuredCount());
         assertEquals(189, bootstrap.metrics().totalStock());
     }
+
+    @Test
+    @DisplayName("프론트 카탈로그 서비스는 상품 번호로 단건 상세를 찾는다")
+    void findProductReturnsMatchingItem() {
+        var product = frontProductCatalogService.findProduct(103L);
+
+        assertTrue(product.isPresent());
+        assertEquals("Gel-Kayano 14 Oyster", product.get().name());
+    }
+
+    @Test
+    @DisplayName("프론트 카탈로그 서비스는 없는 상품 번호면 비어있는 결과를 반환한다")
+    void findProductReturnsEmptyWhenMissing() {
+        var product = frontProductCatalogService.findProduct(999L);
+
+        assertTrue(product.isEmpty());
+    }
 }

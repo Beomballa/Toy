@@ -58,4 +58,39 @@ class FrontProductRestControllerTest {
                 .andExpect(jsonPath("$[0].brand").value("New Balance"))
                 .andExpect(jsonPath("$[0].options[0].name").value("260"));
     }
+
+    @Test
+    @DisplayName("프론트 상품 상세 API는 단건 응답을 반환한다")
+    void getProductReturnsDetail() throws Exception {
+        when(frontProductCatalogService.findProduct(101L)).thenReturn(java.util.Optional.of(
+                new FrontProductResponse(
+                        101L,
+                        "New Balance",
+                        "러닝화",
+                        "990v6 Grey Day",
+                        "M990GL6",
+                        289000,
+                        18,
+                        "2026-06-04",
+                        "설명",
+                        "Grey precision",
+                        true,
+                        List.of(new FrontProductOptionResponse("260", 4))
+                )
+        ));
+
+        mockMvc.perform(get("/api/front/products/101"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(101L))
+                .andExpect(jsonPath("$.name").value("990v6 Grey Day"));
+    }
+
+    @Test
+    @DisplayName("프론트 상품 상세 API는 없는 상품 번호면 404를 반환한다")
+    void getProductReturnsNotFoundWhenMissing() throws Exception {
+        when(frontProductCatalogService.findProduct(999L)).thenReturn(java.util.Optional.empty());
+
+        mockMvc.perform(get("/api/front/products/999"))
+                .andExpect(status().isNotFound());
+    }
 }

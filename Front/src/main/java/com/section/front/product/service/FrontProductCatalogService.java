@@ -7,6 +7,7 @@ import com.section.front.product.dto.FrontProductResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FrontProductCatalogService {
@@ -144,5 +145,11 @@ public class FrontProductCatalogService {
                         catalog.stream().mapToInt(FrontProductResponse::stock).sum()
                 )
         );
+    }
+
+    public Optional<FrontProductResponse> findProduct(long productId) {
+        return getCatalog().stream()
+                .filter(product -> product.id() == productId)
+                .findFirst();
     }
 }

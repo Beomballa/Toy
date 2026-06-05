@@ -7,8 +7,7 @@
         stock: "ALL",
         sort: "LATEST"
     };
-
-    const products = Array.isArray(window.FRONT_PRODUCTS) ? window.FRONT_PRODUCTS.slice() : [];
+    let products = [];
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -33,13 +32,36 @@
         openDrawerFromTop: document.getElementById("openDrawerFromTop")
     };
 
-    function init() {
+    async function init() {
+        await loadProducts();
         populateFilters();
         bindEvents();
         renderHeroMetrics();
         renderFeatured();
         renderSignals();
         renderCatalog();
+    }
+
+    async function loadProducts() {
+        try {
+            const response = await fetch("/api/front/products");
+            if (!response.ok) {
+                throw new Error("상품 데이터를 불러오지 못했습니다.");
+            }
+            const payload = await response.json();
+            products = Array.isArray(payload) ? payload.slice() : [];
+        } catch (error) {
+            products = [];
+            setText(elements.catalogCountText, "상품 데이터를 불러오지 못했습니다.");
+            if (elements.catalogGrid) {
+                elements.catalogGrid.innerHTML = `
+                    <div class="catalog-empty">
+                        <strong>카탈로그를 불러오지 못했습니다.</strong>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                    </div>
+                `;
+            }
+        }
     }
 
     function populateFilters() {

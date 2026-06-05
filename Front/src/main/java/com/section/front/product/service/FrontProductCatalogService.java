@@ -1,6 +1,8 @@
 package com.section.front.product.service;
 
 import com.section.front.product.dto.FrontProductOptionResponse;
+import com.section.front.product.dto.FrontCatalogBootstrapResponse;
+import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontProductResponse;
 import org.springframework.stereotype.Service;
 
@@ -118,6 +120,28 @@ public class FrontProductCatalogService {
                                 new FrontProductOptionResponse("270", 25),
                                 new FrontProductOptionResponse("280", 26)
                         )
+                )
+        );
+    }
+
+    public FrontCatalogBootstrapResponse getBootstrap() {
+        List<FrontProductResponse> catalog = getCatalog();
+        String latestCreatedDate = catalog.stream()
+                .map(FrontProductResponse::createdDate)
+                .max(String::compareTo)
+                .orElse(null);
+
+        return new FrontCatalogBootstrapResponse(
+                catalog,
+                new FrontCatalogMetricsResponse(
+                        catalog.size(),
+                        (int) catalog.stream().filter(product -> product.stock() < 20).count(),
+                        latestCreatedDate,
+                        (int) catalog.stream()
+                                .filter(product -> latestCreatedDate != null && latestCreatedDate.equals(product.createdDate()))
+                                .count(),
+                        (int) catalog.stream().filter(FrontProductResponse::featured).count(),
+                        catalog.stream().mapToInt(FrontProductResponse::stock).sum()
                 )
         );
     }

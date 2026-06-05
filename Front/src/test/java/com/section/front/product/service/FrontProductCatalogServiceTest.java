@@ -21,4 +21,17 @@ class FrontProductCatalogServiceTest {
         assertTrue(catalog.stream().filter(product -> product.featured()).count() >= 3);
         assertTrue(catalog.stream().allMatch(product -> !product.options().isEmpty()));
     }
+
+    @Test
+    @DisplayName("프론트 부트스트랩 응답은 최신 드롭 기준 메트릭을 함께 계산한다")
+    void getBootstrapCalculatesMetrics() {
+        var bootstrap = frontProductCatalogService.getBootstrap();
+
+        assertEquals(6, bootstrap.metrics().totalCount());
+        assertEquals(3, bootstrap.metrics().lowStockCount());
+        assertEquals("2026-06-04", bootstrap.metrics().latestCreatedDate());
+        assertEquals(2, bootstrap.metrics().latestDropCount());
+        assertEquals(3, bootstrap.metrics().featuredCount());
+        assertEquals(189, bootstrap.metrics().totalStock());
+    }
 }

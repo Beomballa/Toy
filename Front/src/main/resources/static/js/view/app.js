@@ -8,6 +8,14 @@
         sort: "LATEST"
     };
     let products = [];
+    let metrics = {
+        totalCount: 0,
+        lowStockCount: 0,
+        latestCreatedDate: null,
+        latestDropCount: 0,
+        featuredCount: 0,
+        totalStock: 0
+    };
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -44,14 +52,23 @@
 
     async function loadProducts() {
         try {
-            const response = await fetch("/api/front/products");
+            const response = await fetch("/api/front/catalog/bootstrap");
             if (!response.ok) {
                 throw new Error("상품 데이터를 불러오지 못했습니다.");
             }
             const payload = await response.json();
-            products = Array.isArray(payload) ? payload.slice() : [];
+            products = Array.isArray(payload?.products) ? payload.products.slice() : [];
+            metrics = payload?.metrics || metrics;
         } catch (error) {
             products = [];
+            metrics = {
+                totalCount: 0,
+                lowStockCount: 0,
+                latestCreatedDate: null,
+                latestDropCount: 0,
+                featuredCount: 0,
+                totalStock: 0
+            };
             setText(elements.catalogCountText, "상품 데이터를 불러오지 못했습니다.");
             if (elements.catalogGrid) {
                 elements.catalogGrid.innerHTML = `
@@ -126,12 +143,9 @@
     }
 
     function renderHeroMetrics() {
-        const todayCount = products.filter((product) => product.createdDate === "2026-06-04").length;
-        const lowStockCount = products.filter((product) => product.stock < LOW_STOCK_THRESHOLD).length;
-
-        setText(elements.metricCount, String(products.length));
-        setText(elements.metricLowStock, String(lowStockCount));
-        setText(elements.metricToday, String(todayCount));
+        setText(elements.metricCount, String(metrics.totalCount || products.length));
+        setText(elements.metricLowStock, String(metrics.lowStockCount || 0));
+        setText(elements.metricToday, String(metrics.latestDropCount || 0));
     }
 
     function renderFeatured() {
@@ -170,20 +184,21 @@
             return;
         }
 
-        const todayProducts = products
-            .filter((product) => product.createdDate === "2026-06-04")
+        const latestCreatedDate = metrics.latestCreatedDate;
+        const latestProducts = products
+            .filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate)
             .sort((left, right) => left.stock - right.stock);
-        const primarySignal = todayProducts[0] || products[0];
+        const primarySignal = latestProducts[0] || products[0];
 
         if (primarySignal) {
-            setText(elements.todaySignalTitle, `${primarySignal.name}이 오늘 기준 가장 빠른 반응을 보이고 있습니다.`);
+            setText(elements.todaySignalTitle, `${primarySignal.name}이 최신 드롭 기준 가장 빠른 반응을 보이고 있습니다.`);
             setText(elements.todaySignalText, `${primarySignal.brand} · ${primarySignal.category} · 재고 ${primarySignal.stock}개`);
         }
 
         const signals = [
-            `${products.filter((product) => product.featured).length}개 상품이 이번 주 큐레이션에 묶여 있습니다.`,
-            `${products.filter((product) => product.stock < LOW_STOCK_THRESHOLD).length}개 상품이 재고 긴장 구간에 있습니다.`,
-            `${products[0] ? products.reduce((sum, product) => sum + product.stock, 0) : 0}개 재고를 첫 화면 기준으로 추적 중입니다.`
+            `${metrics.featuredCount || products.filter((product) => product.featured).length}개 상품이 이번 주 큐레이션에 묶여 있습니다.`,
+            `${metrics.lowStockCount || products.filter((product) => product.stock < LOW_STOCK_THRESHOLD).length}개 상품이 재고 긴장 구간에 있습니다.`,
+            `${metrics.totalStock || (products[0] ? products.reduce((sum, product) => sum + product.stock, 0) : 0)}개 재고를 첫 화면 기준으로 추적 중입니다.`
         ];
 
         elements.signalList.innerHTML = signals.map((message, index) => `

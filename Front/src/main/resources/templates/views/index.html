@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade Stock Front</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<div class="page-shell">
+    <header class="topbar">
+        <a class="brand-mark" href="#top" aria-label="Grade Stock 홈">
+            <span class="brand-mark__badge">GS</span>
+            <span class="brand-mark__copy">
+                <strong>Grade Stock</strong>
+                <span>Curated launch board</span>
+            </span>
+        </a>
+        <nav class="topbar-nav" aria-label="주요 탐색">
+            <a href="#featured">Featured</a>
+            <a href="#catalog">Catalog</a>
+            <a href="#signals">Signals</a>
+        </nav>
+        <button class="topbar-action" type="button" id="openDrawerFromTop">추천 상품 보기</button>
+    </header>
+
+    <main id="top">
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow">Front MVP</p>
+                <h1>드롭 직전 상품을 빠르게 훑고, 재고 시그널까지 한 번에 확인하는 프론트 첫 화면</h1>
+                <p class="hero-description">
+                    관리자에서 다루는 상품 데이터를 바탕으로, 사용자 관점에서는 복잡한 운영 필드를 걷어내고
+                    발매 정보, 재고 긴장도, 큐레이션 포인트만 빠르게 읽히도록 구성했습니다.
+                </p>
+                <div class="hero-actions">
+                    <a class="hero-primary" href="#catalog">카탈로그 보기</a>
+                    <button class="hero-secondary" type="button" id="focusLowStockButton">품절 임박만 보기</button>
+                </div>
+                <dl class="hero-metrics" id="heroMetrics">
+                    <div>
+                        <dt>Curated</dt>
+                        <dd id="metricCount">0</dd>
+                    </div>
+                    <div>
+                        <dt>Low stock</dt>
+                        <dd id="metricLowStock">0</dd>
+                    </div>
+                    <div>
+                        <dt>Today drops</dt>
+                        <dd id="metricToday">0</dd>
+                    </div>
+                </dl>
+            </div>
+            <aside class="hero-panel" id="signals">
+                <div class="hero-panel__card">
+                    <p class="hero-panel__label">Today signal</p>
+                    <strong id="todaySignalTitle">오늘 등록된 신규 상품을 계산 중입니다.</strong>
+                    <span id="todaySignalText">카탈로그를 불러오는 중입니다.</span>
+                </div>
+                <div class="hero-panel__stack" id="signalList"></div>
+            </aside>
+        </section>
+
+        <section class="spotlight" id="featured">
+            <div class="section-heading">
+                <p class="eyebrow">Featured</p>
+                <div>
+                    <h2>이번 주 큐레이션</h2>
+                    <p>브랜드 집중도와 재고 리스크를 함께 보여주는 하이라이트 영역입니다.</p>
+                </div>
+            </div>
+            <div class="spotlight-grid" id="featuredGrid"></div>
+        </section>
+
+        <section class="catalog" id="catalog">
+            <div class="section-heading">
+                <p class="eyebrow">Catalog</p>
+                <div>
+                    <h2>상품 탐색</h2>
+                    <p>브랜드, 카테고리, 재고 긴장도, 검색어를 조합해 고객용 카탈로그 흐름을 바로 확인할 수 있습니다.</p>
+                </div>
+            </div>
+
+            <div class="catalog-toolbar">
+                <div class="toolbar-field toolbar-field--search">
+                    <label for="searchInput">검색</label>
+                    <input id="searchInput" type="text" placeholder="상품명 또는 모델번호">
+                </div>
+                <div class="toolbar-field">
+                    <label for="brandFilter">브랜드</label>
+                    <select id="brandFilter"></select>
+                </div>
+                <div class="toolbar-field">
+                    <label for="categoryFilter">카테고리</label>
+                    <select id="categoryFilter"></select>
+                </div>
+                <div class="toolbar-field">
+                    <label for="stockFilter">재고 상태</label>
+                    <select id="stockFilter">
+                        <option value="ALL">전체</option>
+                        <option value="LOW">품절 임박</option>
+                        <option value="STABLE">재고 안정</option>
+                    </select>
+                </div>
+                <div class="toolbar-field">
+                    <label for="sortFilter">정렬</label>
+                    <select id="sortFilter">
+                        <option value="LATEST">최근 등록순</option>
+                        <option value="PRICE_HIGH">발매가 높은 순</option>
+                        <option value="STOCK_ASC">재고 낮은 순</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="catalog-summary">
+                <strong id="catalogCountText">상품을 계산 중입니다.</strong>
+                <div class="catalog-tags" id="catalogTags"></div>
+            </div>
+
+            <div class="catalog-grid" id="catalogGrid"></div>
+        </section>
+    </main>
+ </div>
+
+<aside class="product-drawer" id="productDrawer" aria-hidden="true">
+    <div class="product-drawer__panel">
+        <button class="product-drawer__close" type="button" id="closeDrawerButton" aria-label="닫기">×</button>
+        <div class="product-drawer__body" id="drawerBody">
+            <p class="eyebrow">Detail</p>
+            <h3>상품을 선택하세요.</h3>
+            <p>카탈로그에서 카드를 누르면 상품 상세를 이곳에 보여줍니다.</p>
+        </div>
+    </div>
+</aside>
+
+<script src="/js/data/products.js"></script>
+<script src="/js/view/app.js"></script>
+</body>
+</html>

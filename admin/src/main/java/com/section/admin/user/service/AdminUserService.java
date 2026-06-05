@@ -86,6 +86,7 @@ public class AdminUserService {
         AdminUser adminUser = adminUserRepository.findById(req.adminNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
 
+        assertSameLoginId(adminUser, normalizedLoginId);
         assertLastActiveSuperAdminEditable(adminUser, normalizedRole, normalizedStatus);
         adminUser.updateInfo(normalizedName, normalizedRole, normalizedStatus);
 
@@ -108,6 +109,12 @@ public class AdminUserService {
 
     private void assertLastActiveSuperAdminEditable(AdminUser adminUser, String nextRole, String nextStatus) {
         assertRemainingActiveSuperAdmin(adminUser, nextRole, nextStatus);
+    }
+
+    private void assertSameLoginId(AdminUser adminUser, String requestedLoginId) {
+        if (!adminUser.getLoginId().equals(requestedLoginId)) {
+            throw new BusinessException("로그인 ID는 변경할 수 없습니다.", ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 
     private void assertRemainingActiveSuperAdmin(AdminUser adminUser, String nextRole, String nextStatus) {

@@ -164,6 +164,26 @@ class AdminUserServiceTest {
     }
 
     @Test
+    @DisplayName("관리자 수정은 기존 로그인 ID와 다른 값으로 변경할 수 없다")
+    void saveAdminRejectsChangingLoginId() {
+        AdminUser adminUser = AdminUser.builder()
+                .adminNo(1L)
+                .loginId("master")
+                .password("pw")
+                .name("최고관리자")
+                .role("ROLE_SUPER")
+                .status("ACTIVE")
+                .build();
+        when(adminUserRepository.findById(1L)).thenReturn(Optional.of(adminUser));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminUserService.saveAdmin(
+                new AdminUserSaveRequest(1L, "master-renamed", null, "최고관리자", "ROLE_SUPER", "ACTIVE")
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("현재 로그인한 관리자 계정은 삭제할 수 없다")
     void deleteAdminRejectsCurrentAdmin() {
         AdminRequestContext.setCurrentAdminNo(7L);

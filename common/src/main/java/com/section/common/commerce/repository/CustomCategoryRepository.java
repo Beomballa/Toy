@@ -9,4 +9,5 @@ import java.util.List;
 public interface CustomCategoryRepository {
     Page<Category> getCategoryList(Integer depth, String keyword, String isActive, Pageable pageable);
     List<Category> getSubCategoryList(Long parentNo);
+    List<Category> getChildCategories(List<Long> parentNos);
 }

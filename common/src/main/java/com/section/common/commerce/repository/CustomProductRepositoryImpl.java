@@ -20,6 +20,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import static com.section.common.commerce.entity.QBrand.brand;
@@ -142,6 +143,32 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .having(productOption.stockCnt.sumLong().lt((long) threshold))
                 .orderBy(productOption.stockCnt.sumLong().asc())
                 .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<Long> getReferencedBrandNos(Collection<Long> brandNos) {
+        if (brandNos == null || brandNos.isEmpty()) {
+            return List.of();
+        }
+        return queryFactory
+                .select(product.brandNo)
+                .from(product)
+                .where(product.brandNo.in(brandNos))
+                .groupBy(product.brandNo)
+                .fetch();
+    }
+
+    @Override
+    public List<Long> getReferencedCategoryNos(Collection<Long> categoryNos) {
+        if (categoryNos == null || categoryNos.isEmpty()) {
+            return List.of();
+        }
+        return queryFactory
+                .select(product.categoryNo)
+                .from(product)
+                .where(product.categoryNo.in(categoryNos))
+                .groupBy(product.categoryNo)
                 .fetch();
     }
 

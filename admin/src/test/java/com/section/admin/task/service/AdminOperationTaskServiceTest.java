@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -535,11 +536,11 @@ class AdminOperationTaskServiceTest {
                         && "Y".equals(task.getIsPinned())
         ));
         verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
-                comments.size() == 3
-                        && comments.stream().allMatch(comment -> Long.valueOf(72L).equals(comment.getTaskNo()))
-                        && comments.stream().anyMatch(comment -> "원본 작업 #71 메모 2건을 복제했습니다.".equals(comment.getContent()))
-                        && comments.stream().anyMatch(comment -> "첫 번째 메모".equals(comment.getContent()))
-                        && comments.stream().anyMatch(comment -> "두 번째 메모".equals(comment.getContent()))
+                toCommentList(comments).size() == 3
+                        && toCommentList(comments).stream().allMatch(comment -> Long.valueOf(72L).equals(comment.getTaskNo()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "원본 작업 #71 메모 2건을 복제했습니다.".equals(comment.getContent()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "첫 번째 메모".equals(comment.getContent()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "두 번째 메모".equals(comment.getContent()))
         ));
         verify(adminLogService).recordCurrentAdminLog("TASK_DUPLICATE", 72L);
     }
@@ -618,16 +619,16 @@ class AdminOperationTaskServiceTest {
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 192L);
         verify(adminOperationTaskCommentRepository, times(2)).saveAll(anyList());
         verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
-                comments.size() == 2
-                        && comments.stream().allMatch(comment -> Long.valueOf(191L).equals(comment.getTaskNo()))
-                        && comments.stream().anyMatch(comment -> "원본 작업 #91 메모 1건을 복제했습니다.".equals(comment.getContent()))
-                        && comments.stream().anyMatch(comment -> "배치 메모".equals(comment.getContent()))
+                toCommentList(comments).size() == 2
+                        && toCommentList(comments).stream().allMatch(comment -> Long.valueOf(191L).equals(comment.getTaskNo()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "원본 작업 #91 메모 1건을 복제했습니다.".equals(comment.getContent()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "배치 메모".equals(comment.getContent()))
         ));
         verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
-                comments.size() == 2
-                        && comments.stream().allMatch(comment -> Long.valueOf(192L).equals(comment.getTaskNo()))
-                        && comments.stream().anyMatch(comment -> "원본 작업 #93 메모 1건을 복제했습니다.".equals(comment.getContent()))
-                        && comments.stream().anyMatch(comment -> "공지 메모".equals(comment.getContent()))
+                toCommentList(comments).size() == 2
+                        && toCommentList(comments).stream().allMatch(comment -> Long.valueOf(192L).equals(comment.getTaskNo()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "원본 작업 #93 메모 1건을 복제했습니다.".equals(comment.getContent()))
+                        && toCommentList(comments).stream().anyMatch(comment -> "공지 메모".equals(comment.getContent()))
         ));
         verify(adminOperationTaskCommentRepository).findByTaskNoInOrderByTaskNoAscCommentNoAsc(List.of(91L, 93L));
         verify(adminOperationTaskRepository).save(argThat(task ->
@@ -680,5 +681,9 @@ class AdminOperationTaskServiceTest {
 
         verify(adminOperationTaskCommentRepository).deleteByTaskNo(81L);
         verify(adminOperationTaskRepository).delete(task);
+    }
+
+    private List<AdminOperationTaskComment> toCommentList(Iterable<AdminOperationTaskComment> comments) {
+        return StreamSupport.stream(comments.spliterator(), false).toList();
     }
 }

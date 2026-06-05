@@ -57,7 +57,7 @@ class AdminUserRepositorySearchIntegrationTest {
     @DisplayName("관리자 요약은 최근 7일 미접속 계정 수를 함께 집계한다")
     void getAdminUserSummaryIncludesInactiveCount() {
         adminUserRepository.save(AdminUser.builder()
-                .loginId("inactive.admin")
+                .loginId("inactive.summary.admin")
                 .password("pw")
                 .name("휴면 관리자")
                 .role("ROLE_ADMIN")
@@ -65,7 +65,7 @@ class AdminUserRepositorySearchIntegrationTest {
                 .lastLoginDtm(LocalDateTime.now().minusDays(10))
                 .build());
         adminUserRepository.save(AdminUser.builder()
-                .loginId("fresh.admin")
+                .loginId("fresh.summary.admin")
                 .password("pw")
                 .name("최근 관리자")
                 .role("ROLE_ADMIN")
@@ -74,7 +74,7 @@ class AdminUserRepositorySearchIntegrationTest {
                 .build());
 
         var summary = adminUserRepository.getAdminUserSummary(
-                new AdminUserListQuery(null, null, null, null, null),
+                new AdminUserListQuery("summary.admin", null, null, null, null),
                 LocalDateTime.now()
         );
 
@@ -85,7 +85,7 @@ class AdminUserRepositorySearchIntegrationTest {
     @DisplayName("관리자 목록 검색은 로그인 이력이 없는 계정만 별도로 필터링할 수 있다")
     void getAdminUserListFiltersNeverLoggedInUsers() {
         adminUserRepository.save(AdminUser.builder()
-                .loginId("never.login")
+                .loginId("never.login.unique")
                 .password("pw")
                 .name("미로그인 관리자")
                 .role("ROLE_ADMIN")
@@ -93,7 +93,7 @@ class AdminUserRepositorySearchIntegrationTest {
                 .lastLoginDtm(null)
                 .build());
         adminUserRepository.save(AdminUser.builder()
-                .loginId("logged.in")
+                .loginId("logged.in.unique")
                 .password("pw")
                 .name("로그인 관리자")
                 .role("ROLE_ADMIN")
@@ -102,7 +102,7 @@ class AdminUserRepositorySearchIntegrationTest {
                 .build());
 
         Page<?> result = adminUserRepository.getAdminUserList(
-                new AdminUserListQuery(null, null, null, null, true),
+                new AdminUserListQuery("unique", null, null, null, true),
                 PageRequest.of(0, 10)
         );
 

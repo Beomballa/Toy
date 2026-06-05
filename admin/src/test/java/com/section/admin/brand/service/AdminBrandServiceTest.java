@@ -174,8 +174,7 @@ class AdminBrandServiceTest {
         Brand brand1 = Brand.builder().brandNo(3L).nameKo("아식스").isActive("Y").build();
         Brand brand2 = Brand.builder().brandNo(4L).nameKo("뉴발란스").isActive("Y").build();
         when(brandRepository.findAllById(List.of(3L, 4L, 9L))).thenReturn(List.of(brand1, brand2));
-        when(productRepository.existsByBrandNo(3L)).thenReturn(false);
-        when(productRepository.existsByBrandNo(4L)).thenReturn(true);
+        when(productRepository.getReferencedBrandNos(List.of(3L, 4L))).thenReturn(List.of(4L));
 
         AdminBrandService.BulkDeleteResult result = adminBrandService.bulkDelete(
                 new BrandBulkDeleteRequest(List.of(3L, 4L, 9L))

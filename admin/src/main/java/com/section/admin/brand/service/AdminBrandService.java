@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -182,11 +183,14 @@ public class AdminBrandService {
         if (brands.isEmpty()) {
             throw new BusinessException(ErrorCode.BRAND_NOT_FOUND);
         }
+        Set<Long> referencedBrandNos = new HashSet<>(productRepository.getReferencedBrandNos(
+                brands.stream().map(Brand::getBrandNo).toList()
+        ));
 
         int deletedCount = 0;
         int blockedCount = 0;
         for (Brand brand : brands) {
-            if (productRepository.existsByBrandNo(brand.getBrandNo())) {
+            if (referencedBrandNos.contains(brand.getBrandNo())) {
                 blockedCount += 1;
                 continue;
             }

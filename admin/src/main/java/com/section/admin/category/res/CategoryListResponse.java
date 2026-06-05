@@ -13,16 +13,17 @@ public record CategoryListResponse(
         int pageSize,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
-) {
+    ) {
     public static CategoryListResponse of(Page<CategoryResponse> page, CategoryListRequest request) {
+        int normalizedDepth = request.normalizedDepth();
         return new CategoryListResponse(
                 page.getContent(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
                 page.getSize(),
-                new AppliedQuery(request.normalizedKeyword(), request.normalizedIsActive(), request.getDepth()),
-                ResultMeta.from(page, request)
+                new AppliedQuery(request.normalizedKeyword(), request.normalizedIsActive(), normalizedDepth),
+                ResultMeta.from(page, request, normalizedDepth)
         );
     }
 
@@ -42,7 +43,7 @@ public record CategoryListResponse(
             long rangeStart,
             long rangeEnd
     ) {
-        private static ResultMeta from(Page<CategoryResponse> page, CategoryListRequest request) {
+        private static ResultMeta from(Page<CategoryResponse> page, CategoryListRequest request, int normalizedDepth) {
             long filterCount = appliedFilterCount(request);
             boolean hasActiveFilters = filterCount > 0;
             long totalElements = page.getTotalElements();
@@ -58,7 +59,7 @@ public record CategoryListResponse(
                             : String.format("%d-%d / %d건 · %d페이지", rangeStart, rangeEnd, totalElements, Math.max(page.getTotalPages(), 1)),
                     filterCount,
                     hasActiveFilters,
-                    querySignature(request),
+                    querySignature(request, normalizedDepth),
                     rangeStart,
                     rangeEnd
             );
@@ -71,8 +72,8 @@ public record CategoryListResponse(
             return count;
         }
 
-        private static String querySignature(CategoryListRequest request) {
-            StringBuilder builder = new StringBuilder(request.getDepth() != null && request.getDepth() == 2 ? "중분류 기준" : "대분류 기준");
+        private static String querySignature(CategoryListRequest request, int normalizedDepth) {
+            StringBuilder builder = new StringBuilder(normalizedDepth == 2 ? "중분류 기준" : "대분류 기준");
             if (request.normalizedKeyword() != null) {
                 builder.append(" · 검색=").append(request.normalizedKeyword());
             }

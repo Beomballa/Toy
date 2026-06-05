@@ -47,12 +47,28 @@ public class CustomCategoryRepositoryImpl implements CustomCategoryRepository {
                 .fetch();
     }
 
+    @Override
+    public List<Category> getChildCategories(List<Long> parentNos) {
+        if (parentNos == null || parentNos.isEmpty()) {
+            return List.of();
+        }
+        return queryFactory
+                .selectFrom(category)
+                .where(parentNoIn(parentNos))
+                .orderBy(category.parentNo.asc(), category.categoryNo.asc())
+                .fetch();
+    }
+
     private BooleanExpression depthEq(Integer depth) {
         return depth == null ? null : category.depth.eq(depth);
     }
 
     private BooleanExpression parentNoEq(Long parentNo) {
         return parentNo == null ? null : category.parentNo.eq(parentNo);
+    }
+
+    private BooleanExpression parentNoIn(List<Long> parentNos) {
+        return parentNos == null || parentNos.isEmpty() ? null : category.parentNo.in(parentNos);
     }
 
     private BooleanExpression keywordLike(String keyword) {

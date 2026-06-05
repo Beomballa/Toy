@@ -2,7 +2,9 @@ package com.section.common.system.repository;
 
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -47,8 +49,8 @@ public class CustomAdminUserRepositoryImpl implements CustomAdminUserRepository 
                 .from(adminUser)
                 .where(conditions)
                 .orderBy(
-                        adminUser.role.eq("ROLE_SUPER").desc(),
-                        adminUser.status.eq("ACTIVE").desc(),
+                        rolePriority().desc(),
+                        statusPriority().desc(),
                         adminUser.lastLoginDtm.desc().nullsLast(),
                         adminUser.adminNo.desc()
                 )
@@ -69,15 +71,20 @@ public class CustomAdminUserRepositoryImpl implements CustomAdminUserRepository 
         BooleanBuilder conditions = buildConditions(query, now);
         LocalDateTime inactiveThreshold = now.minusDays(7);
         NumberExpression<Long> totalCount = adminUser.count();
-        NumberExpression<Long> activeCount = new CaseBuilder().when(adminUser.status.eq("ACTIVE")).then(1L).otherwise(0L).sum();
-        NumberExpression<Long> suspendedCount = new CaseBuilder().when(adminUser.status.eq("SUSPENDED")).then(1L).otherwise(0L).sum();
-        NumberExpression<Long> superCount = new CaseBuilder().when(adminUser.role.eq("ROLE_SUPER")).then(1L).otherwise(0L).sum();
-        NumberExpression<Long> inactiveCount = new CaseBuilder()
+        NumberExpression<Long> activeCount = sumCase(
+                new CaseBuilder().when(adminUser.status.eq("ACTIVE")).then(1L).otherwise(0L)
+        );
+        NumberExpression<Long> suspendedCount = sumCase(
+                new CaseBuilder().when(adminUser.status.eq("SUSPENDED")).then(1L).otherwise(0L)
+        );
+        NumberExpression<Long> superCount = sumCase(
+                new CaseBuilder().when(adminUser.role.eq("ROLE_SUPER")).then(1L).otherwise(0L)
+        );
+        NumberExpression<Long> inactiveCount = sumCase(new CaseBuilder()
                 .when(adminUser.lastLoginDtm.isNull()
                         .or(adminUser.lastLoginDtm.before(inactiveThreshold)))
                 .then(1L)
-                .otherwise(0L)
-                .sum();
+                .otherwise(0L));
 
         Tuple tuple = queryFactory
                 .select(
@@ -114,7 +121,7 @@ public class CustomAdminUserRepositoryImpl implements CustomAdminUserRepository 
         return builder;
     }
 
-    private BooleanExpression keywordCondition(String keyword) {
+    private Predicate keywordCondition(String keyword) {
         if (keyword == null || keyword.isBlank()) {
             return null;
         }
@@ -130,7 +137,7 @@ public class CustomAdminUserRepositoryImpl implements CustomAdminUserRepository 
                             .or(adminUser.name.containsIgnoreCase(token))
             );
         }
-        return builder;
+        return builder.getValue();
     }
 
     private BooleanExpression roleEq(String role) {
@@ -156,5 +163,21 @@ public class CustomAdminUserRepositoryImpl implements CustomAdminUserRepository 
 
     private long safeLong(Long value) {
         return value == null ? 0L : value;
+    }
+
+    private NumberExpression<Long> sumCase(NumberExpression<Long> caseExpression) {
+        return Expressions.numberTemplate(Long.class, "sum({0})", caseExpression);
+    }
+
+    private NumberExpression<Integer> rolePriority() {
+        return new CaseBuilder()
+                .when(adminUser.role.eq("ROLE_SUPER")).then(1)
+                .otherwise(0);
+    }
+
+    private NumberExpression<Integer> statusPriority() {
+        return new CaseBuilder()
+                .when(adminUser.status.eq("ACTIVE")).then(1)
+                .otherwise(0);
     }
 }

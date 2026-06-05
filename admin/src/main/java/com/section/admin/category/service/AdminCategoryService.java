@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -32,8 +35,9 @@ public class AdminCategoryService {
     private final ProductRepository productRepository;
 
     public CategoryListResponse getCategoryListByDepth(CategoryListRequest req) {
+        int normalizedDepth = req.normalizedDepth();
         Page<Category> categoryPage = categoryRepository.getCategoryList(
-                        req.getDepth(),
+                        normalizedDepth,
                         req.normalizedKeyword(),
                         req.normalizedIsActive(),
                         PageRequest.of(req.normalizedPage(), req.normalizedSize())
@@ -43,8 +47,9 @@ public class AdminCategoryService {
     }
 
     public byte[] exportCategoryListCsv(CategoryListRequest req) {
+        int normalizedDepth = req.normalizedDepth();
         Page<Category> categoryPage = categoryRepository.getCategoryList(
-                req.getDepth(),
+                normalizedDepth,
                 req.normalizedKeyword(),
                 req.normalizedIsActive(),
                 PageRequest.of(0, CATEGORY_EXPORT_MAX_SIZE)
@@ -70,18 +75,21 @@ public class AdminCategoryService {
     public void saveCategory(CategorySaveRequest req) {
         String normalizedName = normalizeRequiredText(req.name());
         String normalizedIsActive = normalizeYnStatus(req.isActive());
+        int normalizedDepth = normalizeDepth(req.depth());
 
-        validateCategoryHierarchy(req.categoryNo(), req.parentNo(), req.depth());
-        validateDuplicateCategoryName(req.categoryNo(), req.parentNo(), req.depth(), normalizedName);
+        validateCategoryHierarchy(req.categoryNo(), req.parentNo(), normalizedDepth);
+        validateParentCategoryActivation(req.parentNo(), normalizedDepth, normalizedIsActive);
+        validateDuplicateCategoryName(req.categoryNo(), req.parentNo(), normalizedDepth, normalizedName);
 
         if (req.categoryNo() != null) {
             Category category = getCategoryEntity(req.categoryNo());
-            category.update(req.parentNo(), normalizedName, req.depth(), normalizedIsActive);
+            category.update(req.parentNo(), normalizedName, normalizedDepth, normalizedIsActive);
+            cascadeChildStatusWhenRootDisabled(List.of(category));
         } else {
             categoryRepository.save(Category.builder()
                     .parentNo(req.parentNo())
                     .name(normalizedName)
-                    .depth(req.depth())
+                    .depth(normalizedDepth)
                     .isActive(normalizedIsActive)
                     .build());
         }
@@ -101,12 +109,11 @@ public class AdminCategoryService {
 
     @Transactional
     public void updateActive(Long categoryNo, String isActive) {
-        String normalized = isActive == null ? null : isActive.trim().toUpperCase();
-        if (!"Y".equals(normalized) && !"N".equals(normalized)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
-        }
+        String normalized = normalizeYnStatus(isActive);
         Category category = getCategoryEntity(categoryNo);
+        validateParentCategoryActivation(category.getParentNo(), category.getDepth(), normalized);
         category.changeStatus(normalized);
+        cascadeChildStatusWhenRootDisabled(List.of(category));
     }
 
     @Transactional
@@ -119,6 +126,8 @@ public class AdminCategoryService {
         if (categories.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+        Map<Long, Category> categoryMap = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(Category::getCategoryNo, Function.identity()));
 
         int updatedCount = 0;
         int unchangedCount = 0;
@@ -127,17 +136,15 @@ public class AdminCategoryService {
                 unchangedCount += 1;
                 continue;
             }
+            validateBulkParentCategoryActivation(category, normalizedIsActive, categoryMap);
             category.changeStatus(normalizedIsActive);
             updatedCount += 1;
         }
+        cascadeChildStatusWhenRootDisabled(categories);
         return new BulkOperateResult(targetCategoryNos.size(), updatedCount, unchangedCount);
     }
 
     private void validateCategoryHierarchy(Long categoryNo, Long parentNo, Integer depth) {
-        if (depth == null || depth < 1 || depth > 2) {
-            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
-        }
-
         if (depth == 1) {
             if (parentNo != null) {
                 throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
@@ -171,6 +178,50 @@ public class AdminCategoryService {
         }
     }
 
+    private void validateParentCategoryActivation(Long parentNo, Integer depth, String isActive) {
+        if (depth != 2 || !"Y".equals(isActive)) {
+            return;
+        }
+        Category parent = getCategoryEntity(parentNo);
+        if (!"Y".equals(parent.getIsActive())) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+    }
+
+    private void validateBulkParentCategoryActivation(Category category, String isActive, Map<Long, Category> categoryMap) {
+        if (category.getDepth() != 2 || !"Y".equals(isActive)) {
+            return;
+        }
+        Category targetedParent = categoryMap.get(category.getParentNo());
+        if (targetedParent != null) {
+            return;
+        }
+        validateParentCategoryActivation(category.getParentNo(), category.getDepth(), isActive);
+    }
+
+    private void cascadeChildStatusWhenRootDisabled(List<Category> categories) {
+        List<Long> rootCategoryNos = categories.stream()
+                .filter(category -> category.getDepth() != null && category.getDepth() == 1)
+                .filter(category -> "N".equals(category.getIsActive()))
+                .map(Category::getCategoryNo)
+                .distinct()
+                .toList();
+        if (rootCategoryNos.isEmpty()) {
+            return;
+        }
+
+        categoryRepository.getChildCategories(rootCategoryNos).stream()
+                .filter(child -> !"N".equals(child.getIsActive()))
+                .forEach(child -> child.changeStatus("N"));
+    }
+
+    private int normalizeDepth(Integer depth) {
+        if (depth == null || depth < 1 || depth > 2) {
+            throw new BusinessException(ErrorCode.CATEGORY_HIERARCHY_INVALID);
+        }
+        return depth;
+    }
+
     private String normalizeRequiredText(String value) {
         if (value == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
@@ -197,12 +248,17 @@ public class AdminCategoryService {
         if (categories.isEmpty()) {
             throw new BusinessException(ErrorCode.CATEGORY_NOT_FOUND);
         }
+        List<Long> categoryNos = categories.stream().map(Category::getCategoryNo).toList();
+        Set<Long> childLinkedCategoryNos = new HashSet<>(categoryRepository.getChildCategories(categoryNos).stream()
+                .map(Category::getParentNo)
+                .toList());
+        Set<Long> productLinkedCategoryNos = new HashSet<>(productRepository.getReferencedCategoryNos(categoryNos));
 
         int deletedCount = 0;
         int blockedCount = 0;
         for (Category category : categories) {
-            if (categoryRepository.existsByParentNo(category.getCategoryNo())
-                    || productRepository.existsByCategoryNo(category.getCategoryNo())) {
+            if (childLinkedCategoryNos.contains(category.getCategoryNo())
+                    || productLinkedCategoryNos.contains(category.getCategoryNo())) {
                 blockedCount += 1;
                 continue;
             }

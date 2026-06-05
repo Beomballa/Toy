@@ -47,6 +47,7 @@ class AdminCategoryServiceTest {
         CategoryListRequest request = new CategoryListRequest();
         request.setKeyword("신발");
         request.setIsActive("Y");
+        request.setDepth(1);
 
         when(categoryRepository.getCategoryList(1, "신발", "Y", PageRequest.of(0, 10))).thenReturn(new PageImpl<>(
                 List.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build()),
@@ -165,6 +166,79 @@ class AdminCategoryServiceTest {
     }
 
     @Test
+    @DisplayName("비활성 상위 카테고리 아래에서는 하위 카테고리를 활성화할 수 없다")
+    void saveCategoryRejectsActiveChildUnderInactiveParent() {
+        Category inactiveParent = Category.builder().categoryNo(10L).name("신발").depth(1).isActive("N").build();
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(inactiveParent));
+
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminCategoryService.saveCategory(new CategorySaveRequest(null, 10L, "러닝화", 2, "Y")));
+
+        assertEquals(ErrorCode.CATEGORY_HIERARCHY_INVALID, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상위 카테고리를 비활성화하면 활성 하위 카테고리도 함께 비활성화된다")
+    void updateActiveDisablesActiveChildrenWhenRootDisabled() {
+        Category root = Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build();
+        Category child = Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build();
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(root));
+        when(categoryRepository.getChildCategories(List.of(1L))).thenReturn(List.of(child));
+
+        adminCategoryService.updateActive(1L, "N");
+
+        assertEquals("N", root.getIsActive());
+        assertEquals("N", child.getIsActive());
+    }
+
+    @Test
+    @DisplayName("비활성 상위 카테고리 아래에서는 하위 카테고리를 직접 활성화할 수 없다")
+    void updateActiveRejectsActivatingChildUnderInactiveParent() {
+        Category child = Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("N").build();
+        Category inactiveParent = Category.builder().categoryNo(1L).name("신발").depth(1).isActive("N").build();
+        when(categoryRepository.findById(2L)).thenReturn(Optional.of(child));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(inactiveParent));
+
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminCategoryService.updateActive(2L, "Y"));
+
+        assertEquals(ErrorCode.CATEGORY_HIERARCHY_INVALID, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 비활성화는 대상 상위 카테고리의 활성 하위 카테고리도 함께 비활성화한다")
+    void bulkOperateDisablesChildrenOfTargetRoots() {
+        Category root = Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build();
+        Category untouchedChild = Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build();
+        when(categoryRepository.findAllById(List.of(1L))).thenReturn(List.of(root));
+        when(categoryRepository.getChildCategories(List.of(1L))).thenReturn(List.of(untouchedChild));
+
+        AdminCategoryService.BulkOperateResult result = adminCategoryService.bulkOperate(
+                new CategoryBulkOperateRequest(List.of(1L), "N")
+        );
+
+        assertEquals(1, result.updatedCount());
+        assertEquals("N", root.getIsActive());
+        assertEquals("N", untouchedChild.getIsActive());
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 활성화는 같은 요청에 포함된 상위 카테고리를 부모로 인정한다")
+    void bulkOperateAllowsActivatingChildWhenParentIncludedTogether() {
+        Category root = Category.builder().categoryNo(1L).name("신발").depth(1).isActive("N").build();
+        Category child = Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("N").build();
+        when(categoryRepository.findAllById(List.of(1L, 2L))).thenReturn(List.of(root, child));
+
+        AdminCategoryService.BulkOperateResult result = adminCategoryService.bulkOperate(
+                new CategoryBulkOperateRequest(List.of(1L, 2L), "Y")
+        );
+
+        assertEquals(2, result.updatedCount());
+        assertEquals("Y", root.getIsActive());
+        assertEquals("Y", child.getIsActive());
+    }
+
+    @Test
     @DisplayName("카테고리 CSV 내보내기는 현재 필터와 루트 목록을 기록한다")
     void exportCategoryListCsvIncludesSummaryAndRows() {
         CategoryListRequest request = new CategoryListRequest();
@@ -203,10 +277,8 @@ class AdminCategoryServiceTest {
         Category category1 = Category.builder().categoryNo(5L).name("액세서리").depth(1).isActive("Y").build();
         Category category2 = Category.builder().categoryNo(6L).name("러닝화").depth(2).isActive("Y").build();
         when(categoryRepository.findAllById(List.of(5L, 6L, 9L))).thenReturn(List.of(category1, category2));
-        when(categoryRepository.existsByParentNo(5L)).thenReturn(false);
-        when(productRepository.existsByCategoryNo(5L)).thenReturn(false);
-        when(categoryRepository.existsByParentNo(6L)).thenReturn(false);
-        when(productRepository.existsByCategoryNo(6L)).thenReturn(true);
+        when(categoryRepository.getChildCategories(List.of(5L, 6L))).thenReturn(List.of());
+        when(productRepository.getReferencedCategoryNos(List.of(5L, 6L))).thenReturn(List.of(6L));
 
         AdminCategoryService.BulkDeleteResult result = adminCategoryService.bulkDelete(
                 new CategoryBulkDeleteRequest(List.of(5L, 6L, 9L))
@@ -217,5 +289,26 @@ class AdminCategoryServiceTest {
         assertEquals(1, result.blockedCount());
         assertEquals(1, result.missingCount());
         verify(categoryRepository).delete(argThat(item -> item.getCategoryNo().equals(5L)));
+    }
+
+    @Test
+    @DisplayName("카테고리 일괄 삭제는 하위 카테고리가 연결된 대상을 배치 조회 결과로 차단한다")
+    void bulkDeleteSkipsCategoriesHavingChildrenFromBatchLookup() {
+        Category root = Category.builder().categoryNo(5L).name("신발").depth(1).isActive("Y").build();
+        Category child = Category.builder().categoryNo(6L).parentNo(5L).name("러닝화").depth(2).isActive("Y").build();
+        when(categoryRepository.findAllById(List.of(5L, 7L))).thenReturn(List.of(
+                root,
+                Category.builder().categoryNo(7L).name("모자").depth(1).isActive("Y").build()
+        ));
+        when(categoryRepository.getChildCategories(List.of(5L, 7L))).thenReturn(List.of(child));
+        when(productRepository.getReferencedCategoryNos(List.of(5L, 7L))).thenReturn(List.of());
+
+        AdminCategoryService.BulkDeleteResult result = adminCategoryService.bulkDelete(
+                new CategoryBulkDeleteRequest(List.of(5L, 7L))
+        );
+
+        assertEquals(1, result.deletedCount());
+        assertEquals(1, result.blockedCount());
+        verify(categoryRepository).delete(argThat(item -> item.getCategoryNo().equals(7L)));
     }
 }

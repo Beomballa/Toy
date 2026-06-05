@@ -1,5 +1,7 @@
 package com.section.admin.brand.req;
 
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -17,7 +19,14 @@ public class BrandListRequest {
     }
 
     public String normalizedIsActive() {
-        return normalize(isActive);
+        String normalized = normalize(isActive);
+        if (normalized == null) {
+            return null;
+        }
+        if (!"Y".equalsIgnoreCase(normalized) && !"N".equalsIgnoreCase(normalized)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized.toUpperCase();
     }
 
     private String normalize(String value) {

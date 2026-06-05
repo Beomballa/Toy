@@ -87,7 +87,7 @@ class AdminProductServiceTest {
         request.setBrandNo(99L);
         request.setCategoryNo(88L);
 
-        when(brandRepository.existsById(99L)).thenReturn(false);
+        when(brandRepository.findById(99L)).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
 
@@ -103,8 +103,16 @@ class AdminProductServiceTest {
         request.setNameKo("테스트 상품");
         request.setReleasePrice(1000);
 
-        when(brandRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
         when(productRepository.save(any(Product.class))).thenReturn(Product.builder()
                 .id(33L)
                 .brandNo(1L)
@@ -150,7 +158,7 @@ class AdminProductServiceTest {
         ProductUpdateRequest request = new ProductUpdateRequest();
         request.setProductNo(1L);
         request.setBrandNo(1L);
-        request.setCategoryNo(1L);
+        request.setCategoryNo(2L);
         request.setNameKo("테스트 상품");
         request.setReleasePrice(1000);
         request.setStatus("invalid-status");
@@ -163,7 +171,6 @@ class AdminProductServiceTest {
                 .status("ACTIVE")
                 .releasePrice(1000)
                 .build()));
-
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
@@ -196,8 +203,16 @@ class AdminProductServiceTest {
                 .status("HIDDEN")
                 .releasePrice(1000)
                 .build()));
-        when(brandRepository.existsById(2L)).thenReturn(true);
-        when(categoryRepository.existsById(3L)).thenReturn(true);
+        when(brandRepository.findById(2L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(2L).nameKo("뉴발란스").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(3L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(3L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(3L)).thenReturn(false);
 
         adminProductService.updateProductInfo(request);
 
@@ -528,8 +543,16 @@ class AdminProductServiceTest {
         request.setReleasePrice(1000);
         request.setOptions(List.of(firstOption, duplicatedOption));
 
-        when(brandRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
 
@@ -565,8 +588,16 @@ class AdminProductServiceTest {
                 .status("ACTIVE")
                 .releasePrice(1000)
                 .build()));
-        when(brandRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
 
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
 
@@ -603,8 +634,16 @@ class AdminProductServiceTest {
         when(productOptionRepository.findByProductId(1L)).thenReturn(List.of(
                 ProductOption.builder().productNo(1L).optionName("280").stockCnt(3).additionalPrice(5000).build()
         ));
-        when(brandRepository.existsById(1L)).thenReturn(true);
-        when(categoryRepository.existsById(2L)).thenReturn(true);
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
 
         adminProductService.updateProductInfo(request);
 
@@ -721,6 +760,83 @@ class AdminProductServiceTest {
         assertEquals(3L, response.productStats().lowStockCount());
         assertEquals("기본 필터 기준", response.productStats().contextLabel());
         assertEquals("최신순", response.productStats().querySignature());
+    }
+
+    @Test
+    @DisplayName("비활성 브랜드로는 상품을 등록할 수 없다")
+    void createProductInfoRejectsInactiveBrand() {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("N").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(Optional.of(
+                Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build()
+        ));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상위 카테고리로는 상품을 수정할 수 없다")
+    void updateProductInfoRejectsNonLeafCategory() {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(1L);
+        request.setCategoryNo(10L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+        request.setStatus("ACTIVE");
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+                .id(1L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("기존 상품")
+                .status("ACTIVE")
+                .releasePrice(1000)
+                .build()));
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(10L)).thenReturn(Optional.of(
+                Category.builder().categoryNo(10L).parentNo(null).name("신발").depth(1).isActive("Y").build()
+        ));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("비활성 부모 아래 카테고리로는 상품을 등록할 수 없다")
+    void createProductInfoRejectsCategoryUnderInactiveParent() {
+        ProductCreateRequest request = new ProductCreateRequest();
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("테스트 상품");
+        request.setReleasePrice(1000);
+
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("N").build())
+        );
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.createProductInfo(request));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 
     @Test

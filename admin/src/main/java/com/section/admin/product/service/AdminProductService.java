@@ -439,7 +439,22 @@ public class AdminProductService {
     }
 
     private void validateBrandAndCategory(Long brandNo, Long categoryNo) {
-        if (!brandRepository.existsById(brandNo) || !categoryRepository.existsById(categoryNo)) {
+        Brand brand = brandRepository.findById(brandNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+        Category category = categoryRepository.findById(categoryNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+
+        if (!"Y".equals(brand.getIsActive()) || !"Y".equals(category.getIsActive())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        // 상품은 운영 화면의 선택 구조와 동일하게 최하위 활성 카테고리에만 연결되도록 강제합니다.
+        if (category.getParentNo() == null || categoryRepository.existsByParentNo(categoryNo)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        Category parentCategory = categoryRepository.findById(category.getParentNo())
+                .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+        if (!"Y".equals(parentCategory.getIsActive())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
     }

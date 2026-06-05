@@ -4,6 +4,8 @@ import java.util.List;
 
 public record FrontCatalogBootstrapResponse(
         List<FrontProductResponse> products,
-        FrontCatalogMetricsResponse metrics
+        FrontCatalogMetricsResponse metrics,
+        List<FrontCatalogFacetResponse> brandFacets,
+        List<FrontCatalogFacetResponse> categoryFacets
 ) {
 }

@@ -33,6 +33,12 @@ class FrontProductCatalogServiceTest {
         assertEquals(2, bootstrap.metrics().latestDropCount());
         assertEquals(3, bootstrap.metrics().featuredCount());
         assertEquals(189, bootstrap.metrics().totalStock());
+        assertEquals("Adidas", bootstrap.brandFacets().getFirst().value());
+        assertEquals(3, bootstrap.categoryFacets().stream()
+                .filter(facet -> "러닝화".equals(facet.value()))
+                .findFirst()
+                .orElseThrow()
+                .count());
     }
 
     @Test

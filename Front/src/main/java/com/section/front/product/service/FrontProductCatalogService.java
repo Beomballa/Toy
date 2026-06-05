@@ -2,6 +2,7 @@ package com.section.front.product.service;
 
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
+import com.section.front.product.dto.FrontCatalogFacetResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductResponse;
@@ -10,8 +11,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class FrontProductCatalogService {
@@ -147,7 +151,9 @@ public class FrontProductCatalogService {
                                 .count(),
                         (int) catalog.stream().filter(FrontProductResponse::featured).count(),
                         catalog.stream().mapToInt(FrontProductResponse::stock).sum()
-                )
+                ),
+                buildFacetResponses(catalog, FrontProductResponse::brand),
+                buildFacetResponses(catalog, FrontProductResponse::category)
         );
     }
 
@@ -214,5 +220,18 @@ public class FrontProductCatalogService {
                 product.price(),
                 product.stock()
         ));
+    }
+
+    private List<FrontCatalogFacetResponse> buildFacetResponses(
+            List<FrontProductResponse> catalog,
+            Function<FrontProductResponse, String> classifier
+    ) {
+        Map<String, Long> grouped = catalog.stream()
+                .collect(Collectors.groupingBy(classifier, Collectors.counting()));
+
+        return grouped.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey(String::compareToIgnoreCase))
+                .map(entry -> new FrontCatalogFacetResponse(entry.getKey(), entry.getValue().intValue()))
+                .toList();
     }
 }

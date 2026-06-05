@@ -1,6 +1,7 @@
 package com.section.front.controller;
 
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
+import com.section.front.product.dto.FrontCatalogFacetResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontProductResponse;
@@ -52,13 +53,17 @@ class FrontCatalogRestControllerTest {
                         true,
                         List.of(new FrontProductOptionResponse("260", 4))
                 )),
-                new FrontCatalogMetricsResponse(1, 1, "2026-06-04", 1, 1, 18)
+                new FrontCatalogMetricsResponse(1, 1, "2026-06-04", 1, 1, 18),
+                List.of(new FrontCatalogFacetResponse("New Balance", 1)),
+                List.of(new FrontCatalogFacetResponse("러닝화", 1))
         ));
 
         mockMvc.perform(get("/api/front/catalog/bootstrap"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.products[0].id").value(101L))
                 .andExpect(jsonPath("$.metrics.latestCreatedDate").value("2026-06-04"))
-                .andExpect(jsonPath("$.metrics.latestDropCount").value(1));
+                .andExpect(jsonPath("$.metrics.latestDropCount").value(1))
+                .andExpect(jsonPath("$.brandFacets[0].value").value("New Balance"))
+                .andExpect(jsonPath("$.categoryFacets[0].count").value(1));
     }
 }

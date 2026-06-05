@@ -16,6 +16,8 @@
         featuredCount: 0,
         totalStock: 0
     };
+    let brandFacets = [];
+    let categoryFacets = [];
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -59,6 +61,8 @@
             const payload = await response.json();
             products = Array.isArray(payload?.products) ? payload.products.slice() : [];
             metrics = payload?.metrics || metrics;
+            brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
+            categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
         } catch (error) {
             products = [];
             metrics = {
@@ -69,6 +73,8 @@
                 featuredCount: 0,
                 totalStock: 0
             };
+            brandFacets = [];
+            categoryFacets = [];
             setText(elements.catalogCountText, "상품 데이터를 불러오지 못했습니다.");
             if (elements.catalogGrid) {
                 elements.catalogGrid.innerHTML = `
@@ -82,16 +88,25 @@
     }
 
     function populateFilters() {
-        fillSelect(elements.brandFilter, "전체 브랜드", uniqueValues("brand"));
-        fillSelect(elements.categoryFilter, "전체 카테고리", uniqueValues("category"));
+        fillSelect(elements.brandFilter, "전체 브랜드", brandFacets, uniqueValues("brand"));
+        fillSelect(elements.categoryFilter, "전체 카테고리", categoryFacets, uniqueValues("category"));
     }
 
-    function fillSelect(select, defaultLabel, values) {
+    function fillSelect(select, defaultLabel, facets, fallbackValues) {
         if (!select) {
             return;
         }
+        const options = Array.isArray(facets) && facets.length
+            ? facets.map((facet) => ({
+                value: facet.value,
+                label: `${facet.value} (${facet.count})`
+            }))
+            : fallbackValues.map((value) => ({
+                value,
+                label: value
+            }));
         select.innerHTML = [`<option value="ALL">${defaultLabel}</option>`]
-            .concat(values.map((value) => `<option value="${value}">${value}</option>`))
+            .concat(options.map((option) => `<option value="${option.value}">${option.label}</option>`))
             .join("");
     }
 

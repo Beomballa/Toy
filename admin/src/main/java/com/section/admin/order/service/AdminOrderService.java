@@ -38,6 +38,7 @@ import java.util.List;
 public class AdminOrderService {
     private static final int ORDER_EXPORT_MAX_SIZE = 1000;
     private static final int ORDER_HISTORY_EXPORT_MAX_SIZE = 2000;
+    private static final int ORDER_ADMIN_MEMO_MAX_LENGTH = 1000;
 
     private final OrderRepository orderRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
@@ -171,6 +172,9 @@ public class AdminOrderService {
             return null;
         }
         String normalized = adminMemo.trim().replaceAll("\\s+", " ");
+        if (normalized.length() > ORDER_ADMIN_MEMO_MAX_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
         return normalized.isBlank() ? null : normalized;
     }
 }

@@ -143,6 +143,23 @@ class AdminOrderServiceTest {
     }
 
     @Test
+    @DisplayName("관리 메모 저장은 1000자를 초과하는 값을 거부한다")
+    void saveAdminMemoRejectsTooLongMemo() {
+        Orders order = Orders.createOrder("ORD-4", "홍길동", "010", 1000);
+        when(orderRepository.findById(4L)).thenReturn(Optional.of(order));
+
+        String tooLongMemo = "a".repeat(1001);
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> adminOrderService.saveAdminMemo(4L, tooLongMemo)
+        );
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+        verify(orderStatusHistoryRepository, never()).save(any());
+    }
+
+    @Test
     @DisplayName("주문 처리 이력 목록은 작업자명과 메타 정보를 함께 반환한다")
     void getOrderHistoryListReturnsPagedHistory() {
         OrderHistoryListRequest request = new OrderHistoryListRequest();

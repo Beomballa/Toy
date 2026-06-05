@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -188,6 +189,30 @@ class AdminContentRestControllerTest {
         assertEquals(Document.PublishStatus.PUBLISHED, documentCaptor.getValue().getStatus());
         assertEquals(YN.N, documentCaptor.getValue().getPublicYn());
         assertEquals(YN.Y, documentCaptor.getValue().getPinnedYn());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 저장은 소문자와 여분 공백으로 들어온 enum 스타일 필드도 정규화한다")
+    void saveContentNormalizesEnumStyleFields() throws Exception {
+        Document savedDocument = new Document();
+        savedDocument.setId(10L);
+        when(documentService.saveDocument(any(Document.class))).thenReturn(savedDocument);
+
+        mockMvc.perform(post("/api/admin/content/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SavePayload(
+                                null, " discuss ", "제목", "본문", 7L, " published ", " n ", " y "
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10L));
+
+        ArgumentCaptor<Document> documentCaptor = ArgumentCaptor.forClass(Document.class);
+        verify(documentService, atLeastOnce()).saveDocument(documentCaptor.capture());
+        Document captured = documentCaptor.getValue();
+        assertEquals(Document.BoardType.DISCUSS, captured.getBoardType());
+        assertEquals(Document.PublishStatus.PUBLISHED, captured.getStatus());
+        assertEquals(YN.N, captured.getPublicYn());
+        assertEquals(YN.Y, captured.getPinnedYn());
     }
 
     @Test

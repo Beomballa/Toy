@@ -7,6 +7,8 @@ import com.section.common.content.entity.Document;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.util.Locale;
+
 public record ContentSaveRequest(
     Long id,
     @NotBlank
@@ -39,7 +41,7 @@ public record ContentSaveRequest(
 
     private Document.BoardType parseBoardType(String boardType) {
         try {
-            return Document.BoardType.valueOf(boardType);
+            return Document.BoardType.valueOf(normalizeEnumValue(boardType));
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -51,7 +53,7 @@ public record ContentSaveRequest(
         }
 
         try {
-            return Document.PublishStatus.valueOf(status);
+            return Document.PublishStatus.valueOf(normalizeEnumValue(status));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
@@ -63,9 +65,13 @@ public record ContentSaveRequest(
         }
 
         try {
-            return YN.valueOf(value);
+            return YN.valueOf(normalizeEnumValue(value));
         } catch (IllegalArgumentException e) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private String normalizeEnumValue(String value) {
+        return value == null ? null : value.trim().toUpperCase(Locale.ROOT);
     }
 }

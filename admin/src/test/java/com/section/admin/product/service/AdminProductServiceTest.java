@@ -1,6 +1,9 @@
 package com.section.admin.product.service;
 
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductBulkDeleteRequest;
+import com.section.admin.product.req.ProductBulkDuplicateRequest;
+import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
@@ -10,6 +13,7 @@ import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.settings.service.AdminSettingsService;
 import com.section.common.base.entity.type.ProductHistoryActionType;
+import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.ProductHistoryListResDto;
@@ -49,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -232,6 +237,154 @@ class AdminProductServiceTest {
     }
 
     @Test
+    @DisplayName("상품 일괄 상태 변경은 삭제되지 않은 상품만 반영하고 결과를 집계한다")
+    void bulkOperateProductsUpdatesEligibleProductsOnly() {
+        when(productRepository.findAllById(List.of(1L, 2L, 3L, 99L))).thenReturn(List.of(
+                Product.builder().id(1L).status(ProductStatus.ACTIVE.name()).nameKo("A").brandNo(1L).categoryNo(1L).build(),
+                Product.builder().id(2L).status(ProductStatus.HIDDEN.name()).nameKo("B").brandNo(1L).categoryNo(1L).build(),
+                Product.builder().id(3L).status(ProductStatus.DELETE.name()).nameKo("C").brandNo(1L).categoryNo(1L).build()
+        ));
+
+        AdminProductService.BulkOperateResult result = adminProductService.bulkOperateProducts(
+                new ProductBulkOperateRequest(List.of(1L, 2L, 3L, 99L), "HIDDEN")
+        );
+
+        assertEquals(4, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        assertEquals(1, result.blockedCount());
+        assertEquals(1, result.missingCount());
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().contains("일괄 변경")
+                        && history.getStatusSnapshot().equals(ProductStatus.HIDDEN.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 삭제는 이미 삭제된 상품을 제외하고 논리 삭제한다")
+    void bulkDeleteProductsDeletesEligibleProductsOnly() {
+        when(productRepository.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(
+                Product.builder().id(1L).status(ProductStatus.ACTIVE.name()).nameKo("A").brandNo(1L).categoryNo(1L).build(),
+                Product.builder().id(2L).status(ProductStatus.DELETE.name()).nameKo("B").brandNo(1L).categoryNo(1L).build()
+        ));
+
+        AdminProductService.BulkDeleteResult result = adminProductService.bulkDeleteProducts(
+                new ProductBulkDeleteRequest(List.of(1L, 2L, 3L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(1, result.deletedCount());
+        assertEquals(1, result.alreadyDeletedCount());
+        assertEquals(1, result.missingCount());
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().contains("일괄 삭제")
+                        && history.getStatusSnapshot().equals(ProductStatus.DELETE.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 복제는 삭제되지 않은 상품만 숨김 상태로 복제한다")
+    void bulkDuplicateProductsCreatesEligibleProductsOnly() {
+        Product sourceActive = Product.builder()
+                .id(1L)
+                .status(ProductStatus.ACTIVE.name())
+                .nameKo("A")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .releasePrice(1000)
+                .build();
+        Product sourceDeleted = Product.builder()
+                .id(2L)
+                .status(ProductStatus.DELETE.name())
+                .nameKo("B")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .releasePrice(2000)
+                .build();
+
+        when(productRepository.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(sourceActive, sourceDeleted));
+        when(productRepository.save(any(Product.class))).thenReturn(Product.builder()
+                .id(11L)
+                .status(ProductStatus.HIDDEN.name())
+                .nameKo("A (복제)")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .releasePrice(1000)
+                .build());
+        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of(
+                ProductOption.builder().productNo(1L).optionName("260").stockCnt(2).additionalPrice(0).build()
+        ));
+
+        AdminProductService.BulkDuplicateResult result = adminProductService.bulkDuplicateProducts(
+                new ProductBulkDuplicateRequest(List.of(1L, 2L, 3L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(1, result.createdCount());
+        assertEquals(1, result.blockedCount());
+        assertEquals(1, result.missingCount());
+        assertIterableEquals(List.of(11L), result.createdProductNos());
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(11L)
+                        && history.getSummary().contains("원본 상품 번호: 1")
+                        && history.getStatusSnapshot().equals(ProductStatus.HIDDEN.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 복제는 조회 반환 순서와 무관하게 요청 순서대로 생성 결과를 반환한다")
+    void bulkDuplicateProductsPreservesRequestedOrder() {
+        Product requestedThird = Product.builder()
+                .id(3L)
+                .status(ProductStatus.ACTIVE.name())
+                .nameKo("세 번째")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .releasePrice(3000)
+                .build();
+        Product requestedFirst = Product.builder()
+                .id(1L)
+                .status(ProductStatus.ACTIVE.name())
+                .nameKo("첫 번째")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .releasePrice(1000)
+                .build();
+
+        when(productRepository.findAllById(List.of(3L, 1L, 9L))).thenReturn(List.of(requestedFirst, requestedThird));
+        when(productRepository.save(any(Product.class)))
+                .thenReturn(
+                        Product.builder().id(31L).status(ProductStatus.HIDDEN.name()).nameKo("세 번째 (복제)").brandNo(1L).categoryNo(1L).releasePrice(3000).build(),
+                        Product.builder().id(11L).status(ProductStatus.HIDDEN.name()).nameKo("첫 번째 (복제)").brandNo(1L).categoryNo(1L).releasePrice(1000).build()
+                );
+        when(productOptionRepository.findByProductId(3L)).thenReturn(List.of());
+        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of());
+
+        AdminProductService.BulkDuplicateResult result = adminProductService.bulkDuplicateProducts(
+                new ProductBulkDuplicateRequest(List.of(3L, 1L, 9L))
+        );
+
+        assertEquals(3, result.requestedCount());
+        assertEquals(2, result.createdCount());
+        assertEquals(0, result.blockedCount());
+        assertEquals(1, result.missingCount());
+        assertIterableEquals(List.of(31L, 11L), result.createdProductNos());
+        verify(productRepository, times(2)).save(any(Product.class));
+    }
+
+    @Test
+    @DisplayName("상품 일괄 상태 변경은 DELETE 상태를 허용하지 않는다")
+    void bulkOperateProductsRejectsDeleteStatus() {
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminProductService.bulkOperateProducts(new ProductBulkOperateRequest(List.of(1L), "DELETE"))
+        );
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("상품 이력 조회는 작업자 이름을 함께 내려준다")
     void getProductHistoryIncludesActorName() {
         ProductChangeHistory history = ProductChangeHistory.of(
@@ -339,6 +492,23 @@ class AdminProductServiceTest {
     }
 
     @Test
+    @DisplayName("삭제된 상품은 복제할 수 없다")
+    void cloneProductThrowsWhenSourceProductDeleted() {
+        when(productRepository.findById(5L)).thenReturn(Optional.of(Product.builder()
+                .id(5L)
+                .categoryNo(2L)
+                .brandNo(3L)
+                .nameKo("삭제 상품")
+                .status(ProductStatus.DELETE.name())
+                .releasePrice(1000)
+                .build()));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.cloneProduct(5L));
+
+        assertEquals(ErrorCode.PRODUCT_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("공백 정규화 후 중복되는 상품 옵션명으로 생성 시 INVALID_INPUT_VALUE 예외를 던진다")
     void createProductInfoThrowsBusinessExceptionWhenOptionNamesDuplicated() {
         ProductCreateRequest.ProductOptionRequest firstOption = new ProductCreateRequest.ProductOptionRequest();
@@ -401,6 +571,47 @@ class AdminProductServiceTest {
         BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.updateProductInfo(request));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("옵션 변경이 없으면 수정 이력 요약에 옵션을 포함하지 않는다")
+    void updateProductInfoDoesNotRecordOptionChangeWhenOptionsUnchanged() {
+        ProductUpdateRequest.ProductOptionUpdateRequest option = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        option.setOptionName(" 280 ");
+        option.setStockCnt(3);
+        option.setAdditionalPrice(5000);
+
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("기존 상품");
+        request.setModelNum("OLD");
+        request.setReleasePrice(1000);
+        request.setStatus("ACTIVE");
+        request.setOptions(List.of(option));
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+                .id(1L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("기존 상품")
+                .modelNum("OLD")
+                .status("ACTIVE")
+                .releasePrice(1000)
+                .build()));
+        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of(
+                ProductOption.builder().productNo(1L).optionName("280").stockCnt(3).additionalPrice(5000).build()
+        ));
+        when(brandRepository.existsById(1L)).thenReturn(true);
+        when(categoryRepository.existsById(2L)).thenReturn(true);
+
+        adminProductService.updateProductInfo(request);
+
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().equals("변경된 정보가 없습니다.")
+        ));
     }
 
     @Test

@@ -1,5 +1,8 @@
 package com.section.admin.product.service;
 
+import com.section.admin.product.req.ProductBulkDeleteRequest;
+import com.section.admin.product.req.ProductBulkDuplicateRequest;
+import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
@@ -44,10 +47,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -183,7 +186,8 @@ public class AdminProductService {
     public void updateProductInfo(ProductUpdateRequest reqDto) {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-        String updateSummary = buildUpdateSummary(product, reqDto);
+        List<ProductOption> currentOptions = productOptionRepository.findByProductId(product.getId());
+        String updateSummary = buildUpdateSummary(product, currentOptions, reqDto);
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
         validateDuplicateOptionNames(reqDto.getOptions() == null ? List.of() :
                 reqDto.getOptions().stream()
@@ -278,6 +282,125 @@ public class AdminProductService {
         log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
     }
 
+    @Transactional
+    public BulkOperateResult bulkOperateProducts(ProductBulkOperateRequest reqDto) {
+        List<Long> targetProductNos = reqDto.normalizedProductNos();
+        ProductStatus targetStatus = reqDto.normalizedStatus();
+
+        List<Product> products = productRepository.findAllById(targetProductNos);
+        if (products.isEmpty()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        int updatedCount = 0;
+        int unchangedCount = 0;
+        int blockedCount = 0;
+        for (Product product : products) {
+            if (ProductStatus.DELETE.name().equals(product.getStatus())) {
+                blockedCount += 1;
+                continue;
+            }
+            if (targetStatus.name().equals(product.getStatus())) {
+                unchangedCount += 1;
+                continue;
+            }
+
+            product.changeStatus(targetStatus);
+            recordProductHistory(
+                    product.getId(),
+                    ProductHistoryActionType.UPDATED,
+                    "상품 상태가 일괄 변경되었습니다. 변경 상태: " + targetStatus.name(),
+                    targetStatus.name(),
+                    0,
+                    0L
+            );
+            updatedCount += 1;
+        }
+
+        HashSet<Long> existingProductNoSet = new HashSet<>(products.stream()
+                .map(Product::getId)
+                .toList());
+        long missingCount = targetProductNos.stream()
+                .filter(no -> !existingProductNoSet.contains(no))
+                .count();
+
+        return new BulkOperateResult(targetProductNos.size(), updatedCount, unchangedCount, blockedCount, (int) missingCount);
+    }
+
+    @Transactional
+    public BulkDeleteResult bulkDeleteProducts(ProductBulkDeleteRequest reqDto) {
+        List<Long> targetProductNos = reqDto.normalizedProductNos();
+        List<Product> products = productRepository.findAllById(targetProductNos);
+        if (products.isEmpty()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+
+        int deletedCount = 0;
+        int alreadyDeletedCount = 0;
+        for (Product product : products) {
+            if (ProductStatus.DELETE.name().equals(product.getStatus())) {
+                alreadyDeletedCount += 1;
+                continue;
+            }
+
+            product.deleteProduct();
+            recordProductHistory(
+                    product.getId(),
+                    ProductHistoryActionType.DELETED,
+                    "상품이 일괄 삭제 처리되었습니다.",
+                    ProductStatus.DELETE.name(),
+                    0,
+                    0L
+            );
+            deletedCount += 1;
+        }
+
+        HashSet<Long> existingProductNoSet = new HashSet<>(products.stream()
+                .map(Product::getId)
+                .toList());
+        long missingCount = targetProductNos.stream()
+                .filter(no -> !existingProductNoSet.contains(no))
+                .count();
+
+        return new BulkDeleteResult(targetProductNos.size(), deletedCount, alreadyDeletedCount, (int) missingCount);
+    }
+
+    @Transactional
+    public BulkDuplicateResult bulkDuplicateProducts(ProductBulkDuplicateRequest reqDto) {
+        List<Long> targetProductNos = reqDto.normalizedProductNos();
+        List<Product> products = productRepository.findAllById(targetProductNos);
+        if (products.isEmpty()) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+        java.util.Map<Long, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, product -> product));
+
+        int blockedCount = 0;
+        int missingCount = 0;
+        List<Long> createdProductNos = new java.util.ArrayList<>();
+        // 일괄 복제 결과는 사용자가 고른 순서와 동일해야 화면 선택/후속 이동 흐름이 어긋나지 않습니다.
+        for (Long productNo : targetProductNos) {
+            Product product = productMap.get(productNo);
+            if (product == null) {
+                missingCount += 1;
+                continue;
+            }
+            if (ProductStatus.DELETE.name().equals(product.getStatus())) {
+                blockedCount += 1;
+                continue;
+            }
+            createdProductNos.add(duplicateProduct(product).getId());
+        }
+
+        return new BulkDuplicateResult(
+                targetProductNos.size(),
+                createdProductNos.size(),
+                blockedCount,
+                missingCount,
+                createdProductNos
+        );
+    }
+
     public List<ProductHistoryResponse> getProductHistory(Long productNo) {
         if (!productRepository.existsById(productNo)) {
             throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
@@ -310,45 +433,9 @@ public class AdminProductService {
     @Transactional
     public Long cloneProduct(Long productNo) {
         Product source = productRepository.findById(productNo)
+                .filter(product -> !ProductStatus.DELETE.name().equals(product.getStatus()))
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-
-        Product clonedProduct = Product.builder()
-                .categoryNo(source.getCategoryNo())
-                .brandNo(source.getBrandNo())
-                .nameKo(source.getNameKo() + " (복제)")
-                .modelNum(source.getModelNum())
-                .releasePrice(source.getReleasePrice())
-                .releaseDt(source.getReleaseDt())
-                .thumbnailUrl(source.getThumbnailUrl())
-                .status(ProductStatus.HIDDEN.name())
-                .build();
-        Product savedProduct = productRepository.save(clonedProduct);
-
-        List<ProductOption> sourceOptions = productOptionRepository.findByProductId(productNo);
-        if (!sourceOptions.isEmpty()) {
-            productOptionRepository.saveAll(sourceOptions.stream()
-                    .map(option -> ProductOption.builder()
-                            .productNo(savedProduct.getId())
-                            .optionName(option.getOptionName())
-                            .stockCnt(option.getStockCnt())
-                            .additionalPrice(option.getAdditionalPrice())
-                            .build())
-                    .toList());
-        }
-
-        recordProductHistory(
-                savedProduct.getId(),
-                ProductHistoryActionType.CREATED,
-                "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: " + productNo,
-                ProductStatus.HIDDEN.name(),
-                sourceOptions.size(),
-                sourceOptions.stream()
-                        .map(ProductOption::getStockCnt)
-                        .filter(java.util.Objects::nonNull)
-                        .mapToLong(Integer::longValue)
-                        .sum()
-        );
-        return savedProduct.getId();
+        return duplicateProduct(source).getId();
     }
 
     private void validateBrandAndCategory(Long brandNo, Long categoryNo) {
@@ -390,7 +477,47 @@ public class AdminProductService {
         );
     }
 
-    private String buildUpdateSummary(Product product, ProductUpdateRequest reqDto) {
+    private Product duplicateProduct(Product source) {
+        Product clonedProduct = Product.builder()
+                .categoryNo(source.getCategoryNo())
+                .brandNo(source.getBrandNo())
+                .nameKo(source.getNameKo() + " (복제)")
+                .modelNum(source.getModelNum())
+                .releasePrice(source.getReleasePrice())
+                .releaseDt(source.getReleaseDt())
+                .thumbnailUrl(source.getThumbnailUrl())
+                .status(ProductStatus.HIDDEN.name())
+                .build();
+        Product savedProduct = productRepository.save(clonedProduct);
+
+        List<ProductOption> sourceOptions = productOptionRepository.findByProductId(source.getId());
+        if (!sourceOptions.isEmpty()) {
+            productOptionRepository.saveAll(sourceOptions.stream()
+                    .map(option -> ProductOption.builder()
+                            .productNo(savedProduct.getId())
+                            .optionName(option.getOptionName())
+                            .stockCnt(option.getStockCnt())
+                            .additionalPrice(option.getAdditionalPrice())
+                            .build())
+                    .toList());
+        }
+
+        recordProductHistory(
+                savedProduct.getId(),
+                ProductHistoryActionType.CREATED,
+                "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: " + source.getId(),
+                ProductStatus.HIDDEN.name(),
+                sourceOptions.size(),
+                sourceOptions.stream()
+                        .map(ProductOption::getStockCnt)
+                        .filter(java.util.Objects::nonNull)
+                        .mapToLong(Integer::longValue)
+                        .sum()
+        );
+        return savedProduct;
+    }
+
+    private String buildUpdateSummary(Product product, List<ProductOption> currentOptions, ProductUpdateRequest reqDto) {
         List<String> changedFields = new java.util.ArrayList<>();
 
         if (!product.getCategoryNo().equals(reqDto.getCategoryNo())) changedFields.add("카테고리");
@@ -401,11 +528,38 @@ public class AdminProductService {
         if (!java.util.Objects.equals(product.getReleaseDt(), reqDto.getReleaseDt())) changedFields.add("발매일");
         if (!java.util.Objects.equals(product.getThumbnailUrl(), reqDto.normalizeOptionalText(reqDto.getThumbnailUrl()))) changedFields.add("썸네일");
         if (reqDto.getStatus() != null && !product.getStatus().equals(parseProductStatus(reqDto.getStatus()).name())) changedFields.add("상태");
-        changedFields.add("옵션");
+        if (isOptionChanged(currentOptions, reqDto)) changedFields.add("옵션");
 
         return changedFields.isEmpty()
                 ? "변경된 정보가 없습니다."
                 : "변경 항목: " + String.join(", ", changedFields);
+    }
+
+    private boolean isOptionChanged(List<ProductOption> currentOptions, ProductUpdateRequest reqDto) {
+        List<String> currentOptionSignatures = (currentOptions == null ? List.<ProductOption>of() : currentOptions).stream()
+                .map(this::buildOptionSignature)
+                .sorted()
+                .toList();
+        List<String> requestedOptionSignatures = (reqDto.getOptions() == null ? List.<ProductUpdateRequest.ProductOptionUpdateRequest>of() : reqDto.getOptions()).stream()
+                .filter(option -> option.getOptionName() != null && !option.getOptionName().isBlank())
+                .map(this::buildOptionSignature)
+                .sorted()
+                .toList();
+        return !currentOptionSignatures.equals(requestedOptionSignatures);
+    }
+
+    private String buildOptionSignature(ProductOption option) {
+        return String.join("|",
+                option.getOptionName(),
+                String.valueOf(option.getStockCnt()),
+                String.valueOf(option.getAdditionalPrice()));
+    }
+
+    private String buildOptionSignature(ProductUpdateRequest.ProductOptionUpdateRequest option) {
+        return String.join("|",
+                option.normalizeOptionName(),
+                String.valueOf(option.getStockCnt()),
+                String.valueOf(option.getAdditionalPrice()));
     }
 
     private String resolveBrandName(Long brandNo) {
@@ -426,5 +580,31 @@ public class AdminProductService {
         return categoryRepository.findById(categoryNo)
                 .map(Category::getName)
                 .orElse(null);
+    }
+
+    public record BulkOperateResult(
+            int requestedCount,
+            int updatedCount,
+            int unchangedCount,
+            int blockedCount,
+            int missingCount
+    ) {
+    }
+
+    public record BulkDeleteResult(
+            int requestedCount,
+            int deletedCount,
+            int alreadyDeletedCount,
+            int missingCount
+    ) {
+    }
+
+    public record BulkDuplicateResult(
+            int requestedCount,
+            int createdCount,
+            int blockedCount,
+            int missingCount,
+            List<Long> createdProductNos
+    ) {
     }
 }

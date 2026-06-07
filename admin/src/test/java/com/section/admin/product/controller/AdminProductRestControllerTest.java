@@ -5,8 +5,15 @@ import com.section.admin.product.req.ProductBulkDeleteRequest;
 import com.section.admin.product.req.ProductBulkDuplicateRequest;
 import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
+import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayRankGuideResponse;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductFrontDisplayResponse;
+import com.section.admin.product.res.ProductFrontDisplayListResponse;
+import com.section.admin.product.res.ProductFrontDisplaySummaryResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
@@ -16,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.base.entity.type.ProductOrderType;
+import com.section.common.base.entity.type.ProductStatus;
 import com.section.common.commerce.dto.ProductListQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -32,10 +40,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -239,6 +249,125 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.totalStock").value(0L))
                 .andExpect(jsonPath("$.options").isArray())
                 .andExpect(jsonPath("$.options").isEmpty());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 조회 API는 전시 메타데이터를 반환한다")
+    void getProductFrontDisplayReturnsDisplayMetadata() throws Exception {
+        when(adminProductService.getFrontDisplay(4L))
+                .thenReturn(new ProductFrontDisplayResponse(4L, "Grey precision", "설명", "Mood", true, 2));
+
+        mockMvc.perform(get("/api/admin/product/front-display?productNo=4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productNo").value(4L))
+                .andExpect(jsonPath("$.headline").value("Grey precision"))
+                .andExpect(jsonPath("$.featured").value(true))
+                .andExpect(jsonPath("$.featuredRank").value(2));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 순번 가이드 API는 사용중 순번과 추천값을 반환한다")
+    void getProductFrontDisplayRankGuideReturnsGuide() throws Exception {
+        when(adminProductService.getFrontDisplayRankGuide(4L))
+                .thenReturn(new ProductFrontDisplayRankGuideResponse(
+                        12,
+                        3,
+                        List.of(1, 2, 4),
+                        List.of(3, 5, 6, 7)
+                ));
+
+        mockMvc.perform(get("/api/admin/product/front-display/rank-guide?productNo=4"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.guideLimit").value(12))
+                .andExpect(jsonPath("$.recommendedRank").value(3))
+                .andExpect(jsonPath("$.occupiedRanks[1]").value(2))
+                .andExpect(jsonPath("$.availableRanks[0]").value(3));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 목록 API는 featured 필터 결과를 반환한다")
+    void getProductFrontDisplayListReturnsDisplayRows() throws Exception {
+        when(adminProductService.getFrontDisplayProducts(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
+                .thenReturn(new ProductFrontDisplayDashboardResponse(
+                        new ProductFrontDisplaySummaryResponse(1, 1, 0, 1, 1, 20),
+                        List.of(new ProductFrontDisplayListResponse(
+                                4L,
+                                "990v6 Grey Day",
+                                "New Balance",
+                                "러닝화",
+                                289000,
+                                18L,
+                                "ACTIVE",
+                                "판매중",
+                                true,
+                                "Grey precision",
+                                "전시 설명",
+                                "Sharp tone",
+                                true,
+                                3
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/admin/product/front-display/list?featuredOnly=true&status=ACTIVE&keyword=Grey&brandNo=7&categoryNo=11&configured=CONFIGURED&sort=PRICE_LOW"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.summary.totalCount").value(1))
+                .andExpect(jsonPath("$.summary.configuredCount").value(1))
+                .andExpect(jsonPath("$.items[0].productNo").value(4L))
+                .andExpect(jsonPath("$.items[0].displayConfigured").value(true))
+                .andExpect(jsonPath("$.items[0].statusDescription").value("판매중"))
+                .andExpect(jsonPath("$.items[0].headline").value("Grey precision"))
+                .andExpect(jsonPath("$.items[0].featuredRank").value(3));
+
+        verify(adminProductService).getFrontDisplayProducts(org.mockito.ArgumentMatchers.argThat(request ->
+                "Grey".equals(request.normalizedKeyword())
+                        && request.normalizedStatus() == ProductStatus.ACTIVE
+                        && request.normalizedBrandNo() == 7L
+                        && request.normalizedCategoryNo() == 11L
+                        && Boolean.TRUE.equals(request.normalizedConfigured())
+                        && "PRICE_LOW".equals(request.normalizedSort())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 CSV 내보내기 API는 조건 기반 파일명을 내려준다")
+    void exportProductFrontDisplayListReturnsCsv() throws Exception {
+        when(adminProductService.exportFrontDisplayProductsCsv(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/product/front-display/export?status=ACTIVE&brandNo=7&categoryNo=3&configured=UNCONFIGURED&featuredOnly=true&lowStockOnly=true&keyword=Grey"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Disposition", "attachment; filename=front_display_active_brand7_category3_unconfigured_featured_lowstock_search_" + todayExportDate() + ".csv"))
+                .andExpect(content().contentType("text/csv"));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 저장 API는 저장 결과를 반환한다")
+    void saveProductFrontDisplayReturnsSavedDisplay() throws Exception {
+        ProductFrontDisplaySaveRequest request = new ProductFrontDisplaySaveRequest(
+                4L,
+                "Grey precision",
+                "전시 설명",
+                "Sharp tone",
+                true,
+                3
+        );
+        when(adminProductService.saveFrontDisplay(org.mockito.ArgumentMatchers.any(ProductFrontDisplaySaveRequest.class)))
+                .thenReturn(new ProductFrontDisplayResponse(4L, "Grey precision", "전시 설명", "Sharp tone", true, 3));
+
+        mockMvc.perform(post("/api/admin/product/front-display")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productNo").value(4L))
+                .andExpect(jsonPath("$.headline").value("Grey precision"))
+                .andExpect(jsonPath("$.featuredRank").value(3));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 초기화 API는 삭제 요청을 수행한다")
+    void clearProductFrontDisplayDelegatesDelete() throws Exception {
+        mockMvc.perform(delete("/api/admin/product/front-display/4"))
+                .andExpect(status().isOk());
     }
 
     @Test

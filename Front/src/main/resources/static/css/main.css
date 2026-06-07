@@ -435,7 +435,7 @@ select {
 
 .catalog-toolbar {
     display: grid;
-    grid-template-columns: 2fr repeat(4, minmax(0, 1fr));
+    grid-template-columns: 2fr repeat(6, minmax(0, 1fr));
     gap: 14px;
     padding: 18px;
 }

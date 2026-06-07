@@ -107,11 +107,40 @@
                     </select>
                 </div>
                 <div class="toolbar-field">
+                    <label for="featuredOnlyFilter">대표 노출</label>
+                    <select id="featuredOnlyFilter">
+                        <option value="ALL">전체</option>
+                        <option value="FEATURED">Featured만</option>
+                    </select>
+                </div>
+                <div class="toolbar-field">
+                    <label for="priceBandFilter">가격대</label>
+                    <select id="priceBandFilter">
+                        <option value="ALL">전체</option>
+                        <option value="UNDER_200">20만원 미만</option>
+                        <option value="BETWEEN_200_300">20만원-30만원</option>
+                        <option value="OVER_300">30만원 초과</option>
+                    </select>
+                </div>
+                <div class="toolbar-field">
+                    <label for="lowStockThresholdFilter">긴장 기준</label>
+                    <select id="lowStockThresholdFilter">
+                        <option value="10">10개 미만</option>
+                        <option value="20" selected>20개 미만</option>
+                        <option value="30">30개 미만</option>
+                        <option value="50">50개 미만</option>
+                    </select>
+                </div>
+                <div class="toolbar-field">
                     <label for="sortFilter">정렬</label>
                     <select id="sortFilter">
                         <option value="LATEST">최근 등록순</option>
+                        <option value="NAME_ASC">상품명 오름차순</option>
                         <option value="PRICE_HIGH">발매가 높은 순</option>
+                        <option value="PRICE_LOW">발매가 낮은 순</option>
                         <option value="STOCK_ASC">재고 낮은 순</option>
+                        <option value="STOCK_DESC">재고 높은 순</option>
+                        <option value="FEATURED">대표 노출순</option>
                     </select>
                 </div>
             </div>

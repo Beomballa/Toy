@@ -75,4 +75,13 @@ public class AdminProductController {
         return "views/product-history";
     }
 
+    @RequestMapping("/front-display")
+    public String productFrontDisplay(Model model) {
+        ProductDefaultResDto defaultInfo = adminProductService.getProductDefaultInfo();
+        model.addAttribute("brands", defaultInfo.brands());
+        model.addAttribute("categories", defaultInfo.categories());
+        model.addAttribute("initialLowStockThreshold", adminProductService.getLowStockDefaultThreshold());
+        return "views/product-front-display";
+    }
+
 }

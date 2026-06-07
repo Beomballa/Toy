@@ -6,6 +6,7 @@ const ProductCreate = {
     returnTo: '/admin/products',
     isSubmitting: false,
     operationPolicy: null,
+    frontDisplayRankGuide: null,
 
     init(brands, categories) {
         if (this.initialized) {
@@ -23,6 +24,8 @@ const ProductCreate = {
 
         // 이벤트 바인딩
         this.bindEvents();
+        this.applyFeaturedToggleBehavior();
+        this.loadFrontDisplayRankGuide();
         this.syncReturnLinks();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -108,6 +111,78 @@ const ProductCreate = {
             const url = e.target.value;
             document.getElementById('previewImage').src = url || 'https://via.placeholder.com/300x300?text=No+Image';
         });
+
+        document.getElementById('frontDisplayFeatured')?.addEventListener('change', () => {
+            this.applyFeaturedToggleBehavior();
+        });
+    },
+
+    async loadFrontDisplayRankGuide() {
+        try {
+            const response = await fetch('/api/admin/product/front-display/rank-guide');
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, 'Featured 순번 정보를 불러오지 못했습니다.'));
+            }
+            this.frontDisplayRankGuide = await response.json();
+            this.renderFrontDisplayRankGuide();
+            this.applyFeaturedToggleBehavior();
+        } catch (error) {
+            console.error('Featured rank guide load failed:', error);
+            this.renderFrontDisplayRankGuide(error.message || 'Featured 순번 정보를 불러오지 못했습니다.');
+        }
+    },
+
+    applyFeaturedToggleBehavior() {
+        const featuredSelect = document.getElementById('frontDisplayFeatured');
+        const rankInput = document.getElementById('frontDisplayRank');
+        if (!featuredSelect || !rankInput) {
+            return;
+        }
+
+        const isFeatured = featuredSelect.value === 'true';
+        rankInput.disabled = !isFeatured;
+        rankInput.classList.toggle('bg-light', !isFeatured);
+
+        if (!isFeatured) {
+            rankInput.value = '999';
+            return;
+        }
+
+        const currentRank = Number(rankInput.value);
+        if (Number.isNaN(currentRank) || currentRank === 999 || currentRank < 1) {
+            rankInput.value = String(this.frontDisplayRankGuide?.recommendedRank || 1);
+        }
+    },
+
+    renderFrontDisplayRankGuide(errorMessage = '') {
+        const hint = document.getElementById('frontDisplayRankGuide');
+        if (!hint) {
+            return;
+        }
+        if (errorMessage) {
+            hint.textContent = errorMessage;
+            hint.classList.remove('text-muted');
+            hint.classList.add('text-danger');
+            return;
+        }
+
+        const guide = this.frontDisplayRankGuide;
+        if (!guide) {
+            hint.textContent = 'Featured 순번 정보를 불러오는 중입니다.';
+            hint.classList.remove('text-danger');
+            hint.classList.add('text-muted');
+            return;
+        }
+
+        const occupied = Array.isArray(guide.occupiedRanks) && guide.occupiedRanks.length
+            ? guide.occupiedRanks.join(', ')
+            : '없음';
+        const available = Array.isArray(guide.availableRanks) && guide.availableRanks.length
+            ? guide.availableRanks.join(', ')
+            : '-';
+        hint.textContent = `추천 ${guide.recommendedRank} · 사용중 ${occupied} · 빈 순번 ${available}`;
+        hint.classList.remove('text-danger');
+        hint.classList.add('text-muted');
     },
 
     // 옵션 추가
@@ -187,6 +262,7 @@ const ProductCreate = {
             thumbnailUrl: validationResult.thumbnailUrl,
             options: validationResult.options
         };
+        const frontDisplay = validationResult.frontDisplay;
 
         try {
             this.isSubmitting = true;
@@ -200,6 +276,23 @@ const ProductCreate = {
 
             if (response.ok) {
                 const result = await response.json();
+                const displayResponse = await fetch('/api/admin/product/front-display', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        productNo: result.productNo,
+                        headline: frontDisplay.headline,
+                        description: frontDisplay.description,
+                        mood: frontDisplay.mood,
+                        featured: frontDisplay.featured,
+                        featuredRank: frontDisplay.featuredRank
+                    })
+                });
+                if (!displayResponse.ok) {
+                    const displayMessage = await CommonJS.extractErrorMessage(displayResponse, '프론트 노출 정보 저장에 실패했습니다.');
+                    await CommonJS.alert(displayMessage, '오류', 'error');
+                    return;
+                }
                 await CommonJS.alert('상품이 성공적으로 등록되었습니다.', '성공', 'success');
                 const returnTo = encodeURIComponent(this.returnTo);
                 window.location.href = `/admin/products/get?no=${result.productNo}&returnTo=${returnTo}`;
@@ -246,12 +339,20 @@ const ProductCreate = {
         const modelNumEl = document.getElementById('modelNum');
         const releasePriceEl = document.getElementById('releasePrice');
         const thumbnailUrlEl = document.getElementById('thumbnailUrl');
+        const frontDisplayHeadlineEl = document.getElementById('frontDisplayHeadline');
+        const frontDisplayDescriptionEl = document.getElementById('frontDisplayDescription');
+        const frontDisplayMoodEl = document.getElementById('frontDisplayMood');
+        const frontDisplayRankEl = document.getElementById('frontDisplayRank');
 
         const categoryNo = categoryNoEl.value;
         const brandNo = brandNoEl.value;
         const nameKo = this.normalizeRequiredText(nameKoEl.value);
         const modelNum = this.normalizeOptionalText(modelNumEl.value);
         const thumbnailUrl = this.normalizeOptionalText(thumbnailUrlEl.value);
+        const frontDisplayHeadline = this.normalizeRequiredText(frontDisplayHeadlineEl.value);
+        const frontDisplayDescription = this.normalizeRequiredText(frontDisplayDescriptionEl.value);
+        const frontDisplayMood = this.normalizeRequiredText(frontDisplayMoodEl.value);
+        const frontDisplayRank = Number(frontDisplayRankEl.value);
         const releasePrice = Number(releasePriceEl.value);
 
         if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
@@ -262,6 +363,18 @@ const ProductCreate = {
         if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
         if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
         if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+        if (!frontDisplayHeadline) return this.invalidResult('프론트 헤드라인을 입력해주세요.', frontDisplayHeadlineEl);
+        if (frontDisplayHeadline.length > 120) return this.invalidResult('프론트 헤드라인은 120자 이내로 입력해주세요.', frontDisplayHeadlineEl);
+        if (!frontDisplayDescription) return this.invalidResult('프론트 설명 문구를 입력해주세요.', frontDisplayDescriptionEl);
+        if (frontDisplayDescription.length > 1000) return this.invalidResult('프론트 설명 문구는 1000자 이내로 입력해주세요.', frontDisplayDescriptionEl);
+        if (!frontDisplayMood) return this.invalidResult('프론트 무드 키워드를 입력해주세요.', frontDisplayMoodEl);
+        if (frontDisplayMood.length > 120) return this.invalidResult('프론트 무드 키워드는 120자 이내로 입력해주세요.', frontDisplayMoodEl);
+
+        const isFeatured = document.getElementById('frontDisplayFeatured').value === 'true';
+        if (isFeatured && Number.isNaN(frontDisplayRank)) return this.invalidResult('프론트 노출 순서를 입력해주세요.', frontDisplayRankEl);
+        if (isFeatured && (frontDisplayRank < 1 || frontDisplayRank > 999)) {
+            return this.invalidResult('프론트 노출 순서는 1~999 사이여야 합니다.', frontDisplayRankEl);
+        }
 
         const optionValidation = this.collectAndValidateOptions();
         if (!optionValidation.valid) {
@@ -277,6 +390,13 @@ const ProductCreate = {
             releasePrice,
             thumbnailUrl,
             options: optionValidation.options,
+            frontDisplay: {
+                headline: frontDisplayHeadline,
+                description: frontDisplayDescription,
+                mood: frontDisplayMood,
+                featured: isFeatured,
+                featuredRank: isFeatured ? frontDisplayRank : 999
+            }
         };
     },
 

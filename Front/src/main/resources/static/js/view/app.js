@@ -1,11 +1,13 @@
 (function () {
-    const LOW_STOCK_THRESHOLD = 20;
     const state = {
         search: "",
         brand: "ALL",
         category: "ALL",
         stock: "ALL",
-        sort: "LATEST"
+        sort: "LATEST",
+        lowStockThreshold: "20",
+        featuredOnly: "ALL",
+        priceBand: "ALL"
     };
     let products = [];
     let metrics = {
@@ -18,11 +20,15 @@
     };
     let brandFacets = [];
     let categoryFacets = [];
+    const detailCache = new Map();
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
         categoryFilter: document.getElementById("categoryFilter"),
         stockFilter: document.getElementById("stockFilter"),
+        featuredOnlyFilter: document.getElementById("featuredOnlyFilter"),
+        priceBandFilter: document.getElementById("priceBandFilter"),
+        lowStockThresholdFilter: document.getElementById("lowStockThresholdFilter"),
         sortFilter: document.getElementById("sortFilter"),
         searchInput: document.getElementById("searchInput"),
         catalogGrid: document.getElementById("catalogGrid"),
@@ -54,7 +60,16 @@
 
     async function loadProducts() {
         try {
-            const response = await fetch("/api/front/catalog/bootstrap");
+            const response = await fetch(`/api/front/catalog/bootstrap?${new URLSearchParams({
+                keyword: state.search,
+                brand: state.brand,
+                category: state.category,
+                stock: state.stock,
+                sort: state.sort,
+                lowStockThreshold: state.lowStockThreshold,
+                featuredOnly: state.featuredOnly === "FEATURED",
+                priceBand: state.priceBand
+            })}`);
             if (!response.ok) {
                 throw new Error("상품 데이터를 불러오지 못했습니다.");
             }
@@ -85,11 +100,32 @@
                 `;
             }
         }
+        if (elements.lowStockThresholdFilter) {
+            elements.lowStockThresholdFilter.value = state.lowStockThreshold;
+        }
     }
 
     function populateFilters() {
         fillSelect(elements.brandFilter, "전체 브랜드", brandFacets, uniqueValues("brand"));
         fillSelect(elements.categoryFilter, "전체 카테고리", categoryFacets, uniqueValues("category"));
+        if (elements.brandFilter) {
+            elements.brandFilter.value = state.brand;
+        }
+        if (elements.categoryFilter) {
+            elements.categoryFilter.value = state.category;
+        }
+        if (elements.stockFilter) {
+            elements.stockFilter.value = state.stock;
+        }
+        if (elements.featuredOnlyFilter) {
+            elements.featuredOnlyFilter.value = state.featuredOnly;
+        }
+        if (elements.priceBandFilter) {
+            elements.priceBandFilter.value = state.priceBand;
+        }
+        if (elements.sortFilter) {
+            elements.sortFilter.value = state.sort;
+        }
     }
 
     function fillSelect(select, defaultLabel, facets, fallbackValues) {
@@ -117,27 +153,50 @@
     function bindEvents() {
         elements.searchInput?.addEventListener("input", (event) => {
             state.search = event.target.value.trim().toLowerCase();
-            renderCatalog();
+            refreshCatalog();
         });
         elements.brandFilter?.addEventListener("change", (event) => {
             state.brand = event.target.value;
-            renderCatalog();
+            refreshCatalog();
         });
         elements.categoryFilter?.addEventListener("change", (event) => {
             state.category = event.target.value;
-            renderCatalog();
+            refreshCatalog();
         });
         elements.stockFilter?.addEventListener("change", (event) => {
             state.stock = event.target.value;
-            renderCatalog();
+            refreshCatalog();
+        });
+        elements.featuredOnlyFilter?.addEventListener("change", (event) => {
+            state.featuredOnly = event.target.value;
+            if (state.featuredOnly === "FEATURED" && state.sort !== "FEATURED") {
+                state.sort = "FEATURED";
+                if (elements.sortFilter) {
+                    elements.sortFilter.value = "FEATURED";
+                }
+            }
+            refreshCatalog();
+        });
+        elements.priceBandFilter?.addEventListener("change", (event) => {
+            state.priceBand = event.target.value;
+            refreshCatalog();
         });
         elements.sortFilter?.addEventListener("change", (event) => {
             state.sort = event.target.value;
-            renderCatalog();
+            refreshCatalog();
+        });
+        elements.lowStockThresholdFilter?.addEventListener("change", (event) => {
+            state.lowStockThreshold = event.target.value;
+            refreshCatalog();
         });
         elements.closeDrawerButton?.addEventListener("click", closeDrawer);
         elements.productDrawer?.addEventListener("click", (event) => {
             if (event.target === elements.productDrawer) {
+                closeDrawer();
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && elements.productDrawer?.classList.contains("is-open")) {
                 closeDrawer();
             }
         });
@@ -146,7 +205,7 @@
             if (elements.stockFilter) {
                 elements.stockFilter.value = "LOW";
             }
-            renderCatalog();
+            refreshCatalog();
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         elements.openDrawerFromTop?.addEventListener("click", () => {
@@ -173,17 +232,18 @@
                 <div>
                     <div class="spotlight-card__top">
                         <span class="spotlight-card__label">${product.brand}</span>
-                        <span class="spotlight-card__pill ${stockClassName(product.stock)}">${stockLabel(product.stock)}</span>
+                        <span class="spotlight-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                     </div>
-                    <h3 class="spotlight-card__title">${product.name}</h3>
+                    <h3 class="spotlight-card__title">${product.headline || product.name}</h3>
                     <div class="spotlight-card__meta">
+                        <span>${product.name}</span>
                         <span>${product.category}</span>
-                        <span>${product.model}</span>
+                        <span>${product.featuredRank ? `Featured ${product.featuredRank}` : product.model}</span>
                     </div>
                 </div>
                 <div class="spotlight-card__footer">
                     <div>
-                        <div class="spotlight-card__price">${formatPrice(product.price)}</div>
+                        <div class="spotlight-card__price">${product.priceLabel || formatPrice(product.price)}</div>
                         <div class="catalog-card__meta">총 재고 ${product.stock}개</div>
                     </div>
                     <button class="catalog-card__button" type="button" data-product-id="${product.id}">상세 보기</button>
@@ -212,7 +272,7 @@
 
         const signals = [
             `${metrics.featuredCount || products.filter((product) => product.featured).length}개 상품이 이번 주 큐레이션에 묶여 있습니다.`,
-            `${metrics.lowStockCount || products.filter((product) => product.stock < LOW_STOCK_THRESHOLD).length}개 상품이 재고 긴장 구간에 있습니다.`,
+            `${metrics.lowStockCount || products.filter((product) => product.stock < lowStockThresholdValue()).length}개 상품이 재고 긴장 구간에 있습니다.`,
             `${metrics.totalStock || (products[0] ? products.reduce((sum, product) => sum + product.stock, 0) : 0)}개 재고를 첫 화면 기준으로 추적 중입니다.`
         ];
 
@@ -247,18 +307,19 @@
                 <div class="catalog-card__header">
                     <div>
                         <span class="catalog-card__label">${product.brand}</span>
-                        <h3 class="catalog-card__title">${product.name}</h3>
+                        <h3 class="catalog-card__title">${product.headline || product.name}</h3>
                         <div class="catalog-card__meta">
+                            <span>${product.name}</span>
                             <span>${product.category}</span>
                             <span>${product.model}</span>
                         </div>
                     </div>
-                    <span class="catalog-card__pill ${stockClassName(product.stock)}">${stockLabel(product.stock)}</span>
+                    <span class="catalog-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                 </div>
                 <p class="catalog-card__copy">${product.description}</p>
                 <div class="catalog-card__footer">
                     <div>
-                        <div class="catalog-card__price">${formatPrice(product.price)}</div>
+                        <div class="catalog-card__price">${product.priceLabel || formatPrice(product.price)}</div>
                         <div class="catalog-card__meta">총 재고 ${product.stock}개 · ${product.createdDate}</div>
                     </div>
                     <div class="catalog-card__action">
@@ -286,13 +347,43 @@
             tags.push(`카테고리 ${state.category}`);
         }
         if (state.stock === "LOW") {
-            tags.push("품절 임박");
+            tags.push(`품절 임박 ${state.lowStockThreshold}개 미만`);
         }
         if (state.stock === "STABLE") {
-            tags.push("재고 안정");
+            tags.push(`재고 안정 ${state.lowStockThreshold}개 이상`);
+        }
+        if (state.featuredOnly === "FEATURED") {
+            tags.push("Featured만");
+        }
+        if (state.priceBand === "UNDER_200") {
+            tags.push("20만원 미만");
+        }
+        if (state.priceBand === "BETWEEN_200_300") {
+            tags.push("20만원-30만원");
+        }
+        if (state.priceBand === "OVER_300") {
+            tags.push("30만원 초과");
         }
         if (state.search) {
             tags.push(`검색 ${state.search}`);
+        }
+        if (state.sort === "FEATURED") {
+            tags.push("대표 노출순");
+        }
+        if (state.sort === "NAME_ASC") {
+            tags.push("상품명 오름차순");
+        }
+        if (state.sort === "PRICE_HIGH") {
+            tags.push("발매가 높은 순");
+        }
+        if (state.sort === "PRICE_LOW") {
+            tags.push("발매가 낮은 순");
+        }
+        if (state.sort === "STOCK_ASC") {
+            tags.push("재고 낮은 순");
+        }
+        if (state.sort === "STOCK_DESC") {
+            tags.push("재고 높은 순");
         }
         if (!tags.length) {
             tags.push("전체 탐색");
@@ -302,37 +393,16 @@
     }
 
     function filteredProducts() {
-        return products
-            .filter((product) => {
-                if (state.brand !== "ALL" && product.brand !== state.brand) {
-                    return false;
-                }
-                if (state.category !== "ALL" && product.category !== state.category) {
-                    return false;
-                }
-                if (state.stock === "LOW" && product.stock >= LOW_STOCK_THRESHOLD) {
-                    return false;
-                }
-                if (state.stock === "STABLE" && product.stock < LOW_STOCK_THRESHOLD) {
-                    return false;
-                }
-                if (!state.search) {
-                    return true;
-                }
-                const searchBase = `${product.name} ${product.model} ${product.brand}`.toLowerCase();
-                return searchBase.includes(state.search);
-            })
-            .sort(sortComparator(state.sort));
+        return products.slice();
     }
 
-    function sortComparator(sortType) {
-        if (sortType === "PRICE_HIGH") {
-            return (left, right) => right.price - left.price;
-        }
-        if (sortType === "STOCK_ASC") {
-            return (left, right) => left.stock - right.stock;
-        }
-        return (left, right) => right.createdDate.localeCompare(left.createdDate);
+    async function refreshCatalog() {
+        await loadProducts();
+        populateFilters();
+        renderHeroMetrics();
+        renderFeatured();
+        renderSignals();
+        renderCatalog();
     }
 
     function bindProductButtons(container) {
@@ -355,19 +425,19 @@
         `;
 
         try {
-            const response = await fetch(`/api/front/products/${productId}`);
-            if (!response.ok) {
-                throw new Error("상품 상세를 불러오지 못했습니다.");
-            }
-            const product = await response.json();
+            const product = await loadProductDetail(productId);
 
             elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
             <div class="product-drawer__meta">
-                <span class="product-drawer__pill ${stockClassName(product.stock)}">${stockLabel(product.stock)}</span>
+                <span class="product-drawer__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                 <span class="product-drawer__pill is-stable-stock">${product.brand}</span>
+                ${product.featured ? `<span class="product-drawer__pill">Featured${product.featuredRank ? ` #${product.featuredRank}` : ''}</span>` : ''}
             </div>
-            <h3>${product.name}</h3>
+            <h3>${product.headline || product.name}</h3>
+            <div class="product-drawer__meta">
+                <span>${product.name}</span>
+            </div>
             <p class="product-drawer__description">${product.description}</p>
             <div class="product-drawer__group">
                 <div class="product-drawer__meta">
@@ -378,18 +448,23 @@
             </div>
             <div class="product-drawer__group">
                 <strong>발매가</strong>
-                <h3>${formatPrice(product.price)}</h3>
+                <h3>${product.priceLabel || formatPrice(product.price)}</h3>
                 <p class="product-drawer__description">현재 총 재고 ${product.stock}개 · 무드 키워드 ${product.mood}</p>
             </div>
             <div class="product-drawer__group">
                 <strong>사이즈별 재고</strong>
                 <div class="product-drawer__options">
-                    ${product.options.map((option) => `
+                    ${Array.isArray(product.options) && product.options.length ? product.options.map((option) => `
                         <div class="product-drawer__option">
                             <span>${option.name}</span>
                             <strong>${option.stock}개</strong>
                         </div>
-                    `).join("")}
+                    `).join("") : `
+                        <div class="product-drawer__option">
+                            <span>등록된 옵션이 없습니다.</span>
+                            <strong>-</strong>
+                        </div>
+                    `}
                 </div>
             </div>
             ${Array.isArray(product.relatedProducts) && product.relatedProducts.length ? `
@@ -400,7 +475,7 @@
                         <button class="product-drawer__related-card" type="button" data-product-id="${related.id}">
                             <span class="product-drawer__related-brand">${related.brand}</span>
                             <strong>${related.name}</strong>
-                            <span class="product-drawer__related-meta">${related.model} · ${formatPrice(related.price)} · 재고 ${related.stock}개</span>
+                            <span class="product-drawer__related-meta">${related.reason} · ${related.model} · ${related.priceLabel || formatPrice(related.price)} · ${related.stockStatus || stockLabel(related.stock)}</span>
                         </button>
                     `).join("")}
                 </div>
@@ -417,6 +492,19 @@
         }
     }
 
+    async function loadProductDetail(productId) {
+        if (detailCache.has(productId)) {
+            return detailCache.get(productId);
+        }
+        const response = await fetch(`/api/front/products/${productId}`);
+        if (!response.ok) {
+            throw new Error("상품 상세를 불러오지 못했습니다.");
+        }
+        const product = await response.json();
+        detailCache.set(productId, product);
+        return product;
+    }
+
     function closeDrawer() {
         if (!elements.productDrawer) {
             return;
@@ -426,11 +514,15 @@
     }
 
     function stockLabel(stock) {
-        return stock < LOW_STOCK_THRESHOLD ? "품절 임박" : "재고 안정";
+        return stock < lowStockThresholdValue() ? "품절 임박" : "재고 안정";
     }
 
     function stockClassName(stock) {
-        return stock < LOW_STOCK_THRESHOLD ? "is-low-stock" : "is-stable-stock";
+        return stock < lowStockThresholdValue() ? "is-low-stock" : "is-stable-stock";
+    }
+
+    function lowStockThresholdValue() {
+        return Number(state.lowStockThreshold || 20);
     }
 
     function formatPrice(price) {

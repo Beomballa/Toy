@@ -5,11 +5,16 @@ import com.section.admin.product.req.ProductBulkDeleteRequest;
 import com.section.admin.product.req.ProductBulkDuplicateRequest;
 import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
+import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductCreateResponse;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayRankGuideResponse;
+import com.section.admin.product.res.ProductFrontDisplayResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
@@ -82,6 +87,51 @@ public class AdminProductRestController {
         return ResponseEntity.ok(adminProductService.getProductDetail(productNo));
     }
 
+    @GetMapping("/product/front-display")
+    public ResponseEntity<ProductFrontDisplayResponse> getProductFrontDisplay(@RequestParam("productNo") Long productNo) {
+        return ResponseEntity.ok(adminProductService.getFrontDisplay(productNo));
+    }
+
+    @GetMapping("/product/front-display/rank-guide")
+    public ResponseEntity<ProductFrontDisplayRankGuideResponse> getProductFrontDisplayRankGuide(
+            @RequestParam(value = "productNo", required = false) Long productNo
+    ) {
+        return ResponseEntity.ok(adminProductService.getFrontDisplayRankGuide(productNo));
+    }
+
+    @GetMapping("/product/front-display/list")
+    public ResponseEntity<ProductFrontDisplayDashboardResponse> getProductFrontDisplayList(
+            @ModelAttribute ProductFrontDisplayListRequest request
+    ) {
+        return ResponseEntity.ok(adminProductService.getFrontDisplayProducts(request));
+    }
+
+    @GetMapping("/product/front-display/export")
+    public ResponseEntity<byte[]> exportProductFrontDisplayList(
+            @ModelAttribute ProductFrontDisplayListRequest request
+    ) {
+        String exportFilename = buildFrontDisplayExportFilename(request);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + exportFilename)
+                .contentType(new MediaType("text", "csv"))
+                .body(adminProductService.exportFrontDisplayProductsCsv(request));
+    }
+
+    @PostMapping("/product/front-display")
+    public ResponseEntity<ProductFrontDisplayResponse> saveProductFrontDisplay(
+            @Valid @RequestBody ProductFrontDisplaySaveRequest request
+    ) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminProductService.saveFrontDisplay(request));
+    }
+
+    @DeleteMapping("/product/front-display/{productNo}")
+    public ResponseEntity<Void> clearProductFrontDisplay(@PathVariable Long productNo) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminProductService.clearFrontDisplay(productNo);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/product/history")
     public ResponseEntity<List<ProductHistoryResponse>> getProductHistory(@RequestParam("no") Long productNo) {
         return ResponseEntity.ok(adminProductService.getProductHistory(productNo));
@@ -145,6 +195,36 @@ public class AdminProductRestController {
             parts.add("category" + req.getCategoryNo());
         }
         if (req.getSearchKeyword() != null && !req.getSearchKeyword().isBlank()) {
+            parts.add("search");
+        }
+        parts.add(LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));
+        return String.join("_", parts) + ".csv";
+    }
+
+    private String buildFrontDisplayExportFilename(ProductFrontDisplayListRequest req) {
+        List<String> parts = new ArrayList<>();
+        parts.add("front_display");
+        if (req.normalizedStatus() != null) {
+            parts.add(req.normalizedStatus().name().toLowerCase(Locale.ROOT));
+        }
+        if (req.normalizedBrandNo() != null) {
+            parts.add("brand" + req.normalizedBrandNo());
+        }
+        if (req.normalizedCategoryNo() != null) {
+            parts.add("category" + req.normalizedCategoryNo());
+        }
+        if (Boolean.TRUE.equals(req.normalizedConfigured())) {
+            parts.add("configured");
+        } else if (Boolean.FALSE.equals(req.normalizedConfigured())) {
+            parts.add("unconfigured");
+        }
+        if (req.normalizedFeaturedOnly()) {
+            parts.add("featured");
+        }
+        if (req.normalizedLowStockOnly()) {
+            parts.add("lowstock");
+        }
+        if (req.normalizedKeyword() != null) {
             parts.add("search");
         }
         parts.add(LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE));

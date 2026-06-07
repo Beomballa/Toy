@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>프론트 노출 관리 | Grade-Stock Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/product.css">
+  <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+
+<main class="main-content">
+  <div class="page-header">
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/admin">Home</a></li>
+        <li class="breadcrumb-item"><a href="/admin/products">상품 관리</a></li>
+        <li class="breadcrumb-item active">프론트 노출 관리</li>
+      </ol>
+    </nav>
+    <div class="page-title-wrapper">
+      <h1 class="page-title">프론트 노출 관리</h1>
+      <div class="btn-group">
+        <button class="btn btn-outline-primary" type="button" id="btnExportDisplay">
+          <i class="fas fa-file-export me-2"></i>CSV 내보내기
+        </button>
+        <a class="btn btn-outline-secondary" href="/admin/products">
+          <i class="fas fa-arrow-left me-2"></i>상품 목록
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card animate-in mb-4">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-bold" for="displayKeyword">키워드</label>
+          <input type="text" id="displayKeyword" class="form-control" placeholder="상품명, 모델번호, 헤드라인, 무드">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" for="displayStatus">상태</label>
+          <select id="displayStatus" class="form-select">
+            <option value="">전체 상태</option>
+            <option value="ACTIVE">판매중</option>
+            <option value="HIDDEN">숨김</option>
+            <option value="SOLD_OUT">품절</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" for="displayBrand">브랜드</label>
+          <select id="displayBrand" class="form-select">
+            <option value="">전체 브랜드</option>
+            <option th:each="brand : ${brands}" th:value="${brand.brandNo}" th:text="${brand.nameKo}"></option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" for="displayCategory">카테고리</label>
+          <select id="displayCategory" class="form-select">
+            <option value="">전체 카테고리</option>
+            <option th:each="category : ${categories}"
+                    th:value="${category.categoryNo}"
+                    th:text="${category.depth == 1 ? category.name : 'ㄴ ' + category.name}"></option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold" for="displayConfigured">노출 설정</label>
+          <select id="displayConfigured" class="form-select">
+            <option value="">전체</option>
+            <option value="CONFIGURED">설정됨</option>
+            <option value="UNCONFIGURED">미설정</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold" for="displaySort">정렬</label>
+          <select id="displaySort" class="form-select">
+            <option value="FEATURED">Featured 우선</option>
+            <option value="STOCK_ASC">재고 낮은 순</option>
+            <option value="STOCK_DESC">재고 높은 순</option>
+            <option value="PRICE_HIGH">발매가 높은 순</option>
+            <option value="PRICE_LOW">발매가 낮은 순</option>
+            <option value="LATEST">최신 등록순</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="featuredOnly">
+            <label class="form-check-label" for="featuredOnly">Featured만</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="lowStockOnly">
+            <label class="form-check-label" for="lowStockOnly">저재고만</label>
+          </div>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label fw-bold" for="displayLowStockThreshold">저재고 기준</label>
+          <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
+        </div>
+        <div class="col-md-2 d-grid gap-2">
+          <button class="btn btn-primary" type="button" id="btnSearchDisplay">
+            <i class="fas fa-search me-2"></i>조회
+          </button>
+          <button class="btn btn-outline-secondary" type="button" id="btnResetDisplayFilter">초기화</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card animate-in h-100">
+        <div class="card-body">
+          <div class="small text-muted mb-2">조회 상품</div>
+          <div class="fs-3 fw-bold" id="displaySummaryTotal">0</div>
+          <div class="small text-muted">현재 필터 기준 전체 대상</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card animate-in h-100">
+        <div class="card-body">
+          <div class="small text-muted mb-2">노출 설정 완료</div>
+          <div class="fs-3 fw-bold" id="displaySummaryConfigured">0</div>
+          <div class="small text-muted" id="displaySummaryUnconfigured">미설정 0건</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card animate-in h-100">
+        <div class="card-body">
+          <div class="small text-muted mb-2">Featured</div>
+          <div class="fs-3 fw-bold" id="displaySummaryFeatured">0</div>
+          <div class="small text-muted">대표 노출 상품 수</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card animate-in h-100">
+        <div class="card-body">
+          <div class="small text-muted mb-2">저재고</div>
+          <div class="fs-3 fw-bold" id="displaySummaryLowStock">0</div>
+          <div class="small text-muted" id="displaySummaryThreshold">기준 20개 미만</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card animate-in">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <span class="card-title h6 mb-0">전시 대상 상품</span>
+        <span class="card-subtitle text-muted ms-2" id="displayResultCount">전체 0건</span>
+      </div>
+      <span class="text-muted small" id="displayFilterSummary">전체 상품 기준</span>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+          <tr>
+            <th class="ps-4">상품</th>
+            <th>브랜드/카테고리</th>
+            <th>재고</th>
+            <th>상태</th>
+            <th>노출 설정</th>
+            <th>Featured</th>
+            <th class="text-end pe-4">관리</th>
+          </tr>
+          </thead>
+          <tbody id="frontDisplayTableBody">
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">전시 상품을 불러오는 중입니다.</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/view/product-front-display.js"></script>
+</body>
+</html>

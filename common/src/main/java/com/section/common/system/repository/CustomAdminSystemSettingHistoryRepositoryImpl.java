@@ -1,6 +1,7 @@
 package com.section.common.system.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -60,14 +61,20 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
 
     @Override
     public AdminSystemSettingHistorySummaryDto getHistorySummary(AdminSystemSettingHistoryListQuery query) {
-        return new AdminSystemSettingHistorySummaryDto(
-                countBy(query, null, null),
-                countBy(query, null, LocalDate.now()),
-                countBy(query, "SYSTEM_MAINTENANCE_MODE", null),
-                countBy(query, "COMMUNITY_WRITE_ENABLED", null),
-                countBy(query, "ORDER_EXPORT_ENABLED", null),
-                countBy(query, "LOW_STOCK_DEFAULT_THRESHOLD", null)
-        );
+        AdminSystemSettingHistorySummaryDto summary = queryFactory
+                .select(Projections.constructor(
+                        AdminSystemSettingHistorySummaryDto.class,
+                        adminSystemSettingHistory.count(),
+                        sumCase(adminSystemSettingHistory.crtDtm.goe(LocalDate.now().atStartOfDay())),
+                        sumCase(adminSystemSettingHistory.settingKey.eq("SYSTEM_MAINTENANCE_MODE")),
+                        sumCase(adminSystemSettingHistory.settingKey.eq("COMMUNITY_WRITE_ENABLED")),
+                        sumCase(adminSystemSettingHistory.settingKey.eq("ORDER_EXPORT_ENABLED")),
+                        sumCase(adminSystemSettingHistory.settingKey.eq("LOW_STOCK_DEFAULT_THRESHOLD"))
+                ))
+                .from(adminSystemSettingHistory)
+                .where(historyConditions(query))
+                .fetchOne();
+        return summary == null ? new AdminSystemSettingHistorySummaryDto(0, 0, 0, 0, 0, 0) : summary;
     }
 
     private BooleanExpression[] historyConditions(AdminSystemSettingHistoryListQuery query) {
@@ -104,18 +111,11 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
         return adminSystemSettingHistory.crtDtm.loe(endDateTime);
     }
 
-    private long countBy(AdminSystemSettingHistoryListQuery query, String forcedSettingKey, LocalDate forcedStartDate) {
-        AdminSystemSettingHistoryListQuery effectiveQuery = new AdminSystemSettingHistoryListQuery(
-                forcedSettingKey != null ? forcedSettingKey : query.settingKey(),
-                query.adminNo(),
-                forcedStartDate != null ? forcedStartDate : query.startDate(),
-                forcedStartDate != null ? forcedStartDate : query.endDate()
+    private com.querydsl.core.types.Expression<Long> sumCase(BooleanExpression condition) {
+        return Expressions.numberTemplate(
+                Long.class,
+                "sum(case when {0} then 1 else 0 end)",
+                condition
         );
-        Long count = queryFactory
-                .select(adminSystemSettingHistory.count())
-                .from(adminSystemSettingHistory)
-                .where(historyConditions(effectiveQuery))
-                .fetchOne();
-        return count == null ? 0L : count;
     }
 }

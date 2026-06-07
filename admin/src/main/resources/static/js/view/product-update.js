@@ -5,6 +5,8 @@ const ProductUpdate = {
     returnTo: '/admin/products',
     isSubmitting: false,
     operationPolicy: null,
+    frontDisplayData: null,
+    frontDisplayRankGuide: null,
 
     async init(bootstrapProduct = null) {
         if (this.initialized) {
@@ -28,11 +30,14 @@ const ProductUpdate = {
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 수정 화면도 서버가 이미 가진 상세 모델을 먼저 써서 초기 로딩 왕복을 줄입니다.
             this.fillForm(bootstrapProduct);
+            await this.loadFrontDisplayData();
+            await this.loadFrontDisplayRankGuide();
             this.updatePreview();
         } else {
             await this.loadProductData();
         }
         this.bindEvents();
+        this.applyFeaturedToggleBehavior();
 
         CommonJS.bindMainLogoNavigation(this.returnTo);
     },
@@ -44,6 +49,7 @@ const ProductUpdate = {
             const reason = CommonJS.getAdminWriteBlockedReason('상품 수정');
             CommonJS.setButtonDisabled(document.getElementById('btnUpdate'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnAddOption'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnResetFrontDisplay'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -62,6 +68,10 @@ const ProductUpdate = {
         document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
             window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
         });
+        document.getElementById('btnResetFrontDisplay')?.addEventListener('click', () => this.resetFrontDisplay());
+        document.getElementById('frontDisplayFeatured')?.addEventListener('change', () => {
+            this.applyFeaturedToggleBehavior();
+        });
 
         const previewIds = ['categoryNo', 'brandNo', 'nameKo', 'modelNum', 'releasePrice', 'thumbnailUrl'];
         previewIds.forEach(id => {
@@ -74,14 +84,21 @@ const ProductUpdate = {
 
     async loadProductData() {
         try {
-            const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
-            if (!response.ok) {
-                const error = await CommonJS.extractError(response);
+            const [productResponse, displayResponse] = await Promise.all([
+                fetch(`/api/admin/product/get?no=${this.productNo}`),
+                fetch(`/api/admin/product/front-display?productNo=${this.productNo}`)
+            ]);
+            if (!productResponse.ok) {
+                const error = await CommonJS.extractError(productResponse);
                 throw new Error(error.message || '상품 정보를 불러오는데 실패했습니다.');
             }
 
-            const data = await response.json();
+            const data = await productResponse.json();
             this.fillForm(data);
+            if (displayResponse.ok) {
+                this.fillFrontDisplayForm(await displayResponse.json());
+            }
+            await this.loadFrontDisplayRankGuide();
             this.updatePreview();
         } catch (error) {
             console.error('Data Load Error:', error);
@@ -110,6 +127,97 @@ const ProductUpdate = {
         } else {
             this.showEmptyOptionMessage();
         }
+    },
+
+    async loadFrontDisplayData() {
+        try {
+            const response = await fetch(`/api/admin/product/front-display?productNo=${this.productNo}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
+            }
+            this.fillFrontDisplayForm(await response.json());
+        } catch (error) {
+            console.error('Front Display Load Error:', error);
+            this.fillFrontDisplayForm(null);
+        }
+    },
+
+    fillFrontDisplayForm(data) {
+        this.frontDisplayData = data;
+        document.getElementById('frontDisplayHeadline').value = data?.headline || '';
+        document.getElementById('frontDisplayDescription').value = data?.description || '';
+        document.getElementById('frontDisplayMood').value = data?.mood || '';
+        document.getElementById('frontDisplayFeatured').value = String(Boolean(data?.featured));
+        document.getElementById('frontDisplayRank').value = data?.featuredRank || 999;
+        this.applyFeaturedToggleBehavior();
+    },
+
+    async loadFrontDisplayRankGuide() {
+        try {
+            const response = await fetch(`/api/admin/product/front-display/rank-guide?productNo=${this.productNo}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, 'Featured 순번 정보를 불러오지 못했습니다.'));
+            }
+            this.frontDisplayRankGuide = await response.json();
+            this.renderFrontDisplayRankGuide();
+            this.applyFeaturedToggleBehavior();
+        } catch (error) {
+            console.error('Featured rank guide load failed:', error);
+            this.renderFrontDisplayRankGuide(error.message || 'Featured 순번 정보를 불러오지 못했습니다.');
+        }
+    },
+
+    applyFeaturedToggleBehavior() {
+        const featuredSelect = document.getElementById('frontDisplayFeatured');
+        const rankInput = document.getElementById('frontDisplayRank');
+        if (!featuredSelect || !rankInput) {
+            return;
+        }
+
+        const isFeatured = featuredSelect.value === 'true';
+        rankInput.disabled = !isFeatured;
+        rankInput.classList.toggle('bg-light', !isFeatured);
+
+        if (!isFeatured) {
+            rankInput.value = '999';
+            return;
+        }
+
+        const currentRank = Number(rankInput.value);
+        if (Number.isNaN(currentRank) || currentRank === 999 || currentRank < 1) {
+            rankInput.value = String(this.frontDisplayRankGuide?.recommendedRank || 1);
+        }
+    },
+
+    renderFrontDisplayRankGuide(errorMessage = '') {
+        const hint = document.getElementById('frontDisplayRankGuide');
+        if (!hint) {
+            return;
+        }
+        if (errorMessage) {
+            hint.textContent = errorMessage;
+            hint.classList.remove('text-muted');
+            hint.classList.add('text-danger');
+            return;
+        }
+
+        const guide = this.frontDisplayRankGuide;
+        if (!guide) {
+            hint.textContent = 'Featured 순번 정보를 불러오는 중입니다.';
+            hint.classList.remove('text-danger');
+            hint.classList.add('text-muted');
+            return;
+        }
+
+        const occupied = Array.isArray(guide.occupiedRanks) && guide.occupiedRanks.length
+            ? guide.occupiedRanks.join(', ')
+            : '없음';
+        const available = Array.isArray(guide.availableRanks) && guide.availableRanks.length
+            ? guide.availableRanks.join(', ')
+            : '-';
+        hint.textContent = `추천 ${guide.recommendedRank} · 사용중 ${occupied} · 빈 순번 ${available}`;
+        hint.classList.remove('text-danger');
+        hint.classList.add('text-muted');
     },
 
     addOption(name = '', qty = 0, addPrice = 0) {
@@ -227,6 +335,7 @@ const ProductUpdate = {
             status: document.getElementById('productStatus').value,
             options: validationResult.options
         };
+        const frontDisplayData = validationResult.frontDisplay;
 
         try {
             // 수정 API는 옵션 삭제/재등록까지 같이 처리하므로 중복 요청을 먼저 막습니다.
@@ -239,6 +348,16 @@ const ProductUpdate = {
             });
 
             if (response.ok) {
+                const displayResponse = await fetch('/api/admin/product/front-display', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(frontDisplayData)
+                });
+                if (!displayResponse.ok) {
+                    const displayMessage = await CommonJS.extractErrorMessage(displayResponse, '프론트 노출 정보 저장에 실패했습니다.');
+                    await CommonJS.alert(displayMessage, '오류', 'error');
+                    return;
+                }
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
                 window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
             } else {
@@ -258,6 +377,38 @@ const ProductUpdate = {
         document.getElementById('btnUpdate').disabled = disabled;
         document.getElementById('btnCancelEdit').disabled = disabled;
         document.getElementById('btnAddOption').disabled = disabled;
+        document.getElementById('btnResetFrontDisplay').disabled = disabled;
+    },
+
+    async resetFrontDisplay() {
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('프론트 노출 정보 초기화'), '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm('프론트 노출 정보를 초기화하시겠습니까?', '초기화 확인');
+        if (!confirmed) {
+            return;
+        }
+
+        try {
+            this.setSubmitDisabled(true);
+            const response = await fetch(`/api/admin/product/front-display/${this.productNo}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보 초기화에 실패했습니다.'));
+            }
+            this.fillFrontDisplayForm(null);
+            await this.loadFrontDisplayRankGuide();
+            await CommonJS.alert('프론트 노출 정보가 초기화되었습니다.', '성공', 'success');
+        } catch (error) {
+            console.error('Front Display Reset Error:', error);
+            await CommonJS.alert(error.message || '프론트 노출 정보 초기화 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.setSubmitDisabled(false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
     },
 
     validateFormInputs() {
@@ -267,12 +418,20 @@ const ProductUpdate = {
         const modelNumEl = document.getElementById('modelNum');
         const releasePriceEl = document.getElementById('releasePrice');
         const thumbnailUrlEl = document.getElementById('thumbnailUrl');
+        const frontDisplayHeadlineEl = document.getElementById('frontDisplayHeadline');
+        const frontDisplayDescriptionEl = document.getElementById('frontDisplayDescription');
+        const frontDisplayMoodEl = document.getElementById('frontDisplayMood');
+        const frontDisplayRankEl = document.getElementById('frontDisplayRank');
 
         const categoryNo = categoryNoEl.value;
         const brandNo = brandNoEl.value;
         const nameKo = this.normalizeRequiredText(nameKoEl.value);
         const modelNum = this.normalizeOptionalText(modelNumEl.value);
         const thumbnailUrl = this.normalizeOptionalText(thumbnailUrlEl.value);
+        const frontDisplayHeadline = this.normalizeRequiredText(frontDisplayHeadlineEl.value);
+        const frontDisplayDescription = this.normalizeRequiredText(frontDisplayDescriptionEl.value);
+        const frontDisplayMood = this.normalizeRequiredText(frontDisplayMoodEl.value);
+        const frontDisplayRank = Number(frontDisplayRankEl.value);
         const releasePrice = Number(releasePriceEl.value);
 
         if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
@@ -283,6 +442,17 @@ const ProductUpdate = {
         if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
         if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
         if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+        if (!frontDisplayHeadline) return this.invalidResult('프론트 헤드라인을 입력해주세요.', frontDisplayHeadlineEl);
+        if (frontDisplayHeadline.length > 120) return this.invalidResult('프론트 헤드라인은 120자 이내로 입력해주세요.', frontDisplayHeadlineEl);
+        if (!frontDisplayDescription) return this.invalidResult('프론트 설명 문구를 입력해주세요.', frontDisplayDescriptionEl);
+        if (frontDisplayDescription.length > 1000) return this.invalidResult('프론트 설명 문구는 1000자 이내로 입력해주세요.', frontDisplayDescriptionEl);
+        if (!frontDisplayMood) return this.invalidResult('프론트 무드 키워드를 입력해주세요.', frontDisplayMoodEl);
+        if (frontDisplayMood.length > 120) return this.invalidResult('프론트 무드 키워드는 120자 이내로 입력해주세요.', frontDisplayMoodEl);
+        const isFeatured = document.getElementById('frontDisplayFeatured').value === 'true';
+        if (isFeatured && Number.isNaN(frontDisplayRank)) return this.invalidResult('프론트 노출 순서를 입력해주세요.', frontDisplayRankEl);
+        if (isFeatured && (frontDisplayRank < 1 || frontDisplayRank > 999)) {
+            return this.invalidResult('프론트 노출 순서는 1~999 사이여야 합니다.', frontDisplayRankEl);
+        }
 
         const optionValidation = this.collectAndValidateOptions();
         if (!optionValidation.valid) {
@@ -298,6 +468,14 @@ const ProductUpdate = {
             releasePrice,
             thumbnailUrl,
             options: optionValidation.options,
+            frontDisplay: {
+                productNo: parseInt(this.productNo),
+                headline: frontDisplayHeadline,
+                description: frontDisplayDescription,
+                mood: frontDisplayMood,
+                featured: isFeatured,
+                featuredRank: isFeatured ? frontDisplayRank : 999
+            }
         };
     },
 

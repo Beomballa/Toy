@@ -4,8 +4,11 @@ public record FrontRelatedProductResponse(
         long id,
         String brand,
         String name,
+        String reason,
         String model,
         int price,
-        int stock
+        int stock,
+        String stockStatus,
+        String priceLabel
 ) {
 }

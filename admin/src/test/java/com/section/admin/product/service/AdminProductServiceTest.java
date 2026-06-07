@@ -4,10 +4,15 @@ import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductBulkDeleteRequest;
 import com.section.admin.product.req.ProductBulkDuplicateRequest;
 import com.section.admin.product.req.ProductBulkOperateRequest;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
+import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDefaultResDto;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayResponse;
+import com.section.admin.product.res.ProductFrontDisplayListResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
@@ -20,8 +25,10 @@ import com.section.common.commerce.dto.ProductHistoryListResDto;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
+import com.section.common.commerce.dto.AdminFrontDisplayProductRow;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
+import com.section.common.commerce.entity.FrontProductDisplay;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductChangeHistory;
 import com.section.common.commerce.entity.ProductOption;
@@ -29,6 +36,7 @@ import com.section.common.system.entity.AdminUser;
 import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.FrontProductDisplayRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.service.ProductService;
@@ -50,6 +58,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,6 +79,8 @@ class AdminProductServiceTest {
     private BrandRepository brandRepository;
     @Mock
     private CategoryRepository categoryRepository;
+    @Mock
+    private FrontProductDisplayRepository frontProductDisplayRepository;
     @Mock
     private ProductService productService;
     @Mock
@@ -213,6 +224,7 @@ class AdminProductServiceTest {
                 Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
         );
         when(categoryRepository.existsByParentNo(3L)).thenReturn(false);
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.empty());
 
         adminProductService.updateProductInfo(request);
 
@@ -231,8 +243,379 @@ class AdminProductServiceTest {
     }
 
     @Test
+    @DisplayName("대표 노출 상품을 비활성 상태로 수정하면 featured 순번을 해제하고 이력 요약에 반영한다")
+    void updateProductInfoDemotesFeaturedDisplayWhenStatusBecomesInactive() {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(2L);
+        request.setCategoryNo(3L);
+        request.setNameKo("수정 상품");
+        request.setModelNum("M992GR");
+        request.setReleasePrice(259000);
+        request.setStatus(ProductStatus.HIDDEN.name());
+
+        FrontProductDisplay currentDisplay = FrontProductDisplay.builder()
+                .productNo(1L)
+                .headline("Grey precision")
+                .description("전시 설명")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(2)
+                .build();
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+                .id(1L)
+                .brandNo(2L)
+                .categoryNo(3L)
+                .nameKo("수정 상품")
+                .modelNum("M992GR")
+                .status(ProductStatus.ACTIVE.name())
+                .releasePrice(259000)
+                .build()));
+        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of());
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.of(currentDisplay));
+        when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(brandRepository.findById(2L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(2L).nameKo("뉴발란스").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(3L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(3L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build())
+        );
+        when(categoryRepository.findById(1L)).thenReturn(
+                Optional.of(Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build())
+        );
+        when(categoryRepository.existsByParentNo(3L)).thenReturn(false);
+
+        adminProductService.updateProductInfo(request);
+
+        verify(frontProductDisplayRepository).save(argThat(display ->
+                display.getProductNo().equals(1L)
+                        && display.getFeaturedYn().equals("N")
+                        && display.getFeaturedRank().equals(999)
+        ));
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().contains("프론트 대표노출")
+                        && history.getStatusSnapshot().equals(ProductStatus.HIDDEN.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 조회는 저장된 메타데이터를 반환한다")
+    void getFrontDisplayReturnsSavedDisplay() {
+        when(productRepository.findById(4L)).thenReturn(Optional.of(Product.builder()
+                .id(4L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status("ACTIVE")
+                .build()));
+        when(frontProductDisplayRepository.findByProductNo(4L)).thenReturn(Optional.of(
+                FrontProductDisplay.builder()
+                        .productNo(4L)
+                        .headline("Grey precision")
+                        .description("설명")
+                        .mood("Mood")
+                        .featuredYn("Y")
+                        .featuredRank(2)
+                        .build()
+        ));
+
+        ProductFrontDisplayResponse response = adminProductService.getFrontDisplay(4L);
+
+        assertEquals(4L, response.productNo());
+        assertEquals("Grey precision", response.headline());
+        assertEquals(true, response.featured());
+        assertEquals(2, response.featuredRank());
+    }
+
+    @Test
+    @DisplayName("프론트 Featured 순번 가이드는 현재 상품을 제외한 사용중 순번과 추천 순번을 반환한다")
+    void getFrontDisplayRankGuideReturnsOccupiedAndRecommendedRanks() {
+        when(productRepository.findById(4L)).thenReturn(Optional.of(Product.builder()
+                .id(4L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status("ACTIVE")
+                .build()));
+        when(frontProductDisplayRepository.findActiveFeaturedRanks(ProductStatus.ACTIVE.name(), 4L))
+                .thenReturn(List.of(1, 2, 4, 7));
+
+        var response = adminProductService.getFrontDisplayRankGuide(4L);
+
+        assertEquals(12, response.guideLimit());
+        assertEquals(3, response.recommendedRank());
+        assertIterableEquals(List.of(1, 2, 4, 7), response.occupiedRanks());
+        assertIterableEquals(List.of(3, 5, 6, 8, 9, 10, 11, 12), response.availableRanks());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 저장은 신규 메타데이터를 생성하고 이력을 남긴다")
+    void saveFrontDisplayCreatesMetadataAndHistory() {
+        when(productRepository.findById(4L)).thenReturn(Optional.of(Product.builder()
+                .id(4L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status("ACTIVE")
+                .build()));
+        when(frontProductDisplayRepository.findByProductNo(4L)).thenReturn(Optional.empty());
+        when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProductFrontDisplayResponse response = adminProductService.saveFrontDisplay(new ProductFrontDisplaySaveRequest(
+                4L,
+                " Grey precision ",
+                " 전시 설명 ",
+                " Sharp tone ",
+                true,
+                3
+        ));
+
+        assertEquals("Grey precision", response.headline());
+        assertEquals("전시 설명", response.description());
+        assertEquals("Sharp tone", response.mood());
+        assertEquals(true, response.featured());
+        assertEquals(3, response.featuredRank());
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(4L)
+                        && history.getSummary().contains("headline=Grey precision")
+                        && history.getSummary().contains("featured=Y")
+                        && history.getSummary().contains("rank=3")
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 저장은 일반 노출일 때 순서를 999로 고정한다")
+    void saveFrontDisplayNormalizesRankWhenNotFeatured() {
+        when(productRepository.findById(8L)).thenReturn(Optional.of(Product.builder()
+                .id(8L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status("ACTIVE")
+                .build()));
+        when(frontProductDisplayRepository.findByProductNo(8L)).thenReturn(Optional.empty());
+        when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProductFrontDisplayResponse response = adminProductService.saveFrontDisplay(new ProductFrontDisplaySaveRequest(
+                8L,
+                "Quiet release",
+                "일반 노출 상품",
+                "Soft tone",
+                false,
+                7
+        ));
+
+        assertEquals(false, response.featured());
+        assertEquals(999, response.featuredRank());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 정보 초기화는 저장된 메타데이터를 제거하고 이력을 남긴다")
+    void clearFrontDisplayDeletesMetadataAndRecordsHistory() {
+        FrontProductDisplay display = FrontProductDisplay.builder()
+                .displayNo(21L)
+                .productNo(8L)
+                .headline("Quiet release")
+                .description("일반 노출 상품")
+                .mood("Soft tone")
+                .featuredYn("N")
+                .featuredRank(999)
+                .build();
+        when(productRepository.findById(8L)).thenReturn(Optional.of(Product.builder()
+                .id(8L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status(ProductStatus.ACTIVE.name())
+                .build()));
+        when(frontProductDisplayRepository.findByProductNo(8L)).thenReturn(Optional.of(display));
+
+        adminProductService.clearFrontDisplay(8L);
+
+        verify(frontProductDisplayRepository).delete(display);
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(8L)
+                        && history.getSummary().equals("프론트 노출 정보가 초기화되었습니다.")
+                        && history.getStatusSnapshot().equals(ProductStatus.ACTIVE.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("대표 노출 상품은 활성 상태 상품에만 저장할 수 있다")
+    void saveFrontDisplayThrowsWhenFeaturedProductNotActive() {
+        when(productRepository.findById(8L)).thenReturn(Optional.of(Product.builder()
+                .id(8L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status(ProductStatus.HIDDEN.name())
+                .build()));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.saveFrontDisplay(
+                new ProductFrontDisplaySaveRequest(8L, "Quiet release", "일반 노출 상품", "Soft tone", true, 2)
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("대표 노출 순서는 다른 상품과 중복될 수 없다")
+    void saveFrontDisplayThrowsWhenFeaturedRankAlreadyUsed() {
+        when(productRepository.findById(8L)).thenReturn(Optional.of(Product.builder()
+                .id(8L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status(ProductStatus.ACTIVE.name())
+                .build()));
+        when(frontProductDisplayRepository.existsFeaturedRankConflict("Y", 2, 8L, ProductStatus.ACTIVE.name()))
+                .thenReturn(true);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.saveFrontDisplay(
+                new ProductFrontDisplaySaveRequest(8L, "Quiet release", "일반 노출 상품", "Soft tone", true, 2)
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("대표 노출 상품은 순서를 반드시 함께 입력해야 한다")
+    void saveFrontDisplayThrowsWhenFeaturedRankMissing() {
+        when(productRepository.findById(8L)).thenReturn(Optional.of(Product.builder()
+                .id(8L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("상품")
+                .status(ProductStatus.ACTIVE.name())
+                .build()));
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminProductService.saveFrontDisplay(
+                new ProductFrontDisplaySaveRequest(8L, "Quiet release", "일반 노출 상품", "Soft tone", true, null)
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 목록은 Querydsl 조회 결과를 운영 응답으로 매핑한다")
+    void getFrontDisplayProductsMapsAdminRows() {
+        when(productRepository.getAdminFrontDisplayProducts(argThat(query ->
+                query.featuredOnly()
+                        && query.status() == ProductStatus.ACTIVE
+                        && query.brandNo() == 7L
+                        && query.categoryNo() == 11L
+                        && Boolean.TRUE.equals(query.displayConfigured())
+                        && query.lowStockOnly()
+                        && query.lowStockThreshold() == 15
+                        && "PRICE_LOW".equals(query.sort())
+                        && "Grey".equals(query.keyword())
+        ))).thenReturn(List.of(
+                new AdminFrontDisplayProductRow(
+                        4L,
+                        "990v6 Grey Day",
+                        "New Balance",
+                        "러닝화",
+                        289000,
+                        18L,
+                        "ACTIVE",
+                        true,
+                        "Grey precision",
+                        "전시 설명",
+                        "Sharp tone",
+                        true,
+                        3
+                )
+        ));
+
+        ProductFrontDisplayDashboardResponse response = adminProductService.getFrontDisplayProducts(
+                new ProductFrontDisplayListRequest(" Grey ", "ACTIVE", 7L, 11L, "CONFIGURED", true, true, 15, "price_low")
+        );
+
+        assertEquals(1, response.summary().totalCount());
+        assertEquals(1, response.summary().configuredCount());
+        assertEquals(0, response.summary().unconfiguredCount());
+        assertEquals(1, response.summary().featuredCount());
+        assertEquals(0, response.summary().lowStockCount());
+        assertEquals(15L, response.summary().lowStockThreshold());
+        assertEquals(4L, response.items().getFirst().productNo());
+        assertEquals("Grey precision", response.items().getFirst().headline());
+        assertEquals(18L, response.items().getFirst().totalStock());
+        assertEquals(true, response.items().getFirst().featured());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 목록 조회는 잘못된 상태 필터면 INVALID_INPUT_VALUE 예외를 던진다")
+    void getFrontDisplayProductsThrowsWhenStatusInvalid() {
+        BusinessException exception = assertThrows(BusinessException.class,
+                () -> adminProductService.getFrontDisplayProducts(
+                        new ProductFrontDisplayListRequest(null, "not-a-status", null, null, null, false, false, null, null)
+                ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("상품 프론트 노출 CSV 내보내기는 동일한 Querydsl 조건으로 목록을 조회한다")
+    void exportFrontDisplayProductsCsvUsesNormalizedQuery() {
+        when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(20L);
+        when(productRepository.getAdminFrontDisplayProducts(argThat(query ->
+                !query.featuredOnly()
+                        && query.status() == ProductStatus.HIDDEN
+                        && query.brandNo() == 7L
+                        && query.categoryNo() == 11L
+                        && Boolean.FALSE.equals(query.displayConfigured())
+                        && !query.lowStockOnly()
+                        && query.lowStockThreshold() == 20
+                        && "FEATURED".equals(query.sort())
+                        && "draft".equals(query.keyword())
+        ))).thenReturn(List.of(
+                new AdminFrontDisplayProductRow(
+                        4L,
+                        "990v6 Grey Day",
+                        "New Balance",
+                        "러닝화",
+                        289000,
+                        18L,
+                        "HIDDEN",
+                        false,
+                        null,
+                        null,
+                        null,
+                        false,
+                        999
+                )
+        ));
+        when(brandRepository.findById(7L)).thenReturn(Optional.of(Brand.builder().brandNo(7L).nameKo("New Balance").build()));
+        when(categoryRepository.findById(11L)).thenReturn(Optional.of(Category.builder().categoryNo(11L).name("러닝화").build()));
+
+        byte[] result = adminProductService.exportFrontDisplayProductsCsv(
+                new ProductFrontDisplayListRequest(" draft ", "hidden", 7L, 11L, "UNCONFIGURED", false, false, null, null)
+        );
+
+        String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
+        assertTrue(csv.contains("브랜드: New Balance"));
+        assertTrue(csv.contains("카테고리: 러닝화"));
+        assertTrue(csv.contains("노출 설정: 미설정"));
+        assertTrue(csv.contains("\"미설정\""));
+        assertTrue(csv.contains("\"숨김\""));
+    }
+
+    @Test
     @DisplayName("상품 삭제 성공 시 삭제 이력을 저장한다")
     void deleteProductRecordsHistory() {
+        FrontProductDisplay display = FrontProductDisplay.builder()
+                .productNo(9L)
+                .headline("Grey precision")
+                .description("전시 설명")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build();
         when(productRepository.findById(9L)).thenReturn(Optional.of(Product.builder()
                 .id(9L)
                 .brandNo(1L)
@@ -241,9 +624,11 @@ class AdminProductServiceTest {
                 .status("ACTIVE")
                 .releasePrice(1000)
                 .build()));
+        when(frontProductDisplayRepository.findByProductNo(9L)).thenReturn(Optional.of(display));
 
         adminProductService.deleteProduct(9L);
 
+        verify(frontProductDisplayRepository).delete(display);
         verify(productChangeHistoryRepository).save(argThat(history ->
                 history.getProductNo().equals(9L)
                         && history.getSummary().equals("상품이 삭제 처리되었습니다.")
@@ -254,11 +639,22 @@ class AdminProductServiceTest {
     @Test
     @DisplayName("상품 일괄 상태 변경은 삭제되지 않은 상품만 반영하고 결과를 집계한다")
     void bulkOperateProductsUpdatesEligibleProductsOnly() {
+        FrontProductDisplay featuredDisplay = FrontProductDisplay.builder()
+                .productNo(1L)
+                .headline("Grey precision")
+                .description("전시 설명")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(2)
+                .build();
         when(productRepository.findAllById(List.of(1L, 2L, 3L, 99L))).thenReturn(List.of(
                 Product.builder().id(1L).status(ProductStatus.ACTIVE.name()).nameKo("A").brandNo(1L).categoryNo(1L).build(),
                 Product.builder().id(2L).status(ProductStatus.HIDDEN.name()).nameKo("B").brandNo(1L).categoryNo(1L).build(),
                 Product.builder().id(3L).status(ProductStatus.DELETE.name()).nameKo("C").brandNo(1L).categoryNo(1L).build()
         ));
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.of(featuredDisplay));
+        when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         AdminProductService.BulkOperateResult result = adminProductService.bulkOperateProducts(
                 new ProductBulkOperateRequest(List.of(1L, 2L, 3L, 99L), "HIDDEN")
@@ -269,6 +665,11 @@ class AdminProductServiceTest {
         assertEquals(1, result.unchangedCount());
         assertEquals(1, result.blockedCount());
         assertEquals(1, result.missingCount());
+        verify(frontProductDisplayRepository).save(argThat(display ->
+                display.getProductNo().equals(1L)
+                        && display.getFeaturedYn().equals("N")
+                        && display.getFeaturedRank().equals(999)
+        ));
         verify(productChangeHistoryRepository).save(argThat(history ->
                 history.getProductNo().equals(1L)
                         && history.getSummary().contains("일괄 변경")
@@ -279,10 +680,19 @@ class AdminProductServiceTest {
     @Test
     @DisplayName("상품 일괄 삭제는 이미 삭제된 상품을 제외하고 논리 삭제한다")
     void bulkDeleteProductsDeletesEligibleProductsOnly() {
+        FrontProductDisplay display = FrontProductDisplay.builder()
+                .productNo(1L)
+                .headline("Grey precision")
+                .description("전시 설명")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build();
         when(productRepository.findAllById(List.of(1L, 2L, 3L))).thenReturn(List.of(
                 Product.builder().id(1L).status(ProductStatus.ACTIVE.name()).nameKo("A").brandNo(1L).categoryNo(1L).build(),
                 Product.builder().id(2L).status(ProductStatus.DELETE.name()).nameKo("B").brandNo(1L).categoryNo(1L).build()
         ));
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.of(display));
 
         AdminProductService.BulkDeleteResult result = adminProductService.bulkDeleteProducts(
                 new ProductBulkDeleteRequest(List.of(1L, 2L, 3L))
@@ -292,6 +702,7 @@ class AdminProductServiceTest {
         assertEquals(1, result.deletedCount());
         assertEquals(1, result.alreadyDeletedCount());
         assertEquals(1, result.missingCount());
+        verify(frontProductDisplayRepository).delete(display);
         verify(productChangeHistoryRepository).save(argThat(history ->
                 history.getProductNo().equals(1L)
                         && history.getSummary().contains("일괄 삭제")
@@ -494,14 +905,33 @@ class AdminProductServiceTest {
         when(productOptionRepository.findByProductId(5L)).thenReturn(List.of(
                 ProductOption.builder().productNo(5L).optionName("260").stockCnt(2).additionalPrice(0).build()
         ));
+        when(frontProductDisplayRepository.findByProductNo(5L)).thenReturn(Optional.of(
+                FrontProductDisplay.builder()
+                        .productNo(5L)
+                        .headline("Grey precision")
+                        .description("전시 설명")
+                        .mood("Sharp tone")
+                        .featuredYn("Y")
+                        .featuredRank(1)
+                        .build()
+        ));
 
         Long clonedProductNo = adminProductService.cloneProduct(5L);
 
         assertEquals(10L, clonedProductNo);
         verify(productOptionRepository).saveAll(any());
+        verify(frontProductDisplayRepository).save(argThat(display ->
+                display.getProductNo().equals(10L)
+                        && display.getHeadline().equals("Grey precision")
+                        && display.getDescription().equals("전시 설명")
+                        && display.getMood().equals("Sharp tone")
+                        && display.getFeaturedYn().equals("N")
+                        && display.getFeaturedRank().equals(999)
+        ));
         verify(productChangeHistoryRepository).save(argThat(history ->
                 history.getProductNo().equals(10L)
                         && history.getSummary().contains("원본 상품 번호: 5")
+                        && history.getSummary().contains("프론트 노출 초안도 함께 복제")
                         && history.getStatusSnapshot().equals("HIDDEN")
         ));
     }

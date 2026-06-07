@@ -11,5 +11,7 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption,Lon
     @Query("SELECT po FROM ProductOption po WHERE po.productNo =:productId")
     List<ProductOption> findByProductId(Long productId);
 
+    List<ProductOption> findAllByProductNoInOrderByProductNoAscOptionNameAsc(List<Long> productNos);
+
     void deleteByProductNo(Long productNo);
 }

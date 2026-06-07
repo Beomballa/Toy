@@ -3,15 +3,21 @@ package com.section.admin.product.repository;
 import com.section.admin.AdminToyApplication;
 import com.section.common.base.entity.type.ProductOrderType;
 import com.section.common.base.entity.type.ProductStatus;
+import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
+import com.section.common.commerce.dto.AdminFrontDisplayProductRow;
+import com.section.common.commerce.dto.FrontCatalogProductRow;
+import com.section.common.commerce.dto.FrontCatalogQuery;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
+import com.section.common.commerce.entity.FrontProductDisplay;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.FrontProductDisplayRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -44,6 +51,9 @@ class ProductRepositorySearchIntegrationTest {
 
     @Autowired
     private ProductOptionRepository productOptionRepository;
+
+    @Autowired
+    private FrontProductDisplayRepository frontProductDisplayRepository;
 
     @Test
     @DisplayName("상품 목록 검색은 브랜드명과 카테고리명까지 QueryDSL 조건으로 조회한다")
@@ -112,6 +122,49 @@ class ProductRepositorySearchIntegrationTest {
     @DisplayName("상품 목록 검색은 공백 단위 다중 키워드와 모델번호 정규화 검색을 함께 지원한다")
     void getProductListSupportsTokenizedKeywordAndNormalizedModelSearch() {
         Brand brandEntity = brandRepository.save(Brand.builder()
+                .nameKo("아식스 퍼포먼스 ZQX")
+                .nameEn("Asics Performance")
+                .isActive("Y")
+                .build());
+        Category categoryEntity = categoryRepository.save(Category.builder()
+                .name("러닝화")
+                .depth(1)
+                .isActive("Y")
+                .build());
+
+        Product matchedProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("젤 카야노 14 유니크")
+                .modelNum("ZX1201A-019")
+                .releasePrice(189000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("젤 님버스 27")
+                .modelNum("ZX1203A-777")
+                .releasePrice(199000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        Page<ProductListResDto> result = productRepository.getProductList(
+                new ProductListQuery(null, null, null, "ZQX 유니크 ZX1201A019", ProductOrderType.RECENT, false, null, false),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, result.getTotalElements());
+        assertEquals(matchedProduct.getId(), result.getContent().getFirst().getProductNo());
+    }
+
+    @Test
+    @DisplayName("프론트 노출 관리 검색은 모델번호 구분자 없이도 QueryDSL 정규화 검색을 지원한다")
+    void getAdminFrontDisplayProductsSupportsNormalizedModelKeyword() {
+        Brand brandEntity = brandRepository.save(Brand.builder()
                 .nameKo("아식스 퍼포먼스")
                 .nameEn("Asics Performance")
                 .isActive("Y")
@@ -126,13 +179,21 @@ class ProductRepositorySearchIntegrationTest {
                 .brandNo(brandEntity.getBrandNo())
                 .categoryNo(categoryEntity.getCategoryNo())
                 .nameKo("젤 카야노 14")
-                .modelNum("1201A-019")
+                .modelNum("ZQX1201A-019-UNIQUE")
                 .releasePrice(189000)
                 .releaseDt(LocalDate.of(2026, 6, 1))
                 .status(ProductStatus.ACTIVE.name())
                 .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(matchedProduct.getId())
+                .headline("Metal calm")
+                .description("안정적인 주행감")
+                .mood("Refined silver")
+                .featuredYn("N")
+                .featuredRank(999)
+                .build());
 
-        productRepository.save(Product.builder()
+        Product otherProduct = productRepository.save(Product.builder()
                 .brandNo(brandEntity.getBrandNo())
                 .categoryNo(categoryEntity.getCategoryNo())
                 .nameKo("젤 님버스 27")
@@ -141,14 +202,21 @@ class ProductRepositorySearchIntegrationTest {
                 .releaseDt(LocalDate.of(2026, 6, 1))
                 .status(ProductStatus.ACTIVE.name())
                 .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(otherProduct.getId())
+                .headline("Cloud flow")
+                .description("풍부한 쿠셔닝")
+                .mood("Daily comfort")
+                .featuredYn("N")
+                .featuredRank(999)
+                .build());
 
-        Page<ProductListResDto> result = productRepository.getProductList(
-                new ProductListQuery(null, null, null, "아식스 카야노 1201A019", ProductOrderType.RECENT, false, null, false),
-                PageRequest.of(0, 10)
+        List<AdminFrontDisplayProductRow> result = productRepository.getAdminFrontDisplayProducts(
+                new AdminFrontDisplayProductQuery("ZQX1201A019UNIQUE", null, null, null, null, false, false, 20, "FEATURED")
         );
 
-        assertEquals(1, result.getTotalElements());
-        assertEquals(matchedProduct.getId(), result.getContent().getFirst().getProductNo());
+        assertEquals(1, result.size());
+        assertEquals(matchedProduct.getId(), result.getFirst().productNo());
     }
 
     @Test
@@ -327,5 +395,264 @@ class ProductRepositorySearchIntegrationTest {
         assertEquals(secondStockProduct.getId(), stockCountResult.getContent().getFirst().getProductNo());
         assertTrue(secondReleasePriceProduct.getId() > firstReleasePriceProduct.getId());
         assertTrue(secondStockProduct.getId() > firstStockProduct.getId());
+    }
+
+    @Test
+    @DisplayName("프론트 카탈로그 조회는 featured, 가격대, 저재고 조건을 함께 반영한다")
+    void getFrontCatalogProductsAppliesFeaturedPriceBandAndLowStockFilters() {
+        Brand brandEntity = brandRepository.save(Brand.builder()
+                .nameKo("뉴발란스")
+                .nameEn("New Balance")
+                .isActive("Y")
+                .build());
+        Category categoryEntity = categoryRepository.save(Category.builder()
+                .name("러닝화")
+                .depth(1)
+                .isActive("Y")
+                .build());
+
+        Product featuredLowStockProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("990v6 Grey Day")
+                .modelNum("M990GL6")
+                .releasePrice(189000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(featuredLowStockProduct.getId())
+                .optionName("260")
+                .stockCnt(12)
+                .additionalPrice(0)
+                .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(featuredLowStockProduct.getId())
+                .headline("Grey precision")
+                .description("대표 노출")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build());
+
+        Product stableStockProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("1906U Silver")
+                .modelNum("M1906")
+                .releasePrice(199000)
+                .releaseDt(LocalDate.of(2026, 6, 2))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder()
+                .productNo(stableStockProduct.getId())
+                .optionName("265")
+                .stockCnt(44)
+                .additionalPrice(0)
+                .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(stableStockProduct.getId())
+                .headline("Silver lane")
+                .description("일반 노출")
+                .mood("Calm metal")
+                .featuredYn("Y")
+                .featuredRank(2)
+                .build());
+
+        productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("FuelCell Rebel")
+                .modelNum("FC-REBEL")
+                .releasePrice(329000)
+                .releaseDt(LocalDate.of(2026, 6, 3))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        List<FrontCatalogProductRow> result = productRepository.getFrontCatalogProducts(
+                new FrontCatalogQuery("Grey", "뉴발란스", "러닝화", "LOW", "FEATURED", 20, true, "UNDER_200")
+        );
+
+        assertEquals(1, result.size());
+        assertEquals(featuredLowStockProduct.getId(), result.getFirst().productNo());
+        assertTrue(result.getFirst().featured());
+        assertEquals(12, result.getFirst().totalStock());
+    }
+
+    @Test
+    @DisplayName("프론트 카탈로그 연관 상품 조회는 같은 브랜드 또는 카테고리의 활성 상품만 featured 우선으로 반환한다")
+    void getRelatedFrontCatalogProductsReturnsBrandAndCategoryMatchesFirst() {
+        Brand nb = brandRepository.save(Brand.builder().nameKo("뉴발란스").nameEn("New Balance").isActive("Y").build());
+        Brand asics = brandRepository.save(Brand.builder().nameKo("아식스").nameEn("ASICS").isActive("Y").build());
+        Category running = categoryRepository.save(Category.builder().name("러닝화").depth(1).isActive("Y").build());
+        Category trail = categoryRepository.save(Category.builder().name("트레일").depth(1).isActive("Y").build());
+
+        Product target = productRepository.save(Product.builder()
+                .brandNo(nb.getBrandNo())
+                .categoryNo(running.getCategoryNo())
+                .nameKo("990v6 Grey Day")
+                .modelNum("M990GL6")
+                .releasePrice(289000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        Product sameBrand = productRepository.save(Product.builder()
+                .brandNo(nb.getBrandNo())
+                .categoryNo(trail.getCategoryNo())
+                .nameKo("Hierro")
+                .modelNum("NB-HIERRO")
+                .releasePrice(229000)
+                .releaseDt(LocalDate.of(2026, 6, 2))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(sameBrand.getId())
+                .headline("Trail grip")
+                .description("브랜드 연관")
+                .mood("Grip")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build());
+        productOptionRepository.save(ProductOption.builder().productNo(sameBrand.getId()).optionName("270").stockCnt(14).additionalPrice(0).build());
+
+        Product sameCategory = productRepository.save(Product.builder()
+                .brandNo(asics.getBrandNo())
+                .categoryNo(running.getCategoryNo())
+                .nameKo("Gel-Kayano 14")
+                .modelNum("1201A019")
+                .releasePrice(179000)
+                .releaseDt(LocalDate.of(2026, 6, 3))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder().productNo(sameCategory.getId()).optionName("265").stockCnt(18).additionalPrice(0).build());
+
+        productRepository.save(Product.builder()
+                .brandNo(asics.getBrandNo())
+                .categoryNo(trail.getCategoryNo())
+                .nameKo("무관 상품")
+                .modelNum("OTHER-1")
+                .releasePrice(159000)
+                .releaseDt(LocalDate.of(2026, 6, 4))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+
+        List<FrontCatalogProductRow> related = productRepository.getRelatedFrontCatalogProducts(
+                target.getId(),
+                nb.getBrandNo(),
+                running.getCategoryNo(),
+                6
+        );
+
+        assertEquals(2, related.size());
+        assertEquals(sameBrand.getId(), related.getFirst().productNo());
+        assertEquals(sameCategory.getId(), related.get(1).productNo());
+    }
+
+    @Test
+    @DisplayName("프론트 노출 관리 조회는 설정 여부, featured, 저재고, 키워드를 함께 필터링한다")
+    void getAdminFrontDisplayProductsAppliesDisplayFilters() {
+        Brand brandEntity = brandRepository.save(Brand.builder().nameKo("뉴발란스").nameEn("New Balance").isActive("Y").build());
+        Category categoryEntity = categoryRepository.save(Category.builder().name("러닝화").depth(1).isActive("Y").build());
+
+        Product configuredProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("990v6 Grey Day")
+                .modelNum("M990GL6")
+                .releasePrice(289000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder().productNo(configuredProduct.getId()).optionName("260").stockCnt(12).additionalPrice(0).build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(configuredProduct.getId())
+                .headline("Grey precision")
+                .description("대표 노출")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build());
+
+        Product unconfiguredProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("1080v14")
+                .modelNum("M1080")
+                .releasePrice(219000)
+                .releaseDt(LocalDate.of(2026, 6, 2))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder().productNo(unconfiguredProduct.getId()).optionName("265").stockCnt(50).additionalPrice(0).build());
+
+        List<AdminFrontDisplayProductRow> configuredOnly = productRepository.getAdminFrontDisplayProducts(
+                new AdminFrontDisplayProductQuery("Grey", ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), true, true, true, 20, "FEATURED")
+        );
+        List<AdminFrontDisplayProductRow> unconfiguredOnly = productRepository.getAdminFrontDisplayProducts(
+                new AdminFrontDisplayProductQuery(null, ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), false, false, false, 20, "LATEST")
+        );
+
+        assertEquals(1, configuredOnly.size());
+        assertEquals(configuredProduct.getId(), configuredOnly.getFirst().productNo());
+        assertTrue(configuredOnly.getFirst().featured());
+        assertEquals(1, unconfiguredOnly.size());
+        assertEquals(unconfiguredProduct.getId(), unconfiguredOnly.getFirst().productNo());
+        assertTrue(!unconfiguredOnly.getFirst().displayConfigured());
+    }
+
+    @Test
+    @DisplayName("featured 순번 충돌 검사는 활성 상품의 전시 메타만 대상으로 한다")
+    void existsFeaturedRankConflictChecksOnlyActiveProducts() {
+        Brand brandEntity = brandRepository.save(Brand.builder().nameKo("뉴발란스").nameEn("New Balance").isActive("Y").build());
+        Category categoryEntity = categoryRepository.save(Category.builder().name("러닝화").depth(1).isActive("Y").build());
+
+        Product activeFeaturedProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("990v6")
+                .modelNum("M990GL6")
+                .releasePrice(289000)
+                .releaseDt(LocalDate.of(2026, 6, 1))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(activeFeaturedProduct.getId())
+                .headline("Grey precision")
+                .description("대표 노출")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(1)
+                .build());
+
+        Product hiddenFeaturedProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("1906U")
+                .modelNum("M1906")
+                .releasePrice(219000)
+                .releaseDt(LocalDate.of(2026, 6, 2))
+                .status(ProductStatus.HIDDEN.name())
+                .build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(hiddenFeaturedProduct.getId())
+                .headline("Silver lane")
+                .description("숨김 전시")
+                .mood("Calm metal")
+                .featuredYn("Y")
+                .featuredRank(2)
+                .build());
+
+        assertTrue(frontProductDisplayRepository.existsFeaturedRankConflict(
+                "Y",
+                1,
+                hiddenFeaturedProduct.getId(),
+                ProductStatus.ACTIVE.name()
+        ));
+        assertTrue(!frontProductDisplayRepository.existsFeaturedRankConflict(
+                "Y",
+                2,
+                activeFeaturedProduct.getId(),
+                ProductStatus.ACTIVE.name()
+        ));
     }
 }

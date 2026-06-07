@@ -3,12 +3,18 @@ package com.section.common.commerce.repository;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.ProductOrderType;
 import com.section.common.base.entity.type.ProductStatus;
+import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
+import com.section.common.commerce.dto.AdminFrontDisplayProductRow;
+import com.section.common.commerce.dto.FrontCatalogProductRow;
+import com.section.common.commerce.dto.FrontCatalogQuery;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -22,9 +28,11 @@ import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import static com.section.common.commerce.entity.QBrand.brand;
 import static com.section.common.commerce.entity.QCategory.category;
+import static com.section.common.commerce.entity.QFrontProductDisplay.frontProductDisplay;
 import static com.section.common.commerce.entity.QProduct.product;
 import static com.section.common.commerce.entity.QProductOption.productOption;
 
@@ -172,6 +180,219 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .fetch();
     }
 
+    @Override
+    public List<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query) {
+        return frontCatalogBaseQuery()
+                .where(frontCatalogConditions(query))
+                .groupBy(
+                        product.id,
+                        product.brandNo,
+                        product.categoryNo,
+                        brand.nameKo,
+                        category.name,
+                        product.nameKo,
+                        frontProductDisplay.headline,
+                        product.modelNum,
+                        product.releasePrice,
+                        product.crtDtm,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        frontProductDisplay.featuredYn,
+                        frontProductDisplay.featuredRank
+                )
+                .having(frontStockCondition(query))
+                .orderBy(frontCatalogOrder(query))
+                .fetch();
+    }
+
+    @Override
+    public Optional<FrontCatalogProductRow> getFrontCatalogProduct(Long productNo) {
+        return Optional.ofNullable(
+                frontCatalogBaseQuery()
+                        .where(product.id.eq(productNo), product.status.eq(ProductStatus.ACTIVE.name()))
+                        .groupBy(
+                                product.id,
+                                product.brandNo,
+                                product.categoryNo,
+                                brand.nameKo,
+                                category.name,
+                                product.nameKo,
+                                frontProductDisplay.headline,
+                                product.modelNum,
+                                product.releasePrice,
+                                product.crtDtm,
+                                frontProductDisplay.description,
+                                frontProductDisplay.mood,
+                                frontProductDisplay.featuredYn,
+                                frontProductDisplay.featuredRank
+                        )
+                        .fetchOne()
+        );
+    }
+
+    @Override
+    public List<FrontCatalogProductRow> getRelatedFrontCatalogProducts(Long productNo, Long brandNo, Long categoryNo, int limit) {
+        return frontCatalogBaseQuery()
+                .where(
+                        product.id.ne(productNo),
+                        product.status.eq(ProductStatus.ACTIVE.name()),
+                        product.brandNo.eq(brandNo).or(product.categoryNo.eq(categoryNo))
+                )
+                .groupBy(
+                        product.id,
+                        product.brandNo,
+                        product.categoryNo,
+                        brand.nameKo,
+                        category.name,
+                        product.nameKo,
+                        frontProductDisplay.headline,
+                        product.modelNum,
+                        product.releasePrice,
+                        product.crtDtm,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        frontProductDisplay.featuredYn,
+                        frontProductDisplay.featuredRank
+                )
+                .orderBy(frontFeaturedOrder(), totalStockSum().asc(), product.releaseDt.desc(), product.id.desc())
+                .limit(limit)
+                .fetch();
+    }
+
+    @Override
+    public List<AdminFrontDisplayProductRow> getAdminFrontDisplayProducts(AdminFrontDisplayProductQuery query) {
+        return queryFactory
+                .select(Projections.constructor(
+                        AdminFrontDisplayProductRow.class,
+                        product.id,
+                        product.nameKo,
+                        brand.nameKo,
+                        category.name,
+                        product.releasePrice,
+                        totalStockSum(),
+                        product.status,
+                        frontProductDisplay.displayNo.isNotNull(),
+                        frontProductDisplay.headline,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        new CaseBuilder().when(frontProductDisplay.featuredYn.eq("Y")).then(true).otherwise(false),
+                        frontProductDisplay.featuredRank
+                ))
+                .from(product)
+                .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                .where(
+                        product.status.ne(ProductStatus.DELETE.name()),
+                        query.featuredOnly() ? frontProductDisplay.featuredYn.eq("Y") : null,
+                        query.status() == null ? null : product.status.eq(query.status().name()),
+                        brandNoEq(query.brandNo()),
+                        categoryNoEq(query.categoryNo()),
+                        adminFrontDisplayKeywordLike(query.keyword()),
+                        adminFrontDisplayConfiguredEq(query)
+                )
+                .groupBy(
+                        product.id,
+                        product.nameKo,
+                        brand.nameKo,
+                        category.name,
+                        product.releasePrice,
+                        product.status,
+                        frontProductDisplay.displayNo,
+                        frontProductDisplay.headline,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        frontProductDisplay.featuredYn,
+                        frontProductDisplay.featuredRank
+                )
+                .having(adminFrontDisplayHaving(query))
+                .orderBy(
+                        adminFrontDisplayOrder(query)
+                )
+                .fetch();
+    }
+
+    private BooleanExpression adminFrontDisplayKeywordLike(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+
+        List<String> terms = Arrays.stream(keyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = product.nameKo.containsIgnoreCase(term)
+                    .or(product.modelNum.containsIgnoreCase(term))
+                    .or(brand.nameKo.containsIgnoreCase(term))
+                    .or(category.name.containsIgnoreCase(term))
+                    .or(frontProductDisplay.headline.containsIgnoreCase(term))
+                    .or(frontProductDisplay.description.containsIgnoreCase(term))
+                    .or(frontProductDisplay.mood.containsIgnoreCase(term));
+
+            String normalizedModelTerm = term.replaceAll("[^A-Za-z0-9]", "");
+            if (!normalizedModelTerm.isBlank()) {
+                termPredicate = termPredicate.or(normalizedModelNum().containsIgnoreCase(normalizedModelTerm));
+            }
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+        return predicate;
+    }
+
+    private BooleanExpression adminFrontDisplayConfiguredEq(AdminFrontDisplayProductQuery query) {
+        if (query.configuredOnly()) {
+            return frontProductDisplay.displayNo.isNotNull();
+        }
+        if (query.unconfiguredOnly()) {
+            return frontProductDisplay.displayNo.isNull();
+        }
+        return null;
+    }
+
+    private BooleanExpression adminFrontDisplayHaving(AdminFrontDisplayProductQuery query) {
+        if (!query.lowStockOnly()) {
+            return null;
+        }
+        return totalStockSum().lt(query.lowStockThreshold());
+    }
+
+    private OrderSpecifier<?>[] adminFrontDisplayOrder(AdminFrontDisplayProductQuery query) {
+        return switch (query.sort()) {
+            case "LATEST" -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    product.crtDtm.desc(),
+                    product.id.desc()
+            };
+            case "STOCK_ASC" -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    totalStockSum().asc(),
+                    product.id.desc()
+            };
+            case "STOCK_DESC" -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    totalStockSum().desc(),
+                    product.id.desc()
+            };
+            case "PRICE_HIGH" -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    product.releasePrice.desc(),
+                    product.id.desc()
+            };
+            case "PRICE_LOW" -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    product.releasePrice.asc(),
+                    product.id.desc()
+            };
+            default -> new OrderSpecifier<?>[]{
+                    frontFeaturedOrder(),
+                    frontProductDisplay.featuredRank.asc().nullsLast(),
+                    totalStockSum().asc(),
+                    product.id.desc()
+            };
+        };
+    }
+
     public BooleanExpression searchKeywordLike(String searchKeyword) {
         if (searchKeyword == null || searchKeyword.isBlank()) {
             return null;
@@ -307,6 +528,137 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 "replace(replace(replace({0}, '-', ''), ' ', ''), '_', '')",
                 product.modelNum
         );
+    }
+
+    private JPAQuery<FrontCatalogProductRow> frontCatalogBaseQuery() {
+        return queryFactory
+                .select(Projections.constructor(
+                        FrontCatalogProductRow.class,
+                        product.id,
+                        product.brandNo,
+                        product.categoryNo,
+                        brand.nameKo,
+                        category.name,
+                        product.nameKo,
+                        frontProductDisplay.headline,
+                        product.modelNum,
+                        product.releasePrice,
+                        totalStockSum().intValue(),
+                        product.crtDtm,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        new CaseBuilder().when(frontProductDisplay.featuredYn.eq("Y")).then(true).otherwise(false),
+                        frontProductDisplay.featuredRank
+                ))
+                .from(product)
+                .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id));
+    }
+
+    private BooleanExpression[] frontCatalogConditions(FrontCatalogQuery query) {
+        return new BooleanExpression[]{
+                product.status.eq(ProductStatus.ACTIVE.name()),
+                frontKeywordLike(query.keyword()),
+                frontBrandEq(query.brand()),
+                frontCategoryEq(query.category()),
+                frontFeaturedOnlyEq(query.featuredOnly()),
+                frontPriceBandEq(query)
+        };
+    }
+
+    private BooleanExpression frontKeywordLike(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+
+        List<String> terms = Arrays.stream(keyword.trim().split("\\s+"))
+                .filter(term -> !term.isBlank())
+                .toList();
+        BooleanExpression predicate = null;
+        for (String term : terms) {
+            BooleanExpression termPredicate = product.nameKo.containsIgnoreCase(term)
+                    .or(product.modelNum.containsIgnoreCase(term))
+                    .or(brand.nameKo.containsIgnoreCase(term))
+                    .or(category.name.containsIgnoreCase(term))
+                    .or(frontProductDisplay.headline.containsIgnoreCase(term))
+                    .or(frontProductDisplay.description.containsIgnoreCase(term))
+                    .or(frontProductDisplay.mood.containsIgnoreCase(term));
+            String normalizedModelTerm = term.replaceAll("[^A-Za-z0-9]", "");
+            if (!normalizedModelTerm.isBlank()) {
+                termPredicate = termPredicate.or(normalizedModelNum().containsIgnoreCase(normalizedModelTerm));
+            }
+            predicate = predicate == null ? termPredicate : predicate.and(termPredicate);
+        }
+        return predicate;
+    }
+
+    private BooleanExpression frontBrandEq(String brandName) {
+        if (brandName == null || brandName.isBlank()) {
+            return null;
+        }
+        return brand.nameKo.eq(brandName);
+    }
+
+    private BooleanExpression frontCategoryEq(String categoryName) {
+        if (categoryName == null || categoryName.isBlank()) {
+            return null;
+        }
+        return category.name.eq(categoryName);
+    }
+
+    private BooleanExpression frontFeaturedOnlyEq(boolean featuredOnly) {
+        if (!featuredOnly) {
+            return null;
+        }
+        return frontProductDisplay.featuredYn.eq("Y");
+    }
+
+    private BooleanExpression frontPriceBandEq(FrontCatalogQuery query) {
+        if (query.isUnder200Only()) {
+            return product.releasePrice.lt(200000);
+        }
+        if (query.isBetween200And300Only()) {
+            return product.releasePrice.between(200000, 300000);
+        }
+        if (query.isOver300Only()) {
+            return product.releasePrice.gt(300000);
+        }
+        return null;
+    }
+
+    private BooleanExpression frontStockCondition(FrontCatalogQuery query) {
+        if (query.isLowStockOnly()) {
+            return totalStockSum().lt((long) query.lowStockThreshold());
+        }
+        if (query.isStableStockOnly()) {
+            return totalStockSum().goe((long) query.lowStockThreshold());
+        }
+        return null;
+    }
+
+    private OrderSpecifier<?>[] frontCatalogOrder(FrontCatalogQuery query) {
+        return switch (query.sort()) {
+            case "PRICE_HIGH" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.releasePrice.desc(), product.id.desc()};
+            case "PRICE_LOW" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.releasePrice.asc(), product.id.desc()};
+            case "NAME_ASC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.nameKo.asc(), product.id.desc()};
+            case "STOCK_ASC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), totalStockSum().asc(), product.id.desc()};
+            case "STOCK_DESC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), totalStockSum().desc(), product.id.desc()};
+            case "FEATURED" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), frontProductDisplay.featuredRank.asc().nullsLast(), product.id.desc()};
+            default -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.crtDtm.desc(), product.id.desc()};
+        };
+    }
+
+    private OrderSpecifier<Integer> frontFeaturedOrder() {
+        return new CaseBuilder()
+                .when(frontProductDisplay.featuredYn.eq("Y")).then(0)
+                .otherwise(1)
+                .asc();
+    }
+
+    private NumberExpression<Long> totalStockSum() {
+        return productOption.stockCnt.sumLong().coalesce(0L);
     }
 
     public OrderSpecifier<?>[] orderTypeEq(ProductOrderType orderType) {

@@ -1,14 +1,23 @@
 package com.section.front.product.service;
 
-import com.section.front.product.dto.FrontProductOptionResponse;
+import com.section.common.commerce.dto.FrontCatalogProductRow;
+import com.section.common.commerce.dto.FrontCatalogQuery;
+import com.section.common.commerce.entity.ProductOption;
+import com.section.common.commerce.repository.ProductOptionRepository;
+import com.section.common.commerce.repository.ProductRepository;
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
 import com.section.front.product.dto.FrontCatalogFacetResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontProductDetailResponse;
+import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontProductResponse;
 import com.section.front.product.dto.FrontRelatedProductResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -18,123 +27,25 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class FrontProductCatalogService {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    public List<FrontProductResponse> getCatalog() {
-        return List.of(
-                new FrontProductResponse(
-                        101L,
-                        "New Balance",
-                        "러닝화",
-                        "990v6 Grey Day",
-                        "M990GL6",
-                        289000,
-                        18,
-                        "2026-06-04",
-                        "브랜드 시그니처 그레이 팔레트에 퍼포먼스 러닝 실루엣을 더한 대표 드롭입니다.",
-                        "Grey precision",
-                        true,
-                        List.of(
-                                new FrontProductOptionResponse("260", 4),
-                                new FrontProductOptionResponse("270", 6),
-                                new FrontProductOptionResponse("280", 8)
-                        )
-                ),
-                new FrontProductResponse(
-                        102L,
-                        "Nike",
-                        "라이프스타일",
-                        "Air Max DN Ember",
-                        "DV3337-800",
-                        219000,
-                        54,
-                        "2026-06-03",
-                        "강한 주황빛 텐션과 둥근 에어 볼륨이 전면에 드러나는 에너지 중심 모델입니다.",
-                        "Ember energy",
-                        true,
-                        List.of(
-                                new FrontProductOptionResponse("255", 10),
-                                new FrontProductOptionResponse("265", 24),
-                                new FrontProductOptionResponse("275", 20)
-                        )
-                ),
-                new FrontProductResponse(
-                        103L,
-                        "ASICS",
-                        "러닝화",
-                        "Gel-Kayano 14 Oyster",
-                        "1201A019-200",
-                        179000,
-                        12,
-                        "2026-06-04",
-                        "실버 러닝 무드와 베이지 톤이 섞인 안정적인 실루엣으로 여성 고객 반응이 빠른 편입니다.",
-                        "Metal calm",
-                        true,
-                        List.of(
-                                new FrontProductOptionResponse("240", 2),
-                                new FrontProductOptionResponse("245", 4),
-                                new FrontProductOptionResponse("250", 6)
-                        )
-                ),
-                new FrontProductResponse(
-                        104L,
-                        "Salomon",
-                        "아웃도어",
-                        "XT-6 Skyline",
-                        "L47739100",
-                        248000,
-                        32,
-                        "2026-06-02",
-                        "아웃도어 기반 기술 실루엣이지만 도심 착장용 수요가 높은 스테디 라인입니다.",
-                        "Trail machine",
-                        false,
-                        List.of(
-                                new FrontProductOptionResponse("260", 7),
-                                new FrontProductOptionResponse("270", 12),
-                                new FrontProductOptionResponse("280", 13)
-                        )
-                ),
-                new FrontProductResponse(
-                        105L,
-                        "Adidas",
-                        "축구화",
-                        "Predator Fold-Over Core",
-                        "IG5432",
-                        329000,
-                        8,
-                        "2026-06-01",
-                        "폴드오버 텅 디테일이 강하고, 콘텐츠용 주목도는 높지만 사이즈별 편차가 큰 모델입니다.",
-                        "Pitch statement",
-                        false,
-                        List.of(
-                                new FrontProductOptionResponse("255", 1),
-                                new FrontProductOptionResponse("265", 3),
-                                new FrontProductOptionResponse("275", 4)
-                        )
-                ),
-                new FrontProductResponse(
-                        106L,
-                        "Hoka",
-                        "러닝화",
-                        "Mach X Voltage",
-                        "HM1123",
-                        239000,
-                        65,
-                        "2026-05-29",
-                        "쿠셔닝과 반응성을 동시에 묶은 하이브리드 러닝 카테고리에서 리텐션이 좋은 상품입니다.",
-                        "Fast cushion",
-                        false,
-                        List.of(
-                                new FrontProductOptionResponse("260", 14),
-                                new FrontProductOptionResponse("270", 25),
-                                new FrontProductOptionResponse("280", 26)
-                        )
-                )
+    private final ProductRepository productRepository;
+    private final ProductOptionRepository productOptionRepository;
+
+    public List<FrontProductResponse> getCatalog(FrontCatalogQuery query) {
+        List<FrontCatalogProductRow> rows = productRepository.getFrontCatalogProducts(query);
+        return toProductResponses(
+                rows,
+                loadOptionMap(rows.stream().map(FrontCatalogProductRow::productNo).toList()),
+                query.lowStockThreshold()
         );
     }
 
-    public FrontCatalogBootstrapResponse getBootstrap() {
-        List<FrontProductResponse> catalog = getCatalog();
+    public FrontCatalogBootstrapResponse getBootstrap(FrontCatalogQuery query) {
+        List<FrontProductResponse> catalog = getCatalog(query);
         String latestCreatedDate = catalog.stream()
                 .map(FrontProductResponse::createdDate)
                 .max(String::compareTo)
@@ -144,7 +55,7 @@ public class FrontProductCatalogService {
                 catalog,
                 new FrontCatalogMetricsResponse(
                         catalog.size(),
-                        (int) catalog.stream().filter(product -> product.stock() < 20).count(),
+                        (int) catalog.stream().filter(product -> product.stock() < query.lowStockThreshold()).count(),
                         latestCreatedDate,
                         (int) catalog.stream()
                                 .filter(product -> latestCreatedDate != null && latestCreatedDate.equals(product.createdDate()))
@@ -158,48 +69,148 @@ public class FrontProductCatalogService {
     }
 
     public Optional<FrontProductResponse> findProduct(long productId) {
-        return getCatalog().stream()
-                .filter(product -> product.id() == productId)
-                .findFirst();
-    }
-
-    public Optional<FrontProductDetailResponse> findProductDetail(long productId) {
-        List<FrontProductResponse> catalog = getCatalog();
-        return catalog.stream()
-                .filter(product -> product.id() == productId)
-                .findFirst()
-                .map(product -> new FrontProductDetailResponse(
-                        product.id(),
-                        product.brand(),
-                        product.category(),
-                        product.name(),
-                        product.model(),
-                        product.price(),
-                        product.stock(),
-                        product.createdDate(),
-                        product.description(),
-                        product.mood(),
-                        product.featured(),
-                        product.options(),
-                        buildRelatedProducts(catalog, product)
+        return productRepository.getFrontCatalogProduct(productId)
+                .map(row -> toProductResponse(
+                        row,
+                        loadOptionMap(List.of(row.productNo())).getOrDefault(row.productNo(), List.of()),
+                        20
                 ));
     }
 
-    private List<FrontRelatedProductResponse> buildRelatedProducts(List<FrontProductResponse> catalog, FrontProductResponse target) {
-        Set<Long> relatedIds = new LinkedHashSet<>();
-        List<FrontRelatedProductResponse> relatedProducts = new java.util.ArrayList<>();
+    public Optional<FrontProductDetailResponse> findProductDetail(long productId) {
+        Optional<FrontCatalogProductRow> detailRow = productRepository.getFrontCatalogProduct(productId);
+        if (detailRow.isEmpty()) {
+            return Optional.empty();
+        }
 
-        catalog.stream()
+        FrontCatalogProductRow targetRow = detailRow.get();
+        FrontProductResponse target = toProductResponse(
+                targetRow,
+                loadOptionMap(List.of(targetRow.productNo())).getOrDefault(targetRow.productNo(), List.of()),
+                20
+        );
+
+        List<FrontCatalogProductRow> relatedRows = productRepository.getRelatedFrontCatalogProducts(
+                productId,
+                targetRow.brandNo(),
+                targetRow.categoryNo(),
+                6
+        );
+        List<FrontProductResponse> relatedCatalog = toProductResponses(
+                relatedRows,
+                loadOptionMap(relatedRows.stream().map(FrontCatalogProductRow::productNo).toList()),
+                20
+        );
+
+        return Optional.of(new FrontProductDetailResponse(
+                target.id(),
+                target.brand(),
+                target.category(),
+                target.name(),
+                target.headline(),
+                target.model(),
+                target.price(),
+                target.stock(),
+                target.createdDate(),
+                target.description(),
+                target.mood(),
+                target.featured(),
+                target.featuredRank(),
+                target.stockStatus(),
+                target.priceLabel(),
+                target.options(),
+                buildRelatedProducts(relatedCatalog, target)
+        ));
+    }
+
+    private Map<Long, List<FrontProductOptionResponse>> loadOptionMap(List<Long> productNos) {
+        if (productNos.isEmpty()) {
+            return Map.of();
+        }
+        return productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(productNos).stream()
+                .collect(Collectors.groupingBy(
+                        ProductOption::getProductNo,
+                        Collectors.mapping(
+                                option -> new FrontProductOptionResponse(option.getOptionName(), option.getStockCnt()),
+                                Collectors.toList()
+                        )
+                ));
+    }
+
+    private List<FrontProductResponse> toProductResponses(
+            List<FrontCatalogProductRow> rows,
+            Map<Long, List<FrontProductOptionResponse>> optionMap,
+            int lowStockThreshold
+    ) {
+        return rows.stream()
+                .map(row -> toProductResponse(row, optionMap.getOrDefault(row.productNo(), List.of()), lowStockThreshold))
+                .toList();
+    }
+
+    private FrontProductResponse toProductResponse(
+            FrontCatalogProductRow row,
+            List<FrontProductOptionResponse> options,
+            int lowStockThreshold
+    ) {
+        String brandName = defaultText(row.brandName(), "Unknown");
+        String categoryName = defaultText(row.categoryName(), "미분류");
+        String productName = defaultText(row.productName(), "이름 없는 상품");
+        String headline = defaultText(row.headline(), brandName + " curated");
+        String mood = defaultText(row.mood(), brandName + " pick");
+        String description = defaultText(
+                row.description(),
+                productName + " 상품 상세 문구가 아직 등록되지 않아 기본 정보만 노출합니다."
+        );
+        return new FrontProductResponse(
+                row.productNo(),
+                brandName,
+                categoryName,
+                productName,
+                headline,
+                row.modelNum(),
+                row.releasePrice(),
+                row.totalStock(),
+                row.createdAt() == null ? null : row.createdAt().toLocalDate().format(DATE_FORMATTER),
+                description,
+                mood,
+                row.featured(),
+                row.featuredRank(),
+                toStockStatus(row.totalStock(), lowStockThreshold),
+                formatPriceLabel(row.releasePrice()),
+                options
+        );
+    }
+
+    private String defaultText(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
+    }
+
+    private List<FrontRelatedProductResponse> buildRelatedProducts(
+            List<FrontProductResponse> relatedCatalog,
+            FrontProductResponse target
+    ) {
+        Set<Long> relatedIds = new LinkedHashSet<>();
+        List<FrontRelatedProductResponse> relatedProducts = new ArrayList<>();
+
+        relatedCatalog.stream()
+                .filter(product -> product.id() != target.id())
+                .filter(product -> product.brand().equals(target.brand()) && product.category().equals(target.category()))
+                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product, "브랜드·카테고리 일치"));
+
+        relatedCatalog.stream()
                 .filter(product -> product.id() != target.id())
                 .filter(product -> product.brand().equals(target.brand()))
-                .sorted(java.util.Comparator.comparingInt(FrontProductResponse::stock))
-                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product));
+                .filter(product -> !product.category().equals(target.category()))
+                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product, "같은 브랜드"));
 
-        catalog.stream()
+        relatedCatalog.stream()
                 .filter(product -> product.id() != target.id())
                 .filter(product -> product.category().equals(target.category()))
-                .sorted(java.util.Comparator.comparingInt(FrontProductResponse::stock))
-                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product));
+                .filter(product -> !product.brand().equals(target.brand()))
+                .forEach(product -> appendRelatedProduct(relatedIds, relatedProducts, product, "같은 카테고리"));
 
         return relatedProducts.stream().limit(3).toList();
     }
@@ -207,7 +218,8 @@ public class FrontProductCatalogService {
     private void appendRelatedProduct(
             Set<Long> relatedIds,
             List<FrontRelatedProductResponse> relatedProducts,
-            FrontProductResponse product
+            FrontProductResponse product,
+            String reason
     ) {
         if (!relatedIds.add(product.id()) || relatedProducts.size() >= 3) {
             return;
@@ -216,20 +228,35 @@ public class FrontProductCatalogService {
                 product.id(),
                 product.brand(),
                 product.name(),
+                reason,
                 product.model(),
                 product.price(),
-                product.stock()
+                product.stock(),
+                product.stockStatus(),
+                product.priceLabel()
         ));
+    }
+
+    private String toStockStatus(Integer totalStock, int threshold) {
+        int safeStock = totalStock == null ? 0 : totalStock;
+        return safeStock < threshold ? "품절 임박" : "재고 안정";
+    }
+
+    private String formatPriceLabel(Integer releasePrice) {
+        if (releasePrice == null) {
+            return "-";
+        }
+        return String.format("%,d원", releasePrice);
     }
 
     private List<FrontCatalogFacetResponse> buildFacetResponses(
             List<FrontProductResponse> catalog,
             Function<FrontProductResponse, String> classifier
     ) {
-        Map<String, Long> grouped = catalog.stream()
-                .collect(Collectors.groupingBy(classifier, Collectors.counting()));
-
-        return grouped.entrySet().stream()
+        return catalog.stream()
+                .collect(Collectors.groupingBy(classifier, Collectors.counting()))
+                .entrySet()
+                .stream()
                 .sorted(Map.Entry.comparingByKey(String::compareToIgnoreCase))
                 .map(entry -> new FrontCatalogFacetResponse(entry.getKey(), entry.getValue().intValue()))
                 .toList();

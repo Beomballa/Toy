@@ -2,10 +2,12 @@ package com.section.front.controller;
 
 import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.req.FrontCatalogRequest;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,8 +23,8 @@ public class FrontProductRestController {
     private final FrontProductCatalogService frontProductCatalogService;
 
     @GetMapping
-    public List<FrontProductResponse> getProducts() {
-        return frontProductCatalogService.getCatalog();
+    public List<FrontProductResponse> getProducts(@ModelAttribute FrontCatalogRequest request) {
+        return frontProductCatalogService.getCatalog(request.toQuery());
     }
 
     @GetMapping("/{productId}")

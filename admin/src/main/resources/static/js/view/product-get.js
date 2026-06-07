@@ -29,6 +29,7 @@ const ProductDetail = {
         if (this.hasBootstrapProduct(bootstrapProduct)) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
             this.renderProduct(bootstrapProduct);
+            await this.loadFrontDisplay();
             await this.loadProductHistory();
         } else {
             await this.loadProductDetail();
@@ -144,6 +145,7 @@ const ProductDetail = {
 
             const data = await response.json();
             this.renderProduct(data);
+            await this.loadFrontDisplay();
             await this.loadProductHistory();
 
         } catch (error) {
@@ -234,6 +236,43 @@ const ProductDetail = {
             const statusMeta = CommonJS.getProductStatusMeta(statusCode);
             statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${data.statusDesc || '판매중'}</span>`;
         }
+    },
+
+    async loadFrontDisplay() {
+        try {
+            const response = await fetch(`/api/admin/product/front-display?productNo=${this.productNo}`);
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
+            }
+            const data = await response.json();
+            this.renderFrontDisplay(data);
+        } catch (error) {
+            console.error('Front Display Load Error:', error);
+            this.renderFrontDisplay(null);
+        }
+    },
+
+    renderFrontDisplay(data) {
+        const setText = (id, value) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = value || '-';
+            }
+        };
+        if (!data) {
+            setText('frontDisplayHeadline', '-');
+            setText('frontDisplayMood', '-');
+            setText('frontDisplayFeatured', '일반 노출');
+            setText('frontDisplayRank', '999');
+            setText('frontDisplayDescription', '등록된 프론트 노출 문구가 없습니다.');
+            return;
+        }
+
+        setText('frontDisplayHeadline', data.headline);
+        setText('frontDisplayMood', data.mood);
+        setText('frontDisplayFeatured', data.featured ? 'Featured' : '일반 노출');
+        setText('frontDisplayRank', String(data.featuredRank ?? 999));
+        setText('frontDisplayDescription', data.description);
     },
 
     async loadProductHistory() {

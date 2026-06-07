@@ -1,9 +1,11 @@
 package com.section.front.controller;
 
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
+import com.section.front.product.req.FrontCatalogRequest;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,7 +17,7 @@ public class FrontCatalogRestController {
     private final FrontProductCatalogService frontProductCatalogService;
 
     @GetMapping("/bootstrap")
-    public FrontCatalogBootstrapResponse getBootstrap() {
-        return frontProductCatalogService.getBootstrap();
+    public FrontCatalogBootstrapResponse getBootstrap(@ModelAttribute FrontCatalogRequest request) {
+        return frontProductCatalogService.getBootstrap(request.toQuery());
     }
 }

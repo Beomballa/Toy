@@ -3,17 +3,26 @@ package com.section.admin.product.service;
 import com.section.admin.product.req.ProductBulkDeleteRequest;
 import com.section.admin.product.req.ProductBulkDuplicateRequest;
 import com.section.admin.product.req.ProductBulkOperateRequest;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.req.ProductCreateRequest;
+import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayRankGuideResponse;
+import com.section.admin.product.res.ProductFrontDisplayResponse;
+import com.section.admin.product.res.ProductFrontDisplayListResponse;
+import com.section.admin.product.res.ProductFrontDisplaySummaryResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.settings.service.AdminSettingsService;
 import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductExportPolicy;
+import com.section.admin.product.support.ProductFrontDisplayExportCsvWriter;
+import com.section.admin.product.support.ProductFrontDisplayExportSummary;
 import com.section.admin.product.support.ProductExportSummary;
 import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductHistoryActionType;
@@ -27,13 +36,16 @@ import com.section.common.commerce.dto.ProductHistoryListResDto;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
+import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Category;
+import com.section.common.commerce.entity.FrontProductDisplay;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductChangeHistory;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
+import com.section.common.commerce.repository.FrontProductDisplayRepository;
 import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -50,8 +62,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 @Slf4j
@@ -59,12 +73,14 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminProductService {
+    private static final int FEATURED_RANK_GUIDE_LIMIT = 12;
 
     private final ProductRepository productRepository;
     private final ProductOptionRepository productOptionRepository;
     private final ProductChangeHistoryRepository productChangeHistoryRepository;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
+    private final FrontProductDisplayRepository frontProductDisplayRepository;
     private final AdminUserRepository adminUserRepository;
     private final AdminSettingsService adminSettingsService;
 
@@ -187,7 +203,8 @@ public class AdminProductService {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         List<ProductOption> currentOptions = productOptionRepository.findByProductId(product.getId());
-        String updateSummary = buildUpdateSummary(product, currentOptions, reqDto);
+        FrontProductDisplay currentDisplay = frontProductDisplayRepository.findByProductNo(product.getId()).orElse(null);
+        String updateSummary = buildUpdateSummary(product, currentOptions, currentDisplay, reqDto);
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
         validateDuplicateOptionNames(reqDto.getOptions() == null ? List.of() :
                 reqDto.getOptions().stream()
@@ -224,6 +241,8 @@ public class AdminProductService {
 
             productOptionRepository.saveAll(productOptions);
         }
+
+        synchronizeFrontDisplayForStatus(product);
 
         recordProductHistory(
                 product.getId(),
@@ -271,6 +290,112 @@ public class AdminProductService {
         return ProductDetailResponse.from(resDto, option);
     }
 
+    public ProductFrontDisplayResponse getFrontDisplay(Long productNo) {
+        ensureProductExists(productNo);
+        return ProductFrontDisplayResponse.from(
+                productNo,
+                frontProductDisplayRepository.findByProductNo(productNo).orElse(null)
+        );
+    }
+
+    public ProductFrontDisplayRankGuideResponse getFrontDisplayRankGuide(Long productNo) {
+        if (productNo != null) {
+            ensureProductExists(productNo);
+        }
+
+        List<Integer> occupiedRanks = frontProductDisplayRepository.findActiveFeaturedRanks(
+                        ProductStatus.ACTIVE.name(),
+                        productNo
+                ).stream()
+                .filter(Objects::nonNull)
+                .filter(rank -> rank >= 1 && rank < 999)
+                .distinct()
+                .sorted()
+                .toList();
+
+        Set<Integer> occupiedRankSet = Set.copyOf(occupiedRanks);
+        List<Integer> availableRanks = IntStream.rangeClosed(1, FEATURED_RANK_GUIDE_LIMIT)
+                .filter(rank -> !occupiedRankSet.contains(rank))
+                .boxed()
+                .toList();
+
+        Integer recommendedRank = availableRanks.isEmpty() ? FEATURED_RANK_GUIDE_LIMIT : availableRanks.getFirst();
+        return new ProductFrontDisplayRankGuideResponse(
+                FEATURED_RANK_GUIDE_LIMIT,
+                recommendedRank,
+                occupiedRanks,
+                availableRanks
+        );
+    }
+
+    public ProductFrontDisplayDashboardResponse getFrontDisplayProducts(ProductFrontDisplayListRequest request) {
+        AdminFrontDisplayProductQuery query = buildFrontDisplayQuery(request);
+        List<ProductFrontDisplayListResponse> items = productRepository.getAdminFrontDisplayProducts(query).stream()
+                .map(ProductFrontDisplayListResponse::from)
+                .toList();
+        return new ProductFrontDisplayDashboardResponse(
+                ProductFrontDisplaySummaryResponse.from(items, query.lowStockThreshold()),
+                items
+        );
+    }
+
+    public byte[] exportFrontDisplayProductsCsv(ProductFrontDisplayListRequest request) {
+        AdminFrontDisplayProductQuery query = buildFrontDisplayQuery(request);
+        List<ProductFrontDisplayListResponse> items = productRepository.getAdminFrontDisplayProducts(query).stream()
+                .map(ProductFrontDisplayListResponse::from)
+                .toList();
+        ProductFrontDisplayExportSummary summary = ProductFrontDisplayExportSummary.of(
+                query,
+                resolveBrandName(query.brandNo()),
+                resolveCategoryName(query.categoryNo())
+        );
+        return ProductFrontDisplayExportCsvWriter.write(summary, items);
+    }
+
+    @Transactional
+    public ProductFrontDisplayResponse saveFrontDisplay(ProductFrontDisplaySaveRequest request) {
+        Product product = ensureProductExists(request.productNo());
+        validateFeaturedDisplay(product, request);
+        FrontProductDisplay display = frontProductDisplayRepository.findByProductNo(product.getId())
+                .orElseGet(() -> FrontProductDisplay.builder().productNo(product.getId()).build());
+
+        display.updateDisplay(
+                request.normalizedHeadline(),
+                request.normalizedDescription(),
+                request.normalizedMood(),
+                request.normalizedFeaturedYn(),
+                request.normalizedFeaturedRank()
+        );
+        FrontProductDisplay saved = frontProductDisplayRepository.save(display);
+
+        recordProductHistory(
+                product.getId(),
+                ProductHistoryActionType.UPDATED,
+                buildFrontDisplayHistorySummary(saved),
+                product.getStatus(),
+                0,
+                0L
+        );
+        return ProductFrontDisplayResponse.from(product.getId(), saved);
+    }
+
+    @Transactional
+    public void clearFrontDisplay(Long productNo) {
+        Product product = ensureProductExists(productNo);
+        frontProductDisplayRepository.findByProductNo(product.getId())
+                .ifPresent(display -> {
+                    frontProductDisplayRepository.delete(display);
+                    recordProductHistory(
+                            product.getId(),
+                            ProductHistoryActionType.UPDATED,
+                            "프론트 노출 정보가 초기화되었습니다.",
+                            product.getStatus(),
+                            0,
+                            0L
+                    );
+                });
+    }
+
     @Transactional
     public void deleteProduct(Long productNo) {
         Product product = productRepository.findById(productNo)
@@ -278,6 +403,7 @@ public class AdminProductService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
 
         product.deleteProduct();
+        clearFrontDisplayMetadata(product.getId());
         recordProductHistory(productNo, ProductHistoryActionType.DELETED, "상품이 삭제 처리되었습니다.", ProductStatus.DELETE.name(), 0, 0L);
         log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
     }
@@ -306,6 +432,7 @@ public class AdminProductService {
             }
 
             product.changeStatus(targetStatus);
+            synchronizeFrontDisplayForStatus(product);
             recordProductHistory(
                     product.getId(),
                     ProductHistoryActionType.UPDATED,
@@ -344,6 +471,7 @@ public class AdminProductService {
             }
 
             product.deleteProduct();
+            clearFrontDisplayMetadata(product.getId());
             recordProductHistory(
                     product.getId(),
                     ProductHistoryActionType.DELETED,
@@ -463,12 +591,75 @@ public class AdminProductService {
         return adminSettingsService.getLowStockDefaultThreshold();
     }
 
+    private AdminFrontDisplayProductQuery buildFrontDisplayQuery(ProductFrontDisplayListRequest request) {
+        return new AdminFrontDisplayProductQuery(
+                request.normalizedKeyword(),
+                request.normalizedStatus(),
+                request.normalizedBrandNo(),
+                request.normalizedCategoryNo(),
+                request.normalizedConfigured(),
+                request.normalizedFeaturedOnly(),
+                request.normalizedLowStockOnly(),
+                request.normalizedLowStockThreshold(resolveLowStockDefaultThreshold()),
+                request.normalizedSort()
+        );
+    }
+
     private ProductStatus parseProductStatus(String status) {
         try {
             return ProductStatus.valueOf(status.trim().toUpperCase());
         } catch (IllegalArgumentException ex) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private ProductStatus normalizeProductStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+        return parseProductStatus(status);
+    }
+
+    private String normalizeSearchKeyword(String keyword) {
+        if (keyword == null) {
+            return null;
+        }
+        String normalized = keyword.trim();
+        return normalized.isBlank() ? null : normalized;
+    }
+
+    private Product ensureProductExists(Long productNo) {
+        return productRepository.findById(productNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+    }
+
+    private void validateFeaturedDisplay(Product product, ProductFrontDisplaySaveRequest request) {
+        if (!Boolean.TRUE.equals(request.featured())) {
+            return;
+        }
+        if (request.featuredRank() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (!ProductStatus.ACTIVE.name().equals(product.getStatus())) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (frontProductDisplayRepository.existsFeaturedRankConflict(
+                "Y",
+                request.normalizedFeaturedRank(),
+                product.getId(),
+                ProductStatus.ACTIVE.name()
+        )) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String buildFrontDisplayHistorySummary(FrontProductDisplay display) {
+        return "프론트 노출 정보가 수정되었습니다. headline="
+                + display.getHeadline()
+                + ", featured="
+                + display.getFeaturedYn()
+                + ", rank="
+                + display.getFeaturedRank();
     }
 
     private void validateDuplicateOptionNames(List<String> optionNames) {
@@ -517,10 +708,12 @@ public class AdminProductService {
                     .toList());
         }
 
+        boolean displayCopied = copyFrontDisplayDraft(source.getId(), savedProduct.getId());
+
         recordProductHistory(
                 savedProduct.getId(),
                 ProductHistoryActionType.CREATED,
-                "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: " + source.getId(),
+                buildCloneHistorySummary(source.getId(), displayCopied),
                 ProductStatus.HIDDEN.name(),
                 sourceOptions.size(),
                 sourceOptions.stream()
@@ -532,7 +725,68 @@ public class AdminProductService {
         return savedProduct;
     }
 
-    private String buildUpdateSummary(Product product, List<ProductOption> currentOptions, ProductUpdateRequest reqDto) {
+    private boolean copyFrontDisplayDraft(Long sourceProductNo, Long targetProductNo) {
+        return frontProductDisplayRepository.findByProductNo(sourceProductNo)
+                .map(display -> {
+                    frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                            .productNo(targetProductNo)
+                            .headline(display.getHeadline())
+                            .description(display.getDescription())
+                            .mood(display.getMood())
+                            .featuredYn("N")
+                            .featuredRank(999)
+                            .build());
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    private String buildCloneHistorySummary(Long sourceProductNo, boolean displayCopied) {
+        if (displayCopied) {
+            return "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: "
+                    + sourceProductNo
+                    + ", 프론트 노출 초안도 함께 복제되었습니다.";
+        }
+        return "상품이 기존 상품에서 복제되었습니다. 원본 상품 번호: " + sourceProductNo;
+    }
+
+    private void synchronizeFrontDisplayForStatus(Product product) {
+        if (ProductStatus.ACTIVE.name().equals(product.getStatus())) {
+            return;
+        }
+
+        frontProductDisplayRepository.findByProductNo(product.getId())
+                .ifPresent(display -> {
+                    if (ProductStatus.DELETE.name().equals(product.getStatus())) {
+                        frontProductDisplayRepository.delete(display);
+                        return;
+                    }
+                    if (!display.isFeatured()) {
+                        return;
+                    }
+                    // 비활성 상품은 대표 진열 순번을 점유하지 않도록 초안만 유지합니다.
+                    display.updateDisplay(
+                            display.getHeadline(),
+                            display.getDescription(),
+                            display.getMood(),
+                            "N",
+                            999
+                    );
+                    frontProductDisplayRepository.save(display);
+                });
+    }
+
+    private void clearFrontDisplayMetadata(Long productNo) {
+        frontProductDisplayRepository.findByProductNo(productNo)
+                .ifPresent(frontProductDisplayRepository::delete);
+    }
+
+    private String buildUpdateSummary(
+            Product product,
+            List<ProductOption> currentOptions,
+            FrontProductDisplay currentDisplay,
+            ProductUpdateRequest reqDto
+    ) {
         List<String> changedFields = new java.util.ArrayList<>();
 
         if (!product.getCategoryNo().equals(reqDto.getCategoryNo())) changedFields.add("카테고리");
@@ -543,11 +797,24 @@ public class AdminProductService {
         if (!java.util.Objects.equals(product.getReleaseDt(), reqDto.getReleaseDt())) changedFields.add("발매일");
         if (!java.util.Objects.equals(product.getThumbnailUrl(), reqDto.normalizeOptionalText(reqDto.getThumbnailUrl()))) changedFields.add("썸네일");
         if (reqDto.getStatus() != null && !product.getStatus().equals(parseProductStatus(reqDto.getStatus()).name())) changedFields.add("상태");
+        if (shouldDemoteFeaturedDisplay(product, currentDisplay, reqDto)) changedFields.add("프론트 대표노출");
         if (isOptionChanged(currentOptions, reqDto)) changedFields.add("옵션");
 
         return changedFields.isEmpty()
                 ? "변경된 정보가 없습니다."
                 : "변경 항목: " + String.join(", ", changedFields);
+    }
+
+    private boolean shouldDemoteFeaturedDisplay(
+            Product product,
+            FrontProductDisplay currentDisplay,
+            ProductUpdateRequest reqDto
+    ) {
+        if (currentDisplay == null || !currentDisplay.isFeatured() || reqDto.getStatus() == null) {
+            return false;
+        }
+        return ProductStatus.ACTIVE.name().equals(product.getStatus())
+                && !ProductStatus.ACTIVE.equals(parseProductStatus(reqDto.getStatus()));
     }
 
     private boolean isOptionChanged(List<ProductOption> currentOptions, ProductUpdateRequest reqDto) {

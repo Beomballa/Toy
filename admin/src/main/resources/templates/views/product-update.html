@@ -150,6 +150,40 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card animate-in mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span class="card-title">프론트 노출 정보</span>
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnResetFrontDisplay">초기화</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">헤드라인</label>
+                                <input type="text" class="form-control" id="frontDisplayHeadline" maxlength="120" placeholder="예: Grey precision">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">설명 문구</label>
+                                <textarea class="form-control" id="frontDisplayDescription" rows="4" maxlength="1000" placeholder="프론트 카탈로그에 노출할 설명 문구"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">무드 키워드</label>
+                                <input type="text" class="form-control" id="frontDisplayMood" maxlength="120" placeholder="예: Grey precision">
+                            </div>
+                            <div class="row mb-1">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Featured 노출</label>
+                                    <select class="form-select" id="frontDisplayFeatured">
+                                        <option value="false">일반 노출</option>
+                                        <option value="true">Featured</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">노출 순서</label>
+                                    <input type="number" class="form-control" id="frontDisplayRank" min="1" max="999" value="999">
+                                    <div class="form-text" id="frontDisplayRankGuide">Featured 순번 정보를 불러오는 중입니다.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg py-3" id="btnUpdate"><i class="fas fa-check me-2"></i>수정 완료</button>
                         <button type="button" class="btn btn-outline-secondary py-2" id="btnCancelEdit">취소</button>

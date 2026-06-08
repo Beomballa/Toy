@@ -3,7 +3,8 @@ const OrderHistoryPage = {
     state: {
         page: 0,
         size: 20,
-        returnTo: '/admin/orders/list'
+        returnTo: '/admin/orders/list',
+        historyNo: ''
     },
     isExporting: false,
 
@@ -81,6 +82,7 @@ const OrderHistoryPage = {
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/orders/list';
+        this.state.historyNo = params.get('historyNo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
     },
@@ -103,6 +105,7 @@ const OrderHistoryPage = {
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType !== 'latest') params.set('orderType', orderType);
         if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
+        if (this.state.historyNo) params.set('historyNo', this.state.historyNo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -112,6 +115,7 @@ const OrderHistoryPage = {
         const params = this.buildParams();
         params.delete('page');
         params.delete('size');
+        params.delete('historyNo');
         return params;
     },
 
@@ -130,6 +134,8 @@ const OrderHistoryPage = {
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
+            this.highlightHistoryRow(this.state.historyNo);
+            this.consumeDeepLinkHistoryNo(data.items || []);
         } catch (error) {
             this.renderError(error.message);
         }
@@ -144,7 +150,7 @@ const OrderHistoryPage = {
         }
 
         tbody.innerHTML = items.map((item) => `
-            <tr>
+            <tr data-order-history-row="${item.historyNo}">
                 <td class="ps-4 text-muted small">${item.historyNo}</td>
                 <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${item.orderNo}&returnTo=${returnTo}">${item.orderNo}</a></td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
@@ -242,6 +248,32 @@ const OrderHistoryPage = {
             return;
         }
         summary.textContent = data.resultMeta?.querySignature || '현재 적용된 필터를 기준으로 주문 처리 이력을 조회합니다.';
+    },
+
+    highlightHistoryRow(historyNo) {
+        const targetHistoryNo = Number(historyNo || 0);
+        document.querySelectorAll('[data-order-history-row]').forEach((row) => {
+            const selected = Number(row.dataset.orderHistoryRow) === targetHistoryNo;
+            row.classList.toggle('table-active', selected);
+            if (selected) {
+                row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        });
+    },
+
+    consumeDeepLinkHistoryNo(items) {
+        if (!this.state.historyNo) {
+            return;
+        }
+        const historyNo = Number(this.state.historyNo);
+        if (!Number.isFinite(historyNo) || historyNo <= 0) {
+            this.state.historyNo = '';
+        } else if (items.some((item) => item.historyNo === historyNo)) {
+            this.state.historyNo = '';
+        } else {
+            return;
+        }
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
     }
 };
 

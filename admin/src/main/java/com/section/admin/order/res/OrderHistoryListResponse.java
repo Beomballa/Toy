@@ -26,7 +26,7 @@ public record OrderHistoryListResponse(
         long rangeEnd = page.getTotalElements() == 0 ? 0 : Math.min(page.getTotalElements(), rangeStart + page.getNumberOfElements() - 1L);
         String pageInfoLabel = page.getTotalElements() == 0
                 ? "조회 결과 없음"
-                : "%d-%d / %d건 · %d페이지".formatted(rangeStart, rangeEnd, page.getTotalElements(), page.getNumber() + 1);
+                : "%d-%d / %d건 · %d페이지".formatted(rangeStart, rangeEnd, page.getTotalElements(), Math.max(page.getTotalPages(), 1));
 
         return new OrderHistoryListResponse(
                 page.getContent().stream().map(Item::from).toList(),

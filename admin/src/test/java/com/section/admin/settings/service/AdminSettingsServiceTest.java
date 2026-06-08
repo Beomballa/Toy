@@ -162,6 +162,27 @@ class AdminSettingsServiceTest {
     }
 
     @Test
+    @DisplayName("설정 변경 이력 상세 조회는 작업자 번호가 없으면 기본 관리자명을 사용한다")
+    void getSystemSettingHistoryDetailFallsBackWhenAdminNoMissing() {
+        AdminSystemSettingHistory history = AdminSystemSettingHistory.builder()
+                .historyNo(15L)
+                .settingKey("ORDER_EXPORT_ENABLED")
+                .settingName("주문 Export 허용")
+                .beforeValue("true")
+                .afterValue("false")
+                .changeSummary("주문 Export 허용이 활성에서 비활성으로 변경되었습니다.")
+                .changedIpAddress("127.0.0.1")
+                .build();
+        history.setCrtDtm(java.time.LocalDateTime.of(2026, 6, 6, 15, 0));
+
+        when(adminSystemSettingHistoryRepository.findById(15L)).thenReturn(java.util.Optional.of(history));
+
+        AdminSystemSettingHistoryDetailResponse response = adminSettingsService.getSystemSettingHistoryDetail(15L);
+
+        assertEquals("관리자", response.changedAdminName());
+    }
+
+    @Test
     @DisplayName("설정 변경 이력 CSV 내보내기는 표시값과 관리자명을 함께 포함한다")
     void exportSystemSettingHistoryCsvIncludesFormattedValues() {
         AdminSystemSettingHistoryListRequest request = new AdminSystemSettingHistoryListRequest();

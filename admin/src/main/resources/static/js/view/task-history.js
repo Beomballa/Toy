@@ -196,7 +196,7 @@ const TaskHistoryPage = {
             const detailLogPath = `/admin/logs?actionType=TASK_&targetId=${data.targetId || ''}`;
             document.getElementById('taskHistoryDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
-                <div class="mb-2"><strong>관리자</strong> ${data.adminName} (#${data.adminNo})</div>
+                <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
                 <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
@@ -273,7 +273,11 @@ const TaskHistoryPage = {
             if (startDate && endDate && startDate > endDate) {
                 throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
             }
-            const response = await fetch(`/api/admin/settings/tasks/history/export?${this.buildParams().toString()}`);
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            params.delete('logNo');
+            const response = await fetch(`/api/admin/settings/tasks/history/export?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 이력 CSV 내보내기에 실패했습니다.'));
             }
@@ -332,6 +336,10 @@ const TaskHistoryPage = {
         }
         row.classList.add('table-warning');
         row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    },
+
+    formatAdminLabel(adminName, adminNo) {
+        return adminNo ? `${adminName} (#${adminNo})` : adminName;
     },
 
     setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {

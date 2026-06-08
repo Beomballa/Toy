@@ -410,7 +410,8 @@
         },
         historyState: {
             page: 0,
-            size: 8
+            size: 8,
+            historyNo: ''
         },
         init() {
             if (this.initialized) return;
@@ -419,6 +420,7 @@
             this.historyDetailModal = new bootstrap.Modal(document.getElementById('systemSettingHistoryDetailModal'));
             this.bindEvents();
             window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
+            this.readSystemHistoryStateFromUrl();
             this.getList();
             this.getSystemSettings();
             this.getSystemSettingHistory();
@@ -747,17 +749,30 @@
         async getSystemSettingHistory() {
             try {
                 const params = this.buildSystemHistoryParams();
+                history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
                 const res = await fetch(`/api/admin/settings/system/history?${params.toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 이력을 불러오지 못했습니다.'));
                 }
                 const data = await res.json();
                 this.renderSystemSettingHistory(data);
+                await this.openDeepLinkedSystemHistoryIfNeeded(data.items || []);
             } catch (err) {
                 document.getElementById('systemSettingHistoryMetaText').textContent = err.message;
                 document.getElementById('systemSettingHistoryBody').innerHTML =
                     `<tr><td colspan="5" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             }
+        },
+        readSystemHistoryStateFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('systemSettingHistorySettingKey').value = params.get('settingKey') || '';
+            document.getElementById('systemSettingHistoryAdminNo').value = params.get('adminNo') || '';
+            document.getElementById('systemSettingHistoryStartDate').value = params.get('startDate') || '';
+            document.getElementById('systemSettingHistoryEndDate').value = params.get('endDate') || '';
+            this.historyState.page = Number(params.get('page') || 0);
+            this.historyState.size = Number(params.get('size') || 8);
+            this.historyState.historyNo = params.get('historyNo') || '';
+            document.getElementById('systemSettingHistoryPageSize').value = String(this.historyState.size);
         },
         buildSystemHistoryParams() {
             const params = new URLSearchParams();
@@ -770,6 +785,7 @@
             if (adminNo) params.set('adminNo', adminNo);
             if (startDate) params.set('startDate', startDate);
             if (endDate) params.set('endDate', endDate);
+            if (this.historyState.historyNo) params.set('historyNo', this.historyState.historyNo);
             params.set('page', String(this.historyState.page));
             params.set('size', String(this.historyState.size));
             return params;
@@ -778,6 +794,7 @@
             const params = this.buildSystemHistoryParams();
             params.delete('page');
             params.delete('size');
+            params.delete('historyNo');
             return params;
         },
         renderSystemSettingHistory(data) {
@@ -793,7 +810,7 @@
             }
 
             body.innerHTML = items.map(item => `
-                <tr>
+                <tr data-system-history-row="${item.historyNo}">
                     <td class="ps-4 text-muted small">${item.changedAt || '-'}</td>
                     <td>
                         <div class="fw-bold">${item.settingName}</div>
@@ -805,7 +822,7 @@
                     </td>
                     <td>
                         <div>${item.changedAdminName}</div>
-                        <div class="small text-muted">#${item.changedAdminNo ?? '-'}</div>
+                        <div class="small text-muted">${this.formatAdminNo(item.changedAdminNo)}</div>
                     </td>
                     <td class="text-muted small">${item.changedIpAddress}</td>
                     <td class="text-end pe-4">
@@ -852,7 +869,7 @@
                         <div class="col-md-6">
                             <div class="small text-muted">작업자</div>
                             <div class="fw-bold">${data.changedAdminName}</div>
-                            <div class="text-muted small">#${data.changedAdminNo ?? '-'}</div>
+                            <div class="text-muted small">${this.formatAdminNo(data.changedAdminNo)}</div>
                         </div>
                         <div class="col-md-6">
                             <div class="small text-muted">변경 전</div>
@@ -874,6 +891,9 @@
                         </div>
                     </div>
                 `;
+                this.historyState.historyNo = String(historyNo);
+                this.highlightSystemHistoryRow(historyNo);
+                history.replaceState(null, '', `${window.location.pathname}?${this.buildSystemHistoryParams().toString()}`);
             } catch (err) {
                 document.getElementById('systemSettingHistoryDetailBody').innerHTML =
                     `<div class="text-danger">${err.message}</div>`;
@@ -932,11 +952,37 @@
             document.getElementById('systemSettingHistoryPageSize').value = '8';
             this.historyState.page = 0;
             this.historyState.size = 8;
+            this.historyState.historyNo = '';
             this.getSystemSettingHistory();
         },
         exportSystemSettingHistory() {
             const params = this.buildSystemHistoryExportParams();
             window.location.href = `/api/admin/settings/system/history/export?${params.toString()}`;
+        },
+        async openDeepLinkedSystemHistoryIfNeeded(items) {
+            if (!this.historyState.historyNo) {
+                return;
+            }
+            const historyNo = Number(this.historyState.historyNo);
+            if (!Number.isFinite(historyNo) || historyNo <= 0) {
+                this.historyState.historyNo = '';
+                return;
+            }
+            const hasItem = items.some((item) => item.historyNo === historyNo);
+            if (!hasItem) {
+                return;
+            }
+            await this.openSystemSettingHistoryDetail(historyNo);
+            this.historyState.historyNo = '';
+            history.replaceState(null, '', `${window.location.pathname}?${this.buildSystemHistoryParams().toString()}`);
+        },
+        highlightSystemHistoryRow(historyNo) {
+            document.querySelectorAll('[data-system-history-row]').forEach((row) => {
+                row.classList.toggle('table-active', Number(row.dataset.systemHistoryRow) === Number(historyNo));
+            });
+        },
+        formatAdminNo(adminNo) {
+            return adminNo ? `#${adminNo}` : '시스템';
         },
         async saveSystemSettings() {
             const lowStockDefaultThreshold = Number(document.getElementById('lowStockDefaultThreshold').value);

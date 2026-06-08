@@ -5,7 +5,8 @@ const AdminLogPage = {
     isOpeningDetail: false,
     state: {
         page: 0,
-        size: 20
+        size: 20,
+        logNo: ''
     },
 
     init() {
@@ -60,6 +61,7 @@ const AdminLogPage = {
         document.getElementById('logTargetId').value = params.get('targetId') || '';
         document.getElementById('logStartDate').value = params.get('startDate') || '';
         document.getElementById('logEndDate').value = params.get('endDate') || '';
+        this.state.logNo = params.get('logNo') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         document.getElementById('logPageSize').value = String(this.state.size);
@@ -78,6 +80,7 @@ const AdminLogPage = {
         if (targetId) params.set('targetId', targetId);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
+        if (this.state.logNo) params.set('logNo', this.state.logNo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -87,6 +90,7 @@ const AdminLogPage = {
         const params = this.buildParams();
         params.delete('page');
         params.delete('size');
+        params.delete('logNo');
         return params;
     },
 
@@ -111,6 +115,7 @@ const AdminLogPage = {
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
+            await this.openDeepLinkedLogIfNeeded(data.items || []);
         } catch (err) {
             document.getElementById('logListBody').innerHTML =
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
@@ -130,9 +135,9 @@ const AdminLogPage = {
             return;
         }
         tbody.innerHTML = items.map(item => `
-            <tr>
+            <tr data-log-row="${item.logNo}">
                 <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td><span class="badge bg-light text-dark">${item.adminName} (#${item.adminNo})</span></td>
+                <td><span class="badge bg-light text-dark">${this.formatAdminBadge(item.adminName, item.adminNo)}</span></td>
                 <td><span class="fw-bold text-primary">${item.actionType}</span></td>
                 <td>
                     ${item.targetPath
@@ -213,12 +218,15 @@ const AdminLogPage = {
             const data = await res.json();
             document.getElementById('logDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
-                <div class="mb-2"><strong>관리자</strong> ${data.adminName} (#${data.adminNo})</div>
+                <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
                 <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
+            this.state.logNo = String(logNo);
+            this.highlightLogRow(logNo);
+            history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (err) {
             document.getElementById('logDetailBody').innerHTML = `<div class="text-danger">${err.message}</div>`;
         } finally {
@@ -250,6 +258,7 @@ const AdminLogPage = {
         document.getElementById('logStartDate').value = '';
         document.getElementById('logEndDate').value = '';
         document.getElementById('logPageSize').value = '20';
+        this.state.logNo = '';
         this.state.page = 0;
         this.state.size = 20;
         this.getList();
@@ -264,6 +273,38 @@ const AdminLogPage = {
     exportList() {
         const params = this.buildExportParams();
         window.location.href = `/api/admin/logs/export?${params.toString()}`;
+    },
+
+    async openDeepLinkedLogIfNeeded(items) {
+        if (!this.state.logNo) {
+            return;
+        }
+        const logNo = Number(this.state.logNo);
+        if (!Number.isFinite(logNo) || logNo <= 0) {
+            this.state.logNo = '';
+            return;
+        }
+        const hasLog = items.some((item) => item.logNo === logNo);
+        if (!hasLog || this.isOpeningDetail) {
+            return;
+        }
+        await this.openDetail(logNo);
+        this.state.logNo = '';
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    highlightLogRow(logNo) {
+        document.querySelectorAll('[data-log-row]').forEach((row) => {
+            row.classList.toggle('table-active', Number(row.dataset.logRow) === Number(logNo));
+        });
+    },
+
+    formatAdminBadge(adminName, adminNo) {
+        return adminNo ? `${adminName} (#${adminNo})` : adminName;
+    },
+
+    formatAdminLabel(adminName, adminNo) {
+        return adminNo ? `${adminName} (#${adminNo})` : adminName;
     }
 };
 

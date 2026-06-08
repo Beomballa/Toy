@@ -84,9 +84,11 @@ public class AdminLogService {
     public AdminLogDetailResponse getLogDetail(Long logNo) {
         AdminActivityLog log = logRepository.findById(logNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
-        String adminName = adminUserRepository.findById(log.getAdminNo())
-                .map(AdminUser::getName)
-                .orElse("관리자#" + log.getAdminNo());
+        String adminName = log.getAdminNo() == null
+                ? "관리자"
+                : adminUserRepository.findById(log.getAdminNo())
+                        .map(AdminUser::getName)
+                        .orElse("관리자#" + log.getAdminNo());
         return AdminLogDetailResponse.from(log, adminName);
     }
 }

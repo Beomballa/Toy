@@ -31,9 +31,9 @@ public record AdminLogListResponse(
         long rangeEnd = page.getTotalElements() == 0 ? 0 : Math.min(page.getTotalElements(), rangeStart + page.getNumberOfElements() - 1L);
         String pageInfoLabel = page.getTotalElements() == 0
                 ? "조회 결과 없음"
-                : "%d-%d / %d건 · %d페이지".formatted(rangeStart, rangeEnd, page.getTotalElements(), page.getNumber() + 1);
+                : "%d-%d / %d건 · %d페이지".formatted(rangeStart, rangeEnd, page.getTotalElements(), Math.max(page.getTotalPages(), 1));
         return new AdminLogListResponse(
-                page.getContent().stream().map(item -> Item.from(item, adminNameMap.getOrDefault(item.getAdminNo(), "관리자#" + item.getAdminNo()))).toList(),
+                page.getContent().stream().map(item -> Item.from(item, resolveAdminName(item.getAdminNo(), adminNameMap))).toList(),
                 page.getTotalElements(),
                 page.getTotalPages(),
                 page.getNumber(),
@@ -45,6 +45,13 @@ public record AdminLogListResponse(
                 new AppliedQuery(query.adminNo(), query.actionType(), query.targetId(), query.startDate() == null ? null : query.startDate().toString(), query.endDate() == null ? null : query.endDate().toString()),
                 ResultMeta.from(query, rangeStart, rangeEnd, pageInfoLabel, page.getTotalElements())
         );
+    }
+
+    private static String resolveAdminName(Long adminNo, Map<Long, String> adminNameMap) {
+        if (adminNo == null) {
+            return "관리자";
+        }
+        return adminNameMap.getOrDefault(adminNo, "관리자#" + adminNo);
     }
 
     public record Item(

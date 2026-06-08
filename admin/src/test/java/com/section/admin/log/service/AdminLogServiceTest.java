@@ -143,4 +143,31 @@ class AdminLogServiceTest {
         assertTrue(csv.contains("로그번호,관리자번호,관리자명,작업종류,대상ID,대상라벨,대상이동경로,IP주소,작업일시"));
         assertTrue(csv.contains("\"12\",\"5\",\"공지담당\",\"NOTICE_UPDATE\",\"44\",\"운영 공지 #44\",\"/admin/settings/notices?noticeNo=44\",\"10.0.0.5\",\"2026-06-03 12:00:00\""));
     }
+
+    @Test
+    @DisplayName("활동 로그 상세는 작업자 번호가 없으면 기본 관리자명을 사용한다")
+    void getLogDetailFallsBackWhenAdminNoMissing() {
+        AdminActivityLog log = AdminActivityLog.builder()
+                .adminNo(null)
+                .actionType("TASK_DELETE")
+                .targetId(8L)
+                .ipAddress("127.0.0.1")
+                .build();
+        try {
+            java.lang.reflect.Field logNoField = AdminActivityLog.class.getDeclaredField("logNo");
+            logNoField.setAccessible(true);
+            logNoField.set(log, 10L);
+            java.lang.reflect.Field actionDtmField = AdminActivityLog.class.getDeclaredField("actionDtm");
+            actionDtmField.setAccessible(true);
+            actionDtmField.set(log, LocalDateTime.of(2026, 6, 6, 9, 0));
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
+        when(adminActivityLogRepository.findById(10L)).thenReturn(Optional.of(log));
+
+        AdminLogDetailResponse response = adminLogService.getLogDetail(10L);
+
+        assertEquals("관리자", response.adminName());
+    }
 }

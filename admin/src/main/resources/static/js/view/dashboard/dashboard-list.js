@@ -398,8 +398,11 @@ const DashBoardListJS = {
     },
 
     buildTaskDetailPath(taskNo, source = 'dashboard-task-detail') {
-        const returnTo = this.buildTaskListPath({}, source);
-        return `/admin/settings/tasks/get?no=${taskNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
+        return this.buildTaskListPath({
+            taskNo,
+            openTaskNo: taskNo,
+            focusTaskNo: taskNo
+        }, source);
     },
 
     buildTaskHistoryPath(taskNo, source = 'dashboard-task-history') {

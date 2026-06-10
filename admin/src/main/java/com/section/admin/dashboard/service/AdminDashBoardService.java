@@ -2,6 +2,7 @@ package com.section.admin.dashboard.service;
 
 import com.section.admin.dashboard.res.DashboardResponse;
 import com.section.admin.order.support.OrderViewFormatter;
+import com.section.admin.task.support.AdminTaskLinkSupport;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
@@ -208,7 +209,7 @@ public class AdminDashBoardService {
                 adminNameMap.getOrDefault(task.getAssigneeAdminNo(), "미지정"),
                 buildTaskDueDateLabel(task),
                 "Y".equalsIgnoreCase(task.getIsPinned()),
-                "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
+                AdminTaskLinkSupport.buildListOpenPath(task.getTaskNo(), "/admin/dashboard", "dashboard-task"),
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );
@@ -247,7 +248,7 @@ public class AdminDashBoardService {
                 latestComment == null ? null : latestComment.getContent(),
                 latestComment == null ? null : resolveCommentAdminName(latestComment),
                 latestComment == null ? null : formatDateTime(latestComment.getCrtDtm()),
-                "/admin/settings/tasks/get?no=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
+                AdminTaskLinkSupport.buildListOpenPath(task.getTaskNo(), "/admin/dashboard", "dashboard-unassigned"),
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo() + "&returnTo=/admin/dashboard",
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo()
         );

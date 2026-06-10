@@ -227,6 +227,18 @@ let CommonJS = {
             return { label: '주문 관리', buttonLabel: '주문 관리로' };
         }
 
+        if (returnTo.includes('/admin/settings/tasks/workloads')) {
+            return { label: '담당자별 워크로드', buttonLabel: '담당자별 워크로드로' };
+        }
+
+        if (returnTo.includes('/admin/settings/tasks')) {
+            return { label: '운영 작업', buttonLabel: '운영 작업으로' };
+        }
+
+        if (returnTo.includes('/admin/settings/notices')) {
+            return { label: '운영 공지', buttonLabel: '운영 공지로' };
+        }
+
         if (returnTo.includes('/admin/products')) {
             return { label: '상품 관리', buttonLabel: '상품 관리로' };
         }

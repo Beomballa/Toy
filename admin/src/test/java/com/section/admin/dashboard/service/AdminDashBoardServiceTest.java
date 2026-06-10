@@ -137,14 +137,14 @@ class AdminDashBoardServiceTest {
         assertEquals("/admin/settings/notices/history?noticeNo=10", response.operationNotices().get(0).historyPath());
         assertEquals(1, response.operationTasks().size());
         assertEquals("배치 점검", response.operationTasks().get(0).title());
-        assertEquals("/admin/settings/tasks/get?no=30&returnTo=/admin/dashboard", response.operationTasks().get(0).targetPath());
+        assertEquals("/admin/settings/tasks?taskNo=30&openTaskNo=30&focusTaskNo=30&returnTo=%2Fadmin%2Fdashboard&source=dashboard-task", response.operationTasks().get(0).targetPath());
         assertEquals("/admin/settings/tasks/history?taskNo=30&returnTo=/admin/dashboard", response.operationTasks().get(0).historyPath());
         assertEquals("관리자A", response.operationTasks().get(0).assigneeName());
         assertEquals(1, response.unassignedTasks().size());
         assertEquals("담당자 배정 필요", response.unassignedTasks().get(0).title());
         assertEquals("담당자 확인 후 배정 필요", response.unassignedTasks().get(0).latestCommentContent());
         assertEquals("관리자B", response.unassignedTasks().get(0).latestCommentAdminName());
-        assertEquals("/admin/settings/tasks/get?no=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).targetPath());
+        assertEquals("/admin/settings/tasks?taskNo=31&openTaskNo=31&focusTaskNo=31&returnTo=%2Fadmin%2Fdashboard&source=dashboard-unassigned", response.unassignedTasks().get(0).targetPath());
         assertEquals("/admin/settings/tasks/history?taskNo=31&returnTo=/admin/dashboard", response.unassignedTasks().get(0).historyPath());
         assertEquals("/admin/settings/logs?actionType=TASK_&targetId=31", response.unassignedTasks().get(0).activityLogPath());
         assertEquals(1, response.taskWorkloads().size());

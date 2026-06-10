@@ -1,6 +1,7 @@
 package com.section.admin.task.res;
 
 import com.section.admin.log.res.AdminLogListResponse;
+import com.section.admin.task.support.AdminTaskLinkSupport;
 
 import java.util.List;
 
@@ -43,10 +44,10 @@ public record AdminOperationTaskHistoryListResponse(
             String ipAddress,
             String actionDtm,
             String logDetailPath
-    ) {
+        ) {
         private static Item from(AdminLogListResponse.Item item, String returnTo) {
             Long taskNo = item.targetId();
-            String taskPath = taskNo == null ? null : "/admin/settings/tasks/get?no=" + taskNo + "&returnTo=" + encode(returnTo);
+            String taskPath = taskNo == null ? null : AdminTaskLinkSupport.buildListOpenPath(taskNo, returnTo, "task-history");
             return new Item(
                     item.logNo(),
                     taskNo,
@@ -77,10 +78,6 @@ public record AdminOperationTaskHistoryListResponse(
                 case "TASK_DELETE" -> "작업 삭제";
                 default -> actionType == null ? "-" : actionType;
             };
-        }
-
-        private static String encode(String value) {
-            return java.net.URLEncoder.encode(value, java.nio.charset.StandardCharsets.UTF_8);
         }
     }
 

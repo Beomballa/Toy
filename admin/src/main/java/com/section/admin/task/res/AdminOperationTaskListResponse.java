@@ -40,6 +40,7 @@ public record AdminOperationTaskListResponse(
                 assigneeOptions,
                 new AppliedQuery(
                         query.keyword(),
+                        query.taskNo(),
                         query.status(),
                         query.priority(),
                         query.assigneeAdminNo(),
@@ -165,6 +166,7 @@ public record AdminOperationTaskListResponse(
 
         private static String buildContextLabel(AdminOperationTaskListQuery query) {
             return query.keyword() == null
+                    && query.taskNo() == null
                     && query.assigneeAdminNo() == null
                     && query.isPinned() == null
                     && query.unassignedOnly() == null
@@ -181,6 +183,9 @@ public record AdminOperationTaskListResponse(
             StringBuilder builder = new StringBuilder("고정 우선 · 마감 임박 순");
             if (query.keyword() != null) {
                 builder.append(" · 검색=").append(query.keyword());
+            }
+            if (query.taskNo() != null) {
+                builder.append(" · 작업번호=#").append(query.taskNo());
             }
             if (query.assigneeAdminNo() != null) {
                 builder.append(" · 담당자=").append(query.assigneeAdminNo());
@@ -218,6 +223,7 @@ public record AdminOperationTaskListResponse(
 
     public record AppliedQuery(
             String keyword,
+            Long taskNo,
             String status,
             String priority,
             Long assigneeAdminNo,
@@ -264,6 +270,7 @@ public record AdminOperationTaskListResponse(
         private static long countFilters(AdminOperationTaskListQuery query) {
             long count = 0;
             if (query.keyword() != null) count++;
+            if (query.taskNo() != null) count++;
             if (query.status() != null) count++;
             if (query.priority() != null) count++;
             if (query.assigneeAdminNo() != null) count++;
@@ -280,6 +287,7 @@ public record AdminOperationTaskListResponse(
         private static String buildQuerySignature(AdminOperationTaskListQuery query) {
             StringBuilder builder = new StringBuilder("고정 우선 · 마감 임박 순");
             if (query.keyword() != null) builder.append(" · 검색=").append(query.keyword());
+            if (query.taskNo() != null) builder.append(" · 작업번호=#").append(query.taskNo());
             if (query.status() != null) builder.append(" · 상태=").append(AdminOperationTaskStatus.fromCode(query.status()).getLabel());
             if (query.priority() != null) builder.append(" · 우선순위=").append(AdminOperationTaskPriority.fromCode(query.priority()).getLabel());
             if (query.assigneeAdminNo() != null) builder.append(" · 담당자=").append(query.assigneeAdminNo());

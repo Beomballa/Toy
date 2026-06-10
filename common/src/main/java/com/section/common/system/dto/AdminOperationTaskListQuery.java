@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public record AdminOperationTaskListQuery(
         String keyword,
+        Long taskNo,
         String status,
         String priority,
         Long assigneeAdminNo,
@@ -19,6 +20,7 @@ public record AdminOperationTaskListQuery(
     public AdminOperationTaskListQuery toStatsQuery() {
         return new AdminOperationTaskListQuery(
                 keyword,
+                taskNo,
                 null,
                 null,
                 assigneeAdminNo,

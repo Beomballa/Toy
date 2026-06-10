@@ -33,7 +33,7 @@ class AdminSystemSettingHistoryListResponseTest {
         AdminSystemSettingHistoryListResponse response = AdminSystemSettingHistoryListResponse.from(
                 new PageImpl<>(List.of(row), PageRequest.of(1, 10), 21),
                 Map.of(7L, "운영자"),
-                new AdminSystemSettingHistoryListQuery(null, null, null, null),
+                new AdminSystemSettingHistoryListQuery(null, null, null, null, null),
                 new AdminSystemSettingHistorySummaryDto(21L, 1L, 1L, 0L, 0L, 0L)
         );
 
@@ -57,7 +57,7 @@ class AdminSystemSettingHistoryListResponseTest {
         AdminSystemSettingHistoryListResponse response = AdminSystemSettingHistoryListResponse.from(
                 new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1),
                 Map.of(),
-                new AdminSystemSettingHistoryListQuery(null, null, null, null),
+                new AdminSystemSettingHistoryListQuery(null, null, null, null, null),
                 new AdminSystemSettingHistorySummaryDto(1L, 1L, 0L, 0L, 1L, 0L)
         );
 

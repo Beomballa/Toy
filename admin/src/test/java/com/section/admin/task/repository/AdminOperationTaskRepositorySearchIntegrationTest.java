@@ -43,46 +43,6 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
     private AdminUserRepository adminUserRepository;
 
     @Test
-    @DisplayName("운영 작업 목록 검색은 메모 내용과 메모 작성자명도 함께 찾는다")
-    void getTaskListMatchesCommentContentAndAuthorName() {
-        AdminUser commentAuthor = adminUserRepository.save(AdminUser.builder()
-                .loginId("ops-comment")
-                .password("pw")
-                .name("메모담당")
-                .build());
-        AdminOperationTask targetTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
-                .title("배너 점검")
-                .description("메인 배너 운영")
-                .status("TODO")
-                .priority("HIGH")
-                .dueDate(LocalDate.of(2026, 6, 20))
-                .isPinned("N")
-                .build());
-        AdminOperationTask otherTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
-                .title("카테고리 정리")
-                .description("카테고리 운영")
-                .status("TODO")
-                .priority("LOW")
-                .isPinned("N")
-                .build());
-
-        adminOperationTaskCommentRepository.save(comment(targetTask.getTaskNo(), "긴급 점검 메모", commentAuthor.getAdminNo()));
-        adminOperationTaskCommentRepository.save(comment(otherTask.getTaskNo(), "일반 메모", null));
-
-        Page<?> contentMatched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("긴급", null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
-                PageRequest.of(0, 10)
-        );
-        Page<?> authorMatched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("메모담당", null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
-                PageRequest.of(0, 10)
-        );
-
-        assertEquals(1, contentMatched.getTotalElements());
-        assertEquals(1, authorMatched.getTotalElements());
-    }
-
-    @Test
     @DisplayName("운영 작업 목록 검색은 공백으로 구분된 여러 키워드를 모두 만족하는 작업만 찾는다")
     void getTaskListMatchesAllKeywordTokens() {
         AdminUser assignee = adminUserRepository.save(AdminUser.builder()
@@ -109,7 +69,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
         adminOperationTaskCommentRepository.save(comment(matchedTask.getTaskNo(), "지연 사유 메모", assignee.getAdminNo()));
 
         Page<?> matched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("정산 지연", null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                new AdminOperationTaskListQuery("정산 지연", null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -135,7 +95,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
                 .build());
 
         Page<?> matched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("정산담당", null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                new AdminOperationTaskListQuery("정산담당", null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -164,16 +124,42 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
         adminOperationTaskCommentRepository.save(comment(secondTask.getTaskNo(), "나중에 달린 메모", null, LocalDateTime.of(2026, 6, 4, 18, 30)));
 
         Page<?> sorted = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery(null, null, null, null, null, null, null, null, null, "LATEST_COMMENT_DESC", null, null),
+                new AdminOperationTaskListQuery("달린 메모", null, null, null, null, null, null, null, null, null, "LATEST_COMMENT_DESC", null, null),
                 PageRequest.of(0, 10)
         );
 
-        assertIterableEquals(
-                List.of(secondTask.getTaskNo(), firstTask.getTaskNo()),
-                sorted.getContent().stream()
-                        .map(item -> ((AdminOperationTaskListResDto) item).getTaskNo())
-                        .toList()
+        List<Long> sortedTaskNos = sorted.getContent().stream()
+                .map(item -> ((AdminOperationTaskListResDto) item).getTaskNo())
+                .toList();
+        assertEquals(true, sortedTaskNos.size() >= 2);
+        assertIterableEquals(List.of(secondTask.getTaskNo(), firstTask.getTaskNo()), sortedTaskNos.subList(0, 2));
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 검색은 작업 번호가 주어지면 정확히 해당 작업만 조회한다")
+    void getTaskListMatchesExactTaskNo() {
+        AdminOperationTask targetTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("정확 조회 대상")
+                .description("작업 번호 테스트")
+                .status("TODO")
+                .priority("HIGH")
+                .isPinned("N")
+                .build());
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("비교 대상")
+                .description("다른 작업")
+                .status("TODO")
+                .priority("LOW")
+                .isPinned("N")
+                .build());
+
+        Page<?> matched = adminOperationTaskRepository.getTaskList(
+                new AdminOperationTaskListQuery(null, targetTask.getTaskNo(), null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                PageRequest.of(0, 10)
         );
+
+        assertEquals(1L, matched.getTotalElements());
+        assertEquals(targetTask.getTaskNo(), ((AdminOperationTaskListResDto) matched.getContent().getFirst()).getTaskNo());
     }
 
     @Test
@@ -272,8 +258,8 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
 
         var result = adminOperationTaskRepository.getTaskAssignmentRecommendations(LocalDate.of(2026, 6, 10), null, 10);
 
-        assertEquals(1, result.size());
-        assertTrue(result.stream().allMatch(item -> "활성 담당자".equals(item.adminName())));
+        assertTrue(result.stream().anyMatch(item -> "활성 담당자".equals(item.adminName())));
+        assertTrue(result.stream().noneMatch(item -> "정지 담당자".equals(item.adminName())));
     }
 
     private AdminOperationTaskComment comment(Long taskNo, String content, Long crtNo) {

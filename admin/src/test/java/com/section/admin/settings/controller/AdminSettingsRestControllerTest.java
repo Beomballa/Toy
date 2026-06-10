@@ -6,6 +6,7 @@ import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.settings.service.AdminSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,13 +30,15 @@ class AdminSettingsRestControllerTest {
 
     @Mock
     private AdminSettingsService adminSettingsService;
+    @Mock
+    private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminSettingsRestController(adminSettingsService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminSettingsRestController(adminSettingsService, adminOperationPolicyService))
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
     }
@@ -81,7 +84,7 @@ class AdminSettingsRestControllerTest {
                         1,
                         "1-1 / 1건 · 1페이지",
                         new AdminSystemSettingHistoryListResponse.Summary(1, 1, 1, 0, 0, 0),
-                        new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, "2026-05-28", "2026-05-28"),
+                        new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, null, "2026-05-28", "2026-05-28"),
                         new AdminSystemSettingHistoryListResponse.ResultMeta("1-1 / 1건", "1-1 / 1건 · 1페이지", 2, "최신 변경순 · 설정=유지보수 모드")
                 ));
 
@@ -144,5 +147,19 @@ class AdminSettingsRestControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("시스템 설정 저장 API는 저장 전 운영 쓰기 정책을 검증한다")
+    void saveSystemSettingsChecksWritePolicy() throws Exception {
+        AdminSystemSettingSaveRequest request = new AdminSystemSettingSaveRequest(false, true, true, 10L);
+
+        mockMvc.perform(post("/api/admin/settings/system")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+
+        org.mockito.Mockito.verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        org.mockito.Mockito.verify(adminSettingsService).saveSystemSettings(request);
     }
 }

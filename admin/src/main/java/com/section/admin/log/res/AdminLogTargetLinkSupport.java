@@ -1,5 +1,7 @@
 package com.section.admin.log.res;
 
+import com.section.admin.task.support.AdminTaskLinkSupport;
+
 final class AdminLogTargetLinkSupport {
 
     private AdminLogTargetLinkSupport() {
@@ -74,7 +76,7 @@ final class AdminLogTargetLinkSupport {
             return "/admin/settings/notices?noticeNo=" + targetId;
         }
         if (actionType.startsWith("TASK_")) {
-            return "/admin/settings/tasks/get?no=" + targetId + "&returnTo=/admin/settings/tasks";
+            return AdminTaskLinkSupport.buildListOpenPath(targetId, "/admin/settings/logs", "activity-log-task");
         }
         return null;
     }

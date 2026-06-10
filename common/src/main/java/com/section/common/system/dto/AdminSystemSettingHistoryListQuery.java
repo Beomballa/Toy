@@ -5,6 +5,7 @@ import java.time.LocalDate;
 public record AdminSystemSettingHistoryListQuery(
         String settingKey,
         Long adminNo,
+        String adminKeyword,
         LocalDate startDate,
         LocalDate endDate
 ) {

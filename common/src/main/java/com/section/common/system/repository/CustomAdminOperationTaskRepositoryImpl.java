@@ -62,6 +62,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         listKeywordLike(query.keyword()),
+                        taskNoEq(query.taskNo()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -84,6 +85,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         listKeywordLike(query.keyword()),
+                        taskNoEq(query.taskNo()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -345,6 +347,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         listKeywordLike(query.keyword()),
+                        taskNoEq(query.taskNo()),
                         statusEq(status != null ? status : query.status()),
                         priorityEq(query.priority()),
                         assigneeEq(query.assigneeAdminNo()),
@@ -371,6 +374,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 .leftJoin(adminUser).on(adminOperationTask.assigneeAdminNo.eq(adminUser.adminNo))
                 .where(
                         listKeywordLike(query.keyword()),
+                        taskNoEq(query.taskNo()),
                         statusEq(query.status()),
                         priorityEq(query.priority()),
                         isPinnedEq(query.isPinned()),
@@ -390,6 +394,10 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
             return null;
         }
         return buildTaskKeywordLike(keyword.trim(), true);
+    }
+
+    private BooleanExpression taskNoEq(Long taskNo) {
+        return taskNo == null ? null : adminOperationTask.taskNo.eq(taskNo);
     }
 
     private BooleanExpression workloadKeywordLike(String keyword) {

@@ -111,6 +111,7 @@ public record AdminSystemSettingHistoryListResponse(
     public record AppliedQuery(
             String settingKey,
             Long adminNo,
+            String adminKeyword,
             String startDate,
             String endDate
     ) {
@@ -118,6 +119,7 @@ public record AdminSystemSettingHistoryListResponse(
             return new AppliedQuery(
                     query.settingKey(),
                     query.adminNo(),
+                    query.adminKeyword(),
                     query.startDate() == null ? null : query.startDate().toString(),
                     query.endDate() == null ? null : query.endDate().toString()
             );
@@ -159,6 +161,9 @@ public record AdminSystemSettingHistoryListResponse(
             if (query.adminNo() != null) {
                 count++;
             }
+            if (query.adminKeyword() != null) {
+                count++;
+            }
             if (query.startDate() != null) {
                 count++;
             }
@@ -175,6 +180,9 @@ public record AdminSystemSettingHistoryListResponse(
             }
             if (query.adminNo() != null) {
                 builder.append(" · 관리자=#").append(query.adminNo());
+            }
+            if (query.adminKeyword() != null) {
+                builder.append(" · 관리자검색=").append(query.adminKeyword());
             }
             if (query.startDate() != null || query.endDate() != null) {
                 builder.append(" · 기간=")

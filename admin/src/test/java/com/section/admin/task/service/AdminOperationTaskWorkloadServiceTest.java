@@ -177,7 +177,7 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals(1, response.recentTasks().size());
         assertEquals("정산 점검", response.recentTasks().get(0).title());
         assertEquals(
-                "/admin/settings/tasks/get?no=11&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7%26returnTo%3D%252Fadmin%252Fsettings%252Ftasks%252Fworkloads%253Fkeyword%253D%2525EC%2525A0%252595%2525EC%252582%2525B0",
+                "/admin/settings/tasks?taskNo=11&openTaskNo=11&focusTaskNo=11&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7%26returnTo%3D%252Fadmin%252Fsettings%252Ftasks%252Fworkloads%253Fkeyword%253D%2525EC%2525A0%252595%2525EC%252582%2525B0&source=task-workload-detail",
                 response.recentTasks().get(0).taskPath()
         );
         assertEquals(1, response.overdueTasks().size());
@@ -185,6 +185,10 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals("우선 확인 필요", response.recentComments().get(0).content());
         assertEquals(1, response.recentHistories().size());
         assertEquals("작업 수정", response.recentHistories().get(0).actionLabel());
+        assertEquals(
+                "/admin/settings/tasks?taskNo=11&openTaskNo=11&focusTaskNo=11&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7%26returnTo%3D%252Fadmin%252Fsettings%252Ftasks%252Fworkloads%253Fkeyword%253D%2525EC%2525A0%252595%2525EC%252582%2525B0&source=task-workload-detail",
+                response.recentHistories().get(0).taskPath()
+        );
     }
 
     @Test

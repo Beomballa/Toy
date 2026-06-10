@@ -1,6 +1,7 @@
 package com.section.admin.task.res;
 
 import com.section.admin.log.res.AdminLogListResponse;
+import com.section.admin.task.support.AdminTaskLinkSupport;
 import com.section.common.base.entity.type.AdminOperationTaskPriority;
 import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
@@ -88,7 +89,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                     AdminOperationTaskStatus.fromCode(item.getStatus()).getLabel(),
                     AdminOperationTaskPriority.fromCode(item.getPriority()).getLabel(),
                     resolveDueState(item, LocalDate.now()),
-                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo),
+                    AdminTaskLinkSupport.buildListOpenPath(item.getTaskNo(), detailReturnTo, "task-workload-detail"),
                     "/admin/settings/tasks/history?taskNo=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo)
             );
         }
@@ -127,7 +128,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                     resolveAdminName(item),
                     item.getContent(),
                     format(item.getCrtDtm()),
-                    "/admin/settings/tasks/get?no=" + item.getTaskNo() + "&returnTo=" + encode(detailReturnTo)
+                    AdminTaskLinkSupport.buildListOpenPath(item.getTaskNo(), detailReturnTo, "task-workload-detail")
             );
         }
 
@@ -158,7 +159,7 @@ public record AdminOperationTaskWorkloadDetailResponse(
                     resolveActionLabel(item.actionType()),
                     item.adminName(),
                     item.actionDtm(),
-                    taskNo == null ? null : "/admin/settings/tasks/get?no=" + taskNo + "&returnTo=" + encode(detailReturnTo),
+                    taskNo == null ? null : AdminTaskLinkSupport.buildListOpenPath(taskNo, detailReturnTo, "task-workload-detail"),
                     "/api/admin/logs/get?no=" + item.logNo()
             );
         }

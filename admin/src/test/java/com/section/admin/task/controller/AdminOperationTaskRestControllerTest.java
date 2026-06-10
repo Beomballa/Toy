@@ -76,7 +76,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(4L, 2L, 1L, 1L, 1L, "기본 문맥 기준", "고정 우선 · 마감 임박 순"),
                         List.of(new AdminOperationTaskListResponse.AssigneeOption(2L, "운영자")),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                         new AdminOperationTaskListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 · 마감 임박 순 · 정렬=고정 우선 · 마감 임박 순", 1L, 1L)
                 ));
 
@@ -103,7 +103,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(0L, 0L, 0L, 0L, 0L, "탐색 문맥 기준", "고정 우선 · 마감 임박 순 · 기한=2026-06-01~2026-06-30"),
                         List.of(),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, "Y", null, "LATEST_COMMENT_DESC", "2026-06-01", "2026-06-30"),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, "Y", null, "LATEST_COMMENT_DESC", "2026-06-01", "2026-06-30"),
                         new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모있는 작업만 · 기한=2026-06-01~2026-06-30 · 정렬=최근 메모 순", 0L, 0L)
                 ));
 
@@ -183,7 +183,7 @@ class AdminOperationTaskRestControllerTest {
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(11L, "정산 점검", "진행중", "높음", "2026-05-26", "/admin/settings/tasks/get?no=11", "/admin/settings/tasks/history?taskNo=11")),
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentTask(12L, "배송 지연 확인", "대기", "중간", "기한 초과", "/admin/settings/tasks/get?no=12", "/admin/settings/tasks/history?taskNo=12")),
                         List.of(new AdminOperationTaskWorkloadDetailResponse.RecentComment(31L, 11L, "정산 점검", "관리자", "우선 확인 필요", "2026-05-25 11:00", "/admin/settings/tasks/get?no=11")),
-                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentHistory(15L, 11L, "운영 작업 #11", "작업 수정", "운영자", "2026-05-25 12:00", "/admin/settings/tasks/get?no=11", "/api/admin/logs/get?no=15"))
+                        List.of(new AdminOperationTaskWorkloadDetailResponse.RecentHistory(15L, 11L, "운영 작업 #11", "작업 수정", "운영자", "2026-05-25 12:00", "/admin/settings/tasks?taskNo=11&openTaskNo=11&focusTaskNo=11&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fworkloads%2Fget%3FadminNo%3D7&source=task-workload-detail", "/api/admin/logs/get?no=15"))
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/workloads/7")
@@ -231,7 +231,7 @@ class AdminOperationTaskRestControllerTest {
     void getHistoryListReturnsPagedResponse() throws Exception {
         when(adminOperationTaskHistoryService.getTaskHistoryList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminOperationTaskHistoryListResponse(
-                        List.of(new AdminOperationTaskHistoryListResponse.Item(5L, 3L, "운영 작업 #3", "/admin/settings/tasks/get?no=3&returnTo=%2Fadmin%2Fsettings%2Ftasks", "TASK_STATUS_UPDATE", "상태 변경", 2L, "운영자", "127.0.0.1", "2026-05-23 12:00", "/api/admin/logs/get?no=5")),
+                        List.of(new AdminOperationTaskHistoryListResponse.Item(5L, 3L, "운영 작업 #3", "/admin/settings/tasks?taskNo=3&openTaskNo=3&focusTaskNo=3&returnTo=%2Fadmin%2Fsettings%2Ftasks&source=task-history", "TASK_STATUS_UPDATE", "상태 변경", 2L, "운영자", "127.0.0.1", "2026-05-23 12:00", "/api/admin/logs/get?no=5")),
                         1L,
                         1,
                         0,

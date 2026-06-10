@@ -29,6 +29,9 @@ public record AdminSystemSettingHistoryExportSummary(
         if (query.adminNo() != null) {
             builder.append(" · 관리자=").append(query.adminNo());
         }
+        if (query.adminKeyword() != null) {
+            builder.append(" · 관리자검색=").append(query.adminKeyword());
+        }
         if (query.startDate() != null || query.endDate() != null) {
             builder.append(" · 기간=")
                     .append(query.startDate() == null ? "-" : query.startDate())

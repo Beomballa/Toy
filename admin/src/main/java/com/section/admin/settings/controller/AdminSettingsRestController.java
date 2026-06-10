@@ -6,6 +6,7 @@ import com.section.admin.settings.res.AdminSystemSettingHistoryDetailResponse;
 import com.section.admin.settings.req.AdminSystemSettingSaveRequest;
 import com.section.admin.settings.res.AdminSystemSettingHistoryListResponse;
 import com.section.admin.settings.res.AdminSystemSettingResponse;
+import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.settings.service.AdminSettingsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 public class AdminSettingsRestController {
 
     private final AdminSettingsService adminSettingsService;
+    private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/system")
     public ResponseEntity<AdminSystemSettingResponse> getSystemSettings() {
@@ -53,6 +55,7 @@ public class AdminSettingsRestController {
 
     @PostMapping("/system")
     public ResponseEntity<BaseSimpleResDto> saveSystemSettings(@Valid @RequestBody AdminSystemSettingSaveRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
         adminSettingsService.saveSystemSettings(req);
         return ResponseEntity.ok(new BaseSimpleResDto());
     }

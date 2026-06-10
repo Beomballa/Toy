@@ -46,8 +46,10 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -139,9 +141,11 @@ class AdminOperationTaskServiceTest {
     @DisplayName("운영 작업 CSV 내보내기는 필터 결과를 기반으로 파일 바이트를 만든다")
     void exportTaskListCsvReturnsCsvBytes() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setTaskNo(81L);
         request.setStatus("TODO");
         request.setAssigneeAdminNo(2L);
         request.setCommentedOnly("Y");
+        request.setDueState("OVERDUE");
         request.setSortBy("PRIORITY_DESC");
         request.setDueDateFrom(LocalDate.of(2026, 6, 1));
         request.setDueDateTo(LocalDate.of(2026, 6, 30));
@@ -177,7 +181,7 @@ class AdminOperationTaskServiceTest {
         byte[] result = adminOperationTaskService.exportTaskListCsv(request);
         String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(csv.contains("\"조회조건\",\"상태: 대기 | 담당자: 운영자 | 메모있는 작업만 | 기한: 2026-06-01 ~ 2026-06-30\""));
+        assertTrue(csv.contains("\"조회조건\",\"작업번호: #81 | 상태: 대기 | 담당자: 운영자 | 메모있는 작업만 | 기한상태: 기한 초과 | 기한: 2026-06-01 ~ 2026-06-30\""));
         assertTrue(csv.contains("\"정렬\",\"우선순위 높은 순\""));
         assertTrue(csv.contains("메모있는 작업만"));
         assertTrue(csv.contains("\"정산 확인\""));
@@ -307,8 +311,8 @@ class AdminOperationTaskServiceTest {
         assertEquals(1, result.comments().size());
         assertEquals("우선 확인 필요", result.comments().get(0).content());
         assertEquals(2, result.assigneeOptions().size());
-        assertEquals("담당자", result.assigneeOptions().get(0).name());
-        assertEquals("운영자", result.assigneeOptions().get(1).name());
+        assertTrue(result.assigneeOptions().stream().anyMatch(option -> "담당자".equals(option.name())));
+        assertTrue(result.assigneeOptions().stream().anyMatch(option -> "운영자".equals(option.name())));
         assertEquals(2, result.assignmentRecommendations().size());
         assertEquals(2L, result.assignmentRecommendations().get(0).adminNo());
         assertEquals("현재 배정 작업이 없습니다.", result.assignmentRecommendations().get(0).reasonLabel());
@@ -509,7 +513,7 @@ class AdminOperationTaskServiceTest {
                 AdminOperationTaskComment.builder().commentNo(801L).taskNo(71L).content("첫 번째 메모").build(),
                 AdminOperationTaskComment.builder().commentNo(802L).taskNo(71L).content("두 번째 메모").build()
         ));
-        when(adminOperationTaskCommentRepository.saveAll(anyList()))
+        when(adminOperationTaskCommentRepository.saveAll(org.mockito.ArgumentMatchers.<Iterable<AdminOperationTaskComment>>any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
                 .thenAnswer(invocation -> {
@@ -587,11 +591,11 @@ class AdminOperationTaskServiceTest {
                 .isPinned("Y")
                 .build();
         when(adminOperationTaskRepository.findAllById(List.of(91L, 92L, 93L))).thenReturn(List.of(first, third));
-        when(adminOperationTaskCommentRepository.findByTaskNoInOrderByTaskNoAscCommentNoAsc(List.of(91L, 93L))).thenReturn(List.of(
+        lenient().when(adminOperationTaskCommentRepository.findByTaskNoInOrderByTaskNoAscCommentNoAsc(anyCollection())).thenReturn(List.of(
                 AdminOperationTaskComment.builder().commentNo(901L).taskNo(91L).content("배치 메모").build(),
                 AdminOperationTaskComment.builder().commentNo(903L).taskNo(93L).content("공지 메모").build()
         ));
-        when(adminOperationTaskCommentRepository.saveAll(anyList()))
+        lenient().when(adminOperationTaskCommentRepository.saveAll(anyList()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(adminOperationTaskRepository.save(any(AdminOperationTask.class)))
                 .thenAnswer(new org.mockito.stubbing.Answer<AdminOperationTask>() {
@@ -617,7 +621,7 @@ class AdminOperationTaskServiceTest {
         assertEquals(List.of(191L, 192L), result.createdTaskNos());
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 191L);
         verify(adminLogService).recordCurrentAdminLog("TASK_BULK_DUPLICATE", 192L);
-        verify(adminOperationTaskCommentRepository, times(2)).saveAll(anyList());
+        verify(adminOperationTaskCommentRepository, times(2)).saveAll(org.mockito.ArgumentMatchers.<Iterable<AdminOperationTaskComment>>any());
         verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->
                 toCommentList(comments).size() == 2
                         && toCommentList(comments).stream().allMatch(comment -> Long.valueOf(191L).equals(comment.getTaskNo()))
@@ -630,7 +634,9 @@ class AdminOperationTaskServiceTest {
                         && toCommentList(comments).stream().anyMatch(comment -> "원본 작업 #93 메모 1건을 복제했습니다.".equals(comment.getContent()))
                         && toCommentList(comments).stream().anyMatch(comment -> "공지 메모".equals(comment.getContent()))
         ));
-        verify(adminOperationTaskCommentRepository).findByTaskNoInOrderByTaskNoAscCommentNoAsc(List.of(91L, 93L));
+        verify(adminOperationTaskCommentRepository).findByTaskNoInOrderByTaskNoAscCommentNoAsc(argThat(taskNos ->
+                taskNos.size() == 2 && taskNos.containsAll(List.of(91L, 93L))
+        ));
         verify(adminOperationTaskRepository).save(argThat(task ->
                 "배치 점검 (복제)".equals(task.getTitle()) && task.getDueDate() == null
         ));

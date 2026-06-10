@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+import static com.section.common.system.entity.QAdminUser.adminUser;
 import static com.section.common.system.entity.QAdminSystemSettingHistory.adminSystemSettingHistory;
 
 public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdminSystemSettingHistoryRepository {
@@ -46,6 +47,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
                         adminSystemSettingHistory.crtDtm
                 ))
                 .from(adminSystemSettingHistory)
+                .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query))
                 .orderBy(adminSystemSettingHistory.historyNo.desc())
                 .offset(pageable.getOffset())
@@ -54,6 +56,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
 
         JPAQuery<Long> countQuery = queryFactory.select(adminSystemSettingHistory.count())
                 .from(adminSystemSettingHistory)
+                .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query));
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
@@ -72,6 +75,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
                         sumCase(adminSystemSettingHistory.settingKey.eq("LOW_STOCK_DEFAULT_THRESHOLD"))
                 ))
                 .from(adminSystemSettingHistory)
+                .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query))
                 .fetchOne();
         return summary == null ? new AdminSystemSettingHistorySummaryDto(0, 0, 0, 0, 0, 0) : summary;
@@ -81,6 +85,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
         return new BooleanExpression[]{
                 settingKeyEq(query.settingKey()),
                 adminNoEq(query.adminNo()),
+                adminKeywordLike(query.adminKeyword()),
                 createdDateBetween(query.startDate(), query.endDate())
         };
     }
@@ -94,6 +99,14 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
 
     private BooleanExpression adminNoEq(Long adminNo) {
         return adminNo == null ? null : adminSystemSettingHistory.crtNo.eq(adminNo);
+    }
+
+    private BooleanExpression adminKeywordLike(String adminKeyword) {
+        if (adminKeyword == null || adminKeyword.isBlank()) {
+            return null;
+        }
+        return adminUser.name.containsIgnoreCase(adminKeyword)
+                .or(adminUser.loginId.containsIgnoreCase(adminKeyword));
     }
 
     private BooleanExpression createdDateBetween(LocalDate startDate, LocalDate endDate) {

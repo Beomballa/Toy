@@ -48,6 +48,26 @@ class AdminOperationTaskListRequestTest {
     }
 
     @Test
+    @DisplayName("운영 작업 목록 요청은 작업 번호를 정확 검색 조건으로 정규화한다")
+    void toQueryIncludesTaskNo() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setTaskNo(123L);
+
+        var query = request.toQuery();
+
+        assertEquals(123L, query.taskNo());
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 요청은 음수 작업 번호를 거부한다")
+    void toQueryRejectsNegativeTaskNo() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setTaskNo(-1L);
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
     @DisplayName("운영 작업 목록 요청은 기한 상태 필터를 정규화한다")
     void toQueryNormalizesDueState() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();

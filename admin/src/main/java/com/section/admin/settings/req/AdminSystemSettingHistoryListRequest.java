@@ -22,12 +22,13 @@ public class AdminSystemSettingHistoryListRequest {
 
     private String settingKey;
     private Long adminNo;
+    private String adminKeyword;
     private LocalDate startDate;
     private LocalDate endDate;
 
     public AdminSystemSettingHistoryListQuery toQuery() {
         validate();
-        return new AdminSystemSettingHistoryListQuery(normalizedSettingKey(), adminNo, startDate, endDate);
+        return new AdminSystemSettingHistoryListQuery(normalizedSettingKey(), adminNo, normalizedAdminKeyword(), startDate, endDate);
     }
 
     public int normalizedPage(Integer page) {
@@ -59,5 +60,13 @@ public class AdminSystemSettingHistoryListRequest {
             return null;
         }
         return settingKey.trim().toUpperCase();
+    }
+
+    private String normalizedAdminKeyword() {
+        if (adminKeyword == null) {
+            return null;
+        }
+        String normalized = adminKeyword.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
     }
 }

@@ -15,6 +15,7 @@ import java.time.LocalDate;
 public class AdminOperationTaskListRequest {
 
     private String keyword;
+    private Long taskNo;
     private String status;
     private String priority;
     private Long assigneeAdminNo;
@@ -37,6 +38,7 @@ public class AdminOperationTaskListRequest {
         }
         return new AdminOperationTaskListQuery(
                 normalize(keyword),
+                normalizeTaskNo(taskNo),
                 normalizeStatus(status),
                 normalizePriority(priority),
                 normalizedAssigneeAdminNo,
@@ -98,6 +100,16 @@ public class AdminOperationTaskListRequest {
     }
 
     private Long normalizeAssigneeAdminNo(Long value) {
+        if (value == null || value == 0L) {
+            return null;
+        }
+        if (value < 0L) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return value;
+    }
+
+    private Long normalizeTaskNo(Long value) {
         if (value == null || value == 0L) {
             return null;
         }

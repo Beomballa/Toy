@@ -25,6 +25,7 @@ const TaskList = {
         overdueOnly: '',
         unassignedOnly: '',
         taskNo: '',
+        openTaskNo: '',
         focusTaskNo: '',
         source: ''
     },
@@ -96,6 +97,13 @@ const TaskList = {
                 this.getList();
             }
         });
+        document.getElementById('taskNoFilter')?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                this.state.page = 0;
+                this.getList();
+            }
+        });
         document.getElementById('taskStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
         document.getElementById('taskStatTodoCard')?.addEventListener('click', () => this.applyStatFilter('TODO'));
         document.getElementById('taskStatProgressCard')?.addEventListener('click', () => this.applyStatFilter('IN_PROGRESS'));
@@ -160,9 +168,11 @@ const TaskList = {
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
         this.state.taskNo = params.get('taskNo') || '';
+        this.state.openTaskNo = params.get('openTaskNo') || '';
         this.state.focusTaskNo = params.get('focusTaskNo') || '';
         this.state.source = params.get('source') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
+        document.getElementById('taskNoFilter').value = this.state.taskNo;
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskPinnedFilter').value = this.state.isPinned;
@@ -191,6 +201,7 @@ const TaskList = {
         this.state.overdueOnly = document.getElementById('taskOverdueOnly')?.checked ? 'Y' : '';
         this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
         this.state.commentedOnly = document.getElementById('taskCommentedOnly')?.checked ? 'Y' : '';
+        this.state.taskNo = this.parseOptionalNumber(document.getElementById('taskNoFilter')?.value)?.toString() || '';
         if (this.state.unassignedOnly === 'Y') {
             this.state.assigneeAdminNo = '';
         }
@@ -213,6 +224,7 @@ const TaskList = {
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
         if (this.state.unassignedOnly) params.set('unassignedOnly', this.state.unassignedOnly);
         if (this.state.taskNo) params.set('taskNo', this.state.taskNo);
+        if (this.state.openTaskNo) params.set('openTaskNo', this.state.openTaskNo);
         if (this.state.focusTaskNo) params.set('focusTaskNo', this.state.focusTaskNo);
         if (this.state.source) params.set('source', this.state.source);
         return params;
@@ -257,10 +269,10 @@ const TaskList = {
     },
 
     async openDeepLinkedTaskIfNeeded(items) {
-        if (!this.state.taskNo) {
+        if (!this.state.openTaskNo) {
             return;
         }
-        const taskNo = Number(this.state.taskNo);
+        const taskNo = Number(this.state.openTaskNo);
         const target = items.find((item) => item.taskNo === taskNo);
         if (target) {
             this.openEditModal(target);
@@ -274,7 +286,7 @@ const TaskList = {
                 console.error('딥링크 운영 작업 상세 로드 실패:', error);
             }
         }
-        this.state.taskNo = '';
+        this.state.openTaskNo = '';
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
     },
@@ -910,6 +922,7 @@ const TaskList = {
 
     resetFilters() {
         document.getElementById('taskKeyword').value = '';
+        document.getElementById('taskNoFilter').value = '';
         document.getElementById('taskStatusFilter').value = '';
         document.getElementById('taskPriorityFilter').value = '';
         document.getElementById('taskAssigneeFilter').value = '';
@@ -938,6 +951,7 @@ const TaskList = {
         this.state.overdueOnly = '';
         this.state.unassignedOnly = '';
         this.state.taskNo = '';
+        this.state.openTaskNo = '';
         this.state.focusTaskNo = '';
         this.clearSelection(false);
         this.syncStatFilterState('total');

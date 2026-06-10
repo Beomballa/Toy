@@ -34,5 +34,6 @@ class AdminOperationTaskHistoryListResponseTest {
 
         assertEquals("댓글 수정", result.items().get(0).actionLabel());
         assertEquals("일괄 삭제", result.items().get(1).actionLabel());
+        assertEquals("/admin/settings/tasks?taskNo=11&openTaskNo=11&focusTaskNo=11&returnTo=%2Fadmin%2Fsettings%2Ftasks&source=task-history", result.items().get(0).taskPath());
     }
 }

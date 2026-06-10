@@ -339,7 +339,7 @@ const TaskList = {
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/tasks/get?no=${item.taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.title)}</a>
+                        <a class="fw-bold text-dark text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo, 'task-list-row-title')}">${this.escapeHtml(item.title)}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 440px;">${this.escapeHtml(item.description || '-')}</div>
                     ${Number(item.commentCount || 0) > 0 ? `
@@ -1141,7 +1141,7 @@ const TaskList = {
             variantClass,
             message: `${sourceMessage} · ${message}`,
             actionsHtml: [
-            taskNo ? `<a class="btn btn-sm btn-outline-dark" href="${this.buildTaskDetailPath(taskNo)}">작업 열기</a>` : '',
+            taskNo ? `<a class="btn btn-sm btn-outline-dark" href="${this.buildTaskDetailPath(taskNo, 'task-list-action-notice')}">작업 열기</a>` : '',
             historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${historyPath}">이력</a>` : '',
             logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
             ].join('')
@@ -1170,8 +1170,9 @@ const TaskList = {
         return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
     },
 
-    buildTaskDetailPath(taskNo) {
-        return `/admin/settings/tasks/get?no=${taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+    buildTaskDetailPath(taskNo, source = 'task-list-detail') {
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        return `/admin/settings/tasks?taskNo=${taskNo}&openTaskNo=${taskNo}&focusTaskNo=${taskNo}&returnTo=${returnTo}&source=${encodeURIComponent(source)}`;
     },
 
     buildTaskLogPath(taskNo) {

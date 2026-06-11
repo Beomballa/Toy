@@ -13,7 +13,7 @@
 <body>
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
   <div class="page-header">
     <nav aria-label="breadcrumb">
       <ol class="breadcrumb">
@@ -35,15 +35,15 @@
     </div>
   </div>
 
-  <div class="card animate-in mb-4">
+  <div class="card animate-in admin-panel-card admin-filter-panel">
     <div class="card-body">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label fw-bold" for="displayKeyword">키워드</label>
+      <div class="admin-filter-grid">
+        <div class="admin-filter-field admin-filter-field--span-4">
+          <label class="admin-filter-label" for="displayKeyword">키워드</label>
           <input type="text" id="displayKeyword" class="form-control" placeholder="상품명, 모델번호, 헤드라인, 무드">
         </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold" for="displayStatus">상태</label>
+        <div class="admin-filter-field admin-filter-field--span-3">
+          <label class="admin-filter-label" for="displayStatus">상태</label>
           <select id="displayStatus" class="form-select">
             <option value="">전체 상태</option>
             <option value="ACTIVE">판매중</option>
@@ -51,15 +51,15 @@
             <option value="SOLD_OUT">품절</option>
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold" for="displayBrand">브랜드</label>
+        <div class="admin-filter-field admin-filter-field--span-3">
+          <label class="admin-filter-label" for="displayBrand">브랜드</label>
           <select id="displayBrand" class="form-select">
             <option value="">전체 브랜드</option>
             <option th:each="brand : ${brands}" th:value="${brand.brandNo}" th:text="${brand.nameKo}"></option>
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold" for="displayCategory">카테고리</label>
+        <div class="admin-filter-field admin-filter-field--span-3">
+          <label class="admin-filter-label" for="displayCategory">카테고리</label>
           <select id="displayCategory" class="form-select">
             <option value="">전체 카테고리</option>
             <option th:each="category : ${categories}"
@@ -67,16 +67,16 @@
                     th:text="${category.depth == 1 ? category.name : 'ㄴ ' + category.name}"></option>
           </select>
         </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold" for="displayConfigured">노출 설정</label>
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label" for="displayConfigured">노출 설정</label>
           <select id="displayConfigured" class="form-select">
             <option value="">전체</option>
             <option value="CONFIGURED">설정됨</option>
             <option value="UNCONFIGURED">미설정</option>
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label fw-bold" for="displaySort">정렬</label>
+        <div class="admin-filter-field admin-filter-field--span-3">
+          <label class="admin-filter-label" for="displaySort">정렬</label>
           <select id="displaySort" class="form-select">
             <option value="FEATURED">Featured 우선</option>
             <option value="STOCK_ASC">재고 낮은 순</option>
@@ -86,8 +86,9 @@
             <option value="LATEST">최신 등록순</option>
           </select>
         </div>
-        <div class="col-md-2">
-          <div class="form-check mb-2">
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label">옵션</label>
+          <div class="form-check mb-2 mt-2">
             <input class="form-check-input" type="checkbox" id="featuredOnly">
             <label class="form-check-label" for="featuredOnly">Featured만</label>
           </div>
@@ -96,11 +97,11 @@
             <label class="form-check-label" for="lowStockOnly">저재고만</label>
           </div>
         </div>
-        <div class="col-md-2">
-          <label class="form-label fw-bold" for="displayLowStockThreshold">저재고 기준</label>
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label" for="displayLowStockThreshold">저재고 기준</label>
           <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
         </div>
-        <div class="col-md-2 d-grid gap-2">
+        <div class="admin-filter-actions">
           <button class="btn btn-primary" type="button" id="btnSearchDisplay">
             <i class="fas fa-search me-2"></i>조회
           </button>
@@ -110,46 +111,30 @@
     </div>
   </div>
 
-  <div class="row g-3 mb-4">
-    <div class="col-md-3">
-      <div class="card animate-in h-100">
-        <div class="card-body">
-          <div class="small text-muted mb-2">조회 상품</div>
-          <div class="fs-3 fw-bold" id="displaySummaryTotal">0</div>
-          <div class="small text-muted">현재 필터 기준 전체 대상</div>
-        </div>
-      </div>
+  <section class="admin-summary-grid">
+    <div class="admin-summary-card animate-in">
+      <div class="admin-summary-card__label">조회 상품</div>
+      <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryTotal">0</div>
+      <div class="admin-summary-card__hint">현재 필터 기준 전체 대상</div>
     </div>
-    <div class="col-md-3">
-      <div class="card animate-in h-100">
-        <div class="card-body">
-          <div class="small text-muted mb-2">노출 설정 완료</div>
-          <div class="fs-3 fw-bold" id="displaySummaryConfigured">0</div>
-          <div class="small text-muted" id="displaySummaryUnconfigured">미설정 0건</div>
-        </div>
-      </div>
+    <div class="admin-summary-card animate-in">
+      <div class="admin-summary-card__label">노출 설정 완료</div>
+      <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryConfigured">0</div>
+      <div class="admin-summary-card__hint" id="displaySummaryUnconfigured">미설정 0건</div>
     </div>
-    <div class="col-md-3">
-      <div class="card animate-in h-100">
-        <div class="card-body">
-          <div class="small text-muted mb-2">Featured</div>
-          <div class="fs-3 fw-bold" id="displaySummaryFeatured">0</div>
-          <div class="small text-muted">대표 노출 상품 수</div>
-        </div>
-      </div>
+    <div class="admin-summary-card animate-in">
+      <div class="admin-summary-card__label">Featured</div>
+      <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryFeatured">0</div>
+      <div class="admin-summary-card__hint">대표 노출 상품 수</div>
     </div>
-    <div class="col-md-3">
-      <div class="card animate-in h-100">
-        <div class="card-body">
-          <div class="small text-muted mb-2">저재고</div>
-          <div class="fs-3 fw-bold" id="displaySummaryLowStock">0</div>
-          <div class="small text-muted" id="displaySummaryThreshold">기준 20개 미만</div>
-        </div>
-      </div>
+    <div class="admin-summary-card animate-in">
+      <div class="admin-summary-card__label">저재고</div>
+      <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryLowStock">0</div>
+      <div class="admin-summary-card__hint" id="displaySummaryThreshold">기준 20개 미만</div>
     </div>
-  </div>
+  </section>
 
-  <div class="card animate-in">
+  <div class="card animate-in admin-panel-card admin-table-card">
     <div class="card-header d-flex justify-content-between align-items-center">
       <div>
         <span class="card-title h6 mb-0">전시 대상 상품</span>

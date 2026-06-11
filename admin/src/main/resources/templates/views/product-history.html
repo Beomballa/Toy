@@ -13,7 +13,7 @@
 <body>
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -27,15 +27,15 @@
         </div>
     </div>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">상품 번호</label>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">상품 번호</label>
                     <input type="number" id="historyProductNo" class="form-control" min="1">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">작업 유형</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">작업 유형</label>
                     <select id="historyActionType" class="form-select">
                         <option value="">전체</option>
                         <option value="CREATED">등록</option>
@@ -43,37 +43,37 @@
                         <option value="DELETED">삭제</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">시작일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">시작일</label>
                     <input type="date" id="historyStartDate" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">종료일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">종료일</label>
                     <input type="date" id="historyEndDate" class="form-control">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">요약 검색</label>
+                <div class="admin-filter-field admin-filter-field--span-3">
+                    <label class="admin-filter-label">요약 검색</label>
                     <input type="text" id="historyKeyword" class="form-control" placeholder="변경 항목, 요약 검색">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">작업자 검색</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">작업자 검색</label>
                     <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">정렬</label>
+                <div class="admin-filter-field admin-filter-field--span-1">
+                    <label class="admin-filter-label">정렬</label>
                     <select id="historyOrderType" class="form-select">
                         <option value="latest">최신순</option>
                         <option value="oldest">오래된순</option>
                     </select>
                 </div>
-                <div class="col-md-1 d-grid">
+                <div class="admin-filter-actions">
                     <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-panel-card admin-table-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">변경 이력 목록</h6>
             <div class="d-flex align-items-center gap-3">

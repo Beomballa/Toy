@@ -14,23 +14,25 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content detail-main">
-    <div class="detail-scroll-content">
-    <div class="page-header">
+<main class="main-content admin-page-shell detail-main">
+    <div class="detail-scroll-content admin-detail-page">
+    <div class="page-header admin-detail-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
                 <li class="breadcrumb-item active">시스템 설정</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper">
-            <h1 class="page-title">시스템 설정</h1>
+        <div class="page-title-wrapper admin-detail-titlebar">
+            <div class="admin-detail-heading">
+                <h1 class="page-title">시스템 설정</h1>
+            </div>
         </div>
     </div>
 
     <div class="row g-4">
         <div class="col-lg-12">
-            <div class="card animate-in">
+            <div class="card animate-in admin-panel-card">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <h6 class="card-title mb-0">운영 설정</h6>
                     <button class="btn btn-sm btn-dark" id="btnSaveSystemSettings"><i class="fas fa-save me-1"></i>설정 저장</button>
@@ -76,7 +78,7 @@
         </div>
 
         <div class="col-lg-12">
-            <div class="card animate-in">
+            <div class="card animate-in admin-panel-card admin-table-card">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title mb-0">설정 변경 이력</h6>
@@ -92,48 +94,38 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="row g-3 p-3 border-bottom bg-body-tertiary">
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">전체 변경</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryTotalCount">0</div>
+                    <div class="p-3 border-bottom bg-body-tertiary">
+                        <section class="admin-summary-grid">
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">전체 변경</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryTotalCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">오늘 변경</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryTodayCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">오늘 변경</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryTodayCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">유지보수 모드</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryMaintenanceCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">유지보수 모드</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryMaintenanceCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">커뮤니티 작성</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryCommunityCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">커뮤니티 작성</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryCommunityCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">주문 Export</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryOrderExportCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">주문 Export</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryOrderExportCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">저재고 기준</div>
-                                <div class="fs-5 fw-bold" id="systemSettingHistoryLowStockCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">저재고 기준</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryLowStockCount">0</div>
                             </div>
-                        </div>
+                        </section>
                     </div>
                     <div class="border-bottom p-3 bg-light-subtle">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label fw-bold mb-1">설정 항목</label>
+                        <div class="admin-filter-grid">
+                            <div class="admin-filter-field admin-filter-field--span-3">
+                                <label class="admin-filter-label">설정 항목</label>
                                 <select id="systemSettingHistorySettingKey" class="form-select form-select-sm">
                                     <option value="">전체</option>
                                     <option value="SYSTEM_MAINTENANCE_MODE">유지보수 모드</option>
@@ -142,31 +134,31 @@
                                     <option value="LOW_STOCK_DEFAULT_THRESHOLD">기본 저재고 임계값</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">관리자 번호</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">관리자 번호</label>
                                 <input type="number" min="1" id="systemSettingHistoryAdminNo" class="form-control form-control-sm" placeholder="예: 1">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">관리자 검색</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">관리자 검색</label>
                                 <input type="text" id="systemSettingHistoryAdminKeyword" class="form-control form-control-sm" placeholder="이름 또는 로그인 ID">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">시작일</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">시작일</label>
                                 <input type="date" id="systemSettingHistoryStartDate" class="form-control form-control-sm">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">종료일</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">종료일</label>
                                 <input type="date" id="systemSettingHistoryEndDate" class="form-control form-control-sm">
                             </div>
-                            <div class="col-md-1">
-                                <label class="form-label fw-bold mb-1">건수</label>
+                            <div class="admin-filter-field admin-filter-field--span-1">
+                                <label class="admin-filter-label">건수</label>
                                 <select id="systemSettingHistoryPageSize" class="form-select form-select-sm">
                                     <option value="5">5</option>
                                     <option value="8" selected>8</option>
                                     <option value="20">20</option>
                                 </select>
                             </div>
-                            <div class="col-md-2 d-flex align-items-end gap-2">
+                            <div class="admin-filter-actions">
                                 <button class="btn btn-sm btn-dark flex-grow-1" id="btnSearchSystemHistory">조회</button>
                                 <button class="btn btn-sm btn-outline-secondary" id="btnResetSystemHistory">초기화</button>
                             </div>
@@ -205,7 +197,7 @@
 
         <!-- 관리자 계정 관리 -->
         <div class="col-lg-12">
-            <div class="card animate-in">
+            <div class="card animate-in admin-panel-card admin-table-card">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title mb-0">관리자 계정 관리</h6>
@@ -217,63 +209,55 @@
                     </div>
                 </div>
                 <div class="card-body p-0">
-                    <div class="row g-3 p-3 border-bottom bg-body-tertiary">
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">전체 관리자</div>
-                                <div class="fs-5 fw-bold" id="adminSummaryTotalCount">0</div>
+                    <div class="p-3 border-bottom bg-body-tertiary">
+                        <section class="admin-summary-grid">
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">전체 관리자</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="adminSummaryTotalCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">활성</div>
-                                <div class="fs-5 fw-bold" id="adminSummaryActiveCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">활성</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="adminSummaryActiveCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">정지</div>
-                                <div class="fs-5 fw-bold" id="adminSummarySuspendedCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">정지</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="adminSummarySuspendedCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-2 col-6">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">최고 관리자</div>
-                                <div class="fs-5 fw-bold" id="adminSummarySuperCount">0</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">최고 관리자</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="adminSummarySuperCount">0</div>
                             </div>
-                        </div>
-                        <div class="col-md-4 col-12">
-                            <div class="border rounded p-3 h-100">
-                                <div class="small text-muted">7일 이상 미접속</div>
-                                <div class="fs-5 fw-bold" id="adminSummaryInactiveCount">0</div>
-                                <div class="small text-muted mt-1">로그인 이력이 없거나 최근 7일간 접속이 없는 계정</div>
+                            <div class="admin-summary-card">
+                                <div class="admin-summary-card__label">7일 이상 미접속</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="adminSummaryInactiveCount">0</div>
+                                <div class="admin-summary-card__hint">로그인 이력이 없거나 최근 7일간 접속이 없는 계정</div>
                             </div>
-                        </div>
+                        </section>
                     </div>
                     <div class="border-bottom p-3 bg-light-subtle">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label fw-bold mb-1">검색</label>
+                        <div class="admin-filter-grid">
+                            <div class="admin-filter-field admin-filter-field--span-4">
+                                <label class="admin-filter-label">검색</label>
                                 <input type="text" id="adminKeyword" class="form-control form-control-sm" placeholder="로그인 ID 또는 관리자명">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">권한</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">권한</label>
                                 <select id="adminRoleFilter" class="form-select form-select-sm">
                                     <option value="">전체</option>
                                     <option value="ROLE_SUPER">최고 관리자</option>
                                     <option value="ROLE_ADMIN">일반 관리자</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">상태</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">상태</label>
                                 <select id="adminStatusFilter" class="form-select form-select-sm">
                                     <option value="">전체</option>
                                     <option value="ACTIVE">활성</option>
                                     <option value="SUSPENDED">정지</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">미접속 기준</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">미접속 기준</label>
                                 <select id="adminInactiveDaysFilter" class="form-select form-select-sm">
                                     <option value="">전체</option>
                                     <option value="7">7일 이상</option>
@@ -281,22 +265,22 @@
                                     <option value="30">30일 이상</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label fw-bold mb-1">로그인 이력</label>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">로그인 이력</label>
                                 <select id="adminNeverLoggedInFilter" class="form-select form-select-sm">
                                     <option value="">전체</option>
                                     <option value="Y">없음만</option>
                                 </select>
                             </div>
-                            <div class="col-md-1">
-                                <label class="form-label fw-bold mb-1">건수</label>
+                            <div class="admin-filter-field admin-filter-field--span-1">
+                                <label class="admin-filter-label">건수</label>
                                 <select id="adminPageSize" class="form-select form-select-sm">
                                     <option value="5">5</option>
                                     <option value="10" selected>10</option>
                                     <option value="20">20</option>
                                 </select>
                             </div>
-                            <div class="col-md-1 d-flex align-items-end">
+                            <div class="admin-filter-actions">
                                 <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
                             </div>
                         </div>

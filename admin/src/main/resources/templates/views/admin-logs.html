@@ -14,7 +14,7 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -26,58 +26,34 @@
         <h1 class="page-title">관리 활동 로그</h1>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatTotalCard">
-                <div class="card-body">
-                    <div class="small text-muted">전체 로그</div>
-                    <div class="fs-4 fw-bold" id="logStatTotalCount">0</div>
-                </div>
-            </div>
+    <section class="admin-summary-grid">
+        <div class="admin-summary-card stat-card animate-in" id="logStatTotalCard">
+            <div class="admin-summary-card__label">전체 로그</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTotalCount">0</div>
         </div>
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatTodayCard">
-                <div class="card-body">
-                    <div class="small text-muted">오늘 로그</div>
-                    <div class="fs-4 fw-bold" id="logStatTodayCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card stat-card animate-in" id="logStatTodayCard">
+            <div class="admin-summary-card__label">오늘 로그</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTodayCount">0</div>
         </div>
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatNoticeCard">
-                <div class="card-body">
-                    <div class="small text-muted">공지 작업</div>
-                    <div class="fs-4 fw-bold" id="logStatNoticeCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card stat-card animate-in" id="logStatNoticeCard">
+            <div class="admin-summary-card__label">공지 작업</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatNoticeCount">0</div>
         </div>
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatTaskCard">
-                <div class="card-body">
-                    <div class="small text-muted">운영 작업</div>
-                    <div class="fs-4 fw-bold" id="logStatTaskCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card stat-card animate-in" id="logStatTaskCard">
+            <div class="admin-summary-card__label">운영 작업</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTaskCount">0</div>
         </div>
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatCommerceCard">
-                <div class="card-body">
-                    <div class="small text-muted">상품·주문·배너</div>
-                    <div class="fs-4 fw-bold" id="logStatCommerceCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card stat-card animate-in" id="logStatCommerceCard">
+            <div class="admin-summary-card__label">상품·주문·배너</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatCommerceCount">0</div>
         </div>
-        <div class="col-md-2">
-            <div class="card stat-card animate-in h-100" id="logStatAdminCard">
-                <div class="card-body">
-                    <div class="small text-muted">작업 관리자</div>
-                    <div class="fs-4 fw-bold" id="logStatAdminCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card stat-card animate-in" id="logStatAdminCard">
+            <div class="admin-summary-card__label">작업 관리자</div>
+            <div class="admin-summary-card__value fs-4 fw-bold" id="logStatAdminCount">0</div>
         </div>
-    </div>
+    </section>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
             <div class="d-flex flex-wrap gap-2 mb-3">
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_">공지 작업</button>
@@ -86,38 +62,36 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_ACTIVE_UPDATE">공지 상태 변경</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_DELETE">공지 삭제</button>
             </div>
-            <div class="row g-3 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">관리자 번호</label>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">관리자 번호</label>
                     <input type="number" min="1" id="logAdminNo" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">작업 종류</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">작업 종류</label>
                     <input type="text" id="logActionType" class="form-control" placeholder="PRODUCT_UPDATE">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">대상 ID</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">대상 ID</label>
                     <input type="number" min="1" id="logTargetId" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">시작일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">시작일</label>
                     <input type="date" id="logStartDate" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">종료일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">종료일</label>
                     <input type="date" id="logEndDate" class="form-control">
                 </div>
-                <div class="col-md-2 d-grid">
+                <div class="admin-filter-actions">
                     <button type="button" class="btn btn-dark" id="btnSearchLog">조회</button>
-                </div>
-                <div class="col-md-2 d-grid">
                     <button type="button" class="btn btn-outline-secondary" id="btnResetLog">초기화</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-panel-card admin-table-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">활동 내역</h6>
             <div class="d-flex align-items-center gap-3">

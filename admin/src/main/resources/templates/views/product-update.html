@@ -14,9 +14,9 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content detail-main admin-form-page">
+<main class="main-content admin-page-shell detail-main admin-form-page">
     <div class="detail-scroll-content admin-form-page">
-        <div class="page-header">
+        <div class="page-header admin-detail-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/admin">Home</a></li>
@@ -24,8 +24,10 @@
                 <li class="breadcrumb-item active">상품 수정</li>
                 </ol>
             </nav>
-            <div class="page-title-wrapper">
-                <h1 class="page-title">상품 정보 수정</h1>
+            <div class="page-title-wrapper admin-detail-titlebar">
+                <div class="admin-detail-heading">
+                    <h1 class="page-title">상품 정보 수정</h1>
+                </div>
                 <div class="admin-form-actions">
                     <button type="submit" form="productUpdateForm" class="btn btn-primary" id="btnUpdate"><i class="fas fa-check me-2"></i>수정 완료</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnCancelEdit">취소</button>

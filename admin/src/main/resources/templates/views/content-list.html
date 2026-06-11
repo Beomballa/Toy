@@ -14,7 +14,7 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="content-board-page">
     <div class="page-header content-board-header">
         <nav aria-label="breadcrumb">
@@ -43,7 +43,7 @@
         <a class="content-board-tab" href="#" data-board-type="QNA">문의사항</a>
     </div>
 
-    <div class="content-board-toolbar content-board-toolbar--search">
+    <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
             <div class="content-board-form-group content-board-form-group--search">
                 <label class="content-board-form-label" for="contentSearchKeyword">검색어</label>
@@ -90,7 +90,7 @@
         </form>
     </div>
 
-    <div class="content-board-toolbar content-board-toolbar--bulk">
+    <div class="content-board-toolbar content-board-toolbar--bulk admin-panel-card">
         <div class="content-board-bulk-panel">
             <div class="content-board-bulk-head">
                 <div>
@@ -128,7 +128,7 @@
         </div>
     </div>
 
-    <div class="content-board-toolbar content-board-toolbar--result">
+    <div class="content-board-toolbar content-board-toolbar--result admin-panel-card">
         <div class="content-board-result-meta" id="contentBulkResultMeta">아직 일괄 적용 결과가 없습니다.</div>
     </div>
 

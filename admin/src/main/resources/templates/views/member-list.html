@@ -14,7 +14,7 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -28,85 +28,69 @@
         </div>
     </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-6 col-xl-3">
-            <button type="button" class="card w-100 border-0 shadow-sm text-start member-summary-card animate-in" data-summary-filter="ALL">
-                <div class="card-body">
-                    <div class="small text-muted mb-2">전체 회원</div>
-                    <div class="h3 mb-1 fw-bold" id="memberSummaryTotal">-</div>
-                    <div class="small text-muted">현재 조건에 맞는 회원 수</div>
-                </div>
-            </button>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <button type="button" class="card w-100 border-0 shadow-sm text-start member-summary-card animate-in" data-summary-filter="MASTER">
-                <div class="card-body">
-                    <div class="small text-muted mb-2">마스터 회원</div>
-                    <div class="h3 mb-1 fw-bold" id="memberSummaryMaster">-</div>
-                    <div class="small text-muted">권한 회원 빠른 확인</div>
-                </div>
-            </button>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <button type="button" class="card w-100 border-0 shadow-sm text-start member-summary-card animate-in" data-summary-filter="DELETED">
-                <div class="card-body">
-                    <div class="small text-muted mb-2">탈퇴 회원</div>
-                    <div class="h3 mb-1 fw-bold" id="memberSummaryDeleted">-</div>
-                    <div class="small text-muted">복구 검토 대상 확인</div>
-                </div>
-            </button>
-        </div>
-        <div class="col-md-6 col-xl-3">
-            <button type="button" class="card w-100 border-0 shadow-sm text-start member-summary-card animate-in" data-summary-filter="TEMP_PASSWORD">
-                <div class="card-body">
-                    <div class="small text-muted mb-2">임시 비밀번호</div>
-                    <div class="h3 mb-1 fw-bold" id="memberSummaryTempPassword">-</div>
-                    <div class="small text-muted">초기 로그인 안내 필요</div>
-                </div>
-            </button>
-        </div>
-    </div>
+    <section class="admin-summary-grid">
+        <button type="button" class="admin-summary-card member-summary-card animate-in text-start" data-summary-filter="ALL">
+            <div class="admin-summary-card__label">전체 회원</div>
+            <div class="admin-summary-card__value" id="memberSummaryTotal">-</div>
+            <div class="admin-summary-card__hint">현재 조건에 맞는 회원 수</div>
+        </button>
+        <button type="button" class="admin-summary-card member-summary-card animate-in text-start" data-summary-filter="MASTER">
+            <div class="admin-summary-card__label">마스터 회원</div>
+            <div class="admin-summary-card__value" id="memberSummaryMaster">-</div>
+            <div class="admin-summary-card__hint">권한 회원 빠른 확인</div>
+        </button>
+        <button type="button" class="admin-summary-card member-summary-card animate-in text-start" data-summary-filter="DELETED">
+            <div class="admin-summary-card__label">탈퇴 회원</div>
+            <div class="admin-summary-card__value" id="memberSummaryDeleted">-</div>
+            <div class="admin-summary-card__hint">복구 검토 대상 확인</div>
+        </button>
+        <button type="button" class="admin-summary-card member-summary-card animate-in text-start" data-summary-filter="TEMP_PASSWORD">
+            <div class="admin-summary-card__label">임시 비밀번호</div>
+            <div class="admin-summary-card__value" id="memberSummaryTempPassword">-</div>
+            <div class="admin-summary-card__hint">초기 로그인 안내 필요</div>
+        </button>
+    </section>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">검색</label>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-5">
+                    <label class="admin-filter-label">검색</label>
                     <input type="text" id="memberKeyword" class="form-control" placeholder="이메일, 이름, 닉네임">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">권한</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">권한</label>
                     <select id="memberMasterYn" class="form-select">
                         <option value="">전체</option>
                         <option value="Y">마스터</option>
                         <option value="N">일반</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">상태</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">상태</label>
                     <select id="memberDelYn" class="form-select">
                         <option value="">전체</option>
                         <option value="N">정상</option>
                         <option value="Y">탈퇴</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">비밀번호</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">비밀번호</label>
                     <select id="memberInitYn" class="form-select">
                         <option value="">전체</option>
                         <option value="Y">임시 비밀번호</option>
                         <option value="N">정상</option>
                     </select>
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">페이지</label>
+                <div class="admin-filter-field admin-filter-field--span-1">
+                    <label class="admin-filter-label">페이지</label>
                     <select id="memberPageSize" class="form-select">
                         <option value="20">20</option>
                         <option value="50">50</option>
                         <option value="100">100</option>
                     </select>
                 </div>
-                <div class="col-md-12 d-grid gap-2 d-md-flex justify-content-md-end">
+                <div class="admin-filter-actions">
                     <button type="button" class="btn btn-dark" id="btnSearchMember">조회</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnResetMember">초기화</button>
                 </div>
@@ -114,7 +98,7 @@
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-panel-card admin-table-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <span class="card-title h6 mb-0">회원 목록</span>
             <div class="small text-muted" id="memberMetaText">데이터를 불러오는 중입니다...</div>

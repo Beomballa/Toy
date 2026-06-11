@@ -14,7 +14,7 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content detail-main">
+<main class="main-content detail-main admin-form-page">
     <div class="detail-scroll-content admin-detail-page">
     <div class="page-header admin-detail-header">
         <nav aria-label="breadcrumb">
@@ -41,9 +41,9 @@
         </div>
     </div>
 
-    <div class="row admin-detail-layout">
-        <div class="col-lg-4">
-            <div class="card animate-in admin-detail-side-card">
+    <div class="admin-form-layout admin-detail-layout">
+        <div class="admin-form-side">
+            <div class="card animate-in admin-detail-side-card admin-form-card">
                 <div class="card-header admin-detail-side-header"><span class="card-title">주문자 정보</span></div>
                 <div class="card-body admin-detail-side-body">
                     <div class="admin-detail-side-item">
@@ -56,7 +56,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card animate-in admin-detail-side-card">
+            <div class="card animate-in admin-detail-side-card admin-form-card">
                 <div class="card-header admin-detail-side-header"><span class="card-title">결제 요약</span></div>
                 <div class="card-body admin-detail-side-body">
                     <div class="admin-detail-side-item">
@@ -69,7 +69,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card animate-in admin-detail-side-card">
+            <div class="card animate-in admin-detail-side-card admin-form-card">
                 <div class="card-header admin-detail-side-header"><span class="card-title">관리 메모</span></div>
                 <div class="card-body admin-detail-side-body">
                     <textarea id="adminMemo" class="form-control mb-3" rows="4" placeholder="주문 운영 메모를 입력하세요."></textarea>
@@ -77,8 +77,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-lg-8">
-            <div class="card animate-in admin-detail-card">
+        <div class="admin-form-main">
+            <div class="card animate-in admin-detail-card admin-form-card">
                 <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
                     <span class="card-title">주문 상품 목록</span>
                     <span id="itemCount" class="badge bg-secondary rounded-pill">0</span>
@@ -96,7 +96,7 @@
             </div>
 
             <!-- 배송 정보 입력 (결제완료 상태일 때 노출) -->
-            <div class="card animate-in admin-detail-card hidden-default" id="deliveryInputCard">
+            <div class="card animate-in admin-detail-card admin-form-card hidden-default" id="deliveryInputCard">
                 <div class="card-header admin-detail-side-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
                 <div class="card-body admin-detail-body">
                     <form id="deliveryForm" class="row g-3">
@@ -126,7 +126,7 @@
             </div>
 
             <!-- 배송 정보 표시 (이미 배송 중이거나 완료된 경우) -->
-            <div class="card animate-in admin-detail-card hidden-default" id="deliveryInfoCard">
+            <div class="card animate-in admin-detail-card admin-form-card hidden-default" id="deliveryInfoCard">
                 <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
                     <span class="card-title text-primary"><i class="fas fa-truck-loading me-2"></i>배송 정보</span>
                     <button type="button" class="btn btn-sm btn-success hidden-default" id="btnCompleteDelivery">배송 완료 처리</button>
@@ -145,7 +145,7 @@
                 </div>
             </div>
 
-            <div class="card animate-in admin-detail-card">
+            <div class="card animate-in admin-detail-card admin-form-card">
                 <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
                     <span class="card-title">주문 처리 이력</span>
                     <a href="javascript:void(0);" id="btnOpenOrderHistory" class="small text-decoration-none">전체 이력 보기</a>

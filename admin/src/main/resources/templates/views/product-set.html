@@ -16,8 +16,8 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <!-- 메인 콘텐츠 -->
-<main class="main-content detail-main">
-  <div class="detail-scroll-content">
+<main class="main-content detail-main admin-form-page">
+  <div class="detail-scroll-content admin-form-page">
   <!-- 페이지 헤더 -->
   <div class="page-header">
     <nav aria-label="breadcrumb">
@@ -33,8 +33,8 @@
             data-return-to=""
             data-return-label=""
             data-return-button-label=""></span>
-      <div>
-        <button type="button" class="btn btn-secondary me-2" id="btnBackToProductList">
+      <div class="admin-form-actions">
+        <button type="button" class="btn btn-secondary" id="btnBackToProductList">
           <i class="fas fa-arrow-left me-2"></i>취소
         </button>
         <button type="button" class="btn btn-primary" id="btnSubmit">
@@ -46,10 +46,10 @@
 
   <!-- 등록 폼 -->
   <form id="productCreateForm">
-    <div class="row">
+    <div class="admin-form-layout">
       <!-- 왼쪽: 기본 정보 -->
-      <div class="col-lg-8">
-        <div class="card animate-in">
+      <div class="admin-form-main">
+        <div class="card animate-in admin-form-card">
           <div class="card-header">
             <span class="card-title">기본 정보</span>
           </div>
@@ -114,7 +114,7 @@
         </div>
 
         <!-- 상품 옵션 -->
-        <div class="card animate-in">
+        <div class="card animate-in admin-form-card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <span class="card-title">상품 옵션 (사이즈)</span>
             <button type="button" class="btn btn-sm btn-primary" id="btnAddOption">
@@ -146,8 +146,8 @@
       </div>
 
       <!-- 오른쪽: 미리보기 -->
-      <div class="col-lg-4">
-        <div class="card animate-in preview-sticky">
+      <div class="admin-form-side">
+        <div class="card animate-in admin-form-card preview-sticky">
           <div class="card-header">
             <span class="card-title">미리보기</span>
           </div>
@@ -185,7 +185,7 @@
             </div>
           </div>
         </div>
-        <div class="card animate-in mt-4">
+        <div class="card animate-in admin-form-card">
           <div class="card-header">
             <span class="card-title">프론트 노출 정보</span>
           </div>

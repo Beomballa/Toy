@@ -16,7 +16,7 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <!-- 메인 콘텐츠 영역 -->
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -35,11 +35,11 @@
         </div>
     </div>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="filter-row">
-                <div class="filter-item">
-                    <div class="filter-label">주문 상태</div>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">주문 상태</label>
                     <select class="form-select" id="orderStatus">
                         <option value="">전체 상태</option>
                         <option value="ORDERED">주문완료</option>
@@ -50,8 +50,8 @@
                         <option value="CANCELLED">주문취소</option>
                     </select>
                 </div>
-                <div class="filter-item">
-                    <div class="filter-label">기간 설정</div>
+                <div class="admin-filter-field admin-filter-field--span-4">
+                    <label class="admin-filter-label">기간 설정</label>
                     <div class="input-group">
                         <input type="date" class="form-control" id="startDate">
                         <span class="input-group-text">~</span>
@@ -63,19 +63,25 @@
                         <button type="button" class="btn btn-sm btn-outline-light border text-muted" data-date-preset="30">30일</button>
                     </div>
                 </div>
-                <div class="filter-item filter-item-search">
-                    <div class="filter-label">주문 검색</div>
+                <div class="admin-filter-field admin-filter-field--span-4">
+                    <label class="admin-filter-label">주문 검색</label>
                     <div class="input-group">
                         <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
                         <input type="text" id="searchKeyword" class="form-control" placeholder="주문번호, 운송장번호, 주문자명, 상품명 검색">
                     </div>
                 </div>
-                <div class="filter-item flex-fixed-auto">
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">페이지 크기</label>
+                    <select class="form-select" id="pageSize">
+                        <option value="10">10개</option>
+                        <option value="20">20개</option>
+                        <option value="50">50개</option>
+                    </select>
+                </div>
+                <div class="admin-filter-actions">
                     <button class="btn btn-primary w-100" type="button" id="btnFilter">
                         <i class="fas fa-filter me-2"></i>필터 적용
                     </button>
-                </div>
-                <div class="filter-item flex-fixed-auto">
                     <button class="btn btn-outline-secondary w-100" type="button" id="btnResetFilter">
                         <i class="fas fa-rotate-left me-2"></i>초기화
                     </button>
@@ -84,20 +90,13 @@
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-panel-card admin-table-card">
         <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
             <div>
                 <span class="card-title h6 mb-0">주문 내역</span>
                 <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0건</span>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <label for="pageSize" class="small text-muted mb-0">페이지 크기</label>
-                <select class="form-select form-select-sm select-auto-width" id="pageSize">
-                    <option value="10">10개</option>
-                    <option value="20">20개</option>
-                    <option value="50">50개</option>
-                </select>
-            </div>
+            <div class="small text-muted">필터 조건에 따른 주문 이력을 확인합니다.</div>
         </div>
         <div class="card-body border-bottom bg-light-subtle">
             <div class="row g-2" id="orderStatusSummaryRow">
@@ -119,7 +118,7 @@
                     </tr>
                     </thead>
                     <tbody id="orderListTableBody">
-                    <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                     </tbody>
                 </table>
             </div>

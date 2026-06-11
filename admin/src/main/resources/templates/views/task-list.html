@@ -14,7 +14,7 @@
 
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -33,50 +33,30 @@
         <div class="small text-muted mt-2 d-none" id="taskSourceContextNotice" data-source-context=""></div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatTotalCard">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">전체 작업</div>
-                    <div class="stat-value" id="taskTotalCount">0</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatTodoCard">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">대기</div>
-                    <div class="stat-value" id="taskTodoCount">0</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatProgressCard">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">진행중</div>
-                    <div class="stat-value" id="taskInProgressCount">0</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatOverdueCard">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">기한 초과</div>
-                    <div class="stat-value" id="taskOverdueCount">0</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm stat-card-clickable" id="taskStatUnassignedCard">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">미지정</div>
-                    <div class="stat-value" id="taskUnassignedCount">0</div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <section class="admin-summary-grid">
+        <button type="button" class="admin-summary-card stat-card-clickable text-start" id="taskStatTotalCard">
+            <div class="admin-summary-card__label">전체 작업</div>
+            <div class="admin-summary-card__value" id="taskTotalCount">0</div>
+        </button>
+        <button type="button" class="admin-summary-card stat-card-clickable text-start" id="taskStatTodoCard">
+            <div class="admin-summary-card__label">대기</div>
+            <div class="admin-summary-card__value" id="taskTodoCount">0</div>
+        </button>
+        <button type="button" class="admin-summary-card stat-card-clickable text-start" id="taskStatProgressCard">
+            <div class="admin-summary-card__label">진행중</div>
+            <div class="admin-summary-card__value" id="taskInProgressCount">0</div>
+        </button>
+        <button type="button" class="admin-summary-card stat-card-clickable text-start" id="taskStatOverdueCard">
+            <div class="admin-summary-card__label">기한 초과</div>
+            <div class="admin-summary-card__value" id="taskOverdueCount">0</div>
+        </button>
+        <button type="button" class="admin-summary-card stat-card-clickable text-start" id="taskStatUnassignedCard">
+            <div class="admin-summary-card__label">미지정</div>
+            <div class="admin-summary-card__value" id="taskUnassignedCount">0</div>
+        </button>
+    </section>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card">
         <div class="card-body py-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                 <div class="small text-muted" id="taskStatsContextText">카드 기준을 계산하는 중입니다...</div>
@@ -96,19 +76,19 @@
         </div>
     </div>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">제목/설명 검색</label>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-3">
+                    <label class="admin-filter-label">제목/설명 검색</label>
                     <input type="text" id="taskKeyword" class="form-control" placeholder="운영 작업 검색">
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">작업 번호</label>
+                <div class="admin-filter-field admin-filter-field--span-1">
+                    <label class="admin-filter-label">작업 번호</label>
                     <input type="number" id="taskNoFilter" class="form-control" min="1" placeholder="No">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">상태</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">상태</label>
                     <select id="taskStatusFilter" class="form-select">
                         <option value="">전체</option>
                         <option value="TODO">대기</option>
@@ -117,8 +97,8 @@
                         <option value="HOLD">보류</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">우선순위</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">우선순위</label>
                     <select id="taskPriorityFilter" class="form-select">
                         <option value="">전체</option>
                         <option value="HIGH">높음</option>
@@ -126,30 +106,30 @@
                         <option value="LOW">낮음</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">담당자</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">담당자</label>
                     <select id="taskAssigneeFilter" class="form-select">
                         <option value="">전체</option>
                     </select>
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">고정</label>
+                <div class="admin-filter-field admin-filter-field--span-1">
+                    <label class="admin-filter-label">고정</label>
                     <select id="taskPinnedFilter" class="form-select">
                         <option value="">전체</option>
                         <option value="Y">고정만</option>
                         <option value="N">일반만</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">기한 시작일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">기한 시작일</label>
                     <input type="date" id="taskDueDateFrom" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">기한 종료일</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">기한 종료일</label>
                     <input type="date" id="taskDueDateTo" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">기한 상태</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">기한 상태</label>
                     <select id="taskDueStateFilter" class="form-select">
                         <option value="">전체</option>
                         <option value="OVERDUE">기한 초과</option>
@@ -158,8 +138,8 @@
                         <option value="NO_DUE">기한 없음</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">정렬</label>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">정렬</label>
                     <select id="taskSortBy" class="form-select">
                         <option value="PINNED_DUE">고정 우선 · 마감 임박 순</option>
                         <option value="DUE_DATE_DESC">마감일 늦은 순</option>
@@ -168,7 +148,16 @@
                         <option value="CREATED_DESC">최근 등록 순</option>
                     </select>
                 </div>
-                <div class="col-md-1">
+                <div class="admin-filter-field admin-filter-field--span-1">
+                    <label class="admin-filter-label">페이지</label>
+                    <select id="taskPageSize" class="form-select">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-3">
+                    <label class="admin-filter-label">추가 조건</label>
                     <div class="d-flex flex-column gap-2 mt-4 pt-2">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="taskOverdueOnly">
@@ -184,15 +173,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">크기</label>
-                    <select id="taskPageSize" class="form-select">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-                <div class="col-md-12 col-lg-1 d-grid gap-2">
+                <div class="admin-filter-actions">
                     <button type="button" class="btn btn-dark" id="btnSearchTask">조회</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnResetTask">초기화</button>
                 </div>
@@ -200,7 +181,7 @@
         </div>
     </div>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card">
         <div class="card-body">
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">

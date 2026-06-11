@@ -13,8 +13,8 @@
 <body>
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
-    <div class="page-header">
+<main class="main-content admin-page-shell admin-detail-page">
+    <div class="page-header admin-detail-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="/admin">Home</a></li>
@@ -23,13 +23,13 @@
                 <li class="breadcrumb-item active">운영 작업 상세</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper d-flex justify-content-between align-items-start gap-3">
-            <div>
+        <div class="page-title-wrapper admin-detail-titlebar">
+            <div class="admin-detail-heading">
                 <h1 class="page-title">운영 작업 상세</h1>
                 <div class="small text-muted" id="taskDetailSummary">운영 작업 정보를 불러오는 중입니다.</div>
                 <div class="small text-muted mt-2 d-none" id="taskDetailSourceContextNotice" data-source-context=""></div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="admin-detail-actions">
                 <button type="button" class="btn btn-primary" id="btnTaskDetailEdit">수정</button>
                 <button type="button" class="btn btn-outline-dark" id="btnTaskDetailToggleStatus">상태 변경</button>
                 <button type="button" class="btn btn-outline-danger" id="btnTaskDetailDelete">삭제</button>
@@ -40,7 +40,7 @@
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-detail-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">운영 작업 정보</h6>
             <div class="small text-muted" id="taskDetailMeta">데이터를 불러오는 중입니다...</div>
@@ -123,7 +123,7 @@
         </div>
     </div>
 
-    <div class="card animate-in mt-4">
+    <div class="card animate-in admin-detail-side-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">배정 추천</h6>
             <div class="small text-muted" id="taskAssignmentRecommendationMeta">추천 담당자를 계산하는 중입니다.</div>
@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <div class="card animate-in mt-4">
+    <div class="card animate-in admin-detail-side-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">최근 로그</h6>
             <div class="d-flex gap-2">
@@ -154,7 +154,7 @@
         </div>
     </div>
 
-    <div class="card animate-in mt-4">
+    <div class="card animate-in admin-detail-side-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">작업 메모</h6>
             <div class="small text-muted" id="taskCommentMeta">최근 작업 메모를 불러오는 중입니다.</div>

@@ -4,6 +4,7 @@ import com.section.admin.user.req.AdminMemberListRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
+import com.section.admin.user.res.AdminMemberSummaryResponse;
 import com.section.admin.user.support.AdminMemberExportCsvWriter;
 import com.section.admin.user.support.AdminMemberExportSummary;
 import com.section.common.base.entity.type.YN;
@@ -32,6 +33,10 @@ public class AdminMemberService {
         AccountListQuery query = req.toQuery();
         Page<AccountListResDto> page = accountRepository.getAccountList(query, pageable);
         return AdminMemberListResponse.of(page, query);
+    }
+
+    public AdminMemberSummaryResponse getMemberSummary(AdminMemberListRequest req) {
+        return AdminMemberSummaryResponse.from(accountRepository.getAccountSummary(req.toQuery()));
     }
 
     public byte[] exportMemberListCsv(AdminMemberListRequest req) {

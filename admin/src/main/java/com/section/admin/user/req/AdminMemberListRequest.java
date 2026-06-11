@@ -14,12 +14,14 @@ public class AdminMemberListRequest {
     private String keyword;
     private String masterYn;
     private String delYn;
+    private String initYn;
 
     public AccountListQuery toQuery() {
         return new AccountListQuery(
                 normalize(keyword),
                 parseYn(masterYn),
-                parseYn(delYn)
+                parseYn(delYn),
+                parseYn(initYn)
         );
     }
 

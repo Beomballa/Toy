@@ -5,6 +5,7 @@ import com.section.admin.user.req.AdminMemberListRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
+import com.section.admin.user.res.AdminMemberSummaryResponse;
 import com.section.admin.user.service.AdminMemberService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import jakarta.validation.Valid;
@@ -35,6 +36,11 @@ public class AdminMemberRestController {
     @GetMapping("/list")
     public ResponseEntity<AdminMemberListResponse> getList(@ModelAttribute AdminMemberListRequest req, Pageable pageable) {
         return ResponseEntity.ok(adminMemberService.getMemberList(req, pageable));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<AdminMemberSummaryResponse> getSummary(@ModelAttribute AdminMemberListRequest req) {
+        return ResponseEntity.ok(adminMemberService.getMemberSummary(req));
     }
 
     @GetMapping("/export")

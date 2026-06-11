@@ -29,6 +29,9 @@ public record AdminMemberExportSummary(
         if (query.delYn() != null) {
             builder.append(" · 상태=").append(query.delYn().name());
         }
+        if (query.initYn() != null) {
+            builder.append(" · 비밀번호=").append("Y".equals(query.initYn().name()) ? "임시비밀번호" : "정상");
+        }
         return builder.toString();
     }
 }

@@ -29,7 +29,7 @@ public record AdminMemberListResponse(
                 page.getTotalPages(),
                 rangeStart,
                 rangeEnd,
-                new AppliedQuery(query.keyword(), ynName(query.masterYn()), ynName(query.delYn())),
+                new AppliedQuery(query.keyword(), ynName(query.masterYn()), ynName(query.delYn()), ynName(query.initYn())),
                 ResultMeta.from(page, query, rangeStart, rangeEnd)
         );
     }
@@ -65,7 +65,8 @@ public record AdminMemberListResponse(
     public record AppliedQuery(
             String keyword,
             String masterYn,
-            String delYn
+            String delYn,
+            String initYn
     ) {
     }
 
@@ -99,6 +100,7 @@ public record AdminMemberListResponse(
             if (query.keyword() != null) count++;
             if (query.masterYn() != null) count++;
             if (query.delYn() != null) count++;
+            if (query.initYn() != null) count++;
             return count;
         }
 
@@ -112,6 +114,9 @@ public record AdminMemberListResponse(
             }
             if (query.delYn() != null) {
                 builder.append(" · 상태=").append(query.delYn().name());
+            }
+            if (query.initYn() != null) {
+                builder.append(" · 비밀번호=").append("Y".equals(query.initYn().name()) ? "임시비밀번호" : "정상");
             }
             return builder.toString();
         }

@@ -41,12 +41,27 @@ const MemberListPage = {
             this.state.page = 0;
             this.getList();
         });
+        document.getElementById('memberMasterYn')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.getList();
+        });
+        document.getElementById('memberDelYn')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.getList();
+        });
+        document.getElementById('memberInitYn')?.addEventListener('change', () => {
+            this.state.page = 0;
+            this.getList();
+        });
         document.getElementById('memberKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 this.state.page = 0;
                 this.getList();
             }
+        });
+        document.querySelectorAll('[data-summary-filter]').forEach((button) => {
+            button.addEventListener('click', () => this.applySummaryFilter(button.dataset.summaryFilter));
         });
         document.getElementById('btnToggleMasterYn')?.addEventListener('click', () => this.toggleMemberStatus('master'));
         document.getElementById('btnToggleMemberStatus')?.addEventListener('click', () => this.toggleMemberStatus('deleted'));
@@ -62,6 +77,7 @@ const MemberListPage = {
         document.getElementById('memberKeyword').value = params.get('keyword') || '';
         document.getElementById('memberMasterYn').value = params.get('masterYn') || '';
         document.getElementById('memberDelYn').value = params.get('delYn') || '';
+        document.getElementById('memberInitYn').value = params.get('initYn') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         document.getElementById('memberPageSize').value = String(this.state.size);
@@ -72,9 +88,11 @@ const MemberListPage = {
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('memberKeyword').value);
         const masterYn = document.getElementById('memberMasterYn').value;
         const delYn = document.getElementById('memberDelYn').value;
+        const initYn = document.getElementById('memberInitYn').value;
         if (keyword) params.set('keyword', keyword);
         if (masterYn) params.set('masterYn', masterYn);
         if (delYn) params.set('delYn', delYn);
+        if (initYn) params.set('initYn', initYn);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -88,11 +106,18 @@ const MemberListPage = {
         this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
         this.renderPagination(0, 0);
         try {
-            const res = await fetch(`/api/admin/members/list?${params.toString()}`);
+            const [listRes, summaryRes] = await Promise.all([
+                fetch(`/api/admin/members/list?${params.toString()}`),
+                fetch(`/api/admin/members/summary?${params.toString()}`)
+            ]);
+            const res = listRes;
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 목록을 불러오지 못했습니다.'));
+            if (!summaryRes.ok) throw new Error(await CommonJS.extractErrorMessage(summaryRes, '회원 요약을 불러오지 못했습니다.'));
             const data = await res.json();
+            const summary = await summaryRes.json();
             this.renderList(data.items || []);
             this.renderMeta(data);
+            this.renderSummary(summary);
             this.renderPagination(data.currentPage ?? 0, data.totalPages ?? 0);
         } catch (err) {
             document.getElementById('memberListBody').innerHTML =
@@ -101,7 +126,21 @@ const MemberListPage = {
             this.setFilterMetaText(err.message);
             this.setPageMetaText('페이지 메타 확인 불가');
             this.setPaginationSummary('페이지 정보를 불러오지 못했습니다.');
+            this.renderSummary(null);
         }
+    },
+
+    renderSummary(summary) {
+        const data = summary || {};
+        document.getElementById('memberSummaryTotal').textContent = this.formatCount(data.totalCount);
+        document.getElementById('memberSummaryMaster').textContent = this.formatCount(data.masterCount);
+        document.getElementById('memberSummaryDeleted').textContent = this.formatCount(data.deletedCount);
+        document.getElementById('memberSummaryTempPassword').textContent = this.formatCount(data.tempPasswordCount);
+        document.querySelectorAll('[data-summary-filter]').forEach((button) => {
+            const active = this.isSummaryFilterActive(button.dataset.summaryFilter);
+            button.classList.toggle('border-dark', active);
+            button.classList.toggle('shadow', active);
+        });
     },
 
     renderList(items) {
@@ -187,10 +226,49 @@ const MemberListPage = {
         document.getElementById('memberKeyword').value = '';
         document.getElementById('memberMasterYn').value = '';
         document.getElementById('memberDelYn').value = '';
+        document.getElementById('memberInitYn').value = '';
         document.getElementById('memberPageSize').value = '20';
         this.state.page = 0;
         this.state.size = 20;
         this.getList();
+    },
+
+    applySummaryFilter(filterType) {
+        if (filterType === 'MASTER') {
+            document.getElementById('memberMasterYn').value = 'Y';
+            document.getElementById('memberDelYn').value = '';
+            document.getElementById('memberInitYn').value = '';
+        } else if (filterType === 'DELETED') {
+            document.getElementById('memberMasterYn').value = '';
+            document.getElementById('memberDelYn').value = 'Y';
+            document.getElementById('memberInitYn').value = '';
+        } else if (filterType === 'TEMP_PASSWORD') {
+            document.getElementById('memberMasterYn').value = '';
+            document.getElementById('memberDelYn').value = '';
+            document.getElementById('memberInitYn').value = 'Y';
+        } else {
+            document.getElementById('memberMasterYn').value = '';
+            document.getElementById('memberDelYn').value = '';
+            document.getElementById('memberInitYn').value = '';
+        }
+        this.state.page = 0;
+        this.getList();
+    },
+
+    isSummaryFilterActive(filterType) {
+        const masterYn = document.getElementById('memberMasterYn').value;
+        const delYn = document.getElementById('memberDelYn').value;
+        const initYn = document.getElementById('memberInitYn').value;
+        if (filterType === 'MASTER') {
+            return masterYn === 'Y' && !delYn && !initYn;
+        }
+        if (filterType === 'DELETED') {
+            return delYn === 'Y' && !masterYn && !initYn;
+        }
+        if (filterType === 'TEMP_PASSWORD') {
+            return initYn === 'Y' && !masterYn && !delYn;
+        }
+        return !masterYn && !delYn && !initYn;
     },
 
     async exportList() {
@@ -262,6 +340,7 @@ const MemberListPage = {
                 <section class="member-detail-grid">
                     ${this.renderDetailCard('닉네임', data.nickname || '미등록')}
                     ${this.renderDetailCard('초기화 여부', this.formatInitStatus(data.initYn))}
+                    ${this.renderDetailCard('임시 비밀번호 발급', this.formatTempPasswordIssuedAt(data.initYn, data.tmpPwIssueDtm))}
                     ${this.renderDetailCard('권한 상태', this.formatRoleText(data.masterYn), '현재 운영 권한 상태입니다.')}
                     ${this.renderDetailCard('계정 상태', this.formatMemberStatus(data.delYn), '탈퇴 처리 여부를 포함합니다.')}
                 </section>
@@ -332,6 +411,13 @@ const MemberListPage = {
 
     formatInitStatus(initYn) {
         return initYn === 'Y' ? '초기 비밀번호 상태' : '일반 로그인 상태';
+    },
+
+    formatTempPasswordIssuedAt(initYn, tmpPwIssueDtm) {
+        if (initYn !== 'Y') {
+            return '발급 이력 없음';
+        }
+        return tmpPwIssueDtm && tmpPwIssueDtm !== '-' ? tmpPwIssueDtm : '발급 시각 미기록';
     },
 
     getInitials(value) {
@@ -417,6 +503,10 @@ const MemberListPage = {
 
     setPaginationSummary(message) {
         document.getElementById('memberPaginationSummary').textContent = message;
+    },
+
+    formatCount(value) {
+        return Number(value || 0).toLocaleString('ko-KR');
     }
 };
 

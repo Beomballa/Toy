@@ -6,6 +6,7 @@ import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
+import com.section.admin.user.res.AdminMemberSummaryResponse;
 import com.section.admin.user.service.AdminMemberService;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -57,7 +58,7 @@ class AdminMemberRestControllerTest {
                         List.of(new AdminMemberListResponse.Item(1L, "member@test.com", "회원", "닉네임", "N", "N", "N", "-")),
                         0, 20,
                         1L, 1, 1L, 1L,
-                        new AdminMemberListResponse.AppliedQuery(null, null, null),
+                        new AdminMemberListResponse.AppliedQuery(null, null, null, null),
                         new AdminMemberListResponse.ResultMeta("전체 1명", "1-1 / 1명 · 1페이지", 0, false, "최신 가입순")
                 ));
 
@@ -67,6 +68,19 @@ class AdminMemberRestControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(1L))
                 .andExpect(jsonPath("$.pageSize").value(20))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1명"));
+    }
+
+    @Test
+    @DisplayName("회원 요약 API는 요약 카운트를 반환한다")
+    void getSummaryReturnsSummaryResponse() throws Exception {
+        when(adminMemberService.getMemberSummary(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminMemberSummaryResponse(12L, 2L, 10L, 3L, 4L));
+
+        mockMvc.perform(get("/api/admin/members/summary").param("keyword", "member"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(12))
+                .andExpect(jsonPath("$.masterCount").value(2))
+                .andExpect(jsonPath("$.tempPasswordCount").value(4));
     }
 
     @Test
@@ -87,12 +101,13 @@ class AdminMemberRestControllerTest {
     @DisplayName("회원 상세 API는 상세 응답을 반환한다")
     void getDetailReturnsDetailResponse() throws Exception {
         when(adminMemberService.getMemberDetail(3L))
-                .thenReturn(new AdminMemberDetailResponse(3L, "user@test.com", "사용자", "유저", "Y", "N", "N", null, "-"));
+                .thenReturn(new AdminMemberDetailResponse(3L, "user@test.com", "사용자", "유저", "Y", "N", "N", "-", null, "-"));
 
         mockMvc.perform(get("/api/admin/members/get?id=3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("user@test.com"))
-                .andExpect(jsonPath("$.masterYn").value("Y"));
+                .andExpect(jsonPath("$.masterYn").value("Y"))
+                .andExpect(jsonPath("$.tmpPwIssueDtm").value("-"));
     }
 
     @Test

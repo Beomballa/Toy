@@ -10,6 +10,7 @@ public record AdminMemberDetailResponse(
         String masterYn,
         String initYn,
         String delYn,
+        String tmpPwIssueDtm,
         String profileImgPath,
         String crtDtm
 ) {
@@ -22,6 +23,7 @@ public record AdminMemberDetailResponse(
                 account.getMasterYn() == null ? null : account.getMasterYn().name(),
                 account.getInitYn() == null ? null : account.getInitYn().name(),
                 account.getDelYn() == null ? null : account.getDelYn().name(),
+                account.getTmpPwIssueDt() == null ? "-" : account.getTmpPwIssueDt().toString().replace('T', ' '),
                 resolveProfileImgPath(account),
                 account.getCrtDtm() == null ? "-" : account.getCrtDtm().toString().replace('T', ' ')
         );

@@ -4,8 +4,10 @@ import com.section.admin.user.req.AdminMemberListRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
+import com.section.admin.user.res.AdminMemberSummaryResponse;
 import com.section.common.base.entity.type.YN;
 import com.section.common.system.dto.AccountListResDto;
+import com.section.common.system.dto.AccountSummaryDto;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -60,6 +62,24 @@ class AdminMemberServiceTest {
     }
 
     @Test
+    @DisplayName("회원 요약은 현재 필터 기준 카운트를 반환한다")
+    void getMemberSummaryReturnsSummaryResponse() {
+        AdminMemberListRequest request = new AdminMemberListRequest();
+        request.setKeyword("member");
+
+        when(accountRepository.getAccountSummary(any()))
+                .thenReturn(new AccountSummaryDto(12, 2, 10, 3, 4));
+
+        AdminMemberSummaryResponse response = adminMemberService.getMemberSummary(request);
+
+        assertEquals(12, response.totalCount());
+        assertEquals(2, response.masterCount());
+        assertEquals(10, response.normalCount());
+        assertEquals(3, response.deletedCount());
+        assertEquals(4, response.tempPasswordCount());
+    }
+
+    @Test
     @DisplayName("회원 상세는 엔티티를 운영용 응답으로 변환한다")
     void getMemberDetailReturnsResponse() {
         Account account = new Account();
@@ -69,6 +89,7 @@ class AdminMemberServiceTest {
         account.setNickname("유저");
         account.setMasterYn(YN.Y);
         account.setDelYn(YN.N);
+        account.setTmpPwIssueDt(java.time.LocalDateTime.of(2026, 6, 11, 9, 30));
         account.setProfileImgPath("/images/profiles/");
         account.setProfileImgName("user-3.png");
 
@@ -78,6 +99,7 @@ class AdminMemberServiceTest {
 
         assertEquals("user@test.com", response.email());
         assertEquals("Y", response.masterYn());
+        assertEquals("2026-06-11 09:30", response.tmpPwIssueDtm());
         assertEquals("/images/profiles/user-3.png", response.profileImgPath());
     }
 
@@ -118,6 +140,7 @@ class AdminMemberServiceTest {
         AdminMemberListRequest request = new AdminMemberListRequest();
         request.setKeyword("member");
         request.setMasterYn("Y");
+        request.setInitYn("Y");
 
         AccountListResDto row = new AccountListResDto();
         row.setId(1L);
@@ -133,7 +156,7 @@ class AdminMemberServiceTest {
 
         String csv = new String(adminMemberService.exportMemberListCsv(request), UTF_8);
 
-        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("최신 가입순 · 검색=member · 권한=Y"));
+        org.junit.jupiter.api.Assertions.assertTrue(csv.contains("최신 가입순 · 검색=member · 권한=Y · 비밀번호=임시비밀번호"));
         org.junit.jupiter.api.Assertions.assertTrue(csv.contains("\"1\",\"회원\",\"닉네임\",\"member@test.com\",\"마스터\",\"정상\",\"정상\""));
     }
 }

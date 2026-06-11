@@ -18,7 +18,7 @@
 <!-- 공통 사이드바 사용 -->
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
 
   <div class="page-header">
     <nav aria-label="breadcrumb">
@@ -90,26 +90,25 @@
   </div>
 
   <!-- ✅ 필터 영역: flex 기반으로 넓게 배치 -->
-  <div class="card animate-in mb-4">
+  <div class="card animate-in admin-panel-card admin-filter-panel">
     <div class="card-body">
-      <div class="filter-row">
-
-        <div class="filter-item">
-          <div class="filter-label">브랜드</div>
+      <div class="admin-filter-grid">
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label">브랜드</label>
           <select class="form-select" id="brandNo" name="brandNo">
             <option value="">전체 브랜드</option>
           </select>
         </div>
 
-        <div class="filter-item">
-          <div class="filter-label">카테고리</div>
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label">카테고리</label>
           <select class="form-select" id="categoryNo" name="categoryNo">
             <option value="">전체 카테고리</option>
           </select>
         </div>
 
-        <div class="filter-item">
-          <div class="filter-label">상태</div>
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label">상태</label>
           <select class="form-select" id="statusFilter">
             <option value="">전체 상태</option>
             <option value="ACTIVE">판매중 (ACTIVE)</option>
@@ -118,8 +117,8 @@
           </select>
         </div>
 
-        <div class="filter-item flex-fixed-auto">
-          <div class="filter-label">재고 조건</div>
+        <div class="admin-filter-field admin-filter-field--span-3">
+          <label class="admin-filter-label">재고 조건</label>
           <div class="d-flex gap-2 align-items-center mt-2">
             <div class="form-check mb-0">
               <input class="form-check-input" type="checkbox" id="lowStockOnly">
@@ -134,16 +133,16 @@
           </div>
         </div>
 
-        <div class="filter-item flex-fixed-auto">
-          <div class="filter-label">등록 조건</div>
+        <div class="admin-filter-field admin-filter-field--span-2">
+          <label class="admin-filter-label">등록 조건</label>
           <div class="form-check mt-2">
             <input class="form-check-input" type="checkbox" id="createdTodayOnly">
             <label class="form-check-label" for="createdTodayOnly">오늘 등록만 보기</label>
           </div>
         </div>
 
-        <div class="filter-item filter-item-search">
-          <div class="filter-label">상품 검색</div>
+        <div class="admin-filter-field admin-filter-field--span-5">
+          <label class="admin-filter-label">상품 검색</label>
           <div class="input-group">
             <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
             <input type="text" id="searchKeyword" class="form-control"
@@ -151,12 +150,11 @@
             <button class="btn btn-outline-secondary" type="button" id="btnSearchProducts">검색</button>
           </div>
         </div>
-
       </div>
     </div>
   </div>
 
-  <div class="card animate-in">
+  <div class="card animate-in admin-panel-card admin-table-card">
     <div class="visually-hidden" id="productListStateMeta"
          data-list-state="loading"
          data-state-message=""
@@ -188,12 +186,12 @@
       </div>
     </div>
     <div class="card-body border-bottom py-3">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-4">
+      <div class="admin-filter-grid">
+        <div class="admin-filter-field admin-filter-field--span-4">
           <div class="small text-muted" id="productSelectionMeta">선택된 상품이 없습니다.</div>
         </div>
-        <div class="col-md-4">
-          <label class="form-label fw-bold" for="bulkProductStatus">일괄 상태 변경</label>
+        <div class="admin-filter-field admin-filter-field--span-4">
+          <label class="admin-filter-label" for="bulkProductStatus">일괄 상태 변경</label>
           <select class="form-select" id="bulkProductStatus">
             <option value="">변경 안 함</option>
             <option value="ACTIVE">판매중</option>
@@ -201,11 +199,13 @@
             <option value="SOLD_OUT">품절</option>
           </select>
         </div>
-        <div class="col-md-4 d-grid gap-2">
-          <button class="btn btn-outline-dark" type="button" id="btnApplyProductBulk">일괄 적용</button>
-          <button class="btn btn-outline-secondary" type="button" id="btnBulkDuplicateProduct">선택 복제</button>
-          <button class="btn btn-outline-danger" type="button" id="btnBulkDeleteProduct">일괄 삭제</button>
-          <button class="btn btn-outline-secondary" type="button" id="btnClearProductSelection">선택 해제</button>
+        <div class="admin-filter-field admin-filter-field--span-4">
+          <div class="admin-submit-bar">
+            <button class="btn btn-outline-dark" type="button" id="btnApplyProductBulk">일괄 적용</button>
+            <button class="btn btn-outline-secondary" type="button" id="btnBulkDuplicateProduct">선택 복제</button>
+            <button class="btn btn-outline-danger" type="button" id="btnBulkDeleteProduct">일괄 삭제</button>
+            <button class="btn btn-outline-secondary" type="button" id="btnClearProductSelection">선택 해제</button>
+          </div>
         </div>
       </div>
     </div>

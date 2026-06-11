@@ -13,7 +13,7 @@
 <body>
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
-<main class="main-content">
+<main class="main-content admin-page-shell admin-list-page">
     <div class="page-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -30,50 +30,34 @@
         <div class="small text-muted mt-2 d-none" id="taskWorkloadSourceContextNotice" data-source-context=""></div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">담당자 수</div>
-                    <div class="stat-value" id="taskWorkloadAssigneeCount">0</div>
-                </div>
-            </div>
+    <section class="admin-summary-grid">
+        <div class="admin-summary-card summary-card shadow-sm">
+            <div class="admin-summary-card__label">담당자 수</div>
+            <div class="admin-summary-card__value stat-value" id="taskWorkloadAssigneeCount">0</div>
         </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">배정 작업</div>
-                    <div class="stat-value" id="taskWorkloadAssignedTaskCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card summary-card shadow-sm">
+            <div class="admin-summary-card__label">배정 작업</div>
+            <div class="admin-summary-card__value stat-value" id="taskWorkloadAssignedTaskCount">0</div>
         </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">기한 초과</div>
-                    <div class="stat-value" id="taskWorkloadOverdueTaskCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card summary-card shadow-sm">
+            <div class="admin-summary-card__label">기한 초과</div>
+            <div class="admin-summary-card__value stat-value" id="taskWorkloadOverdueTaskCount">0</div>
         </div>
-        <div class="col-md-6 col-xl">
-            <div class="card summary-card shadow-sm">
-                <div class="card-body">
-                    <div class="text-muted small mb-2">미지정 작업</div>
-                    <div class="stat-value" id="taskWorkloadUnassignedTaskCount">0</div>
-                </div>
-            </div>
+        <div class="admin-summary-card summary-card shadow-sm">
+            <div class="admin-summary-card__label">미지정 작업</div>
+            <div class="admin-summary-card__value stat-value" id="taskWorkloadUnassignedTaskCount">0</div>
         </div>
-    </div>
+    </section>
 
-    <div class="card animate-in mb-4">
+    <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-5">
-                    <label class="form-label fw-bold">담당자/작업/메모 검색</label>
+            <div class="admin-filter-grid">
+                <div class="admin-filter-field admin-filter-field--span-5">
+                    <label class="admin-filter-label">담당자/작업/메모 검색</label>
                     <input type="text" id="taskWorkloadKeyword" class="form-control" placeholder="담당자명, 작업명, 메모 검색">
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">우선순위</label>
+                <div class="admin-filter-field admin-filter-field--span-3">
+                    <label class="admin-filter-label">우선순위</label>
                     <select id="taskWorkloadPriority" class="form-select">
                         <option value="">전체</option>
                         <option value="HIGH">높음</option>
@@ -81,21 +65,22 @@
                         <option value="LOW">낮음</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <div class="form-check mt-4 pt-2">
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">옵션</label>
+                    <div class="form-check mt-2">
                         <input class="form-check-input" type="checkbox" id="taskWorkloadOverdueOnly">
                         <label class="form-check-label" for="taskWorkloadOverdueOnly">기한 초과만</label>
                     </div>
                 </div>
-                <div class="col-md-2 d-flex gap-2">
-                    <button type="button" class="btn btn-primary flex-fill" id="btnSearchTaskWorkload">조회</button>
-                    <button type="button" class="btn btn-outline-secondary flex-fill" id="btnResetTaskWorkload">초기화</button>
+                <div class="admin-filter-actions">
+                    <button type="button" class="btn btn-dark" id="btnSearchTaskWorkload">조회</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetTaskWorkload">초기화</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card animate-in">
+    <div class="card animate-in admin-panel-card admin-table-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">담당자별 작업 분배</h6>
             <div class="d-flex align-items-center gap-2">

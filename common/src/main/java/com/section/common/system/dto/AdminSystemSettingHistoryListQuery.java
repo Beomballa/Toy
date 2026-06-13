@@ -6,6 +6,7 @@ public record AdminSystemSettingHistoryListQuery(
         String settingKey,
         Long adminNo,
         String adminKeyword,
+        String changeStatus,
         LocalDate startDate,
         LocalDate endDate
 ) {

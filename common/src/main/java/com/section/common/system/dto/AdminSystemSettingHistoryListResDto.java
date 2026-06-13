@@ -18,4 +18,6 @@ public class AdminSystemSettingHistoryListResDto {
     private String changedIpAddress;
     private Long crtNo;
     private LocalDateTime crtDtm;
+    private String currentValue;
+    private Boolean currentValueMatched;
 }

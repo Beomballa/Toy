@@ -59,6 +59,9 @@ public record AdminSystemSettingHistoryListResponse(
             String afterValue,
             String beforeValueLabel,
             String afterValueLabel,
+            String currentValue,
+            String currentValueLabel,
+            boolean currentValueMatched,
             String changeSummary,
             Long changedAdminNo,
             String changedAdminName,
@@ -76,6 +79,9 @@ public record AdminSystemSettingHistoryListResponse(
                     item.getAfterValue(),
                     definition.formatValue(item.getBeforeValue()),
                     definition.formatValue(item.getAfterValue()),
+                    definition.normalizeStoredValue(item.getCurrentValue()),
+                    definition.formatValue(item.getCurrentValue()),
+                    Boolean.TRUE.equals(item.getCurrentValueMatched()),
                     item.getChangeSummary(),
                     changedAdminNo,
                     changedAdminNo == null ? "관리자" : adminNameMap.getOrDefault(changedAdminNo, "관리자#" + changedAdminNo),
@@ -91,11 +97,13 @@ public record AdminSystemSettingHistoryListResponse(
             long maintenanceCount,
             long communityCount,
             long orderExportCount,
-            long lowStockThresholdCount
+            long lowStockThresholdCount,
+            long currentValueCount,
+            long outdatedValueCount
     ) {
         private static Summary from(AdminSystemSettingHistorySummaryDto summary) {
             if (summary == null) {
-                return new Summary(0, 0, 0, 0, 0, 0);
+                return new Summary(0, 0, 0, 0, 0, 0, 0, 0);
             }
             return new Summary(
                     summary.totalCount(),
@@ -103,7 +111,9 @@ public record AdminSystemSettingHistoryListResponse(
                     summary.maintenanceCount(),
                     summary.communityCount(),
                     summary.orderExportCount(),
-                    summary.lowStockThresholdCount()
+                    summary.lowStockThresholdCount(),
+                    summary.currentValueCount(),
+                    summary.outdatedValueCount()
             );
         }
     }
@@ -112,6 +122,7 @@ public record AdminSystemSettingHistoryListResponse(
             String settingKey,
             Long adminNo,
             String adminKeyword,
+            String changeStatus,
             String startDate,
             String endDate
     ) {
@@ -120,6 +131,7 @@ public record AdminSystemSettingHistoryListResponse(
                     query.settingKey(),
                     query.adminNo(),
                     query.adminKeyword(),
+                    query.changeStatus(),
                     query.startDate() == null ? null : query.startDate().toString(),
                     query.endDate() == null ? null : query.endDate().toString()
             );
@@ -164,6 +176,9 @@ public record AdminSystemSettingHistoryListResponse(
             if (query.adminKeyword() != null) {
                 count++;
             }
+            if (query.changeStatus() != null) {
+                count++;
+            }
             if (query.startDate() != null) {
                 count++;
             }
@@ -184,6 +199,9 @@ public record AdminSystemSettingHistoryListResponse(
             if (query.adminKeyword() != null) {
                 builder.append(" · 관리자검색=").append(query.adminKeyword());
             }
+            if (query.changeStatus() != null) {
+                builder.append(" · 이력상태=").append(resolveChangeStatusLabel(query.changeStatus()));
+            }
             if (query.startDate() != null || query.endDate() != null) {
                 builder.append(" · 기간=")
                         .append(query.startDate() == null ? "-" : query.startDate())
@@ -191,6 +209,17 @@ public record AdminSystemSettingHistoryListResponse(
                         .append(query.endDate() == null ? "-" : query.endDate());
             }
             return builder.toString();
+        }
+
+        private static String resolveChangeStatusLabel(String changeStatus) {
+            if (changeStatus == null || changeStatus.isBlank()) {
+                return "전체";
+            }
+            return switch (changeStatus.toUpperCase()) {
+                case "CURRENT" -> "현재 반영중";
+                case "OUTDATED" -> "과거 이력";
+                default -> changeStatus;
+            };
         }
     }
 }

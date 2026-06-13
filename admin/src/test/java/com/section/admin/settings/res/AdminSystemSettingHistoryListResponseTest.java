@@ -29,12 +29,14 @@ class AdminSystemSettingHistoryListResponseTest {
         row.setChangedIpAddress("127.0.0.1");
         row.setCrtNo(7L);
         row.setCrtDtm(LocalDateTime.of(2026, 6, 6, 9, 0));
+        row.setCurrentValue("true");
+        row.setCurrentValueMatched(true);
 
         AdminSystemSettingHistoryListResponse response = AdminSystemSettingHistoryListResponse.from(
                 new PageImpl<>(List.of(row), PageRequest.of(1, 10), 21),
                 Map.of(7L, "운영자"),
-                new AdminSystemSettingHistoryListQuery(null, null, null, null, null),
-                new AdminSystemSettingHistorySummaryDto(21L, 1L, 1L, 0L, 0L, 0L)
+                new AdminSystemSettingHistoryListQuery(null, null, null, null, null, null),
+                new AdminSystemSettingHistorySummaryDto(21L, 1L, 1L, 0L, 0L, 0L, 7L, 14L)
         );
 
         assertEquals("11-11 / 21건 · 3페이지", response.pageInfoLabel());
@@ -53,14 +55,19 @@ class AdminSystemSettingHistoryListResponseTest {
         row.setChangeSummary("주문 Export 허용이 활성에서 비활성으로 변경되었습니다.");
         row.setChangedIpAddress("127.0.0.1");
         row.setCrtDtm(LocalDateTime.of(2026, 6, 6, 10, 0));
+        row.setCurrentValue("true");
+        row.setCurrentValueMatched(false);
 
         AdminSystemSettingHistoryListResponse response = AdminSystemSettingHistoryListResponse.from(
                 new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1),
                 Map.of(),
-                new AdminSystemSettingHistoryListQuery(null, null, null, null, null),
-                new AdminSystemSettingHistorySummaryDto(1L, 1L, 0L, 0L, 1L, 0L)
+                new AdminSystemSettingHistoryListQuery(null, null, null, "OUTDATED", null, null),
+                new AdminSystemSettingHistorySummaryDto(1L, 1L, 0L, 0L, 1L, 0L, 0L, 1L)
         );
 
         assertEquals("관리자", response.items().getFirst().changedAdminName());
+        assertEquals("활성", response.items().getFirst().currentValueLabel());
+        assertEquals(false, response.items().getFirst().currentValueMatched());
+        assertEquals("최신 변경순 · 이력상태=과거 이력", response.resultMeta().querySignature());
     }
 }

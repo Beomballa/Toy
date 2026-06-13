@@ -32,6 +32,9 @@ public record AdminSystemSettingHistoryExportSummary(
         if (query.adminKeyword() != null) {
             builder.append(" · 관리자검색=").append(query.adminKeyword());
         }
+        if (query.changeStatus() != null) {
+            builder.append(" · 이력상태=").append(resolveChangeStatusLabel(query.changeStatus()));
+        }
         if (query.startDate() != null || query.endDate() != null) {
             builder.append(" · 기간=")
                     .append(query.startDate() == null ? "-" : query.startDate())
@@ -39,5 +42,13 @@ public record AdminSystemSettingHistoryExportSummary(
                     .append(query.endDate() == null ? "-" : query.endDate());
         }
         return builder.toString();
+    }
+
+    private static String resolveChangeStatusLabel(String changeStatus) {
+        return switch (changeStatus.toUpperCase()) {
+            case "CURRENT" -> "현재 반영중";
+            case "OUTDATED" -> "과거 이력";
+            default -> changeStatus;
+        };
     }
 }

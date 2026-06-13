@@ -14,10 +14,10 @@ class AdminSystemSettingHistoryExportSummaryTest {
     @DisplayName("설정 이력 export 요약은 관리자 검색어를 포함한다")
     void ofIncludesAdminKeyword() {
         AdminSystemSettingHistoryExportSummary summary = AdminSystemSettingHistoryExportSummary.of(
-                new AdminSystemSettingHistoryListQuery("SYSTEM_MAINTENANCE_MODE", 7L, "운영 담당", null, null),
+                new AdminSystemSettingHistoryListQuery("SYSTEM_MAINTENANCE_MODE", 7L, "운영 담당", "CURRENT", null, null),
                 LocalDateTime.of(2026, 6, 10, 9, 30)
         );
 
-        assertEquals("최신 변경순 · 설정=유지보수 모드 · 관리자=7 · 관리자검색=운영 담당", summary.filterSummary());
+        assertEquals("최신 변경순 · 설정=유지보수 모드 · 관리자=7 · 관리자검색=운영 담당 · 이력상태=현재 반영중", summary.filterSummary());
     }
 }

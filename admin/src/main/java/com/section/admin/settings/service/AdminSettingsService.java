@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -107,6 +108,12 @@ public class AdminSettingsService {
 
         AdminSystemSettingHistory history = adminSystemSettingHistoryRepository.findById(historyNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ENTITY_NOT_FOUND));
+        AdminSettingDefinition definition = AdminSettingDefinition.fromKey(history.getSettingKey());
+        String currentValue = adminSystemSettingRepository.findAllBySettingKeyIn(List.of(history.getSettingKey())).stream()
+                .findFirst()
+                .map(AdminSystemSetting::getSettingValue)
+                .map(definition::normalizeStoredValue)
+                .orElse(definition.defaultValue());
 
         String adminName = history.getCrtNo() == null
                 ? "관리자"
@@ -114,7 +121,12 @@ public class AdminSettingsService {
                         .map(AdminUser::getName)
                         .orElse("관리자#" + history.getCrtNo());
 
-        return AdminSystemSettingHistoryDetailResponse.from(history, adminName);
+        return AdminSystemSettingHistoryDetailResponse.from(
+                history,
+                adminName,
+                currentValue,
+                Objects.equals(definition.normalizeStoredValue(history.getAfterValue()), currentValue)
+        );
     }
 
     @Transactional

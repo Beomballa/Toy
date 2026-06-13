@@ -16,10 +16,12 @@ class AdminSystemSettingHistoryListRequestTest {
     void toQueryNormalizesAdminKeyword() {
         AdminSystemSettingHistoryListRequest request = new AdminSystemSettingHistoryListRequest();
         request.setAdminKeyword("  설정   담당자  ");
+        request.setChangeStatus(" current ");
 
         var query = request.toQuery();
 
         assertEquals("설정 담당자", query.adminKeyword());
+        assertEquals("CURRENT", query.changeStatus());
     }
 
     @Test
@@ -28,6 +30,15 @@ class AdminSystemSettingHistoryListRequestTest {
         AdminSystemSettingHistoryListRequest request = new AdminSystemSettingHistoryListRequest();
         request.setStartDate(LocalDate.of(2026, 6, 9));
         request.setEndDate(LocalDate.of(2026, 6, 1));
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("설정 이력 요청은 허용되지 않은 이력 상태 값을 거부한다")
+    void toQueryRejectsInvalidChangeStatus() {
+        AdminSystemSettingHistoryListRequest request = new AdminSystemSettingHistoryListRequest();
+        request.setChangeStatus("latest");
 
         assertThrows(BusinessException.class, request::toQuery);
     }

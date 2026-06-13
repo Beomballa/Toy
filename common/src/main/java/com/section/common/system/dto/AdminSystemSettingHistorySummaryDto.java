@@ -6,6 +6,8 @@ public record AdminSystemSettingHistorySummaryDto(
         long maintenanceCount,
         long communityCount,
         long orderExportCount,
-        long lowStockThresholdCount
+        long lowStockThresholdCount,
+        long currentValueCount,
+        long outdatedValueCount
 ) {
 }

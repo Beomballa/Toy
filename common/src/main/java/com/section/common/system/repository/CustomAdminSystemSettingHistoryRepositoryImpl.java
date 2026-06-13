@@ -21,6 +21,8 @@ import static com.section.common.system.entity.QAdminUser.adminUser;
 import static com.section.common.system.entity.QAdminSystemSettingHistory.adminSystemSettingHistory;
 
 public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdminSystemSettingHistoryRepository {
+    private static final com.section.common.system.entity.QAdminSystemSetting currentSetting =
+            new com.section.common.system.entity.QAdminSystemSetting("currentSetting");
 
     private final JPAQueryFactory queryFactory;
 
@@ -44,9 +46,12 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
                         adminSystemSettingHistory.changeSummary,
                         adminSystemSettingHistory.changedIpAddress,
                         adminSystemSettingHistory.crtNo,
-                        adminSystemSettingHistory.crtDtm
+                        adminSystemSettingHistory.crtDtm,
+                        currentSetting.settingValue.as("currentValue"),
+                        adminSystemSettingHistory.afterValue.eq(currentSetting.settingValue).as("currentValueMatched")
                 ))
                 .from(adminSystemSettingHistory)
+                .leftJoin(currentSetting).on(adminSystemSettingHistory.settingKey.eq(currentSetting.settingKey))
                 .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query))
                 .orderBy(adminSystemSettingHistory.historyNo.desc())
@@ -56,6 +61,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
 
         JPAQuery<Long> countQuery = queryFactory.select(adminSystemSettingHistory.count())
                 .from(adminSystemSettingHistory)
+                .leftJoin(currentSetting).on(adminSystemSettingHistory.settingKey.eq(currentSetting.settingKey))
                 .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query));
 
@@ -72,13 +78,16 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
                         sumCase(adminSystemSettingHistory.settingKey.eq("SYSTEM_MAINTENANCE_MODE")),
                         sumCase(adminSystemSettingHistory.settingKey.eq("COMMUNITY_WRITE_ENABLED")),
                         sumCase(adminSystemSettingHistory.settingKey.eq("ORDER_EXPORT_ENABLED")),
-                        sumCase(adminSystemSettingHistory.settingKey.eq("LOW_STOCK_DEFAULT_THRESHOLD"))
+                        sumCase(adminSystemSettingHistory.settingKey.eq("LOW_STOCK_DEFAULT_THRESHOLD")),
+                        sumCase(adminSystemSettingHistory.afterValue.eq(currentSetting.settingValue)),
+                        sumCase(adminSystemSettingHistory.afterValue.ne(currentSetting.settingValue))
                 ))
                 .from(adminSystemSettingHistory)
+                .leftJoin(currentSetting).on(adminSystemSettingHistory.settingKey.eq(currentSetting.settingKey))
                 .leftJoin(adminUser).on(adminSystemSettingHistory.crtNo.eq(adminUser.adminNo))
                 .where(historyConditions(query))
                 .fetchOne();
-        return summary == null ? new AdminSystemSettingHistorySummaryDto(0, 0, 0, 0, 0, 0) : summary;
+        return summary == null ? new AdminSystemSettingHistorySummaryDto(0, 0, 0, 0, 0, 0, 0, 0) : summary;
     }
 
     private BooleanExpression[] historyConditions(AdminSystemSettingHistoryListQuery query) {
@@ -86,6 +95,7 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
                 settingKeyEq(query.settingKey()),
                 adminNoEq(query.adminNo()),
                 adminKeywordLike(query.adminKeyword()),
+                changeStatusEq(query.changeStatus()),
                 createdDateBetween(query.startDate(), query.endDate())
         };
     }
@@ -107,6 +117,17 @@ public class CustomAdminSystemSettingHistoryRepositoryImpl implements CustomAdmi
         }
         return adminUser.name.containsIgnoreCase(adminKeyword)
                 .or(adminUser.loginId.containsIgnoreCase(adminKeyword));
+    }
+
+    private BooleanExpression changeStatusEq(String changeStatus) {
+        if (changeStatus == null || changeStatus.isBlank()) {
+            return null;
+        }
+        return switch (changeStatus.trim().toUpperCase()) {
+            case "CURRENT" -> adminSystemSettingHistory.afterValue.eq(currentSetting.settingValue);
+            case "OUTDATED" -> adminSystemSettingHistory.afterValue.ne(currentSetting.settingValue);
+            default -> null;
+        };
     }
 
     private BooleanExpression createdDateBetween(LocalDate startDate, LocalDate endDate) {

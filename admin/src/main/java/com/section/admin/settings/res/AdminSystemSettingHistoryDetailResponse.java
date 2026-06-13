@@ -13,6 +13,9 @@ public record AdminSystemSettingHistoryDetailResponse(
         String afterValue,
         String beforeValueLabel,
         String afterValueLabel,
+        String currentValue,
+        String currentValueLabel,
+        boolean currentValueMatched,
         String changeSummary,
         Long changedAdminNo,
         String changedAdminName,
@@ -21,7 +24,12 @@ public record AdminSystemSettingHistoryDetailResponse(
 ) {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static AdminSystemSettingHistoryDetailResponse from(AdminSystemSettingHistory history, String adminName) {
+    public static AdminSystemSettingHistoryDetailResponse from(
+            AdminSystemSettingHistory history,
+            String adminName,
+            String currentValue,
+            boolean currentValueMatched
+    ) {
         AdminSettingDefinition definition = AdminSettingDefinition.fromKey(history.getSettingKey());
         Long changedAdminNo = history.getCrtNo();
         return new AdminSystemSettingHistoryDetailResponse(
@@ -32,6 +40,9 @@ public record AdminSystemSettingHistoryDetailResponse(
                 history.getAfterValue(),
                 definition.formatValue(history.getBeforeValue()),
                 definition.formatValue(history.getAfterValue()),
+                definition.normalizeStoredValue(currentValue),
+                definition.formatValue(currentValue),
+                currentValueMatched,
                 history.getChangeSummary(),
                 changedAdminNo,
                 changedAdminNo == null ? "관리자" : adminName,

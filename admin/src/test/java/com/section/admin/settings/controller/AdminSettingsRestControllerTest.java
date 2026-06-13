@@ -70,6 +70,9 @@ class AdminSettingsRestControllerTest {
                                 "true",
                                 "비활성",
                                 "활성",
+                                "true",
+                                "활성",
+                                true,
                                 "유지보수 모드가 비활성에서 활성으로 변경되었습니다.",
                                 9L,
                                 "운영자",
@@ -83,8 +86,8 @@ class AdminSettingsRestControllerTest {
                         1,
                         1,
                         "1-1 / 1건 · 1페이지",
-                        new AdminSystemSettingHistoryListResponse.Summary(1, 1, 1, 0, 0, 0),
-                        new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, null, "2026-05-28", "2026-05-28"),
+                        new AdminSystemSettingHistoryListResponse.Summary(1, 1, 1, 0, 0, 0, 1, 0),
+                        new AdminSystemSettingHistoryListResponse.AppliedQuery("SYSTEM_MAINTENANCE_MODE", 9L, null, "CURRENT", "2026-05-28", "2026-05-28"),
                         new AdminSystemSettingHistoryListResponse.ResultMeta("1-1 / 1건", "1-1 / 1건 · 1페이지", 2, "최신 변경순 · 설정=유지보수 모드")
                 ));
 
@@ -123,6 +126,9 @@ class AdminSettingsRestControllerTest {
                         "true",
                         "비활성",
                         "활성",
+                        "true",
+                        "활성",
+                        true,
                         "유지보수 모드가 비활성에서 활성으로 변경되었습니다.",
                         7L,
                         "운영자",

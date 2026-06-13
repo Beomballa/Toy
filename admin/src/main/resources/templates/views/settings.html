@@ -96,29 +96,37 @@
                 <div class="card-body p-0">
                     <div class="p-3 border-bottom bg-body-tertiary">
                         <section class="admin-summary-grid">
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="all" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">전체 변경</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryTotalCount">0</div>
                             </div>
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="today" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">오늘 변경</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryTodayCount">0</div>
                             </div>
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="setting" data-setting-key="SYSTEM_MAINTENANCE_MODE" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">유지보수 모드</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryMaintenanceCount">0</div>
                             </div>
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="setting" data-setting-key="COMMUNITY_WRITE_ENABLED" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">커뮤니티 작성</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryCommunityCount">0</div>
                             </div>
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="setting" data-setting-key="ORDER_EXPORT_ENABLED" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">주문 Export</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryOrderExportCount">0</div>
                             </div>
-                            <div class="admin-summary-card">
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="setting" data-setting-key="LOW_STOCK_DEFAULT_THRESHOLD" role="button" tabindex="0">
                                 <div class="admin-summary-card__label">저재고 기준</div>
                                 <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryLowStockCount">0</div>
+                            </div>
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="change-status" data-change-status="CURRENT" role="button" tabindex="0">
+                                <div class="admin-summary-card__label">현재 반영중</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryCurrentCount">0</div>
+                            </div>
+                            <div class="admin-summary-card" data-role="system-history-summary-filter" data-filter-type="change-status" data-change-status="OUTDATED" role="button" tabindex="0">
+                                <div class="admin-summary-card__label">과거 이력</div>
+                                <div class="admin-summary-card__value fs-5 fw-bold" id="systemSettingHistoryOutdatedCount">0</div>
                             </div>
                         </section>
                     </div>
@@ -141,6 +149,14 @@
                             <div class="admin-filter-field admin-filter-field--span-2">
                                 <label class="admin-filter-label">관리자 검색</label>
                                 <input type="text" id="systemSettingHistoryAdminKeyword" class="form-control form-control-sm" placeholder="이름 또는 로그인 ID">
+                            </div>
+                            <div class="admin-filter-field admin-filter-field--span-2">
+                                <label class="admin-filter-label">이력 상태</label>
+                                <select id="systemSettingHistoryChangeStatus" class="form-select form-select-sm">
+                                    <option value="">전체</option>
+                                    <option value="CURRENT">현재 반영중</option>
+                                    <option value="OUTDATED">과거 이력</option>
+                                </select>
                             </div>
                             <div class="admin-filter-field admin-filter-field--span-2">
                                 <label class="admin-filter-label">시작일</label>
@@ -175,13 +191,14 @@
                                 <th class="ps-4">시간</th>
                                 <th>설정</th>
                                 <th>변경 내용</th>
+                                <th>현재 적용값</th>
                                 <th>작업자</th>
                                 <th>IP</th>
                                 <th class="text-end pe-4">상세</th>
                             </tr>
                             </thead>
                             <tbody id="systemSettingHistoryBody">
-                            <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                            <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -464,11 +481,25 @@
                 this.historyState.page = 0;
                 this.getSystemSettingHistory();
             });
+            document.getElementById('systemSettingHistoryChangeStatus').addEventListener('change', () => {
+                this.historyState.page = 0;
+                this.getSystemSettingHistory();
+            });
             document.getElementById('systemSettingHistoryBody').addEventListener('click', (event) => {
                 const detailButton = event.target.closest('[data-role="open-system-setting-history-detail"]');
                 if (detailButton) {
                     this.openSystemSettingHistoryDetail(Number(detailButton.dataset.historyNo));
                 }
+            });
+            document.querySelectorAll('[data-role="system-history-summary-filter"]').forEach((card) => {
+                const apply = () => this.applySystemHistorySummaryFilter(card);
+                card.addEventListener('click', apply);
+                card.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        apply();
+                    }
+                });
             });
             document.getElementById('adminListBody').addEventListener('click', (event) => {
                 const deleteButton = event.target.closest('[data-role="delete-admin"]');
@@ -755,7 +786,7 @@
             } catch (err) {
                 document.getElementById('systemSettingHistoryMetaText').textContent = err.message;
                 document.getElementById('systemSettingHistoryBody').innerHTML =
-                    `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+                    `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             }
         },
         readSystemHistoryStateFromUrl() {
@@ -763,6 +794,7 @@
             document.getElementById('systemSettingHistorySettingKey').value = params.get('settingKey') || '';
             document.getElementById('systemSettingHistoryAdminNo').value = params.get('adminNo') || '';
             document.getElementById('systemSettingHistoryAdminKeyword').value = params.get('adminKeyword') || '';
+            document.getElementById('systemSettingHistoryChangeStatus').value = params.get('changeStatus') || '';
             document.getElementById('systemSettingHistoryStartDate').value = params.get('startDate') || '';
             document.getElementById('systemSettingHistoryEndDate').value = params.get('endDate') || '';
             this.historyState.page = Number(params.get('page') || 0);
@@ -775,12 +807,14 @@
             const settingKey = document.getElementById('systemSettingHistorySettingKey').value;
             const adminNo = document.getElementById('systemSettingHistoryAdminNo').value.trim();
             const adminKeyword = document.getElementById('systemSettingHistoryAdminKeyword').value.trim();
+            const changeStatus = document.getElementById('systemSettingHistoryChangeStatus').value;
             const startDate = document.getElementById('systemSettingHistoryStartDate').value;
             const endDate = document.getElementById('systemSettingHistoryEndDate').value;
 
             if (settingKey) params.set('settingKey', settingKey);
             if (adminNo) params.set('adminNo', adminNo);
             if (adminKeyword) params.set('adminKeyword', adminKeyword);
+            if (changeStatus) params.set('changeStatus', changeStatus);
             if (startDate) params.set('startDate', startDate);
             if (endDate) params.set('endDate', endDate);
             if (this.historyState.historyNo) params.set('historyNo', this.historyState.historyNo);
@@ -800,7 +834,7 @@
             const body = document.getElementById('systemSettingHistoryBody');
 
             if (items.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
+                body.innerHTML = '<tr><td colspan="7" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
                 this.renderSystemSettingHistorySummary(data?.summary);
                 this.renderSystemSettingHistoryMeta(data);
                 this.renderSystemSettingHistoryPagination(data);
@@ -817,6 +851,12 @@
                     <td>
                         <div class="small text-muted">${item.beforeValueLabel} → ${item.afterValueLabel}</div>
                         <div>${item.changeSummary}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold">${item.currentValueLabel}</div>
+                        <div class="small ${item.currentValueMatched ? 'text-success' : 'text-warning'}">
+                            ${item.currentValueMatched ? '현재 반영중' : '과거 이력'}
+                        </div>
                     </td>
                     <td>
                         <div>${item.changedAdminName}</div>
@@ -879,6 +919,14 @@
                             <div class="fw-bold">${data.afterValueLabel}</div>
                             <div class="text-muted small">raw: ${data.afterValue ?? '-'}</div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="small text-muted">현재 적용값</div>
+                            <div class="fw-bold">${data.currentValueLabel}</div>
+                            <div class="text-muted small">raw: ${data.currentValue ?? '-'}</div>
+                            <div class="small mt-1 ${data.currentValueMatched ? 'text-success' : 'text-warning'}">
+                                ${data.currentValueMatched ? '이 이력이 현재 설정에 그대로 반영되어 있습니다.' : '이 이력 이후 더 최근 설정 변경이 반영되었습니다.'}
+                            </div>
+                        </div>
                         <div class="col-md-12">
                             <div class="small text-muted">변경 요약</div>
                             <div class="border rounded p-3 bg-light">${data.changeSummary}</div>
@@ -905,6 +953,8 @@
             document.getElementById('systemSettingHistoryCommunityCount').textContent = Number(safeSummary.communityCount || 0).toLocaleString();
             document.getElementById('systemSettingHistoryOrderExportCount').textContent = Number(safeSummary.orderExportCount || 0).toLocaleString();
             document.getElementById('systemSettingHistoryLowStockCount').textContent = Number(safeSummary.lowStockThresholdCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryCurrentCount').textContent = Number(safeSummary.currentValueCount || 0).toLocaleString();
+            document.getElementById('systemSettingHistoryOutdatedCount').textContent = Number(safeSummary.outdatedValueCount || 0).toLocaleString();
         },
         renderSystemSettingHistoryMeta(data) {
             document.getElementById('systemSettingHistoryMetaText').textContent =
@@ -946,6 +996,7 @@
             document.getElementById('systemSettingHistorySettingKey').value = '';
             document.getElementById('systemSettingHistoryAdminNo').value = '';
             document.getElementById('systemSettingHistoryAdminKeyword').value = '';
+            document.getElementById('systemSettingHistoryChangeStatus').value = '';
             document.getElementById('systemSettingHistoryStartDate').value = '';
             document.getElementById('systemSettingHistoryEndDate').value = '';
             document.getElementById('systemSettingHistoryPageSize').value = '8';
@@ -979,6 +1030,30 @@
             document.querySelectorAll('[data-system-history-row]').forEach((row) => {
                 row.classList.toggle('table-active', Number(row.dataset.systemHistoryRow) === Number(historyNo));
             });
+        },
+        applySystemHistorySummaryFilter(card) {
+            const filterType = card?.dataset?.filterType;
+            if (!filterType) {
+                return;
+            }
+            if (filterType === 'all') {
+                this.resetSystemSettingHistoryFilters();
+                return;
+            }
+            if (filterType === 'today') {
+                const now = new Date();
+                const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                document.getElementById('systemSettingHistoryStartDate').value = today;
+                document.getElementById('systemSettingHistoryEndDate').value = today;
+            }
+            if (filterType === 'setting' && card.dataset.settingKey) {
+                document.getElementById('systemSettingHistorySettingKey').value = card.dataset.settingKey;
+            }
+            if (filterType === 'change-status' && card.dataset.changeStatus) {
+                document.getElementById('systemSettingHistoryChangeStatus').value = card.dataset.changeStatus;
+            }
+            this.historyState.page = 0;
+            this.getSystemSettingHistory();
         },
         formatAdminNo(adminNo) {
             return adminNo ? `#${adminNo}` : '시스템';

@@ -23,12 +23,20 @@ public class AdminSystemSettingHistoryListRequest {
     private String settingKey;
     private Long adminNo;
     private String adminKeyword;
+    private String changeStatus;
     private LocalDate startDate;
     private LocalDate endDate;
 
     public AdminSystemSettingHistoryListQuery toQuery() {
         validate();
-        return new AdminSystemSettingHistoryListQuery(normalizedSettingKey(), adminNo, normalizedAdminKeyword(), startDate, endDate);
+        return new AdminSystemSettingHistoryListQuery(
+                normalizedSettingKey(),
+                adminNo,
+                normalizedAdminKeyword(),
+                normalizedChangeStatus(),
+                startDate,
+                endDate
+        );
     }
 
     public int normalizedPage(Integer page) {
@@ -53,6 +61,9 @@ public class AdminSystemSettingHistoryListRequest {
         if (normalizedSettingKey != null && !ALLOWED_SETTING_KEYS.contains(normalizedSettingKey)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+        if (changeStatus != null && normalizedChangeStatus() == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
     }
 
     private String normalizedSettingKey() {
@@ -68,5 +79,15 @@ public class AdminSystemSettingHistoryListRequest {
         }
         String normalized = adminKeyword.trim().replaceAll("\\s+", " ");
         return normalized.isBlank() ? null : normalized;
+    }
+
+    private String normalizedChangeStatus() {
+        if (changeStatus == null || changeStatus.isBlank()) {
+            return null;
+        }
+        return switch (changeStatus.trim().toUpperCase()) {
+            case "CURRENT", "OUTDATED" -> changeStatus.trim().toUpperCase();
+            default -> null;
+        };
     }
 }

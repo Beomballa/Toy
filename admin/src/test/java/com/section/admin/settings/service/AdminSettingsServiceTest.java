@@ -120,7 +120,7 @@ class AdminSettingsServiceTest {
         when(adminSystemSettingHistoryRepository.getHistoryList(any(), any()))
                 .thenReturn(new PageImpl<>(List.of(row)));
         when(adminSystemSettingHistoryRepository.getHistorySummary(any()))
-                .thenReturn(new AdminSystemSettingHistorySummaryDto(1L, 1L, 1L, 0L, 0L, 0L));
+                .thenReturn(new AdminSystemSettingHistorySummaryDto(1L, 1L, 1L, 0L, 0L, 0L, 1L, 0L));
         when(adminUserRepository.findAllById(List.of(7L)))
                 .thenReturn(List.of(AdminUser.builder().adminNo(7L).name("운영자").build()));
 
@@ -150,6 +150,11 @@ class AdminSettingsServiceTest {
         history.setCrtDtm(java.time.LocalDateTime.of(2026, 5, 29, 10, 0));
 
         when(adminSystemSettingHistoryRepository.findById(11L)).thenReturn(java.util.Optional.of(history));
+        when(adminSystemSettingRepository.findAllBySettingKeyIn(List.of("SYSTEM_MAINTENANCE_MODE")))
+                .thenReturn(List.of(AdminSystemSetting.builder()
+                        .settingKey("SYSTEM_MAINTENANCE_MODE")
+                        .settingValue("true")
+                        .build()));
         when(adminUserRepository.findById(7L))
                 .thenReturn(java.util.Optional.of(AdminUser.builder().adminNo(7L).name("운영자").build()));
 
@@ -159,6 +164,8 @@ class AdminSettingsServiceTest {
         assertEquals("운영자", response.changedAdminName());
         assertEquals("비활성", response.beforeValueLabel());
         assertEquals("활성", response.afterValueLabel());
+        assertEquals("활성", response.currentValueLabel());
+        assertTrue(response.currentValueMatched());
     }
 
     @Test
@@ -176,10 +183,44 @@ class AdminSettingsServiceTest {
         history.setCrtDtm(java.time.LocalDateTime.of(2026, 6, 6, 15, 0));
 
         when(adminSystemSettingHistoryRepository.findById(15L)).thenReturn(java.util.Optional.of(history));
+        when(adminSystemSettingRepository.findAllBySettingKeyIn(List.of("ORDER_EXPORT_ENABLED")))
+                .thenReturn(List.of(AdminSystemSetting.builder()
+                        .settingKey("ORDER_EXPORT_ENABLED")
+                        .settingValue("true")
+                        .build()));
 
         AdminSystemSettingHistoryDetailResponse response = adminSettingsService.getSystemSettingHistoryDetail(15L);
 
         assertEquals("관리자", response.changedAdminName());
+        assertFalse(response.currentValueMatched());
+    }
+
+    @Test
+    @DisplayName("설정 변경 이력 상세 조회는 현재 적용값과 다르면 과거 이력으로 표시한다")
+    void getSystemSettingHistoryDetailMarksOutdatedHistory() {
+        AdminSystemSettingHistory history = AdminSystemSettingHistory.builder()
+                .historyNo(19L)
+                .settingKey("LOW_STOCK_DEFAULT_THRESHOLD")
+                .settingName("기본 저재고 임계값")
+                .beforeValue("100")
+                .afterValue("80")
+                .changeSummary("기본 저재고 임계값이 100에서 80으로 변경되었습니다.")
+                .changedIpAddress("127.0.0.1")
+                .build();
+        history.setCrtDtm(java.time.LocalDateTime.of(2026, 6, 6, 15, 0));
+
+        when(adminSystemSettingHistoryRepository.findById(19L)).thenReturn(java.util.Optional.of(history));
+        when(adminSystemSettingRepository.findAllBySettingKeyIn(List.of("LOW_STOCK_DEFAULT_THRESHOLD")))
+                .thenReturn(List.of(AdminSystemSetting.builder()
+                        .settingKey("LOW_STOCK_DEFAULT_THRESHOLD")
+                        .settingValue("60")
+                        .build()));
+
+        AdminSystemSettingHistoryDetailResponse response = adminSettingsService.getSystemSettingHistoryDetail(19L);
+
+        assertEquals("60", response.currentValue());
+        assertEquals("60", response.currentValueLabel());
+        assertFalse(response.currentValueMatched());
     }
 
     @Test

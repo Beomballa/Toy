@@ -67,7 +67,7 @@ class AdminOperationNoticeServiceTest {
         when(adminOperationNoticeRepository.getNoticeList(any(AdminOperationNoticeListQuery.class), any()))
                 .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, 10), 1));
         when(adminOperationNoticeRepository.getNoticeSummary(any(AdminOperationNoticeListQuery.class), any()))
-                .thenReturn(new AdminOperationNoticeSummaryDto(4, 2, 1, 1));
+                .thenReturn(new AdminOperationNoticeSummaryDto(6, 2, 1, 1, 2, 1));
 
         AdminOperationNoticeListResponse response = adminOperationNoticeService.getNoticeList(request);
 
@@ -76,8 +76,10 @@ class AdminOperationNoticeServiceTest {
         assertEquals(10, response.pageSize());
         assertEquals(1L, response.totalElements());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
-        assertEquals(4L, response.noticeStats().totalCount());
+        assertEquals(6L, response.noticeStats().totalCount());
         assertEquals(2L, response.noticeStats().liveCount());
+        assertEquals(1L, response.noticeStats().endedCount());
+        assertEquals(2L, response.noticeStats().inactiveCount());
         assertEquals("검색 문맥 기준", response.noticeStats().contextLabel());
     }
 

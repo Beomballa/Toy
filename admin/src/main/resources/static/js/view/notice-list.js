@@ -59,6 +59,8 @@ const NoticeList = {
         document.getElementById('noticeStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
         document.getElementById('noticeStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
         document.getElementById('noticeStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
+        document.getElementById('noticeStatEndedCard')?.addEventListener('click', () => this.applyStatFilter('ended'));
+        document.getElementById('noticeStatInactiveCard')?.addEventListener('click', () => this.applyStatFilter('inactive'));
         document.getElementById('noticeStatPinnedCard')?.addEventListener('click', () => this.applyStatFilter('pinned'));
         document.getElementById('noticeListActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
         document.getElementById('noticePageSize')?.addEventListener('change', () => {
@@ -163,7 +165,7 @@ const NoticeList = {
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
             this.renderStats(null);
-            document.getElementById('noticeListBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            document.getElementById('noticeListBody').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('noticePagination').innerHTML = '';
             this.setListStateMeta('error', err.message, 0, 0, '');
         }
@@ -322,6 +324,8 @@ const NoticeList = {
         const totalCountEl = document.getElementById('noticeTotalCount');
         const liveCountEl = document.getElementById('noticeLiveCount');
         const scheduledCountEl = document.getElementById('noticeScheduledCount');
+        const endedCountEl = document.getElementById('noticeEndedCount');
+        const inactiveCountEl = document.getElementById('noticeInactiveCount');
         const pinnedCountEl = document.getElementById('noticePinnedCount');
         const contextTextEl = document.getElementById('noticeStatsContextText');
         const noticeEl = document.getElementById('noticeStatsNotice');
@@ -330,6 +334,8 @@ const NoticeList = {
             if (totalCountEl) totalCountEl.innerText = '0';
             if (liveCountEl) liveCountEl.innerText = '0';
             if (scheduledCountEl) scheduledCountEl.innerText = '0';
+            if (endedCountEl) endedCountEl.innerText = '0';
+            if (inactiveCountEl) inactiveCountEl.innerText = '0';
             if (pinnedCountEl) pinnedCountEl.innerText = '0';
             if (contextTextEl) contextTextEl.innerText = '카드 기준을 확인할 수 없습니다.';
             if (noticeEl) {
@@ -342,6 +348,8 @@ const NoticeList = {
         totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
         liveCountEl.innerText = Number(stats.liveCount || 0).toLocaleString();
         scheduledCountEl.innerText = Number(stats.scheduledCount || 0).toLocaleString();
+        endedCountEl.innerText = Number(stats.endedCount || 0).toLocaleString();
+        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
         pinnedCountEl.innerText = Number(stats.pinnedCount || 0).toLocaleString();
 
         contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
@@ -586,10 +594,11 @@ const NoticeList = {
 
     applyStatFilter(type) {
         this.state.page = 0;
+        document.getElementById('noticeIsActiveFilter').value = '';
+        document.getElementById('noticeIsPinnedFilter').value = '';
+        document.getElementById('noticeVisibilityStatusFilter').value = '';
         switch (type) {
             case 'total':
-                document.getElementById('noticeVisibilityStatusFilter').value = '';
-                document.getElementById('noticeIsPinnedFilter').value = '';
                 break;
             case 'live':
                 document.getElementById('noticeVisibilityStatusFilter').value = 'LIVE';
@@ -597,8 +606,13 @@ const NoticeList = {
             case 'scheduled':
                 document.getElementById('noticeVisibilityStatusFilter').value = 'SCHEDULED';
                 break;
+            case 'ended':
+                document.getElementById('noticeVisibilityStatusFilter').value = 'ENDED';
+                break;
+            case 'inactive':
+                document.getElementById('noticeVisibilityStatusFilter').value = 'INACTIVE';
+                break;
             case 'pinned':
-                document.getElementById('noticeVisibilityStatusFilter').value = '';
                 document.getElementById('noticeIsPinnedFilter').value = 'Y';
                 break;
             default:

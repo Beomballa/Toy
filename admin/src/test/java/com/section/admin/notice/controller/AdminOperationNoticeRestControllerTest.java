@@ -65,7 +65,7 @@ class AdminOperationNoticeRestControllerTest {
                         1,
                         1L,
                         10,
-                        new AdminOperationNoticeListResponse.NoticeStats(1L, 1L, 0L, 1L, "기본 문맥 기준", "고정 우선 최신순"),
+                        new AdminOperationNoticeListResponse.NoticeStats(1L, 1L, 0L, 0L, 0L, 1L, "기본 문맥 기준", "고정 우선 최신순"),
                         new AdminOperationNoticeListResponse.AppliedQuery(null, null, null, null),
                         new AdminOperationNoticeListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 최신순", 1L, 1L)
                 ));
@@ -76,6 +76,8 @@ class AdminOperationNoticeRestControllerTest {
                 .andExpect(jsonPath("$.pageSize").value(10))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
                 .andExpect(jsonPath("$.noticeStats.liveCount").value(1L))
+                .andExpect(jsonPath("$.noticeStats.endedCount").value(0L))
+                .andExpect(jsonPath("$.noticeStats.inactiveCount").value(0L))
                 .andExpect(jsonPath("$.items[0].historyPath").value("/admin/settings/notices/history?noticeNo=1"))
                 .andExpect(jsonPath("$.items[0].activityLogPath").value("/admin/settings/logs?actionType=NOTICE_&targetId=1"));
     }

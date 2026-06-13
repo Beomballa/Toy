@@ -94,6 +94,8 @@ public record AdminOperationNoticeListResponse(
             long totalCount,
             long liveCount,
             long scheduledCount,
+            long endedCount,
+            long inactiveCount,
             long pinnedCount,
             String contextLabel,
             String querySignature
@@ -103,6 +105,8 @@ public record AdminOperationNoticeListResponse(
                     summary.totalCount(),
                     summary.liveCount(),
                     summary.scheduledCount(),
+                    summary.endedCount(),
+                    summary.inactiveCount(),
                     summary.pinnedCount(),
                     buildContextLabel(query),
                     buildQuerySignature(query)

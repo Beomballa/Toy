@@ -91,8 +91,10 @@ public class CustomAdminOperationNoticeRepositoryImpl implements CustomAdminOper
         long totalCount = countBy(statsQuery, null, now);
         long liveCount = countBy(statsQuery, AdminNoticeVisibilityStatus.LIVE, now);
         long scheduledCount = countBy(statsQuery, AdminNoticeVisibilityStatus.SCHEDULED, now);
+        long endedCount = countBy(statsQuery, AdminNoticeVisibilityStatus.ENDED, now);
+        long inactiveCount = countBy(statsQuery, AdminNoticeVisibilityStatus.INACTIVE, now);
         long pinnedCount = countPinned(statsQuery, now);
-        return new AdminOperationNoticeSummaryDto(totalCount, liveCount, scheduledCount, pinnedCount);
+        return new AdminOperationNoticeSummaryDto(totalCount, liveCount, scheduledCount, endedCount, inactiveCount, pinnedCount);
     }
 
     private long countBy(AdminOperationNoticeListQuery query, AdminNoticeVisibilityStatus visibilityStatus, LocalDateTime now) {

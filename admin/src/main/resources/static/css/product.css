@@ -1478,7 +1478,15 @@ body {
 
 .content-board-search-form {
     display: grid;
-    grid-template-columns: minmax(280px, 2.1fr) minmax(140px, 0.8fr) minmax(140px, 0.8fr) minmax(260px, 1.35fr) minmax(120px, 0.75fr) auto;
+    grid-template-columns:
+        minmax(250px, 1.9fr)
+        minmax(128px, 0.8fr)
+        minmax(128px, 0.8fr)
+        minmax(240px, 1.25fr)
+        minmax(120px, 0.72fr)
+        minmax(130px, 0.82fr)
+        minmax(148px, 0.9fr)
+        minmax(188px, 1.05fr);
     gap: 1rem;
     width: 100%;
     padding: 1.1rem 1.2rem;
@@ -1508,11 +1516,12 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
     align-self: end;
+    min-width: 0;
 }
 
 .content-board-form-actions .btn {
-    min-height: 56px;
-    padding: 0 1rem;
+    min-height: 48px;
+    padding: 0 0.95rem;
     border-radius: 12px;
     font-weight: 700;
 }
@@ -1521,7 +1530,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 0.55rem;
-    min-height: 56px;
+    min-height: 48px;
     padding: 0 0.9rem;
     color: #334155;
     font-size: 0.88rem;
@@ -1544,7 +1553,7 @@ body {
 }
 
 .content-board-form-group .form-select {
-    min-height: 56px;
+    min-height: 48px;
     padding: 0 0.9rem;
     border-radius: 12px;
     border-color: #dbe2ea;
@@ -1555,12 +1564,12 @@ body {
 }
 
 .content-board-date-range {
-    min-height: 56px;
+    min-height: 48px;
 }
 
 .content-board-date-range .form-control,
 .content-board-date-range .input-group-text {
-    min-height: 56px;
+    min-height: 48px;
     border-color: #dbe2ea;
     background: #fff;
     font-size: 0.88rem;
@@ -1574,7 +1583,7 @@ body {
     border: 1px solid #dbe2ea;
     border-radius: 12px;
     background: #fff;
-    min-height: 56px;
+    min-height: 48px;
 }
 
 .content-board-search-field i {
@@ -1586,7 +1595,7 @@ body {
     border: 0;
     box-shadow: none;
     padding: 0;
-    min-height: 54px;
+    min-height: 46px;
     font-size: 0.9rem;
     line-height: 1.2;
 }
@@ -1660,7 +1669,11 @@ body {
 
 .content-board-bulk-controls {
     display: grid;
-    grid-template-columns: minmax(220px, 1.45fr) repeat(2, minmax(140px, 0.9fr)) repeat(3, minmax(140px, 1fr)) minmax(132px, 0.9fr) minmax(120px, 0.85fr);
+    grid-template-columns:
+        minmax(210px, 1.35fr)
+        repeat(2, minmax(126px, 0.82fr))
+        repeat(3, minmax(132px, 0.9fr))
+        repeat(3, minmax(118px, 0.8fr));
     gap: 0.75rem;
     align-items: stretch;
 }
@@ -1919,11 +1932,11 @@ body {
     }
 
     .content-board-search-form {
-        grid-template-columns: minmax(240px, 1.6fr) repeat(2, minmax(140px, 1fr)) minmax(220px, 1.2fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
     .content-board-form-group--toggle {
-        grid-column: span 2;
+        grid-column: span 1;
     }
 
     .content-board-form-actions {
@@ -1931,7 +1944,7 @@ body {
     }
 
     .content-board-bulk-controls {
-        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 }
 
@@ -1942,7 +1955,7 @@ body {
     }
 
     .content-board-search-form {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         padding: 1rem;
     }
 
@@ -1950,9 +1963,11 @@ body {
         min-width: 100%;
     }
 
+    .content-board-form-group--search,
+    .content-board-form-group--range,
     .content-board-form-group--toggle,
     .content-board-form-actions {
-        grid-column: auto;
+        grid-column: span 2;
     }
 
     .content-board-bulk-head {
@@ -1961,7 +1976,7 @@ body {
     }
 
     .content-board-bulk-controls {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .content-board-card-footer {
@@ -1976,5 +1991,23 @@ body {
 
     .content-detail-actions .btn {
         width: 100%;
+    }
+}
+
+@media (max-width: 576px) {
+    .content-board-search-form,
+    .content-board-bulk-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .content-board-form-group--search,
+    .content-board-form-group--range,
+    .content-board-form-group--toggle,
+    .content-board-form-actions {
+        grid-column: auto;
+    }
+
+    .content-board-form-actions {
+        grid-template-columns: 1fr;
     }
 }

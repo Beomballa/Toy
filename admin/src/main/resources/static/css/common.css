@@ -910,6 +910,119 @@
     cursor: default;
 }
 
+.admin-search-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-search-section {
+    padding: 1rem 1.05rem;
+    border: 1px solid #e8edf3;
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.admin-search-section__title {
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.admin-search-section__desc {
+    margin-top: 0.35rem;
+    margin-bottom: 0.9rem;
+    color: #64748b;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.admin-search-grid {
+    gap: 0.85rem;
+}
+
+.admin-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.admin-chip-row .btn {
+    min-height: 38px;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.admin-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-list-toolbar__title {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.admin-list-toolbar__meta {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.admin-list-toolbar__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.admin-selection-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-selection-panel__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-selection-panel__title {
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.admin-selection-panel__desc {
+    margin-top: 0.35rem;
+    color: #64748b;
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+.admin-selection-grid {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 0.9fr) minmax(0, 1.5fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-selection-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.admin-selection-actions .btn {
+    min-height: 48px;
+    font-weight: 700;
+}
+
 .order-id,
 .order-id-display {
     font-family: 'Monaco', monospace;
@@ -1056,6 +1169,20 @@
         flex-direction: column;
         align-items: stretch;
     }
+
+    .admin-list-toolbar,
+    .admin-selection-panel__head {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .admin-list-toolbar__actions {
+        justify-content: flex-start;
+    }
+
+    .admin-selection-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 575px) {
@@ -1092,6 +1219,10 @@
     }
 
     .task-filter-section {
+        padding: 0.95rem;
+    }
+
+    .admin-search-section {
         padding: 0.95rem;
     }
 

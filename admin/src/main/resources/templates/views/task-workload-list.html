@@ -51,48 +51,66 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-5">
-                    <label class="admin-filter-label">담당자/작업/메모 검색</label>
-                    <input type="text" id="taskWorkloadKeyword" class="form-control" placeholder="담당자명, 작업명, 메모 검색">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <label class="admin-filter-label">우선순위</label>
-                    <select id="taskWorkloadPriority" class="form-select">
-                        <option value="">전체</option>
-                        <option value="HIGH">높음</option>
-                        <option value="MEDIUM">보통</option>
-                        <option value="LOW">낮음</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">옵션</label>
-                    <div class="form-check mt-2">
-                        <input class="form-check-input" type="checkbox" id="taskWorkloadOverdueOnly">
-                        <label class="form-check-label" for="taskWorkloadOverdueOnly">기한 초과만</label>
+            <div class="admin-search-layout">
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">워크로드 검색</div>
+                    <div class="admin-search-section__desc">담당자, 작업, 메모, 우선순위 기준으로 워크로드를 빠르게 비교합니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-5">
+                            <label class="admin-filter-label">담당자/작업/메모 검색</label>
+                            <input type="text" id="taskWorkloadKeyword" class="form-control" placeholder="담당자명, 작업명, 메모 검색">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">우선순위</label>
+                            <select id="taskWorkloadPriority" class="form-select">
+                                <option value="">전체</option>
+                                <option value="HIGH">높음</option>
+                                <option value="MEDIUM">보통</option>
+                                <option value="LOW">낮음</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-4">
+                            <label class="admin-filter-label">옵션</label>
+                            <div class="admin-chip-row mt-2">
+                                <label class="task-flag-card task-flag-card--select w-100 mb-0">
+                                    <span class="d-flex align-items-center gap-2">
+                                        <input class="form-check-input" type="checkbox" id="taskWorkloadOverdueOnly">
+                                        <span class="task-flag-card__title">기한 초과만</span>
+                                    </span>
+                                    <span class="task-flag-card__desc">지연 중인 담당자 작업만 비교합니다.</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchTaskWorkload">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetTaskWorkload">초기화</button>
+                </section>
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">워크로드 조건과 강조 대상은 URL 상태로 유지됩니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchTaskWorkload">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetTaskWorkload">초기화</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card animate-in admin-panel-card admin-table-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">담당자별 작업 분배</h6>
-            <div class="d-flex align-items-center gap-2">
-                <button type="button" class="btn btn-outline-success btn-sm" id="btnExportTaskWorkloadCsv">
-                    <i class="fas fa-file-csv me-1"></i>CSV 내보내기
-                </button>
-                <span class="small text-muted" id="taskWorkloadMetaText">데이터를 불러오는 중입니다...</span>
-                <select id="taskWorkloadPageSize" class="form-select form-select-sm" style="width: auto;">
-                    <option value="10">10개</option>
-                    <option value="20">20개</option>
-                    <option value="50">50개</option>
-                </select>
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <h6 class="card-title mb-0">담당자별 작업 분배</h6>
+                </div>
+                <div class="admin-list-toolbar__actions d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-success btn-sm" id="btnExportTaskWorkloadCsv">
+                        <i class="fas fa-file-csv me-1"></i>CSV 내보내기
+                    </button>
+                    <span class="admin-list-toolbar__meta" id="taskWorkloadMetaText">데이터를 불러오는 중입니다...</span>
+                    <select id="taskWorkloadPageSize" class="form-select form-select-sm product-master-inline-select">
+                        <option value="10">10개</option>
+                        <option value="20">20개</option>
+                        <option value="50">50개</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div class="card-body border-bottom py-2">

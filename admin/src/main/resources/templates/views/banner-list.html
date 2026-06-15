@@ -65,39 +65,48 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-6">
-                    <label class="admin-filter-label">제목 검색</label>
-                    <input type="text" id="bannerKeyword" class="form-control" placeholder="배너 제목 검색">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">상태</label>
-                    <select id="bannerIsActiveFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="Y">사용</option>
-                        <option value="N">중지</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">노출 기간</label>
-                    <select id="bannerExposureStatusFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="SCHEDULED">대기</option>
-                        <option value="LIVE">진행중</option>
-                        <option value="ENDED">종료</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">크기</label>
-                    <select id="bannerPageSize" class="form-select">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchBanner">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetBanner">초기화</button>
+            <div class="admin-search-layout">
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">배너 검색</div>
+                    <div class="admin-search-section__desc">제목, 상태, 노출 기간 기준으로 배너 목록을 빠르게 좁힙니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-6">
+                            <label class="admin-filter-label">제목 검색</label>
+                            <input type="text" id="bannerKeyword" class="form-control" placeholder="배너 제목 검색">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">상태</label>
+                            <select id="bannerIsActiveFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="Y">사용</option>
+                                <option value="N">중지</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">노출 기간</label>
+                            <select id="bannerExposureStatusFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="SCHEDULED">대기</option>
+                                <option value="LIVE">진행중</option>
+                                <option value="ENDED">종료</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">페이지 크기</label>
+                            <select id="bannerPageSize" class="form-select">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">배너 상태와 노출 기간 필터는 URL 상태에 유지됩니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchBanner">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetBanner">초기화</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -105,23 +114,27 @@
 
     <div class="card animate-in admin-panel-card">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-5">
+            <div class="admin-selection-panel">
+                <div class="admin-selection-panel__head">
+                    <div>
+                        <div class="admin-selection-panel__title">선택 작업</div>
+                        <div class="admin-selection-panel__desc">현재 선택한 배너에만 상태 변경과 삭제를 적용합니다.</div>
+                    </div>
                     <div class="small text-muted" id="bannerSelectionMeta">선택된 배너가 없습니다.</div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-4">
-                    <label class="admin-filter-label">일괄 상태 변경</label>
-                    <select id="bulkBannerIsActive" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="Y">사용</option>
-                        <option value="N">중지</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <div class="admin-submit-bar">
-                    <button type="button" class="btn btn-outline-dark" id="btnApplyBannerBulk">일괄 적용</button>
-                    <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteBanner">일괄 삭제</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnClearBannerSelection">선택 해제</button>
+                <div class="admin-selection-grid">
+                    <div class="admin-filter-field">
+                        <label class="admin-filter-label">일괄 상태 변경</label>
+                        <select id="bulkBannerIsActive" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="Y">사용</option>
+                            <option value="N">중지</option>
+                        </select>
+                    </div>
+                    <div class="admin-selection-actions">
+                        <button type="button" class="btn btn-outline-dark" id="btnApplyBannerBulk">일괄 적용</button>
+                        <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteBanner">일괄 삭제</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnClearBannerSelection">선택 해제</button>
                     </div>
                 </div>
             </div>
@@ -129,9 +142,13 @@
     </div>
 
     <div class="card animate-in admin-panel-card admin-table-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">배너 목록</h6>
-            <div class="small text-muted" id="bannerMetaText">데이터를 불러오는 중입니다...</div>
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <h6 class="card-title mb-0">배너 목록</h6>
+                </div>
+                <div class="admin-list-toolbar__meta" id="bannerMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body border-bottom py-2">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

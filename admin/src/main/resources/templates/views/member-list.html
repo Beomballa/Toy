@@ -53,55 +53,68 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-5">
-                    <label class="admin-filter-label">검색</label>
-                    <input type="text" id="memberKeyword" class="form-control" placeholder="이메일, 이름, 닉네임">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">권한</label>
-                    <select id="memberMasterYn" class="form-select">
-                        <option value="">전체</option>
-                        <option value="Y">마스터</option>
-                        <option value="N">일반</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">상태</label>
-                    <select id="memberDelYn" class="form-select">
-                        <option value="">전체</option>
-                        <option value="N">정상</option>
-                        <option value="Y">탈퇴</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">비밀번호</label>
-                    <select id="memberInitYn" class="form-select">
-                        <option value="">전체</option>
-                        <option value="Y">임시 비밀번호</option>
-                        <option value="N">정상</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">페이지</label>
-                    <select id="memberPageSize" class="form-select">
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchMember">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetMember">초기화</button>
+            <div class="admin-search-layout">
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">회원 검색</div>
+                    <div class="admin-search-section__desc">이메일, 이름, 권한, 상태를 기준으로 회원을 빠르게 찾습니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-5">
+                            <label class="admin-filter-label">검색</label>
+                            <input type="text" id="memberKeyword" class="form-control" placeholder="이메일, 이름, 닉네임">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">권한</label>
+                            <select id="memberMasterYn" class="form-select">
+                                <option value="">전체</option>
+                                <option value="Y">마스터</option>
+                                <option value="N">일반</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">상태</label>
+                            <select id="memberDelYn" class="form-select">
+                                <option value="">전체</option>
+                                <option value="N">정상</option>
+                                <option value="Y">탈퇴</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">비밀번호</label>
+                            <select id="memberInitYn" class="form-select">
+                                <option value="">전체</option>
+                                <option value="Y">임시 비밀번호</option>
+                                <option value="N">정상</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-1">
+                            <label class="admin-filter-label">페이지</label>
+                            <select id="memberPageSize" class="form-select">
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">회원 목록 필터는 URL 상태를 유지해 같은 검색 문맥으로 복원됩니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchMember">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetMember">초기화</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card animate-in admin-panel-card admin-table-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <span class="card-title h6 mb-0">회원 목록</span>
-            <div class="small text-muted" id="memberMetaText">데이터를 불러오는 중입니다...</div>
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <span class="card-title h6 mb-0">회원 목록</span>
+                </div>
+                <div class="admin-list-toolbar__meta" id="memberMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body border-bottom py-2">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

@@ -56,25 +56,33 @@
     </div>
 
     <div class="card animate-in admin-panel-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">브랜드 목록</h6>
-            <div class="small text-muted" id="brandMetaText">데이터를 불러오는 중입니다...</div>
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <h6 class="card-title mb-0">브랜드 목록</h6>
+                </div>
+                <div class="admin-list-toolbar__meta" id="brandMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body border-bottom py-3">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-5">
+            <div class="admin-selection-panel">
+                <div class="admin-selection-panel__head">
+                    <div>
+                        <div class="admin-selection-panel__title">선택 작업</div>
+                        <div class="admin-selection-panel__desc">선택한 브랜드의 상태 변경과 삭제를 한 번에 처리합니다.</div>
+                    </div>
                     <div class="small text-muted" id="brandSelectionMeta">선택된 브랜드가 없습니다.</div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-4">
-                    <label class="admin-filter-label">일괄 상태 변경</label>
-                    <select id="bulkBrandIsActive" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="Y">사용</option>
-                        <option value="N">중지</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <div class="admin-submit-bar">
+                <div class="admin-selection-grid">
+                    <div class="admin-filter-field">
+                        <label class="admin-filter-label">일괄 상태 변경</label>
+                        <select id="bulkBrandIsActive" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="Y">사용</option>
+                            <option value="N">중지</option>
+                        </select>
+                    </div>
+                    <div class="admin-selection-actions">
                         <button type="button" class="btn btn-outline-dark" id="btnApplyBrandBulk">일괄 적용</button>
                         <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteBrand">일괄 삭제</button>
                         <button type="button" class="btn btn-outline-secondary" id="btnClearBrandSelection">선택 해제</button>
@@ -83,30 +91,39 @@
             </div>
         </div>
         <div class="card-body border-bottom py-3">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-7">
-                    <label class="admin-filter-label">브랜드 검색</label>
-                    <input type="text" id="brandKeyword" class="form-control" placeholder="브랜드명 검색">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <label class="admin-filter-label">상태</label>
-                    <select id="brandIsActiveFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="Y">사용</option>
-                        <option value="N">중지</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">크기</label>
-                    <select id="brandPageSize" class="form-select">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchBrand">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetBrand">초기화</button>
+            <div class="admin-search-layout">
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">브랜드 검색</div>
+                    <div class="admin-search-section__desc">브랜드명과 상태 기준으로 목록을 빠르게 줄입니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-7">
+                            <label class="admin-filter-label">브랜드 검색</label>
+                            <input type="text" id="brandKeyword" class="form-control" placeholder="브랜드명 검색">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">상태</label>
+                            <select id="brandIsActiveFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="Y">사용</option>
+                                <option value="N">중지</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">페이지 크기</label>
+                            <select id="brandPageSize" class="form-select">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">브랜드 검색 조건은 새로고침 후에도 같은 문맥으로 복원됩니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchBrand">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetBrand">초기화</button>
+                    </div>
                 </div>
             </div>
         </div>

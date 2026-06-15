@@ -9,6 +9,7 @@ const ContentEdit = {
         title: '',
         content: '',
         boardType: '',
+        productNo: '',
         status: 'DRAFT',
         publicYn: 'Y',
         pinnedYn: 'N'
@@ -21,6 +22,7 @@ const ContentEdit = {
         this.initialBoardType = ContentBoardConfig.normalizeBoardType(
             document.getElementById('initialBoardType')?.value
         );
+        this.returnTo = document.getElementById('contentReturnTo')?.value || '';
         const boardTypeSelect = document.getElementById('boardType');
 
         if (boardTypeSelect) {
@@ -33,6 +35,7 @@ const ContentEdit = {
         this.bindEvents();
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
         this.syncVisibilitySummary();
+        this.syncProductSummary();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         
@@ -53,9 +56,12 @@ const ContentEdit = {
         });
 
         // 자동 저장 (입력 시)
-        const textInputs = [document.getElementById('title'), document.getElementById('content')];
+        const textInputs = [document.getElementById('title'), document.getElementById('content'), document.getElementById('productNo')];
         textInputs.forEach(el => {
             el?.addEventListener('input', () => {
+                if (el.id === 'productNo') {
+                    this.syncProductSummary();
+                }
                 this.scheduleAutoSave();
             });
         });
@@ -84,6 +90,7 @@ const ContentEdit = {
             document.getElementById('title').value = data.title || '';
             document.getElementById('content').value = data.content || '';
             document.getElementById('boardType').value = data.boardType || 'NOTICE';
+            document.getElementById('productNo').value = data.productNo || '';
             document.getElementById('status').value = data.status || 'DRAFT';
             document.getElementById('publicYn').value = data.publicYn || 'Y';
             document.getElementById('pinnedYn').value = data.pinnedYn || 'N';
@@ -92,12 +99,14 @@ const ContentEdit = {
                 title: data.title,
                 content: data.content,
                 boardType: data.boardType,
+                productNo: data.productNo ? String(data.productNo) : '',
                 status: data.status || 'DRAFT',
                 publicYn: data.publicYn || 'Y',
                 pinnedYn: data.pinnedYn || 'N'
             };
             this.applyBoardMeta(data.boardType || 'NOTICE');
             this.syncVisibilitySummary();
+            this.syncProductSummary();
         } catch (err) {
             console.error('콘텐츠 로드 실패:', err);
             await CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
@@ -156,6 +165,9 @@ const ContentEdit = {
     },
 
     getListPath() {
+        if (this.returnTo) {
+            return this.returnTo;
+        }
         const boardType = document.getElementById('boardType')?.value || this.initialBoardType;
         return ContentBoardConfig.getListPath(boardType);
     },
@@ -188,6 +200,7 @@ const ContentEdit = {
         const title = document.getElementById('title').value;
         const content = document.getElementById('content').value;
         const boardType = ContentBoardConfig.normalizeBoardType(document.getElementById('boardType').value);
+        const productNo = document.getElementById('productNo').value.trim();
         const status = document.getElementById('status').value || 'DRAFT';
         const publicYn = document.getElementById('publicYn').value || 'Y';
         const pinnedYn = document.getElementById('pinnedYn').value || 'N';
@@ -202,6 +215,7 @@ const ContentEdit = {
             title === this.initialData.title && 
             content === this.initialData.content && 
             boardType === this.initialData.boardType &&
+            productNo === this.initialData.productNo &&
             status === this.initialData.status &&
             publicYn === this.initialData.publicYn &&
             pinnedYn === this.initialData.pinnedYn) {
@@ -220,6 +234,7 @@ const ContentEdit = {
                     title: title,
                     content: content,
                     boardType: boardType,
+                    productNo: productNo ? Number(productNo) : null,
                     status: status,
                     publicYn: publicYn,
                     pinnedYn: pinnedYn
@@ -238,7 +253,7 @@ const ContentEdit = {
                 window.history.replaceState({}, '', url);
             }
 
-            this.initialData = { title, content, boardType, status, publicYn, pinnedYn };
+            this.initialData = { title, content, boardType, productNo, status, publicYn, pinnedYn };
             this.setStatus(isAutoSave ? '임시 저장되었습니다.' : '저장되었습니다.', 3000);
 
             if (!isAutoSave) {
@@ -318,5 +333,12 @@ const ContentEdit = {
         const publicLabel = (document.getElementById('publicYn')?.value || 'Y') === 'Y' ? '공개' : '비공개';
         const pinnedLabel = (document.getElementById('pinnedYn')?.value || 'N') === 'Y' ? '고정글' : '일반글';
         summaryEl.textContent = `${statusLabel} · ${publicLabel} · ${pinnedLabel}`;
+    },
+
+    syncProductSummary() {
+        const productSummaryEl = document.getElementById('contentProductSummary');
+        if (!productSummaryEl) return;
+        const productNo = document.getElementById('productNo')?.value.trim();
+        productSummaryEl.textContent = productNo ? `상품 #${productNo}` : '미연결';
     }
 };

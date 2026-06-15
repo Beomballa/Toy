@@ -19,6 +19,7 @@
     <form id="contentEditForm">
         <input type="hidden" id="contentId" th:value="${id}">
         <input type="hidden" id="initialBoardType" th:value="${boardType}">
+        <input type="hidden" id="contentReturnTo" th:value="${returnTo}">
         <div class="page-header community-editor-header">
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
@@ -85,6 +86,11 @@
                             <label for="title" class="community-editor-label">제목</label>
                             <input type="text" id="title" class="form-control notion-title community-editor-title-input" placeholder="제목을 입력하세요">
                         </div>
+                        <div class="community-editor-field mt-3">
+                            <label for="productNo" class="community-editor-label">연결 상품번호</label>
+                            <input type="number" id="productNo" class="form-control" min="1" step="1" placeholder="연결할 상품번호가 있으면 입력하세요">
+                            <div class="form-text">스타일 피드, 토론방처럼 상품과 연결되는 게시글에만 입력합니다.</div>
+                        </div>
                         <div class="community-editor-divider"></div>
                         <div class="community-editor-field">
                             <label for="content" class="community-editor-label">본문</label>
@@ -114,6 +120,10 @@
                         <div class="community-editor-side-item">
                             <span class="community-editor-side-label">운영 상태</span>
                             <strong id="contentVisibilitySummary">임시저장 · 공개 · 일반글</strong>
+                        </div>
+                        <div class="community-editor-side-item">
+                            <span class="community-editor-side-label">연결 상품번호</span>
+                            <strong id="contentProductSummary">미연결</strong>
                         </div>
                         <p class="community-editor-side-note" id="contentSideNote">
                             제목과 본문이 목록 카드와 상세 화면에 그대로 반영됩니다.

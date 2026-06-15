@@ -33,6 +33,7 @@ class ContentSaveRequestTest {
         assertEquals(YN.Y, document.getPinnedYn());
         assertEquals("제목", document.getTitle());
         assertEquals("본문", document.getContent());
+        assertEquals(7L, document.getProductNo());
     }
 
     @Test

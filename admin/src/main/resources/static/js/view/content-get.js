@@ -4,6 +4,7 @@ const ContentDetail = {
     state: {
         id: null,
         boardType: 'NOTICE',
+        returnTo: null,
         data: null
     },
     operationPolicy: null,
@@ -16,6 +17,7 @@ const ContentDetail = {
         this.state.boardType = ContentBoardConfig.normalizeBoardType(
             window.initialContentDetail?.boardType || params.get('boardType')
         );
+        this.state.returnTo = window.initialContentDetail?.returnTo || params.get('returnTo');
 
         if (!this.state.id) {
             await CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error');
@@ -40,7 +42,8 @@ const ContentDetail = {
                 await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정'), '알림', 'warning');
                 return;
             }
-            window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}`;
+            const returnToQuery = this.state.returnTo ? `&returnTo=${encodeURIComponent(this.state.returnTo)}` : '';
+            window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}${returnToQuery}`;
         });
 
         document.getElementById('btnDeleteContent')?.addEventListener('click', () => {
@@ -63,7 +66,7 @@ const ContentDetail = {
 
     async loadDetail() {
         try {
-            const response = await fetch(`/api/admin/content/read?id=${this.state.id}`);
+            const response = await fetch(`/api/admin/content/get?id=${this.state.id}`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -145,7 +148,7 @@ const ContentDetail = {
     },
 
     getListPath() {
-        return ContentBoardConfig.getListPath(this.state.boardType);
+        return this.state.returnTo || ContentBoardConfig.getListPath(this.state.boardType);
     },
 
     setText(id, value) {

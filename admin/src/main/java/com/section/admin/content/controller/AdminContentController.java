@@ -24,10 +24,12 @@ public class AdminContentController {
     public String contentEdit(
             @RequestParam(value = "id", required = false) Long id,
             @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            @RequestParam(value = "returnTo", required = false) String returnTo,
             Model model
     ) {
         model.addAttribute("id", id);
         model.addAttribute("boardType", boardType);
+        model.addAttribute("returnTo", returnTo);
         model.addAttribute("boardTypes", Document.BoardType.values());
         model.addAttribute("publishStatuses", Document.PublishStatus.values());
         return "views/content-edit";
@@ -37,10 +39,12 @@ public class AdminContentController {
     public String contentGet(
             @RequestParam("id") Long id,
             @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            @RequestParam(value = "returnTo", required = false) String returnTo,
             Model model
     ) {
         model.addAttribute("id", id);
         model.addAttribute("boardType", boardType);
+        model.addAttribute("returnTo", returnTo);
         return "views/content-get";
     }
 }

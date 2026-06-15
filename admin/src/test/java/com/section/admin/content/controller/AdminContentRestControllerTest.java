@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -236,6 +237,7 @@ class AdminContentRestControllerTest {
         assertEquals(Document.PublishStatus.PUBLISHED, documentCaptor.getValue().getStatus());
         assertEquals(YN.N, documentCaptor.getValue().getPublicYn());
         assertEquals(YN.Y, documentCaptor.getValue().getPinnedYn());
+        assertEquals(7L, documentCaptor.getValue().getProductNo());
     }
 
     @Test
@@ -260,6 +262,7 @@ class AdminContentRestControllerTest {
         assertEquals(Document.PublishStatus.PUBLISHED, captured.getStatus());
         assertEquals(YN.N, captured.getPublicYn());
         assertEquals(YN.Y, captured.getPinnedYn());
+        assertEquals(7L, captured.getProductNo());
     }
 
     @Test
@@ -270,6 +273,27 @@ class AdminContentRestControllerTest {
         mockMvc.perform(get("/api/admin/content/get").param("id", "999"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("D001"));
+    }
+
+    @Test
+    @DisplayName("관리자 상세 조회 전용 read API는 조회수를 증가시키지 않는다")
+    void readDoesNotIncreaseViewCount() throws Exception {
+        Document document = new Document();
+        document.setId(11L);
+        document.setBoardType(Document.BoardType.NOTICE);
+        document.setStatus(Document.PublishStatus.PUBLISHED);
+        document.setPublicYn(YN.Y);
+        document.setPinnedYn(YN.N);
+        document.setTitle("운영 공지");
+        document.setContent("본문");
+        when(documentService.getDocument(11L)).thenReturn(document);
+
+        mockMvc.perform(get("/api/admin/content/read").param("id", "11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(11L));
+
+        verify(documentService).getDocument(11L);
+        verify(documentService, never()).readDocument(11L);
     }
 
     @Test
@@ -286,6 +310,21 @@ class AdminContentRestControllerTest {
                         ))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("A002"));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 저장은 존재하지 않는 상품번호를 전달하면 404 PRODUCT_NOT_FOUND를 반환한다")
+    void saveReturnsNotFoundWhenProductMissing() throws Exception {
+        when(documentService.saveDocument(any(Document.class)))
+                .thenThrow(new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        mockMvc.perform(post("/api/admin/content/save")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new SavePayload(
+                                null, "STYLE", "제목", "본문", 404L, "PUBLISHED", "Y", "N"
+                        ))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("P001"));
     }
 
     @Test

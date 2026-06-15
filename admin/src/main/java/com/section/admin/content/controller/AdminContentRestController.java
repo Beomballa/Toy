@@ -104,7 +104,8 @@ public class AdminContentRestController {
 
     @GetMapping("/read")
     public ResponseEntity<ContentDetailResponse> read(@RequestParam("id") Long id) {
-        return ResponseEntity.ok(ContentDetailResponse.from(documentService.readDocument(id)));
+        // 관리자 상세 조회는 운영 지표를 왜곡하지 않도록 조회수를 증가시키지 않는다.
+        return ResponseEntity.ok(ContentDetailResponse.from(documentService.getDocument(id)));
     }
 
     @PostMapping("/save")

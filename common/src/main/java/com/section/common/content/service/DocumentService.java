@@ -3,8 +3,10 @@ package com.section.common.content.service;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.base.entity.type.YN;
+import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,9 +23,14 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class DocumentService {
     private final DocumentRepository documentRepository;
+    private final ProductRepository productRepository;
 
     public Page<DocumentListItemDto> getDocumentList(DocumentListQuery query, Pageable pageable) {
         return documentRepository.getDocumentList(query, pageable);
+    }
+
+    public DocumentSummaryDto getDocumentSummary(DocumentListQuery query) {
+        return documentRepository.getDocumentSummary(query);
     }
 
     public List<DocumentListItemDto> getDocumentExportList(DocumentListQuery query, int limit) {
@@ -44,6 +51,7 @@ public class DocumentService {
 
     @Transactional
     public Document saveDocument(Document document) {
+        validateProductReference(document.getProductNo());
         if (document.getId() == null) {
             return documentRepository.save(document);
         }
@@ -134,5 +142,14 @@ public class DocumentService {
             int deletedCount,
             int missingCount
     ) {
+    }
+
+    private void validateProductReference(Long productNo) {
+        if (productNo == null) {
+            return;
+        }
+        if (!productRepository.existsById(productNo)) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
     }
 }

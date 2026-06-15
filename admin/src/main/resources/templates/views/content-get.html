@@ -123,7 +123,8 @@
 <script th:inline="javascript">
     window.initialContentDetail = {
         id: /*[[${id}]]*/ null,
-        boardType: /*[[${boardType}]]*/ 'NOTICE'
+        boardType: /*[[${boardType}]]*/ 'NOTICE',
+        returnTo: /*[[${returnTo}]]*/ null
     };
 </script>
 <script>document.addEventListener('DOMContentLoaded', () => ContentDetail.init());</script>

@@ -1,8 +1,12 @@
 package com.section.admin.content.service;
 
 import com.section.common.base.entity.type.YN;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.content.service.DocumentService;
@@ -33,6 +37,9 @@ class DocumentServiceTest {
     @Mock
     private DocumentRepository documentRepository;
 
+    @Mock
+    private ProductRepository productRepository;
+
     @InjectMocks
     private DocumentService documentService;
 
@@ -62,6 +69,7 @@ class DocumentServiceTest {
         );
 
         when(documentRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(productRepository.existsById(44L)).thenReturn(true);
 
         Document saved = documentService.saveDocument(editorInput);
 
@@ -75,6 +83,27 @@ class DocumentServiceTest {
         assertEquals("새 내용", existing.getContent());
         assertEquals(44L, existing.getProductNo());
         verify(documentRepository, never()).save(editorInput);
+    }
+
+    @Test
+    @DisplayName("게시글 저장은 존재하지 않는 연결 상품번호를 거부한다")
+    void saveDocumentRejectsMissingProductReference() {
+        Document editorInput = new Document();
+        editorInput.applyEditorValues(
+                Document.BoardType.STYLE,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                "스타일 제목",
+                "스타일 본문",
+                404L
+        );
+        when(productRepository.existsById(404L)).thenReturn(false);
+
+        BusinessException exception = assertThrows(BusinessException.class, () -> documentService.saveDocument(editorInput));
+
+        assertEquals(ErrorCode.PRODUCT_NOT_FOUND, exception.getErrorCode());
+        verify(documentRepository, never()).save(any());
     }
 
     @Test
@@ -200,12 +229,26 @@ class DocumentServiceTest {
                 .thenReturn(new PageImpl<>(List.of(item)));
 
         var result = documentService.getDocumentExportList(
-                new DocumentListQuery(Document.BoardType.NOTICE, null, null, null, null, null, null),
+                new DocumentListQuery(Document.BoardType.NOTICE, null, null, null, null, null, null, null, null),
                 500
         );
 
         assertEquals(1, result.size());
         verify(documentRepository).getDocumentList(any(), argThat(pageable -> pageable.getPageNumber() == 0 && pageable.getPageSize() == 500));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 요약은 QueryDSL 저장소 집계를 그대로 위임한다")
+    void getDocumentSummaryDelegatesToRepository() {
+        DocumentSummaryDto summary = new DocumentSummaryDto(4, 3, 1, 3, 1, 1, 2, 99);
+        when(documentRepository.getDocumentSummary(any(DocumentListQuery.class))).thenReturn(summary);
+
+        DocumentSummaryDto result = documentService.getDocumentSummary(
+                new DocumentListQuery(Document.BoardType.STYLE, null, null, null, false, null, true, null, null)
+        );
+
+        assertEquals(summary, result);
+        verify(documentRepository).getDocumentSummary(any(DocumentListQuery.class));
     }
 
     @Test

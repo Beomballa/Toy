@@ -7,6 +7,7 @@ import com.section.admin.brand.req.BrandSaveRequest;
 import com.section.admin.brand.res.BrandListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.dto.BrandSummaryDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -55,6 +56,7 @@ class AdminBrandServiceTest {
                 PageRequest.of(0, 10),
                 1
         ));
+        when(brandRepository.getBrandSummary("나이키")).thenReturn(new BrandSummaryDto(2, 1, 1));
 
         BrandListResponse response = adminBrandService.getBrandList(request);
 
@@ -64,6 +66,8 @@ class AdminBrandServiceTest {
         assertEquals(1L, response.totalElements());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
         assertEquals("브랜드명 기준 · 검색=나이키 · 상태=사용", response.resultMeta().querySignature());
+        assertEquals(2, response.brandStats().totalCount());
+        assertEquals(1, response.brandStats().activeCount());
     }
 
     @Test

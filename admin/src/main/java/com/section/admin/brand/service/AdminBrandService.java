@@ -10,6 +10,7 @@ import com.section.admin.brand.support.BrandExportCsvWriter;
 import com.section.admin.brand.support.BrandExportSummary;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.dto.BrandSummaryDto;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -38,8 +39,9 @@ public class AdminBrandService {
                 req.normalizedIsActive(),
                 PageRequest.of(req.normalizedPage(), req.normalizedSize())
         );
+        BrandSummaryDto summary = brandRepository.getBrandSummary(req.normalizedKeyword());
         Page<BrandResponse> responsePage = brandPage.map(BrandResponse::from);
-        return BrandListResponse.of(responsePage, req);
+        return BrandListResponse.of(responsePage, req, summary);
     }
 
     public byte[] exportBrandListCsv(BrandListRequest req) {

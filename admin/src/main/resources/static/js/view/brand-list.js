@@ -55,6 +55,9 @@ const BrandList = {
         document.getElementById('btnBulkDeleteBrand')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearBrandSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('brandSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
+        document.getElementById('brandStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
+        document.getElementById('brandStatActiveCard')?.addEventListener('click', () => this.applyStatFilter('active'));
+        document.getElementById('brandStatInactiveCard')?.addEventListener('click', () => this.applyStatFilter('inactive'));
 
         document.getElementById('btnSearchBrand')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBrand')?.addEventListener('click', () => this.resetFilters());
@@ -123,6 +126,7 @@ const BrandList = {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             this.renderList(data.items || []);
+            this.renderStats(data.brandStats);
             this.renderMeta(data);
             this.renderPagination(data);
         } catch (err) {
@@ -131,6 +135,7 @@ const BrandList = {
             this.setFilterMeta('브랜드 목록을 불러오지 못했습니다.');
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
+            this.renderStats(null);
             document.getElementById('brandPagination').innerHTML = '';
             this.setListStateMeta('error', '브랜드 목록 조회 실패', 0, 0, '');
         }
@@ -192,6 +197,36 @@ const BrandList = {
         if (metaEl) {
             metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
         }
+    },
+
+    renderStats(stats) {
+        const totalCountEl = document.getElementById('brandTotalCount');
+        const activeCountEl = document.getElementById('brandActiveCount');
+        const inactiveCountEl = document.getElementById('brandInactiveCount');
+        const contextTextEl = document.getElementById('brandStatsContextText');
+        const noticeEl = document.getElementById('brandStatsNotice');
+
+        if (!stats) {
+            if (totalCountEl) totalCountEl.innerText = '0';
+            if (activeCountEl) activeCountEl.innerText = '0';
+            if (inactiveCountEl) inactiveCountEl.innerText = '0';
+            if (contextTextEl) contextTextEl.innerText = '카드 기준을 확인할 수 없습니다.';
+            if (noticeEl) {
+                noticeEl.innerText = '카드 기준을 확인할 수 없습니다.';
+                noticeEl.dataset.statsContext = 'error';
+            }
+            return;
+        }
+
+        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
+        activeCountEl.innerText = Number(stats.activeCount || 0).toLocaleString();
+        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
+        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        const usingQuickFilter = !!this.state.isActive;
+        noticeEl.innerText = usingQuickFilter
+            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+            : '카드 수치는 현재 탐색 문맥 기준입니다.';
+        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
     },
 
     renderPagination(data) {
@@ -315,6 +350,23 @@ const BrandList = {
         document.getElementById('brandIsActiveFilter').value = '';
         document.getElementById('brandPageSize').value = '10';
         this.state.page = 0;
+        this.getList();
+    },
+
+    applyStatFilter(type) {
+        this.state.page = 0;
+        document.getElementById('brandIsActiveFilter').value = '';
+        switch (type) {
+            case 'active':
+                document.getElementById('brandIsActiveFilter').value = 'Y';
+                break;
+            case 'inactive':
+                document.getElementById('brandIsActiveFilter').value = 'N';
+                break;
+            case 'total':
+            default:
+                break;
+        }
         this.getList();
     },
 

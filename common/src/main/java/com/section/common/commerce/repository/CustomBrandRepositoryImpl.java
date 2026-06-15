@@ -2,6 +2,7 @@ package com.section.common.commerce.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.commerce.dto.BrandSummaryDto;
 import com.section.common.commerce.entity.Brand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -36,6 +37,23 @@ public class CustomBrandRepositoryImpl implements CustomBrandRepository {
                 .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
+    }
+
+    @Override
+    public BrandSummaryDto getBrandSummary(String keyword) {
+        long totalCount = countBy(keyword, null);
+        long activeCount = countBy(keyword, "Y");
+        long inactiveCount = countBy(keyword, "N");
+        return new BrandSummaryDto(totalCount, activeCount, inactiveCount);
+    }
+
+    private long countBy(String keyword, String isActive) {
+        Long count = queryFactory
+                .select(brand.count())
+                .from(brand)
+                .where(keywordLike(keyword), isActiveEq(isActive))
+                .fetchOne();
+        return count == null ? 0L : count;
     }
 
     private BooleanExpression keywordLike(String keyword) {

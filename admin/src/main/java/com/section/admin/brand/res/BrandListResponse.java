@@ -1,6 +1,7 @@
 package com.section.admin.brand.res;
 
 import com.section.admin.brand.req.BrandListRequest;
+import com.section.common.commerce.dto.BrandSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
@@ -11,16 +12,18 @@ public record BrandListResponse(
         int totalPages,
         long totalElements,
         int pageSize,
+        BrandStats brandStats,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
-    public static BrandListResponse of(Page<BrandResponse> page, BrandListRequest request) {
+    public static BrandListResponse of(Page<BrandResponse> page, BrandListRequest request, BrandSummaryDto summary) {
         return new BrandListResponse(
                 page.getContent(),
                 page.getNumber(),
                 page.getTotalPages(),
                 page.getTotalElements(),
                 page.getSize(),
+                BrandStats.from(summary, request),
                 new AppliedQuery(request.normalizedKeyword(), request.normalizedIsActive()),
                 ResultMeta.from(page, request)
         );
@@ -30,6 +33,26 @@ public record BrandListResponse(
             String keyword,
             String isActive
     ) {
+    }
+
+    public record BrandStats(
+            long totalCount,
+            long activeCount,
+            long inactiveCount,
+            String contextLabel,
+            String querySignature
+    ) {
+        static BrandStats from(BrandSummaryDto summary, BrandListRequest request) {
+            return new BrandStats(
+                    summary.totalCount(),
+                    summary.activeCount(),
+                    summary.inactiveCount(),
+                    request.normalizedKeyword() == null ? "기본 문맥 기준" : "검색 문맥 기준",
+                    request.normalizedKeyword() == null
+                            ? "브랜드명 기준"
+                            : "브랜드명 기준 · 검색=" + request.normalizedKeyword()
+            );
+        }
     }
 
     public record ResultMeta(

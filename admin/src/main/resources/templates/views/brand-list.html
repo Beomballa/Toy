@@ -31,6 +31,30 @@
         </div>
     </div>
 
+    <section class="admin-summary-grid">
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="brandStatTotalCard">
+            <div class="admin-summary-card__label">전체 브랜드</div>
+            <div class="admin-summary-card__value stat-value" id="brandTotalCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="brandStatActiveCard">
+            <div class="admin-summary-card__label">사용 브랜드</div>
+            <div class="admin-summary-card__value stat-value" id="brandActiveCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="brandStatInactiveCard">
+            <div class="admin-summary-card__label">중지 브랜드</div>
+            <div class="admin-summary-card__value stat-value" id="brandInactiveCount">0</div>
+        </div>
+    </section>
+
+    <div class="card animate-in admin-panel-card">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted" id="brandStatsContextText">카드 기준을 계산하는 중입니다...</div>
+                <div class="small text-muted" id="brandStatsNotice" data-stats-context="">카드 기준을 계산하는 중입니다...</div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in admin-panel-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
             <h6 class="card-title mb-0">브랜드 목록</h6>

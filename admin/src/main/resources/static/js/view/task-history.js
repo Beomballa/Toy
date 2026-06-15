@@ -29,7 +29,7 @@ const TaskHistoryPage = {
             this.state.size = Number(document.getElementById('taskHistoryPageSize')?.value || 20);
             this.loadHistory();
         });
-        ['taskHistoryTaskNo', 'taskHistoryAdminNo', 'taskHistoryStartDate', 'taskHistoryEndDate'].forEach((id) => {
+        ['taskHistoryTaskNo', 'taskHistoryAdminNo', 'taskHistoryAdminKeyword', 'taskHistoryStartDate', 'taskHistoryEndDate'].forEach((id) => {
             document.getElementById(id)?.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -45,6 +45,9 @@ const TaskHistoryPage = {
                 this.syncQuickFilterState();
                 this.loadHistory();
             });
+        });
+        document.querySelectorAll('[data-task-history-date-preset]').forEach((button) => {
+            button.addEventListener('click', () => this.applyDatePreset(button.dataset.taskHistoryDatePreset));
         });
         document.getElementById('btnBackToTaskSource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
@@ -62,6 +65,7 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryTaskNo').value = params.get('taskNo') || '';
         document.getElementById('taskHistoryActionType').value = params.get('actionType') || 'TASK_';
         document.getElementById('taskHistoryAdminNo').value = params.get('adminNo') || '';
+        document.getElementById('taskHistoryAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('taskHistoryStartDate').value = params.get('startDate') || '';
         document.getElementById('taskHistoryEndDate').value = params.get('endDate') || '';
         this.state.logNo = params.get('logNo') || '';
@@ -77,12 +81,14 @@ const TaskHistoryPage = {
         const taskNo = document.getElementById('taskHistoryTaskNo').value.trim();
         const actionType = document.getElementById('taskHistoryActionType').value || 'TASK_';
         const adminNo = document.getElementById('taskHistoryAdminNo').value.trim();
+        const adminKeyword = document.getElementById('taskHistoryAdminKeyword').value.trim();
         const startDate = document.getElementById('taskHistoryStartDate').value;
         const endDate = document.getElementById('taskHistoryEndDate').value;
 
         if (taskNo) params.set('taskNo', taskNo);
         if (actionType && actionType !== 'TASK_') params.set('actionType', actionType);
         if (adminNo) params.set('adminNo', adminNo);
+        if (adminKeyword) params.set('adminKeyword', adminKeyword);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (this.state.logNo) params.set('logNo', this.state.logNo);
@@ -297,6 +303,7 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryTaskNo').value = '';
         document.getElementById('taskHistoryActionType').value = 'TASK_';
         document.getElementById('taskHistoryAdminNo').value = '';
+        document.getElementById('taskHistoryAdminKeyword').value = '';
         document.getElementById('taskHistoryStartDate').value = '';
         document.getElementById('taskHistoryEndDate').value = '';
         document.getElementById('taskHistoryPageSize').value = '20';
@@ -304,6 +311,39 @@ const TaskHistoryPage = {
         this.state.size = 20;
         this.state.logNo = '';
         this.syncQuickFilterState();
+        this.loadHistory();
+    },
+
+    applyDatePreset(preset) {
+        const startDateInput = document.getElementById('taskHistoryStartDate');
+        const endDateInput = document.getElementById('taskHistoryEndDate');
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (preset === 'clear') {
+            startDateInput.value = '';
+            endDateInput.value = '';
+        } else {
+            const startDate = new Date(today);
+            if (preset === '7days') {
+                startDate.setDate(startDate.getDate() - 6);
+            } else if (preset === '30days') {
+                startDate.setDate(startDate.getDate() - 29);
+            }
+            startDateInput.value = formatDate(startDate);
+            endDateInput.value = formatDate(today);
+        }
+
+        this.state.page = 0;
         this.loadHistory();
     },
 

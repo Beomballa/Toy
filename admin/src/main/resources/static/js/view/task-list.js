@@ -18,6 +18,7 @@ const TaskList = {
         assigneeAdminNo: '',
         isPinned: '',
         commentedOnly: '',
+        dueWithinDays: '',
         dueState: '',
         sortBy: 'PINNED_DUE',
         dueDateFrom: '',
@@ -161,6 +162,7 @@ const TaskList = {
         this.state.assigneeAdminNo = params.get('assigneeAdminNo') || '';
         this.state.isPinned = params.get('isPinned') || '';
         this.state.commentedOnly = params.get('commentedOnly') || '';
+        this.state.dueWithinDays = params.get('dueWithinDays') || '';
         this.state.dueState = params.get('dueState') || '';
         this.state.sortBy = params.get('sortBy') || 'PINNED_DUE';
         this.state.dueDateFrom = params.get('dueDateFrom') || '';
@@ -176,6 +178,7 @@ const TaskList = {
         document.getElementById('taskStatusFilter').value = this.state.status;
         document.getElementById('taskPriorityFilter').value = this.state.priority;
         document.getElementById('taskPinnedFilter').value = this.state.isPinned;
+        document.getElementById('taskDueWithinDaysFilter').value = this.state.dueWithinDays;
         document.getElementById('taskDueStateFilter').value = this.state.dueState;
         document.getElementById('taskSortBy').value = this.state.sortBy;
         document.getElementById('taskDueDateFrom').value = this.state.dueDateFrom;
@@ -183,7 +186,7 @@ const TaskList = {
         document.getElementById('taskPageSize').value = String(this.state.size);
         document.getElementById('taskOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
-        document.getElementById('taskCommentedOnly').checked = this.state.commentedOnly === 'Y';
+        document.getElementById('taskCommentedOnly').value = this.state.commentedOnly;
         CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
 
@@ -193,6 +196,8 @@ const TaskList = {
         this.state.priority = document.getElementById('taskPriorityFilter').value;
         this.state.assigneeAdminNo = document.getElementById('taskAssigneeFilter').value;
         this.state.isPinned = document.getElementById('taskPinnedFilter').value;
+        this.state.commentedOnly = document.getElementById('taskCommentedOnly')?.value || '';
+        this.state.dueWithinDays = document.getElementById('taskDueWithinDaysFilter')?.value || '';
         this.state.dueState = document.getElementById('taskDueStateFilter').value;
         this.state.sortBy = document.getElementById('taskSortBy').value || 'PINNED_DUE';
         this.state.dueDateFrom = document.getElementById('taskDueDateFrom').value;
@@ -200,7 +205,6 @@ const TaskList = {
         this.state.size = Number(document.getElementById('taskPageSize').value || 10);
         this.state.overdueOnly = document.getElementById('taskOverdueOnly')?.checked ? 'Y' : '';
         this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
-        this.state.commentedOnly = document.getElementById('taskCommentedOnly')?.checked ? 'Y' : '';
         this.state.taskNo = this.parseOptionalNumber(document.getElementById('taskNoFilter')?.value)?.toString() || '';
         if (this.state.unassignedOnly === 'Y') {
             this.state.assigneeAdminNo = '';
@@ -217,6 +221,7 @@ const TaskList = {
         if (this.state.assigneeAdminNo) params.set('assigneeAdminNo', this.state.assigneeAdminNo);
         if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
         if (this.state.commentedOnly) params.set('commentedOnly', this.state.commentedOnly);
+        if (this.state.dueWithinDays) params.set('dueWithinDays', this.state.dueWithinDays);
         if (this.state.dueState) params.set('dueState', this.state.dueState);
         if (this.state.sortBy && this.state.sortBy !== 'PINNED_DUE') params.set('sortBy', this.state.sortBy);
         if (this.state.dueDateFrom) params.set('dueDateFrom', this.state.dueDateFrom);
@@ -424,6 +429,7 @@ const TaskList = {
             || !!this.state.dueState
             || !!this.state.overdueOnly
             || !!this.state.commentedOnly
+            || !!this.state.dueWithinDays
             || this.state.sortBy !== 'PINNED_DUE';
         noticeEl.innerText = usingQuickFilter
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
@@ -934,7 +940,8 @@ const TaskList = {
         document.getElementById('taskAssigneeFilter').disabled = false;
         document.getElementById('taskOverdueOnly').checked = false;
         document.getElementById('taskUnassignedOnly').checked = false;
-        document.getElementById('taskCommentedOnly').checked = false;
+        document.getElementById('taskCommentedOnly').value = '';
+        document.getElementById('taskDueWithinDaysFilter').value = '';
         document.getElementById('taskPageSize').value = '10';
         this.state.page = 0;
         this.state.size = 10;
@@ -944,6 +951,7 @@ const TaskList = {
         this.state.assigneeAdminNo = '';
         this.state.isPinned = '';
         this.state.commentedOnly = '';
+        this.state.dueWithinDays = '';
         this.state.dueState = '';
         this.state.sortBy = 'PINNED_DUE';
         this.state.dueDateFrom = '';

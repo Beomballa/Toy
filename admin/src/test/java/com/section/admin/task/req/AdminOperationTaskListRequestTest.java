@@ -38,13 +38,15 @@ class AdminOperationTaskListRequestTest {
     @DisplayName("운영 작업 목록 요청은 메모 필터와 정렬 조건을 정규화한다")
     void toQueryNormalizesCommentedOnlyAndSortBy() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
-        request.setCommentedOnly("y");
-        request.setSortBy("latest_comment_desc");
+        request.setCommentedOnly("n");
+        request.setSortBy("comment_count_desc");
+        request.setDueWithinDays(7);
 
         var query = request.toQuery();
 
-        assertEquals("Y", query.commentedOnly());
-        assertEquals("LATEST_COMMENT_DESC", query.sortBy());
+        assertEquals("N", query.commentedOnly());
+        assertEquals(7, query.dueWithinDays());
+        assertEquals("COMMENT_COUNT_DESC", query.sortBy());
     }
 
     @Test
@@ -83,6 +85,15 @@ class AdminOperationTaskListRequestTest {
     void toQueryRejectsInvalidDueState() {
         AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
         request.setDueState("LATER");
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 요청은 30일을 초과한 임박 마감 범위를 거부한다")
+    void toQueryRejectsInvalidDueWithinDays() {
+        AdminOperationTaskListRequest request = new AdminOperationTaskListRequest();
+        request.setDueWithinDays(31);
 
         assertThrows(BusinessException.class, request::toQuery);
     }

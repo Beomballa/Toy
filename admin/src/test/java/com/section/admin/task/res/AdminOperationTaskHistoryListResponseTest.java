@@ -26,7 +26,7 @@ class AdminOperationTaskHistoryListResponseTest {
                 2L,
                 "1-2 / 2건 · 1페이지",
                 new AdminLogListResponse.Summary(2, 0, 0, 0, 0, 0),
-                new AdminLogListResponse.AppliedQuery(null, "TASK_", null, null, null),
+                new AdminLogListResponse.AppliedQuery(null, "운영", "TASK_", null, null, null),
                 new AdminLogListResponse.ResultMeta("검색 결과 2건", "1-2 / 2건 · 1페이지", 1, "1-2 · 작업=TASK_")
         );
 
@@ -35,5 +35,6 @@ class AdminOperationTaskHistoryListResponseTest {
         assertEquals("댓글 수정", result.items().get(0).actionLabel());
         assertEquals("일괄 삭제", result.items().get(1).actionLabel());
         assertEquals("/admin/settings/tasks?taskNo=11&openTaskNo=11&focusTaskNo=11&returnTo=%2Fadmin%2Fsettings%2Ftasks&source=task-history", result.items().get(0).taskPath());
+        assertEquals("운영", result.appliedQuery().adminKeyword());
     }
 }

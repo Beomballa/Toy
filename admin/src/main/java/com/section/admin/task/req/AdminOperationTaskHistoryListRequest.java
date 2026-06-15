@@ -31,6 +31,7 @@ public class AdminOperationTaskHistoryListRequest {
     private Long taskNo;
     private String actionType;
     private Long adminNo;
+    private String adminKeyword;
     private LocalDate startDate;
     private LocalDate endDate;
     private String returnTo;
@@ -41,6 +42,7 @@ public class AdminOperationTaskHistoryListRequest {
         AdminLogListRequest request = new AdminLogListRequest();
         request.setTargetId(taskNo);
         request.setAdminNo(adminNo);
+        request.setAdminKeyword(normalizedAdminKeyword());
         // TASK_ prefix means "all task logs" because admin log query uses containsIgnoreCase.
         request.setActionType(normalizedActionType());
         request.setStartDate(startDate);
@@ -88,5 +90,13 @@ public class AdminOperationTaskHistoryListRequest {
         }
         String normalized = actionType.trim().replaceAll("\\s+", " ").toUpperCase();
         return normalized.isBlank() ? "TASK_" : normalized;
+    }
+
+    private String normalizedAdminKeyword() {
+        if (adminKeyword == null) {
+            return null;
+        }
+        String normalized = adminKeyword.trim();
+        return normalized.isBlank() ? null : normalized;
     }
 }

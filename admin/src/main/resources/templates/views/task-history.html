@@ -71,9 +71,21 @@
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_DELETE">작업 삭제</button>
                     </div>
                 </div>
+                <div class="admin-filter-field admin-filter-field--span-12">
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="today">오늘</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="7days">최근 7일</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="30days">최근 30일</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="clear">기간 초기화</button>
+                    </div>
+                </div>
                 <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">관리자 번호</label>
                     <input type="number" id="taskHistoryAdminNo" class="form-control" min="1">
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">관리자명</label>
+                    <input type="text" id="taskHistoryAdminKeyword" class="form-control" placeholder="예: 운영자">
                 </div>
                 <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">시작일</label>
@@ -83,7 +95,7 @@
                     <label class="admin-filter-label">종료일</label>
                     <input type="date" id="taskHistoryEndDate" class="form-control">
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-4">
+                <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">페이지 크기</label>
                     <select id="taskHistoryPageSize" class="form-select">
                         <option value="20">20</option>

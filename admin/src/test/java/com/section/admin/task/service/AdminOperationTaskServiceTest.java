@@ -144,9 +144,10 @@ class AdminOperationTaskServiceTest {
         request.setTaskNo(81L);
         request.setStatus("TODO");
         request.setAssigneeAdminNo(2L);
-        request.setCommentedOnly("Y");
+        request.setCommentedOnly("N");
+        request.setDueWithinDays(7);
         request.setDueState("OVERDUE");
-        request.setSortBy("PRIORITY_DESC");
+        request.setSortBy("COMMENT_COUNT_DESC");
         request.setDueDateFrom(LocalDate.of(2026, 6, 1));
         request.setDueDateTo(LocalDate.of(2026, 6, 30));
 
@@ -181,9 +182,9 @@ class AdminOperationTaskServiceTest {
         byte[] result = adminOperationTaskService.exportTaskListCsv(request);
         String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
 
-        assertTrue(csv.contains("\"조회조건\",\"작업번호: #81 | 상태: 대기 | 담당자: 운영자 | 메모있는 작업만 | 기한상태: 기한 초과 | 기한: 2026-06-01 ~ 2026-06-30\""));
-        assertTrue(csv.contains("\"정렬\",\"우선순위 높은 순\""));
-        assertTrue(csv.contains("메모있는 작업만"));
+        assertTrue(csv.contains("\"조회조건\",\"작업번호: #81 | 상태: 대기 | 담당자: 운영자 | 메모없는 작업만 | 7일 이내 마감 | 기한상태: 기한 초과 | 기한: 2026-06-01 ~ 2026-06-30\""));
+        assertTrue(csv.contains("\"정렬\",\"메모 많은 순\""));
+        assertTrue(csv.contains("메모없는 작업만"));
         assertTrue(csv.contains("\"정산 확인\""));
         assertTrue(csv.contains("\"2\",\"최근 메모입니다.\",\"운영자\",\"2026-06-01 08:30\""));
     }
@@ -286,7 +287,7 @@ class AdminOperationTaskServiceTest {
                         List.of(new AdminLogListResponse.Item(9L, 1L, "운영자", "TASK_UPDATE", 11L, "운영 작업 #11", "/admin/settings/tasks/get?no=11&returnTo=/admin/settings/tasks", "127.0.0.1", "2026-05-23 10:00")),
                         1L, 1, 0, 5, 1L, 1L, "1-1 / 1건 · 1페이지",
                         new AdminLogListResponse.Summary(1, 1, 0, 1, 0, 1),
-                        new AdminLogListResponse.AppliedQuery(null, "TASK_", 11L, null, null),
+                        new AdminLogListResponse.AppliedQuery(null, null, "TASK_", 11L, null, null),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=TASK_ · 대상=11")
                 ));
         AdminOperationTaskCommentResDto comment = new AdminOperationTaskCommentResDto();

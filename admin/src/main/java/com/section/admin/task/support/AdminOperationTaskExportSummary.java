@@ -50,6 +50,11 @@ public record AdminOperationTaskExportSummary(
         }
         if ("Y".equalsIgnoreCase(query.commentedOnly())) {
             filters.add("메모있는 작업만");
+        } else if ("N".equalsIgnoreCase(query.commentedOnly())) {
+            filters.add("메모없는 작업만");
+        }
+        if (query.dueWithinDays() != null) {
+            filters.add(query.dueWithinDays() + "일 이내 마감");
         }
         if (query.dueState() != null) {
             filters.add("기한상태: " + resolveDueStateLabel(query.dueState()));
@@ -76,6 +81,7 @@ public record AdminOperationTaskExportSummary(
             case "DUE_DATE_DESC" -> "마감일 늦은 순";
             case "PRIORITY_DESC" -> "우선순위 높은 순";
             case "LATEST_COMMENT_DESC" -> "최근 메모 순";
+            case "COMMENT_COUNT_DESC" -> "메모 많은 순";
             case "CREATED_DESC" -> "최근 등록 순";
             default -> "고정 우선 · 마감 임박 순";
         };

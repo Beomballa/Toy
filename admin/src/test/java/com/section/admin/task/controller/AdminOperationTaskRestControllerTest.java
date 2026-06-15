@@ -76,7 +76,7 @@ class AdminOperationTaskRestControllerTest {
                         10,
                         new AdminOperationTaskListResponse.TaskStats(4L, 2L, 1L, 1L, 1L, "기본 문맥 기준", "고정 우선 · 마감 임박 순"),
                         List.of(new AdminOperationTaskListResponse.AssigneeOption(2L, "운영자")),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                         new AdminOperationTaskListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "고정 우선 · 마감 임박 순 · 정렬=고정 우선 · 마감 임박 순", 1L, 1L)
                 ));
 
@@ -101,20 +101,22 @@ class AdminOperationTaskRestControllerTest {
                         0,
                         0L,
                         10,
-                        new AdminOperationTaskListResponse.TaskStats(0L, 0L, 0L, 0L, 0L, "탐색 문맥 기준", "고정 우선 · 마감 임박 순 · 기한=2026-06-01~2026-06-30"),
+                        new AdminOperationTaskListResponse.TaskStats(0L, 0L, 0L, 0L, 0L, "탐색 문맥 기준", "고정 우선 · 마감 임박 순 · 메모없는 작업만 · 7일 이내 마감 · 기한=2026-06-01~2026-06-30"),
                         List.of(),
-                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, "Y", null, "LATEST_COMMENT_DESC", "2026-06-01", "2026-06-30"),
-                        new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모있는 작업만 · 기한=2026-06-01~2026-06-30 · 정렬=최근 메모 순", 0L, 0L)
+                        new AdminOperationTaskListResponse.AppliedQuery(null, null, null, null, null, null, null, null, "N", 7, null, "COMMENT_COUNT_DESC", "2026-06-01", "2026-06-30"),
+                        new AdminOperationTaskListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 운영 작업이 없습니다.", 4L, true, "고정 우선 · 마감 임박 순 · 메모없는 작업만 · 7일 이내 마감 · 기한=2026-06-01~2026-06-30 · 정렬=메모 많은 순", 0L, 0L)
                 ));
 
         mockMvc.perform(get("/api/admin/settings/tasks/list")
-                        .param("commentedOnly", "Y")
-                        .param("sortBy", "LATEST_COMMENT_DESC")
+                        .param("commentedOnly", "N")
+                        .param("dueWithinDays", "7")
+                        .param("sortBy", "COMMENT_COUNT_DESC")
                         .param("dueDateFrom", "2026-06-01")
                         .param("dueDateTo", "2026-06-30"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.appliedQuery.commentedOnly").value("Y"))
-                .andExpect(jsonPath("$.appliedQuery.sortBy").value("LATEST_COMMENT_DESC"))
+                .andExpect(jsonPath("$.appliedQuery.commentedOnly").value("N"))
+                .andExpect(jsonPath("$.appliedQuery.dueWithinDays").value(7))
+                .andExpect(jsonPath("$.appliedQuery.sortBy").value("COMMENT_COUNT_DESC"))
                 .andExpect(jsonPath("$.appliedQuery.dueDateFrom").value("2026-06-01"))
                 .andExpect(jsonPath("$.appliedQuery.dueDateTo").value("2026-06-30"))
                 .andExpect(jsonPath("$.resultMeta.appliedFilterCount").value(4));
@@ -239,14 +241,15 @@ class AdminOperationTaskRestControllerTest {
                         1L,
                         1L,
                         "1-1 / 1건 · 1페이지",
-                        new AdminOperationTaskHistoryListResponse.AppliedQuery(3L, "TASK_STATUS_UPDATE", 2L, "2026-05-23", "2026-05-23", "/admin/settings/tasks"),
+                        new AdminOperationTaskHistoryListResponse.AppliedQuery(3L, "TASK_STATUS_UPDATE", 2L, "운영", "2026-05-23", "2026-05-23", "/admin/settings/tasks"),
                         new AdminOperationTaskHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 4, "1-1 · 작업=TASK_STATUS_UPDATE")
                 ));
 
-        mockMvc.perform(get("/api/admin/settings/tasks/history/list").param("taskNo", "3"))
+        mockMvc.perform(get("/api/admin/settings/tasks/history/list").param("taskNo", "3").param("adminKeyword", "운영"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].taskNo").value(3L))
                 .andExpect(jsonPath("$.items[0].actionLabel").value("상태 변경"))
+                .andExpect(jsonPath("$.appliedQuery.adminKeyword").value("운영"))
                 .andExpect(jsonPath("$.resultMeta.filterCount").value(4));
     }
 

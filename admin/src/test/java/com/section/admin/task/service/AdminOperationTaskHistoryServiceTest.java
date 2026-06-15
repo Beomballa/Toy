@@ -44,13 +44,14 @@ class AdminOperationTaskHistoryServiceTest {
                         1L,
                         "1-1 / 1건 · 1페이지",
                         new AdminLogListResponse.Summary(1, 1, 0, 1, 0, 1),
-                        new AdminLogListResponse.AppliedQuery(2L, "TASK_", 7L, "2026-05-23", "2026-05-23"),
+                        new AdminLogListResponse.AppliedQuery(2L, "운영", "TASK_", 7L, "2026-05-23", "2026-05-23"),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 3, "1-1 · 작업=TASK_")
                 ));
 
         AdminOperationTaskHistoryListRequest request = new AdminOperationTaskHistoryListRequest();
         request.setTaskNo(7L);
         request.setAdminNo(2L);
+        request.setAdminKeyword("운영");
         request.setReturnTo("/admin/settings/tasks?page=1");
 
         AdminOperationTaskHistoryListResponse response = adminOperationTaskHistoryService.getTaskHistoryList(request, 0, 20);
@@ -59,6 +60,7 @@ class AdminOperationTaskHistoryServiceTest {
         verify(adminLogService).getLogList(requestCaptor.capture(), any(Pageable.class));
         assertEquals("TASK_", requestCaptor.getValue().getActionType());
         assertEquals(7L, requestCaptor.getValue().getTargetId());
+        assertEquals("운영", requestCaptor.getValue().getAdminKeyword());
         assertEquals(1, response.items().size());
         assertEquals("상태 변경", response.items().get(0).actionLabel());
         assertEquals("/admin/settings/tasks?page=1", response.appliedQuery().returnTo());

@@ -23,6 +23,7 @@ public class AdminOperationTaskListRequest {
     private String overdueOnly;
     private String unassignedOnly;
     private String commentedOnly;
+    private Integer dueWithinDays;
     private String dueState;
     private String sortBy;
     private LocalDate dueDateFrom;
@@ -46,6 +47,7 @@ public class AdminOperationTaskListRequest {
                 normalizeFlag(overdueOnly),
                 normalizedUnassignedOnly,
                 normalizeFlag(commentedOnly),
+                normalizeDueWithinDays(dueWithinDays),
                 normalizeDueState(dueState),
                 normalizeSortBy(sortBy),
                 normalizeDueDateFrom(dueDateFrom, dueDateTo),
@@ -136,9 +138,19 @@ public class AdminOperationTaskListRequest {
             return "PINNED_DUE";
         }
         return switch (normalized.toUpperCase()) {
-            case "PINNED_DUE", "DUE_DATE_DESC", "PRIORITY_DESC", "CREATED_DESC", "LATEST_COMMENT_DESC" -> normalized.toUpperCase();
+            case "PINNED_DUE", "DUE_DATE_DESC", "PRIORITY_DESC", "CREATED_DESC", "LATEST_COMMENT_DESC", "COMMENT_COUNT_DESC" -> normalized.toUpperCase();
             default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         };
+    }
+
+    private Integer normalizeDueWithinDays(Integer value) {
+        if (value == null) {
+            return null;
+        }
+        if (value <= 0 || value > 30) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return value;
     }
 
     private LocalDate normalizeDueDateFrom(LocalDate from, LocalDate to) {

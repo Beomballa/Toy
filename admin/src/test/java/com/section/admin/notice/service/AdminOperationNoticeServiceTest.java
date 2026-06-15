@@ -273,7 +273,7 @@ class AdminOperationNoticeServiceTest {
                         1L,
                         "1-1 / 1건 · 1페이지",
                         new AdminLogListResponse.Summary(1, 1, 1, 0, 0, 1),
-                        new AdminLogListResponse.AppliedQuery(2L, "NOTICE_", 9L, null, null),
+                        new AdminLogListResponse.AppliedQuery(2L, null, "NOTICE_", 9L, null, null),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 2, "1-1 · 작업=NOTICE_")
                 ));
 

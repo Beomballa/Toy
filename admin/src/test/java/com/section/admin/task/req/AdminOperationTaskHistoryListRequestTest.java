@@ -14,11 +14,13 @@ class AdminOperationTaskHistoryListRequestTest {
     void toLogListRequestUsesTaskPrefixByDefault() {
         AdminOperationTaskHistoryListRequest request = new AdminOperationTaskHistoryListRequest();
         request.setTaskNo(3L);
+        request.setAdminKeyword(" 운영 담당 ");
 
         var logRequest = request.toLogListRequest();
 
         assertEquals(3L, logRequest.getTargetId());
         assertEquals("TASK_", logRequest.getActionType());
+        assertEquals("운영 담당", logRequest.getAdminKeyword());
     }
 
     @Test

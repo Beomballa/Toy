@@ -69,6 +69,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueWithinDays(query.dueWithinDays(), LocalDate.now()),
                         dueStateEq(query.dueState(), LocalDate.now()),
                         overdue(query.overdueOnly(), LocalDate.now()),
                         dueDateOnOrAfter(query.dueDateFrom()),
@@ -92,6 +93,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueWithinDays(query.dueWithinDays(), LocalDate.now()),
                         dueStateEq(query.dueState(), LocalDate.now()),
                         overdue(query.overdueOnly(), LocalDate.now()),
                         dueDateOnOrAfter(query.dueDateFrom()),
@@ -354,6 +356,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         isPinnedEq(query.isPinned()),
                         unassigned(query.unassignedOnly()),
                         commented(query.commentedOnly()),
+                        dueWithinDays(query.dueWithinDays(), today),
                         dueStateEq(query.dueState(), today),
                         overdue(overdueOnly, today),
                         dueDateOnOrAfter(query.dueDateFrom()),
@@ -379,6 +382,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         priorityEq(query.priority()),
                         isPinnedEq(query.isPinned()),
                         commented(query.commentedOnly()),
+                        dueWithinDays(query.dueWithinDays(), today),
                         dueStateEq(query.dueState(), today),
                         adminOperationTask.assigneeAdminNo.isNull(),
                         overdue(query.overdueOnly(), today),
@@ -470,13 +474,24 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
     }
 
     private BooleanExpression commented(String commentedOnly) {
-        if (!"Y".equalsIgnoreCase(commentedOnly)) {
+        if (commentedOnly == null || commentedOnly.isBlank()) {
             return null;
         }
-        return JPAExpressions.selectOne()
+        BooleanExpression hasComment = JPAExpressions.selectOne()
                 .from(adminOperationTaskComment)
                 .where(adminOperationTaskComment.taskNo.eq(adminOperationTask.taskNo))
                 .exists();
+        return "N".equalsIgnoreCase(commentedOnly) ? hasComment.not() : hasComment;
+    }
+
+    private BooleanExpression dueWithinDays(Integer dueWithinDays, LocalDate today) {
+        if (dueWithinDays == null) {
+            return null;
+        }
+        return adminOperationTask.dueDate.isNotNull()
+                .and(adminOperationTask.status.ne("DONE"))
+                .and(adminOperationTask.dueDate.goe(today))
+                .and(adminOperationTask.dueDate.loe(today.plusDays(dueWithinDays.longValue())));
     }
 
     private BooleanExpression overdue(String overdueOnly, LocalDate today) {
@@ -537,6 +552,18 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
             case "CREATED_DESC" -> {
                 orderSpecifiers.add(adminOperationTask.crtDtm.desc());
                 orderSpecifiers.add(adminOperationTask.isPinned.desc());
+            }
+            case "COMMENT_COUNT_DESC" -> {
+                NumberExpression<Long> commentCount = Expressions.numberTemplate(
+                        Long.class,
+                        "coalesce({0}, 0)",
+                        JPAExpressions.select(adminOperationTaskComment.count())
+                                .from(adminOperationTaskComment)
+                                .where(adminOperationTaskComment.taskNo.eq(adminOperationTask.taskNo))
+                );
+                orderSpecifiers.add(commentCount.desc());
+                orderSpecifiers.add(adminOperationTask.isPinned.desc());
+                orderSpecifiers.add(adminOperationTask.dueDate.asc().nullsLast());
             }
             case "LATEST_COMMENT_DESC" -> {
                 NumberExpression<Long> latestCommentNo = Expressions.numberTemplate(

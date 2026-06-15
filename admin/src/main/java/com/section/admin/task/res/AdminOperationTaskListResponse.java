@@ -48,6 +48,7 @@ public record AdminOperationTaskListResponse(
                         query.overdueOnly(),
                         query.unassignedOnly(),
                         query.commentedOnly(),
+                        query.dueWithinDays(),
                         query.dueState(),
                         query.sortBy(),
                         formatDate(query.dueDateFrom()),
@@ -171,6 +172,7 @@ public record AdminOperationTaskListResponse(
                     && query.isPinned() == null
                     && query.unassignedOnly() == null
                     && query.commentedOnly() == null
+                    && query.dueWithinDays() == null
                     && query.dueState() == null
                     && query.dueDateFrom() == null
                     && query.dueDateTo() == null
@@ -200,6 +202,11 @@ public record AdminOperationTaskListResponse(
             }
             if ("Y".equalsIgnoreCase(query.commentedOnly())) {
                 builder.append(" · 메모있는 작업만");
+            } else if ("N".equalsIgnoreCase(query.commentedOnly())) {
+                builder.append(" · 메모없는 작업만");
+            }
+            if (query.dueWithinDays() != null) {
+                builder.append(" · ").append(query.dueWithinDays()).append("일 이내 마감");
             }
             if (query.dueState() != null) {
                 builder.append(" · 기한상태=").append(resolveDueStateLabel(query.dueState()));
@@ -231,6 +238,7 @@ public record AdminOperationTaskListResponse(
             String overdueOnly,
             String unassignedOnly,
             String commentedOnly,
+            Integer dueWithinDays,
             String dueState,
             String sortBy,
             String dueDateFrom,
@@ -278,6 +286,7 @@ public record AdminOperationTaskListResponse(
             if (query.overdueOnly() != null) count++;
             if (query.unassignedOnly() != null) count++;
             if (query.commentedOnly() != null) count++;
+            if (query.dueWithinDays() != null) count++;
             if (query.dueState() != null) count++;
             if (query.dueDateFrom() != null) count++;
             if (query.dueDateTo() != null) count++;
@@ -296,6 +305,8 @@ public record AdminOperationTaskListResponse(
             if ("Y".equalsIgnoreCase(query.overdueOnly())) builder.append(" · 기한초과만");
             if ("Y".equalsIgnoreCase(query.unassignedOnly())) builder.append(" · 미지정만");
             if ("Y".equalsIgnoreCase(query.commentedOnly())) builder.append(" · 메모있는 작업만");
+            if ("N".equalsIgnoreCase(query.commentedOnly())) builder.append(" · 메모없는 작업만");
+            if (query.dueWithinDays() != null) builder.append(" · ").append(query.dueWithinDays()).append("일 이내 마감");
             if (query.dueState() != null) builder.append(" · 기한상태=").append(resolveDueStateLabel(query.dueState()));
             if (query.dueDateFrom() != null || query.dueDateTo() != null) {
                 builder.append(" · 기한=");
@@ -321,6 +332,7 @@ public record AdminOperationTaskListResponse(
             case "PRIORITY_DESC" -> "우선순위 높은 순";
             case "CREATED_DESC" -> "최근 등록 순";
             case "LATEST_COMMENT_DESC" -> "최근 메모 순";
+            case "COMMENT_COUNT_DESC" -> "메모 많은 순";
             default -> "고정 우선 · 마감 임박 순";
         };
     }

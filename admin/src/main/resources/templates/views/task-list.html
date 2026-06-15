@@ -129,6 +129,16 @@
                     <input type="date" id="taskDueDateTo" class="form-control">
                 </div>
                 <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">임박 마감</label>
+                    <select id="taskDueWithinDaysFilter" class="form-select">
+                        <option value="">전체</option>
+                        <option value="1">오늘~1일</option>
+                        <option value="3">3일 이내</option>
+                        <option value="7">7일 이내</option>
+                        <option value="14">14일 이내</option>
+                    </select>
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">기한 상태</label>
                     <select id="taskDueStateFilter" class="form-select">
                         <option value="">전체</option>
@@ -144,6 +154,7 @@
                         <option value="PINNED_DUE">고정 우선 · 마감 임박 순</option>
                         <option value="DUE_DATE_DESC">마감일 늦은 순</option>
                         <option value="PRIORITY_DESC">우선순위 높은 순</option>
+                        <option value="COMMENT_COUNT_DESC">메모 많은 순</option>
                         <option value="LATEST_COMMENT_DESC">최근 메모 순</option>
                         <option value="CREATED_DESC">최근 등록 순</option>
                     </select>
@@ -168,8 +179,12 @@
                             <label class="form-check-label" for="taskUnassignedOnly">미지정만</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="taskCommentedOnly">
-                            <label class="form-check-label" for="taskCommentedOnly">메모 있는 작업만</label>
+                            <label class="form-check-label" for="taskCommentedOnly">메모 상태</label>
+                            <select id="taskCommentedOnly" class="form-select mt-1">
+                                <option value="">전체</option>
+                                <option value="Y">메모 있는 작업만</option>
+                                <option value="N">메모 없는 작업만</option>
+                            </select>
                         </div>
                     </div>
                 </div>

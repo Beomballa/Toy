@@ -44,7 +44,7 @@ class AdminOperationNoticeHistoryServiceTest {
                         1L,
                         "1-1 / 1건 · 1페이지",
                         new AdminLogListResponse.Summary(1, 1, 1, 0, 0, 1),
-                        new AdminLogListResponse.AppliedQuery(2L, "NOTICE_", 7L, "2026-05-19", "2026-05-20"),
+                        new AdminLogListResponse.AppliedQuery(2L, null, "NOTICE_", 7L, "2026-05-19", "2026-05-20"),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 3, "1-1 · 작업=NOTICE_")
                 ));
 

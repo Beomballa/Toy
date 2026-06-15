@@ -69,7 +69,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
         adminOperationTaskCommentRepository.save(comment(matchedTask.getTaskNo(), "지연 사유 메모", assignee.getAdminNo()));
 
         Page<?> matched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("정산 지연", null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                new AdminOperationTaskListQuery("정산 지연", null, null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -95,7 +95,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
                 .build());
 
         Page<?> matched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("정산담당", null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                new AdminOperationTaskListQuery("정산담당", null, null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -124,7 +124,113 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
         adminOperationTaskCommentRepository.save(comment(secondTask.getTaskNo(), "나중에 달린 메모", null, LocalDateTime.of(2026, 6, 4, 18, 30)));
 
         Page<?> sorted = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery("달린 메모", null, null, null, null, null, null, null, null, null, "LATEST_COMMENT_DESC", null, null),
+                new AdminOperationTaskListQuery("달린 메모", null, null, null, null, null, null, null, null, null, null, "LATEST_COMMENT_DESC", null, null),
+                PageRequest.of(0, 10)
+        );
+
+        List<Long> sortedTaskNos = sorted.getContent().stream()
+                .map(item -> ((AdminOperationTaskListResDto) item).getTaskNo())
+                .toList();
+        assertEquals(true, sortedTaskNos.size() >= 2);
+        assertIterableEquals(List.of(secondTask.getTaskNo(), firstTask.getTaskNo()), sortedTaskNos.subList(0, 2));
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록은 메모 없는 작업만 필터링할 수 있다")
+    void getTaskListFiltersTasksWithoutComments() {
+        AdminOperationTask withoutComment = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("무메모 작업")
+                .description("메모 없음")
+                .status("TODO")
+                .priority("MEDIUM")
+                .isPinned("N")
+                .build());
+        AdminOperationTask withComment = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("메모 작업")
+                .description("메모 있음")
+                .status("TODO")
+                .priority("MEDIUM")
+                .isPinned("N")
+                .build());
+        adminOperationTaskCommentRepository.save(comment(withComment.getTaskNo(), "메모 있음", null));
+
+        Page<?> matched = adminOperationTaskRepository.getTaskList(
+                new AdminOperationTaskListQuery(null, null, null, null, null, null, null, null, "N", null, null, "PINNED_DUE", null, null),
+                PageRequest.of(0, 10)
+        );
+
+        List<Long> matchedTaskNos = matched.getContent().stream()
+                .map(item -> ((AdminOperationTaskListResDto) item).getTaskNo())
+                .toList();
+        assertTrue(matchedTaskNos.contains(withoutComment.getTaskNo()));
+        assertTrue(matchedTaskNos.stream().noneMatch(taskNo -> taskNo.equals(withComment.getTaskNo())));
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록은 지정한 일수 안에 마감되는 작업만 조회한다")
+    void getTaskListFiltersTasksDueWithinDays() {
+        LocalDate today = LocalDate.now();
+        AdminOperationTask nearDueTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("임박 작업")
+                .description("3일 안에 마감")
+                .status("IN_PROGRESS")
+                .priority("HIGH")
+                .dueDate(today.plusDays(3))
+                .isPinned("N")
+                .build());
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("여유 작업")
+                .description("10일 뒤 마감")
+                .status("IN_PROGRESS")
+                .priority("HIGH")
+                .dueDate(today.plusDays(10))
+                .isPinned("N")
+                .build());
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("완료 임박 작업")
+                .description("완료 상태")
+                .status("DONE")
+                .priority("LOW")
+                .dueDate(today.plusDays(2))
+                .isPinned("N")
+                .build());
+
+        Page<?> matched = adminOperationTaskRepository.getTaskList(
+                new AdminOperationTaskListQuery(null, null, null, null, null, null, null, null, null, 7, null, "PINNED_DUE", null, null),
+                PageRequest.of(0, 10)
+        );
+
+        List<Long> matchedTaskNos = matched.getContent().stream()
+                .map(item -> ((AdminOperationTaskListResDto) item).getTaskNo())
+                .toList();
+        assertEquals(List.of(nearDueTask.getTaskNo()), matchedTaskNos);
+    }
+
+    @Test
+    @DisplayName("운영 작업 목록 메모 수 정렬은 메모가 많은 작업을 먼저 노출한다")
+    void getTaskListSortsByCommentCount() {
+        AdminOperationTask firstTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("메모 한 건")
+                .description("적은 메모")
+                .status("TODO")
+                .priority("HIGH")
+                .isPinned("N")
+                .build());
+        AdminOperationTask secondTask = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("메모 세 건")
+                .description("많은 메모")
+                .status("TODO")
+                .priority("HIGH")
+                .isPinned("N")
+                .build());
+
+        adminOperationTaskCommentRepository.save(comment(firstTask.getTaskNo(), "첫 메모", null));
+        adminOperationTaskCommentRepository.save(comment(secondTask.getTaskNo(), "둘째 메모", null));
+        adminOperationTaskCommentRepository.save(comment(secondTask.getTaskNo(), "셋째 메모", null));
+        adminOperationTaskCommentRepository.save(comment(secondTask.getTaskNo(), "넷째 메모", null));
+
+        Page<?> sorted = adminOperationTaskRepository.getTaskList(
+                new AdminOperationTaskListQuery("메모", null, null, null, null, null, null, null, null, null, null, "COMMENT_COUNT_DESC", null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -154,7 +260,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
                 .build());
 
         Page<?> matched = adminOperationTaskRepository.getTaskList(
-                new AdminOperationTaskListQuery(null, targetTask.getTaskNo(), null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
+                new AdminOperationTaskListQuery(null, targetTask.getTaskNo(), null, null, null, null, null, null, null, null, null, "PINNED_DUE", null, null),
                 PageRequest.of(0, 10)
         );
 

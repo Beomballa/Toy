@@ -2,6 +2,8 @@ package com.section.admin.banner.res;
 
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import com.section.common.commerce.dto.BannerStatsQuery;
+import com.section.common.commerce.dto.BannerSummaryDto;
 import org.springframework.data.domain.Page;
 
 import java.time.LocalDateTime;
@@ -13,10 +15,11 @@ public record BannerListResponse(
         int totalPages,
         long totalElements,
         int pageSize,
+        BannerStats bannerStats,
         AppliedQuery appliedQuery,
         ResultMeta resultMeta
 ) {
-    public static BannerListResponse of(Page<BannerListResDto> page, BannerListQuery query) {
+    public static BannerListResponse of(Page<BannerListResDto> page, BannerListQuery query, BannerSummaryDto summary) {
         List<Item> mappedItems = page.getContent().stream().map(Item::from).toList();
         return new BannerListResponse(
                 mappedItems,
@@ -24,6 +27,7 @@ public record BannerListResponse(
                 page.getTotalPages(),
                 page.getTotalElements(),
                 page.getSize(),
+                BannerStats.from(summary, query.toStatsQuery()),
                 new AppliedQuery(query.keyword(), query.isActive(), query.exposureStatus()),
                 ResultMeta.from(page, query)
         );
@@ -78,6 +82,39 @@ public record BannerListResponse(
             String isActive,
             String exposureStatus
     ) {
+    }
+
+    public record BannerStats(
+            long totalCount,
+            long liveCount,
+            long scheduledCount,
+            long endedCount,
+            long inactiveCount,
+            String contextLabel,
+            String querySignature
+    ) {
+        static BannerStats from(BannerSummaryDto summary, BannerStatsQuery query) {
+            return new BannerStats(
+                    summary.totalCount(),
+                    summary.liveCount(),
+                    summary.scheduledCount(),
+                    summary.endedCount(),
+                    summary.inactiveCount(),
+                    query.keyword() == null && query.isActive() == null ? "기본 문맥 기준" : "검색 문맥 기준",
+                    buildQuerySignature(query)
+            );
+        }
+
+        private static String buildQuerySignature(BannerStatsQuery query) {
+            StringBuilder builder = new StringBuilder("정렬 순서 기준");
+            if (query.keyword() != null) {
+                builder.append(" · 검색=").append(query.keyword());
+            }
+            if (query.isActive() != null) {
+                builder.append(" · 상태=").append("Y".equalsIgnoreCase(query.isActive()) ? "사용" : "중지");
+            }
+            return builder.toString();
+        }
     }
 
     public record ResultMeta(

@@ -5,4 +5,7 @@ public record BannerListQuery(
         String isActive,
         String exposureStatus
 ) {
+    public BannerStatsQuery toStatsQuery() {
+        return new BannerStatsQuery(keyword, isActive);
+    }
 }

@@ -59,6 +59,7 @@ class AdminBannerRestControllerTest {
                         1,
                         1L,
                         10,
+                        new BannerListResponse.BannerStats(1, 1, 0, 0, 0, "기본 문맥 기준", "정렬 순서 기준"),
                         new BannerListResponse.AppliedQuery(null, null, null),
                         new BannerListResponse.ResultMeta("전체 1건", "1-1 / 1건 · 1페이지", 0, false, "정렬 순서 기준", 1L, 1L)
                 ));
@@ -66,6 +67,7 @@ class AdminBannerRestControllerTest {
         mockMvc.perform(get("/api/admin/banners/list"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("메인 배너"))
+                .andExpect(jsonPath("$.bannerStats.totalCount").value(1))
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("전체 1건"))
                 .andExpect(jsonPath("$.pageSize").value(10))
                 .andExpect(jsonPath("$.totalElements").value(1L));
@@ -81,6 +83,7 @@ class AdminBannerRestControllerTest {
                         0,
                         0L,
                         10,
+                        new BannerListResponse.BannerStats(4, 0, 2, 1, 1, "기본 문맥 기준", "정렬 순서 기준 · 상태=사용"),
                         new BannerListResponse.AppliedQuery(null, "Y", "LIVE"),
                         new BannerListResponse.ResultMeta("검색 결과 0건", "조건에 맞는 배너가 없습니다.", 2, true, "정렬 순서 기준 · 상태=사용 · 노출기간=진행중", 0L, 0L)
                 ));
@@ -89,6 +92,7 @@ class AdminBannerRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.appliedQuery.isActive").value("Y"))
                 .andExpect(jsonPath("$.appliedQuery.exposureStatus").value("LIVE"))
+                .andExpect(jsonPath("$.bannerStats.contextLabel").value("기본 문맥 기준"))
                 .andExpect(jsonPath("$.resultMeta.querySignature").value("정렬 순서 기준 · 상태=사용 · 노출기간=진행중"));
     }
 

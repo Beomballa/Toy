@@ -56,6 +56,11 @@ const BannerList = {
         document.getElementById('btnBulkDeleteBanner')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearBannerSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('bannerSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
+        document.getElementById('bannerStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
+        document.getElementById('bannerStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
+        document.getElementById('bannerStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
+        document.getElementById('bannerStatEndedCard')?.addEventListener('click', () => this.applyStatFilter('ended'));
+        document.getElementById('bannerStatInactiveCard')?.addEventListener('click', () => this.applyStatFilter('inactive'));
 
         document.getElementById('btnSearchBanner')?.addEventListener('click', () => this.getList());
         document.getElementById('btnResetBanner')?.addEventListener('click', () => this.resetFilters());
@@ -142,6 +147,7 @@ const BannerList = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
             this.renderList(data.items || []);
+            this.renderStats(data.bannerStats);
             this.renderMeta(data);
             this.renderPagination(data);
             await this.openDeepLinkedBannerIfNeeded(data.items || []);
@@ -150,6 +156,7 @@ const BannerList = {
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
+            this.renderStats(null);
             document.getElementById('bannerListBody').innerHTML =
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('bannerPagination').innerHTML = '';
@@ -220,6 +227,43 @@ const BannerList = {
         }
     },
 
+    renderStats(stats) {
+        const totalCountEl = document.getElementById('bannerTotalCount');
+        const liveCountEl = document.getElementById('bannerLiveCount');
+        const scheduledCountEl = document.getElementById('bannerScheduledCount');
+        const endedCountEl = document.getElementById('bannerEndedCount');
+        const inactiveCountEl = document.getElementById('bannerInactiveCount');
+        const contextTextEl = document.getElementById('bannerStatsContextText');
+        const noticeEl = document.getElementById('bannerStatsNotice');
+
+        if (!stats) {
+            if (totalCountEl) totalCountEl.innerText = '0';
+            if (liveCountEl) liveCountEl.innerText = '0';
+            if (scheduledCountEl) scheduledCountEl.innerText = '0';
+            if (endedCountEl) endedCountEl.innerText = '0';
+            if (inactiveCountEl) inactiveCountEl.innerText = '0';
+            if (contextTextEl) contextTextEl.innerText = '카드 기준을 확인할 수 없습니다.';
+            if (noticeEl) {
+                noticeEl.innerText = '카드 기준을 확인할 수 없습니다.';
+                noticeEl.dataset.statsContext = 'error';
+            }
+            return;
+        }
+
+        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
+        liveCountEl.innerText = Number(stats.liveCount || 0).toLocaleString();
+        scheduledCountEl.innerText = Number(stats.scheduledCount || 0).toLocaleString();
+        endedCountEl.innerText = Number(stats.endedCount || 0).toLocaleString();
+        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
+
+        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        const usingQuickFilter = !!this.state.exposureStatus;
+        noticeEl.innerText = usingQuickFilter
+            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+            : '카드 수치는 현재 탐색 문맥 기준입니다.';
+        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+    },
+
     renderPagination(data) {
         const paginationEl = document.getElementById('bannerPagination');
         if (!paginationEl) {
@@ -284,6 +328,30 @@ const BannerList = {
         this.state.page = 0;
         this.state.bannerNo = '';
         this.state.source = '';
+        this.getList();
+    },
+
+    applyStatFilter(type) {
+        this.state.page = 0;
+        document.getElementById('bannerExposureStatusFilter').value = '';
+        document.getElementById('bannerIsActiveFilter').value = '';
+        switch (type) {
+            case 'live':
+                document.getElementById('bannerExposureStatusFilter').value = 'LIVE';
+                break;
+            case 'scheduled':
+                document.getElementById('bannerExposureStatusFilter').value = 'SCHEDULED';
+                break;
+            case 'ended':
+                document.getElementById('bannerExposureStatusFilter').value = 'ENDED';
+                break;
+            case 'inactive':
+                document.getElementById('bannerIsActiveFilter').value = 'N';
+                break;
+            case 'total':
+            default:
+                break;
+        }
         this.getList();
     },
 

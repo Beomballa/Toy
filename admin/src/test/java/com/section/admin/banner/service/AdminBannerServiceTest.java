@@ -9,6 +9,7 @@ import com.section.admin.banner.res.BannerListResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import com.section.common.commerce.dto.BannerSummaryDto;
 import com.section.common.commerce.entity.DisplayBanner;
 import com.section.common.commerce.repository.BannerRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -63,6 +64,7 @@ class AdminBannerServiceTest {
                 PageRequest.of(0, 10),
                 1
         ));
+        when(bannerRepository.getBannerSummary(any(), any())).thenReturn(new BannerSummaryDto(1, 1, 0, 0, 0));
 
         BannerListResponse response = adminBannerService.getBannerList(request);
 
@@ -73,6 +75,8 @@ class AdminBannerServiceTest {
         assertEquals("메인 배너", response.items().get(0).title());
         assertEquals("전체 1건", response.resultMeta().resultLabel());
         assertEquals("정렬 순서 기준", response.resultMeta().querySignature());
+        assertEquals(1, response.bannerStats().totalCount());
+        assertEquals(1, response.bannerStats().liveCount());
     }
 
     @Test
@@ -82,6 +86,7 @@ class AdminBannerServiceTest {
         request.setExposureStatus("live");
 
         when(bannerRepository.getBannerList(any(), any())).thenReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+        when(bannerRepository.getBannerSummary(any(), any())).thenReturn(new BannerSummaryDto(0, 0, 0, 0, 0));
 
         adminBannerService.getBannerList(request);
 

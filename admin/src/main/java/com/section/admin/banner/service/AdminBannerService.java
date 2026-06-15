@@ -12,6 +12,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import com.section.common.commerce.dto.BannerSummaryDto;
 import com.section.common.commerce.entity.DisplayBanner;
 import com.section.common.commerce.repository.BannerRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
@@ -34,11 +36,13 @@ public class AdminBannerService {
 
     public BannerListResponse getBannerList(BannerListRequest req) {
         BannerListQuery query = req.toQuery();
+        LocalDateTime now = LocalDateTime.now();
         Page<BannerListResDto> page = bannerRepository.getBannerList(
                 query,
                 PageRequest.of(req.normalizedPage(), req.normalizedSize())
         );
-        return BannerListResponse.of(page, query);
+        BannerSummaryDto summary = bannerRepository.getBannerSummary(query, now);
+        return BannerListResponse.of(page, query, summary);
     }
 
     public byte[] exportBannerListCsv(BannerListRequest req) {

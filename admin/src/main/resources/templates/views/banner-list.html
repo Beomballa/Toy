@@ -31,6 +31,38 @@
         </div>
     </div>
 
+    <section class="admin-summary-grid">
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="bannerStatTotalCard">
+            <div class="admin-summary-card__label">전체 배너</div>
+            <div class="admin-summary-card__value stat-value" id="bannerTotalCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="bannerStatLiveCard">
+            <div class="admin-summary-card__label">노출중</div>
+            <div class="admin-summary-card__value stat-value" id="bannerLiveCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="bannerStatScheduledCard">
+            <div class="admin-summary-card__label">대기 배너</div>
+            <div class="admin-summary-card__value stat-value" id="bannerScheduledCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="bannerStatEndedCard">
+            <div class="admin-summary-card__label">종료 배너</div>
+            <div class="admin-summary-card__value stat-value" id="bannerEndedCount">0</div>
+        </div>
+        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="bannerStatInactiveCard">
+            <div class="admin-summary-card__label">중지 배너</div>
+            <div class="admin-summary-card__value stat-value" id="bannerInactiveCount">0</div>
+        </div>
+    </section>
+
+    <div class="card animate-in admin-panel-card">
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted" id="bannerStatsContextText">카드 기준을 계산하는 중입니다...</div>
+                <div class="small text-muted" id="bannerStatsNotice" data-stats-context="">카드 기준을 계산하는 중입니다...</div>
+            </div>
+        </div>
+    </div>
+
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
             <div class="admin-filter-grid">

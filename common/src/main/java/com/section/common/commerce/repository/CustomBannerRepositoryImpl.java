@@ -5,6 +5,8 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.commerce.dto.BannerListQuery;
 import com.section.common.commerce.dto.BannerListResDto;
+import com.section.common.commerce.dto.BannerStatsQuery;
+import com.section.common.commerce.dto.BannerSummaryDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +55,17 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
     }
 
     @Override
+    public BannerSummaryDto getBannerSummary(BannerListQuery query, LocalDateTime now) {
+        BannerStatsQuery statsQuery = query.toStatsQuery();
+        long totalCount = countBy(statsQuery, null, now);
+        long liveCount = countBy(statsQuery, "LIVE", now);
+        long scheduledCount = countBy(statsQuery, "SCHEDULED", now);
+        long endedCount = countBy(statsQuery, "ENDED", now);
+        long inactiveCount = countBy(statsQuery, "INACTIVE", now);
+        return new BannerSummaryDto(totalCount, liveCount, scheduledCount, endedCount, inactiveCount);
+    }
+
+    @Override
     public boolean existsActiveBannerScheduleConflict(Long bannerNo, Integer sortOrder, LocalDateTime startDtm, LocalDateTime endDtm) {
         Integer fetched = queryFactory
                 .selectOne()
@@ -66,6 +79,19 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
                 )
                 .fetchFirst();
         return fetched != null;
+    }
+
+    private long countBy(BannerStatsQuery query, String exposureStatus, LocalDateTime now) {
+        Long count = queryFactory
+                .select(displayBanner.count())
+                .from(displayBanner)
+                .where(
+                        keywordLike(query.keyword()),
+                        isActiveEq(query.isActive()),
+                        exposureStatusEq(exposureStatus, now)
+                )
+                .fetchOne();
+        return count == null ? 0L : count;
     }
 
     private BooleanExpression keywordLike(String keyword) {
@@ -83,15 +109,19 @@ public class CustomBannerRepositoryImpl implements CustomBannerRepository {
     }
 
     private BooleanExpression exposureStatusEq(String exposureStatus) {
+        return exposureStatusEq(exposureStatus, LocalDateTime.now());
+    }
+
+    private BooleanExpression exposureStatusEq(String exposureStatus, LocalDateTime now) {
         if (exposureStatus == null || exposureStatus.isBlank()) {
             return null;
         }
 
-        LocalDateTime now = LocalDateTime.now();
         return switch (exposureStatus.trim().toUpperCase()) {
-            case "SCHEDULED" -> displayBanner.startDtm.after(now);
-            case "LIVE" -> displayBanner.startDtm.loe(now).and(displayBanner.endDtm.goe(now));
-            case "ENDED" -> displayBanner.endDtm.before(now);
+            case "SCHEDULED" -> displayBanner.isActive.eq("Y").and(displayBanner.startDtm.after(now));
+            case "LIVE" -> displayBanner.isActive.eq("Y").and(displayBanner.startDtm.loe(now)).and(displayBanner.endDtm.goe(now));
+            case "ENDED" -> displayBanner.isActive.eq("Y").and(displayBanner.endDtm.before(now));
+            case "INACTIVE" -> displayBanner.isActive.eq("N");
             default -> null;
         };
     }

@@ -78,109 +78,127 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <label class="admin-filter-label">제목/설명 검색</label>
-                    <input type="text" id="taskKeyword" class="form-control" placeholder="운영 작업 검색">
+            <div class="task-filter-layout">
+                <div class="task-filter-section task-filter-section--primary">
+                    <div class="task-filter-section__title">기본 검색</div>
+                    <div class="task-filter-section__desc">제목, 상태, 담당자 기준으로 작업 후보를 먼저 좁힙니다.</div>
+                    <div class="admin-filter-grid task-filter-grid">
+                        <div class="admin-filter-field admin-filter-field--span-4">
+                            <label class="admin-filter-label">제목/설명 검색</label>
+                            <input type="text" id="taskKeyword" class="form-control" placeholder="운영 작업 검색">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업 번호</label>
+                            <input type="number" id="taskNoFilter" class="form-control" min="1" placeholder="No">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">상태</label>
+                            <select id="taskStatusFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="TODO">대기</option>
+                                <option value="IN_PROGRESS">진행중</option>
+                                <option value="DONE">완료</option>
+                                <option value="HOLD">보류</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">우선순위</label>
+                            <select id="taskPriorityFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="HIGH">높음</option>
+                                <option value="MEDIUM">보통</option>
+                                <option value="LOW">낮음</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">담당자</label>
+                            <select id="taskAssigneeFilter" class="form-select">
+                                <option value="">전체</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">작업 번호</label>
-                    <input type="number" id="taskNoFilter" class="form-control" min="1" placeholder="No">
+
+                <div class="task-filter-section task-filter-section--schedule">
+                    <div class="task-filter-section__title">기한 및 정렬</div>
+                    <div class="task-filter-section__desc">마감 임박도와 정렬 기준까지 한 번에 조정합니다.</div>
+                    <div class="admin-filter-grid task-filter-grid">
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">고정</label>
+                            <select id="taskPinnedFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="Y">고정만</option>
+                                <option value="N">일반만</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">기한 시작일</label>
+                            <input type="date" id="taskDueDateFrom" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">기한 종료일</label>
+                            <input type="date" id="taskDueDateTo" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">임박 마감</label>
+                            <select id="taskDueWithinDaysFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="1">오늘~1일</option>
+                                <option value="3">3일 이내</option>
+                                <option value="7">7일 이내</option>
+                                <option value="14">14일 이내</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">기한 상태</label>
+                            <select id="taskDueStateFilter" class="form-select">
+                                <option value="">전체</option>
+                                <option value="OVERDUE">기한 초과</option>
+                                <option value="TODAY">오늘 마감</option>
+                                <option value="UPCOMING">예정 작업</option>
+                                <option value="NO_DUE">기한 없음</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-4">
+                            <label class="admin-filter-label">정렬</label>
+                            <select id="taskSortBy" class="form-select">
+                                <option value="PINNED_DUE">고정 우선 · 마감 임박 순</option>
+                                <option value="DUE_DATE_DESC">마감일 늦은 순</option>
+                                <option value="PRIORITY_DESC">우선순위 높은 순</option>
+                                <option value="COMMENT_COUNT_DESC">메모 많은 순</option>
+                                <option value="LATEST_COMMENT_DESC">최근 메모 순</option>
+                                <option value="CREATED_DESC">최근 등록 순</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">페이지</label>
+                            <select id="taskPageSize" class="form-select">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">상태</label>
-                    <select id="taskStatusFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="TODO">대기</option>
-                        <option value="IN_PROGRESS">진행중</option>
-                        <option value="DONE">완료</option>
-                        <option value="HOLD">보류</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">우선순위</label>
-                    <select id="taskPriorityFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="HIGH">높음</option>
-                        <option value="MEDIUM">보통</option>
-                        <option value="LOW">낮음</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">담당자</label>
-                    <select id="taskAssigneeFilter" class="form-select">
-                        <option value="">전체</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">고정</label>
-                    <select id="taskPinnedFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="Y">고정만</option>
-                        <option value="N">일반만</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">기한 시작일</label>
-                    <input type="date" id="taskDueDateFrom" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">기한 종료일</label>
-                    <input type="date" id="taskDueDateTo" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">임박 마감</label>
-                    <select id="taskDueWithinDaysFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="1">오늘~1일</option>
-                        <option value="3">3일 이내</option>
-                        <option value="7">7일 이내</option>
-                        <option value="14">14일 이내</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">기한 상태</label>
-                    <select id="taskDueStateFilter" class="form-select">
-                        <option value="">전체</option>
-                        <option value="OVERDUE">기한 초과</option>
-                        <option value="TODAY">오늘 마감</option>
-                        <option value="UPCOMING">예정 작업</option>
-                        <option value="NO_DUE">기한 없음</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">정렬</label>
-                    <select id="taskSortBy" class="form-select">
-                        <option value="PINNED_DUE">고정 우선 · 마감 임박 순</option>
-                        <option value="DUE_DATE_DESC">마감일 늦은 순</option>
-                        <option value="PRIORITY_DESC">우선순위 높은 순</option>
-                        <option value="COMMENT_COUNT_DESC">메모 많은 순</option>
-                        <option value="LATEST_COMMENT_DESC">최근 메모 순</option>
-                        <option value="CREATED_DESC">최근 등록 순</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-1">
-                    <label class="admin-filter-label">페이지</label>
-                    <select id="taskPageSize" class="form-select">
-                        <option value="10">10</option>
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <label class="admin-filter-label">추가 조건</label>
-                    <div class="d-flex flex-column gap-2 mt-4 pt-2">
-                        <div class="form-check">
+
+                <div class="task-filter-section task-filter-section--flags">
+                    <div class="task-filter-section__title">추가 조건</div>
+                    <div class="task-filter-section__desc">빠르게 운영상 예외 케이스만 좁혀봅니다.</div>
+                    <div class="task-flag-grid">
+                        <label class="task-flag-card" for="taskOverdueOnly">
                             <input class="form-check-input" type="checkbox" id="taskOverdueOnly">
-                            <label class="form-check-label" for="taskOverdueOnly">기한 초과만</label>
-                        </div>
-                        <div class="form-check">
+                            <span class="task-flag-card__title">기한 초과만</span>
+                            <span class="task-flag-card__desc">이미 마감일을 넘긴 작업만 봅니다.</span>
+                        </label>
+                        <label class="task-flag-card" for="taskUnassignedOnly">
                             <input class="form-check-input" type="checkbox" id="taskUnassignedOnly">
-                            <label class="form-check-label" for="taskUnassignedOnly">미지정만</label>
-                        </div>
-                        <div class="form-check">
-                            <label class="form-check-label" for="taskCommentedOnly">메모 상태</label>
-                            <select id="taskCommentedOnly" class="form-select mt-1">
+                            <span class="task-flag-card__title">미지정만</span>
+                            <span class="task-flag-card__desc">담당자가 비어 있는 작업만 모읍니다.</span>
+                        </label>
+                        <div class="task-flag-card task-flag-card--select">
+                            <label class="task-flag-card__title" for="taskCommentedOnly">메모 상태</label>
+                            <span class="task-flag-card__desc">메모가 있는지 없는지 기준으로 구분합니다.</span>
+                            <select id="taskCommentedOnly" class="form-select mt-2">
                                 <option value="">전체</option>
                                 <option value="Y">메모 있는 작업만</option>
                                 <option value="N">메모 없는 작업만</option>
@@ -188,9 +206,13 @@
                         </div>
                     </div>
                 </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchTask">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetTask">초기화</button>
+
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">필터는 URL에 유지되어 새로고침 후에도 같은 문맥을 복원합니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchTask">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetTask">초기화</button>
+                    </div>
                 </div>
             </div>
         </div>

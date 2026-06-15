@@ -37,28 +37,77 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">작업 번호</label>
-                    <input type="number" id="taskHistoryTaskNo" class="form-control" min="1">
+            <div class="task-filter-layout task-filter-layout--history">
+                <div class="task-filter-section task-filter-section--primary">
+                    <div class="task-filter-section__title">이력 기본 검색</div>
+                    <div class="task-filter-section__desc">작업 번호, 작업 유형, 작업자 기준으로 로그 범위를 빠르게 줄입니다.</div>
+                    <div class="admin-filter-grid task-filter-grid">
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업 번호</label>
+                            <input type="number" id="taskHistoryTaskNo" class="form-control" min="1">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업 유형</label>
+                            <select id="taskHistoryActionType" class="form-select">
+                                <option value="TASK_">전체</option>
+                                <option value="TASK_CREATE">작업 생성</option>
+                                <option value="TASK_UPDATE">작업 수정</option>
+                                <option value="TASK_STATUS_UPDATE">상태 변경</option>
+                                <option value="TASK_BULK_UPDATE">일괄 변경</option>
+                                <option value="TASK_COMMENT_CREATE">댓글 등록</option>
+                                <option value="TASK_COMMENT_UPDATE">댓글 수정</option>
+                                <option value="TASK_COMMENT_DELETE">댓글 삭제</option>
+                                <option value="TASK_BULK_DELETE">일괄 삭제</option>
+                                <option value="TASK_DELETE">작업 삭제</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">관리자 번호</label>
+                            <input type="number" id="taskHistoryAdminNo" class="form-control" min="1">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">관리자명</label>
+                            <input type="text" id="taskHistoryAdminKeyword" class="form-control" placeholder="예: 운영자">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">페이지 크기</label>
+                            <select id="taskHistoryPageSize" class="form-select">
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">작업 유형</label>
-                    <select id="taskHistoryActionType" class="form-select">
-                        <option value="TASK_">전체</option>
-                        <option value="TASK_CREATE">작업 생성</option>
-                        <option value="TASK_UPDATE">작업 수정</option>
-                        <option value="TASK_STATUS_UPDATE">상태 변경</option>
-                        <option value="TASK_BULK_UPDATE">일괄 변경</option>
-                        <option value="TASK_COMMENT_CREATE">댓글 등록</option>
-                        <option value="TASK_COMMENT_UPDATE">댓글 수정</option>
-                        <option value="TASK_COMMENT_DELETE">댓글 삭제</option>
-                        <option value="TASK_BULK_DELETE">일괄 삭제</option>
-                        <option value="TASK_DELETE">작업 삭제</option>
-                    </select>
+
+                <div class="task-filter-section task-filter-section--timeline">
+                    <div class="task-filter-section__title">기간 및 빠른 프리셋</div>
+                    <div class="task-filter-section__desc">최근 이력 구간을 바로 선택하고, 필요하면 수동으로 범위를 조정합니다.</div>
+                    <div class="admin-filter-grid task-filter-grid">
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">시작일</label>
+                            <input type="date" id="taskHistoryStartDate" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">종료일</label>
+                            <input type="date" id="taskHistoryEndDate" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-6">
+                            <label class="admin-filter-label">빠른 기간</label>
+                            <div class="task-filter-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="today">오늘</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="7days">최근 7일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="30days">최근 30일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="clear">기간 초기화</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-8">
-                    <div class="d-flex flex-wrap gap-2">
+
+                <div class="task-filter-section task-filter-section--quick">
+                    <div class="task-filter-section__title">작업 유형 바로가기</div>
+                    <div class="task-filter-section__desc">자주 보는 작업 유형을 버튼으로 바로 좁힙니다.</div>
+                    <div class="task-filter-chip-row task-filter-chip-row--dark">
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter active" data-action-type="TASK_">전체</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_CREATE">작업 생성</button>
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_UPDATE">작업 수정</button>
@@ -71,41 +120,13 @@
                         <button type="button" class="btn btn-sm btn-outline-dark task-history-quick-filter" data-action-type="TASK_DELETE">작업 삭제</button>
                     </div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-12">
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="today">오늘</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="7days">최근 7일</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="30days">최근 30일</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-task-history-date-preset="clear">기간 초기화</button>
+
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">이력 검색도 URL 상태를 유지해서 상세 로그 진입 후 같은 필터로 돌아옵니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchTaskHistory">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetTaskHistory">초기화</button>
                     </div>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">관리자 번호</label>
-                    <input type="number" id="taskHistoryAdminNo" class="form-control" min="1">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">관리자명</label>
-                    <input type="text" id="taskHistoryAdminKeyword" class="form-control" placeholder="예: 운영자">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">시작일</label>
-                    <input type="date" id="taskHistoryStartDate" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">종료일</label>
-                    <input type="date" id="taskHistoryEndDate" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">페이지 크기</label>
-                    <select id="taskHistoryPageSize" class="form-select">
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchTaskHistory">조회</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnResetTaskHistory">초기화</button>
                 </div>
             </div>
         </div>

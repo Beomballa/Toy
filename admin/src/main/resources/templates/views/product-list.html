@@ -92,64 +92,83 @@
   <!-- ✅ 필터 영역: flex 기반으로 넓게 배치 -->
   <div class="card animate-in admin-panel-card admin-filter-panel">
     <div class="card-body">
-      <div class="admin-filter-grid">
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label">브랜드</label>
-          <select class="form-select" id="brandNo" name="brandNo">
-            <option value="">전체 브랜드</option>
-          </select>
-        </div>
-
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label">카테고리</label>
-          <select class="form-select" id="categoryNo" name="categoryNo">
-            <option value="">전체 카테고리</option>
-          </select>
-        </div>
-
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label">상태</label>
-          <select class="form-select" id="statusFilter">
-            <option value="">전체 상태</option>
-            <option value="ACTIVE">판매중 (ACTIVE)</option>
-            <option value="HIDDEN">숨김 (HIDDEN)</option>
-            <option value="SOLD_OUT">품절 (SOLD_OUT)</option>
-          </select>
-        </div>
-
-        <div class="admin-filter-field admin-filter-field--span-3">
-          <label class="admin-filter-label">재고 조건</label>
-          <div class="d-flex gap-2 align-items-center mt-2">
-            <div class="form-check mb-0">
-              <input class="form-check-input" type="checkbox" id="lowStockOnly">
-              <label class="form-check-label" for="lowStockOnly">품절 임박만 보기</label>
+      <div class="product-master-filter-layout">
+        <section class="product-master-filter-section">
+          <div class="product-master-filter-section__title">기본 상품 필터</div>
+          <div class="product-master-filter-section__desc">브랜드, 카테고리, 상태, 검색어로 먼저 목록 범위를 좁힙니다.</div>
+          <div class="admin-filter-grid product-master-filter-grid">
+            <div class="admin-filter-field admin-filter-field--span-3">
+              <label class="admin-filter-label">브랜드</label>
+              <select class="form-select" id="brandNo" name="brandNo">
+                <option value="">전체 브랜드</option>
+              </select>
             </div>
-            <select class="form-select form-select-sm" id="lowStockThreshold" style="width: auto;">
-              <option value="10">10개 미만</option>
-              <option value="30">30개 미만</option>
-              <option value="50">50개 미만</option>
-              <option value="100" selected>100개 미만</option>
-            </select>
-          </div>
-        </div>
 
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label">등록 조건</label>
-          <div class="form-check mt-2">
-            <input class="form-check-input" type="checkbox" id="createdTodayOnly">
-            <label class="form-check-label" for="createdTodayOnly">오늘 등록만 보기</label>
-          </div>
-        </div>
+            <div class="admin-filter-field admin-filter-field--span-3">
+              <label class="admin-filter-label">카테고리</label>
+              <select class="form-select" id="categoryNo" name="categoryNo">
+                <option value="">전체 카테고리</option>
+              </select>
+            </div>
 
-        <div class="admin-filter-field admin-filter-field--span-5">
-          <label class="admin-filter-label">상품 검색</label>
-          <div class="input-group">
-            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" id="searchKeyword" class="form-control"
-                   placeholder="상품명 또는 모델번호 입력 후 엔터">
-            <button class="btn btn-outline-secondary" type="button" id="btnSearchProducts">검색</button>
+            <div class="admin-filter-field admin-filter-field--span-2">
+              <label class="admin-filter-label">상태</label>
+              <select class="form-select" id="statusFilter">
+                <option value="">전체 상태</option>
+                <option value="ACTIVE">판매중 (ACTIVE)</option>
+                <option value="HIDDEN">숨김 (HIDDEN)</option>
+                <option value="SOLD_OUT">품절 (SOLD_OUT)</option>
+              </select>
+            </div>
+
+            <div class="admin-filter-field admin-filter-field--span-4">
+              <label class="admin-filter-label">상품 검색</label>
+              <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" id="searchKeyword" class="form-control"
+                       placeholder="상품명 또는 모델번호 입력 후 엔터">
+                <button class="btn btn-outline-secondary" type="button" id="btnSearchProducts">검색</button>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
+
+        <section class="product-master-filter-section">
+          <div class="product-master-filter-section__title">재고 및 등록 조건</div>
+          <div class="product-master-filter-section__desc">품절 임박 기준과 오늘 등록 조건을 따로 조정합니다.</div>
+          <div class="product-master-flag-grid">
+            <div class="product-master-flag-card">
+              <div class="product-master-flag-card__title">재고 조건</div>
+              <div class="product-master-flag-card__desc">임계값 이하 재고 상품만 바로 확인합니다.</div>
+              <div class="d-flex gap-2 align-items-center flex-wrap mt-2">
+                <div class="form-check mb-0">
+                  <input class="form-check-input" type="checkbox" id="lowStockOnly">
+                  <label class="form-check-label" for="lowStockOnly">품절 임박만 보기</label>
+                </div>
+                <select class="form-select form-select-sm product-master-inline-select" id="lowStockThreshold">
+                  <option value="10">10개 미만</option>
+                  <option value="30">30개 미만</option>
+                  <option value="50">50개 미만</option>
+                  <option value="100" selected>100개 미만</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="product-master-flag-card">
+              <div class="product-master-flag-card__title">등록 조건</div>
+              <div class="product-master-flag-card__desc">당일 등록 상품만 빠르게 추려서 확인합니다.</div>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" id="createdTodayOnly">
+                <label class="form-check-label" for="createdTodayOnly">오늘 등록만 보기</label>
+              </div>
+            </div>
+
+            <div class="product-master-filter-actions">
+              <div class="product-master-filter-actions__hint">필터와 정렬은 URL에 유지되어 새로고침 후에도 같은 문맥을 복원합니다.</div>
+              <button class="btn btn-outline-secondary" type="button" id="btnResetFilter">초기화</button>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
@@ -161,46 +180,51 @@
          data-total-elements="0"
          data-visible-count="0"
          data-query-signature=""></div>
-    <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
-      <div>
-        <span class="card-title h6 mb-0">상품 목록</span>
-        <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0개</span>
-      </div>
-      <div class="dropdown">
-        <div class="d-flex gap-2">
-          <select class="form-select form-select-sm" id="pageSize" style="width: auto;">
-            <option value="10">10개</option>
-            <option value="20">20개</option>
-            <option value="50">50개</option>
-          </select>
-          <button class="btn btn-sm btn-outline-secondary" type="button" id="btnResetFilter">초기화</button>
-          <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderType" data-bs-toggle="dropdown" data-current-value="r">
-            최신순
-          </button>
+    <div class="card-header bg-white py-3">
+      <div class="product-master-list-toolbar">
+        <div class="product-master-list-toolbar__title">
+          <span class="card-title h6 mb-0">상품 목록</span>
+          <span class="card-subtitle text-muted" id="totalElementsCount">전체 0개</span>
         </div>
-        <ul class="dropdown-menu">
-          <li><a class="dropdown-item" href="#" data-value="r">최신순</a></li>
-          <li><a class="dropdown-item" href="#" data-value="p">발매가순</a></li>
-          <li><a class="dropdown-item" href="#" data-value="c">재고순</a></li>
-        </ul>
+        <div class="product-master-list-toolbar__actions dropdown">
+          <div class="d-flex gap-2 flex-wrap justify-content-end">
+            <select class="form-select form-select-sm product-master-inline-select" id="pageSize">
+              <option value="10">10개</option>
+              <option value="20">20개</option>
+              <option value="50">50개</option>
+            </select>
+            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="orderType" data-bs-toggle="dropdown" data-current-value="r">
+              최신순
+            </button>
+          </div>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="#" data-value="r">최신순</a></li>
+            <li><a class="dropdown-item" href="#" data-value="p">발매가순</a></li>
+            <li><a class="dropdown-item" href="#" data-value="c">재고순</a></li>
+          </ul>
+        </div>
       </div>
     </div>
     <div class="card-body border-bottom py-3">
-      <div class="admin-filter-grid">
-        <div class="admin-filter-field admin-filter-field--span-4">
+      <div class="product-master-bulk-panel">
+        <div class="product-master-bulk-panel__head">
+          <div>
+            <div class="product-master-bulk-panel__title">선택 작업</div>
+            <div class="product-master-bulk-panel__desc">현재 페이지에서 선택한 상품에만 상태 변경, 복제, 삭제를 적용합니다.</div>
+          </div>
           <div class="small text-muted" id="productSelectionMeta">선택된 상품이 없습니다.</div>
         </div>
-        <div class="admin-filter-field admin-filter-field--span-4">
-          <label class="admin-filter-label" for="bulkProductStatus">일괄 상태 변경</label>
-          <select class="form-select" id="bulkProductStatus">
-            <option value="">변경 안 함</option>
-            <option value="ACTIVE">판매중</option>
-            <option value="HIDDEN">숨김</option>
-            <option value="SOLD_OUT">품절</option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-4">
-          <div class="admin-submit-bar">
+        <div class="product-master-bulk-grid">
+          <div class="admin-filter-field">
+            <label class="admin-filter-label" for="bulkProductStatus">일괄 상태 변경</label>
+            <select class="form-select" id="bulkProductStatus">
+              <option value="">변경 안 함</option>
+              <option value="ACTIVE">판매중</option>
+              <option value="HIDDEN">숨김</option>
+              <option value="SOLD_OUT">품절</option>
+            </select>
+          </div>
+          <div class="product-master-bulk-actions">
             <button class="btn btn-outline-dark" type="button" id="btnApplyProductBulk">일괄 적용</button>
             <button class="btn btn-outline-secondary" type="button" id="btnBulkDuplicateProduct">선택 복제</button>
             <button class="btn btn-outline-danger" type="button" id="btnBulkDeleteProduct">일괄 삭제</button>

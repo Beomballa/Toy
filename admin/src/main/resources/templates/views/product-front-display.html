@@ -37,76 +37,99 @@
 
   <div class="card animate-in admin-panel-card admin-filter-panel">
     <div class="card-body">
-      <div class="admin-filter-grid">
-        <div class="admin-filter-field admin-filter-field--span-4">
-          <label class="admin-filter-label" for="displayKeyword">키워드</label>
-          <input type="text" id="displayKeyword" class="form-control" placeholder="상품명, 모델번호, 헤드라인, 무드">
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-3">
-          <label class="admin-filter-label" for="displayStatus">상태</label>
-          <select id="displayStatus" class="form-select">
-            <option value="">전체 상태</option>
-            <option value="ACTIVE">판매중</option>
-            <option value="HIDDEN">숨김</option>
-            <option value="SOLD_OUT">품절</option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-3">
-          <label class="admin-filter-label" for="displayBrand">브랜드</label>
-          <select id="displayBrand" class="form-select">
-            <option value="">전체 브랜드</option>
-            <option th:each="brand : ${brands}" th:value="${brand.brandNo}" th:text="${brand.nameKo}"></option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-3">
-          <label class="admin-filter-label" for="displayCategory">카테고리</label>
-          <select id="displayCategory" class="form-select">
-            <option value="">전체 카테고리</option>
-            <option th:each="category : ${categories}"
-                    th:value="${category.categoryNo}"
-                    th:text="${category.depth == 1 ? category.name : 'ㄴ ' + category.name}"></option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label" for="displayConfigured">노출 설정</label>
-          <select id="displayConfigured" class="form-select">
-            <option value="">전체</option>
-            <option value="CONFIGURED">설정됨</option>
-            <option value="UNCONFIGURED">미설정</option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-3">
-          <label class="admin-filter-label" for="displaySort">정렬</label>
-          <select id="displaySort" class="form-select">
-            <option value="FEATURED">Featured 우선</option>
-            <option value="STOCK_ASC">재고 낮은 순</option>
-            <option value="STOCK_DESC">재고 높은 순</option>
-            <option value="PRICE_HIGH">발매가 높은 순</option>
-            <option value="PRICE_LOW">발매가 낮은 순</option>
-            <option value="LATEST">최신 등록순</option>
-          </select>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label">옵션</label>
-          <div class="form-check mb-2 mt-2">
-            <input class="form-check-input" type="checkbox" id="featuredOnly">
-            <label class="form-check-label" for="featuredOnly">Featured만</label>
+      <div class="product-master-filter-layout">
+        <section class="product-master-filter-section">
+          <div class="product-master-filter-section__title">기본 전시 필터</div>
+          <div class="product-master-filter-section__desc">상품, 브랜드, 카테고리, 상태 기준으로 프론트 노출 대상을 먼저 줄입니다.</div>
+          <div class="admin-filter-grid product-master-filter-grid">
+            <div class="admin-filter-field admin-filter-field--span-4">
+              <label class="admin-filter-label" for="displayKeyword">키워드</label>
+              <input type="text" id="displayKeyword" class="form-control" placeholder="상품명, 모델번호, 헤드라인, 무드">
+            </div>
+            <div class="admin-filter-field admin-filter-field--span-3">
+              <label class="admin-filter-label" for="displayBrand">브랜드</label>
+              <select id="displayBrand" class="form-select">
+                <option value="">전체 브랜드</option>
+                <option th:each="brand : ${brands}" th:value="${brand.brandNo}" th:text="${brand.nameKo}"></option>
+              </select>
+            </div>
+            <div class="admin-filter-field admin-filter-field--span-3">
+              <label class="admin-filter-label" for="displayCategory">카테고리</label>
+              <select id="displayCategory" class="form-select">
+                <option value="">전체 카테고리</option>
+                <option th:each="category : ${categories}"
+                        th:value="${category.categoryNo}"
+                        th:text="${category.depth == 1 ? category.name : 'ㄴ ' + category.name}"></option>
+              </select>
+            </div>
+            <div class="admin-filter-field admin-filter-field--span-2">
+              <label class="admin-filter-label" for="displayStatus">상태</label>
+              <select id="displayStatus" class="form-select">
+                <option value="">전체 상태</option>
+                <option value="ACTIVE">판매중</option>
+                <option value="HIDDEN">숨김</option>
+                <option value="SOLD_OUT">품절</option>
+              </select>
+            </div>
           </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="lowStockOnly">
-            <label class="form-check-label" for="lowStockOnly">저재고만</label>
+        </section>
+
+        <section class="product-master-filter-section">
+          <div class="product-master-filter-section__title">노출 옵션 및 정렬</div>
+          <div class="product-master-filter-section__desc">노출 설정 여부, Featured, 저재고 기준과 정렬 정책을 함께 조정합니다.</div>
+          <div class="product-master-flag-grid">
+            <div class="product-master-flag-card">
+              <div class="product-master-flag-card__title">노출 기준</div>
+              <div class="product-master-flag-card__desc">프론트 노출 설정 여부와 정렬 정책을 함께 바꿔 목록 우선순위를 조정합니다.</div>
+              <div class="admin-filter-grid product-master-filter-grid mt-2">
+                <div class="admin-filter-field admin-filter-field--span-6">
+                  <label class="admin-filter-label" for="displayConfigured">노출 설정</label>
+                  <select id="displayConfigured" class="form-select">
+                    <option value="">전체</option>
+                    <option value="CONFIGURED">설정됨</option>
+                    <option value="UNCONFIGURED">미설정</option>
+                  </select>
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-6">
+                  <label class="admin-filter-label" for="displaySort">정렬</label>
+                  <select id="displaySort" class="form-select">
+                    <option value="FEATURED">Featured 우선</option>
+                    <option value="STOCK_ASC">재고 낮은 순</option>
+                    <option value="STOCK_DESC">재고 높은 순</option>
+                    <option value="PRICE_HIGH">발매가 높은 순</option>
+                    <option value="PRICE_LOW">발매가 낮은 순</option>
+                    <option value="LATEST">최신 등록순</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-master-flag-card">
+              <div class="product-master-flag-card__title">옵션</div>
+              <div class="product-master-flag-card__desc">대표 노출만 보거나 저재고 상품만 별도로 추려서 전시 상태를 확인합니다.</div>
+              <div class="form-check mb-2 mt-2">
+                <input class="form-check-input" type="checkbox" id="featuredOnly">
+                <label class="form-check-label" for="featuredOnly">Featured만</label>
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="lowStockOnly">
+                <label class="form-check-label" for="lowStockOnly">저재고만</label>
+              </div>
+              <label class="admin-filter-label mt-2" for="displayLowStockThreshold">저재고 기준</label>
+              <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
+            </div>
+
+            <div class="product-master-filter-actions">
+              <div class="product-master-filter-actions__hint">전시 필터도 새로고침 후 같은 문맥을 유지해서 상품 노출 조정 작업을 끊지 않게 맞춥니다.</div>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary" type="button" id="btnSearchDisplay">
+                  <i class="fas fa-search me-2"></i>조회
+                </button>
+                <button class="btn btn-outline-secondary" type="button" id="btnResetDisplayFilter">초기화</button>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="admin-filter-field admin-filter-field--span-2">
-          <label class="admin-filter-label" for="displayLowStockThreshold">저재고 기준</label>
-          <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
-        </div>
-        <div class="admin-filter-actions">
-          <button class="btn btn-primary" type="button" id="btnSearchDisplay">
-            <i class="fas fa-search me-2"></i>조회
-          </button>
-          <button class="btn btn-outline-secondary" type="button" id="btnResetDisplayFilter">초기화</button>
-        </div>
+        </section>
       </div>
     </div>
   </div>
@@ -135,12 +158,14 @@
   </section>
 
   <div class="card animate-in admin-panel-card admin-table-card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <div>
-        <span class="card-title h6 mb-0">전시 대상 상품</span>
-        <span class="card-subtitle text-muted ms-2" id="displayResultCount">전체 0건</span>
+    <div class="card-header bg-white py-3">
+      <div class="product-master-list-toolbar">
+        <div class="product-master-list-toolbar__title">
+          <span class="card-title h6 mb-0">전시 대상 상품</span>
+          <span class="card-subtitle text-muted" id="displayResultCount">전체 0건</span>
+        </div>
+        <div class="admin-list-toolbar__meta" id="displayFilterSummary">전체 상품 기준</div>
       </div>
-      <span class="text-muted small" id="displayFilterSummary">전체 상품 기준</span>
     </div>
     <div class="card-body p-0">
       <div class="table-responsive">

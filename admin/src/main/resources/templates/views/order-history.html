@@ -36,76 +36,98 @@
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">주문 번호</label>
-                    <input type="number" id="historyOrderNo" class="form-control" min="1">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">작업 유형</label>
-                    <select id="historyActionType" class="form-select">
-                        <option value="">전체</option>
-                        <option value="STATUS_CHANGE">상태 변경</option>
-                        <option value="DELIVERY_START">배송 시작</option>
-                        <option value="DELIVERY_COMPLETE">배송 완료</option>
-                        <option value="CANCEL">주문 취소</option>
-                        <option value="ADMIN_MEMO">메모 저장</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-12">
-                    <div class="d-flex flex-wrap gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter active" data-action-type="">전체</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="STATUS_CHANGE">상태 변경</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_START">배송 시작</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_COMPLETE">배송 완료</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="CANCEL">주문 취소</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="ADMIN_MEMO">메모 저장</button>
+            <div class="admin-search-layout">
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">기본 이력 검색</div>
+                    <div class="admin-search-section__desc">주문 번호, 작업 유형, 작업자 기준으로 처리 이력 범위를 먼저 줄입니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">주문 번호</label>
+                            <input type="number" id="historyOrderNo" class="form-control" min="1">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업 유형</label>
+                            <select id="historyActionType" class="form-select">
+                                <option value="">전체</option>
+                                <option value="STATUS_CHANGE">상태 변경</option>
+                                <option value="DELIVERY_START">배송 시작</option>
+                                <option value="DELIVERY_COMPLETE">배송 완료</option>
+                                <option value="CANCEL">주문 취소</option>
+                                <option value="ADMIN_MEMO">메모 저장</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">작업자 검색</label>
+                            <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">정렬</label>
+                            <select id="historyOrderType" class="form-select">
+                                <option value="latest">최신순</option>
+                                <option value="oldest">오래된순</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">사유/메모/배송 검색</label>
+                            <input type="text" id="historyKeyword" class="form-control" placeholder="사유, 메모, 택배사, 운송장 번호 검색">
+                        </div>
                     </div>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">시작일</label>
-                    <input type="date" id="historyStartDate" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">종료일</label>
-                    <input type="date" id="historyEndDate" class="form-control">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">작업자 검색</label>
-                    <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-2">
-                    <label class="admin-filter-label">정렬</label>
-                    <select id="historyOrderType" class="form-select">
-                        <option value="latest">최신순</option>
-                        <option value="oldest">오래된순</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-4">
-                    <label class="admin-filter-label">사유/메모/배송 검색</label>
-                    <input type="text" id="historyKeyword" class="form-control" placeholder="사유, 메모, 택배사, 운송장 번호 검색">
-                </div>
-                <div class="admin-filter-actions">
-                    <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
+                </section>
+
+                <section class="admin-search-section">
+                    <div class="admin-search-section__title">기간 및 작업 유형 바로가기</div>
+                    <div class="admin-search-section__desc">처리 유형 버튼과 기간 범위를 함께 써서 원하는 주문 이력만 빠르게 찾습니다.</div>
+                    <div class="admin-filter-grid admin-search-grid">
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">시작일</label>
+                            <input type="date" id="historyStartDate" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">종료일</label>
+                            <input type="date" id="historyEndDate" class="form-control">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-6">
+                            <label class="admin-filter-label">작업 유형 바로가기</label>
+                            <div class="admin-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter active" data-action-type="">전체</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="STATUS_CHANGE">상태 변경</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_START">배송 시작</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="DELIVERY_COMPLETE">배송 완료</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="CANCEL">주문 취소</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter" data-action-type="ADMIN_MEMO">메모 저장</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="task-filter-actions">
+                    <div class="task-filter-actions__hint">주문 이력은 검색 키워드와 기간을 함께 유지해서 메모, 배송, 취소 흐름을 연속으로 추적하기 쉽게 맞춥니다.</div>
+                    <div class="admin-filter-actions">
+                        <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="card animate-in admin-panel-card admin-table-card">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">주문 처리 이력 목록</h6>
-            <div class="d-flex align-items-center gap-3">
-                <div class="small text-muted" id="orderHistoryFilterMeta">적용 필터 0개</div>
-                <label class="small text-muted d-flex align-items-center gap-2 mb-0">
-                    <span>페이지 크기</span>
-                    <select id="historyPageSize" class="form-select form-select-sm">
-                        <option value="20">20</option>
-                        <option value="50">50</option>
-                        <option value="100">100</option>
-                    </select>
-                </label>
-                <div class="small text-muted" id="historyMetaText">데이터를 불러오는 중입니다...</div>
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <h6 class="card-title mb-0">주문 처리 이력 목록</h6>
+                    <span class="admin-list-toolbar__meta" id="orderHistoryFilterMeta">적용 필터 0개</span>
+                </div>
+                <div class="admin-list-toolbar__actions d-flex align-items-center gap-3 flex-wrap">
+                    <label class="small text-muted d-flex align-items-center gap-2 mb-0 flex-wrap">
+                        <span>페이지 크기</span>
+                        <select id="historyPageSize" class="form-select form-select-sm product-master-inline-select">
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </label>
+                    <div class="admin-list-toolbar__meta" id="historyMetaText">데이터를 불러오는 중입니다...</div>
+                </div>
             </div>
         </div>
         <div class="card-body p-0">

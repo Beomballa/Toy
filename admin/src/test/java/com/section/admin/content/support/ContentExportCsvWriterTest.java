@@ -22,20 +22,22 @@ class ContentExportCsvWriterTest {
         item.setStatus("PUBLISHED");
         item.setPublicYn("Y");
         item.setPinnedYn("Y");
+        item.setProductNo(88L);
         item.setViewCnt(12);
         item.setCrtDtm(LocalDateTime.of(2026, 6, 1, 9, 30));
         item.setContentPreview("<p>안내 <strong>문구</strong> &amp; 점검</p>");
 
         byte[] bytes = ContentExportCsvWriter.write(
-                new ContentExportSummary("2026.06.01 11:00", "고정 우선 · 최신 등록 순", "게시판: 공지 | 고정만"),
+                new ContentExportSummary("2026.06.01 11:00", "고정 우선 · 최신 등록 순", "게시판: 공지 | 고정만 | 상품번호: 88"),
                 List.of(item)
         );
         String csv = new String(bytes, StandardCharsets.UTF_8);
 
         assertTrue(bytes[0] == (byte) 0xEF && bytes[1] == (byte) 0xBB && bytes[2] == (byte) 0xBF);
-        assertTrue(csv.contains("\"조회조건\",\"게시판: 공지 | 고정만\""));
-        assertTrue(csv.contains("게시글번호,게시판,제목,상태,공개여부,고정여부,조회수,등록일시,내용미리보기"));
+        assertTrue(csv.contains("\"조회조건\",\"게시판: 공지 | 고정만 | 상품번호: 88\""));
+        assertTrue(csv.contains("게시글번호,게시판,제목,상태,공개여부,고정여부,연결상품번호,조회수,등록일시,내용미리보기"));
         assertTrue(csv.contains("\"공지\",\"긴급 공지\",\"게시중\""));
+        assertTrue(csv.contains("\"88\",\"12\""));
         assertTrue(csv.contains("\"안내 문구 & 점검\""));
     }
 }

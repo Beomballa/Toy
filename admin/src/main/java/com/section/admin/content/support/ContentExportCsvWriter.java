@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public final class ContentExportCsvWriter {
-    private static final String HEADER = "게시글번호,게시판,제목,상태,공개여부,고정여부,조회수,등록일시,내용미리보기";
+    private static final String HEADER = "게시글번호,게시판,제목,상태,공개여부,고정여부,연결상품번호,조회수,등록일시,내용미리보기";
     private static final byte[] UTF8_BOM = new byte[] {(byte) 0xEF, (byte) 0xBB, (byte) 0xBF};
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -31,6 +31,7 @@ public final class ContentExportCsvWriter {
                     .append(csv(resolveStatusLabel(item.getStatus()))).append(',')
                     .append(csv("Y".equalsIgnoreCase(item.getPublicYn()) ? "공개" : "비공개")).append(',')
                     .append(csv("Y".equalsIgnoreCase(item.getPinnedYn()) ? "고정" : "일반")).append(',')
+                    .append(csv(item.getProductNo() == null ? "-" : String.valueOf(item.getProductNo()))).append(',')
                     .append(csv(String.valueOf(item.getViewCnt()))).append(',')
                     .append(csv(item.getCrtDtm() == null ? "-" : item.getCrtDtm().format(DATE_TIME_FORMATTER))).append(',')
                     .append(csv(ContentPreviewSanitizer.sanitize(item.getContentPreview())))

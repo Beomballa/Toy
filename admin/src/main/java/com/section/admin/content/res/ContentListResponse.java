@@ -22,6 +22,7 @@ public record ContentListResponse(
         String title,
         String contentPreview,
         int viewCnt,
+        Long productNo,
         String crtDtm
     ) {}
 
@@ -36,6 +37,7 @@ public record ContentListResponse(
                 d.getTitle(),
                 buildPreview(d.getContentPreview()),
                 d.getViewCnt(),
+                d.getProductNo(),
                 d.getCrtDtm() != null ? d.getCrtDtm().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) : ""
             )).toList();
         

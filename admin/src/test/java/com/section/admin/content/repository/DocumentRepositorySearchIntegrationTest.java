@@ -4,6 +4,7 @@ import com.section.admin.AdminToyApplication;
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -69,7 +70,7 @@ class DocumentRepositorySearchIntegrationTest {
         documentRepository.save(draftNotice);
 
         Page<DocumentListItemDto> pinnedOnly = documentRepository.getDocumentList(
-                new DocumentListQuery(Document.BoardType.NOTICE, "공지", Document.PublishStatus.PUBLISHED, YN.Y, true, null, null),
+                new DocumentListQuery(Document.BoardType.NOTICE, "공지", Document.PublishStatus.PUBLISHED, YN.Y, true, null, null, null, null),
                 PageRequest.of(0, 10)
         );
 
@@ -122,6 +123,8 @@ class DocumentRepositorySearchIntegrationTest {
                         Document.PublishStatus.PUBLISHED,
                         YN.Y,
                         false,
+                        null,
+                        null,
                         java.time.LocalDateTime.of(2026, 5, 1, 0, 0),
                         java.time.LocalDateTime.of(2026, 5, 31, 23, 59, 59)
                 ),
@@ -162,11 +165,101 @@ class DocumentRepositorySearchIntegrationTest {
         entityManager.clear();
 
         Page<DocumentListItemDto> result = documentRepository.getDocumentList(
-                new DocumentListQuery(Document.BoardType.NOTICE, "여름 배송", Document.PublishStatus.PUBLISHED, YN.Y, false, null, null),
+                new DocumentListQuery(Document.BoardType.NOTICE, "여름 배송", Document.PublishStatus.PUBLISHED, YN.Y, false, null, null, null, null),
                 PageRequest.of(0, 10)
         );
 
         assertEquals(1, result.getTotalElements());
         assertEquals("여름 배송 공지", result.getContent().getFirst().getTitle());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 목록은 상품 연결 여부와 상품번호 필터를 함께 적용한다")
+    void getDocumentListAppliesProductLinkFilters() {
+        Document linkedStyle = new Document();
+        linkedStyle.applyEditorValues(
+                Document.BoardType.STYLE,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                "자동연결스타일 연결글",
+                "자동연결스타일 키워드를 가진 상품 연결 게시글입니다.",
+                1001L
+        );
+        documentRepository.save(linkedStyle);
+
+        Document unlinkedStyle = new Document();
+        unlinkedStyle.applyEditorValues(
+                Document.BoardType.STYLE,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                "자동연결스타일 일반글",
+                "자동연결스타일 키워드를 가진 상품 미연결 게시글입니다.",
+                null
+        );
+        documentRepository.save(unlinkedStyle);
+        entityManager.flush();
+        entityManager.clear();
+
+        Page<DocumentListItemDto> linkedResult = documentRepository.getDocumentList(
+                new DocumentListQuery(Document.BoardType.STYLE, "자동연결스타일", Document.PublishStatus.PUBLISHED, YN.Y, false, 1001L, true, null, null),
+                PageRequest.of(0, 10)
+        );
+        Page<DocumentListItemDto> unlinkedResult = documentRepository.getDocumentList(
+                new DocumentListQuery(Document.BoardType.STYLE, "자동연결스타일", Document.PublishStatus.PUBLISHED, YN.Y, false, null, false, null, null),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(1, linkedResult.getTotalElements());
+        assertEquals("자동연결스타일 연결글", linkedResult.getContent().getFirst().getTitle());
+        assertEquals(1001L, linkedResult.getContent().getFirst().getProductNo());
+        assertEquals(1, unlinkedResult.getTotalElements());
+        assertEquals("자동연결스타일 일반글", unlinkedResult.getContent().getFirst().getTitle());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 요약은 현재 검색 조건 기준 상태와 조회수 집계를 반환한다")
+    void getDocumentSummaryReturnsAggregatedCounts() {
+        Document publishedLinked = new Document();
+        publishedLinked.applyEditorValues(
+                Document.BoardType.QNA,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.Y,
+                "자동요약QNA 공개글",
+                "자동요약QNA 키워드를 가진 공개 템플릿입니다.",
+                501L
+        );
+        publishedLinked.setViewCnt(12);
+        documentRepository.save(publishedLinked);
+
+        Document draftUnlinked = new Document();
+        draftUnlinked.applyEditorValues(
+                Document.BoardType.QNA,
+                Document.PublishStatus.DRAFT,
+                YN.N,
+                YN.N,
+                "자동요약QNA 비공개글",
+                "자동요약QNA 키워드를 가진 비공개 문의입니다.",
+                null
+        );
+        draftUnlinked.setViewCnt(4);
+        documentRepository.save(draftUnlinked);
+        entityManager.flush();
+        entityManager.clear();
+
+        DocumentSummaryDto summary = documentRepository.getDocumentSummary(
+                new DocumentListQuery(Document.BoardType.QNA, "자동요약QNA", null, null, false, null, null, null, null)
+        );
+
+        assertEquals(2, summary.totalCount());
+        assertEquals(1, summary.publishedCount());
+        assertEquals(1, summary.draftCount());
+        assertEquals(1, summary.publicCount());
+        assertEquals(1, summary.privateCount());
+        assertEquals(1, summary.pinnedCount());
+        assertEquals(1, summary.linkedCount());
+        assertEquals(16, summary.totalViewCount());
     }
 }

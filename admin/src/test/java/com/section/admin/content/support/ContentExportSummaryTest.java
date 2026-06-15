@@ -19,11 +19,13 @@ class ContentExportSummaryTest {
                 Document.PublishStatus.PUBLISHED,
                 YN.Y,
                 true,
+                44L,
+                true,
                 null,
                 null
         ));
 
-        assertEquals("게시판: 공지 | 검색어: 점검 | 상태: 게시중 | 공개여부: 공개 | 고정만", summary.filterSummary());
+        assertEquals("게시판: 공지 | 검색어: 점검 | 상태: 게시중 | 공개여부: 공개 | 고정만 | 상품번호: 44 | 상품연결: 연결됨", summary.filterSummary());
         assertEquals("고정 우선 · 최신 등록 순", summary.sortLabel());
     }
 }

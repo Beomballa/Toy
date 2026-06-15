@@ -7,6 +7,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         document.title.as("title"),
                         document.content.as("contentPreview"),
                         document.viewCnt.as("viewCnt"),
+                        document.productNo.as("productNo"),
                         document.crtDtm.as("crtDtm")
                 ))
                 .from(document)
@@ -46,6 +48,8 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         statusEq(query.status()),
                         publicYnEq(query.publicYn()),
                         pinnedOnly(query.pinnedOnly()),
+                        productNoEq(query.productNo()),
+                        productLinkedEq(query.productLinked()),
                         createdAtBetween(query.startDateTime(), query.endDateTime())
                 )
                 .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
@@ -62,10 +66,43 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         statusEq(query.status()),
                         publicYnEq(query.publicYn()),
                         pinnedOnly(query.pinnedOnly()),
+                        productNoEq(query.productNo()),
+                        productLinkedEq(query.productLinked()),
                         createdAtBetween(query.startDateTime(), query.endDateTime())
                 );
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
+    }
+
+    @Override
+    public DocumentSummaryDto getDocumentSummary(DocumentListQuery query) {
+        long totalCount = countBy(query);
+        long publishedCount = countBy(query, document.status.eq(Document.PublishStatus.PUBLISHED));
+        long draftCount = countBy(query, document.status.eq(Document.PublishStatus.DRAFT));
+        long publicCount = countBy(query, document.publicYn.eq(YN.Y));
+        long privateCount = countBy(query, document.publicYn.eq(YN.N));
+        long pinnedCount = countBy(query, document.pinnedYn.eq(YN.Y));
+        long linkedCount = countBy(query, document.productNo.isNotNull());
+        long totalViewCount = queryFactory
+                .select(document.viewCnt)
+                .from(document)
+                .where(basePredicates(query))
+                .fetch()
+                .stream()
+                .filter(java.util.Objects::nonNull)
+                .mapToLong(Integer::longValue)
+                .sum();
+
+        return new DocumentSummaryDto(
+                totalCount,
+                publishedCount,
+                draftCount,
+                publicCount,
+                privateCount,
+                pinnedCount,
+                linkedCount,
+                totalViewCount
+        );
     }
 
     private BooleanExpression boardTypeEq(Document.BoardType boardType) {
@@ -114,6 +151,20 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
         return document.pinnedYn.eq(YN.Y);
     }
 
+    private BooleanExpression productNoEq(Long productNo) {
+        if (productNo == null) {
+            return null;
+        }
+        return document.productNo.eq(productNo);
+    }
+
+    private BooleanExpression productLinkedEq(Boolean productLinked) {
+        if (productLinked == null) {
+            return null;
+        }
+        return productLinked ? document.productNo.isNotNull() : document.productNo.isNull();
+    }
+
     private BooleanExpression createdAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (startDateTime == null && endDateTime == null) {
             return null;
@@ -125,5 +176,34 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
             return document.crtDtm.goe(startDateTime);
         }
         return document.crtDtm.loe(endDateTime);
+    }
+
+    private long countBy(DocumentListQuery query, BooleanExpression... extraPredicates) {
+        Long count = queryFactory
+                .select(document.count())
+                .from(document)
+                .where(mergePredicates(query, extraPredicates))
+                .fetchOne();
+        return count == null ? 0L : count;
+    }
+
+    private BooleanExpression[] basePredicates(DocumentListQuery query) {
+        return new BooleanExpression[] {
+                boardTypeEq(query.boardType()),
+                keywordLike(query.keyword()),
+                statusEq(query.status()),
+                publicYnEq(query.publicYn()),
+                pinnedOnly(query.pinnedOnly()),
+                productNoEq(query.productNo()),
+                productLinkedEq(query.productLinked()),
+                createdAtBetween(query.startDateTime(), query.endDateTime())
+        };
+    }
+
+    private BooleanExpression[] mergePredicates(DocumentListQuery query, BooleanExpression... extraPredicates) {
+        BooleanExpression[] basePredicates = basePredicates(query);
+        BooleanExpression[] merged = Arrays.copyOf(basePredicates, basePredicates.length + extraPredicates.length);
+        System.arraycopy(extraPredicates, 0, merged, basePredicates.length, extraPredicates.length);
+        return merged;
     }
 }

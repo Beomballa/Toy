@@ -8,6 +8,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.service.DocumentService;
 import org.junit.jupiter.api.BeforeEach;
@@ -72,6 +73,7 @@ class AdminContentRestControllerTest {
         item.setTitle("공지");
         item.setContentPreview("내용");
         item.setViewCnt(10);
+        item.setProductNo(41L);
         item.setCrtDtm(LocalDateTime.of(2026, 5, 12, 10, 0));
         when(documentService.getDocumentList(any(DocumentListQuery.class), any()))
                 .thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 9), 1));
@@ -81,13 +83,16 @@ class AdminContentRestControllerTest {
                         .param("status", "PUBLISHED")
                         .param("publicYn", "Y")
                         .param("pinnedOnly", "true")
+                        .param("productLinked", "Y")
+                        .param("productNo", "41")
                         .param("startDate", "2026-05-01")
                         .param("endDate", "2026-05-31")
                         .param("keyword", "공지"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].status").value("PUBLISHED"))
                 .andExpect(jsonPath("$.items[0].publicYn").value("Y"))
-                .andExpect(jsonPath("$.items[0].pinnedYn").value("Y"));
+                .andExpect(jsonPath("$.items[0].pinnedYn").value("Y"))
+                .andExpect(jsonPath("$.items[0].productNo").value(41L));
 
         ArgumentCaptor<DocumentListQuery> captor = ArgumentCaptor.forClass(DocumentListQuery.class);
         verify(documentService).getDocumentList(captor.capture(), any());
@@ -95,6 +100,8 @@ class AdminContentRestControllerTest {
         assertEquals(Document.PublishStatus.PUBLISHED, captor.getValue().status());
         assertEquals(YN.Y, captor.getValue().publicYn());
         assertEquals(true, captor.getValue().pinnedOnly());
+        assertEquals(true, captor.getValue().productLinked());
+        assertEquals(41L, captor.getValue().productNo());
         assertEquals("2026-05-01T00:00", captor.getValue().startDateTime().toString());
         assertEquals("2026-05-31T23:59:59.999999999", captor.getValue().endDateTime().toString());
     }
@@ -108,7 +115,8 @@ class AdminContentRestControllerTest {
         mockMvc.perform(get("/api/admin/content/list")
                         .param("boardType", " notice ")
                         .param("status", " published ")
-                        .param("publicYn", " y "))
+                        .param("publicYn", " y ")
+                        .param("productLinked", " n "))
                 .andExpect(status().isOk());
 
         ArgumentCaptor<DocumentListQuery> captor = ArgumentCaptor.forClass(DocumentListQuery.class);
@@ -116,6 +124,7 @@ class AdminContentRestControllerTest {
         assertEquals(Document.BoardType.NOTICE, captor.getValue().boardType());
         assertEquals(Document.PublishStatus.PUBLISHED, captor.getValue().status());
         assertEquals(YN.Y, captor.getValue().publicYn());
+        assertEquals(false, captor.getValue().productLinked());
     }
 
     @Test
@@ -129,6 +138,7 @@ class AdminContentRestControllerTest {
         item.setPinnedYn("N");
         item.setTitle("배포 공지");
         item.setContentPreview("<p>점검 안내</p>");
+        item.setProductNo(77L);
         item.setCrtDtm(LocalDateTime.of(2026, 6, 1, 12, 0));
         when(documentService.getDocumentExportList(any(DocumentListQuery.class), org.mockito.ArgumentMatchers.eq(1000)))
                 .thenReturn(List.of(item));
@@ -136,6 +146,8 @@ class AdminContentRestControllerTest {
         mockMvc.perform(get("/api/admin/content/export")
                         .param("boardType", "NOTICE")
                         .param("publicYn", "Y")
+                        .param("productLinked", "Y")
+                        .param("productNo", "77")
                         .param("keyword", "공지"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
@@ -146,6 +158,31 @@ class AdminContentRestControllerTest {
         assertEquals(Document.BoardType.NOTICE, captor.getValue().boardType());
         assertEquals(YN.Y, captor.getValue().publicYn());
         assertEquals("공지", captor.getValue().keyword());
+        assertEquals(true, captor.getValue().productLinked());
+        assertEquals(77L, captor.getValue().productNo());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 요약은 동일한 검색 조건으로 집계 응답을 반환한다")
+    void getSummaryReturnsAggregatedSnapshot() throws Exception {
+        when(documentService.getDocumentSummary(any(DocumentListQuery.class)))
+                .thenReturn(new DocumentSummaryDto(9, 6, 3, 7, 2, 2, 4, 321));
+
+        mockMvc.perform(get("/api/admin/content/summary")
+                        .param("boardType", "STYLE")
+                        .param("productLinked", "Y")
+                        .param("productNo", "101"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalCount").value(9))
+                .andExpect(jsonPath("$.publishedCount").value(6))
+                .andExpect(jsonPath("$.linkedCount").value(4))
+                .andExpect(jsonPath("$.totalViewCount").value(321));
+
+        ArgumentCaptor<DocumentListQuery> captor = ArgumentCaptor.forClass(DocumentListQuery.class);
+        verify(documentService).getDocumentSummary(captor.capture());
+        assertEquals(Document.BoardType.STYLE, captor.getValue().boardType());
+        assertEquals(true, captor.getValue().productLinked());
+        assertEquals(101L, captor.getValue().productNo());
     }
 
     @Test
@@ -165,6 +202,16 @@ class AdminContentRestControllerTest {
                         .param("boardType", "NOTICE")
                         .param("startDate", "2026-05-31")
                         .param("endDate", "2026-05-01"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
+    @DisplayName("잘못된 상품 연결 필터는 400 INVALID_INPUT_VALUE를 반환한다")
+    void getListReturnsBadRequestWhenProductLinkedInvalid() throws Exception {
+        mockMvc.perform(get("/api/admin/content/list")
+                        .param("boardType", "NOTICE")
+                        .param("productLinked", "maybe"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("C001"));
     }

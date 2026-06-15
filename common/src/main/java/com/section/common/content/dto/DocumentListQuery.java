@@ -11,6 +11,8 @@ public record DocumentListQuery(
         Document.PublishStatus status,
         YN publicYn,
         Boolean pinnedOnly,
+        Long productNo,
+        Boolean productLinked,
         LocalDateTime startDateTime,
         LocalDateTime endDateTime
 ) {

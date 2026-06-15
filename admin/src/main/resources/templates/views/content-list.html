@@ -83,6 +83,18 @@
                     <span>고정글만</span>
                 </label>
             </div>
+            <div class="content-board-form-group">
+                <label class="content-board-form-label" for="contentProductLinkedFilter">상품 연결</label>
+                <select id="contentProductLinkedFilter" class="form-select">
+                    <option value="">전체</option>
+                    <option value="Y">연결됨</option>
+                    <option value="N">미연결</option>
+                </select>
+            </div>
+            <div class="content-board-form-group">
+                <label class="content-board-form-label" for="contentProductNoFilter">상품번호</label>
+                <input type="number" id="contentProductNoFilter" class="form-control" min="1" step="1" placeholder="정확한 상품번호">
+            </div>
             <div class="content-board-form-actions">
                 <button type="submit" class="btn btn-dark">검색</button>
                 <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
@@ -130,6 +142,37 @@
 
     <div class="content-board-toolbar content-board-toolbar--result admin-panel-card">
         <div class="content-board-result-meta" id="contentBulkResultMeta">아직 일괄 적용 결과가 없습니다.</div>
+    </div>
+
+    <div class="row g-3 mb-1" id="contentSummaryCards">
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="admin-panel-card p-3 h-100">
+                <div class="text-muted small mb-1">전체 게시글</div>
+                <div class="fs-4 fw-semibold" id="contentSummaryTotal">-</div>
+                <div class="small text-muted" id="contentSummaryViews">조회수 합계 -</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="admin-panel-card p-3 h-100">
+                <div class="text-muted small mb-1">게시 상태</div>
+                <div class="fs-6 fw-semibold" id="contentSummaryPublish">게시중 - · 임시저장 -</div>
+                <div class="small text-muted">현재 검색 조건 기준</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="admin-panel-card p-3 h-100">
+                <div class="text-muted small mb-1">공개 상태</div>
+                <div class="fs-6 fw-semibold" id="contentSummaryVisibility">공개 - · 비공개 -</div>
+                <div class="small text-muted">운영 노출 점검용</div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+            <div class="admin-panel-card p-3 h-100">
+                <div class="text-muted small mb-1">운영 옵션</div>
+                <div class="fs-6 fw-semibold" id="contentSummaryOptions">고정 - · 상품연결 -</div>
+                <div class="small text-muted">핀/상품연결 분포</div>
+            </div>
+        </div>
     </div>
 
     <div class="row g-4 content-board-grid" id="contentGrid">

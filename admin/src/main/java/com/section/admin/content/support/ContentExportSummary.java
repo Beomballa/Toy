@@ -34,6 +34,12 @@ public record ContentExportSummary(
         if (Boolean.TRUE.equals(query.pinnedOnly())) {
             filters.add("고정만");
         }
+        if (query.productNo() != null) {
+            filters.add("상품번호: " + query.productNo());
+        }
+        if (query.productLinked() != null) {
+            filters.add("상품연결: " + (query.productLinked() ? "연결됨" : "미연결"));
+        }
         if (query.startDateTime() != null || query.endDateTime() != null) {
             String start = query.startDateTime() == null ? "-" : query.startDateTime().toLocalDate().format(DATE_FORMAT);
             String end = query.endDateTime() == null ? "-" : query.endDateTime().toLocalDate().format(DATE_FORMAT);

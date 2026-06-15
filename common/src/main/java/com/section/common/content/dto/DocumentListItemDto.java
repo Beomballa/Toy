@@ -16,5 +16,6 @@ public class DocumentListItemDto {
     private String title;
     private String contentPreview;
     private int viewCnt;
+    private Long productNo;
     private LocalDateTime crtDtm;
 }

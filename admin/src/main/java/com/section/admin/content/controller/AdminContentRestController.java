@@ -6,6 +6,7 @@ import com.section.admin.content.req.ContentBulkDeleteRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
+import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -45,14 +46,32 @@ public class AdminContentRestController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "publicYn", required = false) String publicYn,
             @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
+            @RequestParam(value = "productNo", required = false) Long productNo,
+            @RequestParam(value = "productLinked", required = false) String productLinked,
             @RequestParam(value = "startDate", required = false) String startDate,
             @RequestParam(value = "endDate", required = false) String endDate,
             @PageableDefault(size = 9) Pageable pageable
     ) {
-        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, startDate, endDate);
+        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, productNo, productLinked, startDate, endDate);
         return ResponseEntity.ok(ContentListResponse.of(
                 documentService.getDocumentList(query, pageable)
         ));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<ContentSummaryResponse> getSummary(
+            @RequestParam(value = "boardType", defaultValue = "NOTICE") String boardType,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "publicYn", required = false) String publicYn,
+            @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
+            @RequestParam(value = "productNo", required = false) Long productNo,
+            @RequestParam(value = "productLinked", required = false) String productLinked,
+            @RequestParam(value = "startDate", required = false) String startDate,
+            @RequestParam(value = "endDate", required = false) String endDate
+    ) {
+        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, productNo, productLinked, startDate, endDate);
+        return ResponseEntity.ok(ContentSummaryResponse.from(documentService.getDocumentSummary(query)));
     }
 
     @GetMapping("/export")
@@ -62,10 +81,12 @@ public class AdminContentRestController {
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "publicYn", required = false) String publicYn,
             @RequestParam(value = "pinnedOnly", required = false) Boolean pinnedOnly,
+            @RequestParam(value = "productNo", required = false) Long productNo,
+            @RequestParam(value = "productLinked", required = false) String productLinked,
             @RequestParam(value = "startDate", required = false) String startDate,
             @RequestParam(value = "endDate", required = false) String endDate
     ) {
-        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, startDate, endDate);
+        DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, productNo, productLinked, startDate, endDate);
         String fileName = "contents-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
@@ -182,6 +203,8 @@ public class AdminContentRestController {
             String status,
             String publicYn,
             Boolean pinnedOnly,
+            Long productNo,
+            String productLinked,
             String startDate,
             String endDate
     ) {
@@ -196,9 +219,23 @@ public class AdminContentRestController {
                 parseStatus(status),
                 parseYn(publicYn),
                 pinnedOnly,
+                productNo,
+                parseBooleanFilter(productLinked),
                 startDateTime,
                 endDateTime
         );
+    }
+
+    private Boolean parseBooleanFilter(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String normalized = normalizeEnumValue(value);
+        return switch (normalized) {
+            case "Y", "TRUE" -> true;
+            case "N", "FALSE" -> false;
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
     }
 
     private String normalizeEnumValue(String value) {

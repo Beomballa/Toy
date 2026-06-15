@@ -1,7 +1,7 @@
 const ContentList = {
     initialized: false,
     state: {
-        page: 0,
+        page: Number(new URLSearchParams(window.location.search).get('page') || 0),
         size: 9,
         boardType: ContentBoardConfig.normalizeBoardType(
             window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType')
@@ -12,6 +12,8 @@ const ContentList = {
         startDate: new URLSearchParams(window.location.search).get('startDate') || '',
         endDate: new URLSearchParams(window.location.search).get('endDate') || '',
         pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
+        productLinked: new URLSearchParams(window.location.search).get('productLinked') || '',
+        productNo: new URLSearchParams(window.location.search).get('productNo') || '',
         selectedIds: new Set(),
         currentPageIds: [],
         lastBulkResultMessage: '아직 일괄 적용 결과가 없습니다.'
@@ -78,7 +80,9 @@ const ContentList = {
             this.state.startDate = params.get('startDate') || '';
             this.state.endDate = params.get('endDate') || '';
             this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
-            this.state.page = 0;
+            this.state.productLinked = params.get('productLinked') || '';
+            this.state.productNo = params.get('productNo') || '';
+            this.state.page = Number(params.get('page') || 0);
             this.syncSearchField();
             this.setInitialTab();
             this.updateSidebarActive();
@@ -88,7 +92,7 @@ const ContentList = {
 
         // 새 글 작성 버튼
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
-            location.href = `/admin/content/edit?boardType=${this.state.boardType}`;
+            location.href = `/admin/content/edit?boardType=${this.state.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
         });
         document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
@@ -101,6 +105,8 @@ const ContentList = {
             this.state.startDate = document.getElementById('contentStartDate')?.value || '';
             this.state.endDate = document.getElementById('contentEndDate')?.value || '';
             this.state.pinnedOnly = document.getElementById('contentPinnedOnly')?.checked || false;
+            this.state.productLinked = document.getElementById('contentProductLinkedFilter')?.value || '';
+            this.state.productNo = document.getElementById('contentProductNoFilter')?.value.trim() || '';
             this.state.page = 0;
             this.pushState();
             this.getList();
@@ -113,6 +119,8 @@ const ContentList = {
             this.state.startDate = '';
             this.state.endDate = '';
             this.state.pinnedOnly = false;
+            this.state.productLinked = '';
+            this.state.productNo = '';
             this.state.page = 0;
             this.syncSearchField();
             this.pushState();
@@ -193,18 +201,55 @@ const ContentList = {
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
         }
+        if (this.state.productLinked) {
+            params.set('productLinked', this.state.productLinked);
+        }
+        if (this.state.productNo) {
+            params.set('productNo', this.state.productNo);
+        }
 
         try {
-            const res = await fetch(`/api/admin/content/list?${params}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const [listResponse, summaryResponse] = await Promise.all([
+                fetch(`/api/admin/content/list?${params}`),
+                fetch(`/api/admin/content/summary?${params}`)
+            ]);
+            if (!listResponse.ok) throw new Error(`HTTP ${listResponse.status}`);
+            if (!summaryResponse.ok) throw new Error(`HTTP ${summaryResponse.status}`);
 
-            const data = await res.json();
+            const data = await listResponse.json();
+            const summary = await summaryResponse.json();
             this.renderList(data.items);
             this.renderPagination(data);
+            this.renderSummary(summary);
         } catch (err) {
             console.error('콘텐츠 목록 로드 실패:', err);
             CommonJS.alert('목록을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
+    },
+
+    renderSummary(summary) {
+        if (!summary) {
+            return;
+        }
+        const totalCount = Number(summary.totalCount || 0).toLocaleString();
+        const totalViewCount = Number(summary.totalViewCount || 0).toLocaleString();
+        const publishedCount = Number(summary.publishedCount || 0).toLocaleString();
+        const draftCount = Number(summary.draftCount || 0).toLocaleString();
+        const publicCount = Number(summary.publicCount || 0).toLocaleString();
+        const privateCount = Number(summary.privateCount || 0).toLocaleString();
+        const pinnedCount = Number(summary.pinnedCount || 0).toLocaleString();
+        const linkedCount = Number(summary.linkedCount || 0).toLocaleString();
+
+        const totalEl = document.getElementById('contentSummaryTotal');
+        if (totalEl) totalEl.textContent = `${totalCount}건`;
+        const viewsEl = document.getElementById('contentSummaryViews');
+        if (viewsEl) viewsEl.textContent = `조회수 합계 ${totalViewCount}`;
+        const publishEl = document.getElementById('contentSummaryPublish');
+        if (publishEl) publishEl.textContent = `게시중 ${publishedCount} · 임시저장 ${draftCount}`;
+        const visibilityEl = document.getElementById('contentSummaryVisibility');
+        if (visibilityEl) visibilityEl.textContent = `공개 ${publicCount} · 비공개 ${privateCount}`;
+        const optionsEl = document.getElementById('contentSummaryOptions');
+        if (optionsEl) optionsEl.textContent = `고정 ${pinnedCount} · 상품연결 ${linkedCount}`;
     },
 
     renderList(items) {
@@ -235,10 +280,11 @@ const ContentList = {
                                 ${item.pinnedYn === 'Y' ? '<span class="badge bg-dark">고정</span>' : ''}
                                 <span class="badge ${item.status === 'PUBLISHED' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${item.status === 'PUBLISHED' ? '게시중' : '임시저장'}</span>
                                 <span class="badge ${item.publicYn === 'Y' ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis'}">${item.publicYn === 'Y' ? '공개' : '비공개'}</span>
+                                <span class="badge bg-light text-dark border">${item.productNo ? `상품 #${item.productNo}` : '미연결'}</span>
                             </div>
                             <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
-                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}">
+                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
                             <h5 class="card-title content-board-card-title text-line-clamp-2">${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</h5>
                         </a>
                         <p class="content-board-card-copy">${ContentBoardConfig.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
@@ -281,6 +327,7 @@ const ContentList = {
 
     goPage(page) {
         this.state.page = page;
+        this.pushState();
         this.getList();
     },
 
@@ -292,6 +339,7 @@ const ContentList = {
 
     buildQueryParams() {
         const params = new URLSearchParams({ boardType: this.state.boardType });
+        params.set('page', String(this.state.page));
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
         }
@@ -309,6 +357,12 @@ const ContentList = {
         }
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
+        }
+        if (this.state.productLinked) {
+            params.set('productLinked', this.state.productLinked);
+        }
+        if (this.state.productNo) {
+            params.set('productNo', this.state.productNo);
         }
         return params;
     },
@@ -338,6 +392,14 @@ const ContentList = {
         if (pinnedInput) {
             pinnedInput.checked = this.state.pinnedOnly;
         }
+        const productLinkedInput = document.getElementById('contentProductLinkedFilter');
+        if (productLinkedInput) {
+            productLinkedInput.value = this.state.productLinked;
+        }
+        const productNoInput = document.getElementById('contentProductNoFilter');
+        if (productNoInput) {
+            productNoInput.value = this.state.productNo;
+        }
     },
 
     bindSelectionEvents() {
@@ -357,7 +419,7 @@ const ContentList = {
     bindRowActions() {
         document.querySelectorAll('[data-role="content-detail"]').forEach((button) => {
             button.addEventListener('click', () => {
-                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}`;
+                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
         document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
@@ -367,9 +429,13 @@ const ContentList = {
                     await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}`;
+                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
+    },
+
+    getCurrentLocation() {
+        return `${window.location.pathname}${window.location.search}`;
     },
 
     syncSelectionState() {

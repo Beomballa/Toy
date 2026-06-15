@@ -29,7 +29,7 @@ class AdminLogListResponseTest {
 
         AdminLogListResponse response = AdminLogListResponse.of(
                 new PageImpl<>(List.of(row), PageRequest.of(1, 10), 21),
-                new AdminActivityLogListQuery(null, null, null, null, null),
+                new AdminActivityLogListQuery(null, "운영", null, null, null, null),
                 Map.of(),
                 new AdminActivityLogSummaryDto(21, 3, 0, 5, 0, 2)
         );
@@ -37,5 +37,6 @@ class AdminLogListResponseTest {
         assertEquals("관리자", response.items().get(0).adminName());
         assertEquals("11-11 / 21건 · 3페이지", response.pageInfoLabel());
         assertEquals("11-11 / 21건 · 3페이지", response.resultMeta().pageInfoLabel());
+        assertEquals(1, response.resultMeta().filterCount());
     }
 }

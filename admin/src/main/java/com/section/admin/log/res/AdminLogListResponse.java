@@ -42,7 +42,7 @@ public record AdminLogListResponse(
                 rangeEnd,
                 pageInfoLabel,
                 Summary.from(summary),
-                new AppliedQuery(query.adminNo(), query.actionType(), query.targetId(), query.startDate() == null ? null : query.startDate().toString(), query.endDate() == null ? null : query.endDate().toString()),
+                new AppliedQuery(query.adminNo(), query.adminKeyword(), query.actionType(), query.targetId(), query.startDate() == null ? null : query.startDate().toString(), query.endDate() == null ? null : query.endDate().toString()),
                 ResultMeta.from(query, rangeStart, rangeEnd, pageInfoLabel, page.getTotalElements())
         );
     }
@@ -82,6 +82,7 @@ public record AdminLogListResponse(
 
     public record AppliedQuery(
             Long adminNo,
+            String adminKeyword,
             String actionType,
             Long targetId,
             String startDate,
@@ -136,6 +137,7 @@ public record AdminLogListResponse(
         private static int countFilters(AdminActivityLogListQuery query) {
             int count = 0;
             if (query.adminNo() != null) count += 1;
+            if (query.adminKeyword() != null && !query.adminKeyword().isBlank()) count += 1;
             if (query.actionType() != null && !query.actionType().isBlank()) count += 1;
             if (query.targetId() != null) count += 1;
             if (query.startDate() != null) count += 1;
@@ -147,6 +149,7 @@ public record AdminLogListResponse(
             StringBuilder builder = new StringBuilder();
             builder.append(rangeStart).append("-").append(rangeEnd);
             if (query.adminNo() != null) builder.append(" · 관리자=").append(query.adminNo());
+            if (query.adminKeyword() != null && !query.adminKeyword().isBlank()) builder.append(" · 관리자명=").append(query.adminKeyword());
             if (query.actionType() != null && !query.actionType().isBlank()) builder.append(" · 작업=").append(query.actionType());
             if (query.targetId() != null) builder.append(" · 대상=").append(query.targetId());
             if (query.startDate() != null || query.endDate() != null) {

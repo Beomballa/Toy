@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 public record AdminActivityLogListQuery(
         Long adminNo,
+        String adminKeyword,
         String actionType,
         Long targetId,
         LocalDate startDate,

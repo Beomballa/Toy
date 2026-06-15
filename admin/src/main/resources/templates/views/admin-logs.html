@@ -62,10 +62,20 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_ACTIVE_UPDATE">공지 상태 변경</button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_DELETE">공지 삭제</button>
             </div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="today">오늘</button>
+                <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="7days">최근 7일</button>
+                <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="30days">최근 30일</button>
+                <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="clear">기간 초기화</button>
+            </div>
             <div class="admin-filter-grid">
                 <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">관리자 번호</label>
                     <input type="number" min="1" id="logAdminNo" class="form-control">
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-2">
+                    <label class="admin-filter-label">관리자명</label>
+                    <input type="text" id="logAdminKeyword" class="form-control" placeholder="예: 운영자">
                 </div>
                 <div class="admin-filter-field admin-filter-field--span-2">
                     <label class="admin-filter-label">작업 종류</label>

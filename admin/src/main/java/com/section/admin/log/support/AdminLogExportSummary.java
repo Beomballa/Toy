@@ -23,6 +23,9 @@ public record AdminLogExportSummary(
         if (query.adminNo() != null) {
             builder.append(" · 관리자=").append(query.adminNo());
         }
+        if (query.adminKeyword() != null && !query.adminKeyword().isBlank()) {
+            builder.append(" · 관리자명=").append(query.adminKeyword());
+        }
         if (query.actionType() != null && !query.actionType().isBlank()) {
             builder.append(" · 작업=").append(query.actionType());
         }

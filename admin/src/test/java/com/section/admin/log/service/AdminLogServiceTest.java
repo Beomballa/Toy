@@ -137,11 +137,15 @@ class AdminLogServiceTest {
         when(adminUserRepository.findAllById(any()))
                 .thenReturn(List.of(AdminUser.builder().adminNo(5L).name("공지담당").loginId("notice").password("pw").build()));
 
-        byte[] result = adminLogService.exportLogListCsv(new AdminLogListRequest());
+        AdminLogListRequest request = new AdminLogListRequest();
+        request.setAdminKeyword("공지");
+
+        byte[] result = adminLogService.exportLogListCsv(request);
         String csv = new String(result, StandardCharsets.UTF_8);
 
         assertTrue(csv.contains("로그번호,관리자번호,관리자명,작업종류,대상ID,대상라벨,대상이동경로,IP주소,작업일시"));
-        assertTrue(csv.contains("\"12\",\"5\",\"공지담당\",\"NOTICE_UPDATE\",\"44\",\"운영 공지 #44\",\"/admin/settings/notices?noticeNo=44\",\"10.0.0.5\",\"2026-06-03 12:00:00\""));
+        assertTrue(csv.contains("관리자명=공지"));
+        assertTrue(csv.contains("\"12\",\"5\",\"공지담당\",\"NOTICE_UPDATE\",\"44\",\"운영 공지 #44\",\"/admin/settings/notices?noticeNo=44\",\"10.0.0.5\",\"2026-06-03 12:00\""));
     }
 
     @Test

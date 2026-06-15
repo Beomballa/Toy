@@ -22,6 +22,9 @@ const AdminLogPage = {
         document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
             button.addEventListener('click', () => this.applyQuickFilter(button.dataset.logQuickFilter));
         });
+        document.querySelectorAll('[data-log-date-preset]').forEach((button) => {
+            button.addEventListener('click', () => this.applyDatePreset(button.dataset.logDatePreset));
+        });
         document.getElementById('btnSearchLog')?.addEventListener('click', () => {
             this.state.page = 0;
             this.getList();
@@ -43,7 +46,7 @@ const AdminLogPage = {
                 this.openDetail(Number(detailButton.dataset.logNo));
             }
         });
-        ['logAdminNo', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
+        ['logAdminNo', 'logAdminKeyword', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
             document.getElementById(id)?.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -57,6 +60,7 @@ const AdminLogPage = {
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         document.getElementById('logAdminNo').value = params.get('adminNo') || '';
+        document.getElementById('logAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('logActionType').value = params.get('actionType') || '';
         document.getElementById('logTargetId').value = params.get('targetId') || '';
         document.getElementById('logStartDate').value = params.get('startDate') || '';
@@ -70,12 +74,14 @@ const AdminLogPage = {
     buildParams() {
         const params = new URLSearchParams();
         const adminNo = document.getElementById('logAdminNo').value.trim();
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('logAdminKeyword').value);
         const actionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType').value);
         const targetId = document.getElementById('logTargetId').value.trim();
         const startDate = document.getElementById('logStartDate').value;
         const endDate = document.getElementById('logEndDate').value;
 
         if (adminNo) params.set('adminNo', adminNo);
+        if (adminKeyword) params.set('adminKeyword', adminKeyword);
         if (actionType) params.set('actionType', actionType);
         if (targetId) params.set('targetId', targetId);
         if (startDate) params.set('startDate', startDate);
@@ -253,6 +259,7 @@ const AdminLogPage = {
 
     resetFilters() {
         document.getElementById('logAdminNo').value = '';
+        document.getElementById('logAdminKeyword').value = '';
         document.getElementById('logActionType').value = '';
         document.getElementById('logTargetId').value = '';
         document.getElementById('logStartDate').value = '';
@@ -266,6 +273,38 @@ const AdminLogPage = {
 
     applyQuickFilter(actionType) {
         document.getElementById('logActionType').value = actionType || '';
+        this.state.page = 0;
+        this.getList();
+    },
+
+    applyDatePreset(preset) {
+        const startDateInput = document.getElementById('logStartDate');
+        const endDateInput = document.getElementById('logEndDate');
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (preset === 'clear') {
+            startDateInput.value = '';
+            endDateInput.value = '';
+        } else {
+            const startDate = new Date(today);
+            if (preset === '7days') {
+                startDate.setDate(startDate.getDate() - 6);
+            } else if (preset === '30days') {
+                startDate.setDate(startDate.getDate() - 29);
+            }
+            startDateInput.value = formatDate(startDate);
+            endDateInput.value = formatDate(today);
+        }
+
         this.state.page = 0;
         this.getList();
     },

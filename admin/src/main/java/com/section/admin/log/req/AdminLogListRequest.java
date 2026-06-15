@@ -13,6 +13,7 @@ import java.time.LocalDate;
 public class AdminLogListRequest {
 
     private Long adminNo;
+    private String adminKeyword;
     private String actionType;
     private Long targetId;
     private LocalDate startDate;
@@ -30,6 +31,7 @@ public class AdminLogListRequest {
         }
         return new AdminActivityLogListQuery(
                 adminNo,
+                normalize(adminKeyword),
                 normalize(actionType),
                 targetId,
                 startDate,

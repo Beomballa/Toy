@@ -50,7 +50,7 @@ class AdminLogRestControllerTest {
                         List.of(new AdminLogListResponse.Item(1L, 2L, "운영자", "PRODUCT_UPDATE", 4L, "상품 #4", "/admin/products/history?productNo=4", "127.0.0.1", "2026-05-11 12:00")),
                         1L, 1, 0, 20, 1L, 1L, "1-1 / 1건 · 1페이지",
                         new AdminLogListResponse.Summary(1, 1, 0, 0, 1, 1),
-                        new AdminLogListResponse.AppliedQuery(null, null, null, null, null),
+                        new AdminLogListResponse.AppliedQuery(null, "운영", null, null, null, null),
                         new AdminLogListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 0, "1-1")
                 ));
 
@@ -65,7 +65,8 @@ class AdminLogRestControllerTest {
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1건"))
                 .andExpect(jsonPath("$.summary.totalCount").value(1L))
                 .andExpect(jsonPath("$.summary.commerceCount").value(1L))
-                .andExpect(jsonPath("$.totalElements").value(1L));
+                .andExpect(jsonPath("$.totalElements").value(1L))
+                .andExpect(jsonPath("$.appliedQuery.adminKeyword").value("운영"));
     }
 
     @Test

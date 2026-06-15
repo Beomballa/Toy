@@ -18,6 +18,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import static com.section.common.system.entity.QAdminActivityLog.adminActivityLog;
+import static com.section.common.system.entity.QAdminUser.adminUser;
 
 public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivityLogRepository {
 
@@ -40,6 +41,7 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
                         adminActivityLog.actionDtm
                 ))
                 .from(adminActivityLog)
+                .leftJoin(adminUser).on(adminActivityLog.adminNo.eq(adminUser.adminNo))
                 .where(logConditions(query))
                 .orderBy(adminActivityLog.logNo.desc())
                 .offset(pageable.getOffset())
@@ -48,6 +50,7 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
 
         JPAQuery<Long> countQuery = queryFactory.select(adminActivityLog.count())
                 .from(adminActivityLog)
+                .leftJoin(adminUser).on(adminActivityLog.adminNo.eq(adminUser.adminNo))
                 .where(logConditions(query));
 
         return PageableExecutionUtils.getPage(items, pageable, countQuery::fetchOne);
@@ -90,6 +93,7 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
                         adminActivityLog.adminNo.countDistinct()
                 ))
                 .from(adminActivityLog)
+                .leftJoin(adminUser).on(adminActivityLog.adminNo.eq(adminUser.adminNo))
                 .where(logConditions(query))
                 .fetchOne();
     }
@@ -97,6 +101,7 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
     private BooleanExpression[] logConditions(AdminActivityLogListQuery query) {
         return new BooleanExpression[]{
                 adminNoEq(query.adminNo()),
+                adminKeywordLike(query.adminKeyword()),
                 actionTypeLike(query.actionType()),
                 targetIdEq(query.targetId()),
                 actionDateBetween(query.startDate(), query.endDate())
@@ -112,6 +117,22 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
             return null;
         }
         return adminActivityLog.actionType.containsIgnoreCase(actionType.trim());
+    }
+
+    private BooleanExpression adminKeywordLike(String adminKeyword) {
+        if (adminKeyword == null || adminKeyword.isBlank()) {
+            return null;
+        }
+        String[] tokens = adminKeyword.trim().split("\\s+");
+        BooleanExpression expression = null;
+        for (String token : tokens) {
+            if (token == null || token.isBlank()) {
+                continue;
+            }
+            BooleanExpression tokenExpression = adminUser.name.containsIgnoreCase(token);
+            expression = expression == null ? tokenExpression : expression.and(tokenExpression);
+        }
+        return expression;
     }
 
     private BooleanExpression targetIdEq(Long targetId) {

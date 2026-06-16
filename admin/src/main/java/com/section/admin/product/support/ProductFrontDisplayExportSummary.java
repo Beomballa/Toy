@@ -65,6 +65,12 @@ public record ProductFrontDisplayExportSummary(
         if (query.unconfiguredOnly()) {
             parts.add("노출 설정: 미설정");
         }
+        if (query.readyContentOnly()) {
+            parts.add("전시 문구: 완성");
+        }
+        if (query.incompleteContentOnly()) {
+            parts.add("전시 문구: 보완 필요");
+        }
         if (query.featuredOnly()) {
             parts.add("Featured만");
         }

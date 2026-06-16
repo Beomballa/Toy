@@ -10,6 +10,7 @@ public record ProductFrontDisplayListRequest(
         Long brandNo,
         Long categoryNo,
         String configured,
+        String contentStatus,
         Boolean featuredOnly,
         Boolean lowStockOnly,
         Integer lowStockThreshold,
@@ -50,6 +51,17 @@ public record ProductFrontDisplayListRequest(
             case "ALL" -> null;
             case "CONFIGURED" -> true;
             case "UNCONFIGURED" -> false;
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
+    }
+
+    public String normalizedContentStatus() {
+        if (contentStatus == null || contentStatus.isBlank()) {
+            return null;
+        }
+        return switch (contentStatus.trim().toUpperCase()) {
+            case "ALL" -> null;
+            case "READY", "INCOMPLETE" -> contentStatus.trim().toUpperCase();
             default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         };
     }

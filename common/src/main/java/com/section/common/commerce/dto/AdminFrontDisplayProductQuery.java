@@ -8,6 +8,7 @@ public record AdminFrontDisplayProductQuery(
         Long brandNo,
         Long categoryNo,
         Boolean displayConfigured,
+        String contentStatus,
         boolean featuredOnly,
         boolean lowStockOnly,
         long lowStockThreshold,
@@ -19,5 +20,13 @@ public record AdminFrontDisplayProductQuery(
 
     public boolean unconfiguredOnly() {
         return Boolean.FALSE.equals(displayConfigured);
+    }
+
+    public boolean readyContentOnly() {
+        return "READY".equals(contentStatus);
+    }
+
+    public boolean incompleteContentOnly() {
+        return "INCOMPLETE".equals(contentStatus);
     }
 }

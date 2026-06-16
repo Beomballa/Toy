@@ -9,6 +9,7 @@ public record AdminFrontDisplayProductRow(
         Long totalStock,
         String status,
         boolean displayConfigured,
+        boolean contentReady,
         String headline,
         String description,
         String mood,

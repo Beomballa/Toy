@@ -2,10 +2,12 @@ package com.section.common.commerce.repository;
 
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.StringPath;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -272,6 +274,7 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         totalStockSum(),
                         product.status,
                         frontProductDisplay.displayNo.isNotNull(),
+                        new CaseBuilder().when(adminFrontDisplayContentReady()).then(true).otherwise(false),
                         frontProductDisplay.headline,
                         frontProductDisplay.description,
                         frontProductDisplay.mood,
@@ -290,7 +293,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         brandNoEq(query.brandNo()),
                         categoryNoEq(query.categoryNo()),
                         adminFrontDisplayKeywordLike(query.keyword()),
-                        adminFrontDisplayConfiguredEq(query)
+                        adminFrontDisplayConfiguredEq(query),
+                        adminFrontDisplayContentStatusEq(query)
                 )
                 .groupBy(
                         product.id,
@@ -348,6 +352,35 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
             return frontProductDisplay.displayNo.isNull();
         }
         return null;
+    }
+
+    private BooleanExpression adminFrontDisplayContentStatusEq(AdminFrontDisplayProductQuery query) {
+        if (query.readyContentOnly()) {
+            return adminFrontDisplayContentReady();
+        }
+        if (query.incompleteContentOnly()) {
+            return adminFrontDisplayContentIncomplete();
+        }
+        return null;
+    }
+
+    private BooleanExpression adminFrontDisplayContentReady() {
+        return frontProductDisplay.displayNo.isNotNull()
+                .and(hasDisplayText(frontProductDisplay.headline))
+                .and(hasDisplayText(frontProductDisplay.description))
+                .and(hasDisplayText(frontProductDisplay.mood));
+    }
+
+    private BooleanExpression adminFrontDisplayContentIncomplete() {
+        return frontProductDisplay.displayNo.isNull()
+                .or(hasDisplayText(frontProductDisplay.headline).not())
+                .or(hasDisplayText(frontProductDisplay.description).not())
+                .or(hasDisplayText(frontProductDisplay.mood).not());
+    }
+
+    private BooleanExpression hasDisplayText(StringPath path) {
+        return path.isNotNull()
+                .and(Expressions.stringTemplate("trim({0})", path).ne(""));
     }
 
     private BooleanExpression adminFrontDisplayHaving(AdminFrontDisplayProductQuery query) {

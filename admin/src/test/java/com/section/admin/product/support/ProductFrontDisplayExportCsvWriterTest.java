@@ -24,6 +24,7 @@ class ProductFrontDisplayExportCsvWriterTest {
                 "ACTIVE",
                 "판매중",
                 true,
+                true,
                 "Grey precision",
                 "전시 설명",
                 "Sharp tone",

@@ -505,7 +505,9 @@ class AdminProductServiceTest {
     @DisplayName("상품 프론트 노출 목록은 Querydsl 조회 결과를 운영 응답으로 매핑한다")
     void getFrontDisplayProductsMapsAdminRows() {
         when(productRepository.getAdminFrontDisplayProducts(argThat(query ->
-                query.featuredOnly()
+                query.readyContentOnly()
+                        && !query.incompleteContentOnly()
+                        && query.featuredOnly()
                         && query.status() == ProductStatus.ACTIVE
                         && query.brandNo() == 7L
                         && query.categoryNo() == 11L
@@ -524,6 +526,7 @@ class AdminProductServiceTest {
                         18L,
                         "ACTIVE",
                         true,
+                        true,
                         "Grey precision",
                         "전시 설명",
                         "Sharp tone",
@@ -533,18 +536,21 @@ class AdminProductServiceTest {
         ));
 
         ProductFrontDisplayDashboardResponse response = adminProductService.getFrontDisplayProducts(
-                new ProductFrontDisplayListRequest(" Grey ", "ACTIVE", 7L, 11L, "CONFIGURED", true, true, 15, "price_low")
+                new ProductFrontDisplayListRequest(" Grey ", "ACTIVE", 7L, 11L, "CONFIGURED", "READY", true, true, 15, "price_low")
         );
 
         assertEquals(1, response.summary().totalCount());
         assertEquals(1, response.summary().configuredCount());
         assertEquals(0, response.summary().unconfiguredCount());
+        assertEquals(1, response.summary().readyContentCount());
+        assertEquals(0, response.summary().incompleteContentCount());
         assertEquals(1, response.summary().featuredCount());
         assertEquals(0, response.summary().lowStockCount());
         assertEquals(15L, response.summary().lowStockThreshold());
         assertEquals(4L, response.items().getFirst().productNo());
         assertEquals("Grey precision", response.items().getFirst().headline());
         assertEquals(18L, response.items().getFirst().totalStock());
+        assertEquals(true, response.items().getFirst().contentReady());
         assertEquals(true, response.items().getFirst().featured());
     }
 
@@ -553,7 +559,7 @@ class AdminProductServiceTest {
     void getFrontDisplayProductsThrowsWhenStatusInvalid() {
         BusinessException exception = assertThrows(BusinessException.class,
                 () -> adminProductService.getFrontDisplayProducts(
-                        new ProductFrontDisplayListRequest(null, "not-a-status", null, null, null, false, false, null, null)
+                        new ProductFrontDisplayListRequest(null, "not-a-status", null, null, null, null, false, false, null, null)
                 ));
 
         assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
@@ -564,7 +570,9 @@ class AdminProductServiceTest {
     void exportFrontDisplayProductsCsvUsesNormalizedQuery() {
         when(adminSettingsService.getLowStockDefaultThreshold()).thenReturn(20L);
         when(productRepository.getAdminFrontDisplayProducts(argThat(query ->
-                !query.featuredOnly()
+                !query.readyContentOnly()
+                        && query.incompleteContentOnly()
+                        && !query.featuredOnly()
                         && query.status() == ProductStatus.HIDDEN
                         && query.brandNo() == 7L
                         && query.categoryNo() == 11L
@@ -583,6 +591,7 @@ class AdminProductServiceTest {
                         18L,
                         "HIDDEN",
                         false,
+                        false,
                         null,
                         null,
                         null,
@@ -594,13 +603,14 @@ class AdminProductServiceTest {
         when(categoryRepository.findById(11L)).thenReturn(Optional.of(Category.builder().categoryNo(11L).name("러닝화").build()));
 
         byte[] result = adminProductService.exportFrontDisplayProductsCsv(
-                new ProductFrontDisplayListRequest(" draft ", "hidden", 7L, 11L, "UNCONFIGURED", false, false, null, null)
+                new ProductFrontDisplayListRequest(" draft ", "hidden", 7L, 11L, "UNCONFIGURED", "INCOMPLETE", false, false, null, null)
         );
 
         String csv = new String(result, java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(csv.contains("브랜드: New Balance"));
         assertTrue(csv.contains("카테고리: 러닝화"));
         assertTrue(csv.contains("노출 설정: 미설정"));
+        assertTrue(csv.contains("전시 문구: 보완 필요"));
         assertTrue(csv.contains("\"미설정\""));
         assertTrue(csv.contains("\"숨김\""));
     }

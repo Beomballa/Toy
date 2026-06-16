@@ -598,6 +598,7 @@ public class AdminProductService {
                 request.normalizedBrandNo(),
                 request.normalizedCategoryNo(),
                 request.normalizedConfigured(),
+                request.normalizedContentStatus(),
                 request.normalizedFeaturedOnly(),
                 request.normalizedLowStockOnly(),
                 request.normalizedLowStockThreshold(resolveLowStockDefaultThreshold()),

@@ -82,7 +82,7 @@
               <div class="product-master-flag-card__title">노출 기준</div>
               <div class="product-master-flag-card__desc">프론트 노출 설정 여부와 정렬 정책을 함께 바꿔 목록 우선순위를 조정합니다.</div>
               <div class="admin-filter-grid product-master-filter-grid mt-2">
-                <div class="admin-filter-field admin-filter-field--span-6">
+                <div class="admin-filter-field admin-filter-field--span-4">
                   <label class="admin-filter-label" for="displayConfigured">노출 설정</label>
                   <select id="displayConfigured" class="form-select">
                     <option value="">전체</option>
@@ -90,7 +90,15 @@
                     <option value="UNCONFIGURED">미설정</option>
                   </select>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-6">
+                <div class="admin-filter-field admin-filter-field--span-4">
+                  <label class="admin-filter-label" for="displayContentStatus">전시 문구</label>
+                  <select id="displayContentStatus" class="form-select">
+                    <option value="">전체</option>
+                    <option value="READY">완성</option>
+                    <option value="INCOMPLETE">보완 필요</option>
+                  </select>
+                </div>
+                <div class="admin-filter-field admin-filter-field--span-4">
                   <label class="admin-filter-label" for="displaySort">정렬</label>
                   <select id="displaySort" class="form-select">
                     <option value="FEATURED">Featured 우선</option>
@@ -144,6 +152,7 @@
       <div class="admin-summary-card__label">노출 설정 완료</div>
       <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryConfigured">0</div>
       <div class="admin-summary-card__hint" id="displaySummaryUnconfigured">미설정 0건</div>
+      <div class="admin-summary-card__hint" id="displaySummaryContentQuality">전시 문구 완성 0건 · 보완 0건</div>
     </div>
     <div class="admin-summary-card animate-in">
       <div class="admin-summary-card__label">Featured</div>

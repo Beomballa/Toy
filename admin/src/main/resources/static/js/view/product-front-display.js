@@ -5,6 +5,7 @@ const ProductFrontDisplayList = {
         brandNo: '',
         categoryNo: '',
         configured: '',
+        contentStatus: '',
         featuredOnly: false,
         lowStockOnly: false,
         lowStockThreshold: 20,
@@ -50,6 +51,9 @@ const ProductFrontDisplayList = {
         if (this.state.configured) {
             params.set('configured', this.state.configured);
         }
+        if (this.state.contentStatus) {
+            params.set('contentStatus', this.state.contentStatus);
+        }
         if (this.state.featuredOnly) {
             params.set('featuredOnly', 'true');
         }
@@ -82,6 +86,7 @@ const ProductFrontDisplayList = {
         this.state.brandNo = document.getElementById('displayBrand')?.value || '';
         this.state.categoryNo = document.getElementById('displayCategory')?.value || '';
         this.state.configured = document.getElementById('displayConfigured')?.value || '';
+        this.state.contentStatus = document.getElementById('displayContentStatus')?.value || '';
         this.state.featuredOnly = document.getElementById('featuredOnly')?.checked || false;
         this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
         this.state.lowStockThreshold = Number(document.getElementById('displayLowStockThreshold')?.value || 20);
@@ -101,6 +106,7 @@ const ProductFrontDisplayList = {
             brandNo: '',
             categoryNo: '',
             configured: '',
+            contentStatus: '',
             featuredOnly: false,
             lowStockOnly: false,
             lowStockThreshold: this.initialLowStockThreshold,
@@ -111,6 +117,7 @@ const ProductFrontDisplayList = {
         document.getElementById('displayBrand').value = '';
         document.getElementById('displayCategory').value = '';
         document.getElementById('displayConfigured').value = '';
+        document.getElementById('displayContentStatus').value = '';
         document.getElementById('featuredOnly').checked = false;
         document.getElementById('lowStockOnly').checked = false;
         document.getElementById('displayLowStockThreshold').value = String(this.initialLowStockThreshold);
@@ -159,7 +166,7 @@ const ProductFrontDisplayList = {
                 <td>${this.escapeHtml(item.statusDescription || item.status || '-')}</td>
                 <td>
                     <div>${item.displayConfigured ? '설정됨' : '미설정'}</div>
-                    <div class="small text-muted">${this.escapeHtml(item.mood || '-')}</div>
+                    <div class="small text-muted">${item.contentReady ? '전시 문구 완성' : '보완 필요'}</div>
                 </td>
                 <td>${item.featured ? `Y / ${item.featuredRank}` : 'N'}</td>
                 <td class="text-end pe-4">
@@ -198,6 +205,10 @@ const ProductFrontDisplayList = {
         setText('displaySummaryTotal', Number(summary.totalCount || 0).toLocaleString());
         setText('displaySummaryConfigured', Number(summary.configuredCount || 0).toLocaleString());
         setText('displaySummaryUnconfigured', `미설정 ${Number(summary.unconfiguredCount || 0).toLocaleString()}건`);
+        setText(
+            'displaySummaryContentQuality',
+            `전시 문구 완성 ${Number(summary.readyContentCount || 0).toLocaleString()}건 · 보완 ${Number(summary.incompleteContentCount || 0).toLocaleString()}건`
+        );
         setText('displaySummaryFeatured', Number(summary.featuredCount || 0).toLocaleString());
         setText('displaySummaryLowStock', Number(summary.lowStockCount || 0).toLocaleString());
         setText('displaySummaryThreshold', `기준 ${Number(summary.lowStockThreshold || this.state.lowStockThreshold).toLocaleString()}개 미만`);
@@ -225,6 +236,12 @@ const ProductFrontDisplayList = {
         }
         if (this.state.configured === 'UNCONFIGURED') {
             tokens.push('미설정만');
+        }
+        if (this.state.contentStatus === 'READY') {
+            tokens.push('전시 문구 완성');
+        }
+        if (this.state.contentStatus === 'INCOMPLETE') {
+            tokens.push('전시 문구 보완 필요');
         }
         if (this.state.keyword) {
             tokens.push(`검색 ${this.state.keyword}`);

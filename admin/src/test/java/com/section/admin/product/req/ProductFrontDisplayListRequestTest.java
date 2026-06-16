@@ -21,6 +21,7 @@ class ProductFrontDisplayListRequestTest {
                 7L,
                 11L,
                 "configured",
+                "ready",
                 true,
                 true,
                 15,
@@ -32,6 +33,7 @@ class ProductFrontDisplayListRequestTest {
         assertEquals(7L, request.normalizedBrandNo());
         assertEquals(11L, request.normalizedCategoryNo());
         assertEquals(true, request.normalizedConfigured());
+        assertEquals("READY", request.normalizedContentStatus());
         assertTrue(request.normalizedFeaturedOnly());
         assertTrue(request.normalizedLowStockOnly());
         assertEquals(15L, request.normalizedLowStockThreshold(20));
@@ -47,6 +49,7 @@ class ProductFrontDisplayListRequestTest {
                 0L,
                 0L,
                 "ALL",
+                "ALL",
                 null,
                 null,
                 0,
@@ -58,6 +61,7 @@ class ProductFrontDisplayListRequestTest {
         assertNull(request.normalizedBrandNo());
         assertNull(request.normalizedCategoryNo());
         assertNull(request.normalizedConfigured());
+        assertNull(request.normalizedContentStatus());
         assertEquals(30L, request.normalizedLowStockThreshold(30));
         assertEquals("FEATURED", request.normalizedSort());
     }
@@ -68,6 +72,7 @@ class ProductFrontDisplayListRequestTest {
         ProductFrontDisplayListRequest request = new ProductFrontDisplayListRequest(
                 null,
                 "invalid",
+                null,
                 null,
                 null,
                 null,
@@ -89,6 +94,7 @@ class ProductFrontDisplayListRequestTest {
                 null,
                 null,
                 "maybe",
+                "READY",
                 false,
                 false,
                 null,
@@ -100,6 +106,19 @@ class ProductFrontDisplayListRequestTest {
                 -1L,
                 null,
                 null,
+                null,
+                false,
+                false,
+                null,
+                null
+        );
+        ProductFrontDisplayListRequest invalidContentStatusRequest = new ProductFrontDisplayListRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                "draft",
                 false,
                 false,
                 null,
@@ -108,5 +127,6 @@ class ProductFrontDisplayListRequestTest {
 
         assertThrows(BusinessException.class, invalidConfiguredRequest::normalizedConfigured);
         assertThrows(BusinessException.class, invalidBrandRequest::normalizedBrandNo);
+        assertThrows(BusinessException.class, invalidContentStatusRequest::normalizedContentStatus);
     }
 }

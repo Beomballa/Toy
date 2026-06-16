@@ -218,6 +218,11 @@ public class AdminProductRestController {
         } else if (Boolean.FALSE.equals(req.normalizedConfigured())) {
             parts.add("unconfigured");
         }
+        if ("READY".equals(req.normalizedContentStatus())) {
+            parts.add("ready");
+        } else if ("INCOMPLETE".equals(req.normalizedContentStatus())) {
+            parts.add("incomplete");
+        }
         if (req.normalizedFeaturedOnly()) {
             parts.add("featured");
         }

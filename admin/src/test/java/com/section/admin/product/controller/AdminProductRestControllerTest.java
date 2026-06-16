@@ -289,7 +289,7 @@ class AdminProductRestControllerTest {
     void getProductFrontDisplayListReturnsDisplayRows() throws Exception {
         when(adminProductService.getFrontDisplayProducts(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
                 .thenReturn(new ProductFrontDisplayDashboardResponse(
-                        new ProductFrontDisplaySummaryResponse(1, 1, 0, 1, 1, 20),
+                        new ProductFrontDisplaySummaryResponse(1, 1, 0, 1, 0, 1, 1, 20),
                         List.of(new ProductFrontDisplayListResponse(
                                 4L,
                                 "990v6 Grey Day",
@@ -300,6 +300,7 @@ class AdminProductRestControllerTest {
                                 "ACTIVE",
                                 "판매중",
                                 true,
+                                true,
                                 "Grey precision",
                                 "전시 설명",
                                 "Sharp tone",
@@ -308,12 +309,14 @@ class AdminProductRestControllerTest {
                         ))
                 ));
 
-        mockMvc.perform(get("/api/admin/product/front-display/list?featuredOnly=true&status=ACTIVE&keyword=Grey&brandNo=7&categoryNo=11&configured=CONFIGURED&sort=PRICE_LOW"))
+        mockMvc.perform(get("/api/admin/product/front-display/list?featuredOnly=true&status=ACTIVE&keyword=Grey&brandNo=7&categoryNo=11&configured=CONFIGURED&contentStatus=READY&sort=PRICE_LOW"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.summary.totalCount").value(1))
                 .andExpect(jsonPath("$.summary.configuredCount").value(1))
+                .andExpect(jsonPath("$.summary.readyContentCount").value(1))
                 .andExpect(jsonPath("$.items[0].productNo").value(4L))
                 .andExpect(jsonPath("$.items[0].displayConfigured").value(true))
+                .andExpect(jsonPath("$.items[0].contentReady").value(true))
                 .andExpect(jsonPath("$.items[0].statusDescription").value("판매중"))
                 .andExpect(jsonPath("$.items[0].headline").value("Grey precision"))
                 .andExpect(jsonPath("$.items[0].featuredRank").value(3));
@@ -324,6 +327,7 @@ class AdminProductRestControllerTest {
                         && request.normalizedBrandNo() == 7L
                         && request.normalizedCategoryNo() == 11L
                         && Boolean.TRUE.equals(request.normalizedConfigured())
+                        && "READY".equals(request.normalizedContentStatus())
                         && "PRICE_LOW".equals(request.normalizedSort())
         ));
     }
@@ -334,9 +338,9 @@ class AdminProductRestControllerTest {
         when(adminProductService.exportFrontDisplayProductsCsv(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
                 .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
-        mockMvc.perform(get("/api/admin/product/front-display/export?status=ACTIVE&brandNo=7&categoryNo=3&configured=UNCONFIGURED&featuredOnly=true&lowStockOnly=true&keyword=Grey"))
+        mockMvc.perform(get("/api/admin/product/front-display/export?status=ACTIVE&brandNo=7&categoryNo=3&configured=UNCONFIGURED&contentStatus=INCOMPLETE&featuredOnly=true&lowStockOnly=true&keyword=Grey"))
                 .andExpect(status().isOk())
-                .andExpect(header().string("Content-Disposition", "attachment; filename=front_display_active_brand7_category3_unconfigured_featured_lowstock_search_" + todayExportDate() + ".csv"))
+                .andExpect(header().string("Content-Disposition", "attachment; filename=front_display_active_brand7_category3_unconfigured_incomplete_featured_lowstock_search_" + todayExportDate() + ".csv"))
                 .andExpect(content().contentType("text/csv"));
     }
 

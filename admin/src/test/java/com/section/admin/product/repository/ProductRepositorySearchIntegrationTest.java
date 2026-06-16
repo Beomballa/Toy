@@ -212,7 +212,7 @@ class ProductRepositorySearchIntegrationTest {
                 .build());
 
         List<AdminFrontDisplayProductRow> result = productRepository.getAdminFrontDisplayProducts(
-                new AdminFrontDisplayProductQuery("ZQX1201A019UNIQUE", null, null, null, null, false, false, 20, "FEATURED")
+                new AdminFrontDisplayProductQuery("ZQX1201A019UNIQUE", null, null, null, null, null, false, false, 20, "FEATURED")
         );
 
         assertEquals(1, result.size());
@@ -585,19 +585,45 @@ class ProductRepositorySearchIntegrationTest {
                 .build());
         productOptionRepository.save(ProductOption.builder().productNo(unconfiguredProduct.getId()).optionName("265").stockCnt(50).additionalPrice(0).build());
 
+        Product incompleteConfiguredProduct = productRepository.save(Product.builder()
+                .brandNo(brandEntity.getBrandNo())
+                .categoryNo(categoryEntity.getCategoryNo())
+                .nameKo("2002R Slate")
+                .modelNum("M2002RS")
+                .releasePrice(199000)
+                .releaseDt(LocalDate.of(2026, 6, 3))
+                .status(ProductStatus.ACTIVE.name())
+                .build());
+        productOptionRepository.save(ProductOption.builder().productNo(incompleteConfiguredProduct.getId()).optionName("270").stockCnt(8).additionalPrice(0).build());
+        frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                .productNo(incompleteConfiguredProduct.getId())
+                .headline("Slate rhythm")
+                .description(" ")
+                .mood("Muted stone")
+                .featuredYn("N")
+                .featuredRank(999)
+                .build());
+
         List<AdminFrontDisplayProductRow> configuredOnly = productRepository.getAdminFrontDisplayProducts(
-                new AdminFrontDisplayProductQuery("Grey", ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), true, true, true, 20, "FEATURED")
+                new AdminFrontDisplayProductQuery("Grey", ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), true, "READY", true, true, 20, "FEATURED")
         );
         List<AdminFrontDisplayProductRow> unconfiguredOnly = productRepository.getAdminFrontDisplayProducts(
-                new AdminFrontDisplayProductQuery(null, ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), false, false, false, 20, "LATEST")
+                new AdminFrontDisplayProductQuery(null, ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), false, "INCOMPLETE", false, false, 20, "LATEST")
+        );
+        List<AdminFrontDisplayProductRow> incompleteConfiguredOnly = productRepository.getAdminFrontDisplayProducts(
+                new AdminFrontDisplayProductQuery(null, ProductStatus.ACTIVE, brandEntity.getBrandNo(), categoryEntity.getCategoryNo(), true, "INCOMPLETE", false, true, 20, "LATEST")
         );
 
         assertEquals(1, configuredOnly.size());
         assertEquals(configuredProduct.getId(), configuredOnly.getFirst().productNo());
         assertTrue(configuredOnly.getFirst().featured());
+        assertTrue(configuredOnly.getFirst().contentReady());
         assertEquals(1, unconfiguredOnly.size());
         assertEquals(unconfiguredProduct.getId(), unconfiguredOnly.getFirst().productNo());
         assertTrue(!unconfiguredOnly.getFirst().displayConfigured());
+        assertEquals(1, incompleteConfiguredOnly.size());
+        assertEquals(incompleteConfiguredProduct.getId(), incompleteConfiguredOnly.getFirst().productNo());
+        assertTrue(!incompleteConfiguredOnly.getFirst().contentReady());
     }
 
     @Test

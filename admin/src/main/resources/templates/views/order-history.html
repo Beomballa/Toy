@@ -86,7 +86,16 @@
                             <label class="admin-filter-label">종료일</label>
                             <input type="date" id="historyEndDate" class="form-control">
                         </div>
-                        <div class="admin-filter-field admin-filter-field--span-6">
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">빠른 기간</label>
+                            <div class="admin-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-order-history-date-preset="today">오늘</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-order-history-date-preset="7days">최근 7일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-order-history-date-preset="30days">최근 30일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-order-history-date-preset="clear">기간 초기화</button>
+                            </div>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
                             <label class="admin-filter-label">작업 유형 바로가기</label>
                             <div class="admin-chip-row">
                                 <button type="button" class="btn btn-sm btn-outline-dark history-quick-filter active" data-action-type="">전체</button>
@@ -104,6 +113,7 @@
                     <div class="task-filter-actions__hint">주문 이력은 검색 키워드와 기간을 함께 유지해서 메모, 배송, 취소 흐름을 연속으로 추적하기 쉽게 맞춥니다.</div>
                     <div class="admin-filter-actions">
                         <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btnResetOrderHistory">초기화</button>
                     </div>
                 </div>
             </div>

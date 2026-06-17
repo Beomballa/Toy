@@ -22,6 +22,7 @@ const OrderHistoryPage = {
             this.state.page = 0;
             this.loadHistory();
         });
+        document.getElementById('btnResetOrderHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('historyPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
             this.state.size = Number(document.getElementById('historyPageSize')?.value || 20);
@@ -53,6 +54,9 @@ const OrderHistoryPage = {
                 this.loadHistory();
             });
         });
+        document.querySelectorAll('[data-order-history-date-preset]').forEach((button) => {
+            button.addEventListener('click', () => this.applyDatePreset(button.dataset.orderHistoryDatePreset));
+        });
         document.getElementById('btnBackToOrderHistorySource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
         });
@@ -67,6 +71,11 @@ const OrderHistoryPage = {
             } finally {
                 this.isExporting = false;
             }
+        });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.syncReturnLinks();
+            this.loadHistory();
         });
     },
 
@@ -85,6 +94,7 @@ const OrderHistoryPage = {
         this.state.historyNo = params.get('historyNo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo);
     },
 
     buildParams() {
@@ -191,11 +201,14 @@ const OrderHistoryPage = {
         for (let i = 0; i < data.totalPages; i += 1) {
             html += `
                 <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <a class="page-link" href="javascript:void(0);" onclick="OrderHistoryPage.goPage(${i})">${i + 1}</a>
+                    <button type="button" class="page-link" data-role="go-order-history-page" data-page="${i}">${i + 1}</button>
                 </li>
             `;
         }
         pagination.innerHTML = html;
+        pagination.querySelectorAll('[data-role="go-order-history-page"]').forEach((button) => {
+            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+        });
     },
 
     renderError(message) {
@@ -226,6 +239,22 @@ const OrderHistoryPage = {
         this.loadHistory();
     },
 
+    resetFilters() {
+        document.getElementById('historyOrderNo').value = '';
+        document.getElementById('historyActionType').value = '';
+        document.getElementById('historyStartDate').value = '';
+        document.getElementById('historyEndDate').value = '';
+        document.getElementById('historyKeyword').value = '';
+        document.getElementById('historyActorKeyword').value = '';
+        document.getElementById('historyOrderType').value = 'latest';
+        document.getElementById('historyPageSize').value = '20';
+        this.state.historyNo = '';
+        this.state.page = 0;
+        this.state.size = 20;
+        this.syncQuickFilterState();
+        this.loadHistory();
+    },
+
     syncQuickFilterState() {
         const currentActionType = document.getElementById('historyActionType')?.value || '';
         document.querySelectorAll('.history-quick-filter[data-action-type]').forEach((button) => {
@@ -248,6 +277,39 @@ const OrderHistoryPage = {
             return;
         }
         summary.textContent = data.resultMeta?.querySignature || '현재 적용된 필터를 기준으로 주문 처리 이력을 조회합니다.';
+    },
+
+    applyDatePreset(preset) {
+        const startDateInput = document.getElementById('historyStartDate');
+        const endDateInput = document.getElementById('historyEndDate');
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (preset === 'clear') {
+            startDateInput.value = '';
+            endDateInput.value = '';
+        } else {
+            const startDate = new Date(today);
+            if (preset === '7days') {
+                startDate.setDate(startDate.getDate() - 6);
+            } else if (preset === '30days') {
+                startDate.setDate(startDate.getDate() - 29);
+            }
+            startDateInput.value = formatDate(startDate);
+            endDateInput.value = formatDate(today);
+        }
+
+        this.state.page = 0;
+        this.loadHistory();
     },
 
     highlightHistoryRow(historyNo) {

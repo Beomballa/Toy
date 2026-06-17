@@ -58,6 +58,11 @@ const TaskHistoryPage = {
                 this.openDetail(Number(detailButton.dataset.logNo));
             }
         });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.syncReturnLinks();
+            this.loadHistory();
+        });
     },
 
     readStateFromUrl() {
@@ -74,6 +79,7 @@ const TaskHistoryPage = {
         this.state.returnTo = params.get('returnTo') || '/admin/settings/tasks';
         document.getElementById('taskHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo);
     },
 
     buildParams() {

@@ -50,6 +50,20 @@ const DashBoardListJS = {
             if (!anchor) return;
             this.markSectionEntry('unassignedTaskStateMeta', anchor.dataset.entrySource || 'dashboard-unassigned', anchor.dataset.entryTarget || 'unassigned-task', anchor.href);
         });
+        document.getElementById('recentOrderTableBody')?.addEventListener('click', (event) => {
+            const detailButton = event.target.closest('[data-role="dashboard-order-detail"]');
+            if (!detailButton) {
+                return;
+            }
+            this.goToOrderDetail(Number(detailButton.dataset.orderNo));
+        });
+        document.getElementById('lowStockListBody')?.addEventListener('click', (event) => {
+            const detailButton = event.target.closest('[data-role="dashboard-product-detail"]');
+            if (!detailButton) {
+                return;
+            }
+            this.goToProductDetail(Number(detailButton.dataset.productNo));
+        });
     },
 
     async getStats() {
@@ -525,7 +539,7 @@ const DashBoardListJS = {
                 <td><span class="badge ${CommonJS.getOrderStatusMeta(order.statusCode).badgeClass}">${order.statusDesc}</span></td>
                 <td class="small text-muted">${order.orderDt}</td>
                 <td class="text-end pe-4">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="DashBoardListJS.goToOrderDetail(${order.orderNo})">상세보기</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-order-detail" data-order-no="${order.orderNo}">상세보기</button>
                 </td>
             </tr>
         `).join('');
@@ -546,7 +560,7 @@ const DashBoardListJS = {
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge low-stock-badge rounded-pill">${product.stockCnt}개</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="DashBoardListJS.goToProductDetail(${product.productNo})">상세보기</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-product-detail" data-product-no="${product.productNo}">상세보기</button>
                 </div>
             </div>
         `).join('');

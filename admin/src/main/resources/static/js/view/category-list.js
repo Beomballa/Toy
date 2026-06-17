@@ -51,6 +51,7 @@ const CategoryList = {
 
     bindEvents() {
         document.getElementById('btnNewRootCategory')?.addEventListener('click', () => this.openModal(1));
+        document.getElementById('btnNewSubCategory')?.addEventListener('click', () => this.openModal(2));
         document.getElementById('btnExportCategory')?.addEventListener('click', () => this.exportList());
         document.getElementById('btnApplyCategoryBulk')?.addEventListener('click', () => this.applyBulkOperation());
         document.getElementById('btnBulkDeleteCategory')?.addEventListener('click', () => this.applyBulkDelete());

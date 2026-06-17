@@ -71,15 +71,34 @@
                             <input type="date" id="historyEndDate" class="form-control">
                         </div>
                         <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">빠른 기간</label>
+                            <div class="admin-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-product-history-date-preset="today">오늘</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-product-history-date-preset="7days">최근 7일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-product-history-date-preset="30days">최근 30일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-product-history-date-preset="clear">기간 초기화</button>
+                            </div>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
                             <label class="admin-filter-label">정렬</label>
                             <select id="historyOrderType" class="form-select">
                                 <option value="latest">최신순</option>
                                 <option value="oldest">오래된순</option>
                             </select>
                         </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">작업 유형 바로가기</label>
+                            <div class="admin-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-dark product-history-quick-filter active" data-action-type="">전체</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark product-history-quick-filter" data-action-type="CREATED">등록</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark product-history-quick-filter" data-action-type="UPDATED">수정</button>
+                                <button type="button" class="btn btn-sm btn-outline-dark product-history-quick-filter" data-action-type="DELETED">삭제</button>
+                            </div>
+                        </div>
                         <div class="admin-filter-field admin-filter-field--span-3 d-flex align-items-end">
-                            <div class="admin-filter-actions w-100">
+                            <div class="admin-filter-actions w-100 justify-content-end">
                                 <button type="button" class="btn btn-dark" id="btnSearchHistory">조회</button>
+                                <button type="button" class="btn btn-outline-secondary" id="btnResetProductHistory">초기화</button>
                             </div>
                         </div>
                     </div>
@@ -93,7 +112,7 @@
             <div class="admin-list-toolbar">
                 <div class="admin-list-toolbar__title">
                     <h6 class="card-title mb-0">변경 이력 목록</h6>
-                    <span class="admin-list-toolbar__meta" id="historyMetaText">데이터를 불러오는 중입니다...</span>
+                    <span class="admin-list-toolbar__meta" id="historyFilterMeta">적용 필터 0개</span>
                 </div>
                 <div class="admin-list-toolbar__actions">
                     <label class="small text-muted d-flex align-items-center gap-2 mb-0 flex-wrap">
@@ -104,6 +123,7 @@
                             <option value="100">100</option>
                         </select>
                     </label>
+                    <span class="admin-list-toolbar__meta" id="historyMetaText">데이터를 불러오는 중입니다...</span>
                 </div>
             </div>
         </div>
@@ -128,6 +148,7 @@
             </div>
         </div>
         <div class="card-footer bg-white py-3">
+            <div class="small text-muted text-center mb-2" id="historyPageMeta">페이지 메타 계산 중</div>
             <ul class="pagination pagination-sm justify-content-center mb-0" id="historyPagination"></ul>
         </div>
     </div>

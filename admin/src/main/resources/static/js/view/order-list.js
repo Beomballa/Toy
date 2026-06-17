@@ -73,6 +73,22 @@ const OrderList = {
             });
         });
 
+        document.getElementById('orderListTableBody')?.addEventListener('click', (event) => {
+            const detailButton = event.target.closest('[data-role="go-order-detail"]');
+            if (!detailButton) {
+                return;
+            }
+            location.href = this.buildDetailUrl(detailButton.dataset.orderNo);
+        });
+
+        document.getElementById('pagination')?.addEventListener('click', (event) => {
+            const pageButton = event.target.closest('[data-role="go-order-page"]');
+            if (!pageButton) {
+                return;
+            }
+            this.goPage(Number(pageButton.dataset.page));
+        });
+
         // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.
         document.getElementById('searchKeyword')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -190,7 +206,7 @@ const OrderList = {
                     <td><strong>${item.totalAmount}</strong></td>
                     <td><span class="badge ${statusMeta.badgeClass}">${item.statusDesc}</span></td>
                     <td class="text-end pe-4">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="location.href='${this.buildDetailUrl(item.orderNo)}'">상세보기</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="go-order-detail" data-order-no="${item.orderNo}">상세보기</button>
                     </td>
                 </tr>
             `;
@@ -206,7 +222,7 @@ const OrderList = {
         for (let i = 0; i < totalPages; i++) {
             html += `
                 <li class="page-item ${i === curr ? 'active' : ''}">
-                    <a class="page-link" href="javascript:void(0);" onclick="OrderList.goPage(${i})">${i + 1}</a>
+                    <button type="button" class="page-link" data-role="go-order-page" data-page="${i}">${i + 1}</button>
                 </li>`;
         }
         pagination.innerHTML = html;

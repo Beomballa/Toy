@@ -180,6 +180,13 @@ const ProductList = {
         this.bindStatCardKeyboard('statActiveCard', () => this.applyActiveFilter());
         this.bindStatCardKeyboard('statLowStockCard', () => this.applyLowStockFilter());
         this.bindStatCardKeyboard('statTodayCard', () => this.applyTodayFilter());
+        document.getElementById('pagination')?.addEventListener('click', (event) => {
+            const pageButton = event.target.closest('[data-role="go-product-page"]');
+            if (!pageButton) {
+                return;
+            }
+            this.goPage(Number(pageButton.dataset.page));
+        });
         window.addEventListener('popstate', () => {
             this._readStateFromUrl();
             this._syncFilterInputs();
@@ -393,7 +400,7 @@ const ProductList = {
         for (let i = 0; i < totalPages; i++) {
             html += `
             <li class="page-item ${i === curr ? 'active' : ''}">
-                <a class="page-link" href="javascript:void(0);" onclick="ProductList.goPage(${i})">${i + 1}</a>
+                <button type="button" class="page-link" data-role="go-product-page" data-page="${i}">${i + 1}</button>
             </li>`;
         }
         pagination.innerHTML = html;

@@ -137,6 +137,14 @@ const ContentList = {
         document.getElementById('contentSelectAllOnPage')?.addEventListener('change', (event) => {
             this.updateCurrentPageSelection(event.target.checked);
         });
+
+        document.getElementById('pagination')?.addEventListener('click', (event) => {
+            const pageButton = event.target.closest('[data-role="go-content-page"]');
+            if (!pageButton) {
+                return;
+            }
+            this.goPage(Number(pageButton.dataset.page));
+        });
     },
 
     updatePageMeta() {
@@ -319,7 +327,7 @@ const ContentList = {
         for (let i = 0; i < totalPages; i++) {
             html += `
                 <li class="page-item ${i === curr ? 'active' : ''}">
-                    <a class="page-link" href="javascript:void(0);" onclick="ContentList.goPage(${i})">${i + 1}</a>
+                    <button type="button" class="page-link" data-role="go-content-page" data-page="${i}">${i + 1}</button>
                 </li>`;
         }
         pagination.innerHTML = html;

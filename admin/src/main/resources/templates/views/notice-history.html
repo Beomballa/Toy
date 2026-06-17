@@ -82,7 +82,16 @@
                             <label class="admin-filter-label">종료일</label>
                             <input type="date" id="noticeHistoryEndDate" class="form-control">
                         </div>
-                        <div class="admin-filter-field admin-filter-field--span-6">
+                        <div class="admin-filter-field admin-filter-field--span-3">
+                            <label class="admin-filter-label">빠른 기간</label>
+                            <div class="admin-chip-row">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-notice-history-date-preset="today">오늘</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-notice-history-date-preset="7days">최근 7일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-notice-history-date-preset="30days">최근 30일</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" data-notice-history-date-preset="clear">기간 초기화</button>
+                            </div>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-3">
                             <label class="admin-filter-label">작업 유형 바로가기</label>
                             <div class="admin-chip-row">
                                 <button type="button" class="btn btn-sm btn-outline-dark notice-history-quick-filter active" data-action-type="NOTICE_">전체</button>
@@ -161,6 +170,9 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="noticeHistoryDetailBody">데이터를 불러오는 중입니다...</div>
+            <div class="modal-footer">
+                <a class="btn btn-outline-secondary d-none" id="btnNoticeHistoryDetailTarget" href="#">관련 공지</a>
+            </div>
         </div>
     </div>
 </div>

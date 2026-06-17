@@ -1,11 +1,13 @@
 const NoticeHistoryPage = {
     initialized: false,
     modal: null,
+    isOpeningDetail: false,
     state: {
         page: 0,
         size: 20,
         returnTo: '/admin/settings/notices',
-        source: ''
+        source: '',
+        logNo: ''
     },
 
     init() {
@@ -46,6 +48,9 @@ const NoticeHistoryPage = {
                 this.loadHistory();
             });
         });
+        document.querySelectorAll('[data-notice-history-date-preset]').forEach((button) => {
+            button.addEventListener('click', () => this.applyDatePreset(button.dataset.noticeHistoryDatePreset));
+        });
         document.getElementById('btnBackToNoticeSource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
         });
@@ -54,6 +59,11 @@ const NoticeHistoryPage = {
             if (detailButton) {
                 this.openDetail(Number(detailButton.dataset.logNo));
             }
+        });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.syncReturnLinks();
+            this.loadHistory();
         });
     },
 
@@ -68,9 +78,11 @@ const NoticeHistoryPage = {
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/settings/notices';
         this.state.source = params.get('source') || '';
+        this.state.logNo = params.get('logNo') || '';
         document.getElementById('noticeHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeHistorySourceContextNotice', source: this.state.source });
+        CommonJS.bindMainLogoNavigation(this.state.returnTo);
     },
 
     buildParams() {
@@ -86,6 +98,7 @@ const NoticeHistoryPage = {
         if (adminNo) params.set('adminNo', adminNo);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
+        if (this.state.logNo) params.set('logNo', this.state.logNo);
         if (this.state.returnTo && this.state.returnTo !== '/admin/settings/notices') params.set('returnTo', this.state.returnTo);
         if (this.state.source) params.set('source', this.state.source);
         params.set('page', String(this.state.page));
@@ -108,6 +121,7 @@ const NoticeHistoryPage = {
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
+            await this.openDeepLinkedLogIfNeeded(data.items || []);
         } catch (error) {
             this.renderError(error.message);
         }
@@ -122,7 +136,7 @@ const NoticeHistoryPage = {
         }
 
         tbody.innerHTML = items.map((item) => `
-            <tr>
+            <tr data-notice-log-row="${item.logNo}">
                 <td class="ps-4 text-muted small">${item.logNo}</td>
                 <td>${item.noticePath ? `<a class="text-decoration-none fw-bold" href="${item.noticePath}">${item.noticeLabel}</a>` : (item.noticeLabel || '-')}</td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
@@ -175,9 +189,14 @@ const NoticeHistoryPage = {
     },
 
     async openDetail(logNo) {
+        if (this.isOpeningDetail) {
+            return;
+        }
         document.getElementById('noticeHistoryDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        this.setDetailTargetLink('');
         this.modal.show();
         try {
+            this.isOpeningDetail = true;
             const response = await fetch(`/api/admin/logs/get?no=${logNo}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
@@ -191,8 +210,15 @@ const NoticeHistoryPage = {
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
+            this.setDetailTargetLink(data.targetPath || '');
+            this.state.logNo = String(logNo);
+            this.highlightLogRow(logNo);
+            history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
             document.getElementById('noticeHistoryDetailBody').innerHTML = `<div class="text-danger">${error.message}</div>`;
+            this.setDetailTargetLink('');
+        } finally {
+            this.isOpeningDetail = false;
         }
     },
 
@@ -262,8 +288,79 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryPageSize').value = '20';
         this.state.page = 0;
         this.state.size = 20;
+        this.state.logNo = '';
         this.syncQuickFilterState();
         this.loadHistory();
+    },
+
+    applyDatePreset(preset) {
+        const startDateInput = document.getElementById('noticeHistoryStartDate');
+        const endDateInput = document.getElementById('noticeHistoryEndDate');
+        if (!startDateInput || !endDateInput) {
+            return;
+        }
+
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        if (preset === 'clear') {
+            startDateInput.value = '';
+            endDateInput.value = '';
+        } else {
+            const startDate = new Date(today);
+            if (preset === '7days') {
+                startDate.setDate(startDate.getDate() - 6);
+            } else if (preset === '30days') {
+                startDate.setDate(startDate.getDate() - 29);
+            }
+            startDateInput.value = formatDate(startDate);
+            endDateInput.value = formatDate(today);
+        }
+
+        this.state.page = 0;
+        this.loadHistory();
+    },
+
+    async openDeepLinkedLogIfNeeded(items) {
+        if (!this.state.logNo) {
+            return;
+        }
+        const logNo = Number(this.state.logNo);
+        if (!Number.isFinite(logNo) || logNo <= 0) {
+            this.state.logNo = '';
+            return;
+        }
+        const hasLog = items.some((item) => item.logNo === logNo);
+        if (!hasLog || this.isOpeningDetail) {
+            return;
+        }
+        await this.openDetail(logNo);
+        this.state.logNo = '';
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    highlightLogRow(logNo) {
+        document.querySelectorAll('[data-notice-log-row]').forEach((row) => {
+            const selected = Number(row.dataset.noticeLogRow) === Number(logNo);
+            row.classList.toggle('table-active', selected);
+            if (selected) {
+                row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        });
+    },
+
+    setDetailTargetLink(targetPath) {
+        const targetButton = document.getElementById('btnNoticeHistoryDetailTarget');
+        if (!targetButton) {
+            return;
+        }
+        targetButton.href = targetPath || '#';
+        targetButton.classList.toggle('d-none', !targetPath);
     }
 };
 

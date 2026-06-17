@@ -424,7 +424,15 @@
             this.modal = new bootstrap.Modal(document.getElementById('adminModal'));
             this.historyDetailModal = new bootstrap.Modal(document.getElementById('systemSettingHistoryDetailModal'));
             this.bindEvents();
+            CommonJS.bindMainLogoNavigation('/admin/settings');
             window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
+            window.addEventListener('popstate', () => {
+                this.readAdminStateFromUrl();
+                this.readSystemHistoryStateFromUrl();
+                this.getList();
+                this.getSystemSettingHistory();
+            });
+            this.readAdminStateFromUrl();
             this.readSystemHistoryStateFromUrl();
             this.getList();
             this.getSystemSettings();
@@ -521,6 +529,7 @@
         },
         async getList() {
             try {
+                this.syncPageState();
                 const res = await fetch(`/api/admin/users/list?${this.buildAdminListParams().toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '관리자 목록을 불러오지 못했습니다.'));
@@ -549,6 +558,73 @@
             params.set('page', String(this.adminState.page));
             params.set('size', String(this.adminState.size));
             return params;
+        },
+        readAdminStateFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            document.getElementById('adminKeyword').value = params.get('adminKeyword') || '';
+            document.getElementById('adminRoleFilter').value = params.get('adminRole') || '';
+            document.getElementById('adminStatusFilter').value = params.get('adminStatus') || '';
+            document.getElementById('adminInactiveDaysFilter').value = params.get('adminInactiveDays') || '';
+            document.getElementById('adminNeverLoggedInFilter').value = params.get('adminNeverLoggedInOnly') || '';
+            this.adminState.page = Number(params.get('adminPage') || 0);
+            this.adminState.size = Number(params.get('adminSize') || 10);
+            document.getElementById('adminPageSize').value = String(this.adminState.size);
+        },
+        buildPageStateParams() {
+            const params = new URLSearchParams();
+            const adminKeyword = document.getElementById('adminKeyword').value.trim();
+            const adminRole = document.getElementById('adminRoleFilter').value;
+            const adminStatus = document.getElementById('adminStatusFilter').value;
+            const adminInactiveDays = document.getElementById('adminInactiveDaysFilter').value;
+            const adminNeverLoggedInOnly = document.getElementById('adminNeverLoggedInFilter').value;
+            const settingKey = document.getElementById('systemSettingHistorySettingKey').value;
+            const adminNo = document.getElementById('systemSettingHistoryAdminNo').value.trim();
+            const historyAdminKeyword = document.getElementById('systemSettingHistoryAdminKeyword').value.trim();
+            const changeStatus = document.getElementById('systemSettingHistoryChangeStatus').value;
+            const startDate = document.getElementById('systemSettingHistoryStartDate').value;
+            const endDate = document.getElementById('systemSettingHistoryEndDate').value;
+
+            if (adminKeyword) params.set('adminKeyword', adminKeyword);
+            if (adminRole) params.set('adminRole', adminRole);
+            if (adminStatus) params.set('adminStatus', adminStatus);
+            if (adminInactiveDays) params.set('adminInactiveDays', adminInactiveDays);
+            if (adminNeverLoggedInOnly) params.set('adminNeverLoggedInOnly', adminNeverLoggedInOnly);
+            if (this.adminState.page) params.set('adminPage', String(this.adminState.page));
+            if (this.adminState.size !== 10) params.set('adminSize', String(this.adminState.size));
+
+            if (settingKey) params.set('settingKey', settingKey);
+            if (adminNo) params.set('adminNo', adminNo);
+            if (historyAdminKeyword) params.set('historyAdminKeyword', historyAdminKeyword);
+            if (changeStatus) params.set('changeStatus', changeStatus);
+            if (startDate) params.set('startDate', startDate);
+            if (endDate) params.set('endDate', endDate);
+            if (this.historyState.historyNo) params.set('historyNo', this.historyState.historyNo);
+            if (this.historyState.page) params.set('historyPage', String(this.historyState.page));
+            if (this.historyState.size !== 8) params.set('historySize', String(this.historyState.size));
+
+            return params;
+        },
+        syncPageState(replace = false) {
+            const nextParams = this.buildPageStateParams();
+            const nextQuery = nextParams.toString();
+            const currentQuery = window.location.search.startsWith('?')
+                ? window.location.search.slice(1)
+                : window.location.search;
+
+            if (nextQuery === currentQuery) {
+                return;
+            }
+
+            const nextUrl = nextQuery
+                ? `${window.location.pathname}?${nextQuery}`
+                : window.location.pathname;
+
+            if (replace) {
+                window.history.replaceState({ path: nextUrl }, '', nextUrl);
+                return;
+            }
+
+            window.history.pushState({ path: nextUrl }, '', nextUrl);
         },
         exportAdminList() {
             const params = this.buildAdminListParams();
@@ -790,7 +866,7 @@
         async getSystemSettingHistory() {
             try {
                 const params = this.buildSystemHistoryParams();
-                history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+                this.syncPageState();
                 const res = await fetch(`/api/admin/settings/system/history?${params.toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 이력을 불러오지 못했습니다.'));
@@ -808,12 +884,12 @@
             const params = new URLSearchParams(window.location.search);
             document.getElementById('systemSettingHistorySettingKey').value = params.get('settingKey') || '';
             document.getElementById('systemSettingHistoryAdminNo').value = params.get('adminNo') || '';
-            document.getElementById('systemSettingHistoryAdminKeyword').value = params.get('adminKeyword') || '';
+            document.getElementById('systemSettingHistoryAdminKeyword').value = params.get('historyAdminKeyword') || '';
             document.getElementById('systemSettingHistoryChangeStatus').value = params.get('changeStatus') || '';
             document.getElementById('systemSettingHistoryStartDate').value = params.get('startDate') || '';
             document.getElementById('systemSettingHistoryEndDate').value = params.get('endDate') || '';
-            this.historyState.page = Number(params.get('page') || 0);
-            this.historyState.size = Number(params.get('size') || 8);
+            this.historyState.page = Number(params.get('historyPage') || 0);
+            this.historyState.size = Number(params.get('historySize') || 8);
             this.historyState.historyNo = params.get('historyNo') || '';
             document.getElementById('systemSettingHistoryPageSize').value = String(this.historyState.size);
         },
@@ -954,7 +1030,7 @@
                 `;
                 this.historyState.historyNo = String(historyNo);
                 this.highlightSystemHistoryRow(historyNo);
-                history.replaceState(null, '', `${window.location.pathname}?${this.buildSystemHistoryParams().toString()}`);
+                this.syncPageState(true);
             } catch (err) {
                 document.getElementById('systemSettingHistoryDetailBody').innerHTML =
                     `<div class="text-danger">${err.message}</div>`;
@@ -1039,7 +1115,7 @@
             }
             await this.openSystemSettingHistoryDetail(historyNo);
             this.historyState.historyNo = '';
-            history.replaceState(null, '', `${window.location.pathname}?${this.buildSystemHistoryParams().toString()}`);
+            this.syncPageState(true);
         },
         highlightSystemHistoryRow(historyNo) {
             document.querySelectorAll('[data-system-history-row]').forEach((row) => {

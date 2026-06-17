@@ -552,6 +552,11 @@ class AdminProductServiceTest {
         assertEquals(18L, response.items().getFirst().totalStock());
         assertEquals(true, response.items().getFirst().contentReady());
         assertEquals(true, response.items().getFirst().featured());
+        assertEquals("CONFIGURED", response.appliedQuery().configured());
+        assertEquals("READY", response.appliedQuery().contentStatus());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals(8, response.resultMeta().filterCount());
+        assertTrue(response.resultMeta().querySignature().contains("문구=완성"));
     }
 
     @Test

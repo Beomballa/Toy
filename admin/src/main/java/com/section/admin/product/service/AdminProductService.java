@@ -333,7 +333,8 @@ public class AdminProductService {
         List<ProductFrontDisplayListResponse> items = productRepository.getAdminFrontDisplayProducts(query).stream()
                 .map(ProductFrontDisplayListResponse::from)
                 .toList();
-        return new ProductFrontDisplayDashboardResponse(
+        return ProductFrontDisplayDashboardResponse.of(
+                query,
                 ProductFrontDisplaySummaryResponse.from(items, query.lowStockThreshold()),
                 items
         );

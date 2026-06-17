@@ -142,9 +142,10 @@ const ProductFrontDisplayList = {
             lowStockCount: 0,
             lowStockThreshold: this.state.lowStockThreshold
         };
+        const resultMeta = payload?.resultMeta || null;
 
-        resultCount.textContent = `전체 ${summary.totalCount}건`;
-        filterSummary.textContent = this.buildSummary();
+        resultCount.textContent = resultMeta?.resultLabel || `전체 ${summary.totalCount}건`;
+        filterSummary.textContent = resultMeta?.querySignature || this.buildSummary();
         this.renderSummary(summary);
 
         if (!items.length) {

@@ -24,6 +24,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.base.entity.type.ProductOrderType;
 import com.section.common.base.entity.type.ProductStatus;
+import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
 import com.section.common.commerce.dto.ProductListQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -288,7 +289,10 @@ class AdminProductRestControllerTest {
     @DisplayName("상품 프론트 노출 목록 API는 featured 필터 결과를 반환한다")
     void getProductFrontDisplayListReturnsDisplayRows() throws Exception {
         when(adminProductService.getFrontDisplayProducts(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
-                .thenReturn(new ProductFrontDisplayDashboardResponse(
+                .thenReturn(ProductFrontDisplayDashboardResponse.of(
+                        new AdminFrontDisplayProductQuery(
+                                "Grey", ProductStatus.ACTIVE, 7L, 11L, true, "READY", true, false, 20L, "PRICE_LOW"
+                        ),
                         new ProductFrontDisplaySummaryResponse(1, 1, 0, 1, 0, 1, 1, 20),
                         List.of(new ProductFrontDisplayListResponse(
                                 4L,
@@ -314,6 +318,9 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.summary.totalCount").value(1))
                 .andExpect(jsonPath("$.summary.configuredCount").value(1))
                 .andExpect(jsonPath("$.summary.readyContentCount").value(1))
+                .andExpect(jsonPath("$.appliedQuery.configured").value("CONFIGURED"))
+                .andExpect(jsonPath("$.appliedQuery.contentStatus").value("READY"))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1건"))
                 .andExpect(jsonPath("$.items[0].productNo").value(4L))
                 .andExpect(jsonPath("$.items[0].displayConfigured").value(true))
                 .andExpect(jsonPath("$.items[0].contentReady").value(true))

@@ -15,6 +15,7 @@ const AdminLogPage = {
         this.initialized = true;
         this.modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
         this.bindEvents();
+        CommonJS.bindMainLogoNavigation('/admin/settings/logs');
         this.readStateFromUrl();
         this.getList();
     },

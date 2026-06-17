@@ -26,9 +26,14 @@ const NoticeList = {
             this.modal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
+        CommonJS.bindMainLogoNavigation('/admin/settings/notices');
         this.readStateFromUrl();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getList();
+        });
         this.getList();
     },
 

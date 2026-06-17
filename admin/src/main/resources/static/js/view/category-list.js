@@ -109,6 +109,10 @@ const CategoryList = {
                 this.deleteCategory(Number(deleteSubButton.dataset.categoryNo));
             }
         });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getDepth1List();
+        });
     },
 
     readStateFromUrl() {
@@ -117,9 +121,11 @@ const CategoryList = {
         this.state.size = Number(params.get('size') || 10);
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
+        this.state.selectedParentNo = Number(params.get('parentNo') || 0) || null;
         document.getElementById('categoryKeyword').value = this.state.keyword;
         document.getElementById('categoryIsActiveFilter').value = this.state.isActive;
         document.getElementById('categoryPageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation('/admin/categories');
     },
 
     buildParams() {
@@ -129,6 +135,7 @@ const CategoryList = {
         params.set('depth', '1');
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
+        if (this.state.selectedParentNo) params.set('parentNo', String(this.state.selectedParentNo));
         return params;
     },
 
@@ -147,6 +154,7 @@ const CategoryList = {
             this.renderDepth1();
             this.renderDepth1Meta(data);
             this.renderPagination(data);
+            this.restoreSelectedParent();
         } catch (err) {
             console.error('1차 카테고리 로드 실패:', err);
             this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
@@ -160,6 +168,7 @@ const CategoryList = {
     async getDepth2List(parentNo, parentName) {
         this.state.selectedParentNo = parentNo;
         this.state.selectedParentName = parentName;
+        history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         
         document.getElementById('parentCategoryName').innerText = `> ${parentName}`;
         const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
@@ -411,6 +420,10 @@ const CategoryList = {
         document.getElementById('categoryIsActiveFilter').value = '';
         document.getElementById('categoryPageSize').value = '10';
         this.state.page = 0;
+        this.state.selectedParentNo = null;
+        this.state.selectedParentName = '';
+        this.state.depth2List = [];
+        this.renderDepth2Empty();
         this.getDepth1List();
     },
 
@@ -613,6 +626,42 @@ const CategoryList = {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value) || '';
         this.state.isActive = document.getElementById('categoryIsActiveFilter').value || '';
         this.state.size = Number(document.getElementById('categoryPageSize').value || 10);
+    },
+
+    restoreSelectedParent() {
+        if (!this.state.selectedParentNo) {
+            this.renderDepth2Empty();
+            return;
+        }
+        const matchedParent = this.state.depth1List.find((item) => item.categoryNo === this.state.selectedParentNo);
+        if (!matchedParent) {
+            this.state.selectedParentNo = null;
+            this.state.selectedParentName = '';
+            this.renderDepth2Empty();
+            history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+            return;
+        }
+        this.getDepth2List(matchedParent.categoryNo, matchedParent.name);
+    },
+
+    renderDepth2Empty() {
+        const wrapper = document.getElementById('depth2TableWrapper');
+        const emptyMsg = document.getElementById('depth2EmptyMessage');
+        const tbody = document.getElementById('depth2ListBody');
+        const parentName = document.getElementById('parentCategoryName');
+        if (wrapper) {
+            wrapper.classList.add('d-none');
+        }
+        if (emptyMsg) {
+            emptyMsg.classList.remove('d-none');
+        }
+        if (tbody) {
+            tbody.innerHTML = '';
+        }
+        if (parentName) {
+            parentName.innerText = '> 대분류를 선택하세요';
+        }
+        this.setSubCategoryMeta('선택된 대분류가 없습니다.');
     }
 };
 

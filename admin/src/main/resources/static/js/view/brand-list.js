@@ -91,6 +91,10 @@ const BrandList = {
                 this.getList();
             }
         });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getList();
+        });
     },
 
     readStateFromUrl() {
@@ -102,6 +106,7 @@ const BrandList = {
         document.getElementById('brandKeyword').value = this.state.keyword;
         document.getElementById('brandIsActiveFilter').value = this.state.isActive;
         document.getElementById('brandPageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation('/admin/brands');
     },
 
     buildParams() {

@@ -105,6 +105,10 @@ const BannerList = {
                 this.getList();
             }
         });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getList();
+        });
     },
 
     readStateFromUrl() {
@@ -120,6 +124,7 @@ const BannerList = {
         document.getElementById('bannerIsActiveFilter').value = this.state.isActive;
         document.getElementById('bannerExposureStatusFilter').value = this.state.exposureStatus;
         document.getElementById('bannerPageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation('/admin/banners');
     },
 
     buildParams() {

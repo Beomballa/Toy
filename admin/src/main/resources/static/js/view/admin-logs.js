@@ -3,6 +3,7 @@ const AdminLogPage = {
     modal: null,
     isLoading: false,
     isOpeningDetail: false,
+    isExporting: false,
     state: {
         page: 0,
         size: 20,
@@ -55,6 +56,12 @@ const AdminLogPage = {
                 }
             });
         });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.syncQuickFilterState();
+            this.syncDatePresetState();
+            this.getList();
+        });
     },
 
     readStateFromUrl() {
@@ -69,6 +76,8 @@ const AdminLogPage = {
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         document.getElementById('logPageSize').value = String(this.state.size);
+        this.syncQuickFilterState();
+        this.syncDatePresetState();
     },
 
     buildParams() {
@@ -202,11 +211,14 @@ const AdminLogPage = {
         for (let i = 0; i < data.totalPages; i += 1) {
             html += `
                 <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <a class="page-link" href="javascript:void(0);" onclick="AdminLogPage.goPage(${i})">${i + 1}</a>
+                    <button type="button" class="page-link" data-role="go-log-page" data-page="${i}">${i + 1}</button>
                 </li>
             `;
         }
         pagination.innerHTML = html;
+        pagination.querySelectorAll('[data-role="go-log-page"]').forEach((button) => {
+            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+        });
     },
 
     async openDetail(logNo) {
@@ -268,12 +280,15 @@ const AdminLogPage = {
         this.state.logNo = '';
         this.state.page = 0;
         this.state.size = 20;
+        this.syncQuickFilterState();
+        this.syncDatePresetState();
         this.getList();
     },
 
     applyQuickFilter(actionType) {
         document.getElementById('logActionType').value = actionType || '';
         this.state.page = 0;
+        this.syncQuickFilterState();
         this.getList();
     },
 
@@ -306,12 +321,30 @@ const AdminLogPage = {
         }
 
         this.state.page = 0;
+        this.syncDatePresetState();
         this.getList();
     },
 
     exportList() {
+        if (this.isExporting) {
+            return;
+        }
         const params = this.buildExportParams();
-        window.location.href = `/api/admin/logs/export?${params.toString()}`;
+        const exportButton = document.getElementById('btnExportLog');
+        if (exportButton) {
+            exportButton.disabled = true;
+        }
+        try {
+            this.isExporting = true;
+            window.location.href = `/api/admin/logs/export?${params.toString()}`;
+        } finally {
+            this.isExporting = false;
+            if (exportButton) {
+                window.setTimeout(() => {
+                    exportButton.disabled = false;
+                }, 300);
+            }
+        }
     },
 
     async openDeepLinkedLogIfNeeded(items) {
@@ -344,6 +377,44 @@ const AdminLogPage = {
 
     formatAdminLabel(adminName, adminNo) {
         return adminNo ? `${adminName} (#${adminNo})` : adminName;
+    },
+
+    syncQuickFilterState() {
+        const currentActionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value) || '';
+        document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
+            const active = (button.dataset.logQuickFilter || '') === currentActionType;
+            button.classList.toggle('btn-secondary', active);
+            button.classList.toggle('btn-outline-secondary', !active);
+        });
+    },
+
+    syncDatePresetState() {
+        const startDate = document.getElementById('logStartDate')?.value || '';
+        const endDate = document.getElementById('logEndDate')?.value || '';
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const todayLabel = formatDate(today);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        document.querySelectorAll('[data-log-date-preset]').forEach((button) => {
+            const preset = button.dataset.logDatePreset;
+            const active = (
+                (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
+                (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
+                (preset === '30days' && startDate === formatDate(thirtyDaysAgo) && endDate === todayLabel) ||
+                (preset === 'clear' && !startDate && !endDate)
+            );
+            button.classList.toggle('btn-dark', active);
+            button.classList.toggle('btn-outline-dark', !active);
+        });
     }
 };
 

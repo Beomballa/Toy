@@ -1,6 +1,7 @@
 const TaskWorkloadList = {
     initialized: false,
     isLoading: false,
+    isExporting: false,
     state: {
         page: 0,
         size: 10,
@@ -17,6 +18,7 @@ const TaskWorkloadList = {
         this.initialized = true;
         this.bindEvents();
         this.readStateFromUrl();
+        CommonJS.bindMainLogoNavigation('/admin/settings/tasks/workloads');
         this.getList();
     },
 
@@ -38,6 +40,10 @@ const TaskWorkloadList = {
                 this.state.page = 0;
                 this.getList();
             }
+        });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getList();
         });
     },
 
@@ -79,11 +85,28 @@ const TaskWorkloadList = {
     },
 
     exportCsv() {
+        if (this.isExporting) {
+            return;
+        }
         this.updateStateFromInputs();
         const params = this.buildParams();
         params.delete('page');
         params.delete('size');
-        window.location.href = `/api/admin/settings/tasks/workloads/export?${params.toString()}`;
+        const button = document.getElementById('btnExportTaskWorkloadCsv');
+        if (button) {
+            button.disabled = true;
+        }
+        try {
+            this.isExporting = true;
+            window.location.href = `/api/admin/settings/tasks/workloads/export?${params.toString()}`;
+        } finally {
+            this.isExporting = false;
+            if (button) {
+                window.setTimeout(() => {
+                    button.disabled = false;
+                }, 300);
+            }
+        }
     },
 
     async getList() {

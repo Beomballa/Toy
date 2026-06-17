@@ -16,6 +16,7 @@ const MemberListPage = {
         this.modal = new bootstrap.Modal(document.getElementById('memberDetailModal'));
         this.bindEvents();
         this.readStateFromUrl();
+        CommonJS.bindMainLogoNavigation('/admin/members');
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -69,6 +70,10 @@ const MemberListPage = {
             this.selectedMember = null;
             this.detailActionInFlight = false;
             this.setDetailActionState(false);
+        });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.getList();
         });
     },
 

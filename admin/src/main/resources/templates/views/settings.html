@@ -502,6 +502,17 @@
                 });
             });
             document.getElementById('adminListBody').addEventListener('click', (event) => {
+                const editButton = event.target.closest('[data-role="edit-admin"]');
+                if (editButton) {
+                    this.openModal({
+                        adminNo: Number(editButton.dataset.adminNo),
+                        loginId: editButton.dataset.loginId || '',
+                        name: editButton.dataset.name || '',
+                        role: editButton.dataset.adminRole || '',
+                        status: editButton.dataset.status || ''
+                    });
+                    return;
+                }
                 const deleteButton = event.target.closest('[data-role="delete-admin"]');
                 if (deleteButton) {
                     this.deleteAdmin(Number(deleteButton.dataset.adminNo), deleteButton.dataset.adminName);
@@ -566,7 +577,11 @@
                     <td class="text-end pe-4">
                         <button class="btn btn-sm btn-outline-primary"
                                 data-role="edit-admin"
-                                onclick='AdminUser.openModal(${JSON.stringify(item)})'>수정</button>
+                                data-admin-no="${item.adminNo}"
+                                data-login-id="${item.loginId}"
+                                data-name="${item.name}"
+                                data-admin-role="${item.role}"
+                                data-status="${item.status}">수정</button>
                         <button class="btn btn-sm btn-outline-danger ms-1"
                                 data-role="delete-admin"
                                 data-admin-no="${item.adminNo}"

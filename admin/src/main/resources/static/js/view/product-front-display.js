@@ -17,6 +17,8 @@ const ProductFrontDisplayList = {
         const thresholdInput = document.getElementById('displayLowStockThreshold');
         this.initialLowStockThreshold = Number(thresholdInput?.value || 20);
         this.state.lowStockThreshold = this.initialLowStockThreshold;
+        this.readStateFromUrl();
+        this.syncFilterInputs();
         this.bindEvents();
         this.load();
         CommonJS.bindMainLogoNavigation('/admin/products/front-display');
@@ -31,6 +33,11 @@ const ProductFrontDisplayList = {
                 event.preventDefault();
                 this.search();
             }
+        });
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.syncFilterInputs();
+            this.load();
         });
     },
 
@@ -65,6 +72,67 @@ const ProductFrontDisplayList = {
         return params;
     },
 
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const lowStockThreshold = Number(params.get('lowStockThreshold') || this.initialLowStockThreshold);
+
+        this.state = {
+            keyword: CommonJS.normalizeOptionalText(params.get('keyword')) || '',
+            status: params.get('status') || '',
+            brandNo: params.get('brandNo') || '',
+            categoryNo: params.get('categoryNo') || '',
+            configured: params.get('configured') || '',
+            contentStatus: params.get('contentStatus') || '',
+            featuredOnly: params.get('featuredOnly') === 'true',
+            lowStockOnly: params.get('lowStockOnly') === 'true',
+            lowStockThreshold: Number.isFinite(lowStockThreshold) && lowStockThreshold > 0
+                ? lowStockThreshold
+                : this.initialLowStockThreshold,
+            sort: params.get('sort') || 'FEATURED'
+        };
+    },
+
+    syncFilterInputs() {
+        const setValue = (id, value) => {
+            const target = document.getElementById(id);
+            if (target) {
+                target.value = value;
+            }
+        };
+
+        setValue('displayKeyword', this.state.keyword);
+        setValue('displayStatus', this.state.status);
+        setValue('displayBrand', this.state.brandNo);
+        setValue('displayCategory', this.state.categoryNo);
+        setValue('displayConfigured', this.state.configured);
+        setValue('displayContentStatus', this.state.contentStatus);
+        setValue('displayLowStockThreshold', String(this.state.lowStockThreshold));
+        setValue('displaySort', this.state.sort);
+
+        const featuredOnly = document.getElementById('featuredOnly');
+        if (featuredOnly) {
+            featuredOnly.checked = this.state.featuredOnly;
+        }
+
+        const lowStockOnly = document.getElementById('lowStockOnly');
+        if (lowStockOnly) {
+            lowStockOnly.checked = this.state.lowStockOnly;
+        }
+    },
+
+    syncUrlState() {
+        const params = this.buildParams();
+        const queryString = params.toString();
+        const nextUrl = queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+        window.history.pushState({}, '', nextUrl);
+    },
+
+    getReturnTo() {
+        const params = this.buildParams();
+        const queryString = params.toString();
+        return queryString ? `${window.location.pathname}?${queryString}` : window.location.pathname;
+    },
+
     async load() {
         const params = this.buildParams();
         try {
@@ -91,6 +159,7 @@ const ProductFrontDisplayList = {
         this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
         this.state.lowStockThreshold = Number(document.getElementById('displayLowStockThreshold')?.value || 20);
         this.state.sort = document.getElementById('displaySort')?.value || 'FEATURED';
+        this.syncUrlState();
         this.load();
     },
 
@@ -112,16 +181,8 @@ const ProductFrontDisplayList = {
             lowStockThreshold: this.initialLowStockThreshold,
             sort: 'FEATURED'
         };
-        document.getElementById('displayKeyword').value = '';
-        document.getElementById('displayStatus').value = '';
-        document.getElementById('displayBrand').value = '';
-        document.getElementById('displayCategory').value = '';
-        document.getElementById('displayConfigured').value = '';
-        document.getElementById('displayContentStatus').value = '';
-        document.getElementById('featuredOnly').checked = false;
-        document.getElementById('lowStockOnly').checked = false;
-        document.getElementById('displayLowStockThreshold').value = String(this.initialLowStockThreshold);
-        document.getElementById('displaySort').value = 'FEATURED';
+        this.syncFilterInputs();
+        this.syncUrlState();
         this.load();
     },
 
@@ -153,6 +214,7 @@ const ProductFrontDisplayList = {
             return;
         }
 
+        const returnTo = encodeURIComponent(this.getReturnTo());
         tbody.innerHTML = items.map((item) => `
             <tr>
                 <td class="ps-4">
@@ -172,8 +234,8 @@ const ProductFrontDisplayList = {
                 <td>${item.featured ? `Y / ${item.featuredRank}` : 'N'}</td>
                 <td class="text-end pe-4">
                     <div class="btn-group btn-group-sm">
-                        <a class="btn btn-outline-secondary" href="/admin/products/get?no=${item.productNo}&returnTo=${encodeURIComponent('/admin/products/front-display')}">상세</a>
-                        <a class="btn btn-outline-primary" href="/admin/products/update?no=${item.productNo}&returnTo=${encodeURIComponent('/admin/products/front-display')}">수정</a>
+                        <a class="btn btn-outline-secondary" href="/admin/products/get?no=${item.productNo}&returnTo=${returnTo}">상세</a>
+                        <a class="btn btn-outline-primary" href="/admin/products/update?no=${item.productNo}&returnTo=${returnTo}">수정</a>
                     </div>
                 </td>
             </tr>

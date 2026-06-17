@@ -1,38 +1,54 @@
 const DashBoardListJS = {
     initialized: false,
+    state: {
+        section: ''
+    },
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        CommonJS.bindMainLogoNavigation('/admin/dashboard');
         this.bindSummaryActions();
         this.bindOperationEntryActions();
+        window.addEventListener('popstate', () => {
+            this.readStateFromUrl();
+            this.applySectionFocus();
+        });
+        this.readStateFromUrl();
+        this.applySectionFocus();
         this.getStats();
     },
 
     bindSummaryActions() {
         document.getElementById('summaryTodayOrders')?.addEventListener('click', () => {
             const today = this.formatDate(new Date());
-            this.goToOrderList({ startDate: today, endDate: today });
+            this.goToOrderList({ startDate: today, endDate: today }, 'summary');
         });
 
         document.getElementById('summaryTodaySales')?.addEventListener('click', () => {
             const today = this.formatDate(new Date());
-            this.goToOrderList({ startDate: today, endDate: today });
+            this.goToOrderList({ startDate: today, endDate: today }, 'summary');
         });
 
         document.getElementById('summaryPreparingOrders')?.addEventListener('click', () => {
-            this.goToOrderList({ status: 'PREPARING' });
+            this.goToOrderList({ status: 'PREPARING' }, 'summary');
         });
 
         document.getElementById('summaryShippingOrders')?.addEventListener('click', () => {
-            this.goToOrderList({ status: 'SHIPPED' });
+            this.goToOrderList({ status: 'SHIPPED' }, 'summary');
         });
 
         document.getElementById('summaryCancelledOrders')?.addEventListener('click', () => {
-            this.goToOrderList({ status: 'CANCELLED' });
+            this.goToOrderList({ status: 'CANCELLED' }, 'summary');
         });
     },
 
     bindOperationEntryActions() {
+        document.querySelectorAll('[data-dashboard-section] a[href]').forEach((anchor) => {
+            anchor.addEventListener('click', () => {
+                const section = anchor.closest('[data-dashboard-section]')?.dataset.dashboardSection || '';
+                this.markDashboardSection(section, true);
+            });
+        });
         document.getElementById('operationTaskSection')?.addEventListener('click', (event) => {
             const anchor = event.target.closest('a[href]');
             if (!anchor) return;
@@ -55,6 +71,7 @@ const DashBoardListJS = {
             if (!detailButton) {
                 return;
             }
+            this.markDashboardSection('recent-order', true);
             this.goToOrderDetail(Number(detailButton.dataset.orderNo));
         });
         document.getElementById('lowStockListBody')?.addEventListener('click', (event) => {
@@ -62,6 +79,7 @@ const DashBoardListJS = {
             if (!detailButton) {
                 return;
             }
+            this.markDashboardSection('low-stock', true);
             this.goToProductDetail(Number(detailButton.dataset.productNo));
         });
     },
@@ -366,6 +384,49 @@ const DashBoardListJS = {
         metaEl.dataset.lastEntryPath = path || '';
     },
 
+    readStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        this.state.section = params.get('section') || '';
+    },
+
+    syncState(replace = false) {
+        const params = new URLSearchParams(window.location.search);
+        if (this.state.section) {
+            params.set('section', this.state.section);
+        } else {
+            params.delete('section');
+        }
+        const nextQuery = params.toString();
+        const nextUrl = nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname;
+        if (replace) {
+            window.history.replaceState({ path: nextUrl }, '', nextUrl);
+            return;
+        }
+        window.history.pushState({ path: nextUrl }, '', nextUrl);
+    },
+
+    markDashboardSection(section, replace = false) {
+        this.state.section = section || '';
+        this.syncState(replace);
+        this.applySectionFocus();
+    },
+
+    applySectionFocus() {
+        document.querySelectorAll('[data-dashboard-section]').forEach((sectionEl) => {
+            sectionEl.classList.toggle('dashboard-section-focus', sectionEl.dataset.dashboardSection === this.state.section);
+        });
+    },
+
+    getReturnTo() {
+        const params = new URLSearchParams();
+        if (this.state.section) {
+            params.set('section', this.state.section);
+        }
+        return params.toString()
+            ? `${window.location.pathname}?${params.toString()}`
+            : window.location.pathname;
+    },
+
     buildNoticeListPath(filters = {}, source = 'dashboard-notice-list') {
         const params = new URLSearchParams();
         Object.entries(filters).forEach(([key, value]) => {
@@ -567,19 +628,21 @@ const DashBoardListJS = {
     },
 
     goToOrderDetail(orderNo) {
-        const returnTo = encodeURIComponent('/admin/dashboard');
-        location.href = `/admin/orders/get?no=${orderNo}&returnTo=${returnTo}`;
+        const returnTo = encodeURIComponent(this.getReturnTo());
+        location.href = `/admin/orders/get?no=${orderNo}&source=dashboard-recent-order-detail&returnTo=${returnTo}`;
     },
 
     goToProductDetail(productNo) {
-        const returnTo = encodeURIComponent('/admin/dashboard');
-        location.href = `/admin/products/get?no=${productNo}&returnTo=${returnTo}`;
+        const returnTo = encodeURIComponent(this.getReturnTo());
+        location.href = `/admin/products/get?no=${productNo}&source=dashboard-low-stock-detail&returnTo=${returnTo}`;
     },
 
-    goToOrderList(filters = {}) {
+    goToOrderList(filters = {}, section = '') {
+        this.markDashboardSection(section, true);
         const params = new URLSearchParams({
             page: 0,
-            size: 10
+            size: 10,
+            source: section === 'summary' ? 'dashboard-summary' : 'dashboard'
         });
 
         if (filters.status) params.set('status', filters.status);

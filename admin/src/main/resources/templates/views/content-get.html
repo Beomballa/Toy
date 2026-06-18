@@ -28,6 +28,7 @@
                 <div class="content-detail-heading admin-detail-heading">
                     <div class="content-detail-eyebrow admin-detail-eyebrow" id="contentDetailBadge">NOTICE</div>
                     <h1 class="page-title" id="contentDetailTitle">콘텐츠 상세</h1>
+                    <div class="small text-muted mt-2 d-none" id="contentDetailSourceContextNotice" data-source-context=""></div>
                     <div class="content-detail-submeta admin-detail-submeta">
                         <span class="content-detail-meta-chip admin-detail-meta-chip" id="contentCreatedMeta">등록 -</span>
                         <span class="content-detail-meta-chip admin-detail-meta-chip" id="contentUpdatedMeta">수정 -</span>
@@ -124,7 +125,8 @@
     window.initialContentDetail = {
         id: /*[[${id}]]*/ null,
         boardType: /*[[${boardType}]]*/ 'NOTICE',
-        returnTo: /*[[${returnTo}]]*/ null
+        returnTo: /*[[${returnTo}]]*/ null,
+        source: /*[[${param.source}]]*/ null
     };
 </script>
 <script>document.addEventListener('DOMContentLoaded', () => ContentDetail.init());</script>

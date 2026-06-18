@@ -5,6 +5,7 @@ const ContentDetail = {
         id: null,
         boardType: 'NOTICE',
         returnTo: null,
+        source: '',
         data: null
     },
     operationPolicy: null,
@@ -18,6 +19,7 @@ const ContentDetail = {
             window.initialContentDetail?.boardType || params.get('boardType')
         );
         this.state.returnTo = window.initialContentDetail?.returnTo || params.get('returnTo');
+        this.state.source = window.initialContentDetail?.source || params.get('source') || '';
 
         if (!this.state.id) {
             await CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error');
@@ -26,6 +28,7 @@ const ContentDetail = {
         }
 
         this.applyBoardMeta(this.state.boardType);
+        CommonJS.renderSourceContextNotice({ noticeId: 'contentDetailSourceContextNotice', source: this.state.source });
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -43,7 +46,8 @@ const ContentDetail = {
                 return;
             }
             const returnToQuery = this.state.returnTo ? `&returnTo=${encodeURIComponent(this.state.returnTo)}` : '';
-            window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}${returnToQuery}`;
+            const sourceQuery = this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : '';
+            window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}${sourceQuery}${returnToQuery}`;
         });
 
         document.getElementById('btnDeleteContent')?.addEventListener('click', () => {

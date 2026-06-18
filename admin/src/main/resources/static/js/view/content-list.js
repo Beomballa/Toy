@@ -92,7 +92,7 @@ const ContentList = {
 
         // 새 글 작성 버튼
         document.getElementById('btnNewContent')?.addEventListener('click', () => {
-            location.href = `/admin/content/edit?boardType=${this.state.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
+            location.href = `/admin/content/edit?boardType=${this.state.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
         });
         document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
@@ -292,7 +292,7 @@ const ContentList = {
                             </div>
                             <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
                         </div>
-                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
+                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
                             <h5 class="card-title content-board-card-title text-line-clamp-2">${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</h5>
                         </a>
                         <p class="content-board-card-copy">${ContentBoardConfig.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
@@ -427,7 +427,7 @@ const ContentList = {
     bindRowActions() {
         document.querySelectorAll('[data-role="content-detail"]').forEach((button) => {
             button.addEventListener('click', () => {
-                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
+                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
         document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
@@ -437,7 +437,7 @@ const ContentList = {
                     await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
+                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
     },

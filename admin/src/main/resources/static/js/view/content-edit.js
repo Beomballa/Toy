@@ -5,6 +5,7 @@ const ContentEdit = {
     isSaving: false,
     isDeleting: false,
     operationPolicy: null,
+    source: '',
     initialData: {
         title: '',
         content: '',
@@ -23,6 +24,7 @@ const ContentEdit = {
             document.getElementById('initialBoardType')?.value
         );
         this.returnTo = document.getElementById('contentReturnTo')?.value || '';
+        this.source = document.getElementById('contentSource')?.value || '';
         const boardTypeSelect = document.getElementById('boardType');
 
         if (boardTypeSelect) {
@@ -34,6 +36,7 @@ const ContentEdit = {
 
         this.bindEvents();
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
+        CommonJS.renderSourceContextNotice({ noticeId: 'contentEditSourceContextNotice', source: this.source });
         this.syncVisibilitySummary();
         this.syncProductSummary();
         this.applyOperationPolicy();

@@ -134,7 +134,6 @@ const ProductHistoryPage = {
 
     renderList(items) {
         const tbody = document.getElementById('productHistoryBody');
-        const returnTo = encodeURIComponent(this.getReturnTo());
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 변경 이력이 없습니다.</td></tr>';
             return;
@@ -143,13 +142,13 @@ const ProductHistoryPage = {
         tbody.innerHTML = items.map(item => `
             <tr>
                 <td class="ps-4 text-muted small">${item.historyNo}</td>
-                <td><a class="text-decoration-none fw-bold" href="/admin/products/get?no=${item.productNo}&returnTo=${returnTo}">${item.productNo}</a></td>
+                <td><a class="text-decoration-none fw-bold" href="${this.buildProductDetailPath(item.productNo)}">${item.productNo}</a></td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>
                     <div class="fw-semibold">${item.summary}</div>
                     ${item.relatedProductNo ? `
                         <div class="small">
-                            <a class="text-decoration-none" href="/admin/products/get?no=${item.relatedProductNo}&returnTo=${returnTo}">
+                            <a class="text-decoration-none" href="${this.buildProductDetailPath(item.relatedProductNo)}">
                                 ${item.relatedProductLabel} #${item.relatedProductNo}
                             </a>
                         </div>
@@ -168,6 +167,16 @@ const ProductHistoryPage = {
                 <td class="text-end pe-4 small text-muted">${item.actionDtm}</td>
             </tr>
         `).join('');
+    },
+
+    buildProductDetailPath(productNo) {
+        const params = new URLSearchParams();
+        params.set('no', String(productNo));
+        params.set('returnTo', this.getReturnTo());
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/products/get?${params.toString()}`;
     },
 
     renderMeta(data) {

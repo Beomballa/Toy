@@ -53,7 +53,7 @@ const ProductList = {
                 return;
             }
 
-            location.href = `/admin/products/set?returnTo=${encodeURIComponent(this.getReturnTo())}`;
+            location.href = `/admin/products/set?source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
         });
         document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
         document.getElementById('btnExportProducts')?.addEventListener('click', () => {

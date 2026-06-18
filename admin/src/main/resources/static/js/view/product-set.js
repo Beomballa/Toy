@@ -4,6 +4,7 @@ const ProductCreate = {
     brands: [],
     categories: [],
     returnTo: '/admin/products',
+    source: '',
     isSubmitting: false,
     operationPolicy: null,
     frontDisplayRankGuide: null,
@@ -17,7 +18,9 @@ const ProductCreate = {
         // Thymeleaf에서 전달받은 데이터 저장
         this.brands = brands || [];
         this.categories = categories || [];
-        this.returnTo = new URLSearchParams(window.location.search).get('returnTo') || '/admin/products';
+        const params = new URLSearchParams(window.location.search);
+        this.returnTo = params.get('returnTo') || '/admin/products';
+        this.source = params.get('source') || '';
 
         // 선택박스 렌더링
         this.renderSelects();
@@ -31,6 +34,7 @@ const ProductCreate = {
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
 
         CommonJS.bindMainLogoNavigation(this.returnTo);
+        CommonJS.renderSourceContextNotice({ noticeId: 'productCreateSourceContextNotice', source: this.source });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -294,8 +298,13 @@ const ProductCreate = {
                     return;
                 }
                 await CommonJS.alert('상품이 성공적으로 등록되었습니다.', '성공', 'success');
-                const returnTo = encodeURIComponent(this.returnTo);
-                window.location.href = `/admin/products/get?no=${result.productNo}&returnTo=${returnTo}`;
+                const params = new URLSearchParams();
+                params.set('no', String(result.productNo));
+                params.set('returnTo', this.returnTo);
+                if (this.source) {
+                    params.set('source', this.source);
+                }
+                window.location.href = `/admin/products/get?${params.toString()}`;
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
                 await CommonJS.alert('등록 실패: ' + message, '오류', 'error');
@@ -465,6 +474,8 @@ const ProductCreate = {
             returnContextMeta.dataset.returnTo = this.returnTo;
             returnContextMeta.dataset.returnLabel = returnContext.label;
             returnContextMeta.dataset.returnButtonLabel = returnContext.buttonLabel;
+            returnContextMeta.dataset.sourceContext = this.source || '';
         }
+        CommonJS.renderSourceContextNotice({ noticeId: 'productCreateSourceContextNotice', source: this.source });
     }
 };

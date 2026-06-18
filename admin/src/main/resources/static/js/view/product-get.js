@@ -318,7 +318,7 @@ const ProductDetail = {
                             </a>
                         ` : ''}
                         ${history.activityLogPath ? `
-                            <a class="small text-decoration-none" href="${history.activityLogPath}">
+                            <a class="small text-decoration-none" href="${this.buildLogPathFromBase(history.activityLogPath)}">
                                 ${history.activityLogLabel || '활동 로그 보기'}
                             </a>
                         ` : ''}
@@ -417,5 +417,18 @@ const ProductDetail = {
             button.textContent = button.dataset.originalText;
             delete button.dataset.originalText;
         }
+    },
+
+    buildLogPathFromBase(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.source) {
+            params.set('source', this.source);
+        }
+        return `${path}?${params.toString()}`;
     }
 };

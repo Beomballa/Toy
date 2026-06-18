@@ -321,7 +321,7 @@ const NoticeList = {
         if (!historyLink) {
             return;
         }
-        historyLink.href = this.buildNoticeHistoryPath('/admin/settings/notices/history');
+        historyLink.href = this.buildNoticeHistoryPathFromBase('/admin/settings/notices/history');
     },
 
     buildNoticeDetailPath(noticeNo) {
@@ -334,7 +334,7 @@ const NoticeList = {
         return `/admin/settings/notices/get?${params.toString()}`;
     },
 
-    buildNoticeHistoryPath(basePath) {
+    buildNoticeHistoryPathFromBase(basePath) {
         if (!basePath) {
             return '#';
         }
@@ -862,7 +862,13 @@ const NoticeList = {
     },
 
     buildNoticeHistoryPath(noticeNo) {
-        return `/admin/settings/notices/history?noticeNo=${noticeNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const params = new URLSearchParams();
+        params.set('noticeNo', String(noticeNo));
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/settings/notices/history?${params.toString()}`;
     },
 
     buildNoticeLogPath(noticeNo) {

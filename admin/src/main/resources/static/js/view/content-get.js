@@ -29,6 +29,7 @@ const ContentDetail = {
 
         this.applyBoardMeta(this.state.boardType);
         CommonJS.renderSourceContextNotice({ noticeId: 'contentDetailSourceContextNotice', source: this.state.source });
+        CommonJS.bindMainLogoNavigation(this.getListPath());
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -79,6 +80,7 @@ const ContentDetail = {
             this.state.data = data;
             this.state.boardType = data.boardType || this.state.boardType;
             this.applyBoardMeta(this.state.boardType);
+            CommonJS.bindMainLogoNavigation(this.getListPath());
             this.renderDetail(data);
         } catch (error) {
             console.error('콘텐츠 상세 로드 실패:', error);

@@ -97,7 +97,7 @@ const NoticeDetailPage = {
         const historyPath = this.buildHistoryPathFromBase(data.historyPath);
         document.getElementById('btnNoticeDetailHistory').href = historyPath;
         document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
-        document.getElementById('btnNoticeDetailLog').href = data.activityLogPath;
+        document.getElementById('btnNoticeDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
         document.getElementById('btnNoticeDetailToggleActive').textContent = data.isActive === 'Y' ? '비활성' : '활성';
         this.renderRecentHistories(data.recentHistories || []);
 
@@ -313,7 +313,7 @@ const NoticeDetailPage = {
                         <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-dark" href="${item.activityLogPath}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-dark" href="${this.buildLogPathFromBase(item.activityLogPath)}">활동 로그</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPath(item.historyPath)}">이력</a>
                     </div>
                 </div>
@@ -371,7 +371,7 @@ const NoticeDetailPage = {
         metaEl.dataset.lastActionSource = sourceLabel || '운영 공지 상세';
         metaEl.dataset.lastActionStatus = status || '';
         metaEl.dataset.lastActionHistoryPath = this.buildHistoryPath();
-        metaEl.dataset.lastActionLogPath = this.state.currentDetail?.activityLogPath || '';
+        metaEl.dataset.lastActionLogPath = this.buildLogPathFromBase(this.state.currentDetail?.activityLogPath);
         this.renderLastActionNotice();
     },
 
@@ -450,6 +450,17 @@ const NoticeDetailPage = {
     },
 
     buildHistoryPathFromBase(basePath) {
+        if (!basePath) return '';
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
+    },
+
+    buildLogPathFromBase(basePath) {
         if (!basePath) return '';
         const [path, rawQuery = ''] = basePath.split('?');
         const params = new URLSearchParams(rawQuery);

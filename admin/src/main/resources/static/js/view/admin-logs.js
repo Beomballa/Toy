@@ -7,7 +7,9 @@ const AdminLogPage = {
     state: {
         page: 0,
         size: 20,
-        logNo: ''
+        logNo: '',
+        returnTo: '/admin/settings/logs',
+        source: ''
     },
 
     init() {
@@ -15,8 +17,8 @@ const AdminLogPage = {
         this.initialized = true;
         this.modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
         this.bindEvents();
-        CommonJS.bindMainLogoNavigation('/admin/settings/logs');
         this.readStateFromUrl();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/logs');
         this.getList();
     },
 
@@ -76,9 +78,13 @@ const AdminLogPage = {
         this.state.logNo = params.get('logNo') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        this.state.returnTo = params.get('returnTo') || '/admin/settings/logs';
+        this.state.source = params.get('source') || '';
         document.getElementById('logPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         this.syncDatePresetState();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/logs');
+        CommonJS.renderSourceContextNotice({ noticeId: 'adminLogSourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -97,6 +103,8 @@ const AdminLogPage = {
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (this.state.logNo) params.set('logNo', this.state.logNo);
+        if (this.state.returnTo && this.state.returnTo !== '/admin/settings/logs') params.set('returnTo', this.state.returnTo);
+        if (this.state.source) params.set('source', this.state.source);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -157,7 +165,7 @@ const AdminLogPage = {
                 <td><span class="fw-bold text-primary">${item.actionType}</span></td>
                 <td>
                     ${item.targetPath
-                        ? `<a class="text-decoration-none" href="${item.targetPath}">${item.targetLabel}</a>`
+                        ? `<a class="text-decoration-none" href="${this.buildTargetPath(item.targetPath)}">${item.targetLabel}</a>`
                         : (item.targetLabel || '-')}
                 </td>
                 <td><code class="small">${item.ipAddress}</code></td>
@@ -196,6 +204,7 @@ const AdminLogPage = {
         if (pageMeta) {
             pageMeta.textContent = data.resultMeta?.querySignature || data.pageInfoLabel || '페이지 메타 없음';
         }
+        CommonJS.renderSourceContextNotice({ noticeId: 'adminLogSourceContextNotice', source: this.state.source });
     },
 
     renderPagination(data) {
@@ -239,7 +248,7 @@ const AdminLogPage = {
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
-                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${this.buildTargetPath(data.targetPath)}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
@@ -378,6 +387,19 @@ const AdminLogPage = {
 
     formatAdminLabel(adminName, adminNo) {
         return adminNo ? `${adminName} (#${adminNo})` : adminName;
+    },
+
+    buildTargetPath(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     syncQuickFilterState() {

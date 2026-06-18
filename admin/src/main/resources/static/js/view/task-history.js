@@ -149,7 +149,7 @@ const TaskHistoryPage = {
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${item.logNo}">상세</button>
                         ${item.taskPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskDetailPath(item.taskPath)}">작업</a>` : ''}
-                        <a class="btn btn-sm btn-outline-secondary" href="/admin/logs?actionType=TASK_&targetId=${item.taskNo || ''}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskLogPath(item.taskNo)}">활동 로그</a>
                     </div>
                 </td>
                 <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
@@ -211,7 +211,7 @@ const TaskHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await response.json();
-            const detailLogPath = `/admin/logs?actionType=TASK_&targetId=${data.targetId || ''}`;
+            const detailLogPath = this.buildTaskLogPath(data.targetId || '');
             document.getElementById('taskHistoryDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
@@ -275,6 +275,17 @@ const TaskHistoryPage = {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    buildTaskLogPath(taskNo) {
+        const params = new URLSearchParams();
+        params.set('actionType', 'TASK_');
+        params.set('targetId', String(taskNo || ''));
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/logs?${params.toString()}`;
     },
 
     renderResultSummary(data) {

@@ -213,7 +213,7 @@ const NoticeList = {
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeHistoryPath(item.historyPath)}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath || '#'}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeLogPathFromBase(item.activityLogPath, item.noticeNo)}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
                     <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>
                 </td>
@@ -866,7 +866,30 @@ const NoticeList = {
     },
 
     buildNoticeLogPath(noticeNo) {
-        return `/admin/logs?actionType=NOTICE_&targetId=${noticeNo}`;
+        const params = new URLSearchParams();
+        params.set('actionType', 'NOTICE_');
+        params.set('targetId', String(noticeNo));
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/logs?${params.toString()}`;
+    },
+
+    buildNoticeLogPathFromBase(basePath, noticeNo = null) {
+        if (!basePath && noticeNo == null) {
+            return '#';
+        }
+        if (!basePath) {
+            return this.buildNoticeLogPath(noticeNo);
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     escapeHtml(value) {

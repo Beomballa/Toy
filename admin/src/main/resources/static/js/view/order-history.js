@@ -173,7 +173,7 @@ const OrderHistoryPage = {
                     ${item.reason ? `<div class="text-muted small">사유 ${CommonJS.escapeHtml(item.reason)}</div>` : ''}
                     ${item.adminMemoSnapshot ? `<div class="text-muted small">메모 ${CommonJS.escapeHtml(item.adminMemoSnapshot)}</div>` : ''}
                     ${(item.deliveryCompany || item.trackingNum) ? `<div class="text-muted small">배송 ${CommonJS.escapeHtml(item.deliveryCompany || '-')} / ${CommonJS.escapeHtml(item.trackingNum || '-')}</div>` : ''}
-                    ${item.activityLogPath ? `<div class="small"><a class="text-decoration-none" href="${item.activityLogPath}">${item.activityLogLabel || '활동 로그 보기'}</a></div>` : ''}
+                    ${item.activityLogPath ? `<div class="small"><a class="text-decoration-none" href="${this.buildLogPathFromBase(item.activityLogPath)}">${item.activityLogLabel || '활동 로그 보기'}</a></div>` : ''}
                 </td>
                 <td>${item.actorName}${item.actorNo ? ` <span class="text-muted small">(#${item.actorNo})</span>` : ''}</td>
                 <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
@@ -191,6 +191,19 @@ const OrderHistoryPage = {
         if (pageMeta) {
             pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
         }
+    },
+
+    buildLogPathFromBase(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     renderPagination(data) {

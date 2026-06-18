@@ -155,7 +155,7 @@ const ProductHistoryPage = {
                     ` : ''}
                     ${item.activityLogPath ? `
                         <div class="small">
-                            <a class="text-decoration-none" href="${item.activityLogPath}">
+                            <a class="text-decoration-none" href="${this.buildLogPathFromBase(item.activityLogPath)}">
                                 ${item.activityLogLabel || '활동 로그 보기'}
                             </a>
                         </div>
@@ -177,6 +177,19 @@ const ProductHistoryPage = {
             params.set('source', this.state.source);
         }
         return `/admin/products/get?${params.toString()}`;
+    },
+
+    buildLogPathFromBase(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', this.getReturnTo());
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     renderMeta(data) {

@@ -177,7 +177,7 @@ const OrderDetail = {
                 ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
                 <div class="d-flex flex-wrap gap-2 small mt-1">
                     <a class="text-decoration-none" href="/admin/orders/history?orderNo=${this.orderNo}&historyNo=${history.historyNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
-                    ${history.activityLogPath ? `<a class="text-decoration-none" href="${history.activityLogPath}">${history.activityLogLabel || '활동 로그 보기'}</a>` : ''}
+                    ${history.activityLogPath ? `<a class="text-decoration-none" href="${this.buildLogPathFromBase(history.activityLogPath)}">${history.activityLogLabel || '활동 로그 보기'}</a>` : ''}
                 </div>
             </div>
         `).join('');
@@ -199,6 +199,19 @@ const OrderDetail = {
             fallbackErrorMessage: '배송 완료 처리 중 오류가 발생했습니다.',
             logLabel: '배송 완료 처리'
         });
+    },
+
+    buildLogPathFromBase(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.source) {
+            params.set('source', this.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     async cancelOrder() {

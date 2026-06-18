@@ -373,7 +373,7 @@ const TaskList = {
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
                     <button class="btn btn-sm btn-outline-secondary me-1" data-role="duplicate-task" data-task-no="${item.taskNo}">복제</button>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskHistoryPathFromBase(item.historyPath)}">${item.historyLabel}</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath}">${item.activityLogLabel}</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskLogPathFromBase(item.activityLogPath, item.taskNo)}">${item.activityLogLabel}</a>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">상태</button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -1208,7 +1208,30 @@ const TaskList = {
     },
 
     buildTaskLogPath(taskNo) {
-        return `/admin/logs?actionType=TASK_&targetId=${taskNo}`;
+        const params = new URLSearchParams();
+        params.set('actionType', 'TASK_');
+        params.set('targetId', String(taskNo));
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/logs?${params.toString()}`;
+    },
+
+    buildTaskLogPathFromBase(basePath, taskNo = null) {
+        if (!basePath && taskNo == null) {
+            return '#';
+        }
+        if (!basePath) {
+            return this.buildTaskLogPath(taskNo);
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     parseOptionalNumber(value) {

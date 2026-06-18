@@ -123,9 +123,9 @@ const TaskDetailPage = {
         this.renderAssignmentRecommendations(data.assignmentRecommendations || []);
         const historyPath = this.buildHistoryPathFromBase(data.historyPath);
         document.getElementById('btnTaskDetailHistory').href = historyPath;
-        document.getElementById('btnTaskDetailLog').href = data.activityLogPath;
+        document.getElementById('btnTaskDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
         document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
-        document.getElementById('btnTaskDetailLogsMore').href = data.activityLogPath;
+        document.getElementById('btnTaskDetailLogsMore').href = this.buildLogPathFromBase(data.activityLogPath);
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
         this.renderRecentHistories(data.recentHistories || []);
         this.renderComments(data.comments || []);
@@ -422,7 +422,7 @@ const TaskDetailPage = {
                     </div>
                     <div class="d-flex gap-2">
                         <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPathFromBase(item.historyPath)}">이력</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.activityLogPath}">활동 로그</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildLogPathFromBase(item.activityLogPath)}">활동 로그</a>
                     </div>
                 </div>
             </div>
@@ -649,7 +649,7 @@ const TaskDetailPage = {
         metaEl.dataset.lastActionSource = sourceLabel || '운영 작업 상세';
         metaEl.dataset.lastActionStatus = status || '';
         metaEl.dataset.lastActionHistoryPath = this.buildHistoryPath();
-        metaEl.dataset.lastActionLogPath = this.state.currentDetail?.activityLogPath || '';
+        metaEl.dataset.lastActionLogPath = this.buildLogPathFromBase(this.state.currentDetail?.activityLogPath);
         this.renderLastActionNotice();
     },
 
@@ -758,6 +758,17 @@ const TaskDetailPage = {
     },
 
     buildHistoryPathFromBase(basePath) {
+        if (!basePath) return '';
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
+    },
+
+    buildLogPathFromBase(basePath) {
         if (!basePath) return '';
         const [path, rawQuery = ''] = basePath.split('?');
         const params = new URLSearchParams(rawQuery);

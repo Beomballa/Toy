@@ -163,7 +163,7 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadDetailInProgressButton').href = data.inProgressPath || '#';
         document.getElementById('workloadDetailOverdueButton').href = data.overduePath || '#';
         document.getElementById('workloadDetailOverdueSummaryButton').href = data.overduePath || '#';
-        document.getElementById('workloadDetailLogButton').href = data.activityLogPath || '#';
+        document.getElementById('workloadDetailLogButton').href = this.buildLogPathFromBase(data.activityLogPath) || '#';
 
         this.renderRecentTasks(data.recentTasks || []);
         this.renderOverdueTasks(data.overdueTasks || []);
@@ -648,6 +648,19 @@ const TaskWorkloadDetail = {
             params.set('source', this.bootstrap.source);
         }
         return `/admin/settings/tasks/workloads/get?${params.toString()}`;
+    },
+
+    buildLogPathFromBase(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', this.buildCurrentDetailPath());
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     async fetchTaskDetail(taskNo) {

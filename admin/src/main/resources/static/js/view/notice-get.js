@@ -94,7 +94,7 @@ const NoticeDetailPage = {
         document.getElementById('noticeDetailCrtDtm').textContent = data.crtDtm || '-';
         document.getElementById('noticeDetailMeta').textContent = `운영 공지 #${data.noticeNo}`;
         document.getElementById('noticeDetailSummary').textContent = `${data.displayStatus} · ${data.isPinned === 'Y' ? '고정 공지' : '일반 공지'}`;
-        const historyPath = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const historyPath = this.buildHistoryPathFromBase(data.historyPath);
         document.getElementById('btnNoticeDetailHistory').href = historyPath;
         document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
         document.getElementById('btnNoticeDetailLog').href = data.activityLogPath;
@@ -314,7 +314,7 @@ const NoticeDetailPage = {
                     </div>
                     <div class="d-flex gap-2">
                         <a class="btn btn-sm btn-outline-dark" href="${item.activityLogPath}">활동 로그</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPath(item.historyPath)}">이력</a>
                     </div>
                 </div>
             </div>
@@ -446,9 +446,18 @@ const NoticeDetailPage = {
     },
 
     buildHistoryPath() {
-        const detail = this.state.currentDetail;
-        if (!detail?.historyPath) return '';
-        return `${detail.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return this.buildHistoryPathFromBase(this.state.currentDetail?.historyPath);
+    },
+
+    buildHistoryPathFromBase(basePath) {
+        if (!basePath) return '';
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     escapeHtml(value) {

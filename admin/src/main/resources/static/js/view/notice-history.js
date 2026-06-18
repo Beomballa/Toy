@@ -138,7 +138,7 @@ const NoticeHistoryPage = {
         tbody.innerHTML = items.map((item) => `
             <tr data-notice-log-row="${item.logNo}">
                 <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td>${item.noticePath ? `<a class="text-decoration-none fw-bold" href="${item.noticePath}">${item.noticeLabel}</a>` : (item.noticeLabel || '-')}</td>
+                <td>${item.noticePath ? `<a class="text-decoration-none fw-bold" href="${this.buildNoticeDetailPath(item.noticePath)}">${item.noticeLabel}</a>` : (item.noticeLabel || '-')}</td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>${item.adminName}${item.adminNo ? ` <span class="text-muted small">(#${item.adminNo})</span>` : ''}</td>
                 <td><code class="small">${item.ipAddress || '-'}</code></td>
@@ -361,6 +361,19 @@ const NoticeHistoryPage = {
         }
         targetButton.href = targetPath || '#';
         targetButton.classList.toggle('d-none', !targetPath);
+    },
+
+    buildNoticeDetailPath(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     }
 };
 

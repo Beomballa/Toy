@@ -196,7 +196,7 @@ const NoticeList = {
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
                         ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <a class="fw-bold text-dark text-decoration-none" href="/admin/settings/notices/get?no=${item.noticeNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${this.escapeHtml(item.title)}</a>
+                        <a class="fw-bold text-dark text-decoration-none" href="${this.buildNoticeDetailPath(item.noticeNo)}">${this.escapeHtml(item.title)}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 520px;">${this.escapeHtml(item.content)}</div>
                 </td>
@@ -212,7 +212,7 @@ const NoticeList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.historyPath || '#'}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeHistoryPath(item.historyPath)}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath || '#'}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
                     <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>
@@ -321,8 +321,34 @@ const NoticeList = {
         if (!historyLink) {
             return;
         }
-        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        historyLink.href = `/admin/settings/notices/history?returnTo=${returnTo}`;
+        historyLink.href = this.buildNoticeHistoryPath('/admin/settings/notices/history');
+    },
+
+    buildNoticeDetailPath(noticeNo) {
+        const params = new URLSearchParams();
+        params.set('no', String(noticeNo));
+        params.set('returnTo', this.getCurrentLocation());
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/settings/notices/get?${params.toString()}`;
+    },
+
+    buildNoticeHistoryPath(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', this.getCurrentLocation());
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
+    },
+
+    getCurrentLocation() {
+        return window.location.pathname + window.location.search;
     },
 
     renderStats(stats) {

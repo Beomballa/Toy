@@ -298,7 +298,13 @@ const TaskWorkloadList = {
         const returnParams = this.buildParams();
         returnParams.set('focusAdminNo', String(adminNo));
         returnParams.delete('adminNo');
-        return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&returnTo=${encodeURIComponent(`${window.location.pathname}?${returnParams.toString()}`)}`;
+        const params = new URLSearchParams();
+        params.set('adminNo', String(adminNo));
+        params.set('returnTo', `${window.location.pathname}?${returnParams.toString()}`);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/settings/tasks/workloads/get?${params.toString()}`;
     },
 
     highlightFocusedAdminRow() {

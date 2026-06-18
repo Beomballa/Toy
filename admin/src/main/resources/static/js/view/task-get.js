@@ -24,6 +24,7 @@ const TaskDetailPage = {
         }
         this.readBootstrapState();
         this.bindEvents();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo);
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.loadDetail();
@@ -120,7 +121,7 @@ const TaskDetailPage = {
         document.getElementById('taskDetailSummary').textContent = `${data.statusLabel} · ${data.priorityLabel} · 담당자 ${data.assigneeAdminName || '미지정'}`;
         this.renderAssigneeOptions(data.assigneeOptions || []);
         this.renderAssignmentRecommendations(data.assignmentRecommendations || []);
-        const historyPath = `${data.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const historyPath = this.buildHistoryPathFromBase(data.historyPath);
         document.getElementById('btnTaskDetailHistory').href = historyPath;
         document.getElementById('btnTaskDetailLog').href = data.activityLogPath;
         document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
@@ -420,7 +421,7 @@ const TaskDetailPage = {
                         <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPathFromBase(item.historyPath)}">이력</a>
                         <a class="btn btn-sm btn-outline-secondary" href="${item.activityLogPath}">활동 로그</a>
                     </div>
                 </div>
@@ -753,9 +754,18 @@ const TaskDetailPage = {
     },
 
     buildHistoryPath() {
-        const detail = this.state.currentDetail;
-        if (!detail?.historyPath) return '';
-        return `${detail.historyPath}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        return this.buildHistoryPathFromBase(this.state.currentDetail?.historyPath);
+    },
+
+    buildHistoryPathFromBase(basePath) {
+        if (!basePath) return '';
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     }
 };
 

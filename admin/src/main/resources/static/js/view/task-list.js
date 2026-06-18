@@ -372,7 +372,7 @@ const TaskList = {
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
                     <button class="btn btn-sm btn-outline-secondary me-1" data-role="duplicate-task" data-task-no="${item.taskNo}">복제</button>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.historyPath}&returnTo=${currentPath}">${item.historyLabel}</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskHistoryPathFromBase(item.historyPath)}">${item.historyLabel}</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${item.activityLogPath}">${item.activityLogLabel}</a>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">상태</button>
@@ -1180,7 +1180,26 @@ const TaskList = {
     },
 
     buildTaskHistoryPath(taskNo) {
-        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+        const params = new URLSearchParams();
+        params.set('taskNo', String(taskNo));
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `/admin/settings/tasks/history?${params.toString()}`;
+    },
+
+    buildTaskHistoryPathFromBase(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     buildTaskDetailPath(taskNo, source = 'task-list-detail') {

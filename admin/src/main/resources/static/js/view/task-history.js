@@ -4,7 +4,8 @@ const TaskHistoryPage = {
     state: {
         page: 0,
         size: 20,
-        returnTo: '/admin/settings/tasks'
+        returnTo: '/admin/settings/tasks',
+        source: ''
     },
 
     init() {
@@ -77,9 +78,11 @@ const TaskHistoryPage = {
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/settings/tasks';
+        this.state.source = params.get('source') || '';
         document.getElementById('taskHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         CommonJS.bindMainLogoNavigation(this.state.returnTo);
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskHistorySourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -99,6 +102,7 @@ const TaskHistoryPage = {
         if (endDate) params.set('endDate', endDate);
         if (this.state.logNo) params.set('logNo', this.state.logNo);
         if (this.state.returnTo && this.state.returnTo !== '/admin/settings/tasks') params.set('returnTo', this.state.returnTo);
+        if (this.state.source) params.set('source', this.state.source);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -137,14 +141,14 @@ const TaskHistoryPage = {
         tbody.innerHTML = items.map((item) => `
             <tr data-log-row="${item.logNo}">
                 <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td>${item.taskPath ? `<a class="text-decoration-none fw-bold" href="${item.taskPath}">${item.taskLabel}</a>` : (item.taskLabel || '-')}</td>
+                <td>${item.taskPath ? `<a class="text-decoration-none fw-bold" href="${this.buildTaskDetailPath(item.taskPath)}">${item.taskLabel}</a>` : (item.taskLabel || '-')}</td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>${item.adminName}${item.adminNo ? ` <span class="text-muted small">(#${item.adminNo})</span>` : ''}</td>
                 <td><code class="small">${item.ipAddress || '-'}</code></td>
                 <td class="text-center">
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${item.logNo}">상세</button>
-                        ${item.taskPath ? `<a class="btn btn-sm btn-outline-secondary" href="${item.taskPath}">작업</a>` : ''}
+                        ${item.taskPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskDetailPath(item.taskPath)}">작업</a>` : ''}
                         <a class="btn btn-sm btn-outline-secondary" href="/admin/logs?actionType=TASK_&targetId=${item.taskNo || ''}">활동 로그</a>
                     </div>
                 </td>
@@ -170,7 +174,9 @@ const TaskHistoryPage = {
             metaEl.dataset.filterCount = String(data.resultMeta?.filterCount ?? 0);
             metaEl.dataset.querySignature = data.resultMeta?.querySignature || '';
             metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '';
+            metaEl.dataset.sourceContext = this.state.source || '';
         }
+        CommonJS.renderSourceContextNotice({ noticeId: 'taskHistorySourceContextNotice', source: this.state.source });
     },
 
     renderPagination(data) {
@@ -256,6 +262,19 @@ const TaskHistoryPage = {
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
         }
+    },
+
+    buildTaskDetailPath(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', window.location.pathname + window.location.search);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     renderResultSummary(data) {

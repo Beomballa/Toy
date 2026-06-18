@@ -217,10 +217,10 @@ const TaskWorkloadDetail = {
         }
         body.innerHTML = items.map((item) => `
             <div class="border rounded-3 p-3 mb-3">
-                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
+                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.title)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                 <div class="mt-2 d-flex gap-2 flex-wrap">
-                    <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(item.taskNo)}">이력</a>
                     <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button>
                     <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button>
                     <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">재배정</button>
@@ -241,11 +241,11 @@ const TaskWorkloadDetail = {
             <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
-                        <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.title)}</a></div>
+                        <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.title)}</a></div>
                         <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${item.historyPath}">이력</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(item.taskNo)}">이력</a>
                         <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-overdue-priority" data-task-no="${item.taskNo}">우선순위 높음</button>
                         <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${item.taskNo}">완료 처리</button>
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-overdue-task" data-task-no="${item.taskNo}">재배정</button>
@@ -265,7 +265,7 @@ const TaskWorkloadDetail = {
         }
         body.innerHTML = items.map((item) => `
             <div class="border rounded-3 p-3 mb-3">
-                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskTitle)}</a></div>
+                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.taskTitle)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.commentDtm)}</div>
                 <div class="small text-dark mt-2">${this.escapeHtml(item.content)}</div>
                 <div class="mt-2 d-flex gap-2 flex-wrap">
@@ -290,7 +290,7 @@ const TaskWorkloadDetail = {
                 <div class="fw-bold mb-1">${this.escapeHtml(item.actionLabel)}</div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.actionDtm)}</div>
                 <div class="small text-dark mt-2">
-                    ${item.taskPath ? `<a class="text-decoration-none" href="${item.taskPath}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
+                    ${item.taskNo ? `<a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
                 </div>
                 ${item.taskNo ? `<div class="mt-2 d-flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button><button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button></div>` : ''}
             </div>
@@ -619,11 +619,23 @@ const TaskWorkloadDetail = {
     },
 
     buildTaskDetailPath(taskNo) {
-        return `/admin/settings/tasks/get?no=${taskNo}&returnTo=${encodeURIComponent(this.buildCurrentDetailPath())}`;
+        const params = new URLSearchParams();
+        params.set('no', String(taskNo));
+        params.set('returnTo', this.buildCurrentDetailPath());
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
+        }
+        return `/admin/settings/tasks/get?${params.toString()}`;
     },
 
     buildTaskHistoryPath(taskNo) {
-        return `/admin/settings/tasks/history?taskNo=${taskNo}&returnTo=${encodeURIComponent(this.buildCurrentDetailPath())}`;
+        const params = new URLSearchParams();
+        params.set('taskNo', String(taskNo));
+        params.set('returnTo', this.buildCurrentDetailPath());
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
+        }
+        return `/admin/settings/tasks/history?${params.toString()}`;
     },
 
     buildCurrentDetailPath() {
@@ -631,6 +643,9 @@ const TaskWorkloadDetail = {
         params.set('adminNo', String(this.bootstrap.adminNo || 0));
         if (this.bootstrap.returnTo) {
             params.set('returnTo', this.bootstrap.returnTo);
+        }
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
         }
         return `/admin/settings/tasks/workloads/get?${params.toString()}`;
     },

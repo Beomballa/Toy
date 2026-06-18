@@ -2,7 +2,9 @@ const ProductHistoryPage = {
     initialized: false,
     state: {
         page: 0,
-        size: 20
+        size: 20,
+        source: '',
+        returnTo: ''
     },
 
     init() {
@@ -10,6 +12,7 @@ const ProductHistoryPage = {
         this.initialized = true;
         this.bindEvents();
         this.readStateFromUrl();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products');
         this.loadHistory();
     },
 
@@ -72,10 +75,13 @@ const ProductHistoryPage = {
         document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         this.syncDatePresetState();
-        CommonJS.bindMainLogoNavigation('/admin/products');
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products');
+        CommonJS.renderSourceContextNotice({ noticeId: 'productHistorySourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -95,9 +101,16 @@ const ProductHistoryPage = {
         if (keyword) params.set('keyword', keyword);
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType && orderType !== 'latest') params.set('orderType', orderType);
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
+    },
+
+    getReturnTo() {
+        const params = this.buildParams();
+        return `${window.location.pathname}?${params.toString()}`;
     },
 
     async loadHistory() {
@@ -121,7 +134,7 @@ const ProductHistoryPage = {
 
     renderList(items) {
         const tbody = document.getElementById('productHistoryBody');
-        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        const returnTo = encodeURIComponent(this.getReturnTo());
         if (!items.length) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 변경 이력이 없습니다.</td></tr>';
             return;
@@ -130,7 +143,7 @@ const ProductHistoryPage = {
         tbody.innerHTML = items.map(item => `
             <tr>
                 <td class="ps-4 text-muted small">${item.historyNo}</td>
-                <td><a class="text-decoration-none fw-bold" href="/admin/products/get?no=${item.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}">${item.productNo}</a></td>
+                <td><a class="text-decoration-none fw-bold" href="/admin/products/get?no=${item.productNo}&returnTo=${returnTo}">${item.productNo}</a></td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>
                     <div class="fw-semibold">${item.summary}</div>

@@ -295,7 +295,7 @@ const OrderList = {
 
     buildDetailUrl(orderNo) {
         const returnTo = encodeURIComponent(`${window.location.pathname}?${this.buildQueryString()}`);
-        return `/admin/orders/get?no=${orderNo}&returnTo=${returnTo}`;
+        return `/admin/orders/get?no=${orderNo}&source=order-list&returnTo=${returnTo}`;
     },
 
     buildQueryString() {

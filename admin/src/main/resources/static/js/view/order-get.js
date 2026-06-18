@@ -6,6 +6,7 @@ const OrderDetail = {
         const params = new URLSearchParams(window.location.search);
         this.orderNo = params.get('no');
         this.returnTo = params.get('returnTo') || '/admin/orders/list';
+        this.source = params.get('source') || '';
         this.isSubmitting = false;
         this.operationPolicy = null;
         if (!this.orderNo) {
@@ -15,6 +16,7 @@ const OrderDetail = {
         }
 
         this.syncReturnLinks();
+        CommonJS.renderSourceContextNotice({ noticeId: 'orderDetailSourceContextNotice', source: this.source });
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -31,7 +33,8 @@ const OrderDetail = {
         document.getElementById('btnSaveAdminMemo')?.addEventListener('click', () => this.saveAdminMemo());
         document.getElementById('btnOpenOrderHistory')?.addEventListener('click', () => {
             const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-            window.location.href = `/admin/orders/history?orderNo=${this.orderNo}&returnTo=${returnTo}`;
+            const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+            window.location.href = `/admin/orders/history?orderNo=${this.orderNo}&returnTo=${returnTo}${sourceQuery}`;
         });
     },
 
@@ -173,7 +176,7 @@ const OrderDetail = {
                 ${history.adminMemoSnapshot ? `<div class="small mb-1"><span class="text-muted">메모</span> ${CommonJS.escapeHtml(history.adminMemoSnapshot)}</div>` : ''}
                 ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
                 <div class="d-flex flex-wrap gap-2 small mt-1">
-                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${this.orderNo}&historyNo=${history.historyNo}&returnTo=${returnTo}">이력 위치 보기</a>
+                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${this.orderNo}&historyNo=${history.historyNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
                     ${history.activityLogPath ? `<a class="text-decoration-none" href="${history.activityLogPath}">${history.activityLogLabel || '활동 로그 보기'}</a>` : ''}
                 </div>
             </div>

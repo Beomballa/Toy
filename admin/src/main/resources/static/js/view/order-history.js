@@ -4,6 +4,7 @@ const OrderHistoryPage = {
         page: 0,
         size: 20,
         returnTo: '/admin/orders/list',
+        source: '',
         historyNo: ''
     },
     isExporting: false,
@@ -91,10 +92,12 @@ const OrderHistoryPage = {
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
         this.state.returnTo = params.get('returnTo') || '/admin/orders/list';
+        this.state.source = params.get('source') || '';
         this.state.historyNo = params.get('historyNo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         CommonJS.bindMainLogoNavigation(this.state.returnTo);
+        CommonJS.renderSourceContextNotice({ noticeId: 'orderHistorySourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -115,6 +118,7 @@ const OrderHistoryPage = {
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType !== 'latest') params.set('orderType', orderType);
         if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
+        if (this.state.source) params.set('source', this.state.source);
         if (this.state.historyNo) params.set('historyNo', this.state.historyNo);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
@@ -162,7 +166,7 @@ const OrderHistoryPage = {
         tbody.innerHTML = items.map((item) => `
             <tr data-order-history-row="${item.historyNo}">
                 <td class="ps-4 text-muted small">${item.historyNo}</td>
-                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${item.orderNo}&returnTo=${returnTo}">${item.orderNo}</a></td>
+                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${item.orderNo}&returnTo=${returnTo}${this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : ''}">${item.orderNo}</a></td>
                 <td><span class="badge bg-dark">${item.actionLabel}</span></td>
                 <td>
                     <div class="fw-semibold">상태 ${item.beforeStatusDesc || '-'} -> ${item.afterStatusDesc || '-'}</div>

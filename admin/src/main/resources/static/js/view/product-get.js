@@ -3,6 +3,7 @@ const ProductDetail = {
     productNo: null,
     productData: null,
     returnTo: '/admin/products',
+    source: '',
     operationPolicy: null,
     isCloning: false,
     isDeleting: false,
@@ -16,6 +17,7 @@ const ProductDetail = {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
+        this.source = urlParams.get('source') || '';
 
         if (!this.productNo) {
             await CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error');
@@ -24,6 +26,7 @@ const ProductDetail = {
         }
 
         this.syncReturnLinks();
+        CommonJS.renderSourceContextNotice({ noticeId: 'productDetailSourceContextNotice', source: this.source });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         if (this.hasBootstrapProduct(bootstrapProduct)) {
@@ -55,7 +58,8 @@ const ProductDetail = {
         if (btnEdit) {
             btnEdit.addEventListener('click', () => {
                 const returnTo = encodeURIComponent(this.returnTo);
-                window.location.href = `/admin/products/update?no=${this.productNo}&returnTo=${returnTo}`;
+                const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+                window.location.href = `/admin/products/update?no=${this.productNo}&returnTo=${returnTo}${sourceQuery}`;
             });
         }
 
@@ -119,7 +123,8 @@ const ProductDetail = {
             }
             const data = await response.json();
             await CommonJS.alert('상품이 복제되었습니다.', '성공', 'success');
-            window.location.href = `/admin/products/get?no=${data.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+            const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+            window.location.href = `/admin/products/get?no=${data.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}${sourceQuery}`;
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
@@ -308,7 +313,7 @@ const ProductDetail = {
                         </div>
                         <span class="small text-muted">${history.summary}</span>
                         ${history.relatedProductNo ? `
-                            <a class="small text-decoration-none" href="/admin/products/get?no=${history.relatedProductNo}&returnTo=${returnTo}">
+                            <a class="small text-decoration-none" href="/admin/products/get?no=${history.relatedProductNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">
                                 ${history.relatedProductLabel} #${history.relatedProductNo}
                             </a>
                         ` : ''}

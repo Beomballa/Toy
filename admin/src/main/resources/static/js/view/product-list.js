@@ -103,7 +103,7 @@ const ProductList = {
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
-                location.href = `/admin/products/get?no=${productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+                location.href = `/admin/products/get?no=${productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
                 return;
             }
 
@@ -129,7 +129,7 @@ const ProductList = {
                     void CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/products/update?no=${editButton.dataset.productNo}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+                location.href = `/admin/products/update?no=${editButton.dataset.productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
                 return;
             }
 

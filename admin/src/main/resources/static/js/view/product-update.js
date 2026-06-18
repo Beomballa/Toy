@@ -3,6 +3,7 @@ const ProductUpdate = {
     optionCount: 0,
     productNo: null,
     returnTo: '/admin/products',
+    source: '',
     isSubmitting: false,
     operationPolicy: null,
     frontDisplayData: null,
@@ -17,6 +18,7 @@ const ProductUpdate = {
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = urlParams.get('no');
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
+        this.source = urlParams.get('source') || '';
 
         if (!this.productNo) {
             await CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error');
@@ -25,6 +27,7 @@ const ProductUpdate = {
         }
 
         this.syncReturnLinks();
+        CommonJS.renderSourceContextNotice({ noticeId: 'productUpdateSourceContextNotice', source: this.source });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         if (this.hasBootstrapProduct(bootstrapProduct)) {
@@ -66,7 +69,8 @@ const ProductUpdate = {
         });
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
         document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
-            window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
+            const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+            window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}${sourceQuery}`;
         });
         document.getElementById('btnResetFrontDisplay')?.addEventListener('click', () => this.resetFrontDisplay());
         document.getElementById('frontDisplayFeatured')?.addEventListener('change', () => {
@@ -359,7 +363,8 @@ const ProductUpdate = {
                     return;
                 }
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
-                window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}`;
+                const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+                window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}${sourceQuery}`;
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
                 await CommonJS.alert('수정 실패: ' + message, '오류', 'error');

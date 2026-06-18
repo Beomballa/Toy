@@ -234,8 +234,8 @@ const ProductFrontDisplayList = {
                 <td>${item.featured ? `Y / ${item.featuredRank}` : 'N'}</td>
                 <td class="text-end pe-4">
                     <div class="btn-group btn-group-sm">
-                        <a class="btn btn-outline-secondary" href="/admin/products/get?no=${item.productNo}&returnTo=${returnTo}">상세</a>
-                        <a class="btn btn-outline-primary" href="/admin/products/update?no=${item.productNo}&returnTo=${returnTo}">수정</a>
+                        <a class="btn btn-outline-secondary" href="/admin/products/get?no=${item.productNo}&source=product-front-display&returnTo=${returnTo}">상세</a>
+                        <a class="btn btn-outline-primary" href="/admin/products/update?no=${item.productNo}&source=product-front-display&returnTo=${returnTo}">수정</a>
                     </div>
                 </td>
             </tr>

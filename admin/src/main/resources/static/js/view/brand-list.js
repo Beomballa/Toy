@@ -6,6 +6,8 @@ const BrandList = {
         size: 10,
         keyword: '',
         isActive: '',
+        source: '',
+        returnTo: '',
     },
     operationPolicy: null,
     saveInFlight: false,
@@ -103,10 +105,13 @@ const BrandList = {
         this.state.size = Number(params.get('size') || 10);
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('brandKeyword').value = this.state.keyword;
         document.getElementById('brandIsActiveFilter').value = this.state.isActive;
         document.getElementById('brandPageSize').value = String(this.state.size);
-        CommonJS.bindMainLogoNavigation('/admin/brands');
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/brands');
+        CommonJS.renderSourceContextNotice({ noticeId: 'brandSourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -115,6 +120,8 @@ const BrandList = {
         params.set('size', String(this.state.size));
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

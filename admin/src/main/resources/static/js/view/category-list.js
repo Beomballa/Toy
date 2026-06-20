@@ -7,6 +7,8 @@ const CategoryList = {
         size: 10,
         keyword: '',
         isActive: '',
+        source: '',
+        returnTo: '',
         selectedParentNo: null,
         selectedParentName: '',
         depth1List: [],
@@ -122,11 +124,14 @@ const CategoryList = {
         this.state.size = Number(params.get('size') || 10);
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         this.state.selectedParentNo = Number(params.get('parentNo') || 0) || null;
         document.getElementById('categoryKeyword').value = this.state.keyword;
         document.getElementById('categoryIsActiveFilter').value = this.state.isActive;
         document.getElementById('categoryPageSize').value = String(this.state.size);
-        CommonJS.bindMainLogoNavigation('/admin/categories');
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/categories');
+        CommonJS.renderSourceContextNotice({ noticeId: 'categorySourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -137,6 +142,8 @@ const CategoryList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.isActive) params.set('isActive', this.state.isActive);
         if (this.state.selectedParentNo) params.set('parentNo', String(this.state.selectedParentNo));
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

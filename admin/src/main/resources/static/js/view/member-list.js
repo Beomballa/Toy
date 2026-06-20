@@ -7,7 +7,9 @@ const MemberListPage = {
     exportInFlight: false,
     state: {
         page: 0,
-        size: 20
+        size: 20,
+        source: '',
+        returnTo: ''
     },
 
     init() {
@@ -16,7 +18,8 @@ const MemberListPage = {
         this.modal = new bootstrap.Modal(document.getElementById('memberDetailModal'));
         this.bindEvents();
         this.readStateFromUrl();
-        CommonJS.bindMainLogoNavigation('/admin/members');
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/members');
+        CommonJS.renderSourceContextNotice({ noticeId: 'memberSourceContextNotice', source: this.state.source });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -85,7 +88,11 @@ const MemberListPage = {
         document.getElementById('memberInitYn').value = params.get('initYn') || '';
         this.state.page = Number(params.get('page') || 0);
         this.state.size = Number(params.get('size') || 20);
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('memberPageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/members');
+        CommonJS.renderSourceContextNotice({ noticeId: 'memberSourceContextNotice', source: this.state.source });
     },
 
     buildParams() {
@@ -100,6 +107,8 @@ const MemberListPage = {
         if (initYn) params.set('initYn', initYn);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

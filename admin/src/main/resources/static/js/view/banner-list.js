@@ -8,7 +8,9 @@ const BannerList = {
         isActive: '',
         exposureStatus: '',
         bannerNo: '',
+        pageSource: '',
         source: '',
+        returnTo: '',
     },
     operationPolicy: null,
     saveInFlight: false,
@@ -119,12 +121,15 @@ const BannerList = {
         this.state.isActive = params.get('isActive') || '';
         this.state.exposureStatus = params.get('exposureStatus') || '';
         this.state.bannerNo = params.get('bannerNo') || '';
-        this.state.source = params.get('source') || '';
+        this.state.pageSource = params.get('source') || '';
+        this.state.source = this.state.pageSource;
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('bannerKeyword').value = this.state.keyword;
         document.getElementById('bannerIsActiveFilter').value = this.state.isActive;
         document.getElementById('bannerExposureStatusFilter').value = this.state.exposureStatus;
         document.getElementById('bannerPageSize').value = String(this.state.size);
-        CommonJS.bindMainLogoNavigation('/admin/banners');
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/banners');
+        CommonJS.renderSourceContextNotice({ noticeId: 'bannerSourceContextNotice', source: this.state.pageSource });
     },
 
     buildParams() {
@@ -135,7 +140,8 @@ const BannerList = {
         if (this.state.isActive) params.set('isActive', this.state.isActive);
         if (this.state.exposureStatus) params.set('exposureStatus', this.state.exposureStatus);
         if (this.state.bannerNo) params.set('bannerNo', this.state.bannerNo);
-        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.pageSource) params.set('source', this.state.pageSource);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 
@@ -332,7 +338,7 @@ const BannerList = {
         document.getElementById('bannerPageSize').value = '10';
         this.state.page = 0;
         this.state.bannerNo = '';
-        this.state.source = '';
+        this.state.source = this.state.pageSource;
         this.getList();
     },
 

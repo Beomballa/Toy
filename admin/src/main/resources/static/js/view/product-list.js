@@ -13,6 +13,8 @@ const ProductList = {
         createdTodayOnly: false,
         searchKeyword: '',
         orderType: 'r',
+        source: '',
+        returnTo: '',
     },
     defaultLowStockThreshold: '100',
     requestSequence: 0,
@@ -40,6 +42,8 @@ const ProductList = {
 
         this._readStateFromUrl();
         this._syncFilterInputs();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products');
+        CommonJS.renderSourceContextNotice({ noticeId: 'productListSourceContextNotice', source: this.state.source });
         this._renderFilterSummary();
         this._bindEvents();
         this._initAnimations();
@@ -64,7 +68,6 @@ const ProductList = {
         document.getElementById('btnBulkDeleteProduct')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearProductSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('productSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
-        CommonJS.bindMainLogoNavigation('/admin/products');
     },
 
     _fillSelect(selectId, items, valueKey, labelKey) {
@@ -946,6 +949,8 @@ const ProductList = {
         if (this.state.createdTodayOnly) params.set('createdTodayOnly', 'true');
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
         if (this.state.orderType && this.state.orderType !== 'r') params.set('orderType', this.state.orderType);
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
 
         return params.toString();
     },
@@ -962,6 +967,8 @@ const ProductList = {
         this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
         this.state.searchKeyword = params.get('searchKeyword') || '';
         this.state.orderType = params.get('orderType') || 'r';
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
     },
 
     _syncFilterInputs() {

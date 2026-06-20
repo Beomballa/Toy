@@ -12,6 +12,8 @@ const OrderList = {
         this.initialized = true;
         this.state = this.readStateFromUrl();
         this.syncFilterFields();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/orders');
+        CommonJS.renderSourceContextNotice({ noticeId: 'orderListSourceContextNotice', source: this.state.source });
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -105,6 +107,8 @@ const OrderList = {
         window.addEventListener('popstate', () => {
             this.state = this.readStateFromUrl();
             this.syncFilterFields();
+            CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/orders');
+            CommonJS.renderSourceContextNotice({ noticeId: 'orderListSourceContextNotice', source: this.state.source });
             this.getList();
         });
     },
@@ -362,7 +366,9 @@ const OrderList = {
             status: params.get('status') || '',
             startDate: params.get('startDate') || '',
             endDate: params.get('endDate') || '',
-            searchKeyword: params.get('searchKeyword') || ''
+            searchKeyword: params.get('searchKeyword') || '',
+            source: params.get('source') || '',
+            returnTo: params.get('returnTo') || ''
         };
     },
 
@@ -377,6 +383,8 @@ const OrderList = {
         if (this.state.startDate) params.set('startDate', this.state.startDate);
         if (this.state.endDate) params.set('endDate', this.state.endDate);
         if (this.state.searchKeyword) params.set('searchKeyword', this.state.searchKeyword);
+        if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
 
         return params;
     }

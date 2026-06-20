@@ -14,6 +14,8 @@ const ContentList = {
         pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
         productLinked: new URLSearchParams(window.location.search).get('productLinked') || '',
         productNo: new URLSearchParams(window.location.search).get('productNo') || '',
+        source: new URLSearchParams(window.location.search).get('source') || '',
+        returnTo: new URLSearchParams(window.location.search).get('returnTo') || '',
         selectedIds: new Set(),
         currentPageIds: [],
         lastBulkResultMessage: '아직 일괄 적용 결과가 없습니다.'
@@ -26,6 +28,8 @@ const ContentList = {
         this.setInitialTab();
         this.updateSidebarActive();
         this.updatePageMeta();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
+        CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -82,11 +86,15 @@ const ContentList = {
             this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
             this.state.productLinked = params.get('productLinked') || '';
             this.state.productNo = params.get('productNo') || '';
+            this.state.source = params.get('source') || '';
+            this.state.returnTo = params.get('returnTo') || '';
             this.state.page = Number(params.get('page') || 0);
             this.syncSearchField();
             this.setInitialTab();
             this.updateSidebarActive();
             this.updatePageMeta();
+            CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
+            CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
             this.getList();
         });
 
@@ -371,6 +379,12 @@ const ContentList = {
         }
         if (this.state.productNo) {
             params.set('productNo', this.state.productNo);
+        }
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        if (this.state.returnTo) {
+            params.set('returnTo', this.state.returnTo);
         }
         return params;
     },

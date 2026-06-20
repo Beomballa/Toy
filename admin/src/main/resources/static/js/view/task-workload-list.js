@@ -10,7 +10,8 @@ const TaskWorkloadList = {
         overdueOnly: '',
         adminNo: '',
         focusAdminNo: '',
-        source: ''
+        source: '',
+        returnTo: ''
     },
 
     init() {
@@ -18,7 +19,6 @@ const TaskWorkloadList = {
         this.initialized = true;
         this.bindEvents();
         this.readStateFromUrl();
-        CommonJS.bindMainLogoNavigation('/admin/settings/tasks/workloads');
         this.getList();
     },
 
@@ -57,11 +57,13 @@ const TaskWorkloadList = {
         this.state.adminNo = params.get('adminNo') || '';
         this.state.focusAdminNo = params.get('focusAdminNo') || '';
         this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
         document.getElementById('taskWorkloadOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskWorkloadPageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/tasks/workloads');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
     },
 
@@ -81,6 +83,7 @@ const TaskWorkloadList = {
         if (this.state.adminNo) params.set('adminNo', this.state.adminNo);
         if (this.state.focusAdminNo) params.set('focusAdminNo', this.state.focusAdminNo);
         if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

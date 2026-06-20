@@ -9,7 +9,9 @@ const ProductFrontDisplayList = {
         featuredOnly: false,
         lowStockOnly: false,
         lowStockThreshold: 20,
-        sort: 'FEATURED'
+        sort: 'FEATURED',
+        source: '',
+        returnTo: ''
     },
     initialLowStockThreshold: 20,
 
@@ -19,9 +21,10 @@ const ProductFrontDisplayList = {
         this.state.lowStockThreshold = this.initialLowStockThreshold;
         this.readStateFromUrl();
         this.syncFilterInputs();
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
+        CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
         this.bindEvents();
         this.load();
-        CommonJS.bindMainLogoNavigation('/admin/products/front-display');
     },
 
     bindEvents() {
@@ -37,6 +40,8 @@ const ProductFrontDisplayList = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.syncFilterInputs();
+            CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
+            CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
             this.load();
         });
     },
@@ -69,6 +74,12 @@ const ProductFrontDisplayList = {
         }
         params.set('lowStockThreshold', String(this.state.lowStockThreshold));
         params.set('sort', this.state.sort);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        if (this.state.returnTo) {
+            params.set('returnTo', this.state.returnTo);
+        }
         return params;
     },
 
@@ -88,7 +99,9 @@ const ProductFrontDisplayList = {
             lowStockThreshold: Number.isFinite(lowStockThreshold) && lowStockThreshold > 0
                 ? lowStockThreshold
                 : this.initialLowStockThreshold,
-            sort: params.get('sort') || 'FEATURED'
+            sort: params.get('sort') || 'FEATURED',
+            source: params.get('source') || '',
+            returnTo: params.get('returnTo') || ''
         };
     },
 

@@ -28,7 +28,8 @@ const TaskList = {
         taskNo: '',
         openTaskNo: '',
         focusTaskNo: '',
-        source: ''
+        source: '',
+        returnTo: ''
     },
 
     init() {
@@ -39,7 +40,6 @@ const TaskList = {
             this.modal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
-        CommonJS.bindMainLogoNavigation('/admin/settings/tasks');
         this.readStateFromUrl();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -178,6 +178,7 @@ const TaskList = {
         this.state.openTaskNo = params.get('openTaskNo') || '';
         this.state.focusTaskNo = params.get('focusTaskNo') || '';
         this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
         document.getElementById('taskNoFilter').value = this.state.taskNo;
         document.getElementById('taskStatusFilter').value = this.state.status;
@@ -192,6 +193,7 @@ const TaskList = {
         document.getElementById('taskOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskUnassignedOnly').checked = this.state.unassignedOnly === 'Y';
         document.getElementById('taskCommentedOnly').value = this.state.commentedOnly;
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/tasks');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskSourceContextNotice', source: this.state.source });
     },
 
@@ -237,6 +239,7 @@ const TaskList = {
         if (this.state.openTaskNo) params.set('openTaskNo', this.state.openTaskNo);
         if (this.state.focusTaskNo) params.set('focusTaskNo', this.state.focusTaskNo);
         if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

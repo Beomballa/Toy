@@ -10,7 +10,8 @@ const NoticeList = {
         isPinned: '',
         visibilityStatus: '',
         noticeNo: '',
-        source: ''
+        source: '',
+        returnTo: ''
     },
     selectedNoticeNos: new Set(),
     saveInFlight: false,
@@ -26,7 +27,6 @@ const NoticeList = {
             this.modal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
-        CommonJS.bindMainLogoNavigation('/admin/settings/notices');
         this.readStateFromUrl();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -115,11 +115,13 @@ const NoticeList = {
         this.state.visibilityStatus = params.get('visibilityStatus') || '';
         this.state.noticeNo = params.get('noticeNo') || '';
         this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('noticeKeyword').value = this.state.keyword;
         document.getElementById('noticeIsActiveFilter').value = this.state.isActive;
         document.getElementById('noticeIsPinnedFilter').value = this.state.isPinned;
         document.getElementById('noticeVisibilityStatusFilter').value = this.state.visibilityStatus;
         document.getElementById('noticePageSize').value = String(this.state.size);
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/notices');
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
     },
 
@@ -141,6 +143,7 @@ const NoticeList = {
         if (this.state.visibilityStatus) params.set('visibilityStatus', this.state.visibilityStatus);
         if (this.state.noticeNo) params.set('noticeNo', this.state.noticeNo);
         if (this.state.source) params.set('source', this.state.source);
+        if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
         return params;
     },
 

@@ -12,9 +12,11 @@ const DashBoardListJS = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.applySectionFocus();
+            this.rewriteEntryLinksWithReturnTo();
         });
         this.readStateFromUrl();
         this.applySectionFocus();
+        this.rewriteEntryLinksWithReturnTo();
         this.getStats();
     },
 
@@ -419,6 +421,15 @@ const DashBoardListJS = {
     applySectionFocus() {
         document.querySelectorAll('[data-dashboard-section]').forEach((sectionEl) => {
             sectionEl.classList.toggle('dashboard-section-focus', sectionEl.dataset.dashboardSection === this.state.section);
+        });
+    },
+
+    rewriteEntryLinksWithReturnTo() {
+        document.querySelectorAll('[data-dashboard-section] a[href]').forEach((anchor) => {
+            const nextHref = this.buildEntryPathWithReturnTo(anchor.href, anchor.dataset.entrySource || '');
+            if (nextHref) {
+                anchor.href = nextHref;
+            }
         });
     },
 

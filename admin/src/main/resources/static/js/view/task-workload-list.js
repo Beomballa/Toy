@@ -65,6 +65,10 @@ const TaskWorkloadList = {
         document.getElementById('taskWorkloadPageSize').value = String(this.state.size);
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/tasks/workloads');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
+        const backButton = document.getElementById('btnBackToTaskList');
+        if (backButton) {
+            backButton.href = this.state.returnTo || '/admin/settings/tasks';
+        }
     },
 
     updateStateFromInputs() {

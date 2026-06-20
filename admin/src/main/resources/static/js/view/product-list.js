@@ -44,6 +44,10 @@ const ProductList = {
         this._syncFilterInputs();
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products');
         CommonJS.renderSourceContextNotice({ noticeId: 'productListSourceContextNotice', source: this.state.source });
+        const frontDisplayButton = document.getElementById('btnGoProductFrontDisplay');
+        if (frontDisplayButton) {
+            frontDisplayButton.href = `/admin/products/front-display?source=product-list-front-display&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+        }
         this._renderFilterSummary();
         this._bindEvents();
         this._initAnimations();

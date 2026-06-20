@@ -23,6 +23,10 @@ const ProductFrontDisplayList = {
         this.syncFilterInputs();
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
         CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
+        const backButton = document.getElementById('btnBackToProductList');
+        if (backButton) {
+            backButton.href = this.state.returnTo || '/admin/products';
+        }
         this.bindEvents();
         this.load();
     },
@@ -42,6 +46,10 @@ const ProductFrontDisplayList = {
             this.syncFilterInputs();
             CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
             CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
+            const backButton = document.getElementById('btnBackToProductList');
+            if (backButton) {
+                backButton.href = this.state.returnTo || '/admin/products';
+            }
             this.load();
         });
     },

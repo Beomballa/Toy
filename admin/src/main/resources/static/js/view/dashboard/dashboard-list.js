@@ -44,9 +44,14 @@ const DashBoardListJS = {
 
     bindOperationEntryActions() {
         document.querySelectorAll('[data-dashboard-section] a[href]').forEach((anchor) => {
-            anchor.addEventListener('click', () => {
+            anchor.addEventListener('click', (event) => {
                 const section = anchor.closest('[data-dashboard-section]')?.dataset.dashboardSection || '';
                 this.markDashboardSection(section, true);
+                const nextHref = this.buildEntryPathWithReturnTo(anchor.href, anchor.dataset.entrySource || '');
+                if (nextHref) {
+                    event.preventDefault();
+                    location.href = nextHref;
+                }
             });
         });
         document.getElementById('operationTaskSection')?.addEventListener('click', (event) => {
@@ -182,7 +187,7 @@ const DashBoardListJS = {
                            data-entry-source="dashboard-task-history"
                            data-entry-target="task-history">이력</a>
                         <a class="btn btn-sm btn-outline-secondary"
-                           href="${task.activityLogPath}"
+                           href="${this.buildActivityLogPathFromBase(task.activityLogPath, 'dashboard-task-activity-log')}"
                            data-entry-source="dashboard-task-activity-log"
                            data-entry-target="activity-log">활동 로그</a>
                     </div>
@@ -240,7 +245,7 @@ const DashBoardListJS = {
                            data-entry-source="dashboard-unassigned-history"
                            data-entry-target="task-history">이력</a>
                         <a class="btn btn-sm btn-outline-secondary"
-                           href="${task.activityLogPath}"
+                           href="${this.buildActivityLogPathFromBase(task.activityLogPath, 'dashboard-unassigned-activity-log')}"
                            data-entry-source="dashboard-unassigned-activity-log"
                            data-entry-target="activity-log">활동 로그</a>
                     </div>
@@ -490,6 +495,28 @@ const DashBoardListJS = {
         return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
+    buildActivityLogPathFromBase(basePath, source = 'dashboard-activity-log') {
+        if (!basePath) return '#';
+        const targetUrl = new URL(basePath, window.location.origin);
+        targetUrl.searchParams.set('returnTo', this.getReturnTo());
+        if (source) {
+            targetUrl.searchParams.set('source', source);
+        }
+        return `${targetUrl.pathname}${targetUrl.search}`;
+    },
+
+    buildEntryPathWithReturnTo(basePath, source = '') {
+        if (!basePath || basePath.startsWith('javascript:')) {
+            return '';
+        }
+        const targetUrl = new URL(basePath, window.location.origin);
+        if (source && !targetUrl.searchParams.get('source')) {
+            targetUrl.searchParams.set('source', source);
+        }
+        targetUrl.searchParams.set('returnTo', this.getReturnTo());
+        return `${targetUrl.pathname}${targetUrl.search}`;
+    },
+
     renderSalesChart(chartData) {
         const ctx = document.getElementById('salesChart');
         if (!ctx || !chartData) return;
@@ -642,7 +669,8 @@ const DashBoardListJS = {
         const params = new URLSearchParams({
             page: 0,
             size: 10,
-            source: section === 'summary' ? 'dashboard-summary' : 'dashboard'
+            source: section === 'summary' ? 'dashboard-summary' : 'dashboard',
+            returnTo: this.getReturnTo()
         });
 
         if (filters.status) params.set('status', filters.status);

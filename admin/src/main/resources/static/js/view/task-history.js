@@ -259,9 +259,15 @@ const TaskHistoryPage = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo, '운영 작업');
         const breadcrumbLink = document.getElementById('taskHistoryBreadcrumbLink');
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
+            breadcrumbLink.textContent = returnContext.label;
+        }
+        const backButton = document.getElementById('btnBackToTaskSource');
+        if (backButton) {
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
         }
     },
 

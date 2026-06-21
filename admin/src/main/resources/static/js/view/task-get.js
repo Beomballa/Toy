@@ -35,10 +35,7 @@ const TaskDetailPage = {
         this.state.taskNo = Number(bootstrapState.taskNo || 0);
         this.state.returnTo = bootstrapState.returnTo || '/admin/settings/tasks';
         this.state.source = bootstrapState.source || '';
-        const breadcrumbLink = document.getElementById('taskDetailBreadcrumbLink');
-        if (breadcrumbLink) {
-            breadcrumbLink.href = this.state.returnTo;
-        }
+        this.syncReturnLinks();
         this.syncReturnContextMeta();
         CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
     },
@@ -660,6 +657,19 @@ const TaskDetailPage = {
         metaEl.dataset.returnContext = this.resolveReturnContext();
         metaEl.dataset.sourceContext = this.state.source || '';
         CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
+    },
+
+    syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo, '운영 작업');
+        const breadcrumbLink = document.getElementById('taskDetailBreadcrumbLink');
+        if (breadcrumbLink) {
+            breadcrumbLink.href = this.state.returnTo;
+            breadcrumbLink.textContent = returnContext.label;
+        }
+        const backButton = document.getElementById('btnBackToTaskList');
+        if (backButton) {
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
+        }
     },
 
     resolveReturnContext() {

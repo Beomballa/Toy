@@ -282,9 +282,15 @@ const OrderHistoryPage = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo, '주문 관리');
         const breadcrumbLink = document.getElementById('orderHistoryBreadcrumbLink');
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
+            breadcrumbLink.textContent = returnContext.label;
+        }
+        const backButton = document.getElementById('btnBackToOrderHistorySource');
+        if (backButton) {
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
         }
     },
 

@@ -66,8 +66,10 @@ const TaskWorkloadList = {
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/tasks/workloads');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
         const backButton = document.getElementById('btnBackToTaskList');
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo || '/admin/settings/tasks', '운영 작업');
         if (backButton) {
             backButton.href = this.state.returnTo || '/admin/settings/tasks';
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
         }
     },
 

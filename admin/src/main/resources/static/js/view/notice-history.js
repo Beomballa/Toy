@@ -245,9 +245,15 @@ const NoticeHistoryPage = {
     },
 
     syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo, '운영 공지');
         const breadcrumbLink = document.getElementById('noticeHistoryBreadcrumbLink');
         if (breadcrumbLink) {
             breadcrumbLink.href = this.state.returnTo;
+            breadcrumbLink.textContent = returnContext.label;
+        }
+        const backButton = document.getElementById('btnBackToNoticeSource');
+        if (backButton) {
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
         }
     },
 

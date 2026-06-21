@@ -207,15 +207,18 @@ const TaskWorkloadDetail = {
         const returnButton = document.getElementById('taskWorkloadReturnButton');
         const returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
         const workloadListPath = this.buildCurrentListPath();
+        const returnContext = CommonJS.getReturnContext(returnTo, '담당자별 워크로드');
 
         if (taskBreadcrumb) {
             taskBreadcrumb.href = returnTo;
+            taskBreadcrumb.textContent = returnContext.label;
         }
         if (workloadBreadcrumb) {
             workloadBreadcrumb.href = workloadListPath;
         }
         if (returnButton) {
             returnButton.href = returnTo;
+            returnButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.label}로 돌아가기`;
         }
     },
 

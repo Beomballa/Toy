@@ -31,10 +31,7 @@ const NoticeDetailPage = {
         this.state.noticeNo = Number(bootstrapState.noticeNo || 0);
         this.state.returnTo = bootstrapState.returnTo || '/admin/settings/notices';
         this.state.source = bootstrapState.source || '';
-        const breadcrumbLink = document.getElementById('noticeDetailBreadcrumbLink');
-        if (breadcrumbLink) {
-            breadcrumbLink.href = this.state.returnTo;
-        }
+        this.syncReturnLinks();
         this.syncReturnContextMeta();
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeDetailSourceContextNotice', source: this.state.source });
     },
@@ -333,6 +330,19 @@ const NoticeDetailPage = {
         metaEl.dataset.returnTo = this.state.returnTo || '/admin/settings/notices';
         metaEl.dataset.returnContext = this.resolveReturnContext();
         metaEl.dataset.sourceContext = this.state.source || '';
+    },
+
+    syncReturnLinks() {
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo, '운영 공지');
+        const breadcrumbLink = document.getElementById('noticeDetailBreadcrumbLink');
+        if (breadcrumbLink) {
+            breadcrumbLink.href = this.state.returnTo;
+            breadcrumbLink.textContent = returnContext.label;
+        }
+        const backButton = document.getElementById('btnBackToNoticeList');
+        if (backButton) {
+            backButton.textContent = `${returnContext.label}로 돌아가기`;
+        }
     },
 
     resolveReturnContext() {

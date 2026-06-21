@@ -51,6 +51,7 @@ class AdminOperationNoticeHistoryServiceTest {
         AdminOperationNoticeHistoryListRequest request = new AdminOperationNoticeHistoryListRequest();
         request.setNoticeNo(7L);
         request.setAdminNo(2L);
+        request.setAdminKeyword("운영자");
         request.setReturnTo("/admin/settings/notices?page=1");
 
         AdminOperationNoticeHistoryListResponse response = adminOperationNoticeHistoryService.getNoticeHistoryList(request, 0, 20);
@@ -59,6 +60,7 @@ class AdminOperationNoticeHistoryServiceTest {
         verify(adminLogService).getLogList(requestCaptor.capture(), any(Pageable.class));
         assertEquals("NOTICE_", requestCaptor.getValue().getActionType());
         assertEquals(7L, requestCaptor.getValue().getTargetId());
+        assertEquals("운영자", requestCaptor.getValue().getAdminKeyword());
         assertEquals(1, response.items().size());
         assertEquals("공지 수정", response.items().get(0).actionLabel());
         assertEquals("/admin/settings/notices?page=1", response.appliedQuery().returnTo());

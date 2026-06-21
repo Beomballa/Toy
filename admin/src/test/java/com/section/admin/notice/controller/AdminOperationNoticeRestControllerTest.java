@@ -145,14 +145,15 @@ class AdminOperationNoticeRestControllerTest {
                         1L,
                         1L,
                         "1-1 / 1건 · 1페이지",
-                        new AdminOperationNoticeHistoryListResponse.AppliedQuery(1L, "NOTICE_UPDATE", 2L, "2026-05-20", "2026-05-20", "/admin/settings/notices"),
+                        new AdminOperationNoticeHistoryListResponse.AppliedQuery(1L, "NOTICE_UPDATE", 2L, "운영자", "2026-05-20", "2026-05-20", "/admin/settings/notices"),
                         new AdminOperationNoticeHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 4, "1-1 · 작업=NOTICE_UPDATE")
                 ));
 
-        mockMvc.perform(get("/api/admin/settings/notices/history/list").param("noticeNo", "1"))
+        mockMvc.perform(get("/api/admin/settings/notices/history/list").param("noticeNo", "1").param("adminKeyword", "운영자"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].noticeNo").value(1L))
                 .andExpect(jsonPath("$.items[0].actionLabel").value("공지 수정"))
+                .andExpect(jsonPath("$.appliedQuery.adminKeyword").value("운영자"))
                 .andExpect(jsonPath("$.resultMeta.filterCount").value(4));
     }
 

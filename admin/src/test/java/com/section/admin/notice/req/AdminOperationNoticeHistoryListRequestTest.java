@@ -22,6 +22,15 @@ class AdminOperationNoticeHistoryListRequestTest {
     }
 
     @Test
+    @DisplayName("운영 공지 이력 요청은 관리자명 검색어를 정규화해 로그 요청으로 전달한다")
+    void toLogListRequestNormalizesAdminKeyword() {
+        AdminOperationNoticeHistoryListRequest request = new AdminOperationNoticeHistoryListRequest();
+        request.setAdminKeyword("  운영  관리자  ");
+
+        assertEquals("운영 관리자", request.toLogListRequest().getAdminKeyword());
+    }
+
+    @Test
     @DisplayName("운영 공지 이력 요청은 허용되지 않은 actionType을 거부한다")
     void toLogListRequestRejectsInvalidActionType() {
         AdminOperationNoticeHistoryListRequest request = new AdminOperationNoticeHistoryListRequest();

@@ -25,6 +25,7 @@ public class AdminOperationNoticeHistoryListRequest {
     private Long noticeNo;
     private String actionType;
     private Long adminNo;
+    private String adminKeyword;
     private LocalDate startDate;
     private LocalDate endDate;
     private String returnTo;
@@ -35,6 +36,7 @@ public class AdminOperationNoticeHistoryListRequest {
         AdminLogListRequest request = new AdminLogListRequest();
         request.setTargetId(noticeNo);
         request.setAdminNo(adminNo);
+        request.setAdminKeyword(normalize(adminKeyword));
         // NOTICE_ prefix means "all notice logs" because admin log query uses containsIgnoreCase.
         request.setActionType(normalizedActionType());
         request.setStartDate(startDate);
@@ -80,7 +82,15 @@ public class AdminOperationNoticeHistoryListRequest {
         if (actionType == null) {
             return "NOTICE_";
         }
-        String normalized = actionType.trim().replaceAll("\\s+", " ");
-        return normalized.isBlank() ? "NOTICE_" : normalized;
+        String normalized = normalize(actionType);
+        return normalized == null ? "NOTICE_" : normalized;
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        return normalized.isBlank() ? null : normalized;
     }
 }

@@ -31,7 +31,7 @@ const NoticeHistoryPage = {
             this.state.size = Number(document.getElementById('noticeHistoryPageSize')?.value || 20);
             this.loadHistory();
         });
-        ['noticeHistoryNoticeNo', 'noticeHistoryAdminNo', 'noticeHistoryStartDate', 'noticeHistoryEndDate'].forEach((id) => {
+        ['noticeHistoryNoticeNo', 'noticeHistoryAdminNo', 'noticeHistoryAdminKeyword', 'noticeHistoryStartDate', 'noticeHistoryEndDate'].forEach((id) => {
             document.getElementById(id)?.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
                     event.preventDefault();
@@ -72,6 +72,7 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryNoticeNo').value = params.get('noticeNo') || '';
         document.getElementById('noticeHistoryActionType').value = params.get('actionType') || 'NOTICE_';
         document.getElementById('noticeHistoryAdminNo').value = params.get('adminNo') || '';
+        document.getElementById('noticeHistoryAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('noticeHistoryStartDate').value = params.get('startDate') || '';
         document.getElementById('noticeHistoryEndDate').value = params.get('endDate') || '';
         this.state.page = Number(params.get('page') || 0);
@@ -90,12 +91,14 @@ const NoticeHistoryPage = {
         const noticeNo = document.getElementById('noticeHistoryNoticeNo').value.trim();
         const actionType = document.getElementById('noticeHistoryActionType').value || 'NOTICE_';
         const adminNo = document.getElementById('noticeHistoryAdminNo').value.trim();
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('noticeHistoryAdminKeyword').value) || '';
         const startDate = document.getElementById('noticeHistoryStartDate').value;
         const endDate = document.getElementById('noticeHistoryEndDate').value;
 
         if (noticeNo) params.set('noticeNo', noticeNo);
         if (actionType && actionType !== 'NOTICE_') params.set('actionType', actionType);
         if (adminNo) params.set('adminNo', adminNo);
+        if (adminKeyword) params.set('adminKeyword', adminKeyword);
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (this.state.logNo) params.set('logNo', this.state.logNo);
@@ -290,6 +293,7 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryNoticeNo').value = '';
         document.getElementById('noticeHistoryActionType').value = 'NOTICE_';
         document.getElementById('noticeHistoryAdminNo').value = '';
+        document.getElementById('noticeHistoryAdminKeyword').value = '';
         document.getElementById('noticeHistoryStartDate').value = '';
         document.getElementById('noticeHistoryEndDate').value = '';
         document.getElementById('noticeHistoryPageSize').value = '20';

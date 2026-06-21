@@ -83,6 +83,7 @@ public record AdminOperationNoticeHistoryListResponse(
             Long noticeNo,
             String actionType,
             Long adminNo,
+            String adminKeyword,
             String startDate,
             String endDate,
             String returnTo
@@ -92,6 +93,7 @@ public record AdminOperationNoticeHistoryListResponse(
                     query.targetId(),
                     query.actionType(),
                     query.adminNo(),
+                    query.adminKeyword(),
                     query.startDate(),
                     query.endDate(),
                     returnTo

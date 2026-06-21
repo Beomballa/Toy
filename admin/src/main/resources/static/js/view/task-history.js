@@ -212,16 +212,17 @@ const TaskHistoryPage = {
             }
             const data = await response.json();
             const detailLogPath = this.buildTaskLogPath(data.targetId || '');
+            const targetPath = this.buildTaskDetailPath(data.targetPath || '');
             document.getElementById('taskHistoryDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
-                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
-            this.setDetailFooterLinks(data.targetPath || '', detailLogPath);
-            this.setDetailStateMeta('ready', '', logNo, data.targetPath || '', detailLogPath);
+            this.setDetailFooterLinks(targetPath, detailLogPath);
+            this.setDetailStateMeta('ready', '', logNo, targetPath, detailLogPath);
             this.state.logNo = String(logNo);
             const listMetaEl = document.getElementById('taskHistoryStateMeta');
             if (listMetaEl) {

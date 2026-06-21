@@ -187,8 +187,8 @@ const TaskWorkloadList = {
                 </td>
                 <td class="text-end pe-4">
                     <a class="btn btn-sm btn-outline-dark me-1" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">상세</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${item.targetPath}">담당 작업</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="${item.overduePath}">기한 초과</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildContextualTaskPath(item.targetPath)}">담당 작업</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="${this.buildContextualTaskPath(item.overduePath)}">기한 초과</a>
                 </td>
             </tr>
         `).join('');
@@ -245,7 +245,8 @@ const TaskWorkloadList = {
             overdueOnly: '',
             adminNo: '',
             focusAdminNo: '',
-            source: this.state.source || ''
+            source: this.state.source || '',
+            returnTo: this.state.returnTo || ''
         };
         document.getElementById('taskWorkloadKeyword').value = '';
         document.getElementById('taskWorkloadPriority').value = '';
@@ -312,6 +313,19 @@ const TaskWorkloadList = {
             params.set('source', this.state.source);
         }
         return `/admin/settings/tasks/workloads/get?${params.toString()}`;
+    },
+
+    buildContextualTaskPath(basePath) {
+        if (!basePath) {
+            return '#';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', `${window.location.pathname}?${this.buildParams().toString()}`);
+        if (this.state.source) {
+            params.set('source', this.state.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     highlightFocusedAdminRow() {

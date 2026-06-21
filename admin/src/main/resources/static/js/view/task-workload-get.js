@@ -16,7 +16,9 @@ const TaskWorkloadDetail = {
             this.reassignModal = new bootstrap.Modal(modalEl);
         }
         this.bindEvents();
+        this.syncReturnLinks();
         this.syncReturnContextMeta();
+        CommonJS.bindMainLogoNavigation(this.bootstrap.returnTo || '/admin/settings/tasks/workloads/get');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadDetailSourceContextNotice', source: this.bootstrap.source || '' });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -157,12 +159,12 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadDetailInProgressCount').textContent = Number(data.summary?.inProgressCount || 0).toLocaleString();
         document.getElementById('workloadDetailOverdueCount').textContent = Number(data.summary?.overdueCount || 0).toLocaleString();
 
-        document.getElementById('workloadDetailTaskListButton').href = data.targetPath || '#';
-        document.getElementById('workloadDetailTotalButton').href = data.targetPath || '#';
-        document.getElementById('workloadDetailTodoButton').href = data.todoPath || '#';
-        document.getElementById('workloadDetailInProgressButton').href = data.inProgressPath || '#';
-        document.getElementById('workloadDetailOverdueButton').href = data.overduePath || '#';
-        document.getElementById('workloadDetailOverdueSummaryButton').href = data.overduePath || '#';
+        document.getElementById('workloadDetailTaskListButton').href = this.buildContextualPath(data.targetPath) || '#';
+        document.getElementById('workloadDetailTotalButton').href = this.buildContextualPath(data.targetPath) || '#';
+        document.getElementById('workloadDetailTodoButton').href = this.buildContextualPath(data.todoPath) || '#';
+        document.getElementById('workloadDetailInProgressButton').href = this.buildContextualPath(data.inProgressPath) || '#';
+        document.getElementById('workloadDetailOverdueButton').href = this.buildContextualPath(data.overduePath) || '#';
+        document.getElementById('workloadDetailOverdueSummaryButton').href = this.buildContextualPath(data.overduePath) || '#';
         document.getElementById('workloadDetailLogButton').href = this.buildLogPathFromBase(data.activityLogPath) || '#';
 
         this.renderRecentTasks(data.recentTasks || []);
@@ -197,6 +199,24 @@ const TaskWorkloadDetail = {
         metaEl.dataset.returnContext = this.resolveReturnContext();
         metaEl.dataset.sourceContext = this.bootstrap.source || '';
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadDetailSourceContextNotice', source: this.bootstrap.source || '' });
+    },
+
+    syncReturnLinks() {
+        const taskBreadcrumb = document.getElementById('taskWorkloadTaskBreadcrumbLink');
+        const workloadBreadcrumb = document.getElementById('taskWorkloadListBreadcrumbLink');
+        const returnButton = document.getElementById('taskWorkloadReturnButton');
+        const returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
+        const workloadListPath = this.buildCurrentListPath();
+
+        if (taskBreadcrumb) {
+            taskBreadcrumb.href = returnTo;
+        }
+        if (workloadBreadcrumb) {
+            workloadBreadcrumb.href = workloadListPath;
+        }
+        if (returnButton) {
+            returnButton.href = returnTo;
+        }
     },
 
     resolveReturnContext() {
@@ -648,6 +668,31 @@ const TaskWorkloadDetail = {
             params.set('source', this.bootstrap.source);
         }
         return `/admin/settings/tasks/workloads/get?${params.toString()}`;
+    },
+
+    buildCurrentListPath() {
+        const params = new URLSearchParams();
+        if (this.bootstrap.returnTo) {
+            params.set('returnTo', this.bootstrap.returnTo);
+        }
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
+        }
+        const query = params.toString();
+        return query ? `/admin/settings/tasks/workloads?${query}` : '/admin/settings/tasks/workloads';
+    },
+
+    buildContextualPath(basePath) {
+        if (!basePath) {
+            return '';
+        }
+        const [path, rawQuery = ''] = basePath.split('?');
+        const params = new URLSearchParams(rawQuery);
+        params.set('returnTo', this.buildCurrentDetailPath());
+        if (this.bootstrap.source) {
+            params.set('source', this.bootstrap.source);
+        }
+        return `${path}?${params.toString()}`;
     },
 
     buildLogPathFromBase(basePath) {

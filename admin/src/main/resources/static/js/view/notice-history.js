@@ -202,15 +202,16 @@ const NoticeHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            const targetPath = this.buildNoticeDetailPath(data.targetPath || '');
             document.getElementById('noticeHistoryDetailBody').innerHTML = `
                 <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
                 <div class="mb-2"><strong>관리자</strong> ${data.adminName} (#${data.adminNo})</div>
                 <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
-                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${data.targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
                 <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
                 <div><strong>작업 일시</strong> ${data.actionDtm}</div>
             `;
-            this.setDetailTargetLink(data.targetPath || '');
+            this.setDetailTargetLink(targetPath);
             this.state.logNo = String(logNo);
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);

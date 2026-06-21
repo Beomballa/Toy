@@ -150,6 +150,10 @@ const ContentEdit = {
         const boardNameEl = document.getElementById('contentBoardName');
         const sideNoteEl = document.getElementById('contentSideNote');
         const listBreadcrumbEl = document.getElementById('contentListBreadcrumb');
+        const backButton = document.getElementById('btnBackToList');
+        const returnContext = this.returnTo
+            ? CommonJS.getReturnContext(this.returnTo, meta.edit.boardName)
+            : null;
 
         const pageTitle = this.id ? meta.edit.title.replace('작성', '수정') : meta.edit.title;
 
@@ -162,8 +166,11 @@ const ContentEdit = {
         if (boardNameEl) boardNameEl.textContent = meta.edit.boardName;
         if (sideNoteEl) sideNoteEl.textContent = meta.edit.sideNote;
         if (listBreadcrumbEl) {
-            listBreadcrumbEl.textContent = meta.edit.boardName;
-            listBreadcrumbEl.href = meta.listPath;
+            listBreadcrumbEl.textContent = returnContext?.label || meta.edit.boardName;
+            listBreadcrumbEl.href = this.getListPath();
+        }
+        if (backButton) {
+            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext?.buttonLabel || `${meta.edit.boardName}로`}`;
         }
     },
 

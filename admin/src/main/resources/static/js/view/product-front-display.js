@@ -21,12 +21,7 @@ const ProductFrontDisplayList = {
         this.state.lowStockThreshold = this.initialLowStockThreshold;
         this.readStateFromUrl();
         this.syncFilterInputs();
-        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
-        CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
-        const backButton = document.getElementById('btnBackToProductList');
-        if (backButton) {
-            backButton.href = this.state.returnTo || '/admin/products';
-        }
+        this.syncReturnLinks();
         this.bindEvents();
         this.load();
     },
@@ -44,12 +39,7 @@ const ProductFrontDisplayList = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.syncFilterInputs();
-            CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
-            CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
-            const backButton = document.getElementById('btnBackToProductList');
-            if (backButton) {
-                backButton.href = this.state.returnTo || '/admin/products';
-            }
+            this.syncReturnLinks();
             this.load();
         });
     },
@@ -138,6 +128,17 @@ const ProductFrontDisplayList = {
         const lowStockOnly = document.getElementById('lowStockOnly');
         if (lowStockOnly) {
             lowStockOnly.checked = this.state.lowStockOnly;
+        }
+    },
+
+    syncReturnLinks() {
+        CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/products/front-display');
+        CommonJS.renderSourceContextNotice({ noticeId: 'productFrontDisplaySourceContextNotice', source: this.state.source });
+        const backButton = document.getElementById('btnBackToProductList');
+        const returnContext = CommonJS.getReturnContext(this.state.returnTo || '/admin/products', '상품 관리');
+        if (backButton) {
+            backButton.href = this.state.returnTo || '/admin/products';
+            backButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
         }
     },
 

@@ -114,9 +114,16 @@ const ContentDetail = {
         this.setText('contentBoardLabel', meta.detail.label);
 
         const listLink = document.getElementById('contentListBreadcrumbLink');
+        const backButton = document.getElementById('btnBackToList');
+        const returnContext = this.state.returnTo
+            ? CommonJS.getReturnContext(this.state.returnTo, meta.detail.listTitle)
+            : null;
         if (listLink) {
-            listLink.textContent = meta.detail.listTitle;
-            listLink.href = meta.listPath;
+            listLink.textContent = returnContext?.label || meta.detail.listTitle;
+            listLink.href = this.getListPath();
+        }
+        if (backButton) {
+            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext?.buttonLabel || `${meta.detail.listTitle}로`}`;
         }
     },
 

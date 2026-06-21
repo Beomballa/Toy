@@ -14,6 +14,7 @@ public class AdminOperationTaskWorkloadListRequest {
     private String keyword;
     private String priority;
     private String overdueOnly;
+    private String sortBy;
     private Integer page = 0;
     private Integer size = 10;
 
@@ -21,7 +22,8 @@ public class AdminOperationTaskWorkloadListRequest {
         return new AdminOperationTaskWorkloadListQuery(
                 normalize(keyword),
                 normalizePriority(priority),
-                normalizeFlag(overdueOnly)
+                normalizeFlag(overdueOnly),
+                normalizeSort(sortBy)
         );
     }
 
@@ -68,5 +70,16 @@ public class AdminOperationTaskWorkloadListRequest {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         return normalized.toUpperCase();
+    }
+
+    private String normalizeSort(String value) {
+        String normalized = normalize(value);
+        if (normalized == null) {
+            return "OVERDUE_DESC";
+        }
+        return switch (normalized.toUpperCase()) {
+            case "OVERDUE_DESC", "TOTAL_DESC", "TODO_DESC", "NAME_ASC" -> normalized.toUpperCase();
+            default -> throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        };
     }
 }

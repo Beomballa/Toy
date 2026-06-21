@@ -4,6 +4,7 @@ import com.section.admin.AdminToyApplication;
 import com.section.common.system.dto.AdminOperationTaskListQuery;
 import com.section.common.system.dto.AdminOperationTaskListResDto;
 import com.section.common.system.dto.AdminOperationTaskWorkloadListQuery;
+import com.section.common.system.dto.AdminOperationTaskWorkloadDto;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.entity.AdminOperationTaskComment;
 import com.section.common.system.entity.AdminUser;
@@ -288,12 +289,12 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
         adminOperationTaskCommentRepository.save(comment(task.getTaskNo(), "송장 지연 이슈 확인", assignee.getAdminNo()));
 
         Page<?> assigneeMatched = adminOperationTaskRepository.getTaskWorkloadPage(
-                new AdminOperationTaskWorkloadListQuery("정산운영", null, null),
+                new AdminOperationTaskWorkloadListQuery("정산운영", null, null, null),
                 PageRequest.of(0, 10),
                 LocalDate.of(2026, 6, 10)
         );
         Page<?> commentMatched = adminOperationTaskRepository.getTaskWorkloadPage(
-                new AdminOperationTaskWorkloadListQuery("송장 지연", null, null),
+                new AdminOperationTaskWorkloadListQuery("송장 지연", null, null, null),
                 PageRequest.of(0, 10),
                 LocalDate.of(2026, 6, 10)
         );
@@ -328,7 +329,7 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
                 .build());
 
         Page<?> matched = adminOperationTaskRepository.getTaskWorkloadPage(
-                new AdminOperationTaskWorkloadListQuery("정산 지연", null, null),
+                new AdminOperationTaskWorkloadListQuery("정산 지연", null, null, null),
                 PageRequest.of(0, 10),
                 LocalDate.of(2026, 6, 10)
         );
@@ -366,6 +367,66 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
 
         assertTrue(result.stream().anyMatch(item -> "활성 담당자".equals(item.adminName())));
         assertTrue(result.stream().noneMatch(item -> "정지 담당자".equals(item.adminName())));
+    }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 정렬은 총 작업 많은 순 기준으로 담당자를 먼저 노출한다")
+    void getTaskWorkloadPageSortsByTotalTaskCount() {
+        AdminUser heavyAssignee = adminUserRepository.save(AdminUser.builder()
+                .loginId("ops-heavy")
+                .password("pw")
+                .name("작업 많은 담당자")
+                .build());
+        AdminUser lightAssignee = adminUserRepository.save(AdminUser.builder()
+                .loginId("ops-light")
+                .password("pw")
+                .name("작업 적은 담당자")
+                .build());
+
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("정산 1")
+                .description("정산 작업")
+                .status("TODO")
+                .priority("HIGH")
+                .assigneeAdminNo(heavyAssignee.getAdminNo())
+                .isPinned("N")
+                .build());
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("정산 2")
+                .description("정산 작업")
+                .status("IN_PROGRESS")
+                .priority("MEDIUM")
+                .assigneeAdminNo(heavyAssignee.getAdminNo())
+                .isPinned("N")
+                .build());
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("정산 3")
+                .description("정산 작업")
+                .status("DONE")
+                .priority("LOW")
+                .assigneeAdminNo(heavyAssignee.getAdminNo())
+                .isPinned("N")
+                .build());
+
+        adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("정산 단건")
+                .description("정산 작업")
+                .status("TODO")
+                .priority("HIGH")
+                .assigneeAdminNo(lightAssignee.getAdminNo())
+                .isPinned("N")
+                .build());
+
+        Page<?> sorted = adminOperationTaskRepository.getTaskWorkloadPage(
+                new AdminOperationTaskWorkloadListQuery("정산", null, null, "TOTAL_DESC"),
+                PageRequest.of(0, 10),
+                LocalDate.of(2026, 6, 10)
+        );
+
+        List<Long> adminNos = sorted.getContent().stream()
+                .map(item -> ((AdminOperationTaskWorkloadDto) item).assigneeAdminNo())
+                .toList();
+        assertIterableEquals(List.of(heavyAssignee.getAdminNo(), lightAssignee.getAdminNo()), adminNos.subList(0, 2));
     }
 
     private AdminOperationTaskComment comment(Long taskNo, String content, Long crtNo) {

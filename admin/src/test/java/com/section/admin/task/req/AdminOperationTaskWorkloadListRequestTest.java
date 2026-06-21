@@ -16,12 +16,14 @@ class AdminOperationTaskWorkloadListRequestTest {
         request.setKeyword("  운영   작업  ");
         request.setPriority("high");
         request.setOverdueOnly("y");
+        request.setSortBy("total_desc");
 
         var query = request.toQuery();
 
         assertEquals("운영 작업", query.keyword());
         assertEquals("HIGH", query.priority());
         assertEquals("Y", query.overdueOnly());
+        assertEquals("TOTAL_DESC", query.sortBy());
     }
 
     @Test
@@ -29,6 +31,15 @@ class AdminOperationTaskWorkloadListRequestTest {
     void toQueryRejectsInvalidPriority() {
         AdminOperationTaskWorkloadListRequest request = new AdminOperationTaskWorkloadListRequest();
         request.setPriority("WRONG");
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("운영 작업 워크로드 요청은 잘못된 정렬 기준을 거부한다")
+    void toQueryRejectsInvalidSortBy() {
+        AdminOperationTaskWorkloadListRequest request = new AdminOperationTaskWorkloadListRequest();
+        request.setSortBy("WRONG");
 
         assertThrows(BusinessException.class, request::toQuery);
     }

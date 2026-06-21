@@ -145,7 +145,7 @@ class AdminOperationTaskRestControllerTest {
                         1L,
                         10,
                         new AdminOperationTaskWorkloadListResponse.Summary(1L, 6L, 1L, 2L, "탐색 문맥 기준", "기한 초과 우선 · 진행중 우선"),
-                        new AdminOperationTaskWorkloadListResponse.AppliedQuery("정산", "HIGH", null),
+                        new AdminOperationTaskWorkloadListResponse.AppliedQuery("정산", "HIGH", null, "TOTAL_DESC"),
                         new AdminOperationTaskWorkloadListResponse.ResultMeta("검색 결과 1명", "1-1 / 1명 · 1페이지", 2L, true, "기한 초과 우선 · 진행중 우선", 1L, 1L)
                 ));
 

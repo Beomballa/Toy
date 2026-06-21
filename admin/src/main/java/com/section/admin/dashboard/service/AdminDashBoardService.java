@@ -103,7 +103,7 @@ public class AdminDashBoardService {
                 .map(this::toTaskWorkload)
                 .toList();
         AdminOperationTaskWorkloadSummaryDto workloadSummary = adminOperationTaskRepository.getTaskWorkloadSummary(
-                new AdminOperationTaskWorkloadListQuery(null, null, null),
+                new AdminOperationTaskWorkloadListQuery(null, null, null, null),
                 LocalDate.now()
         );
         DashboardResponse.TaskWorkloadSummary taskWorkloadSummary = new DashboardResponse.TaskWorkloadSummary(

@@ -70,6 +70,15 @@
                             </select>
                         </div>
                         <div class="admin-filter-field admin-filter-field--span-4">
+                            <label class="admin-filter-label">정렬 기준</label>
+                            <select id="taskWorkloadSortBy" class="form-select">
+                                <option value="OVERDUE_DESC">기한 초과 우선</option>
+                                <option value="TOTAL_DESC">총 작업 많은 순</option>
+                                <option value="TODO_DESC">대기 작업 많은 순</option>
+                                <option value="NAME_ASC">담당자명 순</option>
+                            </select>
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-4">
                             <label class="admin-filter-label">옵션</label>
                             <div class="admin-chip-row mt-2">
                                 <label class="task-flag-card task-flag-card--select w-100 mb-0">

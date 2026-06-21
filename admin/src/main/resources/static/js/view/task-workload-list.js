@@ -8,6 +8,7 @@ const TaskWorkloadList = {
         keyword: '',
         priority: '',
         overdueOnly: '',
+        sortBy: 'OVERDUE_DESC',
         adminNo: '',
         focusAdminNo: '',
         source: '',
@@ -54,6 +55,7 @@ const TaskWorkloadList = {
         this.state.keyword = params.get('keyword') || '';
         this.state.priority = params.get('priority') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
+        this.state.sortBy = params.get('sortBy') || 'OVERDUE_DESC';
         this.state.adminNo = params.get('adminNo') || '';
         this.state.focusAdminNo = params.get('focusAdminNo') || '';
         this.state.source = params.get('source') || '';
@@ -61,6 +63,7 @@ const TaskWorkloadList = {
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;
+        document.getElementById('taskWorkloadSortBy').value = this.state.sortBy;
         document.getElementById('taskWorkloadOverdueOnly').checked = this.state.overdueOnly === 'Y';
         document.getElementById('taskWorkloadPageSize').value = String(this.state.size);
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/tasks/workloads');
@@ -77,6 +80,7 @@ const TaskWorkloadList = {
         this.state.keyword = (document.getElementById('taskWorkloadKeyword')?.value || '').trim();
         this.state.priority = document.getElementById('taskWorkloadPriority')?.value || '';
         this.state.overdueOnly = document.getElementById('taskWorkloadOverdueOnly')?.checked ? 'Y' : '';
+        this.state.sortBy = document.getElementById('taskWorkloadSortBy')?.value || 'OVERDUE_DESC';
     },
 
     buildParams() {
@@ -86,6 +90,7 @@ const TaskWorkloadList = {
         if (this.state.keyword) params.set('keyword', this.state.keyword);
         if (this.state.priority) params.set('priority', this.state.priority);
         if (this.state.overdueOnly) params.set('overdueOnly', this.state.overdueOnly);
+        if (this.state.sortBy && this.state.sortBy !== 'OVERDUE_DESC') params.set('sortBy', this.state.sortBy);
         if (this.state.adminNo) params.set('adminNo', this.state.adminNo);
         if (this.state.focusAdminNo) params.set('focusAdminNo', this.state.focusAdminNo);
         if (this.state.source) params.set('source', this.state.source);
@@ -245,6 +250,7 @@ const TaskWorkloadList = {
             keyword: '',
             priority: '',
             overdueOnly: '',
+            sortBy: 'OVERDUE_DESC',
             adminNo: '',
             focusAdminNo: '',
             source: this.state.source || '',
@@ -252,6 +258,7 @@ const TaskWorkloadList = {
         };
         document.getElementById('taskWorkloadKeyword').value = '';
         document.getElementById('taskWorkloadPriority').value = '';
+        document.getElementById('taskWorkloadSortBy').value = 'OVERDUE_DESC';
         document.getElementById('taskWorkloadOverdueOnly').checked = false;
         document.getElementById('taskWorkloadPageSize').value = '10';
         this.getList();

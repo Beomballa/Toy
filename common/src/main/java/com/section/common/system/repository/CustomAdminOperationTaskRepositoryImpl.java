@@ -306,13 +306,7 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                         overdue(query.overdueOnly(), today)
                 )
                 .groupBy(adminOperationTask.assigneeAdminNo, adminUser.name)
-                .orderBy(
-                        sumOverdueCount(today).desc(),
-                        sumInProgressCount().desc(),
-                        sumTodoCount().desc(),
-                        adminOperationTask.count().desc(),
-                        adminOperationTask.assigneeAdminNo.asc()
-                )
+                .orderBy(resolveWorkloadOrderSpecifiers(query.sortBy(), today))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -672,5 +666,36 @@ public class CustomAdminOperationTaskRepositoryImpl implements CustomAdminOperat
                 )
                 .fetchOne();
         return count == null ? 0L : count;
+    }
+
+    private OrderSpecifier<?>[] resolveWorkloadOrderSpecifiers(String sortBy, LocalDate today) {
+        String normalizedSort = sortBy == null ? "OVERDUE_DESC" : sortBy;
+        List<OrderSpecifier<?>> orderSpecifiers = new ArrayList<>();
+        switch (normalizedSort) {
+            case "TOTAL_DESC" -> {
+                orderSpecifiers.add(adminOperationTask.count().desc());
+                orderSpecifiers.add(sumOverdueCount(today).desc());
+                orderSpecifiers.add(sumInProgressCount().desc());
+            }
+            case "TODO_DESC" -> {
+                orderSpecifiers.add(sumTodoCount().desc());
+                orderSpecifiers.add(sumInProgressCount().desc());
+                orderSpecifiers.add(sumOverdueCount(today).desc());
+            }
+            case "NAME_ASC" -> {
+                orderSpecifiers.add(adminUser.name.asc().nullsLast());
+                orderSpecifiers.add(sumOverdueCount(today).desc());
+                orderSpecifiers.add(adminOperationTask.count().desc());
+            }
+            case "OVERDUE_DESC" -> {
+                orderSpecifiers.add(sumOverdueCount(today).desc());
+                orderSpecifiers.add(sumInProgressCount().desc());
+                orderSpecifiers.add(sumTodoCount().desc());
+                orderSpecifiers.add(adminOperationTask.count().desc());
+            }
+            default -> throw new IllegalArgumentException("지원하지 않는 워크로드 정렬: " + normalizedSort);
+        }
+        orderSpecifiers.add(adminOperationTask.assigneeAdminNo.asc());
+        return orderSpecifiers.toArray(new OrderSpecifier<?>[0]);
     }
 }

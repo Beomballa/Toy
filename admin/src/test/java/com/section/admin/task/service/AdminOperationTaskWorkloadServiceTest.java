@@ -55,6 +55,7 @@ class AdminOperationTaskWorkloadServiceTest {
         AdminOperationTaskWorkloadListRequest request = new AdminOperationTaskWorkloadListRequest();
         request.setKeyword("정산");
         request.setPriority("HIGH");
+        request.setSortBy("TOTAL_DESC");
 
         when(adminOperationTaskRepository.getTaskWorkloadPage(any(AdminOperationTaskWorkloadListQuery.class), any(PageRequest.class), any(LocalDate.class)))
                 .thenReturn(new PageImpl<>(
@@ -85,6 +86,8 @@ class AdminOperationTaskWorkloadServiceTest {
         assertEquals("/admin/settings/tasks?assigneeAdminNo=7&keyword=%EC%A0%95%EC%82%B0&priority=HIGH&overdueOnly=Y", response.items().get(0).overduePath());
         assertEquals(6L, response.summary().assignedTaskCount());
         assertEquals("검색 결과 1명", response.resultMeta().resultLabel());
+        assertEquals("TOTAL_DESC", response.appliedQuery().sortBy());
+        assertTrue(response.resultMeta().querySignature().contains("총 작업 많은 순"));
     }
 
     @Test

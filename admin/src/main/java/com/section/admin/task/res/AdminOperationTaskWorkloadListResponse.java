@@ -35,7 +35,7 @@ public record AdminOperationTaskWorkloadListResponse(
                 page.getTotalElements(),
                 page.getSize(),
                 Summary.from(summary, query),
-                new AppliedQuery(query.keyword(), query.priority(), query.overdueOnly()),
+                new AppliedQuery(query.keyword(), query.priority(), query.overdueOnly(), query.sortBy()),
                 ResultMeta.from(page, query)
         );
     }
@@ -137,7 +137,8 @@ public record AdminOperationTaskWorkloadListResponse(
     public record AppliedQuery(
             String keyword,
             String priority,
-            String overdueOnly
+            String overdueOnly,
+            String sortBy
     ) {
     }
 
@@ -175,11 +176,12 @@ public record AdminOperationTaskWorkloadListResponse(
         if (query.keyword() != null) count++;
         if (query.priority() != null) count++;
         if (query.overdueOnly() != null) count++;
+        if (query.sortBy() != null && !"OVERDUE_DESC".equals(query.sortBy())) count++;
         return count;
     }
 
     private static String buildQuerySignature(AdminOperationTaskWorkloadListQuery query) {
-        StringBuilder builder = new StringBuilder("기한 초과 우선 · 진행중 우선");
+        StringBuilder builder = new StringBuilder(resolveSortLabel(query.sortBy()));
         if (query.keyword() != null) {
             builder.append(" · 검색=").append(query.keyword());
         }
@@ -190,5 +192,15 @@ public record AdminOperationTaskWorkloadListResponse(
             builder.append(" · 기한초과 작업만");
         }
         return builder.toString();
+    }
+
+    private static String resolveSortLabel(String sortBy) {
+        return switch (sortBy == null ? "OVERDUE_DESC" : sortBy) {
+            case "TOTAL_DESC" -> "총 작업 많은 순";
+            case "TODO_DESC" -> "대기 작업 많은 순";
+            case "NAME_ASC" -> "담당자명 순";
+            case "OVERDUE_DESC" -> "기한 초과 우선 · 진행중 우선";
+            default -> "기한 초과 우선 · 진행중 우선";
+        };
     }
 }

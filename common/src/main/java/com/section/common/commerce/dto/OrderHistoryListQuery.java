@@ -8,6 +8,7 @@ public record OrderHistoryListQuery(
         Long orderNo,
         String actionType,
         String keyword,
+        Long actorNo,
         String actorKeyword,
         LocalDate startDate,
         LocalDate endDate,

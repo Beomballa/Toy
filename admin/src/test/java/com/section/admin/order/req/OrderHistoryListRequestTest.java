@@ -22,6 +22,7 @@ class OrderHistoryListRequestTest {
         request.setOrderNo(9L);
         request.setActionType("delivery_start");
         request.setKeyword("  cj   1234  ");
+        request.setActorNo(77L);
         request.setActorKeyword("  관리자  ");
         request.setStartDate(LocalDate.of(2026, 5, 1));
         request.setEndDate(LocalDate.of(2026, 5, 31));
@@ -32,6 +33,7 @@ class OrderHistoryListRequestTest {
         assertEquals(9L, query.orderNo());
         assertEquals("DELIVERY_START", query.actionType());
         assertEquals("cj 1234", query.keyword());
+        assertEquals(77L, query.actorNo());
         assertEquals("관리자", query.actorKeyword());
         assertEquals(OrderHistoryOrderType.OLDEST, query.orderType());
     }
@@ -54,6 +56,17 @@ class OrderHistoryListRequestTest {
         request.setActionType("unknown");
 
         assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("주문 이력 작업자 번호가 0 이하이면 INVALID_INPUT_VALUE 예외를 던진다")
+    void toQueryThrowsWhenActorNoInvalid() {
+        OrderHistoryListRequest request = new OrderHistoryListRequest();
+        request.setActorNo(0L);
+
+        BusinessException exception = assertThrows(BusinessException.class, request::toQuery);
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 
     @Test

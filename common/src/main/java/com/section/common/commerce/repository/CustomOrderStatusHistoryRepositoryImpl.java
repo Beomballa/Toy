@@ -70,6 +70,7 @@ public class CustomOrderStatusHistoryRepositoryImpl implements CustomOrderStatus
                 orderNoEq(query.orderNo()),
                 actionTypeEq(query.actionType()),
                 keywordLike(query.keyword()),
+                actorNoEq(query.actorNo()),
                 actorKeywordLike(query.actorKeyword()),
                 actionDateBetween(query.startDate(), query.endDate())
         };
@@ -84,6 +85,10 @@ public class CustomOrderStatusHistoryRepositoryImpl implements CustomOrderStatus
             return null;
         }
         return orderStatusHistory.actionType.eq(actionType);
+    }
+
+    private BooleanExpression actorNoEq(Long actorNo) {
+        return actorNo == null ? null : orderStatusHistory.crtNo.eq(actorNo);
     }
 
     private BooleanExpression keywordLike(String keyword) {

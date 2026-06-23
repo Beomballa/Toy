@@ -26,7 +26,7 @@ class OrderHistoryListResponseTest {
 
         OrderHistoryListResponse response = OrderHistoryListResponse.of(
                 new PageImpl<>(List.of(row), PageRequest.of(1, 10), 21),
-                new OrderHistoryListQuery(7L, null, null, null, null, null, OrderHistoryOrderType.LATEST)
+                new OrderHistoryListQuery(7L, null, null, null, null, null, null, OrderHistoryOrderType.LATEST)
         );
 
         assertEquals("11-11 / 21건 · 3페이지", response.pageInfoLabel());

@@ -62,13 +62,17 @@
                             <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
                         </div>
                         <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업자 번호</label>
+                            <input type="number" id="historyActorNo" class="form-control" min="1" placeholder="예: 12">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
                             <label class="admin-filter-label">정렬</label>
                             <select id="historyOrderType" class="form-select">
                                 <option value="latest">최신순</option>
                                 <option value="oldest">오래된순</option>
                             </select>
                         </div>
-                        <div class="admin-filter-field admin-filter-field--span-3">
+                        <div class="admin-filter-field admin-filter-field--span-2">
                             <label class="admin-filter-label">사유/메모/배송 검색</label>
                             <input type="text" id="historyKeyword" class="form-control" placeholder="사유, 메모, 택배사, 운송장 번호 검색">
                         </div>

@@ -101,6 +101,7 @@ public record OrderHistoryListResponse(
             Long orderNo,
             String actionType,
             String keyword,
+            Long actorNo,
             String actorKeyword,
             String startDate,
             String endDate,
@@ -112,6 +113,7 @@ public record OrderHistoryListResponse(
                     query.orderNo(),
                     query.actionType(),
                     query.keyword(),
+                    query.actorNo(),
                     query.actorKeyword(),
                     query.startDate() == null ? null : query.startDate().toString(),
                     query.endDate() == null ? null : query.endDate().toString(),
@@ -147,6 +149,7 @@ public record OrderHistoryListResponse(
             if (query.orderNo() != null) count += 1;
             if (query.actionType() != null && !query.actionType().isBlank()) count += 1;
             if (query.keyword() != null && !query.keyword().isBlank()) count += 1;
+            if (query.actorNo() != null) count += 1;
             if (query.actorKeyword() != null && !query.actorKeyword().isBlank()) count += 1;
             if (query.startDate() != null) count += 1;
             if (query.endDate() != null) count += 1;
@@ -160,6 +163,7 @@ public record OrderHistoryListResponse(
             if (query.orderNo() != null) builder.append(" · 주문=").append(query.orderNo());
             if (query.actionType() != null && !query.actionType().isBlank()) builder.append(" · 작업=").append(query.actionType());
             if (query.keyword() != null && !query.keyword().isBlank()) builder.append(" · 검색=").append(query.keyword());
+            if (query.actorNo() != null) builder.append(" · 작업자번호=").append(query.actorNo());
             if (query.actorKeyword() != null && !query.actorKeyword().isBlank()) builder.append(" · 작업자=").append(query.actorKeyword());
             if (query.orderType() != null && query.orderType() != OrderHistoryOrderType.LATEST) builder.append(" · 정렬=").append(query.orderType().getDesc());
             return builder.toString();

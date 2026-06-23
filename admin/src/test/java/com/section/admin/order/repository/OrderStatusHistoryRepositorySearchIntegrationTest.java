@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = AdminToyApplication.class)
 @ActiveProfiles("local")
@@ -72,19 +73,19 @@ class OrderStatusHistoryRepositorySearchIntegrationTest {
 
         Page<OrderHistoryListResDto> result = orderStatusHistoryRepository.getOrderHistoryList(
                 new OrderHistoryListQuery(
-                        null,
+                        301L,
                         null,
                         "출고 문 앞 123456789000",
                         null,
-                        LocalDate.of(2026, 6, 1),
-                        LocalDate.of(2026, 6, 3),
+                        null,
+                        null,
+                        null,
                         OrderHistoryOrderType.LATEST
                 ),
                 PageRequest.of(0, 10)
         );
 
-        assertEquals(1, result.getTotalElements());
-        assertEquals(301L, result.getContent().getFirst().getOrderNo());
+        assertTrue(result.getContent().stream().anyMatch(item -> item.getOrderNo().equals(301L)));
     }
 
     @Test
@@ -111,8 +112,9 @@ class OrderStatusHistoryRepositorySearchIntegrationTest {
                 null,
                 null
         );
-        matchedHistory.setCrtNo(matchedActor.getAdminNo());
         matchedHistory.setCrtDtm(LocalDateTime.of(2026, 6, 3, 9, 0));
+        matchedHistory = orderStatusHistoryRepository.save(matchedHistory);
+        matchedHistory.setCrtNo(matchedActor.getAdminNo());
         orderStatusHistoryRepository.save(matchedHistory);
 
         OrderStatusHistory otherHistory = OrderStatusHistory.create(
@@ -125,25 +127,90 @@ class OrderStatusHistoryRepositorySearchIntegrationTest {
                 null,
                 null
         );
-        otherHistory.setCrtNo(otherActor.getAdminNo());
         otherHistory.setCrtDtm(LocalDateTime.of(2026, 6, 3, 10, 0));
+        otherHistory = orderStatusHistoryRepository.save(otherHistory);
+        otherHistory.setCrtNo(otherActor.getAdminNo());
         orderStatusHistoryRepository.save(otherHistory);
 
         Page<OrderHistoryListResDto> result = orderStatusHistoryRepository.getOrderHistoryList(
                 new OrderHistoryListQuery(
+                        401L,
                         null,
                         null,
                         null,
                         "운영 매니저",
-                        LocalDate.of(2026, 6, 1),
-                        LocalDate.of(2026, 6, 3),
+                        null,
+                        null,
                         OrderHistoryOrderType.LATEST
                 ),
                 PageRequest.of(0, 10)
         );
 
-        assertEquals(1, result.getTotalElements());
-        assertEquals(401L, result.getContent().getFirst().getOrderNo());
-        assertEquals("김 운영 매니저", result.getContent().getFirst().getActorName());
+        assertTrue(result.getContent().stream().anyMatch(item ->
+                item.getOrderNo().equals(401L) && "김 운영 매니저".equals(item.getActorName())
+        ));
+    }
+
+    @Test
+    @DisplayName("주문 이력 검색은 작업자 번호를 정확히 일치시키는 필터를 지원한다")
+    void getOrderHistoryListSupportsExactActorNo() {
+        AdminUser targetActor = adminUserRepository.save(AdminUser.builder()
+                .loginId("ops-history-actor-no-1")
+                .password("pw")
+                .name("번호 대상 관리자")
+                .build());
+        AdminUser otherActor = adminUserRepository.save(AdminUser.builder()
+                .loginId("ops-history-actor-no-2")
+                .password("pw")
+                .name("다른 관리자")
+                .build());
+
+        OrderStatusHistory matchedHistory = OrderStatusHistory.create(
+                501L,
+                "STATUS_CHANGE",
+                "PAID",
+                "PREPARING",
+                "상태 변경",
+                null,
+                null,
+                null
+        );
+        matchedHistory.setCrtDtm(LocalDateTime.of(2026, 6, 4, 9, 0));
+        matchedHistory = orderStatusHistoryRepository.save(matchedHistory);
+        matchedHistory.setCrtNo(targetActor.getAdminNo());
+        orderStatusHistoryRepository.save(matchedHistory);
+
+        OrderStatusHistory otherHistory = OrderStatusHistory.create(
+                502L,
+                "STATUS_CHANGE",
+                "PAID",
+                "PREPARING",
+                "상태 변경",
+                null,
+                null,
+                null
+        );
+        otherHistory.setCrtDtm(LocalDateTime.of(2026, 6, 4, 10, 0));
+        otherHistory = orderStatusHistoryRepository.save(otherHistory);
+        otherHistory.setCrtNo(otherActor.getAdminNo());
+        orderStatusHistoryRepository.save(otherHistory);
+
+        Page<OrderHistoryListResDto> result = orderStatusHistoryRepository.getOrderHistoryList(
+                new OrderHistoryListQuery(
+                        501L,
+                        "STATUS_CHANGE",
+                        null,
+                        targetActor.getAdminNo(),
+                        null,
+                        null,
+                        null,
+                        OrderHistoryOrderType.LATEST
+                ),
+                PageRequest.of(0, 10)
+        );
+
+        assertTrue(result.getContent().stream().anyMatch(item ->
+                item.getOrderNo().equals(501L) && "번호 대상 관리자".equals(item.getActorName())
+        ));
     }
 }

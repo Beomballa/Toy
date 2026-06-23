@@ -87,6 +87,7 @@ const OrderHistoryPage = {
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
         document.getElementById('historyKeyword').value = params.get('keyword') || '';
+        document.getElementById('historyActorNo').value = params.get('actorNo') || '';
         document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
         document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
         this.state.page = Number(params.get('page') || 0);
@@ -107,6 +108,7 @@ const OrderHistoryPage = {
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
+        const actorNo = document.getElementById('historyActorNo').value.trim();
         const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword').value);
         const orderType = document.getElementById('historyOrderType').value || 'latest';
 
@@ -115,6 +117,7 @@ const OrderHistoryPage = {
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (keyword) params.set('keyword', keyword);
+        if (actorNo) params.set('actorNo', actorNo);
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType !== 'latest') params.set('orderType', orderType);
         if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
@@ -262,6 +265,7 @@ const OrderHistoryPage = {
         document.getElementById('historyStartDate').value = '';
         document.getElementById('historyEndDate').value = '';
         document.getElementById('historyKeyword').value = '';
+        document.getElementById('historyActorNo').value = '';
         document.getElementById('historyActorKeyword').value = '';
         document.getElementById('historyOrderType').value = 'latest';
         document.getElementById('historyPageSize').value = '20';

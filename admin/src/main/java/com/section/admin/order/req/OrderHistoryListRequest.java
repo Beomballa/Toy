@@ -26,6 +26,7 @@ public class OrderHistoryListRequest {
     private Long orderNo;
     private String actionType;
     private String keyword;
+    private Long actorNo;
     private String actorKeyword;
     private LocalDate startDate;
     private LocalDate endDate;
@@ -33,6 +34,9 @@ public class OrderHistoryListRequest {
 
     public OrderHistoryListQuery toQuery() {
         if (orderNo != null && orderNo <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (actorNo != null && actorNo <= 0) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
@@ -46,6 +50,7 @@ public class OrderHistoryListRequest {
                 orderNo,
                 parseActionType(actionType),
                 normalizeKeyword(keyword),
+                actorNo,
                 normalizeKeyword(actorKeyword),
                 startDate,
                 endDate,

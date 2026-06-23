@@ -165,6 +165,7 @@ class AdminOrderServiceTest {
         OrderHistoryListRequest request = new OrderHistoryListRequest();
         request.setOrderNo(3L);
         request.setActionType("DELIVERY_START");
+        request.setActorNo(1L);
         request.setActorKeyword("관리자");
         request.setOrderType("oldest");
 
@@ -190,12 +191,13 @@ class AdminOrderServiceTest {
         assertEquals("관리자", response.items().get(0).actorName());
         assertEquals("배송 시작", response.items().get(0).actionLabel());
         assertEquals("DELIVERY_START", response.appliedQuery().actionType());
+        assertEquals(1L, response.appliedQuery().actorNo());
         assertEquals("관리자", response.appliedQuery().actorKeyword());
         assertEquals("oldest", response.appliedQuery().orderType());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
         assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
-        assertEquals(4, response.resultMeta().filterCount());
-        assertEquals("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자=관리자 · 정렬=오래된순", response.resultMeta().querySignature());
+        assertEquals(5, response.resultMeta().filterCount());
+        assertEquals("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자번호=1 · 작업자=관리자 · 정렬=오래된순", response.resultMeta().querySignature());
     }
 
     @Test

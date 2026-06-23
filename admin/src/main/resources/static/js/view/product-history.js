@@ -21,6 +21,7 @@ const ProductHistoryPage = {
             this.state.page = 0;
             this.loadHistory();
         });
+        document.getElementById('btnExportProductHistoryCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnResetProductHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('historyPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
@@ -71,6 +72,7 @@ const ProductHistoryPage = {
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
         document.getElementById('historyKeyword').value = params.get('keyword') || '';
+        document.getElementById('historyActorNo').value = params.get('actorNo') || '';
         document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
         document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
         this.state.page = Number(params.get('page') || 0);
@@ -91,6 +93,7 @@ const ProductHistoryPage = {
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
+        const actorNo = document.getElementById('historyActorNo').value.trim();
         const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword').value);
         const orderType = document.getElementById('historyOrderType').value || 'latest';
 
@@ -99,6 +102,7 @@ const ProductHistoryPage = {
         if (startDate) params.set('startDate', startDate);
         if (endDate) params.set('endDate', endDate);
         if (keyword) params.set('keyword', keyword);
+        if (actorNo) params.set('actorNo', actorNo);
         if (actorKeyword) params.set('actorKeyword', actorKeyword);
         if (orderType && orderType !== 'latest') params.set('orderType', orderType);
         if (this.state.source) params.set('source', this.state.source);
@@ -193,14 +197,14 @@ const ProductHistoryPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+        this.setMetaText(data.resultMeta?.resultLabel || data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
         const filterMeta = document.getElementById('historyFilterMeta');
         if (filterMeta) {
-            filterMeta.textContent = `적용 필터 ${this.countActiveFilters()}개`;
+            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? this.countActiveFilters()}개`;
         }
         const pageMeta = document.getElementById('historyPageMeta');
         if (pageMeta) {
-            pageMeta.textContent = data.pageInfoLabel || '페이지 메타 없음';
+            pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
         }
     },
 
@@ -244,6 +248,29 @@ const ProductHistoryPage = {
         document.getElementById('historyPagination').innerHTML = '';
     },
 
+    async exportCsv() {
+        const button = document.getElementById('btnExportProductHistoryCsv');
+        if (button?.dataset.loading === 'true') {
+            return;
+        }
+
+        const params = this.buildParams();
+        if (button) {
+            button.dataset.loading = 'true';
+            button.disabled = true;
+        }
+        try {
+            await CommonJS.downloadFile(`/api/admin/product/history/export?${params.toString()}`);
+        } catch (error) {
+            await CommonJS.alert(error.message || '상품 변경 이력 CSV를 내보내지 못했습니다.');
+        } finally {
+            if (button) {
+                button.dataset.loading = 'false';
+                button.disabled = false;
+            }
+        }
+    },
+
     setMetaText(message) {
         document.getElementById('historyMetaText').textContent = message;
     },
@@ -259,6 +286,7 @@ const ProductHistoryPage = {
         document.getElementById('historyStartDate').value = '';
         document.getElementById('historyEndDate').value = '';
         document.getElementById('historyKeyword').value = '';
+        document.getElementById('historyActorNo').value = '';
         document.getElementById('historyActorKeyword').value = '';
         document.getElementById('historyOrderType').value = 'latest';
         document.getElementById('historyPageSize').value = '20';
@@ -347,6 +375,7 @@ const ProductHistoryPage = {
         if (document.getElementById('historyProductNo')?.value.trim()) count += 1;
         if (document.getElementById('historyActionType')?.value) count += 1;
         if (document.getElementById('historyKeyword')?.value.trim()) count += 1;
+        if (document.getElementById('historyActorNo')?.value.trim()) count += 1;
         if (document.getElementById('historyActorKeyword')?.value.trim()) count += 1;
         if (document.getElementById('historyStartDate')?.value) count += 1;
         if (document.getElementById('historyEndDate')?.value) count += 1;

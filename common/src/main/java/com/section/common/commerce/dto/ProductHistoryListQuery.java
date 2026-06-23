@@ -9,6 +9,7 @@ public record ProductHistoryListQuery(
         Long productNo,
         ProductHistoryActionType actionType,
         String keyword,
+        Long actorNo,
         String actorKeyword,
         LocalDate startDate,
         LocalDate endDate,

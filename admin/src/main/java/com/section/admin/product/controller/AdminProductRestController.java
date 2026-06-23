@@ -145,6 +145,15 @@ public class AdminProductRestController {
         return ResponseEntity.ok(adminProductService.getProductHistoryList(req, pageable));
     }
 
+    @GetMapping("/product/history/export")
+    public ResponseEntity<byte[]> exportProductHistoryList(@ModelAttribute ProductHistoryListRequest req) {
+        String fileName = "product-history-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
+                .contentType(new MediaType("text", "csv"))
+                .body(adminProductService.exportProductHistoryListCsv(req));
+    }
+
     @PatchMapping("/product/delete/{no}")
     public ResponseEntity<Void> deleteProduct(@PathVariable("no") Long productNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();

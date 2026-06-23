@@ -27,9 +27,11 @@ class ProductHistoryListResponseTest {
 
         ProductHistoryListResponse response = ProductHistoryListResponse.of(
                 new PageImpl<>(List.of(row), PageRequest.of(1, 10), 21),
-                new ProductHistoryListQuery(3L, null, null, null, null, null, ProductHistoryOrderType.LATEST)
+                new ProductHistoryListQuery(3L, null, null, null, null, null, null, ProductHistoryOrderType.LATEST)
         );
 
         assertEquals("11-11 / 21건 · 3페이지", response.pageInfoLabel());
+        assertEquals("11-11 / 21건 · 3페이지", response.resultMeta().pageInfoLabel());
+        assertEquals("검색 결과 21건", response.resultMeta().resultLabel());
     }
 }

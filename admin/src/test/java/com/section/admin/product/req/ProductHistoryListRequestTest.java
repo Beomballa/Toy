@@ -15,11 +15,13 @@ class ProductHistoryListRequestTest {
     @DisplayName("상품 이력 목록 요청은 작업자 검색어와 정렬을 정규화한다")
     void toQueryNormalizesActorKeywordAndOrderType() {
         ProductHistoryListRequest request = new ProductHistoryListRequest();
+        request.setActorNo(17L);
         request.setActorKeyword("  관리자  계정 ");
         request.setOrderType("oldest");
 
         ProductHistoryListQuery query = request.toQuery();
 
+        assertEquals(17L, query.actorNo());
         assertEquals("관리자 계정", query.actorKeyword());
         assertEquals(ProductHistoryOrderType.OLDEST, query.orderType());
     }
@@ -29,6 +31,15 @@ class ProductHistoryListRequestTest {
     void toQueryRejectsInvalidOrderType() {
         ProductHistoryListRequest request = new ProductHistoryListRequest();
         request.setOrderType("random");
+
+        assertThrows(BusinessException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("상품 이력 목록 요청은 잘못된 작업자 번호를 거부한다")
+    void toQueryRejectsInvalidActorNo() {
+        ProductHistoryListRequest request = new ProductHistoryListRequest();
+        request.setActorNo(0L);
 
         assertThrows(BusinessException.class, request::toQuery);
     }

@@ -23,6 +23,8 @@ import com.section.admin.product.support.ProductExportCsvWriter;
 import com.section.admin.product.support.ProductExportPolicy;
 import com.section.admin.product.support.ProductFrontDisplayExportCsvWriter;
 import com.section.admin.product.support.ProductFrontDisplayExportSummary;
+import com.section.admin.product.support.ProductHistoryExportCsvWriter;
+import com.section.admin.product.support.ProductHistoryExportSummary;
 import com.section.admin.product.support.ProductExportSummary;
 import com.section.admin.product.support.ProductListPagePolicy;
 import com.section.common.base.entity.type.ProductHistoryActionType;
@@ -557,6 +559,16 @@ public class AdminProductService {
         ProductHistoryListQuery query = req.toQuery();
         Page<ProductHistoryListResDto> page = productChangeHistoryRepository.getProductHistoryList(query, pageable);
         return ProductHistoryListResponse.of(page, query);
+    }
+
+    public byte[] exportProductHistoryListCsv(ProductHistoryListRequest req) {
+        ProductHistoryListQuery query = req.toQuery();
+        List<ProductHistoryListResDto> items = productChangeHistoryRepository.getProductHistoryList(
+                query,
+                Pageable.ofSize(ProductExportPolicy.MAX_EXPORT_SIZE)
+        ).getContent();
+        ProductHistoryExportSummary summary = ProductHistoryExportSummary.from(query);
+        return ProductHistoryExportCsvWriter.write(summary, items);
     }
 
     @Transactional

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -418,10 +419,11 @@ class AdminProductRestControllerTest {
                         1L,
                         1L,
                         "1-1 / 1건 · 1페이지",
-                        new ProductHistoryListResponse.AppliedQuery(4L, "UPDATED", null, "관리자", null, null, "oldest", "오래된순")
+                        new ProductHistoryListResponse.AppliedQuery(4L, "UPDATED", null, 1L, "관리자", null, null, "oldest", "오래된순"),
+                        new ProductHistoryListResponse.ResultMeta("검색 결과 1건", "1-1 / 1건 · 1페이지", 5, "1-1 · 상품=4 · 작업=UPDATED · 작업자번호=1 · 작업자=관리자 · 정렬=오래된순")
                 ));
 
-        mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
+        mockMvc.perform(get("/api/admin/product/history/list?productNo=4&actionType=UPDATED&actorNo=1&actorKeyword=%EA%B4%80%EB%A6%AC%EC%9E%90&orderType=oldest&page=0&size=20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].historyNo").value(7L))
                 .andExpect(jsonPath("$.items[0].relatedProductNo").value(5L))
@@ -433,8 +435,24 @@ class AdminProductRestControllerTest {
                 .andExpect(jsonPath("$.pageInfoLabel").value("1-1 / 1건 · 1페이지"))
                 .andExpect(jsonPath("$.appliedQuery.productNo").value(4L))
                 .andExpect(jsonPath("$.appliedQuery.actionType").value("UPDATED"))
+                .andExpect(jsonPath("$.appliedQuery.actorNo").value(1L))
                 .andExpect(jsonPath("$.appliedQuery.actorKeyword").value("관리자"))
-                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"));
+                .andExpect(jsonPath("$.appliedQuery.orderType").value("oldest"))
+                .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1건"))
+                .andExpect(jsonPath("$.resultMeta.filterCount").value(5))
+                .andExpect(jsonPath("$.resultMeta.querySignature").value("1-1 · 상품=4 · 작업=UPDATED · 작업자번호=1 · 작업자=관리자 · 정렬=오래된순"));
+    }
+
+    @Test
+    @DisplayName("상품 변경 이력 export API는 csv 바이트를 반환한다")
+    void exportProductHistoryListReturnsCsv() throws Exception {
+        when(adminProductService.exportProductHistoryListCsv(org.mockito.ArgumentMatchers.any()))
+                .thenReturn("history".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/product/history/export?productNo=4&actorNo=1"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, org.hamcrest.Matchers.containsString("product-history-")))
+                .andExpect(content().contentType("text/csv"));
     }
 
     @Test

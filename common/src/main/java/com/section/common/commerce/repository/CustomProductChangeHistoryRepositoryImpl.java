@@ -66,6 +66,7 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
                 productNoEq(query.productNo()),
                 actionTypeEq(query.actionType()),
                 keywordLike(query.keyword()),
+                actorNoEq(query.actorNo()),
                 actorKeywordLike(query.actorKeyword()),
                 actionDateBetween(query.startDate(), query.endDate())
         };
@@ -84,6 +85,10 @@ public class CustomProductChangeHistoryRepositoryImpl implements CustomProductCh
             return null;
         }
         return productChangeHistory.summary.containsIgnoreCase(keyword.trim());
+    }
+
+    private BooleanExpression actorNoEq(Long actorNo) {
+        return actorNo == null ? null : productChangeHistory.crtNo.eq(actorNo);
     }
 
     private BooleanExpression actorKeywordLike(String actorKeyword) {

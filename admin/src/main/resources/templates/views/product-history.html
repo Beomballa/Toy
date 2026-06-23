@@ -23,8 +23,13 @@
             </ol>
         </nav>
         <div class="page-title-wrapper">
-            <h1 class="page-title">상품 변경 이력</h1>
-            <div class="small text-muted mt-2 d-none" id="productHistorySourceContextNotice" data-source-context=""></div>
+            <div>
+                <h1 class="page-title">상품 변경 이력</h1>
+                <div class="small text-muted mt-2 d-none" id="productHistorySourceContextNotice" data-source-context=""></div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn btn-outline-dark" id="btnExportProductHistoryCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
+            </div>
         </div>
     </div>
 
@@ -55,6 +60,10 @@
                         <div class="admin-filter-field admin-filter-field--span-4">
                             <label class="admin-filter-label">작업자 검색</label>
                             <input type="text" id="historyActorKeyword" class="form-control" placeholder="관리자 이름">
+                        </div>
+                        <div class="admin-filter-field admin-filter-field--span-2">
+                            <label class="admin-filter-label">작업자 번호</label>
+                            <input type="number" id="historyActorNo" class="form-control" min="1" placeholder="예: 12">
                         </div>
                     </div>
                 </section>

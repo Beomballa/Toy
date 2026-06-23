@@ -16,6 +16,7 @@ import com.section.admin.product.res.ProductFrontDisplayListResponse;
 import com.section.admin.product.res.ProductHistoryListResponse;
 import com.section.admin.product.res.ProductHistoryResponse;
 import com.section.admin.product.res.ProductListResponse;
+import com.section.admin.product.support.ProductExportPolicy;
 import com.section.admin.settings.service.AdminSettingsService;
 import com.section.common.base.entity.type.ProductHistoryActionType;
 import com.section.common.base.entity.type.ProductStatus;
@@ -859,6 +860,7 @@ class AdminProductServiceTest {
         ProductHistoryListRequest request = new ProductHistoryListRequest();
         request.setProductNo(4L);
         request.setActionType("UPDATED");
+        request.setActorNo(1L);
         request.setActorKeyword("관리자");
         request.setOrderType("oldest");
 
@@ -885,12 +887,50 @@ class AdminProductServiceTest {
         assertEquals("원본 상품", response.items().get(0).relatedProductLabel());
         assertEquals("/admin/logs?actionType=PRODUCT_CREATE&targetId=4", response.items().get(0).activityLogPath());
         assertEquals("UPDATED", response.appliedQuery().actionType());
+        assertEquals(1L, response.appliedQuery().actorNo());
         assertEquals("관리자", response.appliedQuery().actorKeyword());
         assertEquals("oldest", response.appliedQuery().orderType());
         assertEquals("오래된순", response.appliedQuery().orderTypeLabel());
         assertEquals(1L, response.totalElements());
         assertEquals(0, response.currentPage());
         assertEquals("1-1 / 1건 · 1페이지", response.pageInfoLabel());
+        assertEquals("검색 결과 1건", response.resultMeta().resultLabel());
+        assertEquals(5, response.resultMeta().filterCount());
+        assertEquals("1-1 · 상품=4 · 작업=UPDATED · 작업자번호=1 · 작업자=관리자 · 정렬=오래된순", response.resultMeta().querySignature());
+    }
+
+    @Test
+    @DisplayName("상품 변경 이력 CSV 내보내기는 현재 조회 조건 요약을 함께 포함한다")
+    void exportProductHistoryListCsvIncludesReadableSummary() {
+        ProductHistoryListRequest request = new ProductHistoryListRequest();
+        request.setProductNo(4L);
+        request.setActionType("UPDATED");
+        request.setActorNo(1L);
+        request.setActorKeyword("관리자");
+        request.setOrderType("oldest");
+
+        ProductHistoryListResDto row = new ProductHistoryListResDto();
+        row.setHistoryNo(7L);
+        row.setProductNo(4L);
+        row.setActionType("UPDATED");
+        row.setSummary("썸네일이 변경되었습니다.");
+        row.setStatusSnapshot("ACTIVE");
+        row.setOptionCount(2);
+        row.setTotalStock(8L);
+        row.setActorNo(1L);
+        row.setActorName("관리자");
+        row.setActionDtm(java.time.LocalDateTime.of(2026, 6, 23, 21, 10));
+
+        when(productChangeHistoryRepository.getProductHistoryList(any(), any()))
+                .thenReturn(new PageImpl<>(List.of(row), PageRequest.of(0, ProductExportPolicy.MAX_EXPORT_SIZE), 1));
+
+        byte[] bytes = adminProductService.exportProductHistoryListCsv(request);
+        String csv = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+
+        assertTrue(csv.contains("\"정렬\",\"오래된순\""));
+        assertTrue(csv.contains("\"조회조건\",\"상품번호: 4 | 작업유형: 수정 | 작업자번호: 1 | 작업자명: 관리자\""));
+        assertTrue(csv.contains("\"수정\""));
+        assertTrue(csv.contains("\"관리자\""));
     }
 
     @Test

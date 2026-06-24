@@ -28,23 +28,23 @@
     </div>
 
     <section class="admin-summary-grid">
-        <div class="admin-summary-card stat-card animate-in" id="logStatTotalCard">
+        <div class="admin-summary-card stat-card animate-in" id="logStatTotalCard" data-log-summary-filter="">
             <div class="admin-summary-card__label">전체 로그</div>
             <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTotalCount">0</div>
         </div>
-        <div class="admin-summary-card stat-card animate-in" id="logStatTodayCard">
+        <div class="admin-summary-card stat-card animate-in" id="logStatTodayCard" data-log-summary-date-preset="today">
             <div class="admin-summary-card__label">오늘 로그</div>
             <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTodayCount">0</div>
         </div>
-        <div class="admin-summary-card stat-card animate-in" id="logStatNoticeCard">
+        <div class="admin-summary-card stat-card animate-in" id="logStatNoticeCard" data-log-summary-filter="NOTICE_">
             <div class="admin-summary-card__label">공지 작업</div>
             <div class="admin-summary-card__value fs-4 fw-bold" id="logStatNoticeCount">0</div>
         </div>
-        <div class="admin-summary-card stat-card animate-in" id="logStatTaskCard">
+        <div class="admin-summary-card stat-card animate-in" id="logStatTaskCard" data-log-summary-filter="TASK_">
             <div class="admin-summary-card__label">운영 작업</div>
             <div class="admin-summary-card__value fs-4 fw-bold" id="logStatTaskCount">0</div>
         </div>
-        <div class="admin-summary-card stat-card animate-in" id="logStatCommerceCard">
+        <div class="admin-summary-card stat-card animate-in" id="logStatCommerceCard" data-log-summary-filter="COMMERCE_">
             <div class="admin-summary-card__label">상품·주문·배너</div>
             <div class="admin-summary-card__value fs-4 fw-bold" id="logStatCommerceCount">0</div>
         </div>
@@ -89,19 +89,31 @@
                 </section>
                 <section class="admin-search-section">
                     <div class="admin-search-section__title">빠른 조건</div>
-                    <div class="admin-search-section__desc">자주 보는 공지 작업과 최근 기간을 버튼으로 바로 적용합니다.</div>
-                    <div class="admin-chip-row mb-3">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_">공지 작업</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_CREATE">공지 생성</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_UPDATE">공지 수정</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_ACTIVE_UPDATE">공지 상태 변경</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_DELETE">공지 삭제</button>
+                    <div class="admin-search-section__desc">도메인 묶음과 최근 기간을 바로 적용해서 조사 속도를 줄입니다.</div>
+                    <div class="admin-chip-group mb-3">
+                        <div class="admin-chip-group__label">도메인 바로가기</div>
+                        <div class="admin-chip-row">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="NOTICE_">공지</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="TASK_">운영 작업</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="COMMERCE_">커머스 묶음</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="PRODUCT_">상품</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="ORDER_">주문</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="BANNER_">배너</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="BRAND_">브랜드</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="CATEGORY_">카테고리</button>
+                        </div>
                     </div>
-                    <div class="admin-chip-row">
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="today">오늘</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="7days">최근 7일</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="30days">최근 30일</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="clear">기간 초기화</button>
+                    <div class="admin-chip-group">
+                        <div class="admin-chip-group__label">운영/기간 바로가기</div>
+                        <div class="admin-chip-row">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="SETTING_">시스템 설정</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="CONTENT_">콘텐츠</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-log-quick-filter="MEMBER_">회원</button>
+                            <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="today">오늘</button>
+                            <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="7days">최근 7일</button>
+                            <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="30days">최근 30일</button>
+                            <button type="button" class="btn btn-sm btn-outline-dark" data-log-date-preset="clear">기간 초기화</button>
+                        </div>
                     </div>
                 </section>
                 <div class="task-filter-actions">

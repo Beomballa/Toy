@@ -116,7 +116,16 @@ public class CustomAdminActivityLogRepositoryImpl implements CustomAdminActivity
         if (actionType == null || actionType.isBlank()) {
             return null;
         }
-        return adminActivityLog.actionType.containsIgnoreCase(actionType.trim());
+        String normalized = actionType.trim().toUpperCase();
+        // COMMERCE_ is a virtual preset that aggregates product/order/banner/brand/category admin logs.
+        if ("COMMERCE_".equals(normalized)) {
+            return adminActivityLog.actionType.startsWithIgnoreCase("PRODUCT_")
+                    .or(adminActivityLog.actionType.startsWithIgnoreCase("ORDER_"))
+                    .or(adminActivityLog.actionType.startsWithIgnoreCase("BANNER_"))
+                    .or(adminActivityLog.actionType.startsWithIgnoreCase("BRAND_"))
+                    .or(adminActivityLog.actionType.startsWithIgnoreCase("CATEGORY_"));
+        }
+        return adminActivityLog.actionType.containsIgnoreCase(normalized);
     }
 
     private BooleanExpression adminKeywordLike(String adminKeyword) {

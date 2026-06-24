@@ -26,6 +26,12 @@ const AdminLogPage = {
         document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
             button.addEventListener('click', () => this.applyQuickFilter(button.dataset.logQuickFilter));
         });
+        document.querySelectorAll('[data-log-summary-filter]').forEach((card) => {
+            card.addEventListener('click', () => this.applySummaryFilter(card.dataset.logSummaryFilter));
+        });
+        document.querySelectorAll('[data-log-summary-date-preset]').forEach((card) => {
+            card.addEventListener('click', () => this.applySummaryDatePreset(card.dataset.logSummaryDatePreset));
+        });
         document.querySelectorAll('[data-log-date-preset]').forEach((button) => {
             button.addEventListener('click', () => this.applyDatePreset(button.dataset.logDatePreset));
         });
@@ -83,6 +89,7 @@ const AdminLogPage = {
         document.getElementById('logPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         this.syncDatePresetState();
+        this.syncSummaryCardState();
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/logs');
         CommonJS.renderSourceContextNotice({ noticeId: 'adminLogSourceContextNotice', source: this.state.source });
     },
@@ -205,6 +212,7 @@ const AdminLogPage = {
             pageMeta.textContent = data.resultMeta?.querySignature || data.pageInfoLabel || '페이지 메타 없음';
         }
         CommonJS.renderSourceContextNotice({ noticeId: 'adminLogSourceContextNotice', source: this.state.source });
+        this.syncSummaryCardState();
     },
 
     renderPagination(data) {
@@ -299,7 +307,21 @@ const AdminLogPage = {
         document.getElementById('logActionType').value = actionType || '';
         this.state.page = 0;
         this.syncQuickFilterState();
+        this.syncSummaryCardState();
         this.getList();
+    },
+
+    applySummaryFilter(actionType) {
+        document.getElementById('logActionType').value = actionType || '';
+        this.state.page = 0;
+        this.syncQuickFilterState();
+        this.syncSummaryCardState();
+        this.getList();
+    },
+
+    applySummaryDatePreset(preset) {
+        this.applyDatePreset(preset);
+        this.syncSummaryCardState();
     },
 
     applyDatePreset(preset) {
@@ -412,17 +434,26 @@ const AdminLogPage = {
         });
     },
 
+    syncSummaryCardState() {
+        const currentActionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value) || '';
+        const today = this.resolveDateLabel(new Date());
+        const startDate = document.getElementById('logStartDate')?.value || '';
+        const endDate = document.getElementById('logEndDate')?.value || '';
+
+        document.querySelectorAll('[data-log-summary-filter]').forEach((card) => {
+            card.classList.toggle('stat-card-active', (card.dataset.logSummaryFilter || '') === currentActionType);
+        });
+        document.querySelectorAll('[data-log-summary-date-preset]').forEach((card) => {
+            const active = card.dataset.logSummaryDatePreset === 'today' && startDate === today && endDate === today;
+            card.classList.toggle('stat-card-active', active);
+        });
+    },
+
     syncDatePresetState() {
         const startDate = document.getElementById('logStartDate')?.value || '';
         const endDate = document.getElementById('logEndDate')?.value || '';
         const today = new Date();
-        const formatDate = (value) => {
-            const year = value.getFullYear();
-            const month = String(value.getMonth() + 1).padStart(2, '0');
-            const day = String(value.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        };
-        const todayLabel = formatDate(today);
+        const todayLabel = this.resolveDateLabel(today);
         const sevenDaysAgo = new Date(today);
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
         const thirtyDaysAgo = new Date(today);
@@ -432,13 +463,20 @@ const AdminLogPage = {
             const preset = button.dataset.logDatePreset;
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
-                (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
-                (preset === '30days' && startDate === formatDate(thirtyDaysAgo) && endDate === todayLabel) ||
+                (preset === '7days' && startDate === this.resolveDateLabel(sevenDaysAgo) && endDate === todayLabel) ||
+                (preset === '30days' && startDate === this.resolveDateLabel(thirtyDaysAgo) && endDate === todayLabel) ||
                 (preset === 'clear' && !startDate && !endDate)
             );
             button.classList.toggle('btn-dark', active);
             button.classList.toggle('btn-outline-dark', !active);
         });
+    },
+
+    resolveDateLabel(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 };
 

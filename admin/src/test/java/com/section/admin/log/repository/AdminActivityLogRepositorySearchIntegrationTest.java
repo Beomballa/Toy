@@ -56,6 +56,29 @@ class AdminActivityLogRepositorySearchIntegrationTest {
         assertEquals(matchedAdmin.getAdminNo(), page.getContent().getFirst().getAdminNo());
     }
 
+    @Test
+    @DisplayName("활동 로그 검색은 COMMERCE_ 프리셋으로 커머스 로그만 묶어서 조회한다")
+    void getLogListMatchesCommercePreset() {
+        AdminUser admin = adminUserRepository.save(AdminUser.builder()
+                .loginId("ops-commerce")
+                .password("pw")
+                .name("커머스 운영자")
+                .build());
+
+        adminActivityLogRepository.save(log(admin.getAdminNo(), "PRODUCT_UPDATE", 11L, LocalDateTime.of(2026, 6, 14, 9, 0)));
+        adminActivityLogRepository.save(log(admin.getAdminNo(), "ORDER_CANCEL", 12L, LocalDateTime.of(2026, 6, 14, 9, 5)));
+        adminActivityLogRepository.save(log(admin.getAdminNo(), "NOTICE_UPDATE", 13L, LocalDateTime.of(2026, 6, 14, 9, 10)));
+
+        var page = adminActivityLogRepository.getLogList(
+                new AdminActivityLogListQuery(null, "커머스 운영자", "COMMERCE_", null, null, null),
+                PageRequest.of(0, 10)
+        );
+
+        assertEquals(2, page.getTotalElements());
+        assertEquals("ORDER_CANCEL", page.getContent().getFirst().getActionType());
+        assertEquals("PRODUCT_UPDATE", page.getContent().get(1).getActionType());
+    }
+
     private AdminActivityLog log(Long adminNo, String actionType, Long targetId, LocalDateTime actionDtm) {
         AdminActivityLog log = AdminActivityLog.builder()
                 .adminNo(adminNo)

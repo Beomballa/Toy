@@ -954,6 +954,20 @@
     font-weight: 700;
 }
 
+.admin-chip-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+}
+
+.admin-chip-group__label {
+    color: #475569;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 .admin-list-toolbar {
     display: flex;
     align-items: center;

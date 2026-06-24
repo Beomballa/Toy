@@ -25,6 +25,7 @@ const NoticeHistoryPage = {
             this.state.page = 0;
             this.loadHistory();
         });
+        document.getElementById('btnExportNoticeHistoryCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnResetNoticeHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('noticeHistoryPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
@@ -235,6 +236,32 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryResultSummary').textContent = '운영 공지 이력 조회에 실패했습니다.';
         document.getElementById('noticeHistoryPagination').innerHTML = '';
         this.setListStateMeta('error', message, 0, 0, 0, '', '');
+    },
+
+    async exportCsv() {
+        const button = document.getElementById('btnExportNoticeHistoryCsv');
+        if (button?.dataset.loading === 'true') {
+            return;
+        }
+        const params = this.buildParams();
+        params.delete('page');
+        params.delete('size');
+        params.delete('logNo');
+
+        if (button) {
+            button.dataset.loading = 'true';
+            button.disabled = true;
+        }
+        try {
+            await CommonJS.downloadFile(`/api/admin/settings/notices/history/export?${params.toString()}`);
+        } catch (error) {
+            await CommonJS.alert(error.message || '운영 공지 이력 CSV를 내보내지 못했습니다.');
+        } finally {
+            if (button) {
+                button.dataset.loading = 'false';
+                button.disabled = false;
+            }
+        }
     },
 
     syncQuickFilterState() {

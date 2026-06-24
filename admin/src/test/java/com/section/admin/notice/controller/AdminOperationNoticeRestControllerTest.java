@@ -158,6 +158,18 @@ class AdminOperationNoticeRestControllerTest {
     }
 
     @Test
+    @DisplayName("운영 공지 이력 CSV 내보내기는 첨부 헤더를 반환한다")
+    void exportHistoryReturnsAttachmentHeaders() throws Exception {
+        when(adminOperationNoticeHistoryService.exportNoticeHistoryListCsv(any()))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        mockMvc.perform(get("/api/admin/settings/notices/history/export").param("noticeNo", "1").param("adminKeyword", "운영자"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string("Content-Disposition", org.hamcrest.Matchers.containsString("attachment; filename=\"notice-history-")));
+    }
+
+    @Test
     @DisplayName("유지보수 모드에서는 운영 공지 저장이 차단된다")
     void saveReturnsServiceUnavailableWhenMaintenanceModeEnabled() throws Exception {
         AdminOperationNoticeSaveRequest request = new AdminOperationNoticeSaveRequest(

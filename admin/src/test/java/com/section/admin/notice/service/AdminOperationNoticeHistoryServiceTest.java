@@ -65,4 +65,25 @@ class AdminOperationNoticeHistoryServiceTest {
         assertEquals("공지 수정", response.items().get(0).actionLabel());
         assertEquals("/admin/settings/notices?page=1", response.appliedQuery().returnTo());
     }
+
+    @Test
+    @DisplayName("운영 공지 이력 export는 공지 로그 prefix 조건으로 CSV를 위임한다")
+    void exportNoticeHistoryListCsvDelegatesToAdminLogExport() {
+        when(adminLogService.exportLogListCsv(any(AdminLogListRequest.class)))
+                .thenReturn("csv".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        AdminOperationNoticeHistoryListRequest request = new AdminOperationNoticeHistoryListRequest();
+        request.setNoticeNo(9L);
+        request.setAdminNo(2L);
+        request.setAdminKeyword("운영자");
+
+        byte[] bytes = adminOperationNoticeHistoryService.exportNoticeHistoryListCsv(request);
+
+        ArgumentCaptor<AdminLogListRequest> requestCaptor = ArgumentCaptor.forClass(AdminLogListRequest.class);
+        verify(adminLogService).exportLogListCsv(requestCaptor.capture());
+        assertEquals("NOTICE_", requestCaptor.getValue().getActionType());
+        assertEquals(9L, requestCaptor.getValue().getTargetId());
+        assertEquals("운영자", requestCaptor.getValue().getAdminKeyword());
+        assertEquals("csv", new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
+    }
 }

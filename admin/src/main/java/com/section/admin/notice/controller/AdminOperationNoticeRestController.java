@@ -54,6 +54,15 @@ public class AdminOperationNoticeRestController {
         return ResponseEntity.ok(adminOperationNoticeHistoryService.getNoticeHistoryList(req, page, size));
     }
 
+    @GetMapping("/history/export")
+    public ResponseEntity<byte[]> exportHistory(@ModelAttribute AdminOperationNoticeHistoryListRequest req) {
+        String fileName = "notice-history-" + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(adminOperationNoticeHistoryService.exportNoticeHistoryListCsv(req));
+    }
+
     @GetMapping("/{no}")
     public ResponseEntity<AdminOperationNoticeDetailResponse> getDetail(@PathVariable("no") Long noticeNo) {
         return ResponseEntity.ok(adminOperationNoticeService.getNoticeDetail(noticeNo));

@@ -626,11 +626,19 @@
 
             window.history.pushState({ path: nextUrl }, '', nextUrl);
         },
-        exportAdminList() {
+        async exportAdminList() {
+            const button = document.getElementById('btnExportAdminCsv');
             const params = this.buildAdminListParams();
             params.delete('page');
             params.delete('size');
-            window.location.href = `/api/admin/users/export?${params.toString()}`;
+            try {
+                CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+                await CommonJS.downloadFile(`/api/admin/users/export?${params.toString()}`, 'admin-users.csv');
+            } catch (err) {
+                CommonJS.alert(err.message, '오류', 'error');
+            } finally {
+                CommonJS.setButtonDisabled(button, false);
+            }
         },
         renderList(data) {
             const tbody = document.getElementById('adminListBody');
@@ -1096,9 +1104,17 @@
             this.historyState.historyNo = '';
             this.getSystemSettingHistory();
         },
-        exportSystemSettingHistory() {
+        async exportSystemSettingHistory() {
+            const button = document.getElementById('btnExportSystemHistory');
             const params = this.buildSystemHistoryExportParams();
-            window.location.href = `/api/admin/settings/system/history/export?${params.toString()}`;
+            try {
+                CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+                await CommonJS.downloadFile(`/api/admin/settings/system/history/export?${params.toString()}`, 'system-setting-history.csv');
+            } catch (err) {
+                CommonJS.alert(err.message, '오류', 'error');
+            } finally {
+                CommonJS.setButtonDisabled(button, false);
+            }
         },
         async openDeepLinkedSystemHistoryIfNeeded(items) {
             if (!this.historyState.historyNo) {

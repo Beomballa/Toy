@@ -75,11 +75,11 @@
           </div>
         </section>
 
-        <section class="product-master-filter-section">
+        <section class="product-master-filter-section product-front-display-filter-section">
           <div class="product-master-filter-section__title">노출 옵션 및 정렬</div>
           <div class="product-master-filter-section__desc">노출 설정 여부, Featured, 저재고 기준과 정렬 정책을 함께 조정합니다.</div>
-          <div class="product-master-flag-grid">
-            <div class="product-master-flag-card">
+          <div class="product-front-display-aux-grid">
+            <div class="product-master-flag-card product-front-display-logic-card">
               <div class="product-master-flag-card__title">노출 기준</div>
               <div class="product-master-flag-card__desc">프론트 노출 설정 여부와 정렬 정책을 함께 바꿔 목록 우선순위를 조정합니다.</div>
               <div class="admin-filter-grid product-master-filter-grid mt-2">
@@ -113,22 +113,32 @@
               </div>
             </div>
 
-            <div class="product-master-flag-card">
+            <div class="product-master-flag-card product-front-display-option-card">
               <div class="product-master-flag-card__title">옵션</div>
               <div class="product-master-flag-card__desc">대표 노출만 보거나 저재고 상품만 별도로 추려서 전시 상태를 확인합니다.</div>
-              <div class="form-check mb-2 mt-2">
-                <input class="form-check-input" type="checkbox" id="featuredOnly">
-                <label class="form-check-label" for="featuredOnly">Featured만</label>
+              <div class="product-front-display-toggle-list mt-2">
+                <label class="product-front-display-toggle-item mb-0">
+                  <span class="d-flex align-items-center gap-2">
+                    <input class="form-check-input" type="checkbox" id="featuredOnly">
+                    <span class="task-flag-card__title">Featured만</span>
+                  </span>
+                  <span class="task-flag-card__desc">대표 전시 상품만 골라서 검수합니다.</span>
+                </label>
+                <label class="product-front-display-toggle-item mb-0">
+                  <span class="d-flex align-items-center gap-2">
+                    <input class="form-check-input" type="checkbox" id="lowStockOnly">
+                    <span class="task-flag-card__title">저재고만</span>
+                  </span>
+                  <span class="task-flag-card__desc">품절 위험이 있는 전시 상품만 빠르게 확인합니다.</span>
+                </label>
               </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="lowStockOnly">
-                <label class="form-check-label" for="lowStockOnly">저재고만</label>
+              <div class="mt-2">
+                <label class="admin-filter-label mt-2" for="displayLowStockThreshold">저재고 기준</label>
+                <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
               </div>
-              <label class="admin-filter-label mt-2" for="displayLowStockThreshold">저재고 기준</label>
-              <input type="number" id="displayLowStockThreshold" class="form-control" min="1" th:value="${initialLowStockThreshold}">
             </div>
 
-            <div class="product-master-filter-actions">
+            <div class="product-master-filter-actions product-front-display-action-card">
               <div class="product-master-filter-actions__hint">전시 필터도 새로고침 후 같은 문맥을 유지해서 상품 노출 조정 작업을 끊지 않게 맞춥니다.</div>
               <div class="d-flex gap-2 flex-wrap">
                 <button class="btn btn-primary" type="button" id="btnSearchDisplay">

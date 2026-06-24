@@ -198,6 +198,35 @@ let CommonJS = {
         }
     },
 
+    downloadFile: async function(url, fallbackFilename = 'download.csv') {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(await this.extractErrorMessage(response, '파일 다운로드에 실패했습니다.'));
+        }
+        const blob = await response.blob();
+        const fileName = this.resolveDownloadFileName(response.headers.get('Content-Disposition'), fallbackFilename);
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+    },
+
+    resolveDownloadFileName: function(disposition, fallbackFilename = 'download.csv') {
+        if (!disposition) {
+            return fallbackFilename;
+        }
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+        if (utf8Match?.[1]) {
+            return decodeURIComponent(utf8Match[1]);
+        }
+        const plainMatch = disposition.match(/filename="?([^"]+)"?/i);
+        return plainMatch?.[1] || fallbackFilename;
+    },
+
     getOrderStatusMeta: function(statusCode) {
         return this.orderStatusMeta[statusCode] || {
             badgeClass: 'bg-secondary',

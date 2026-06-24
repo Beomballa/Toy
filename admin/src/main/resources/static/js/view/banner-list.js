@@ -14,6 +14,7 @@ const BannerList = {
     },
     operationPolicy: null,
     saveInFlight: false,
+    exportInFlight: false,
     bulkInFlight: false,
     selectedBannerNos: new Set(),
     toggleInFlight: new Set(),
@@ -367,25 +368,23 @@ const BannerList = {
     },
 
     async exportCsv() {
+        if (this.exportInFlight) {
+            return;
+        }
+        const button = document.getElementById('btnExportBannerCsv');
         try {
+            this.exportInFlight = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             this._updateStateFromInputs();
             const params = this.buildParams();
-            const response = await fetch(`/api/admin/banners/export?${params.toString()}`);
-            if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, '배너 CSV 내보내기에 실패했습니다.'));
-            const blob = await response.blob();
-            const disposition = response.headers.get('Content-Disposition') || '';
-            const fileNameMatch = disposition.match(/filename="([^"]+)"/);
-            const fileName = fileNameMatch ? fileNameMatch[1] : 'banners.csv';
-            const objectUrl = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = objectUrl;
-            link.download = fileName;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            URL.revokeObjectURL(objectUrl);
+            params.delete('page');
+            params.delete('size');
+            await CommonJS.downloadFile(`/api/admin/banners/export?${params.toString()}`, 'banners.csv');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.exportInFlight = false;
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 

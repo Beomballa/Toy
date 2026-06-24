@@ -64,8 +64,19 @@ const ProductList = {
             location.href = `/admin/products/set?source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
         });
         document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
-        document.getElementById('btnExportProducts')?.addEventListener('click', () => {
-            window.location.href = `/api/admin/product/export?${this.buildQueryString()}`;
+        document.getElementById('btnExportProducts')?.addEventListener('click', async () => {
+            const button = document.getElementById('btnExportProducts');
+            try {
+                CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+                const params = new URLSearchParams(this.buildQueryString());
+                params.delete('page');
+                params.delete('size');
+                await CommonJS.downloadFile(`/api/admin/product/export?${params.toString()}`, 'products.csv');
+            } catch (error) {
+                await CommonJS.alert(error.message, '오류', 'error');
+            } finally {
+                CommonJS.setButtonDisabled(button, false);
+            }
         });
         document.getElementById('btnApplyProductBulk')?.addEventListener('click', () => this.applyBulkOperation());
         document.getElementById('btnBulkDuplicateProduct')?.addEventListener('click', () => this.applyBulkDuplicate());

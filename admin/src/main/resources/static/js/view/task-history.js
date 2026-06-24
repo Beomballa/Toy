@@ -313,10 +313,8 @@ const TaskHistoryPage = {
 
     async exportCsv() {
         const button = document.getElementById('btnExportTaskHistoryCsv');
-        if (button) {
-            button.disabled = true;
-        }
         try {
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             const startDate = document.getElementById('taskHistoryStartDate')?.value || '';
             const endDate = document.getElementById('taskHistoryEndDate')?.value || '';
             if (startDate && endDate && startDate > endDate) {
@@ -326,19 +324,11 @@ const TaskHistoryPage = {
             params.delete('page');
             params.delete('size');
             params.delete('logNo');
-            const response = await fetch(`/api/admin/settings/tasks/history/export?${params.toString()}`);
-            if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 이력 CSV 내보내기에 실패했습니다.'));
-            }
-            const blob = await response.blob();
-            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), 'task-history.csv');
-            this.downloadBlob(blob, fileName);
+            await CommonJS.downloadFile(`/api/admin/settings/tasks/history/export?${params.toString()}`, 'task-history.csv');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
-            if (button) {
-                button.disabled = false;
-            }
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 
@@ -460,21 +450,6 @@ const TaskHistoryPage = {
         }
     },
 
-    extractFileName(contentDisposition, fallback) {
-        const matched = /filename=\"?([^"]+)\"?/i.exec(contentDisposition || '');
-        return matched?.[1] || fallback;
-    },
-
-    downloadBlob(blob, fileName) {
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = fileName;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        window.URL.revokeObjectURL(url);
-    }
 };
 
 document.addEventListener('DOMContentLoaded', () => TaskHistoryPage.init());

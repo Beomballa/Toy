@@ -335,25 +335,26 @@ const AdminLogPage = {
         this.getList();
     },
 
-    exportList() {
+    async exportList() {
         if (this.isExporting) {
             return;
         }
         const params = this.buildExportParams();
         const exportButton = document.getElementById('btnExportLog');
-        if (exportButton) {
-            exportButton.disabled = true;
-        }
         try {
             this.isExporting = true;
-            window.location.href = `/api/admin/logs/export?${params.toString()}`;
+            CommonJS.setButtonDisabled(exportButton, true, '내보내는 중입니다.');
+            const startDate = document.getElementById('logStartDate')?.value || '';
+            const endDate = document.getElementById('logEndDate')?.value || '';
+            if (startDate && endDate && startDate > endDate) {
+                throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+            }
+            await CommonJS.downloadFile(`/api/admin/logs/export?${params.toString()}`, 'admin-logs.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message || '활동 로그 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
             this.isExporting = false;
-            if (exportButton) {
-                window.setTimeout(() => {
-                    exportButton.disabled = false;
-                }, 300);
-            }
+            CommonJS.setButtonDisabled(exportButton, false);
         }
     },
 

@@ -325,7 +325,9 @@ const CategoryList = {
             const params = this.buildParams();
             params.delete('page');
             params.delete('size');
-            window.location.href = `/api/admin/categories/export?${params.toString()}`;
+            await CommonJS.downloadFile(`/api/admin/categories/export?${params.toString()}`, 'categories.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message || '카테고리 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
             this.exportInFlight = false;
             CommonJS.setButtonDisabled(document.getElementById('btnExportCategory'), false);

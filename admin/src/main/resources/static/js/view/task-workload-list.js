@@ -98,7 +98,7 @@ const TaskWorkloadList = {
         return params;
     },
 
-    exportCsv() {
+    async exportCsv() {
         if (this.isExporting) {
             return;
         }
@@ -107,19 +107,15 @@ const TaskWorkloadList = {
         params.delete('page');
         params.delete('size');
         const button = document.getElementById('btnExportTaskWorkloadCsv');
-        if (button) {
-            button.disabled = true;
-        }
         try {
             this.isExporting = true;
-            window.location.href = `/api/admin/settings/tasks/workloads/export?${params.toString()}`;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(`/api/admin/settings/tasks/workloads/export?${params.toString()}`, 'task-workloads.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message || '담당자별 워크로드 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
             this.isExporting = false;
-            if (button) {
-                window.setTimeout(() => {
-                    button.disabled = false;
-                }, 300);
-            }
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 

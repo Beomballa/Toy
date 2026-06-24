@@ -68,9 +68,18 @@ const OrderHistoryPage = {
 
             try {
                 this.isExporting = true;
-                window.location.href = `/api/admin/orders/history/export?${this.buildExportParams().toString()}`;
+                CommonJS.setButtonDisabled(document.getElementById('btnExportOrderHistory'), true, '내보내는 중입니다.');
+                const startDate = document.getElementById('historyStartDate')?.value || '';
+                const endDate = document.getElementById('historyEndDate')?.value || '';
+                if (startDate && endDate && startDate > endDate) {
+                    throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+                }
+                await CommonJS.downloadFile(`/api/admin/orders/history/export?${this.buildExportParams().toString()}`, 'order-history.csv');
+            } catch (error) {
+                await CommonJS.alert(error.message || '주문 처리 이력 CSV를 내보내지 못했습니다.', '오류', 'error');
             } finally {
                 this.isExporting = false;
+                CommonJS.setButtonDisabled(document.getElementById('btnExportOrderHistory'), false);
             }
         });
         window.addEventListener('popstate', () => {

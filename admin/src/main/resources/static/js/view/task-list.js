@@ -976,27 +976,20 @@ const TaskList = {
 
     async exportCsv() {
         const button = document.getElementById('btnExportTaskCsv');
-        if (button) {
-            button.disabled = true;
-        }
         try {
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             this.updateStateFromInputs();
             if (this.hasInvalidDueDateRange()) {
                 throw new Error('기한 시작일은 종료일보다 늦을 수 없습니다.');
             }
-            const response = await fetch(`/api/admin/settings/tasks/export?${this.buildParams().toString()}`);
-            if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 CSV 내보내기에 실패했습니다.'));
-            }
-            const blob = await response.blob();
-            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), 'tasks.csv');
-            this.downloadBlob(blob, fileName);
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            await CommonJS.downloadFile(`/api/admin/settings/tasks/export?${params.toString()}`, 'tasks.csv');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
-            if (button) {
-                button.disabled = false;
-            }
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 
@@ -1242,22 +1235,6 @@ const TaskList = {
             return null;
         }
         return Number(value);
-    },
-
-    extractFileName(contentDisposition, fallback) {
-        const matched = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
-        return matched?.[1] || fallback;
-    },
-
-    downloadBlob(blob, fileName) {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
     },
 
     resolveBulkAssigneeAdminNo() {

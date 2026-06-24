@@ -60,7 +60,12 @@ const OrderList = {
             try {
                 this.isExporting = true;
                 this.setBusyExportButton(true);
-                window.location.href = `/api/admin/orders/export?${this.buildStateParams().toString()}`;
+                const params = this.buildStateParams();
+                params.delete('page');
+                params.delete('size');
+                await CommonJS.downloadFile(`/api/admin/orders/export?${params.toString()}`, 'orders.csv');
+            } catch (error) {
+                await CommonJS.alert(error.message, '오류', 'error');
             } finally {
                 this.isExporting = false;
                 this.setBusyExportButton(false);

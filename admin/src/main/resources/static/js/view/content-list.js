@@ -575,40 +575,14 @@ const ContentList = {
 
     async exportCsv() {
         const button = document.getElementById('btnExportContentCsv');
-        if (button) {
-            button.disabled = true;
-        }
         try {
-            const response = await fetch(`/api/admin/content/export?${this.buildQueryParams().toString()}`);
-            if (!response.ok) {
-                throw new Error(await CommonJS.extractErrorMessage(response, '콘텐츠 CSV 내보내기에 실패했습니다.'));
-            }
-            const blob = await response.blob();
-            const fileName = this.extractFileName(response.headers.get('Content-Disposition'), `contents-${this.state.boardType}.csv`);
-            this.downloadBlob(blob, fileName);
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(`/api/admin/content/export?${this.buildQueryParams().toString()}`, `contents-${this.state.boardType}.csv`);
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
-            if (button) {
-                button.disabled = false;
-            }
+            CommonJS.setButtonDisabled(button, false);
         }
-    },
-
-    extractFileName(contentDisposition, fallback) {
-        const matched = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
-        return matched?.[1] || fallback;
-    },
-
-    downloadBlob(blob, fileName) {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
     }
 };
 

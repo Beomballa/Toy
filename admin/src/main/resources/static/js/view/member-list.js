@@ -295,7 +295,9 @@ const MemberListPage = {
             const params = this.buildParams();
             params.delete('page');
             params.delete('size');
-            window.location.href = `/api/admin/members/export?${params.toString()}`;
+            await CommonJS.downloadFile(`/api/admin/members/export?${params.toString()}`, 'members.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message || '회원 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
             this.exportInFlight = false;
             CommonJS.setButtonDisabled(document.getElementById('btnExportMember'), false);

@@ -185,9 +185,17 @@ const ProductFrontDisplayList = {
         this.load();
     },
 
-    exportCsv() {
+    async exportCsv() {
+        const button = document.getElementById('btnExportDisplayCsv');
         const params = this.buildParams();
-        window.location.href = `/api/admin/product/front-display/export?${params.toString()}`;
+        try {
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(`/api/admin/product/front-display/export?${params.toString()}`, 'front-display-products.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            CommonJS.setButtonDisabled(button, false);
+        }
     },
 
     reset() {

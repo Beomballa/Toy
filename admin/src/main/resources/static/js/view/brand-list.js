@@ -395,7 +395,12 @@ const BrandList = {
         try {
             this.exportInFlight = true;
             CommonJS.setButtonDisabled(document.getElementById('btnExportBrand'), true, '내보내는 중입니다.');
-            window.location.href = `/api/admin/brands/export?${this.buildParams().toString()}`;
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            await CommonJS.downloadFile(`/api/admin/brands/export?${params.toString()}`, 'brands.csv');
+        } catch (error) {
+            await CommonJS.alert(error.message || '브랜드 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
             this.exportInFlight = false;
             CommonJS.setButtonDisabled(document.getElementById('btnExportBrand'), false);

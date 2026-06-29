@@ -220,66 +220,76 @@
 
     <div class="card animate-in admin-panel-card">
         <div class="card-body">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
+            <div class="admin-selection-panel">
+                <div class="admin-selection-panel__head">
+                    <div>
+                        <div class="admin-selection-panel__title">선택 작업</div>
+                        <div class="admin-selection-panel__desc">상태, 우선순위, 담당자, 마감일을 여러 작업에 한 번에 반영합니다.</div>
+                    </div>
                     <div class="small text-muted" id="taskSelectionMeta">선택된 작업이 없습니다.</div>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">일괄 상태 변경</label>
-                    <select id="bulkTaskStatus" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="TODO">대기</option>
-                        <option value="IN_PROGRESS">진행중</option>
-                        <option value="DONE">완료</option>
-                        <option value="HOLD">보류</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">일괄 우선순위 변경</label>
-                    <select id="bulkTaskPriority" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="HIGH">높음</option>
-                        <option value="MEDIUM">보통</option>
-                        <option value="LOW">낮음</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">일괄 담당자 변경</label>
-                    <select id="bulkTaskAssignee" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="__UNASSIGN__">담당 해제</option>
-                    </select>
-                </div>
-                <div class="col-md-1">
-                    <label class="form-label fw-bold">일괄 고정 변경</label>
-                    <select id="bulkTaskPinned" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="Y">고정</option>
-                        <option value="N">일반</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold">일괄 마감일 변경</label>
-                    <input type="date" id="bulkTaskDueDate" class="form-control">
-                    <div class="form-check mt-2">
-                        <input class="form-check-input" type="checkbox" id="bulkTaskDueDateClear">
-                        <label class="form-check-label" for="bulkTaskDueDateClear">마감일 해제</label>
+                <div class="admin-selection-grid">
+                    <div class="admin-filter-field">
+                        <label class="admin-filter-label">일괄 상태 변경</label>
+                        <select id="bulkTaskStatus" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="TODO">대기</option>
+                            <option value="IN_PROGRESS">진행중</option>
+                            <option value="DONE">완료</option>
+                            <option value="HOLD">보류</option>
+                        </select>
+
+                        <label class="admin-filter-label mt-3">일괄 우선순위 변경</label>
+                        <select id="bulkTaskPriority" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="HIGH">높음</option>
+                            <option value="MEDIUM">보통</option>
+                            <option value="LOW">낮음</option>
+                        </select>
                     </div>
-                </div>
-                <div class="col-md-2 d-grid gap-2">
-                    <button type="button" class="btn btn-outline-dark" id="btnApplyTaskBulk">일괄 적용</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnBulkDuplicateTask">선택 복제</button>
-                    <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteTask">일괄 삭제</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnClearTaskSelection">선택 해제</button>
+                    <div class="admin-filter-field">
+                        <label class="admin-filter-label">일괄 담당자 변경</label>
+                        <select id="bulkTaskAssignee" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="__UNASSIGN__">담당 해제</option>
+                        </select>
+
+                        <label class="admin-filter-label mt-3">일괄 고정 변경</label>
+                        <select id="bulkTaskPinned" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="Y">고정</option>
+                            <option value="N">일반</option>
+                        </select>
+                    </div>
+                    <div class="admin-selection-actions">
+                        <div class="admin-filter-field">
+                            <label class="admin-filter-label">일괄 마감일 변경</label>
+                            <input type="date" id="bulkTaskDueDate" class="form-control">
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="bulkTaskDueDateClear">
+                                <label class="form-check-label" for="bulkTaskDueDateClear">마감일 해제</label>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-outline-dark" id="btnApplyTaskBulk">일괄 적용</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnBulkDuplicateTask">선택 복제</button>
+                            <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteTask">일괄 삭제</button>
+                            <button type="button" class="btn btn-outline-secondary" id="btnClearTaskSelection">선택 해제</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card animate-in">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">운영 작업 목록</h6>
-            <div class="small text-muted" id="taskMetaText">데이터를 불러오는 중입니다...</div>
+    <div class="card animate-in admin-panel-card admin-table-card">
+        <div class="card-header bg-white py-3">
+            <div class="admin-list-toolbar">
+                <div class="admin-list-toolbar__title">
+                    <h6 class="card-title mb-0">운영 작업 목록</h6>
+                </div>
+                <div class="small text-muted admin-list-toolbar__meta" id="taskMetaText">데이터를 불러오는 중입니다...</div>
+            </div>
         </div>
         <div class="card-body border-bottom py-2">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">

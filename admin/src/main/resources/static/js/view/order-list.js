@@ -80,6 +80,17 @@ const OrderList = {
             });
         });
 
+        document.getElementById('startDate')?.addEventListener('change', () => this.syncDatePresetButtons());
+        document.getElementById('endDate')?.addEventListener('change', () => this.syncDatePresetButtons());
+
+        document.getElementById('orderStatusSummaryRow')?.addEventListener('click', (event) => {
+            const summaryButton = event.target.closest('[data-role="apply-order-status-summary"]');
+            if (!summaryButton) {
+                return;
+            }
+            this.applyStatusSummaryFilter(summaryButton.dataset.statusCode || '');
+        });
+
         document.getElementById('orderListTableBody')?.addEventListener('click', (event) => {
             const detailButton = event.target.closest('[data-role="go-order-detail"]');
             if (!detailButton) {
@@ -147,11 +158,26 @@ const OrderList = {
         });
         const tbody = document.getElementById('orderListTableBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">주문 내역을 불러오는 중입니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="product-loading-state">
+                            <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
+                            <strong>주문 내역을 불러오는 중입니다.</strong>
+                            <p>현재 필터 기준 주문 목록과 상태 집계를 함께 계산하고 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
         }
 
         try {
             this.isLoading = true;
+            this.renderMeta({
+                totalElements: 0,
+                currentPage: this.state.page,
+                totalPages: 0
+            });
             const res = await fetch(`/api/admin/orders/list?${params}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '데이터를 불러오는 중 오류가 발생했습니다.'));
@@ -160,10 +186,17 @@ const OrderList = {
             const data = await res.json();
             this.renderStatusSummaries(data.statusSummaries || []);
             this.renderList(data.orders);
+            this.renderMeta(data);
             this.renderPagination(data);
         } catch (err) {
             console.error('주문 목록 로드 실패:', err);
             this.renderStatusSummaries([]);
+            this.renderMeta({
+                totalElements: 0,
+                currentPage: this.state.page,
+                totalPages: 0,
+                errorMessage: err.message
+            });
             await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         } finally {
             this.isLoading = false;
@@ -174,19 +207,43 @@ const OrderList = {
         const container = document.getElementById('orderStatusSummaryRow');
         if (!container) return;
 
+        const totalCount = (items || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+        const selectedStatus = this.state.status || '';
+
         if (!items.length) {
-            container.innerHTML = '<div class="col-12 text-muted small">현재 필터에 해당하는 상태별 집계가 없습니다.</div>';
+            container.innerHTML = '<div class="text-muted small">현재 필터에 해당하는 상태별 집계가 없습니다.</div>';
             return;
         }
 
-        container.innerHTML = items.map((item) => `
-            <div class="col-6 col-lg-2">
-                <div class="border rounded-3 bg-white px-3 py-2 h-100">
-                    <div class="small text-muted">${item.statusDesc}</div>
-                    <div class="fw-bold fs-5">${Number(item.count || 0).toLocaleString()}건</div>
-                </div>
-            </div>
-        `).join('');
+        const cards = [
+            {
+                statusCode: '',
+                statusDesc: '전체 주문',
+                count: totalCount,
+                hint: '현재 조건 기준 전체 주문'
+            },
+            ...items.map((item) => ({
+                statusCode: item.statusCode || '',
+                statusDesc: item.statusDesc,
+                count: Number(item.count || 0),
+                hint: `${item.statusDesc} 상태 주문`
+            }))
+        ];
+
+        container.innerHTML = cards.map((item) => {
+            const active = (item.statusCode || '') === selectedStatus;
+            const percentage = totalCount > 0 ? Math.round((Number(item.count || 0) / totalCount) * 100) : 0;
+            return `
+                <button type="button"
+                        class="admin-summary-card order-status-summary-card text-start ${active ? 'stat-card-active' : ''}"
+                        data-role="apply-order-status-summary"
+                        data-status-code="${item.statusCode || ''}">
+                    <div class="admin-summary-card__label">${item.statusDesc}</div>
+                    <div class="admin-summary-card__value">${Number(item.count || 0).toLocaleString()}건</div>
+                    <div class="admin-summary-card__hint">${item.hint} · ${percentage}%</div>
+                </button>
+            `;
+        }).join('');
     },
 
     renderList(items) {
@@ -194,7 +251,17 @@ const OrderList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">주문 내역이 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="product-empty-state">
+                            <i class="fas fa-box-open product-empty-state-icon"></i>
+                            <strong>주문 내역이 없습니다.</strong>
+                            <p>기간, 상태, 검색어 조건을 조정하거나 빠른 상태 카드를 눌러 다른 주문 문맥을 확인하세요.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
@@ -238,7 +305,7 @@ const OrderList = {
 
         const infoEl = document.getElementById('pageInfoText');
         if (infoEl) {
-            infoEl.textContent = `Showing page ${curr + 1} of ${totalPages} (Total ${totalElements.toLocaleString()} entries)`;
+            infoEl.textContent = this.buildPageInfoLabel(data);
         }
 
         const totalCountEl = document.getElementById('totalElementsCount');
@@ -273,6 +340,7 @@ const OrderList = {
         if (endDateEl) endDateEl.value = this.state.endDate;
         if (searchKeywordEl) searchKeywordEl.value = this.state.searchKeyword;
         if (pageSizeEl) pageSizeEl.value = String(this.state.size);
+        this.syncDatePresetButtons();
     },
 
     resetFilters() {
@@ -282,6 +350,14 @@ const OrderList = {
         this.state.endDate = '';
         this.state.searchKeyword = '';
         this.syncFilterFields();
+    },
+
+    applyStatusSummaryFilter(statusCode) {
+        this.state.page = 0;
+        this.state.status = this.state.status === (statusCode || '') ? '' : (statusCode || '');
+        this.syncFilterFields();
+        this.pushState();
+        this.getList();
     },
 
     applyDatePreset(days) {
@@ -295,6 +371,114 @@ const OrderList = {
         this.state.startDate = this.formatDate(startDate);
         this.state.endDate = endDate;
         this.syncFilterFields();
+    },
+
+    renderMeta(data = {}) {
+        const totalElements = Number(data.totalElements || 0);
+        const resultLabel = data.errorMessage
+            ? data.errorMessage
+            : (totalElements === 0 ? '조회 결과 없음' : `검색 결과 ${totalElements.toLocaleString()}건`);
+        const pageInfoLabel = data.errorMessage
+            ? '페이지 메타 확인 불가'
+            : this.buildPageInfoLabel(data);
+        const querySignature = this.buildQuerySignature();
+
+        CommonJS.renderListMeta({
+            metaTextId: 'orderMetaText',
+            filterMetaId: 'orderFilterMeta',
+            resultMetaId: 'orderResultMeta',
+            pageMetaId: 'orderPageMeta',
+            resultLabel,
+            filterCount: this.countActiveFilters(),
+            querySignature,
+            pageInfoLabel,
+            filterPrefix: '필터',
+            defaultResultText: '결과 메타 없음',
+            defaultPageText: '페이지 메타 없음'
+        });
+
+        const summaryGuideEl = document.getElementById('orderSummaryGuideText');
+        if (summaryGuideEl) {
+            summaryGuideEl.textContent = this.state.status
+                ? `상태 요약 카드를 다시 누르면 빠른 상태 필터를 해제합니다. 현재 선택: ${this.resolveStatusLabel(this.state.status)}`
+                : '상태 요약 카드를 누르면 해당 상태로 바로 필터링합니다.';
+        }
+    },
+
+    countActiveFilters() {
+        let count = 0;
+        if (this.state.status) count += 1;
+        if (this.state.startDate) count += 1;
+        if (this.state.endDate) count += 1;
+        if (this.state.searchKeyword) count += 1;
+        return count;
+    },
+
+    buildQuerySignature() {
+        const tokens = ['주문 최신순'];
+        if (this.state.status) {
+            tokens.push(`상태=${this.resolveStatusLabel(this.state.status)}`);
+        }
+        if (this.state.startDate || this.state.endDate) {
+            tokens.push(`기간=${this.state.startDate || '시작 미지정'}~${this.state.endDate || '종료 미지정'}`);
+        }
+        if (this.state.searchKeyword) {
+            tokens.push(`검색=${this.state.searchKeyword}`);
+        }
+        return tokens.join(' · ');
+    },
+
+    buildPageInfoLabel(data = {}) {
+        const totalElements = Number(data.totalElements || 0);
+        if (totalElements === 0) {
+            return '조건에 맞는 주문이 없습니다.';
+        }
+
+        const size = Number(this.state.size || data.size || 10);
+        const currentPage = Number(data.currentPage ?? this.state.page ?? 0);
+        const totalPages = Math.max(Number(data.totalPages || 0), 1);
+        const rangeStart = currentPage * size + 1;
+        const visibleCount = Array.isArray(data.orders) ? data.orders.length : Math.min(size, totalElements - currentPage * size);
+        const rangeEnd = Math.min(totalElements, rangeStart + Math.max(visibleCount, 0) - 1);
+        return `${rangeStart}-${rangeEnd} / ${totalElements.toLocaleString()}건 · ${totalPages}페이지`;
+    },
+
+    resolveStatusLabel(statusCode) {
+        const labels = {
+            ORDERED: '주문완료',
+            PAID: '결제완료',
+            PREPARING: '배송준비',
+            SHIPPED: '배송중',
+            DELIVERED: '배송완료',
+            CANCELLED: '주문취소'
+        };
+        return labels[statusCode] || '전체 상태';
+    },
+
+    syncDatePresetButtons() {
+        const activePreset = this.resolveActiveDatePreset();
+        document.querySelectorAll('[data-date-preset]').forEach((button) => {
+            const isActive = Number(button.dataset.datePreset || 0) === activePreset;
+            button.classList.toggle('btn-dark', isActive);
+            button.classList.toggle('text-white', isActive);
+            button.classList.toggle('btn-outline-light', !isActive);
+            button.classList.toggle('text-muted', !isActive);
+        });
+    },
+
+    resolveActiveDatePreset() {
+        if (!this.state.startDate || !this.state.endDate) {
+            return null;
+        }
+
+        const today = new Date();
+        const todayText = this.formatDate(today);
+        if (this.state.endDate !== todayText) {
+            return null;
+        }
+
+        const diff = Math.floor((new Date(`${this.state.endDate}T00:00:00`) - new Date(`${this.state.startDate}T00:00:00`)) / (1000 * 60 * 60 * 24)) + 1;
+        return [1, 7, 30].includes(diff) ? diff : null;
     },
 
     pushState() {

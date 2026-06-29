@@ -107,12 +107,18 @@
                     <span class="card-title h6 mb-0">주문 내역</span>
                     <span class="card-subtitle text-muted ms-2" id="totalElementsCount">전체 0건</span>
                 </div>
-                <div class="admin-list-toolbar__meta">필터 조건에 따른 주문 이력을 확인합니다.</div>
+                <div class="admin-list-toolbar__meta" id="orderMetaText">필터 조건에 따른 주문 이력을 확인합니다.</div>
             </div>
         </div>
         <div class="card-body border-bottom bg-light-subtle">
-            <div class="row g-2" id="orderStatusSummaryRow">
-                <div class="col-12 text-muted small">상태별 집계를 불러오는 중입니다...</div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div class="small text-muted" id="orderFilterMeta">적용 필터를 계산하는 중입니다...</div>
+                <div class="small text-muted" id="orderResultMeta">결과 메타를 계산하는 중입니다...</div>
+                <div class="small text-muted" id="orderPageMeta">페이지 메타를 계산하는 중입니다...</div>
+            </div>
+            <div class="small text-muted mb-3" id="orderSummaryGuideText">상태 요약 카드를 누르면 해당 상태로 바로 필터링합니다.</div>
+            <div class="admin-summary-grid admin-summary-grid--compact" id="orderStatusSummaryRow">
+                <div class="text-muted small">상태별 집계를 불러오는 중입니다...</div>
             </div>
         </div>
         <div class="card-body p-0">

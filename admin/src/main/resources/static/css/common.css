@@ -663,6 +663,24 @@
     border-color: #d8dee6;
 }
 
+.admin-summary-card.stat-card-active {
+    border-color: #16a34a;
+    background: linear-gradient(180deg, #f6fff9 0%, #eefbf3 100%);
+    box-shadow: 0 18px 32px rgba(3, 105, 56, 0.12);
+}
+
+.admin-summary-card.stat-card-active .admin-summary-card__label {
+    color: #166534;
+}
+
+.admin-summary-card.stat-card-active .admin-summary-card__value {
+    color: #14532d;
+}
+
+.admin-summary-card.stat-card-active .admin-summary-card__hint {
+    color: #15803d;
+}
+
 .admin-summary-card__label {
     color: #64748b;
     font-size: 0.82rem;
@@ -993,6 +1011,14 @@
     justify-content: flex-end;
 }
 
+.admin-summary-grid--compact {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.order-status-summary-card {
+    min-height: 118px;
+}
+
 .admin-selection-panel {
     display: flex;
     flex-direction: column;
@@ -1153,6 +1179,10 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .admin-summary-grid--compact {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .admin-filter-grid {
         grid-template-columns: repeat(6, minmax(0, 1fr));
     }
@@ -1201,6 +1231,10 @@
 
 @media (max-width: 575px) {
     .admin-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-summary-grid--compact {
         grid-template-columns: 1fr;
     }
 

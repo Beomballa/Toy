@@ -35,30 +35,36 @@
     </div>
 
     <section class="admin-summary-grid">
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatTotalCard">
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatTotalCard">
             <div class="admin-summary-card__label">전체 공지</div>
             <div class="admin-summary-card__value stat-value" id="noticeTotalCount">0</div>
-        </div>
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatLiveCard">
+            <div class="admin-summary-card__hint">현재 탐색 문맥 전체</div>
+        </button>
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatLiveCard">
             <div class="admin-summary-card__label">노출중</div>
             <div class="admin-summary-card__value stat-value" id="noticeLiveCount">0</div>
-        </div>
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatScheduledCard">
+            <div class="admin-summary-card__hint">현재 노출 중 공지</div>
+        </button>
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatScheduledCard">
             <div class="admin-summary-card__label">예약 공지</div>
             <div class="admin-summary-card__value stat-value" id="noticeScheduledCount">0</div>
-        </div>
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatEndedCard">
+            <div class="admin-summary-card__hint">시작 전 대기 공지</div>
+        </button>
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatEndedCard">
             <div class="admin-summary-card__label">종료 공지</div>
             <div class="admin-summary-card__value stat-value" id="noticeEndedCount">0</div>
-        </div>
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatInactiveCard">
+            <div class="admin-summary-card__hint">노출 기간 종료 공지</div>
+        </button>
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatInactiveCard">
             <div class="admin-summary-card__label">비활성 공지</div>
             <div class="admin-summary-card__value stat-value" id="noticeInactiveCount">0</div>
-        </div>
-        <div class="admin-summary-card summary-card shadow-sm stat-card-clickable" id="noticeStatPinnedCard">
+            <div class="admin-summary-card__hint">중지 또는 비활성 상태</div>
+        </button>
+        <button type="button" class="admin-summary-card summary-card shadow-sm stat-card-clickable text-start" id="noticeStatPinnedCard">
             <div class="admin-summary-card__label">고정 공지</div>
             <div class="admin-summary-card__value stat-value" id="noticePinnedCount">0</div>
-        </div>
+            <div class="admin-summary-card__hint">상단 고정 운영 공지</div>
+        </button>
     </section>
 
     <div class="card animate-in admin-panel-card">
@@ -67,6 +73,7 @@
                 <div class="small text-muted" id="noticeStatsContextText">카드 기준을 계산하는 중입니다...</div>
                 <div class="small text-muted" id="noticeStatsNotice" data-stats-context="">카드 기준을 계산하는 중입니다...</div>
             </div>
+            <div class="small text-muted mt-2" id="noticeSummaryGuideText">요약 카드를 누르면 해당 문맥으로 바로 필터링합니다.</div>
         </div>
     </div>
 

@@ -157,6 +157,20 @@ const NoticeList = {
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             this.setListStateMeta('loading', '운영 공지를 불러오는 중입니다.', 0, 0, '');
+            const tbody = document.getElementById('noticeListBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="product-loading-state">
+                                <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
+                                <strong>운영 공지를 불러오는 중입니다.</strong>
+                                <p>현재 필터 기준 목록과 상태 요약을 함께 계산하고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
 
             const res = await fetch(`/api/admin/settings/notices/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지 목록을 불러오지 못했습니다.'));
@@ -165,6 +179,7 @@ const NoticeList = {
             this.renderList(data.items || []);
             this.renderStats(data.noticeStats);
             this.renderMeta(data);
+            this.syncStatCardState();
             this.renderPagination(data);
             await this.openDeepLinkedNoticeIfNeeded(data.items || []);
         } catch (err) {
@@ -176,6 +191,7 @@ const NoticeList = {
             document.getElementById('noticeListBody').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             document.getElementById('noticePagination').innerHTML = '';
             this.setListStateMeta('error', err.message, 0, 0, '');
+            this.syncStatCardState();
         }
     },
 
@@ -184,7 +200,17 @@ const NoticeList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 운영 공지가 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="product-empty-state">
+                            <i class="fas fa-bullhorn product-empty-state-icon"></i>
+                            <strong>등록된 운영 공지가 없습니다.</strong>
+                            <p>상태, 고정, 노출 상태 조건을 조정하거나 신규 공지를 등록해 운영 안내 흐름을 채워보세요.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             this.setListStateMeta('empty', '등록된 운영 공지가 없습니다.', 0, 0, '');
             this.updateSelectionMeta([]);
             return;
@@ -353,6 +379,10 @@ const NoticeList = {
                 noticeEl.innerText = '카드 기준을 확인할 수 없습니다.';
                 noticeEl.dataset.statsContext = 'error';
             }
+            const guideTextEl = document.getElementById('noticeSummaryGuideText');
+            if (guideTextEl) {
+                guideTextEl.textContent = '요약 카드를 눌러 빠른 필터를 적용할 수 있습니다.';
+            }
             return;
         }
 
@@ -369,6 +399,10 @@ const NoticeList = {
             ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
             : '카드 수치는 현재 탐색 문맥 기준입니다.';
         noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        const guideTextEl = document.getElementById('noticeSummaryGuideText');
+        if (guideTextEl) {
+            guideTextEl.textContent = this.resolveSummaryGuideText();
+        }
     },
 
     renderPagination(data) {
@@ -605,6 +639,14 @@ const NoticeList = {
 
     applyStatFilter(type) {
         this.state.page = 0;
+        const currentQuickFilter = this.resolveActiveStatFilter();
+        if (currentQuickFilter === type || (type === 'total' && !currentQuickFilter)) {
+            document.getElementById('noticeIsActiveFilter').value = '';
+            document.getElementById('noticeIsPinnedFilter').value = '';
+            document.getElementById('noticeVisibilityStatusFilter').value = '';
+            this.getList();
+            return;
+        }
         document.getElementById('noticeIsActiveFilter').value = '';
         document.getElementById('noticeIsPinnedFilter').value = '';
         document.getElementById('noticeVisibilityStatusFilter').value = '';
@@ -630,6 +672,44 @@ const NoticeList = {
                 break;
         }
         this.getList();
+    },
+
+    resolveActiveStatFilter() {
+        if (document.getElementById('noticeIsPinnedFilter')?.value === 'Y') {
+            return 'pinned';
+        }
+        const visibilityStatus = document.getElementById('noticeVisibilityStatusFilter')?.value || '';
+        if (visibilityStatus === 'LIVE') return 'live';
+        if (visibilityStatus === 'SCHEDULED') return 'scheduled';
+        if (visibilityStatus === 'ENDED') return 'ended';
+        if (visibilityStatus === 'INACTIVE') return 'inactive';
+        return '';
+    },
+
+    syncStatCardState() {
+        const activeFilter = this.resolveActiveStatFilter();
+        document.getElementById('noticeStatTotalCard')?.classList.toggle('stat-card-active', !activeFilter);
+        document.getElementById('noticeStatLiveCard')?.classList.toggle('stat-card-active', activeFilter === 'live');
+        document.getElementById('noticeStatScheduledCard')?.classList.toggle('stat-card-active', activeFilter === 'scheduled');
+        document.getElementById('noticeStatEndedCard')?.classList.toggle('stat-card-active', activeFilter === 'ended');
+        document.getElementById('noticeStatInactiveCard')?.classList.toggle('stat-card-active', activeFilter === 'inactive');
+        document.getElementById('noticeStatPinnedCard')?.classList.toggle('stat-card-active', activeFilter === 'pinned');
+    },
+
+    resolveSummaryGuideText() {
+        const activeFilter = this.resolveActiveStatFilter();
+        if (!activeFilter) {
+            return '요약 카드를 누르면 해당 문맥으로 바로 필터링합니다.';
+        }
+
+        const labels = {
+            live: '노출중',
+            scheduled: '예약 공지',
+            ended: '종료 공지',
+            inactive: '비활성 공지',
+            pinned: '고정 공지'
+        };
+        return `현재 빠른 필터: ${labels[activeFilter] || '전체 공지'} · 같은 카드를 다시 누르면 해제됩니다.`;
     },
 
     toggleSelection(noticeNo, checked) {

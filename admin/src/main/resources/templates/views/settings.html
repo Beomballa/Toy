@@ -131,57 +131,66 @@
                         </section>
                     </div>
                     <div class="border-bottom p-3 bg-light-subtle">
-                        <div class="admin-filter-grid">
-                            <div class="admin-filter-field admin-filter-field--span-3">
-                                <label class="admin-filter-label">설정 항목</label>
-                                <select id="systemSettingHistorySettingKey" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="SYSTEM_MAINTENANCE_MODE">유지보수 모드</option>
-                                    <option value="COMMUNITY_WRITE_ENABLED">커뮤니티 작성 허용</option>
-                                    <option value="ORDER_EXPORT_ENABLED">주문 Export 허용</option>
-                                    <option value="LOW_STOCK_DEFAULT_THRESHOLD">기본 저재고 임계값</option>
-                                </select>
+                        <div class="admin-search-layout">
+                            <section class="admin-search-section">
+                                <div class="admin-search-section__title">설정 이력 검색</div>
+                                <div class="admin-search-section__desc">설정 항목, 작업 관리자, 이력 상태, 기간 기준으로 변경 이력을 빠르게 좁힙니다.</div>
+                                <div class="admin-filter-grid admin-search-grid">
+                                    <div class="admin-filter-field admin-filter-field--span-3">
+                                        <label class="admin-filter-label">설정 항목</label>
+                                        <select id="systemSettingHistorySettingKey" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="SYSTEM_MAINTENANCE_MODE">유지보수 모드</option>
+                                            <option value="COMMUNITY_WRITE_ENABLED">커뮤니티 작성 허용</option>
+                                            <option value="ORDER_EXPORT_ENABLED">주문 Export 허용</option>
+                                            <option value="LOW_STOCK_DEFAULT_THRESHOLD">기본 저재고 임계값</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">관리자 번호</label>
+                                        <input type="number" min="1" id="systemSettingHistoryAdminNo" class="form-control form-control-sm" placeholder="예: 1">
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-3">
+                                        <label class="admin-filter-label">관리자 검색</label>
+                                        <input type="text" id="systemSettingHistoryAdminKeyword" class="form-control form-control-sm" placeholder="이름 또는 로그인 ID">
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">이력 상태</label>
+                                        <select id="systemSettingHistoryChangeStatus" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="CURRENT">현재 반영중</option>
+                                            <option value="OUTDATED">과거 이력</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">건수</label>
+                                        <select id="systemSettingHistoryPageSize" class="form-select form-select-sm">
+                                            <option value="5">5</option>
+                                            <option value="8" selected>8</option>
+                                            <option value="20">20</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-3">
+                                        <label class="admin-filter-label">시작일</label>
+                                        <input type="date" id="systemSettingHistoryStartDate" class="form-control form-control-sm">
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-3">
+                                        <label class="admin-filter-label">종료일</label>
+                                        <input type="date" id="systemSettingHistoryEndDate" class="form-control form-control-sm">
+                                    </div>
+                                </div>
+                            </section>
+                            <div class="task-filter-actions">
+                                <div class="task-filter-actions__hint">설정 저장 상태와 관리자 이력 문맥은 URL에 같이 유지됩니다.</div>
+                                <div class="admin-filter-actions">
+                                    <button class="btn btn-sm btn-dark flex-grow-1" id="btnSearchSystemHistory">조회</button>
+                                    <button class="btn btn-sm btn-outline-secondary" id="btnResetSystemHistory">초기화</button>
+                                </div>
                             </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">관리자 번호</label>
-                                <input type="number" min="1" id="systemSettingHistoryAdminNo" class="form-control form-control-sm" placeholder="예: 1">
+                            <div class="d-flex flex-wrap gap-3 small text-muted">
+                                <span id="systemSettingHistoryFilterMeta">적용 필터 없음</span>
+                                <span id="systemSettingHistoryPageMeta">페이지 메타 없음</span>
                             </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">관리자 검색</label>
-                                <input type="text" id="systemSettingHistoryAdminKeyword" class="form-control form-control-sm" placeholder="이름 또는 로그인 ID">
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">이력 상태</label>
-                                <select id="systemSettingHistoryChangeStatus" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="CURRENT">현재 반영중</option>
-                                    <option value="OUTDATED">과거 이력</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">시작일</label>
-                                <input type="date" id="systemSettingHistoryStartDate" class="form-control form-control-sm">
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">종료일</label>
-                                <input type="date" id="systemSettingHistoryEndDate" class="form-control form-control-sm">
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-1">
-                                <label class="admin-filter-label">건수</label>
-                                <select id="systemSettingHistoryPageSize" class="form-select form-select-sm">
-                                    <option value="5">5</option>
-                                    <option value="8" selected>8</option>
-                                    <option value="20">20</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-actions">
-                                <button class="btn btn-sm btn-dark flex-grow-1" id="btnSearchSystemHistory">조회</button>
-                                <button class="btn btn-sm btn-outline-secondary" id="btnResetSystemHistory">초기화</button>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
-                            <span id="systemSettingHistoryFilterMeta">적용 필터 없음</span>
-                            <span id="systemSettingHistoryPageMeta">페이지 메타 없음</span>
                         </div>
                     </div>
                     <div class="table-responsive">
@@ -252,58 +261,67 @@
                         </section>
                     </div>
                     <div class="border-bottom p-3 bg-light-subtle">
-                        <div class="admin-filter-grid">
-                            <div class="admin-filter-field admin-filter-field--span-4">
-                                <label class="admin-filter-label">검색</label>
-                                <input type="text" id="adminKeyword" class="form-control form-control-sm" placeholder="로그인 ID 또는 관리자명">
+                        <div class="admin-search-layout">
+                            <section class="admin-search-section">
+                                <div class="admin-search-section__title">관리자 계정 검색</div>
+                                <div class="admin-search-section__desc">로그인 ID, 권한, 상태, 미접속 기준으로 운영 계정을 빠르게 점검합니다.</div>
+                                <div class="admin-filter-grid admin-search-grid">
+                                    <div class="admin-filter-field admin-filter-field--span-4">
+                                        <label class="admin-filter-label">검색</label>
+                                        <input type="text" id="adminKeyword" class="form-control form-control-sm" placeholder="로그인 ID 또는 관리자명">
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">권한</label>
+                                        <select id="adminRoleFilter" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="ROLE_SUPER">최고 관리자</option>
+                                            <option value="ROLE_ADMIN">일반 관리자</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">상태</label>
+                                        <select id="adminStatusFilter" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="ACTIVE">활성</option>
+                                            <option value="SUSPENDED">정지</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">미접속 기준</label>
+                                        <select id="adminInactiveDaysFilter" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="7">7일 이상</option>
+                                            <option value="14">14일 이상</option>
+                                            <option value="30">30일 이상</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">로그인 이력</label>
+                                        <select id="adminNeverLoggedInFilter" class="form-select form-select-sm">
+                                            <option value="">전체</option>
+                                            <option value="Y">없음만</option>
+                                        </select>
+                                    </div>
+                                    <div class="admin-filter-field admin-filter-field--span-2">
+                                        <label class="admin-filter-label">건수</label>
+                                        <select id="adminPageSize" class="form-select form-select-sm">
+                                            <option value="5">5</option>
+                                            <option value="10" selected>10</option>
+                                            <option value="20">20</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </section>
+                            <div class="task-filter-actions">
+                                <div class="task-filter-actions__hint">관리자 목록과 설정 이력은 같은 화면에서 각각의 검색 상태를 따로 유지합니다.</div>
+                                <div class="admin-filter-actions">
+                                    <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
+                                </div>
                             </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">권한</label>
-                                <select id="adminRoleFilter" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="ROLE_SUPER">최고 관리자</option>
-                                    <option value="ROLE_ADMIN">일반 관리자</option>
-                                </select>
+                            <div class="d-flex flex-wrap gap-3 small text-muted">
+                                <span id="adminFilterMeta">적용 필터 없음</span>
+                                <span id="adminPageMeta">페이지 메타 없음</span>
                             </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">상태</label>
-                                <select id="adminStatusFilter" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="ACTIVE">활성</option>
-                                    <option value="SUSPENDED">정지</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">미접속 기준</label>
-                                <select id="adminInactiveDaysFilter" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="7">7일 이상</option>
-                                    <option value="14">14일 이상</option>
-                                    <option value="30">30일 이상</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-2">
-                                <label class="admin-filter-label">로그인 이력</label>
-                                <select id="adminNeverLoggedInFilter" class="form-select form-select-sm">
-                                    <option value="">전체</option>
-                                    <option value="Y">없음만</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-field admin-filter-field--span-1">
-                                <label class="admin-filter-label">건수</label>
-                                <select id="adminPageSize" class="form-select form-select-sm">
-                                    <option value="5">5</option>
-                                    <option value="10" selected>10</option>
-                                    <option value="20">20</option>
-                                </select>
-                            </div>
-                            <div class="admin-filter-actions">
-                                <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
-                            </div>
-                        </div>
-                        <div class="d-flex flex-wrap gap-3 small text-muted mt-3">
-                            <span id="adminFilterMeta">적용 필터 없음</span>
-                            <span id="adminPageMeta">페이지 메타 없음</span>
                         </div>
                     </div>
                     <div class="table-responsive">

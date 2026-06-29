@@ -30,6 +30,10 @@ const ProductFrontDisplayList = {
         document.getElementById('btnSearchDisplay')?.addEventListener('click', () => this.search());
         document.getElementById('btnResetDisplayFilter')?.addEventListener('click', () => this.reset());
         document.getElementById('btnExportDisplay')?.addEventListener('click', () => this.exportCsv());
+        document.getElementById('displaySummaryTotalCard')?.addEventListener('click', () => this.applySummaryFilter('ALL'));
+        document.getElementById('displaySummaryConfiguredCard')?.addEventListener('click', () => this.applySummaryFilter('CONFIGURED'));
+        document.getElementById('displaySummaryFeaturedCard')?.addEventListener('click', () => this.applySummaryFilter('FEATURED'));
+        document.getElementById('displaySummaryLowStockCard')?.addEventListener('click', () => this.applySummaryFilter('LOW_STOCK'));
         document.getElementById('displayKeyword')?.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 event.preventDefault();
@@ -129,6 +133,8 @@ const ProductFrontDisplayList = {
         if (lowStockOnly) {
             lowStockOnly.checked = this.state.lowStockOnly;
         }
+
+        this.syncToggleCardState();
     },
 
     syncReturnLinks() {
@@ -158,6 +164,13 @@ const ProductFrontDisplayList = {
     async load() {
         const params = this.buildParams();
         try {
+            this.renderLoading();
+            this.renderMeta({
+                resultMeta: null,
+                summary: {
+                    totalCount: 0
+                }
+            });
             const response = await fetch(`/api/admin/product/front-display/list?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 목록을 불러오지 못했습니다.'));
@@ -179,14 +192,15 @@ const ProductFrontDisplayList = {
         this.state.contentStatus = document.getElementById('displayContentStatus')?.value || '';
         this.state.featuredOnly = document.getElementById('featuredOnly')?.checked || false;
         this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
-        this.state.lowStockThreshold = Number(document.getElementById('displayLowStockThreshold')?.value || 20);
+        this.state.lowStockThreshold = this.normalizeLowStockThreshold(document.getElementById('displayLowStockThreshold')?.value);
         this.state.sort = document.getElementById('displaySort')?.value || 'FEATURED';
+        this.syncFilterInputs();
         this.syncUrlState();
         this.load();
     },
 
     async exportCsv() {
-        const button = document.getElementById('btnExportDisplayCsv');
+        const button = document.getElementById('btnExportDisplay');
         const params = this.buildParams();
         try {
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
@@ -209,7 +223,9 @@ const ProductFrontDisplayList = {
             featuredOnly: false,
             lowStockOnly: false,
             lowStockThreshold: this.initialLowStockThreshold,
-            sort: 'FEATURED'
+            sort: 'FEATURED',
+            source: this.state.source,
+            returnTo: this.state.returnTo
         };
         this.syncFilterInputs();
         this.syncUrlState();
@@ -238,9 +254,21 @@ const ProductFrontDisplayList = {
         resultCount.textContent = resultMeta?.resultLabel || `전체 ${summary.totalCount}건`;
         filterSummary.textContent = resultMeta?.querySignature || this.buildSummary();
         this.renderSummary(summary);
+        this.renderMeta(payload);
+        this.syncSummaryCardState();
 
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조건에 맞는 전시 상품이 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5">
+                        <div class="product-empty-state">
+                            <i class="fas fa-layer-group product-empty-state-icon"></i>
+                            <strong>조건에 맞는 전시 상품이 없습니다.</strong>
+                            <p>노출 설정, 전시 문구, Featured, 저재고 조건을 조정해서 다른 전시 후보를 확인하세요.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
@@ -285,7 +313,26 @@ const ProductFrontDisplayList = {
             lowStockCount: 0,
             lowStockThreshold: this.state.lowStockThreshold
         });
+        this.renderMeta({ errorMessage: message, resultMeta: null, summary: { totalCount: 0 } });
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
+    },
+
+    renderLoading() {
+        const tbody = document.getElementById('frontDisplayTableBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5">
+                    <div class="product-loading-state">
+                        <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
+                        <strong>전시 상품을 불러오는 중입니다.</strong>
+                        <p>현재 필터 기준으로 상품 노출 설정과 요약 지표를 함께 계산하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
     },
 
     renderSummary(summary) {
@@ -305,6 +352,31 @@ const ProductFrontDisplayList = {
         setText('displaySummaryFeatured', Number(summary.featuredCount || 0).toLocaleString());
         setText('displaySummaryLowStock', Number(summary.lowStockCount || 0).toLocaleString());
         setText('displaySummaryThreshold', `기준 ${Number(summary.lowStockThreshold || this.state.lowStockThreshold).toLocaleString()}개 미만`);
+    },
+
+    renderMeta(payload = {}) {
+        const resultMeta = payload?.resultMeta || null;
+        const totalCount = Number(payload?.summary?.totalCount || 0);
+        const resultLabel = payload?.errorMessage
+            ? payload.errorMessage
+            : (resultMeta?.resultLabel || `전체 ${totalCount.toLocaleString()}건`);
+        const querySignature = resultMeta?.querySignature || this.buildSummary();
+        const pageInfoLabel = resultMeta?.pageInfoLabel || '전시 대상은 단일 목록으로 조회합니다.';
+        const filterCount = Number(resultMeta?.filterCount || this.countActiveFilters());
+
+        CommonJS.renderListMeta({
+            metaTextId: 'displayFilterSummary',
+            filterMetaId: 'displayFilterMeta',
+            resultMetaId: 'displayResultMeta',
+            pageMetaId: 'displayPageMeta',
+            resultLabel,
+            filterCount,
+            querySignature,
+            pageInfoLabel,
+            filterPrefix: '필터',
+            defaultResultText: '결과 메타 없음',
+            defaultPageText: '페이지 메타 없음'
+        });
     },
 
     buildSummary() {
@@ -344,6 +416,65 @@ const ProductFrontDisplayList = {
         }
         tokens.push(this.sortLabel(this.state.sort));
         return tokens.length ? tokens.join(' · ') : '전체 상품 기준';
+    },
+
+    countActiveFilters() {
+        let count = 0;
+        if (this.state.keyword) count += 1;
+        if (this.state.status) count += 1;
+        if (this.state.brandNo) count += 1;
+        if (this.state.categoryNo) count += 1;
+        if (this.state.configured) count += 1;
+        if (this.state.contentStatus) count += 1;
+        if (this.state.featuredOnly) count += 1;
+        if (this.state.lowStockOnly) count += 1;
+        if (this.state.lowStockThreshold !== this.initialLowStockThreshold) count += 1;
+        if (this.state.sort && this.state.sort !== 'FEATURED') count += 1;
+        return count;
+    },
+
+    normalizeLowStockThreshold(rawValue) {
+        const parsed = Number(rawValue || this.initialLowStockThreshold);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : this.initialLowStockThreshold;
+    },
+
+    applySummaryFilter(type) {
+        if (type === 'ALL') {
+            this.state.configured = '';
+            this.state.featuredOnly = false;
+            this.state.lowStockOnly = false;
+        } else if (type === 'CONFIGURED') {
+            this.state.configured = this.state.configured === 'CONFIGURED' ? '' : 'CONFIGURED';
+        } else if (type === 'FEATURED') {
+            this.state.featuredOnly = !this.state.featuredOnly;
+        } else if (type === 'LOW_STOCK') {
+            this.state.lowStockOnly = !this.state.lowStockOnly;
+        }
+
+        this.syncFilterInputs();
+        this.syncUrlState();
+        this.load();
+    },
+
+    syncSummaryCardState() {
+        const totalCard = document.getElementById('displaySummaryTotalCard');
+        const configuredCard = document.getElementById('displaySummaryConfiguredCard');
+        const featuredCard = document.getElementById('displaySummaryFeaturedCard');
+        const lowStockCard = document.getElementById('displaySummaryLowStockCard');
+        const hasFocusedSummary = this.state.configured === 'CONFIGURED' || this.state.featuredOnly || this.state.lowStockOnly;
+
+        totalCard?.classList.toggle('stat-card-active', !hasFocusedSummary);
+        configuredCard?.classList.toggle('stat-card-active', this.state.configured === 'CONFIGURED');
+        featuredCard?.classList.toggle('stat-card-active', this.state.featuredOnly);
+        lowStockCard?.classList.toggle('stat-card-active', this.state.lowStockOnly);
+    },
+
+    syncToggleCardState() {
+        const featuredOnly = document.getElementById('featuredOnly');
+        featuredOnly?.closest('.product-front-display-toggle-item')?.classList.toggle('is-active', !!featuredOnly?.checked);
+
+        const lowStockOnly = document.getElementById('lowStockOnly');
+        lowStockOnly?.closest('.product-front-display-toggle-item')?.classList.toggle('is-active', !!lowStockOnly?.checked);
     },
 
     sortLabel(sort) {

@@ -154,27 +154,27 @@
   </div>
 
   <section class="admin-summary-grid">
-    <div class="admin-summary-card animate-in">
+    <button type="button" class="admin-summary-card animate-in text-start" id="displaySummaryTotalCard">
       <div class="admin-summary-card__label">조회 상품</div>
       <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryTotal">0</div>
       <div class="admin-summary-card__hint">현재 필터 기준 전체 대상</div>
-    </div>
-    <div class="admin-summary-card animate-in">
+    </button>
+    <button type="button" class="admin-summary-card animate-in text-start" id="displaySummaryConfiguredCard">
       <div class="admin-summary-card__label">노출 설정 완료</div>
       <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryConfigured">0</div>
       <div class="admin-summary-card__hint" id="displaySummaryUnconfigured">미설정 0건</div>
       <div class="admin-summary-card__hint" id="displaySummaryContentQuality">전시 문구 완성 0건 · 보완 0건</div>
-    </div>
-    <div class="admin-summary-card animate-in">
+    </button>
+    <button type="button" class="admin-summary-card animate-in text-start" id="displaySummaryFeaturedCard">
       <div class="admin-summary-card__label">Featured</div>
       <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryFeatured">0</div>
       <div class="admin-summary-card__hint">대표 노출 상품 수</div>
-    </div>
-    <div class="admin-summary-card animate-in">
+    </button>
+    <button type="button" class="admin-summary-card animate-in text-start" id="displaySummaryLowStockCard">
       <div class="admin-summary-card__label">저재고</div>
       <div class="admin-summary-card__value fs-3 fw-bold" id="displaySummaryLowStock">0</div>
       <div class="admin-summary-card__hint" id="displaySummaryThreshold">기준 20개 미만</div>
-    </div>
+    </button>
   </section>
 
   <div class="card animate-in admin-panel-card admin-table-card">
@@ -185,6 +185,13 @@
           <span class="card-subtitle text-muted" id="displayResultCount">전체 0건</span>
         </div>
         <div class="admin-list-toolbar__meta" id="displayFilterSummary">전체 상품 기준</div>
+      </div>
+    </div>
+    <div class="card-body border-bottom py-2">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div class="small text-muted" id="displayFilterMeta">적용 필터를 계산하는 중입니다...</div>
+        <div class="small text-muted" id="displayResultMeta">결과 메타를 계산하는 중입니다...</div>
+        <div class="small text-muted" id="displayPageMeta">페이지 메타를 계산하는 중입니다...</div>
       </div>
     </div>
     <div class="card-body p-0">

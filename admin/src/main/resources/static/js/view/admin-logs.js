@@ -132,8 +132,9 @@ const AdminLogPage = {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
-        document.getElementById('logListBody').innerHTML =
-            '<tr><td colspan="7" class="text-center py-5 text-muted">활동 로그를 불러오는 중입니다.</td></tr>';
+        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
+        this.setPageMetaText('페이지 메타 계산 중');
+        this.renderLoadingState();
 
         try {
             this.isLoading = true;
@@ -152,7 +153,8 @@ const AdminLogPage = {
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             this.setMetaText('로그 조회 실패');
             document.getElementById('logFilterMeta').textContent = '적용 필터 확인 불가';
-            document.getElementById('logPageMeta').textContent = '페이지 메타 확인 불가';
+            this.setResultMetaText(err.message);
+            this.setPageMetaText('페이지 메타 확인 불가');
             document.getElementById('logPagination').innerHTML = '';
         } finally {
             this.isLoading = false;
@@ -162,7 +164,17 @@ const AdminLogPage = {
     renderList(items) {
         const tbody = document.getElementById('logListBody');
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5">활동 로그가 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-clipboard-list product-empty-state-icon"></i>
+                            <strong>조건에 맞는 활동 로그가 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
         tbody.innerHTML = items.map(item => `
@@ -207,10 +219,8 @@ const AdminLogPage = {
         if (filterMeta) {
             filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
         }
-        const pageMeta = document.getElementById('logPageMeta');
-        if (pageMeta) {
-            pageMeta.textContent = data.resultMeta?.querySignature || data.pageInfoLabel || '페이지 메타 없음';
-        }
+        this.setResultMetaText(data.resultMeta?.querySignature || '최신 로그순');
+        this.setPageMetaText(data.pageInfoLabel || '페이지 메타 없음');
         CommonJS.renderSourceContextNotice({ noticeId: 'adminLogSourceContextNotice', source: this.state.source });
         this.syncSummaryCardState();
     },
@@ -274,6 +284,20 @@ const AdminLogPage = {
         document.getElementById('logMetaText').textContent = message;
     },
 
+    setResultMetaText(message) {
+        const resultMeta = document.getElementById('logResultMeta');
+        if (resultMeta) {
+            resultMeta.textContent = message;
+        }
+    },
+
+    setPageMetaText(message) {
+        const pageMeta = document.getElementById('logPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = message;
+        }
+    },
+
     setSummaryText(id, value) {
         const el = document.getElementById(id);
         if (!el) {
@@ -301,6 +325,46 @@ const AdminLogPage = {
         this.syncQuickFilterState();
         this.syncDatePresetState();
         this.getList();
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('logListBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>활동 로그를 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 운영 로그를 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        const adminNo = document.getElementById('logAdminNo')?.value.trim();
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('logAdminKeyword')?.value);
+        const actionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value);
+        const targetId = document.getElementById('logTargetId')?.value.trim();
+        const startDate = document.getElementById('logStartDate')?.value;
+        const endDate = document.getElementById('logEndDate')?.value;
+
+        if (adminNo) parts.push(`관리자 번호 ${adminNo}`);
+        if (adminKeyword) parts.push(`관리자명 "${adminKeyword}"`);
+        if (actionType) parts.push(`작업 종류 ${actionType}`);
+        if (targetId) parts.push(`대상 ID ${targetId}`);
+        if (startDate || endDate) parts.push(`기간 ${startDate || '전체'} ~ ${endDate || '전체'}`);
+
+        if (!parts.length) {
+            return '등록된 로그가 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 로그가 없습니다.`;
     },
 
     applyQuickFilter(actionType) {

@@ -46,59 +46,74 @@
 
     <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
-            <div class="content-board-form-group content-board-form-group--search">
-                <label class="content-board-form-label" for="contentSearchKeyword">검색어</label>
-                <div class="content-board-search-field">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
+            <section class="content-board-search-section content-board-search-section--primary">
+                <div class="content-board-search-section__title">기본 검색</div>
+                <div class="content-board-search-section__desc">게시글 제목과 공개 상태부터 빠르게 범위를 좁힙니다.</div>
+                <div class="content-board-search-grid">
+                    <div class="content-board-form-group content-board-form-group--search">
+                        <label class="content-board-form-label" for="contentSearchKeyword">검색어</label>
+                        <div class="content-board-search-field">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="contentSearchKeyword" class="form-control" placeholder="제목 또는 본문 검색">
+                        </div>
+                    </div>
+                    <div class="content-board-form-group">
+                        <label class="content-board-form-label" for="contentStatusFilter">상태</label>
+                        <select id="contentStatusFilter" class="form-select">
+                            <option value="">전체 상태</option>
+                            <option value="DRAFT">임시저장</option>
+                            <option value="PUBLISHED">게시중</option>
+                        </select>
+                    </div>
+                    <div class="content-board-form-group">
+                        <label class="content-board-form-label" for="contentPublicFilter">공개 여부</label>
+                        <select id="contentPublicFilter" class="form-select">
+                            <option value="">전체 공개</option>
+                            <option value="Y">공개</option>
+                            <option value="N">비공개</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="content-board-form-group">
-                <label class="content-board-form-label" for="contentStatusFilter">상태</label>
-                <select id="contentStatusFilter" class="form-select">
-                    <option value="">전체 상태</option>
-                    <option value="DRAFT">임시저장</option>
-                    <option value="PUBLISHED">게시중</option>
-                </select>
-            </div>
-            <div class="content-board-form-group">
-                <label class="content-board-form-label" for="contentPublicFilter">공개 여부</label>
-                <select id="contentPublicFilter" class="form-select">
-                    <option value="">전체 공개</option>
-                    <option value="Y">공개</option>
-                    <option value="N">비공개</option>
-                </select>
-            </div>
-            <div class="content-board-form-group content-board-form-group--range">
-                <label class="content-board-form-label">기간</label>
-                <div class="input-group input-group-sm content-board-date-range">
-                    <input type="date" id="contentStartDate" class="form-control" aria-label="시작일">
-                    <span class="input-group-text">~</span>
-                    <input type="date" id="contentEndDate" class="form-control" aria-label="종료일">
+            </section>
+            <section class="content-board-search-section">
+                <div class="content-board-search-section__title">기간 및 옵션</div>
+                <div class="content-board-search-section__desc">고정 여부와 상품 연결 조건까지 함께 확인합니다.</div>
+                <div class="content-board-search-grid content-board-search-grid--secondary">
+                    <div class="content-board-form-group content-board-form-group--range">
+                        <label class="content-board-form-label">기간</label>
+                        <div class="input-group input-group-sm content-board-date-range">
+                            <input type="date" id="contentStartDate" class="form-control" aria-label="시작일">
+                            <span class="input-group-text">~</span>
+                            <input type="date" id="contentEndDate" class="form-control" aria-label="종료일">
+                        </div>
+                    </div>
+                    <div class="content-board-form-group content-board-form-group--toggle">
+                        <label class="content-board-form-label" for="contentPinnedOnly">옵션</label>
+                        <label class="content-board-check">
+                            <input class="form-check-input" type="checkbox" id="contentPinnedOnly">
+                            <span>고정글만</span>
+                        </label>
+                    </div>
+                    <div class="content-board-form-group">
+                        <label class="content-board-form-label" for="contentProductLinkedFilter">상품 연결</label>
+                        <select id="contentProductLinkedFilter" class="form-select">
+                            <option value="">전체</option>
+                            <option value="Y">연결됨</option>
+                            <option value="N">미연결</option>
+                        </select>
+                    </div>
+                    <div class="content-board-form-group">
+                        <label class="content-board-form-label" for="contentProductNoFilter">상품번호</label>
+                        <input type="number" id="contentProductNoFilter" class="form-control" min="1" step="1" placeholder="정확한 상품번호">
+                    </div>
                 </div>
-            </div>
-            <div class="content-board-form-group content-board-form-group--toggle">
-                <label class="content-board-form-label" for="contentPinnedOnly">옵션</label>
-                <label class="content-board-check">
-                    <input class="form-check-input" type="checkbox" id="contentPinnedOnly">
-                    <span>고정글만</span>
-                </label>
-            </div>
-            <div class="content-board-form-group">
-                <label class="content-board-form-label" for="contentProductLinkedFilter">상품 연결</label>
-                <select id="contentProductLinkedFilter" class="form-select">
-                    <option value="">전체</option>
-                    <option value="Y">연결됨</option>
-                    <option value="N">미연결</option>
-                </select>
-            </div>
-            <div class="content-board-form-group">
-                <label class="content-board-form-label" for="contentProductNoFilter">상품번호</label>
-                <input type="number" id="contentProductNoFilter" class="form-control" min="1" step="1" placeholder="정확한 상품번호">
-            </div>
-            <div class="content-board-form-actions">
-                <button type="submit" class="btn btn-dark">검색</button>
-                <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
+            </section>
+            <div class="task-filter-actions content-board-search-actions">
+                <div class="task-filter-actions__hint">검색 조건은 게시판 탭과 함께 URL 상태로 유지됩니다.</div>
+                <div class="content-board-form-actions">
+                    <button type="submit" class="btn btn-dark">검색</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnResetContentSearch">초기화</button>
+                </div>
             </div>
         </form>
     </div>
@@ -113,30 +128,39 @@
                 <div class="content-board-selection-summary" id="contentSelectionMeta">선택된 게시글 0건</div>
             </div>
             <div class="content-board-bulk-controls">
-                <label class="content-board-check content-board-check--boxed" for="contentSelectAllOnPage">
-                    <input class="form-check-input" type="checkbox" id="contentSelectAllOnPage">
-                    <span>현재 페이지 전체 선택</span>
-                </label>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectCurrentPage">현재 페이지 선택</button>
-                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectCurrentPage">현재 페이지 해제</button>
-                <select id="contentBulkStatus" class="form-select">
-                    <option value="">상태 유지</option>
-                    <option value="DRAFT">임시저장</option>
-                    <option value="PUBLISHED">게시중</option>
-                </select>
-                <select id="contentBulkPublicYn" class="form-select">
-                    <option value="">공개 유지</option>
-                    <option value="Y">공개</option>
-                    <option value="N">비공개</option>
-                </select>
-                <select id="contentBulkPinnedYn" class="form-select">
-                    <option value="">고정 유지</option>
-                    <option value="Y">고정</option>
-                    <option value="N">고정 해제</option>
-                </select>
-                <button type="button" class="btn btn-outline-primary" id="btnApplyBulkOperate">선택 적용</button>
-                <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteContent">선택 삭제</button>
-                <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
+                <div class="content-board-bulk-group">
+                    <div class="content-board-bulk-group__title">선택 범위</div>
+                    <label class="content-board-check content-board-check--boxed" for="contentSelectAllOnPage">
+                        <input class="form-check-input" type="checkbox" id="contentSelectAllOnPage">
+                        <span>현재 페이지 전체 선택</span>
+                    </label>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSelectCurrentPage">현재 페이지 선택</button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btnDeselectCurrentPage">현재 페이지 해제</button>
+                </div>
+                <div class="content-board-bulk-group">
+                    <div class="content-board-bulk-group__title">변경 항목</div>
+                    <select id="contentBulkStatus" class="form-select">
+                        <option value="">상태 유지</option>
+                        <option value="DRAFT">임시저장</option>
+                        <option value="PUBLISHED">게시중</option>
+                    </select>
+                    <select id="contentBulkPublicYn" class="form-select">
+                        <option value="">공개 유지</option>
+                        <option value="Y">공개</option>
+                        <option value="N">비공개</option>
+                    </select>
+                    <select id="contentBulkPinnedYn" class="form-select">
+                        <option value="">고정 유지</option>
+                        <option value="Y">고정</option>
+                        <option value="N">고정 해제</option>
+                    </select>
+                </div>
+                <div class="content-board-bulk-group">
+                    <div class="content-board-bulk-group__title">실행</div>
+                    <button type="button" class="btn btn-outline-primary" id="btnApplyBulkOperate">선택 적용</button>
+                    <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteContent">선택 삭제</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnClearSelection">선택 해제</button>
+                </div>
             </div>
         </div>
     </div>

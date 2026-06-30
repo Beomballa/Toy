@@ -163,13 +163,14 @@
                 <label class="form-check-label" for="createdTodayOnly">오늘 등록만 보기</label>
               </div>
             </div>
-
-            <div class="product-master-filter-actions">
-              <div class="product-master-filter-actions__hint">필터와 정렬은 URL에 유지되어 새로고침 후에도 같은 문맥을 복원합니다.</div>
-              <button class="btn btn-outline-secondary" type="button" id="btnResetFilter">초기화</button>
-            </div>
           </div>
         </section>
+      </div>
+      <div class="task-filter-actions product-master-filter-footer">
+        <div class="task-filter-actions__hint">필터와 정렬은 URL에 유지되어 새로고침 후에도 같은 문맥을 복원합니다.</div>
+        <div class="admin-filter-actions">
+          <button class="btn btn-outline-secondary" type="button" id="btnResetFilter">초기화</button>
+        </div>
       </div>
     </div>
   </div>
@@ -216,9 +217,18 @@
           <div class="small text-muted" id="productSelectionMeta">선택된 상품이 없습니다.</div>
         </div>
         <div class="product-master-bulk-grid">
-          <div class="admin-filter-field">
+          <div class="product-master-bulk-card">
+            <label class="product-master-select-card mb-0" for="productSelectPage">
+              <span class="d-flex align-items-center gap-2">
+                <input type="checkbox" id="productSelectPage">
+                <span class="product-master-select-card__title">현재 페이지 전체 선택</span>
+              </span>
+              <span class="product-master-select-card__desc">보이는 상품만 빠르게 선택하거나 해제합니다.</span>
+            </label>
+          </div>
+          <div class="product-master-bulk-card">
             <label class="admin-filter-label" for="bulkProductStatus">일괄 상태 변경</label>
-            <select class="form-select" id="bulkProductStatus">
+            <select class="form-select mt-2" id="bulkProductStatus">
               <option value="">변경 안 함</option>
               <option value="ACTIVE">판매중</option>
               <option value="HIDDEN">숨김</option>
@@ -241,7 +251,7 @@
           <thead class="table-light">
           <tr>
             <th class="ps-4 table-col-80">
-              <input type="checkbox" id="productSelectPage">
+              <span class="small text-muted">선택</span>
             </th>
             <th class="ps-4">상품 정보</th>
             <th>모델번호</th>
@@ -268,7 +278,7 @@
     <div class="card-footer bg-white border-top-0 py-3">
       <div class="row align-items-center">
         <div class="col-sm-6 text-center text-sm-start mb-3 mb-sm-0">
-          <span class="small text-muted" id="pageInfoText">Showing 0 to 0 of 0 entries</span>
+          <span class="small text-muted" id="pageInfoText">상품 목록을 준비하는 중입니다.</span>
           <div class="small text-muted mt-1" id="pageMetaText">페이지 크기 10 · 0-0</div>
         </div>
         <div class="col-sm-6">

@@ -134,6 +134,7 @@ const BrandList = {
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             this.setListStateMeta('loading', '브랜드 목록을 불러오는 중입니다.', 0, 0, '');
+            this.renderLoadingState();
             const res = await fetch(`/api/admin/brands/list?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
@@ -158,8 +159,18 @@ const BrandList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 브랜드가 없습니다.</td></tr>';
-            this.setListStateMeta('empty', '등록된 브랜드가 없습니다.', 0, 0, '');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-tags product-empty-state-icon"></i>
+                            <strong>조건에 맞는 브랜드가 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            this.setListStateMeta('empty', '조건에 맞는 브랜드가 없습니다.', 0, 0, '');
             this.updateSelectionMeta([]);
             return;
         }
@@ -172,8 +183,8 @@ const BrandList = {
                 <td class="ps-4 text-muted">${item.brandNo}</td>
                 <td>
                     <div class="brand-logo-wrapper">
-                        <img src="${item.logoUrl || ''}" class="brand-logo-img" alt="${item.nameKo}" 
-                             onerror="CommonJS.handleImageError(this, '${item.nameKo}')">
+                        <img src="${item.logoUrl || ''}" class="brand-logo-img" alt="${this.escapeHtml(item.nameKo)}"
+                             data-role="brand-logo" data-brand-name="${this.escapeHtml(item.nameKo)}">
                     </div>
                 </td>
                 <td class="fw-bold text-dark">${item.nameKo}</td>
@@ -189,6 +200,7 @@ const BrandList = {
                 </td>
             </tr>
         `).join('');
+        this.bindLogoFallbacks();
         this.setListStateMeta('ready', '', items.length, null, null);
         this.updateSelectionMeta(items);
     },
@@ -295,6 +307,48 @@ const BrandList = {
         if (querySignature != null) {
             metaEl.dataset.querySignature = querySignature;
         }
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('brandListBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>브랜드 목록을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 브랜드 운영 목록을 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    bindLogoFallbacks() {
+        document.querySelectorAll('[data-role="brand-logo"]').forEach((image) => {
+            image.addEventListener('error', () => {
+                CommonJS.handleImageError(image, image.dataset.brandName || '');
+            }, { once: true });
+        });
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        if (this.state.keyword) {
+            parts.push(`검색어 "${this.state.keyword}"`);
+        }
+        if (this.state.isActive) {
+            parts.push(`상태 ${this.state.isActive === 'Y' ? '사용' : '중지'}`);
+        }
+
+        if (!parts.length) {
+            return '등록된 브랜드가 아직 없거나, 현재 페이지에 표시할 브랜드가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 브랜드가 없습니다.`;
     },
 
     toggleSelection(brandNo, checked) {
@@ -585,6 +639,15 @@ const BrandList = {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('brandKeyword').value) || '';
         this.state.isActive = document.getElementById('brandIsActiveFilter').value || '';
         this.state.size = Number(document.getElementById('brandPageSize').value || 10);
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 };
 

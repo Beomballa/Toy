@@ -75,6 +75,13 @@
                     <div class="small text-muted" id="brandSelectionMeta">선택된 브랜드가 없습니다.</div>
                 </div>
                 <div class="admin-selection-grid">
+                    <div class="task-flag-card task-flag-card--select">
+                        <span class="d-flex align-items-center gap-2">
+                            <input class="form-check-input" type="checkbox" id="brandSelectPage">
+                            <span class="task-flag-card__title">현재 페이지 전체 선택</span>
+                        </span>
+                        <span class="task-flag-card__desc">현재 페이지에서 보이는 브랜드만 빠르게 선택하거나 해제합니다.</span>
+                    </div>
                     <div class="admin-filter-field">
                         <label class="admin-filter-label">일괄 상태 변경</label>
                         <select id="bulkBrandIsActive" class="form-select">
@@ -147,9 +154,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-4 table-col-80">
-                                <input type="checkbox" id="brandSelectPage">
-                            </th>
+                            <th class="ps-4 table-col-80">선택</th>
                             <th class="ps-4 table-col-80">No</th>
                             <th class="table-col-100">로고</th>
                             <th>브랜드명(한글)</th>

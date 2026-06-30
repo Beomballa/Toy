@@ -119,6 +119,7 @@ const MemberListPage = {
         this.setFilterMetaText('적용 필터를 계산하는 중입니다...');
         this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
         this.renderPagination(0, 0);
+        this.renderLoadingState();
         try {
             const [listRes, summaryRes] = await Promise.all([
                 fetch(`/api/admin/members/list?${params.toString()}`),
@@ -160,7 +161,17 @@ const MemberListPage = {
     renderList(items) {
         const tbody = document.getElementById('memberListBody');
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 회원이 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-users-slash product-empty-state-icon"></i>
+                            <strong>조건에 맞는 회원이 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
         tbody.innerHTML = items.map(item => `
@@ -193,10 +204,15 @@ const MemberListPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.resultMeta?.resultLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
-        this.setFilterMetaText(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '최신 가입순'}`);
-        this.setPageMetaText(data.resultMeta?.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
-        this.setPaginationSummary(`페이지 크기 ${data.pageSize ?? this.state.size} · ${data.resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
+        const resultMeta = data.resultMeta || null;
+        this.setMetaText(resultMeta?.resultLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
+        this.setFilterMetaText(
+            resultMeta
+                ? `필터 ${resultMeta.appliedFilterCount}개 · ${this.resolveQuerySignature(resultMeta.querySignature)}`
+                : `필터 0개 · 최신 가입순`
+        );
+        this.setPageMetaText(resultMeta?.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
+        this.setPaginationSummary(`페이지 크기 ${data.pageSize ?? this.state.size} · ${resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
     },
 
     renderPagination(currentPage, totalPages) {
@@ -245,6 +261,51 @@ const MemberListPage = {
         this.state.page = 0;
         this.state.size = 20;
         this.getList();
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('memberListBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>회원 목록을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 회원 데이터를 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('memberKeyword').value);
+        const masterYn = document.getElementById('memberMasterYn').value;
+        const delYn = document.getElementById('memberDelYn').value;
+        const initYn = document.getElementById('memberInitYn').value;
+
+        if (keyword) {
+            parts.push(`검색어 "${keyword}"`);
+        }
+        if (masterYn) {
+            parts.push(`권한 ${masterYn === 'Y' ? '마스터' : '일반'}`);
+        }
+        if (delYn) {
+            parts.push(`상태 ${delYn === 'Y' ? '탈퇴' : '정상'}`);
+        }
+        if (initYn) {
+            parts.push(`비밀번호 ${initYn === 'Y' ? '임시 비밀번호' : '정상'}`);
+        }
+
+        if (!parts.length) {
+            return '등록된 회원이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 회원이 없습니다.`;
     },
 
     applySummaryFilter(filterType) {
@@ -521,6 +582,18 @@ const MemberListPage = {
 
     formatCount(value) {
         return Number(value || 0).toLocaleString('ko-KR');
+    },
+
+    resolveQuerySignature(signature) {
+        if (!signature) {
+            return '최신 가입순';
+        }
+
+        return signature
+            .replace('권한=Y', '권한=마스터')
+            .replace('권한=N', '권한=일반')
+            .replace('상태=Y', '상태=탈퇴')
+            .replace('상태=N', '상태=정상');
     }
 };
 

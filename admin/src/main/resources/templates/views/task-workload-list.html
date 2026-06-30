@@ -110,15 +110,18 @@
                     <h6 class="card-title mb-0">담당자별 작업 분배</h6>
                 </div>
                 <div class="admin-list-toolbar__actions d-flex align-items-center gap-2 flex-wrap">
+                    <span class="admin-list-toolbar__meta" id="taskWorkloadMetaText">데이터를 불러오는 중입니다...</span>
+                    <label class="small text-muted d-flex align-items-center gap-2 mb-0">
+                        <span>페이지 크기</span>
+                        <select id="taskWorkloadPageSize" class="form-select form-select-sm product-master-inline-select">
+                            <option value="10">10개</option>
+                            <option value="20">20개</option>
+                            <option value="50">50개</option>
+                        </select>
+                    </label>
                     <button type="button" class="btn btn-outline-success btn-sm" id="btnExportTaskWorkloadCsv">
                         <i class="fas fa-file-csv me-1"></i>CSV 내보내기
                     </button>
-                    <span class="admin-list-toolbar__meta" id="taskWorkloadMetaText">데이터를 불러오는 중입니다...</span>
-                    <select id="taskWorkloadPageSize" class="form-select form-select-sm product-master-inline-select">
-                        <option value="10">10개</option>
-                        <option value="20">20개</option>
-                        <option value="50">50개</option>
-                    </select>
                 </div>
             </div>
         </div>

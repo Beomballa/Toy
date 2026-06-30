@@ -129,7 +129,17 @@ const TaskWorkloadList = {
         this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
         const tbody = document.getElementById('taskWorkloadListBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">담당자별 워크로드를 불러오는 중입니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="product-loading-state">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>담당자별 워크로드를 불러오는 중입니다.</strong>
+                            <p>현재 조건에 맞는 담당자 작업 분배 현황을 조회하고 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
         }
 
         try {
@@ -164,7 +174,17 @@ const TaskWorkloadList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">조건에 맞는 담당자 워크로드가 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-user-clock product-empty-state-icon"></i>
+                            <strong>조건에 맞는 담당자 워크로드가 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             this.setStateMeta('empty', '조건에 맞는 담당자 워크로드가 없습니다.', 0, 0, 0, '', '');
             return;
         }
@@ -258,6 +278,28 @@ const TaskWorkloadList = {
         document.getElementById('taskWorkloadOverdueOnly').checked = false;
         document.getElementById('taskWorkloadPageSize').value = '10';
         this.getList();
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        if (this.state.keyword) {
+            parts.push(`검색어 "${this.state.keyword}"`);
+        }
+        if (this.state.priority) {
+            parts.push(`우선순위 ${this.resolvePriorityLabel(this.state.priority)}`);
+        }
+        if (this.state.overdueOnly === 'Y') {
+            parts.push('기한 초과만');
+        }
+        if (this.state.sortBy) {
+            parts.push(`정렬 ${this.resolveSortLabel(this.state.sortBy)}`);
+        }
+
+        if (!parts.length) {
+            return '담당자별 작업 분배 데이터가 아직 없거나, 현재 페이지에 표시할 결과가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 담당자 워크로드가 없습니다.`;
     },
 
     renderListError(message) {
@@ -362,5 +404,19 @@ const TaskWorkloadList = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    resolvePriorityLabel(priority) {
+        if (priority === 'HIGH') return '높음';
+        if (priority === 'MEDIUM') return '보통';
+        if (priority === 'LOW') return '낮음';
+        return priority || '전체';
+    },
+
+    resolveSortLabel(sortBy) {
+        if (sortBy === 'TOTAL_DESC') return '총 작업 많은 순';
+        if (sortBy === 'TODO_DESC') return '대기 작업 많은 순';
+        if (sortBy === 'NAME_ASC') return '담당자명 순';
+        return '기한 초과 우선';
     }
 };

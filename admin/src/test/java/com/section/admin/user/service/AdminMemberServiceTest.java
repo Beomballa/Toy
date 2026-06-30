@@ -119,6 +119,21 @@ class AdminMemberServiceTest {
     }
 
     @Test
+    @DisplayName("회원 상세는 확장자 없이 점만 포함한 잘못된 프로필 경로를 이미지 경로로 노출하지 않는다")
+    void getMemberDetailIgnoresMalformedProfilePath() {
+        Account account = new Account();
+        account.setId(5L);
+        account.setEmail("user3@test.com");
+        account.setProfileImgPath("/images/profiles.");
+
+        when(accountRepository.findById(5L)).thenReturn(Optional.of(account));
+
+        AdminMemberDetailResponse response = adminMemberService.getMemberDetail(5L);
+
+        assertNull(response.profileImgPath());
+    }
+
+    @Test
     @DisplayName("회원 상태 변경은 권한과 탈퇴 여부를 함께 갱신한다")
     void updateMemberStatusUpdatesFlags() {
         Account account = new Account();

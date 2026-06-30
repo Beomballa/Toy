@@ -54,6 +54,11 @@ public record AdminMemberDetailResponse(
     private static boolean isDirectAssetPath(String value) {
         int lastSlashIndex = value.lastIndexOf('/');
         String lastSegment = lastSlashIndex >= 0 ? value.substring(lastSlashIndex + 1) : value;
-        return lastSegment.contains(".") || value.startsWith("http://") || value.startsWith("https://");
+        if (value.startsWith("http://") || value.startsWith("https://")) {
+            return true;
+        }
+
+        int extensionDelimiterIndex = lastSegment.lastIndexOf('.');
+        return extensionDelimiterIndex > 0 && extensionDelimiterIndex < lastSegment.length() - 1;
     }
 }

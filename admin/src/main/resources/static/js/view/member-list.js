@@ -480,11 +480,9 @@ const MemberListPage = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 상태를 변경하지 못했습니다.'));
             const refreshed = await this.fetchMemberDetail(this.selectedMember.id);
             this.renderDetail(refreshed);
-            if (!this.modal._isShown) {
-                this.modal.show();
-            }
             await this.getList();
             await CommonJS.alert('회원 상태가 변경되었습니다.', '성공', 'success');
+            this.modal.hide();
         } catch (err) {
             await CommonJS.alert(err.message, '오류', 'error');
             if (this.selectedMember) {

@@ -155,6 +155,7 @@ const BannerList = {
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             this.setListStateMeta('loading', '배너 목록을 불러오는 중입니다.', 0, 0, '');
+            this.renderLoadingState();
             const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
@@ -181,8 +182,18 @@ const BannerList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">등록된 배너가 없습니다.</td></tr>';
-            this.setListStateMeta('empty', '등록된 배너가 없습니다.', 0, 0, '');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-images product-empty-state-icon"></i>
+                            <strong>조건에 맞는 배너가 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            this.setListStateMeta('empty', '조건에 맞는 배너가 없습니다.', 0, 0, '');
             this.updateSelectionMeta([]);
             return;
         }
@@ -330,6 +341,43 @@ const BannerList = {
         if (querySignature != null) {
             metaEl.dataset.querySignature = querySignature;
         }
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('bannerListBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>배너 목록을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 배너 운영 목록을 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        if (this.state.keyword) {
+            parts.push(`검색어 "${this.state.keyword}"`);
+        }
+        if (this.state.isActive) {
+            parts.push(`상태 ${this.state.isActive === 'Y' ? '사용' : '중지'}`);
+        }
+        if (this.state.exposureStatus) {
+            parts.push(`노출 기간 ${this.resolveExposureLabel(this.state.exposureStatus)}`);
+        }
+
+        if (!parts.length) {
+            return '등록된 배너가 아직 없거나, 현재 페이지에 표시할 배너가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 배너가 없습니다.`;
     },
 
     resetFilters() {
@@ -692,6 +740,13 @@ const BannerList = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    resolveExposureLabel(exposureStatus) {
+        if (exposureStatus === 'LIVE') return '진행중';
+        if (exposureStatus === 'SCHEDULED') return '대기';
+        if (exposureStatus === 'ENDED') return '종료';
+        return exposureStatus || '전체';
     }
 };
 

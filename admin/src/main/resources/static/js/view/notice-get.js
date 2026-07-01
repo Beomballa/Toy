@@ -264,6 +264,10 @@ const NoticeDetailPage = {
         document.getElementById('noticeDetailTitle').textContent = message;
         document.getElementById('noticeDetailMeta').textContent = '상세 확인 불가';
         document.getElementById('noticeDetailSummary').textContent = '운영 공지 상세 조회에 실패했습니다.';
+        const historyMetaText = document.getElementById('noticeDetailHistoryMeta');
+        if (historyMetaText) {
+            historyMetaText.textContent = '최근 이력 확인 불가';
+        }
         const historyList = document.getElementById('noticeDetailRecentHistoryList');
         if (historyList) {
             historyList.innerHTML = `<div class="text-danger small">${this.escapeHtml(message)}</div>`;
@@ -293,7 +297,17 @@ const NoticeDetailPage = {
         }
 
         if (!items.length) {
-            listEl.innerHTML = '<div class="text-muted small">최근 이력이 없습니다.</div>';
+            listEl.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
+                    <strong>최근 이력이 없습니다.</strong>
+                    <p>아직 공지에 대한 수정, 상태 변경, 삭제 이력이 기록되지 않았습니다.</p>
+                </div>
+            `;
+            const historyMetaText = document.getElementById('noticeDetailHistoryMeta');
+            if (historyMetaText) {
+                historyMetaText.textContent = '최근 이력 0건';
+            }
             if (metaEl) {
                 metaEl.dataset.listState = 'empty';
                 metaEl.dataset.stateMessage = '최근 이력이 없습니다.';
@@ -316,6 +330,11 @@ const NoticeDetailPage = {
                 </div>
             </div>
         `).join('');
+
+        const historyMetaText = document.getElementById('noticeDetailHistoryMeta');
+        if (historyMetaText) {
+            historyMetaText.textContent = `최근 이력 ${items.length}건`;
+        }
 
         if (metaEl) {
             metaEl.dataset.listState = 'ready';

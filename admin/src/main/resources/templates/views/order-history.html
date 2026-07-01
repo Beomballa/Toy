@@ -132,17 +132,23 @@
                     <h6 class="card-title mb-0">주문 처리 이력 목록</h6>
                     <span class="admin-list-toolbar__meta" id="orderHistoryFilterMeta">적용 필터 0개</span>
                 </div>
-                <div class="admin-list-toolbar__actions d-flex align-items-center gap-3 flex-wrap">
+                <div class="admin-list-toolbar__actions d-flex align-items-center gap-2 flex-wrap">
+                    <div class="admin-list-toolbar__meta" id="historyMetaText">데이터를 불러오는 중입니다...</div>
                     <label class="small text-muted d-flex align-items-center gap-2 mb-0 flex-wrap">
                         <span>페이지 크기</span>
                         <select id="historyPageSize" class="form-select form-select-sm product-master-inline-select">
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
+                            <option value="20">20개</option>
+                            <option value="50">50개</option>
+                            <option value="100">100개</option>
                         </select>
                     </label>
-                    <div class="admin-list-toolbar__meta" id="historyMetaText">데이터를 불러오는 중입니다...</div>
                 </div>
+            </div>
+        </div>
+        <div class="card-body border-bottom py-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="small text-muted" id="orderHistoryResultMeta">결과 메타를 계산하는 중입니다...</div>
+                <div class="small text-muted" id="orderHistoryPageMeta">페이지 메타 계산 중</div>
             </div>
         </div>
         <div class="card-body p-0">
@@ -165,7 +171,6 @@
             </div>
         </div>
         <div class="card-footer bg-white py-3">
-            <div class="small text-muted text-center mb-2" id="orderHistoryPageMeta">페이지 메타 계산 중</div>
             <ul class="pagination pagination-sm justify-content-center mb-0" id="historyPagination"></ul>
         </div>
     </div>

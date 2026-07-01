@@ -149,6 +149,9 @@ const OrderHistoryPage = {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
+        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
+        this.setPageMetaText('페이지 메타 계산 중');
+        this.renderLoadingState();
 
         try {
             const response = await fetch(`/api/admin/orders/history/list?${params.toString()}`);
@@ -171,7 +174,17 @@ const OrderHistoryPage = {
         const tbody = document.getElementById('orderHistoryBody');
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">조회된 주문 처리 이력이 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-receipt product-empty-state-icon"></i>
+                            <strong>조건에 맞는 주문 처리 이력이 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
@@ -199,10 +212,8 @@ const OrderHistoryPage = {
         if (filterMeta) {
             filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
         }
-        const pageMeta = document.getElementById('orderHistoryPageMeta');
-        if (pageMeta) {
-            pageMeta.textContent = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음';
-        }
+        this.setResultMetaText(data.resultMeta?.querySignature || '최신순');
+        this.setPageMetaText(data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음');
     },
 
     buildLogPathFromBase(basePath) {
@@ -248,10 +259,8 @@ const OrderHistoryPage = {
         if (filterMeta) {
             filterMeta.textContent = '적용 필터 확인 불가';
         }
-        const pageMeta = document.getElementById('orderHistoryPageMeta');
-        if (pageMeta) {
-            pageMeta.textContent = '페이지 메타 확인 불가';
-        }
+        this.setResultMetaText(message);
+        this.setPageMetaText('페이지 메타 확인 불가');
         const summary = document.getElementById('orderHistoryResultSummary');
         if (summary) {
             summary.textContent = '주문 처리 이력 조회에 실패했습니다.';
@@ -261,6 +270,20 @@ const OrderHistoryPage = {
 
     setMetaText(message) {
         document.getElementById('historyMetaText').textContent = message;
+    },
+
+    setResultMetaText(message) {
+        const resultMeta = document.getElementById('orderHistoryResultMeta');
+        if (resultMeta) {
+            resultMeta.textContent = message;
+        }
+    },
+
+    setPageMetaText(message) {
+        const pageMeta = document.getElementById('orderHistoryPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = message;
+        }
     },
 
     goPage(page) {
@@ -283,6 +306,48 @@ const OrderHistoryPage = {
         this.state.size = 20;
         this.syncQuickFilterState();
         this.loadHistory();
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('orderHistoryBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>주문 처리 이력을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 주문 처리 변경 내역을 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        const orderNo = document.getElementById('historyOrderNo')?.value.trim();
+        const actionType = document.getElementById('historyActionType')?.value;
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword')?.value);
+        const actorNo = document.getElementById('historyActorNo')?.value.trim();
+        const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword')?.value);
+        const startDate = document.getElementById('historyStartDate')?.value;
+        const endDate = document.getElementById('historyEndDate')?.value;
+
+        if (orderNo) parts.push(`주문 번호 ${orderNo}`);
+        if (actionType) parts.push(`작업 유형 ${actionType}`);
+        if (keyword) parts.push(`검색어 "${keyword}"`);
+        if (actorNo) parts.push(`작업자 번호 ${actorNo}`);
+        if (actorKeyword) parts.push(`작업자 "${actorKeyword}"`);
+        if (startDate || endDate) parts.push(`기간 ${startDate || '전체'} ~ ${endDate || '전체'}`);
+
+        if (!parts.length) {
+            return '주문 처리 이력이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 주문 처리 이력이 없습니다.`;
     },
 
     syncQuickFilterState() {

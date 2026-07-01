@@ -117,6 +117,7 @@ const MemberListPage = {
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
         this.setFilterMetaText('적용 필터를 계산하는 중입니다...');
+        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
         this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
         this.renderPagination(0, 0);
         this.renderLoadingState();
@@ -139,6 +140,7 @@ const MemberListPage = {
                 `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
             this.setMetaText('회원 목록 조회 실패');
             this.setFilterMetaText(err.message);
+            this.setResultMetaText('결과 메타 확인 불가');
             this.setPageMetaText('페이지 메타 확인 불가');
             this.setPaginationSummary('페이지 정보를 불러오지 못했습니다.');
             this.renderSummary(null);
@@ -208,9 +210,10 @@ const MemberListPage = {
         this.setMetaText(resultMeta?.resultLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
         this.setFilterMetaText(
             resultMeta
-                ? `필터 ${resultMeta.appliedFilterCount}개 · ${this.resolveQuerySignature(resultMeta.querySignature)}`
-                : `필터 0개 · 최신 가입순`
+                ? `필터 ${resultMeta.appliedFilterCount}개`
+                : '필터 0개'
         );
+        this.setResultMetaText(this.resolveQuerySignature(resultMeta?.querySignature));
         this.setPageMetaText(resultMeta?.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
         this.setPaginationSummary(`페이지 크기 ${data.pageSize ?? this.state.size} · ${resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
     },
@@ -570,6 +573,10 @@ const MemberListPage = {
 
     setFilterMetaText(message) {
         document.getElementById('memberFilterMeta').textContent = message;
+    },
+
+    setResultMetaText(message) {
+        document.getElementById('memberResultMeta').textContent = message;
     },
 
     setPageMetaText(message) {

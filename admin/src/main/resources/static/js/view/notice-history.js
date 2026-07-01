@@ -114,6 +114,9 @@ const NoticeHistoryPage = {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
+        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
+        this.setPageMetaText('페이지 메타 계산 중');
+        this.renderLoadingState();
 
         try {
             const response = await fetch(`/api/admin/settings/notices/history/list?${params.toString()}`);
@@ -134,8 +137,18 @@ const NoticeHistoryPage = {
     renderList(items) {
         const tbody = document.getElementById('noticeHistoryBody');
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 운영 공지 이력이 없습니다.</td></tr>';
-            this.setListStateMeta('empty', '조회된 운영 공지 이력이 없습니다.', 0, 0, 0, '', '');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-bullhorn product-empty-state-icon"></i>
+                            <strong>조건에 맞는 운영 공지 이력이 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            this.setListStateMeta('empty', '조건에 맞는 운영 공지 이력이 없습니다.', 0, 0, 0, '', '');
             return;
         }
 
@@ -158,12 +171,14 @@ const NoticeHistoryPage = {
         CommonJS.renderListMeta({
             metaTextId: 'noticeHistoryMetaText',
             filterMetaId: 'noticeHistoryFilterMeta',
+            resultMetaId: 'noticeHistoryResultMeta',
             pageMetaId: 'noticeHistoryPageMeta',
             resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
             filterCount: data.resultMeta?.filterCount ?? 0,
-            querySignature: '',
+            querySignature: data.resultMeta?.querySignature || '',
             pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
             filterPrefix: '적용 필터',
+            defaultResultText: '결과 메타 없음',
             defaultPageText: '페이지 메타 없음'
         });
         this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
@@ -232,7 +247,8 @@ const NoticeHistoryPage = {
             `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
         this.setMetaText('이력 조회 실패');
         document.getElementById('noticeHistoryFilterMeta').textContent = '적용 필터 확인 불가';
-        document.getElementById('noticeHistoryPageMeta').textContent = '페이지 메타 확인 불가';
+        this.setResultMetaText(message);
+        this.setPageMetaText('페이지 메타 확인 불가');
         document.getElementById('noticeHistoryResultSummary').textContent = '운영 공지 이력 조회에 실패했습니다.';
         document.getElementById('noticeHistoryPagination').innerHTML = '';
         this.setListStateMeta('error', message, 0, 0, 0, '', '');
@@ -298,6 +314,20 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryMetaText').textContent = message;
     },
 
+    setResultMetaText(message) {
+        const resultMeta = document.getElementById('noticeHistoryResultMeta');
+        if (resultMeta) {
+            resultMeta.textContent = message;
+        }
+    },
+
+    setPageMetaText(message) {
+        const pageMeta = document.getElementById('noticeHistoryPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = message;
+        }
+    },
+
     setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {
         const metaEl = document.getElementById('noticeHistoryStateMeta');
         if (!metaEl) return;
@@ -329,6 +359,46 @@ const NoticeHistoryPage = {
         this.state.logNo = '';
         this.syncQuickFilterState();
         this.loadHistory();
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('noticeHistoryBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>운영 공지 이력을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 공지 작업 로그를 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        const noticeNo = document.getElementById('noticeHistoryNoticeNo')?.value.trim();
+        const actionType = document.getElementById('noticeHistoryActionType')?.value;
+        const adminNo = document.getElementById('noticeHistoryAdminNo')?.value.trim();
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('noticeHistoryAdminKeyword')?.value);
+        const startDate = document.getElementById('noticeHistoryStartDate')?.value;
+        const endDate = document.getElementById('noticeHistoryEndDate')?.value;
+
+        if (noticeNo) parts.push(`공지 번호 ${noticeNo}`);
+        if (actionType && actionType !== 'NOTICE_') parts.push(`작업 유형 ${actionType}`);
+        if (adminNo) parts.push(`관리자 번호 ${adminNo}`);
+        if (adminKeyword) parts.push(`관리자 "${adminKeyword}"`);
+        if (startDate || endDate) parts.push(`기간 ${startDate || '전체'} ~ ${endDate || '전체'}`);
+
+        if (!parts.length) {
+            return '운영 공지 이력이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 운영 공지 이력이 없습니다.`;
     },
 
     applyDatePreset(preset) {

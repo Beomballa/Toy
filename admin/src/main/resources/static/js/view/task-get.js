@@ -401,7 +401,17 @@ const TaskDetailPage = {
         if (!listEl) return;
 
         if (!items.length) {
-            listEl.innerHTML = '<div class="text-muted small">최근 로그가 없습니다.</div>';
+            listEl.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
+                    <strong>최근 로그가 없습니다.</strong>
+                    <p>아직 이 작업에 대한 상태 변경, 수정, 삭제 기록이 없습니다.</p>
+                </div>
+            `;
+            const historyMetaText = document.getElementById('taskDetailHistoryMeta');
+            if (historyMetaText) {
+                historyMetaText.textContent = '최근 로그 0건';
+            }
             if (metaEl) {
                 metaEl.dataset.listState = 'empty';
                 metaEl.dataset.stateMessage = '최근 로그가 없습니다.';
@@ -425,6 +435,11 @@ const TaskDetailPage = {
             </div>
         `).join('');
 
+        const historyMetaText = document.getElementById('taskDetailHistoryMeta');
+        if (historyMetaText) {
+            historyMetaText.textContent = `최근 로그 ${items.length}건`;
+        }
+
         if (metaEl) {
             metaEl.dataset.listState = 'ready';
             metaEl.dataset.stateMessage = '';
@@ -439,7 +454,13 @@ const TaskDetailPage = {
         if (!listEl) return;
 
         if (!items.length) {
-            listEl.innerHTML = '<div class="text-muted small">등록된 작업 메모가 없습니다.</div>';
+            listEl.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-note-sticky product-empty-state-icon"></i>
+                    <strong>등록된 작업 메모가 없습니다.</strong>
+                    <p>운영 처리 과정에서 필요한 메모를 남기면 이 영역에서 바로 확인할 수 있습니다.</p>
+                </div>
+            `;
             if (metaEl) {
                 metaEl.dataset.listState = 'empty';
                 metaEl.dataset.stateMessage = '등록된 작업 메모가 없습니다.';

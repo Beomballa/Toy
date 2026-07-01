@@ -137,7 +137,10 @@
 
     <div class="card animate-in admin-detail-side-card">
         <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h6 class="card-title mb-0">최근 로그</h6>
+            <div>
+                <h6 class="card-title mb-0">최근 로그</h6>
+                <div class="small text-muted mt-1" id="taskDetailHistoryMeta">최근 로그를 불러오는 중입니다.</div>
+            </div>
             <div class="d-flex gap-2">
                 <a class="btn btn-sm btn-outline-secondary" id="btnTaskDetailHistoryMore" href="#">전체 이력 보기</a>
                 <a class="btn btn-sm btn-outline-secondary" id="btnTaskDetailLogsMore" href="#">전체 로그 보기</a>
@@ -149,7 +152,11 @@
                  data-visible-count="0"
                  data-state-message="최근 로그를 불러오는 중입니다."></div>
             <div class="list-group list-group-flush" id="taskDetailRecentHistoryList">
-                <div class="text-muted small">최근 로그를 불러오는 중입니다.</div>
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>최근 로그를 불러오는 중입니다.</strong>
+                    <p>상태 변경, 수정, 삭제 기록을 정리하고 있습니다.</p>
+                </div>
             </div>
         </div>
     </div>
@@ -174,7 +181,11 @@
                  data-visible-count="0"
                  data-state-message="작업 메모를 불러오는 중입니다."></div>
             <div class="list-group list-group-flush" id="taskCommentList">
-                <div class="text-muted small">작업 메모를 불러오는 중입니다.</div>
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>작업 메모를 불러오는 중입니다.</strong>
+                    <p>담당자 메모와 최근 코멘트를 정리하고 있습니다.</p>
+                </div>
             </div>
         </div>
     </div>

@@ -351,7 +351,13 @@ const ProductDetail = {
         } catch (error) {
             console.error('History Load Error:', error);
             if (historyListEl) {
-                historyListEl.innerHTML = `<p class="text-danger small mb-0">${error.message || '상품 변경 이력을 불러오지 못했습니다.'}</p>`;
+                historyListEl.innerHTML = `
+                    <div class="product-empty-state py-4">
+                        <i class="fas fa-triangle-exclamation product-empty-state-icon"></i>
+                        <strong>변경 이력을 불러오지 못했습니다.</strong>
+                        <p>${this.escapeHtml(error.message || '상품 변경 이력을 불러오지 못했습니다.')}</p>
+                    </div>
+                `;
             }
             if (historyCountEl) {
                 historyCountEl.textContent = '0';

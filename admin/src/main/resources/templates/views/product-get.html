@@ -79,21 +79,37 @@
                 </div>
                 <div class="card animate-in product-option-card">
                     <div class="card-header product-section-header">
-                        <span class="card-title">상품 옵션</span>
+                        <div>
+                            <span class="card-title">상품 옵션</span>
+                            <div class="small text-muted mt-1" id="productOptionMetaText">옵션 정보를 불러오는 중입니다.</div>
+                        </div>
                         <span class="product-section-count" id="optionCount">0</span>
                     </div>
                     <div class="card-body">
-                        <div id="optionList" class="product-option-list"></div>
+                        <div id="optionList" class="product-option-list">
+                            <div class="product-loading-state py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>상품 옵션을 불러오는 중입니다.</strong>
+                                <p>옵션 구성과 재고 수량을 정리하고 있습니다.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="card animate-in product-option-card mt-4">
                     <div class="card-header product-section-header">
-                        <span class="card-title">변경 이력</span>
+                        <div>
+                            <span class="card-title">변경 이력</span>
+                            <div class="small text-muted mt-1" id="productHistoryMetaText">변경 이력을 불러오는 중입니다.</div>
+                        </div>
                         <span class="product-section-count" id="historyCount">0</span>
                     </div>
                     <div class="card-body">
                         <div id="productHistoryList" class="product-option-list">
-                            <p class="text-muted small mb-0">변경 이력을 불러오는 중입니다.</p>
+                            <div class="product-loading-state py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>변경 이력을 불러오는 중입니다.</strong>
+                                <p>상품 수정, 상태 변경, 재고 관련 이력을 정리하고 있습니다.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

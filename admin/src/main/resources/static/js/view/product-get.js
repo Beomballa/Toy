@@ -213,10 +213,12 @@ const ProductDetail = {
 
         const optionList = document.getElementById('optionList');
         const optionCount = document.getElementById('optionCount');
+        const optionMetaText = document.getElementById('productOptionMetaText');
         const totalStockValueEl = document.getElementById('totalStockValue');
 
         if (data.options && data.options.length > 0) {
             if (optionCount) optionCount.textContent = data.optionCount ?? data.options.length;
+            if (optionMetaText) optionMetaText.textContent = `옵션 ${data.optionCount ?? data.options.length}개`;
 
             const optHtml = data.options.map(opt => `
                 <div class="product-option-chip">
@@ -230,8 +232,17 @@ const ProductDetail = {
             if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
 
         } else {
-            if (optionList) optionList.innerHTML = '<p class="text-muted small">등록된 옵션 정보가 없습니다.</p>';
+            if (optionList) {
+                optionList.innerHTML = `
+                    <div class="product-empty-state py-4">
+                        <i class="fas fa-layer-group product-empty-state-icon"></i>
+                        <strong>등록된 옵션 정보가 없습니다.</strong>
+                        <p>옵션이 없는 단일 상품이거나 아직 옵션 구성이 저장되지 않았습니다.</p>
+                    </div>
+                `;
+            }
             if (optionCount) optionCount.textContent = String(data.optionCount ?? 0);
+            if (optionMetaText) optionMetaText.textContent = `옵션 ${data.optionCount ?? 0}개`;
             if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
         }
 
@@ -283,6 +294,7 @@ const ProductDetail = {
     async loadProductHistory() {
         const historyListEl = document.getElementById('productHistoryList');
         const historyCountEl = document.getElementById('historyCount');
+        const historyMetaTextEl = document.getElementById('productHistoryMetaText');
 
         try {
             const response = await fetch(`/api/admin/product/history?no=${this.productNo}`);
@@ -294,10 +306,19 @@ const ProductDetail = {
             if (historyCountEl) {
                 historyCountEl.textContent = String(histories.length);
             }
+            if (historyMetaTextEl) {
+                historyMetaTextEl.textContent = `변경 이력 ${histories.length}건`;
+            }
 
             if (!histories.length) {
                 if (historyListEl) {
-                    historyListEl.innerHTML = '<p class="text-muted small mb-0">등록된 변경 이력이 없습니다.</p>';
+                    historyListEl.innerHTML = `
+                        <div class="product-empty-state py-4">
+                            <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
+                            <strong>등록된 변경 이력이 없습니다.</strong>
+                            <p>아직 상품 수정, 상태 변경, 재고 관련 이력이 기록되지 않았습니다.</p>
+                        </div>
+                    `;
                 }
                 return;
             }
@@ -334,6 +355,9 @@ const ProductDetail = {
             }
             if (historyCountEl) {
                 historyCountEl.textContent = '0';
+            }
+            if (historyMetaTextEl) {
+                historyMetaTextEl.textContent = '변경 이력 확인 불가';
             }
         }
     },

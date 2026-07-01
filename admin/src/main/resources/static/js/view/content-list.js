@@ -225,6 +225,7 @@ const ContentList = {
         }
 
         try {
+            this.renderLoadingState();
             const [listResponse, summaryResponse] = await Promise.all([
                 fetch(`/api/admin/content/list?${params}`),
                 fetch(`/api/admin/content/summary?${params}`)
@@ -239,12 +240,24 @@ const ContentList = {
             this.renderSummary(summary);
         } catch (err) {
             console.error('콘텐츠 목록 로드 실패:', err);
+            this.renderListError(err.message || '목록을 불러오는 중 오류가 발생했습니다.');
+            this.renderSummary(null);
             CommonJS.alert('목록을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
     },
 
     renderSummary(summary) {
         if (!summary) {
+            const totalEl = document.getElementById('contentSummaryTotal');
+            const viewsEl = document.getElementById('contentSummaryViews');
+            const publishEl = document.getElementById('contentSummaryPublish');
+            const visibilityEl = document.getElementById('contentSummaryVisibility');
+            const optionsEl = document.getElementById('contentSummaryOptions');
+            if (totalEl) totalEl.textContent = '0건';
+            if (viewsEl) viewsEl.textContent = '조회수 합계 0';
+            if (publishEl) publishEl.textContent = '게시중 0 · 임시저장 0';
+            if (visibilityEl) visibilityEl.textContent = '공개 0 · 비공개 0';
+            if (optionsEl) optionsEl.textContent = '고정 0 · 상품연결 0';
             return;
         }
         const totalCount = Number(summary.totalCount || 0).toLocaleString();
@@ -275,9 +288,12 @@ const ContentList = {
 
         if (!items || items.length === 0) {
             grid.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <div class="mb-3 text-muted"><i class="fas fa-folder-open fa-3x opacity-25"></i></div>
-                    <div class="text-muted">등록된 콘텐츠가 없습니다.</div>
+                <div class="col-12">
+                    <div class="product-empty-state py-5">
+                        <i class="fas fa-folder-open product-empty-state-icon"></i>
+                        <strong>등록된 콘텐츠가 없습니다.</strong>
+                        <p>${this.buildEmptyStateMessage()}</p>
+                    </div>
                 </div>`;
             this.syncSelectionState();
             return;
@@ -319,6 +335,56 @@ const ContentList = {
         this.syncSelectionState();
         this.bindRowActions();
         this.applyOperationPolicy();
+    },
+
+    renderLoadingState() {
+        const grid = document.getElementById('contentGrid');
+        if (!grid) return;
+        grid.innerHTML = `
+            <div class="col-12">
+                <div class="product-loading-state py-5">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>콘텐츠 목록을 불러오는 중입니다.</strong>
+                    <p>선택한 게시판과 검색 조건에 맞는 게시글을 정리하고 있습니다.</p>
+                </div>
+            </div>
+        `;
+    },
+
+    renderListError(message) {
+        const grid = document.getElementById('contentGrid');
+        const pagination = document.getElementById('pagination');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="col-12">
+                    <div class="product-empty-state py-5">
+                        <i class="fas fa-triangle-exclamation product-empty-state-icon"></i>
+                        <strong>콘텐츠 목록을 불러오지 못했습니다.</strong>
+                        <p>${ContentBoardConfig.escapeHtml(message)}</p>
+                    </div>
+                </div>
+            `;
+        }
+        if (pagination) {
+            pagination.innerHTML = '';
+        }
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        if (this.state.keyword) parts.push(`검색어 "${this.state.keyword}"`);
+        if (this.state.status) parts.push(`상태 ${this.state.status === 'PUBLISHED' ? '게시중' : '임시저장'}`);
+        if (this.state.publicYn) parts.push(`공개 ${this.state.publicYn === 'Y' ? '공개' : '비공개'}`);
+        if (this.state.startDate || this.state.endDate) parts.push(`기간 ${this.state.startDate || '전체'} ~ ${this.state.endDate || '전체'}`);
+        if (this.state.pinnedOnly) parts.push('고정글만');
+        if (this.state.productLinked) parts.push(`상품 연결 ${this.state.productLinked === 'Y' ? '연결됨' : '미연결'}`);
+        if (this.state.productNo) parts.push(`상품번호 ${this.state.productNo}`);
+
+        if (!parts.length) {
+            return '아직 등록된 게시글이 없거나 현재 페이지에 표시할 결과가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 콘텐츠가 없습니다.`;
     },
 
     getBoardLabel(boardType) {

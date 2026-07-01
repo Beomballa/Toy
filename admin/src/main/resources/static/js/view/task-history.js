@@ -112,6 +112,9 @@ const TaskHistoryPage = {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('데이터를 불러오는 중입니다...');
+        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
+        this.setPageMetaText('페이지 메타 계산 중');
+        this.renderLoadingState();
 
         try {
             const response = await fetch(`/api/admin/settings/tasks/history/list?${params.toString()}`);
@@ -133,8 +136,18 @@ const TaskHistoryPage = {
     renderList(items) {
         const tbody = document.getElementById('taskHistoryBody');
         if (!items.length) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">조회된 운영 작업 이력이 없습니다.</td></tr>';
-            this.setListStateMeta('empty', '조회된 운영 작업 이력이 없습니다.', 0, 0, 0, '', '');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <div class="product-empty-state">
+                            <i class="fas fa-list-check product-empty-state-icon"></i>
+                            <strong>조건에 맞는 운영 작업 이력이 없습니다.</strong>
+                            <p>${this.buildEmptyStateMessage()}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            this.setListStateMeta('empty', '조건에 맞는 운영 작업 이력이 없습니다.', 0, 0, 0, '', '');
             return;
         }
 
@@ -161,12 +174,14 @@ const TaskHistoryPage = {
         CommonJS.renderListMeta({
             metaTextId: 'taskHistoryMetaText',
             filterMetaId: 'taskHistoryFilterMeta',
+            resultMetaId: 'taskHistoryResultMeta',
             pageMetaId: 'taskHistoryPageMeta',
             resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
             filterCount: data.resultMeta?.filterCount ?? 0,
-            querySignature: '',
+            querySignature: data.resultMeta?.querySignature || '',
             pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
             filterPrefix: '적용 필터',
+            defaultResultText: '결과 메타 없음',
             defaultPageText: '페이지 메타 없음'
         });
         const metaEl = document.getElementById('taskHistoryStateMeta');
@@ -242,7 +257,8 @@ const TaskHistoryPage = {
             `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
         this.setMetaText('이력 조회 실패');
         document.getElementById('taskHistoryFilterMeta').textContent = '적용 필터 확인 불가';
-        document.getElementById('taskHistoryPageMeta').textContent = '페이지 메타 확인 불가';
+        this.setResultMetaText(message);
+        this.setPageMetaText('페이지 메타 확인 불가');
         document.getElementById('taskHistoryResultSummary').textContent = '운영 작업 이력 조회에 실패했습니다.';
         document.getElementById('taskHistoryPagination').innerHTML = '';
         this.setListStateMeta('error', message, 0, 0, 0, '', '');
@@ -306,6 +322,20 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryMetaText').textContent = message;
     },
 
+    setResultMetaText(message) {
+        const resultMeta = document.getElementById('taskHistoryResultMeta');
+        if (resultMeta) {
+            resultMeta.textContent = message;
+        }
+    },
+
+    setPageMetaText(message) {
+        const pageMeta = document.getElementById('taskHistoryPageMeta');
+        if (pageMeta) {
+            pageMeta.textContent = message;
+        }
+    },
+
     goPage(page) {
         this.state.page = page;
         this.loadHistory();
@@ -345,6 +375,46 @@ const TaskHistoryPage = {
         this.state.logNo = '';
         this.syncQuickFilterState();
         this.loadHistory();
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('taskHistoryBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center py-5 text-muted">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>운영 작업 이력을 불러오는 중입니다.</strong>
+                        <p>현재 필터 조건에 맞는 작업 변경 로그를 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    buildEmptyStateMessage() {
+        const parts = [];
+        const taskNo = document.getElementById('taskHistoryTaskNo')?.value.trim();
+        const actionType = document.getElementById('taskHistoryActionType')?.value;
+        const adminNo = document.getElementById('taskHistoryAdminNo')?.value.trim();
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('taskHistoryAdminKeyword')?.value);
+        const startDate = document.getElementById('taskHistoryStartDate')?.value;
+        const endDate = document.getElementById('taskHistoryEndDate')?.value;
+
+        if (taskNo) parts.push(`작업 번호 ${taskNo}`);
+        if (actionType && actionType !== 'TASK_') parts.push(`작업 유형 ${actionType}`);
+        if (adminNo) parts.push(`관리자 번호 ${adminNo}`);
+        if (adminKeyword) parts.push(`관리자 "${adminKeyword}"`);
+        if (startDate || endDate) parts.push(`기간 ${startDate || '전체'} ~ ${endDate || '전체'}`);
+
+        if (!parts.length) {
+            return '운영 작업 이력이 아직 없거나, 현재 페이지에 표시할 데이터가 없습니다.';
+        }
+
+        return `${parts.join(', ')} 조건에 맞는 운영 작업 이력이 없습니다.`;
     },
 
     applyDatePreset(preset) {

@@ -34,39 +34,54 @@
         <div class="col-lg-12">
             <div class="card animate-in admin-panel-card">
                 <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0">운영 설정</h6>
+                    <div>
+                        <h6 class="card-title mb-0">운영 설정</h6>
+                        <div class="small text-muted mt-1">운영 제한, 커뮤니티 작성, 주문 내보내기 정책과 기본 저재고 기준을 한 화면에서 관리합니다.</div>
+                    </div>
                     <button class="btn btn-sm btn-dark" id="btnSaveSystemSettings"><i class="fas fa-save me-1"></i>설정 저장</button>
                 </div>
                 <div class="card-body">
-                    <div class="row g-4">
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">유지보수 모드</label>
-                            <div class="form-check form-switch">
+                    <div class="admin-settings-grid">
+                        <section class="admin-settings-control">
+                            <div class="admin-settings-control__header">
+                                <label class="form-label fw-bold mb-0">유지보수 모드</label>
+                                <div class="admin-settings-control__hint">관리자 쓰기 작업을 전역으로 제한할 때 사용합니다.</div>
+                            </div>
+                            <div class="form-check form-switch admin-settings-control__switch">
                                 <input class="form-check-input" type="checkbox" id="maintenanceMode">
                                 <label class="form-check-label" for="maintenanceMode">관리자 서비스 유지보수 모드 활성화</label>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">커뮤니티 작성 허용</label>
-                            <div class="form-check form-switch">
+                        </section>
+                        <section class="admin-settings-control">
+                            <div class="admin-settings-control__header">
+                                <label class="form-label fw-bold mb-0">커뮤니티 작성 허용</label>
+                                <div class="admin-settings-control__hint">회원이 공지 외 커뮤니티 영역에 신규 글을 작성할 수 있는지 제어합니다.</div>
+                            </div>
+                            <div class="form-check form-switch admin-settings-control__switch">
                                 <input class="form-check-input" type="checkbox" id="communityWriteEnabled">
                                 <label class="form-check-label" for="communityWriteEnabled">커뮤니티 신규 작성 허용</label>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">주문 Export 허용</label>
-                            <div class="form-check form-switch">
+                        </section>
+                        <section class="admin-settings-control">
+                            <div class="admin-settings-control__header">
+                                <label class="form-label fw-bold mb-0">주문 Export 허용</label>
+                                <div class="admin-settings-control__hint">주문 목록과 이력 화면의 CSV 다운로드 버튼 동작 여부를 제어합니다.</div>
+                            </div>
+                            <div class="form-check form-switch admin-settings-control__switch">
                                 <input class="form-check-input" type="checkbox" id="orderExportEnabled">
                                 <label class="form-check-label" for="orderExportEnabled">주문 CSV 내보내기 허용</label>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">기본 저재고 임계값</label>
+                        </section>
+                        <section class="admin-settings-control admin-settings-control--threshold">
+                            <div class="admin-settings-control__header">
+                                <label class="form-label fw-bold mb-0" for="lowStockDefaultThreshold">기본 저재고 임계값</label>
+                                <div class="admin-settings-control__hint">상품 관리, 주문 관리 등에서 공통으로 참조하는 기본 재고 경고 기준입니다.</div>
+                            </div>
                             <input type="number" min="1" id="lowStockDefaultThreshold" class="form-control" placeholder="100">
-                        </div>
-                        <div class="col-md-8 d-flex align-items-end">
-                            <div class="small text-muted" id="systemSettingMetaText">운영 설정을 불러오는 중입니다...</div>
-                        </div>
+                        </section>
+                    </div>
+                    <div class="admin-search-meta-row mt-3">
+                        <div class="small text-muted" id="systemSettingMetaText">운영 설정을 불러오는 중입니다...</div>
                     </div>
                     <div id="systemSettingsStateMeta" class="d-none"
                          data-maintenance-mode=""
@@ -165,9 +180,9 @@
                                     <div class="admin-filter-field admin-filter-field--span-2">
                                         <label class="admin-filter-label">건수</label>
                                         <select id="systemSettingHistoryPageSize" class="form-select form-select-sm">
-                                            <option value="5">5</option>
-                                            <option value="8" selected>8</option>
-                                            <option value="20">20</option>
+                                            <option value="5">5개</option>
+                                            <option value="8" selected>8개</option>
+                                            <option value="20">20개</option>
                                         </select>
                                     </div>
                                     <div class="admin-filter-field admin-filter-field--span-3">
@@ -180,14 +195,14 @@
                                     </div>
                                 </div>
                             </section>
-                            <div class="task-filter-actions">
+                            <div class="admin-search-side">
                                 <div class="task-filter-actions__hint">설정 저장 상태와 관리자 이력 문맥은 URL에 같이 유지됩니다.</div>
                                 <div class="admin-filter-actions">
                                     <button class="btn btn-sm btn-dark flex-grow-1" id="btnSearchSystemHistory">조회</button>
                                     <button class="btn btn-sm btn-outline-secondary" id="btnResetSystemHistory">초기화</button>
                                 </div>
                             </div>
-                            <div class="d-flex flex-wrap gap-3 small text-muted">
+                            <div class="admin-search-meta-row">
                                 <span id="systemSettingHistoryFilterMeta">적용 필터 없음</span>
                                 <span id="systemSettingHistoryPageMeta">페이지 메타 없음</span>
                             </div>
@@ -305,20 +320,20 @@
                                     <div class="admin-filter-field admin-filter-field--span-2">
                                         <label class="admin-filter-label">건수</label>
                                         <select id="adminPageSize" class="form-select form-select-sm">
-                                            <option value="5">5</option>
-                                            <option value="10" selected>10</option>
-                                            <option value="20">20</option>
+                                            <option value="5">5개</option>
+                                            <option value="10" selected>10개</option>
+                                            <option value="20">20개</option>
                                         </select>
                                     </div>
                                 </div>
                             </section>
-                            <div class="task-filter-actions">
+                            <div class="admin-search-side">
                                 <div class="task-filter-actions__hint">관리자 목록과 설정 이력은 같은 화면에서 각각의 검색 상태를 따로 유지합니다.</div>
                                 <div class="admin-filter-actions">
                                     <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
                                 </div>
                             </div>
-                            <div class="d-flex flex-wrap gap-3 small text-muted">
+                            <div class="admin-search-meta-row">
                                 <span id="adminFilterMeta">적용 필터 없음</span>
                                 <span id="adminPageMeta">페이지 메타 없음</span>
                             </div>

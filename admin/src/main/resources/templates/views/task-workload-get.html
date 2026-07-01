@@ -103,7 +103,11 @@
             <div class="card admin-detail-card">
                 <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">기한 초과 작업</h6></div>
                 <div class="card-body" id="workloadOverdueTasksBody">
-                    <div class="text-muted small">기한 초과 작업을 불러오는 중입니다...</div>
+                    <div class="product-loading-state py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>기한 초과 작업을 불러오는 중입니다.</strong>
+                        <p>즉시 조치가 필요한 작업을 정리하고 있습니다.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -111,7 +115,11 @@
             <div class="card admin-detail-side-card h-100">
                 <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 작업</h6></div>
                 <div class="card-body" id="workloadRecentTasksBody">
-                    <div class="text-muted small">최근 작업을 불러오는 중입니다...</div>
+                    <div class="product-loading-state py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>최근 작업을 불러오는 중입니다.</strong>
+                        <p>담당자의 최신 작업 흐름을 정리하고 있습니다.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -119,7 +127,11 @@
             <div class="card admin-detail-side-card h-100">
                 <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 메모</h6></div>
                 <div class="card-body" id="workloadRecentCommentsBody">
-                    <div class="text-muted small">최근 메모를 불러오는 중입니다...</div>
+                    <div class="product-loading-state py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>최근 메모를 불러오는 중입니다.</strong>
+                        <p>업무 코멘트와 최근 남긴 메모를 정리하고 있습니다.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -127,7 +139,11 @@
             <div class="card admin-detail-side-card h-100">
                 <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0">최근 활동</h6></div>
                 <div class="card-body" id="workloadRecentHistoriesBody">
-                    <div class="text-muted small">최근 활동을 불러오는 중입니다...</div>
+                    <div class="product-loading-state py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>최근 활동을 불러오는 중입니다.</strong>
+                        <p>최근 상태 변경과 작업 이력을 정리하고 있습니다.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -152,7 +168,13 @@
                 <div>
                     <div class="fw-semibold mb-2">추천 담당자</div>
                     <div class="row g-3" id="taskReassignRecommendationList">
-                        <div class="col-12"><div class="text-muted small">추천 담당자를 불러오는 중입니다...</div></div>
+                        <div class="col-12">
+                            <div class="product-loading-state py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>추천 담당자를 불러오는 중입니다.</strong>
+                                <p>현재 작업 상황을 기준으로 적합한 담당자를 계산하고 있습니다.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

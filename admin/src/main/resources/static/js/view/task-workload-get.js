@@ -235,7 +235,13 @@ const TaskWorkloadDetail = {
         const body = document.getElementById('workloadRecentTasksBody');
         if (!body) return;
         if (!items.length) {
-            body.innerHTML = '<div class="text-muted small">최근 작업이 없습니다.</div>';
+            body.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-list-check product-empty-state-icon"></i>
+                    <strong>최근 작업이 없습니다.</strong>
+                    <p>아직 이 담당자에게 연결된 최근 작업 이력이 없습니다.</p>
+                </div>
+            `;
             return;
         }
         body.innerHTML = items.map((item) => `
@@ -257,7 +263,13 @@ const TaskWorkloadDetail = {
         const body = document.getElementById('workloadOverdueTasksBody');
         if (!body) return;
         if (!items.length) {
-            body.innerHTML = '<div class="text-muted small">기한 초과 작업이 없습니다.</div>';
+            body.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-calendar-check product-empty-state-icon"></i>
+                    <strong>기한 초과 작업이 없습니다.</strong>
+                    <p>현재 기준으로 즉시 조치가 필요한 지연 작업이 없습니다.</p>
+                </div>
+            `;
             return;
         }
         body.innerHTML = items.map((item) => `
@@ -283,7 +295,13 @@ const TaskWorkloadDetail = {
         const body = document.getElementById('workloadRecentCommentsBody');
         if (!body) return;
         if (!items.length) {
-            body.innerHTML = '<div class="text-muted small">최근 메모가 없습니다.</div>';
+            body.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-note-sticky product-empty-state-icon"></i>
+                    <strong>최근 메모가 없습니다.</strong>
+                    <p>이 담당자와 연결된 최근 메모 기록이 아직 없습니다.</p>
+                </div>
+            `;
             return;
         }
         body.innerHTML = items.map((item) => `
@@ -305,7 +323,13 @@ const TaskWorkloadDetail = {
         const body = document.getElementById('workloadRecentHistoriesBody');
         if (!body) return;
         if (!items.length) {
-            body.innerHTML = '<div class="text-muted small">최근 활동이 없습니다.</div>';
+            body.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
+                    <strong>최근 활동이 없습니다.</strong>
+                    <p>최근 상태 변경이나 작업 이력이 아직 기록되지 않았습니다.</p>
+                </div>
+            `;
             return;
         }
         body.innerHTML = items.map((item) => `
@@ -460,7 +484,17 @@ const TaskWorkloadDetail = {
         const listEl = document.getElementById('taskReassignRecommendationList');
         const selectEl = document.getElementById('taskReassignAssignee');
         if (metaEl) metaEl.textContent = '재배정 정보를 불러오는 중입니다...';
-        if (listEl) listEl.innerHTML = '<div class="col-12"><div class="text-muted small">추천 담당자를 불러오는 중입니다...</div></div>';
+        if (listEl) {
+            listEl.innerHTML = `
+                <div class="col-12">
+                    <div class="product-loading-state py-4">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>추천 담당자를 불러오는 중입니다.</strong>
+                        <p>현재 작업 상황을 기준으로 적합한 담당자를 계산하고 있습니다.</p>
+                    </div>
+                </div>
+            `;
+        }
         if (selectEl) selectEl.innerHTML = '<option value="">미지정</option>';
         this.reassignModal?.show();
 
@@ -492,7 +526,15 @@ const TaskWorkloadDetail = {
         const listEl = document.getElementById('taskReassignRecommendationList');
         if (!listEl) return;
         if (!items.length) {
-            listEl.innerHTML = '<div class="col-12"><div class="text-muted small">추천 가능한 담당자가 없습니다.</div></div>';
+            listEl.innerHTML = `
+                <div class="col-12">
+                    <div class="product-empty-state py-4">
+                        <i class="fas fa-user-slash product-empty-state-icon"></i>
+                        <strong>추천 가능한 담당자가 없습니다.</strong>
+                        <p>현재 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.</p>
+                    </div>
+                </div>
+            `;
             return;
         }
         listEl.innerHTML = items.map((item) => `

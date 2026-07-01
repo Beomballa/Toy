@@ -115,6 +115,8 @@ const DashBoardListJS = {
             this.renderSectionState('unassignedTaskBody', 'error', '미지정 작업을 불러오지 못했습니다.', '담당자 배정이 필요한 작업 목록을 불러오지 못했습니다.');
             this.renderSectionState('taskWorkloadSummaryBody', 'error', '워크로드 요약을 불러오지 못했습니다.', '담당자별 배정 현황 요약을 다시 확인해주세요.');
             this.renderSectionState('taskWorkloadBody', 'error', '담당자별 작업 현황을 불러오지 못했습니다.', '워크로드 목록을 다시 불러오거나 운영 작업 메뉴에서 직접 확인해주세요.');
+            this.renderTableState('recentOrderTableBody', 6, 'error', '최근 주문 내역을 불러오지 못했습니다.', '주문 목록을 다시 불러오거나 주문 관리 메뉴에서 직접 확인해주세요.');
+            this.renderListState('lowStockListBody', 'error', '저재고 상품을 불러오지 못했습니다.', '재고 상태를 다시 불러오거나 상품 관리에서 직접 확인해주세요.');
             this.setSectionStateMeta('operationTaskStateMeta', 'error', '운영 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
             this.setSectionStateMeta('unassignedTaskStateMeta', 'error', '미지정 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
             this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 불러오지 못했습니다.', 0);
@@ -646,8 +648,10 @@ const DashBoardListJS = {
 
     renderRecentOrders(orders) {
         const tbody = document.getElementById('recentOrderTableBody');
+        if (!tbody) return;
+
         if (!orders || orders.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">최근 주문 데이터가 없습니다.</td></tr>';
+            this.renderTableState('recentOrderTableBody', 6, 'empty', '최근 주문 데이터가 없습니다.', '새로운 주문이 발생하면 이 영역에서 바로 확인할 수 있습니다.');
             return;
         }
 
@@ -667,8 +671,10 @@ const DashBoardListJS = {
 
     renderLowStockProducts(products) {
         const body = document.getElementById('lowStockListBody');
+        if (!body) return;
+
         if (!products || products.length === 0) {
-            body.innerHTML = '<div class="p-4 text-center text-muted">재고 부족 상품이 없습니다.</div>';
+            this.renderListState('lowStockListBody', 'empty', '재고 부족 상품이 없습니다.', '현재 기준으로 긴급 재고 보충이 필요한 상품이 없습니다.');
             return;
         }
 
@@ -694,6 +700,40 @@ const DashBoardListJS = {
     goToProductDetail(productNo) {
         const returnTo = encodeURIComponent(this.getReturnTo());
         location.href = `/admin/products/get?no=${productNo}&source=dashboard-low-stock-detail&returnTo=${returnTo}`;
+    },
+
+    renderTableState(elementId, colSpan, type, title, description) {
+        const tbody = document.getElementById(elementId);
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="${colSpan}" class="py-4">
+                    <div class="product-empty-state py-2">
+                        <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                            <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-receipt'}"></i>
+                        </div>
+                        <strong>${this.escapeHtml(title)}</strong>
+                        <p>${this.escapeHtml(description)}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    renderListState(elementId, type, title, description) {
+        const body = document.getElementById(elementId);
+        if (!body) return;
+
+        body.innerHTML = `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                    <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-box-open'}"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
+        `;
     },
 
     goToOrderList(filters = {}, section = '') {

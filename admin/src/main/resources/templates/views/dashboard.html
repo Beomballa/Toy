@@ -203,7 +203,17 @@
                     <div class="table-responsive">
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light"><tr><th class="ps-4">주문번호</th><th>주문자</th><th>금액</th><th>상태</th><th>일시</th><th class="text-end pe-4">관리</th></tr></thead>
-                            <tbody id="recentOrderTableBody"></tbody>
+                            <tbody id="recentOrderTableBody">
+                            <tr>
+                                <td colspan="6" class="py-4">
+                                    <div class="product-loading-state py-2">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                        <strong>최근 주문 내역을 불러오는 중입니다.</strong>
+                                        <p>방금 유입된 주문과 상태를 정리하고 있습니다.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -212,7 +222,15 @@
         <div class="col-lg-4">
             <div class="card admin-panel-card admin-table-card" id="lowStockSection" data-dashboard-section="low-stock">
                 <div class="card-header bg-white py-3"><h6 class="fw-bold mb-0 text-danger">재고 부족 상품 (10개 미만)</h6></div>
-                <div class="card-body p-0"><div class="list-group list-group-flush" id="lowStockListBody"></div></div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush" id="lowStockListBody">
+                        <div class="product-loading-state py-4">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>저재고 상품을 불러오는 중입니다.</strong>
+                            <p>즉시 확인이 필요한 상품 재고를 정리하고 있습니다.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

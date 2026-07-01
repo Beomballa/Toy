@@ -152,6 +152,7 @@ const CategoryList = {
             this._updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setMetaText('데이터를 불러오는 중입니다...');
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
@@ -165,6 +166,7 @@ const CategoryList = {
             this.restoreSelectedParent();
         } catch (err) {
             console.error('1차 카테고리 로드 실패:', err);
+            this.setMetaText('카테고리 목록을 불러오지 못했습니다.');
             this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
@@ -273,8 +275,9 @@ const CategoryList = {
     },
 
     renderDepth1Meta(data) {
-        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '대분류 기준'}`);
-        this.setResultMeta(data.resultMeta?.resultLabel || `${this.state.depth1List.length}건`);
+        this.setMetaText(data.resultMeta?.resultLabel || `${this.state.depth1List.length}건`);
+        this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개`);
+        this.setResultMeta(data.resultMeta?.querySignature || '대분류 기준');
         this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
         this.setListStateMeta(
             'ready',
@@ -336,6 +339,10 @@ const CategoryList = {
 
     setFilterMeta(message) {
         document.getElementById('categoryFilterMeta').textContent = message;
+    },
+
+    setMetaText(message) {
+        document.getElementById('categoryMetaText').textContent = message;
     },
 
     setResultMeta(message) {

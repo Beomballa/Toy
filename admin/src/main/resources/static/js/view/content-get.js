@@ -92,7 +92,7 @@ const ContentDetail = {
     renderDetail(data) {
         this.setText('contentDetailTitle', data.title || '제목 없음');
         this.setText('contentTitleValue', data.title || '제목 없음');
-        this.setText('contentBodyValue', data.content || '등록된 본문이 없습니다.');
+        this.renderBodyValue(data.content);
         this.setText('contentIdValue', data.id || '-');
         this.setText('contentProductNoValue', data.productNo || '-');
         this.setText('contentStatusValue', data.status === 'PUBLISHED' ? '게시중' : '임시저장');
@@ -169,6 +169,24 @@ const ContentDetail = {
         if (el) {
             el.textContent = value;
         }
+    },
+
+    renderBodyValue(content) {
+        const bodyEl = document.getElementById('contentBodyValue');
+        if (!bodyEl) {
+            return;
+        }
+        if (!content) {
+            bodyEl.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-file-lines product-empty-state-icon"></i>
+                    <strong>등록된 본문이 없습니다.</strong>
+                    <p>아직 게시글 본문이 비어 있거나 저장되지 않았습니다.</p>
+                </div>
+            `;
+            return;
+        }
+        bodyEl.textContent = content;
     },
 
     setBusyButton(button, isBusy, busyText = '처리 중...') {

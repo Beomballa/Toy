@@ -110,6 +110,11 @@ const DashBoardListJS = {
             this.renderTopBrandsChart(data.topBrands);
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
+            this.renderSectionState('operationNoticeBody', 'error', '운영 공지를 불러오지 못했습니다.', '잠시 후 다시 시도하거나 운영 공지 메뉴에서 직접 확인해주세요.');
+            this.renderSectionState('operationTaskBody', 'error', '운영 작업을 불러오지 못했습니다.', '지금 확인이 필요한 작업을 불러오지 못했습니다.');
+            this.renderSectionState('unassignedTaskBody', 'error', '미지정 작업을 불러오지 못했습니다.', '담당자 배정이 필요한 작업 목록을 불러오지 못했습니다.');
+            this.renderSectionState('taskWorkloadSummaryBody', 'error', '워크로드 요약을 불러오지 못했습니다.', '담당자별 배정 현황 요약을 다시 확인해주세요.');
+            this.renderSectionState('taskWorkloadBody', 'error', '담당자별 작업 현황을 불러오지 못했습니다.', '워크로드 목록을 다시 불러오거나 운영 작업 메뉴에서 직접 확인해주세요.');
             this.setSectionStateMeta('operationTaskStateMeta', 'error', '운영 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
             this.setSectionStateMeta('unassignedTaskStateMeta', 'error', '미지정 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
             this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 불러오지 못했습니다.', 0);
@@ -122,7 +127,7 @@ const DashBoardListJS = {
         if (!body) return;
 
         if (!notices || notices.length === 0) {
-            body.innerHTML = '<div class="text-muted small">현재 노출중인 운영 공지가 없습니다.</div>';
+            this.renderSectionState('operationNoticeBody', 'empty', '현재 노출중인 운영 공지가 없습니다.', '운영 공지를 등록하면 이 영역에서 빠르게 확인할 수 있습니다.');
             return;
         }
 
@@ -160,7 +165,7 @@ const DashBoardListJS = {
         if (!body) return;
 
         if (!tasks || tasks.length === 0) {
-            body.innerHTML = '<div class="text-muted small">현재 관리가 필요한 운영 작업이 없습니다.</div>';
+            this.renderSectionState('operationTaskBody', 'empty', '현재 관리가 필요한 운영 작업이 없습니다.', '지금 시점에는 별도로 확인이 필요한 운영 작업이 없습니다.');
             this.setSectionStateMeta('operationTaskStateMeta', 'empty', '현재 관리가 필요한 운영 작업이 없습니다.', 0, { pinnedCount: 0 });
             return;
         }
@@ -210,7 +215,7 @@ const DashBoardListJS = {
         if (!body) return;
 
         if (!tasks || tasks.length === 0) {
-            body.innerHTML = '<div class="text-muted small">현재 미지정 작업이 없습니다.</div>';
+            this.renderSectionState('unassignedTaskBody', 'empty', '현재 미지정 작업이 없습니다.', '모든 운영 작업에 담당자가 지정되어 있습니다.');
             this.setSectionStateMeta('unassignedTaskStateMeta', 'empty', '현재 미지정 작업이 없습니다.', 0, { pinnedCount: 0 });
             return;
         }
@@ -268,7 +273,7 @@ const DashBoardListJS = {
         if (!body) return;
 
         if (!items || items.length === 0) {
-            body.innerHTML = '<div class="text-muted small">담당자별 워크로드 데이터가 없습니다.</div>';
+            this.renderSectionState('taskWorkloadBody', 'empty', '담당자별 워크로드 데이터가 없습니다.', '운영 작업이 배정되면 담당자별 현황이 이 영역에 표시됩니다.');
             this.setSectionStateMeta('taskWorkloadStateMeta', 'empty', '담당자별 워크로드 데이터가 없습니다.', 0, { overdueRowCount: 0 });
             return;
         }
@@ -316,7 +321,7 @@ const DashBoardListJS = {
         if (!body) return;
 
         if (!summary) {
-            body.innerHTML = '<div class="text-muted small">워크로드 요약을 확인할 수 없습니다.</div>';
+            this.renderSectionState('taskWorkloadSummaryBody', 'error', '워크로드 요약을 확인할 수 없습니다.', '담당자별 배정 현황 계산에 필요한 데이터를 다시 확인해주세요.');
             this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 확인할 수 없습니다.', 0);
             return;
         }
@@ -370,6 +375,22 @@ const DashBoardListJS = {
             </div>
         `;
         this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'ready', '', 4);
+    },
+
+    renderSectionState(elementId, type, title, description) {
+        const body = document.getElementById(elementId);
+        if (!body) return;
+
+        const iconClass = type === 'error' ? 'text-danger' : 'text-primary';
+        body.innerHTML = `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon ${iconClass}">
+                    <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-inbox'}"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
+        `;
     },
 
     setSectionStateMeta(id, state, message, visibleCount, extra = {}) {

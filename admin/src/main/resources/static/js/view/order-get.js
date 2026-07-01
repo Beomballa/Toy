@@ -153,14 +153,28 @@ const OrderDetail = {
 
     renderOrderHistory(histories) {
         const container = document.getElementById('orderHistoryList');
+        const metaTextEl = document.getElementById('orderHistoryMetaText');
         if (!container) {
             return;
         }
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
 
         if (!histories.length) {
-            container.innerHTML = '<div class="text-muted">등록된 주문 처리 이력이 없습니다.</div>';
+            container.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <i class="fas fa-box-open product-empty-state-icon"></i>
+                    <strong>등록된 주문 처리 이력이 없습니다.</strong>
+                    <p>아직 상태 변경, 배송 처리, 관리 메모 기록이 남아 있지 않습니다.</p>
+                </div>
+            `;
+            if (metaTextEl) {
+                metaTextEl.textContent = '주문 처리 이력 0건';
+            }
             return;
+        }
+
+        if (metaTextEl) {
+            metaTextEl.textContent = `주문 처리 이력 ${histories.length}건`;
         }
 
         container.innerHTML = histories.map((history) => `

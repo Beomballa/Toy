@@ -148,12 +148,19 @@
 
             <div class="card animate-in admin-detail-card admin-form-card">
                 <div class="card-header admin-detail-side-header d-flex justify-content-between align-items-center">
-                    <span class="card-title">주문 처리 이력</span>
+                    <div>
+                        <span class="card-title">주문 처리 이력</span>
+                        <div class="small text-muted mt-1" id="orderHistoryMetaText">주문 처리 이력을 불러오는 중입니다.</div>
+                    </div>
                     <a href="javascript:void(0);" id="btnOpenOrderHistory" class="small text-decoration-none">전체 이력 보기</a>
                 </div>
                 <div class="card-body admin-detail-body">
                     <div id="orderHistoryList" class="d-flex flex-column gap-3">
-                        <div class="text-muted">이력을 불러오는 중입니다.</div>
+                        <div class="product-loading-state py-4">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>주문 처리 이력을 불러오는 중입니다.</strong>
+                            <p>상태 변경, 배송 처리, 메모 기록을 정리하고 있습니다.</p>
+                        </div>
                     </div>
                 </div>
             </div>

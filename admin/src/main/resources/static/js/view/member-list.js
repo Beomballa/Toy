@@ -179,7 +179,7 @@ const MemberListPage = {
         if (!items.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="7" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-users-slash product-empty-state-icon"></i>
                             <strong>조건에 맞는 회원이 없습니다.</strong>
@@ -287,7 +287,7 @@ const MemberListPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>회원 목록을 불러오는 중입니다.</strong>

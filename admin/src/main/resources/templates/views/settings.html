@@ -222,7 +222,15 @@
                             </tr>
                             </thead>
                             <tbody id="systemSettingHistoryBody">
-                            <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                            <tr>
+                                <td colspan="7" class="py-5">
+                                    <div class="product-loading-state">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                        <strong>설정 변경 이력을 불러오는 중입니다.</strong>
+                                        <p>최근 운영 설정 변경 내역과 페이지 정보를 조회하고 있습니다.</p>
+                                    </div>
+                                </td>
+                            </tr>
                             </tbody>
                         </table>
                     </div>
@@ -353,7 +361,15 @@
                                 </tr>
                             </thead>
                             <tbody id="adminListBody">
-                                <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                                <tr>
+                                    <td colspan="7" class="py-5">
+                                        <div class="product-loading-state">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                            <strong>관리자 계정을 불러오는 중입니다.</strong>
+                                            <p>현재 필터 조건에 맞는 관리자 목록과 계정 현황을 조회하고 있습니다.</p>
+                                        </div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -571,8 +587,18 @@
                 this.renderList(data);
             } catch (err) {
                 document.getElementById('adminListMetaText').textContent = err.message;
-                document.getElementById('adminListBody').innerHTML =
-                    `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+                document.getElementById('adminListBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon text-danger">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </div>
+                                <strong>관리자 목록을 불러오지 못했습니다.</strong>
+                                <p>${err.message}</p>
+                            </div>
+                        </td>
+                    </tr>`;
             }
         },
         buildAdminListParams() {
@@ -677,7 +703,18 @@
             const tbody = document.getElementById('adminListBody');
             const items = data?.items || [];
             if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5">등록된 관리자가 없습니다.</td></tr>';
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon">
+                                    <i class="fa-solid fa-user-slash"></i>
+                                </div>
+                                <strong>등록된 관리자가 없습니다.</strong>
+                                <p>현재 조건에 맞는 관리자 계정이 없어 필터를 조정하거나 새 계정을 추가할 수 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>`;
                 this.renderAdminSummary(data?.summary);
                 this.renderAdminMeta(data);
                 this.renderAdminPagination(data);
@@ -917,8 +954,18 @@
                 await this.openDeepLinkedSystemHistoryIfNeeded(data.items || []);
             } catch (err) {
                 document.getElementById('systemSettingHistoryMetaText').textContent = err.message;
-                document.getElementById('systemSettingHistoryBody').innerHTML =
-                    `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+                document.getElementById('systemSettingHistoryBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon text-danger">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </div>
+                                <strong>설정 변경 이력을 불러오지 못했습니다.</strong>
+                                <p>${err.message}</p>
+                            </div>
+                        </td>
+                    </tr>`;
             }
         },
         readSystemHistoryStateFromUrl() {
@@ -966,7 +1013,18 @@
             const body = document.getElementById('systemSettingHistoryBody');
 
             if (items.length === 0) {
-                body.innerHTML = '<tr><td colspan="7" class="text-center py-5">아직 저장된 설정 변경 이력이 없습니다.</td></tr>';
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon">
+                                    <i class="fa-solid fa-clock-rotate-left"></i>
+                                </div>
+                                <strong>아직 저장된 설정 변경 이력이 없습니다.</strong>
+                                <p>선택한 조건에 맞는 운영 설정 변경 기록이 없어 최신 상태만 유지되고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>`;
                 this.renderSystemSettingHistorySummary(data?.summary);
                 this.renderSystemSettingHistoryMeta(data);
                 this.renderSystemSettingHistoryPagination(data);

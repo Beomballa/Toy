@@ -176,7 +176,7 @@ const TaskWorkloadList = {
         if (!items || items.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="8" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-user-clock product-empty-state-icon"></i>
                             <strong>조건에 맞는 담당자 워크로드가 없습니다.</strong>

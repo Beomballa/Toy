@@ -149,8 +149,18 @@ const AdminLogPage = {
             this.renderPagination(data);
             await this.openDeepLinkedLogIfNeeded(data.items || []);
         } catch (err) {
-            document.getElementById('logListBody').innerHTML =
-                `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            document.getElementById('logListBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>활동 로그를 불러오지 못했습니다.</strong>
+                            <p>${this.escapeHtml(err.message || '잠시 후 다시 시도해 주세요.')}</p>
+                        </div>
+                    </td>
+                </tr>`;
             this.setMetaText('로그 조회 실패');
             document.getElementById('logFilterMeta').textContent = '적용 필터 확인 불가';
             this.setResultMetaText(err.message);
@@ -334,7 +344,7 @@ const AdminLogPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>활동 로그를 불러오는 중입니다.</strong>

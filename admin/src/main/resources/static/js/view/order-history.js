@@ -176,7 +176,7 @@ const OrderHistoryPage = {
         if (!items.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center py-5 text-muted">
+                    <td colspan="6" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-receipt product-empty-state-icon"></i>
                             <strong>조건에 맞는 주문 처리 이력이 없습니다.</strong>

@@ -255,6 +255,7 @@ const TaskList = {
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             this.setListStateMeta('loading', '운영 작업을 불러오는 중입니다.', 0, 0, '');
+            this.renderTableState('loading', '운영 작업을 불러오는 중입니다.', '현재 필터 기준 목록과 상태 요약을 함께 계산하고 있습니다.');
 
             const response = await fetch(`/api/admin/settings/tasks/list?${params.toString()}`);
             if (!response.ok) {
@@ -274,7 +275,7 @@ const TaskList = {
             this.setFilterMeta(error.message);
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
-            document.getElementById('taskListBody').innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">${error.message}</td></tr>`;
+            this.renderTableState('error', '운영 작업 목록을 불러오지 못했습니다.', error.message);
             document.getElementById('taskPagination').innerHTML = '';
             this.renderStats(null);
             this.setListStateMeta('error', error.message, 0, 0, '');
@@ -337,7 +338,7 @@ const TaskList = {
         const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted">등록된 운영 작업이 없습니다.</td></tr>';
+            this.renderTableState('empty', '등록된 운영 작업이 없습니다.', '상태, 담당자, 우선순위 조건을 조정하거나 새 운영 작업을 등록해 보세요.');
             this.setListStateMeta('empty', '등록된 운영 작업이 없습니다.', 0, 0, '');
             this.updateSelectionMeta([]);
             return;
@@ -402,6 +403,37 @@ const TaskList = {
         ].map(([value, label]) => `
             <li><button type="button" class="dropdown-item ${item.status === value ? 'active' : ''}" data-role="update-task-status" data-task-no="${item.taskNo}" data-status="${value}">${label}</button></li>
         `).join('');
+    },
+
+    renderTableState(type, title, description) {
+        const tbody = document.getElementById('taskListBody');
+        if (!tbody) return;
+
+        const content = type === 'loading'
+            ? `
+                <div class="product-loading-state">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `
+            : `
+                <div class="product-empty-state">
+                    <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                        <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-list-check'}"></i>
+                    </div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="py-5">
+                    ${content}
+                </td>
+            </tr>
+        `;
     },
 
     renderStats(stats) {

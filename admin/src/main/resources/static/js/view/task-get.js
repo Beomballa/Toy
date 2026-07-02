@@ -181,7 +181,11 @@ const TaskDetailPage = {
         if (!listEl || !metaEl) return;
 
         if (!items.length) {
-            listEl.innerHTML = '<div class="text-muted small">추천 가능한 담당자가 없습니다.</div>';
+            listEl.innerHTML = `
+                <div class="col-12">
+                    ${this.buildStateMarkup('empty', '추천 가능한 담당자가 없습니다.', '현재 작업 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.', 'fa-user-slash')}
+                </div>
+            `;
             metaEl.textContent = '추천 가능한 담당자가 없습니다.';
             return;
         }
@@ -546,8 +550,24 @@ const TaskDetailPage = {
         document.getElementById('taskDetailMeta').textContent = '상세 확인 불가';
         document.getElementById('taskDetailSummary').textContent = '운영 작업 상세 조회에 실패했습니다.';
         const historyList = document.getElementById('taskDetailRecentHistoryList');
+        const commentList = document.getElementById('taskCommentList');
+        const recommendationList = document.getElementById('taskAssignmentRecommendationList');
+        const recommendationMeta = document.getElementById('taskAssignmentRecommendationMeta');
         if (historyList) {
-            historyList.innerHTML = `<div class="text-danger small">${this.escapeHtml(message)}</div>`;
+            historyList.innerHTML = this.buildStateMarkup('error', '최근 로그를 불러오지 못했습니다.', message, 'fa-triangle-exclamation');
+        }
+        if (commentList) {
+            commentList.innerHTML = this.buildStateMarkup('error', '작업 메모를 불러오지 못했습니다.', '잠시 후 다시 시도하거나 관련 작업 이력을 먼저 확인해주세요.', 'fa-triangle-exclamation');
+        }
+        if (recommendationList) {
+            recommendationList.innerHTML = `
+                <div class="col-12">
+                    ${this.buildStateMarkup('error', '추천 담당자를 계산하지 못했습니다.', '작업 상세를 다시 불러온 뒤 추천 후보를 다시 확인해주세요.', 'fa-triangle-exclamation')}
+                </div>
+            `;
+        }
+        if (recommendationMeta) {
+            recommendationMeta.textContent = '추천 담당자 계산 실패';
         }
         const metaEl = document.getElementById('taskDetailStateMeta');
         if (metaEl) {
@@ -565,6 +585,24 @@ const TaskDetailPage = {
             historyMetaEl.dataset.stateMessage = message;
             historyMetaEl.dataset.visibleCount = '0';
         }
+        const commentMetaEl = document.getElementById('taskCommentStateMeta');
+        if (commentMetaEl) {
+            commentMetaEl.dataset.listState = 'error';
+            commentMetaEl.dataset.stateMessage = message;
+            commentMetaEl.dataset.visibleCount = '0';
+        }
+    },
+
+    buildStateMarkup(type, title, description, icon) {
+        return `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                    <i class="fa-solid ${icon}"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
+        `;
     },
 
     renderStatusBadge(statusLabel) {

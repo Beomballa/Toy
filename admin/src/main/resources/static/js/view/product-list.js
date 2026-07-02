@@ -323,7 +323,7 @@ const ProductList = {
             const emptyMessage = this._buildEmptyStateMessage();
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
+                    <td colspan="9" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품이 없습니다.</strong>

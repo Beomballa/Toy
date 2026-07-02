@@ -314,7 +314,19 @@ const ProductFrontDisplayList = {
             lowStockThreshold: this.state.lowStockThreshold
         });
         this.renderMeta({ errorMessage: message, resultMeta: null, summary: { totalCount: 0 } });
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-5">
+                    <div class="product-empty-state">
+                        <div class="product-empty-state__icon text-danger">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <strong>전시 상품을 불러오지 못했습니다.</strong>
+                        <p>${this.escapeHtml(message)}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
     },
 
     renderLoading() {
@@ -324,9 +336,9 @@ const ProductFrontDisplayList = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
-                        <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>전시 상품을 불러오는 중입니다.</strong>
                         <p>현재 필터 기준으로 상품 노출 설정과 요약 지표를 함께 계산하고 있습니다.</p>
                     </div>

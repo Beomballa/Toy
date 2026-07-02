@@ -252,8 +252,22 @@ const OrderHistoryPage = {
     },
 
     renderError(message) {
-        document.getElementById('orderHistoryBody').innerHTML =
-            `<tr><td colspan="6" class="text-center py-5 text-danger">${message}</td></tr>`;
+        const tbody = document.getElementById('orderHistoryBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>주문 처리 이력을 불러오지 못했습니다.</strong>
+                            <p>${this.escapeHtml(message)}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
         this.setMetaText('이력 조회 실패');
         const filterMeta = document.getElementById('orderHistoryFilterMeta');
         if (filterMeta) {
@@ -315,7 +329,7 @@ const OrderHistoryPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-5 text-muted">
+                <td colspan="6" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>주문 처리 이력을 불러오는 중입니다.</strong>
@@ -324,6 +338,15 @@ const OrderHistoryPage = {
                 </td>
             </tr>
         `;
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     },
 
     buildEmptyStateMessage() {

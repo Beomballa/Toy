@@ -165,7 +165,15 @@
                     </tr>
                     </thead>
                     <tbody id="orderHistoryBody">
-                    <tr><td colspan="6" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr>
+                        <td colspan="6" class="py-5">
+                            <div class="product-loading-state">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>주문 처리 이력을 불러오는 중입니다.</strong>
+                                <p>현재 필터 조건에 맞는 주문 처리 변경 내역을 조회하고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>

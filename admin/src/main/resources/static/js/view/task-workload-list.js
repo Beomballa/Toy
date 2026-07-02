@@ -131,7 +131,7 @@ const TaskWorkloadList = {
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center py-5 text-muted">
+                    <td colspan="8" class="py-5">
                         <div class="product-loading-state">
                             <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                             <strong>담당자별 워크로드를 불러오는 중입니다.</strong>
@@ -305,7 +305,19 @@ const TaskWorkloadList = {
     renderListError(message) {
         const tbody = document.getElementById('taskWorkloadListBody');
         if (tbody) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger">${this.escapeHtml(message)}</td></tr>`;
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>담당자별 워크로드 조회에 실패했습니다.</strong>
+                            <p>${this.escapeHtml(message)}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
         }
         this.setStateMeta('error', message, 0, 0, 0, '', '');
         document.getElementById('taskWorkloadMetaText').textContent = '조회 실패';

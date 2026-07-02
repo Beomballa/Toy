@@ -524,7 +524,17 @@ const ProductList = {
 
     _showError(message = '데이터 로드 중 오류가 발생했습니다.') {
         document.getElementById('productListTableBody').innerHTML = `
-            <tr><td colspan="9" class="text-center py-5 text-danger">${message}</td></tr>`;
+            <tr>
+                <td colspan="9" class="py-5">
+                    <div class="product-empty-state">
+                        <div class="product-empty-state__icon text-danger">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <strong>상품 목록을 불러오지 못했습니다.</strong>
+                        <p>${message}</p>
+                    </div>
+                </td>
+            </tr>`;
         const pageInfoText = document.getElementById('pageInfoText');
         const totalElementsCount = document.getElementById('totalElementsCount');
         const pageMetaText = document.getElementById('pageMetaText');
@@ -548,7 +558,7 @@ const ProductList = {
         if (isLoading) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="text-center py-5 text-muted">
+                    <td colspan="9" class="py-5">
                         <div class="product-loading-state">
                             <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                             <strong>상품 목록을 다시 불러오는 중입니다.</strong>

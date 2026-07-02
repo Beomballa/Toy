@@ -211,7 +211,7 @@ const NoticeHistoryPage = {
         if (this.isOpeningDetail) {
             return;
         }
-        document.getElementById('noticeHistoryDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 공지 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
         this.setDetailTargetLink('');
         this.modal.show();
         try {
@@ -235,7 +235,7 @@ const NoticeHistoryPage = {
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
-            document.getElementById('noticeHistoryDetailBody').innerHTML = `<div class="text-danger">${error.message}</div>`;
+            this.renderDetailState('error', '상세 로그를 불러오지 못했습니다.', error.message);
             this.setDetailTargetLink('');
         } finally {
             this.isOpeningDetail = false;
@@ -243,8 +243,22 @@ const NoticeHistoryPage = {
     },
 
     renderError(message) {
-        document.getElementById('noticeHistoryBody').innerHTML =
-            `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
+        const tbody = document.getElementById('noticeHistoryBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>운영 공지 이력을 불러오지 못했습니다.</strong>
+                            <p>${this.escapeHtml(message)}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
         this.setMetaText('이력 조회 실패');
         document.getElementById('noticeHistoryFilterMeta').textContent = '적용 필터 확인 불가';
         this.setResultMetaText(message);
@@ -368,7 +382,7 @@ const NoticeHistoryPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>운영 공지 이력을 불러오는 중입니다.</strong>
@@ -376,6 +390,34 @@ const NoticeHistoryPage = {
                     </div>
                 </td>
             </tr>
+        `;
+    },
+
+    renderDetailState(type, title, description) {
+        const body = document.getElementById('noticeHistoryDetailBody');
+        if (!body) {
+            return;
+        }
+
+        if (type === 'loading') {
+            body.innerHTML = `
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `;
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
         `;
     },
 
@@ -482,6 +524,15 @@ const NoticeHistoryPage = {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     }
 };
 

@@ -173,7 +173,15 @@
                     </tr>
                     </thead>
                     <tbody id="noticeHistoryBody">
-                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-loading-state">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>운영 공지 이력을 불러오는 중입니다.</strong>
+                                <p>현재 필터 조건에 맞는 공지 작업 로그를 조회하고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>
@@ -191,7 +199,13 @@
                 <h5 class="modal-title fw-bold">로그 상세</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="noticeHistoryDetailBody">데이터를 불러오는 중입니다...</div>
+            <div class="modal-body" id="noticeHistoryDetailBody">
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>로그 상세를 불러오는 중입니다.</strong>
+                    <p>선택한 공지 이력의 상세 정보와 바로가기를 준비하고 있습니다.</p>
+                </div>
+            </div>
             <div class="modal-footer">
                 <a class="btn btn-outline-secondary d-none" id="btnNoticeHistoryDetailTarget" href="#">관련 공지</a>
             </div>

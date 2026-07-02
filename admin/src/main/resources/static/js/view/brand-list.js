@@ -149,6 +149,7 @@ const BrandList = {
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
             this.renderStats(null);
+            this.renderErrorState(err.message || '브랜드 목록을 불러오지 못했습니다.');
             document.getElementById('brandPagination').innerHTML = '';
             this.setListStateMeta('error', '브랜드 목록 조회 실패', 0, 0, '');
         }
@@ -316,11 +317,31 @@ const BrandList = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>브랜드 목록을 불러오는 중입니다.</strong>
                         <p>현재 필터 조건에 맞는 브랜드 운영 목록을 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    },
+
+    renderErrorState(message) {
+        const tbody = document.getElementById('brandListBody');
+        if (!tbody) {
+            return;
+        }
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-5">
+                    <div class="product-empty-state">
+                        <div class="product-empty-state__icon text-danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <strong>브랜드 목록을 불러오지 못했습니다.</strong>
+                        <p>${this.escapeHtml(message)}</p>
                     </div>
                 </td>
             </tr>

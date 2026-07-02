@@ -152,7 +152,7 @@ const CategoryList = {
             this._updateStateFromInputs();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-            this.setMetaText('데이터를 불러오는 중입니다...');
+            this.setMetaText('카테고리 목록을 불러오는 중입니다...');
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
             this.setResultMeta('결과 메타를 계산하는 중입니다...');
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');

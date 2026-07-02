@@ -264,7 +264,18 @@ const CategoryList = {
         wrapper.classList.remove('d-none');
 
         if (!this.state.depth2List || this.state.depth2List.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">하위 카테고리가 없습니다.</td></tr>';
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon">
+                                <i class="fas fa-folder-tree"></i>
+                            </div>
+                            <strong>하위 카테고리가 없습니다.</strong>
+                            <p>선택한 대분류 아래에 아직 등록된 중분류가 없어 바로 추가할 수 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>`;
             this.updateSelectionMeta();
             return;
         }

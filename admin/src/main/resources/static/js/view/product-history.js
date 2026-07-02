@@ -144,7 +144,7 @@ const ProductHistoryPage = {
         if (!items.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="7" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품 변경 이력이 없습니다.</strong>
@@ -245,8 +245,18 @@ const ProductHistoryPage = {
     },
 
     renderError(message) {
-        document.getElementById('productHistoryBody').innerHTML =
-            `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
+        document.getElementById('productHistoryBody').innerHTML = `
+            <tr>
+                <td colspan="7" class="py-5">
+                    <div class="product-empty-state">
+                        <div class="product-empty-state__icon text-danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <strong>상품 변경 이력을 불러오지 못했습니다.</strong>
+                        <p>${this.escapeHtml(message)}</p>
+                    </div>
+                </td>
+            </tr>`;
         this.setMetaText('이력 조회 실패');
         const filterMeta = document.getElementById('historyFilterMeta');
         if (filterMeta) {
@@ -327,7 +337,7 @@ const ProductHistoryPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>상품 변경 이력을 불러오는 중입니다.</strong>

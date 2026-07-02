@@ -130,10 +130,10 @@ const TaskWorkloadDetail = {
         } catch (error) {
             document.getElementById('taskWorkloadDetailTitle').textContent = error.message;
             document.getElementById('workloadDetailMetaText').textContent = '상세 메타 확인 불가';
-            document.getElementById('workloadRecentTasksBody').innerHTML = `<div class="text-danger small">${this.escapeHtml(error.message)}</div>`;
-            document.getElementById('workloadOverdueTasksBody').innerHTML = '<div class="text-muted small">기한 초과 작업을 확인할 수 없습니다.</div>';
-            document.getElementById('workloadRecentCommentsBody').innerHTML = '<div class="text-muted small">최근 메모를 확인할 수 없습니다.</div>';
-            document.getElementById('workloadRecentHistoriesBody').innerHTML = '<div class="text-muted small">최근 활동을 확인할 수 없습니다.</div>';
+            this.renderSectionState('workloadRecentTasksBody', 'error', '최근 작업을 불러오지 못했습니다.', error.message);
+            this.renderSectionState('workloadOverdueTasksBody', 'error', '기한 초과 작업을 확인할 수 없습니다.', '지연 작업 목록을 다시 불러오거나 운영 작업 목록에서 직접 확인해주세요.');
+            this.renderSectionState('workloadRecentCommentsBody', 'error', '최근 메모를 확인할 수 없습니다.', '메모 이력을 다시 불러오거나 관련 작업 상세에서 직접 확인해주세요.');
+            this.renderSectionState('workloadRecentHistoriesBody', 'error', '최근 활동을 확인할 수 없습니다.', '최근 상태 변경 이력을 다시 불러오거나 작업 이력 메뉴에서 확인해주세요.');
             const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
             if (metaEl) {
                 metaEl.dataset.detailState = 'error';
@@ -509,7 +509,13 @@ const TaskWorkloadDetail = {
             this.syncOverdueActionState();
         } catch (error) {
             if (metaEl) metaEl.textContent = error.message;
-            if (listEl) listEl.innerHTML = `<div class="col-12"><div class="text-danger small">${this.escapeHtml(error.message)}</div></div>`;
+            if (listEl) {
+                listEl.innerHTML = `
+                    <div class="col-12">
+                        ${this.buildSectionStateMarkup('error', '추천 담당자를 불러오지 못했습니다.', error.message, 'fa-triangle-exclamation')}
+                    </div>
+                `;
+            }
         }
     },
 
@@ -528,11 +534,7 @@ const TaskWorkloadDetail = {
         if (!items.length) {
             listEl.innerHTML = `
                 <div class="col-12">
-                    <div class="product-empty-state py-4">
-                        <i class="fas fa-user-slash product-empty-state-icon"></i>
-                        <strong>추천 가능한 담당자가 없습니다.</strong>
-                        <p>현재 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.</p>
-                    </div>
+                    ${this.buildSectionStateMarkup('empty', '추천 가능한 담당자가 없습니다.', '현재 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.', 'fa-user-slash')}
                 </div>
             `;
             return;
@@ -549,6 +551,24 @@ const TaskWorkloadDetail = {
                 </div>
             </div>
         `).join('');
+    },
+
+    renderSectionState(elementId, type, title, description, icon = 'fa-circle-info') {
+        const body = document.getElementById(elementId);
+        if (!body) return;
+        body.innerHTML = this.buildSectionStateMarkup(type, title, description, icon);
+    },
+
+    buildSectionStateMarkup(type, title, description, icon) {
+        return `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                    <i class="fa-solid ${icon}"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
+        `;
     },
 
     async applyReassignment() {

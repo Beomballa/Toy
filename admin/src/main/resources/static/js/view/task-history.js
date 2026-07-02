@@ -217,7 +217,7 @@ const TaskHistoryPage = {
     },
 
     async openDetail(logNo) {
-        document.getElementById('taskHistoryDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 작업 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
         this.setDetailStateMeta('loading', '로그 상세를 불러오는 중입니다.', logNo, '', '');
         this.modal.show();
         try {
@@ -246,15 +246,29 @@ const TaskHistoryPage = {
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
-            document.getElementById('taskHistoryDetailBody').innerHTML = `<div class="text-danger">${error.message}</div>`;
+            this.renderDetailState('error', '상세 로그를 불러오지 못했습니다.', error.message);
             this.setDetailFooterLinks('', '');
             this.setDetailStateMeta('error', error.message, logNo, '', '');
         }
     },
 
     renderError(message) {
-        document.getElementById('taskHistoryBody').innerHTML =
-            `<tr><td colspan="7" class="text-center py-5 text-danger">${message}</td></tr>`;
+        const tbody = document.getElementById('taskHistoryBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>운영 작업 이력을 불러오지 못했습니다.</strong>
+                            <p>${this.escapeHtml(message)}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
         this.setMetaText('이력 조회 실패');
         document.getElementById('taskHistoryFilterMeta').textContent = '적용 필터 확인 불가';
         this.setResultMetaText(message);
@@ -384,7 +398,7 @@ const TaskHistoryPage = {
         }
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="text-center py-5 text-muted">
+                <td colspan="7" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>운영 작업 이력을 불러오는 중입니다.</strong>
@@ -392,6 +406,32 @@ const TaskHistoryPage = {
                     </div>
                 </td>
             </tr>
+        `;
+    },
+
+    renderDetailState(type, title, description) {
+        const body = document.getElementById('taskHistoryDetailBody');
+        if (!body) return;
+
+        if (type === 'loading') {
+            body.innerHTML = `
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `;
+            return;
+        }
+
+        body.innerHTML = `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon text-danger">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
         `;
     },
 
@@ -483,6 +523,15 @@ const TaskHistoryPage = {
 
     formatAdminLabel(adminName, adminNo) {
         return adminNo ? `${adminName} (#${adminNo})` : adminName;
+    },
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
     },
 
     setListStateMeta(state, message, visibleCount, totalElements, filterCount, querySignature, pageInfoLabel) {

@@ -136,8 +136,22 @@ const MemberListPage = {
             this.renderSummary(summary);
             this.renderPagination(data.currentPage ?? 0, data.totalPages ?? 0);
         } catch (err) {
-            document.getElementById('memberListBody').innerHTML =
-                `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            const tbody = document.getElementById('memberListBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon text-danger">
+                                    <i class="fa-solid fa-triangle-exclamation"></i>
+                                </div>
+                                <strong>회원 목록을 불러오지 못했습니다.</strong>
+                                <p>${this.escapeHtml(err.message)}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
             this.setMetaText('회원 목록 조회 실패');
             this.setFilterMetaText(err.message);
             this.setResultMetaText('결과 메타 확인 불가');
@@ -369,13 +383,22 @@ const MemberListPage = {
     },
 
     async openDetail(memberId) {
-        this.setDetailLoadingState('데이터를 불러오는 중입니다...');
+        this.setDetailLoadingState('회원 상세를 불러오는 중입니다.', '프로필, 권한, 상태 정보를 정리하고 있습니다.');
         this.modal.show();
         try {
             const data = await this.fetchMemberDetail(memberId);
             this.renderDetail(data);
         } catch (err) {
-            document.getElementById('memberDetailBody').innerHTML = `<div class="text-danger">${err.message}</div>`;
+            document.getElementById('memberDetailBody').innerHTML = `
+                <div class="product-empty-state py-4">
+                    <div class="product-empty-state__icon text-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <strong>회원 상세를 불러오지 못했습니다.</strong>
+                    <p>${this.escapeHtml(err.message)}</p>
+                </div>
+            `;
+            this.setDetailActionState(true);
         }
     },
 
@@ -389,8 +412,14 @@ const MemberListPage = {
         return data;
     },
 
-    setDetailLoadingState(message) {
-        document.getElementById('memberDetailBody').textContent = message;
+    setDetailLoadingState(title, description) {
+        document.getElementById('memberDetailBody').innerHTML = `
+            <div class="product-loading-state py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <strong>${this.escapeHtml(title)}</strong>
+                <p>${this.escapeHtml(description)}</p>
+            </div>
+        `;
         this.setDetailActionState(true);
     },
 

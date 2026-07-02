@@ -141,7 +141,15 @@
                         </tr>
                     </thead>
                     <tbody id="memberListBody">
-                        <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                        <tr>
+                            <td colspan="7" class="py-5">
+                                <div class="product-loading-state">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                    <strong>회원 목록을 불러오는 중입니다.</strong>
+                                    <p>현재 필터 조건에 맞는 회원 데이터를 조회하고 있습니다.</p>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -162,7 +170,13 @@
                 <h5 class="modal-title fw-bold">회원 상세</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="memberDetailBody">데이터를 불러오는 중입니다...</div>
+            <div class="modal-body" id="memberDetailBody">
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>회원 상세를 불러오는 중입니다.</strong>
+                    <p>프로필, 권한, 상태 정보를 정리하고 있습니다.</p>
+                </div>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 <button type="button" class="btn btn-outline-primary" id="btnToggleMasterYn">권한 변경</button>

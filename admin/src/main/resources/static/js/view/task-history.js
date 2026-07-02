@@ -111,7 +111,7 @@ const TaskHistoryPage = {
     async loadHistory() {
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-        this.setMetaText('데이터를 불러오는 중입니다...');
+        this.setMetaText('운영 작업 이력을 불러오는 중입니다...');
         this.setResultMetaText('결과 메타를 계산하는 중입니다...');
         this.setPageMetaText('페이지 메타 계산 중');
         this.renderLoadingState();

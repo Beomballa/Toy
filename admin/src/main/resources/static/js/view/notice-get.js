@@ -270,7 +270,14 @@ const NoticeDetailPage = {
         }
         const historyList = document.getElementById('noticeDetailRecentHistoryList');
         if (historyList) {
-            historyList.innerHTML = `<div class="text-danger small">${this.escapeHtml(message)}</div>`;
+            historyList.innerHTML = `
+                <div class="product-empty-state py-4">
+                    <div class="product-empty-state__icon text-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <strong>최근 이력을 불러오지 못했습니다.</strong>
+                    <p>${this.escapeHtml(message)}</p>
+                </div>`;
         }
         const metaEl = document.getElementById('noticeDetailStateMeta');
         if (metaEl) {

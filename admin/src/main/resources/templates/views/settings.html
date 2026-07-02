@@ -441,7 +441,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="systemSettingHistoryDetailBody">
-                데이터를 불러오는 중입니다...
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>설정 변경 상세를 불러오는 중입니다.</strong>
+                    <p>선택한 변경 이력의 값 비교와 반영 상태를 정리하고 있습니다.</p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
@@ -1071,7 +1075,13 @@
             if (!Number.isFinite(historyNo) || historyNo <= 0) {
                 return;
             }
-            document.getElementById('systemSettingHistoryDetailBody').textContent = '데이터를 불러오는 중입니다...';
+            document.getElementById('systemSettingHistoryDetailBody').innerHTML = `
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>설정 변경 상세를 불러오는 중입니다.</strong>
+                    <p>선택한 변경 이력의 값 비교와 반영 상태를 정리하고 있습니다.</p>
+                </div>
+            `;
             this.historyDetailModal.show();
             try {
                 const res = await fetch(`/api/admin/settings/system/history/get?historyNo=${historyNo}`);
@@ -1131,8 +1141,14 @@
                 this.highlightSystemHistoryRow(historyNo);
                 this.syncPageState(true);
             } catch (err) {
-                document.getElementById('systemSettingHistoryDetailBody').innerHTML =
-                    `<div class="text-danger">${err.message}</div>`;
+                document.getElementById('systemSettingHistoryDetailBody').innerHTML = `
+                    <div class="product-empty-state py-4">
+                        <div class="product-empty-state__icon text-danger">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <strong>설정 변경 상세를 불러오지 못했습니다.</strong>
+                        <p>${err.message}</p>
+                    </div>`;
             }
         },
         renderSystemSettingHistorySummary(summary) {

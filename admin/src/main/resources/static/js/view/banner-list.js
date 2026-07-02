@@ -183,7 +183,7 @@ const BannerList = {
         if (!items || items.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="7" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-images product-empty-state-icon"></i>
                             <strong>조건에 맞는 배너가 없습니다.</strong>

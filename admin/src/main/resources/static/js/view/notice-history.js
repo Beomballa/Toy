@@ -139,7 +139,7 @@ const NoticeHistoryPage = {
         if (!items.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="7" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-bullhorn product-empty-state-icon"></i>
                             <strong>조건에 맞는 운영 공지 이력이 없습니다.</strong>

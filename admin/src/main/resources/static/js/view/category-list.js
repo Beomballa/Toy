@@ -170,6 +170,15 @@ const CategoryList = {
             this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
+            document.getElementById('depth1Body').innerHTML = `
+                <div class="product-empty-state py-5">
+                    <div class="product-empty-state__icon text-danger">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <strong>카테고리 목록을 불러오지 못했습니다.</strong>
+                    <p>${this.escapeHtml(err.message || '잠시 후 다시 시도해 주세요.')}</p>
+                </div>
+            `;
             document.getElementById('categoryPagination').innerHTML = '';
             this.setListStateMeta('error', '카테고리 목록을 불러오지 못했습니다.', 0, 0, '');
         }
@@ -203,7 +212,14 @@ const CategoryList = {
     renderDepth1() {
         const body = document.getElementById('depth1Body');
         if (!this.state.depth1List || this.state.depth1List.length === 0) {
-            body.innerHTML = '<div class="text-center py-5 text-muted">등록된 카테고리가 없습니다.</div>';
+            body.innerHTML = `
+                <div class="product-empty-state py-5">
+                    <div class="product-empty-state__icon">
+                        <i class="fas fa-folder-open"></i>
+                    </div>
+                    <strong>등록된 카테고리가 없습니다.</strong>
+                    <p>현재 조건에 맞는 대분류가 없어 새 카테고리를 바로 추가할 수 있습니다.</p>
+                </div>`;
             this.setListStateMeta('empty', '등록된 카테고리가 없습니다.', 0, 0, '');
             this.updateSelectionMeta();
             return;

@@ -158,18 +158,9 @@ const OrderList = {
         });
         const tbody = document.getElementById('orderListTableBody');
         if (tbody) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-5">
-                        <div class="product-loading-state">
-                            <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
-                            <strong>주문 내역을 불러오는 중입니다.</strong>
-                            <p>현재 필터 기준 주문 목록과 상태 집계를 함께 계산하고 있습니다.</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            this.renderTableState('loading', '주문 내역을 불러오는 중입니다.', '현재 필터 기준 주문 목록과 상태 집계를 함께 계산하고 있습니다.');
         }
+        this.renderSummaryState('loading', '상태별 집계를 불러오는 중입니다.', '현재 필터 기준 주문 상태별 건수를 계산하고 있습니다.');
 
         try {
             this.isLoading = true;
@@ -190,7 +181,8 @@ const OrderList = {
             this.renderPagination(data);
         } catch (err) {
             console.error('주문 목록 로드 실패:', err);
-            this.renderStatusSummaries([]);
+            this.renderSummaryState('error', '상태별 집계를 불러오지 못했습니다.', '잠시 후 다시 시도하거나 필터 조건을 조정해주세요.');
+            this.renderTableState('error', '주문 내역을 불러오지 못했습니다.', '잠시 후 다시 시도하거나 주문 검색 조건을 조정해주세요.');
             this.renderMeta({
                 totalElements: 0,
                 currentPage: this.state.page,
@@ -211,7 +203,7 @@ const OrderList = {
         const selectedStatus = this.state.status || '';
 
         if (!items.length) {
-            container.innerHTML = '<div class="text-muted small">현재 필터에 해당하는 상태별 집계가 없습니다.</div>';
+            this.renderSummaryState('empty', '현재 필터에 해당하는 상태별 집계가 없습니다.', '기간이나 검색 조건을 조정하면 다른 주문 상태를 확인할 수 있습니다.');
             return;
         }
 
@@ -251,17 +243,7 @@ const OrderList = {
         if (!tbody) return;
 
         if (!items || items.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" class="text-center py-5">
-                        <div class="product-empty-state">
-                            <i class="fas fa-box-open product-empty-state-icon"></i>
-                            <strong>주문 내역이 없습니다.</strong>
-                            <p>기간, 상태, 검색어 조건을 조정하거나 빠른 상태 카드를 눌러 다른 주문 문맥을 확인하세요.</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            this.renderTableState('empty', '주문 내역이 없습니다.', '기간, 상태, 검색어 조건을 조정하거나 빠른 상태 카드를 눌러 다른 주문 문맥을 확인하세요.');
             return;
         }
 
@@ -312,6 +294,64 @@ const OrderList = {
         if (totalCountEl) {
             totalCountEl.textContent = `전체 ${Number(totalElements || 0).toLocaleString()}건`;
         }
+    },
+
+    renderSummaryState(type, title, description) {
+        const container = document.getElementById('orderStatusSummaryRow');
+        if (!container) return;
+
+        if (type === 'loading') {
+            container.innerHTML = `
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${title}</strong>
+                    <p>${description}</p>
+                </div>
+            `;
+            return;
+        }
+
+        const iconClass = type === 'error' ? 'fa-triangle-exclamation text-danger' : 'fa-chart-pie text-primary';
+        container.innerHTML = `
+            <div class="product-empty-state py-4">
+                <div class="product-empty-state__icon">
+                    <i class="fa-solid ${iconClass}"></i>
+                </div>
+                <strong>${title}</strong>
+                <p>${description}</p>
+            </div>
+        `;
+    },
+
+    renderTableState(type, title, description) {
+        const tbody = document.getElementById('orderListTableBody');
+        if (!tbody) return;
+
+        const stateMarkup = type === 'loading'
+            ? `
+                <div class="product-loading-state">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${title}</strong>
+                    <p>${description}</p>
+                </div>
+            `
+            : `
+                <div class="product-empty-state">
+                    <div class="product-empty-state__icon">
+                        <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation text-danger' : 'fa-box-open text-primary'}"></i>
+                    </div>
+                    <strong>${title}</strong>
+                    <p>${description}</p>
+                </div>
+            `;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-5">
+                    ${stateMarkup}
+                </td>
+            </tr>
+        `;
     },
 
     goPage(page) {

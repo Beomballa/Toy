@@ -118,7 +118,11 @@
             </div>
             <div class="small text-muted mb-3" id="orderSummaryGuideText">상태 요약 카드를 누르면 해당 상태로 바로 필터링합니다.</div>
             <div class="admin-summary-grid admin-summary-grid--compact" id="orderStatusSummaryRow">
-                <div class="text-muted small">상태별 집계를 불러오는 중입니다...</div>
+                <div class="product-loading-state py-4">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>상태별 집계를 불러오는 중입니다.</strong>
+                    <p>현재 필터 기준 주문 상태별 건수를 계산하고 있습니다.</p>
+                </div>
             </div>
         </div>
         <div class="card-body p-0">
@@ -136,7 +140,15 @@
                     </tr>
                     </thead>
                     <tbody id="orderListTableBody">
-                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-loading-state">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>주문 내역을 불러오는 중입니다.</strong>
+                                <p>현재 필터 기준 주문 목록과 상태 집계를 함께 계산하고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>

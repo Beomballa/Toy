@@ -176,7 +176,7 @@ const AdminLogPage = {
         if (!items.length) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center py-5 text-muted">
+                    <td colspan="7" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-clipboard-list product-empty-state-icon"></i>
                             <strong>조건에 맞는 활동 로그가 없습니다.</strong>
@@ -263,7 +263,13 @@ const AdminLogPage = {
         if (this.isOpeningDetail) {
             return;
         }
-        document.getElementById('logDetailBody').textContent = '데이터를 불러오는 중입니다...';
+        document.getElementById('logDetailBody').innerHTML = `
+            <div class="product-loading-state py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <strong>로그 상세를 불러오는 중입니다.</strong>
+                <p>선택한 활동 로그의 상세 정보와 이동 경로를 정리하고 있습니다.</p>
+            </div>
+        `;
         this.modal.show();
         try {
             this.isOpeningDetail = true;
@@ -284,7 +290,15 @@ const AdminLogPage = {
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (err) {
-            document.getElementById('logDetailBody').innerHTML = `<div class="text-danger">${err.message}</div>`;
+            document.getElementById('logDetailBody').innerHTML = `
+                <div class="product-empty-state py-4">
+                    <div class="product-empty-state__icon text-danger">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <strong>상세 로그를 불러오지 못했습니다.</strong>
+                    <p>${this.escapeHtml(err.message)}</p>
+                </div>
+            `;
         } finally {
             this.isOpeningDetail = false;
         }

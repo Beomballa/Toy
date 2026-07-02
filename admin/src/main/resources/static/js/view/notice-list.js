@@ -159,17 +159,7 @@ const NoticeList = {
             this.setListStateMeta('loading', '운영 공지를 불러오는 중입니다.', 0, 0, '');
             const tbody = document.getElementById('noticeListBody');
             if (tbody) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="text-center py-5">
-                            <div class="product-loading-state">
-                                <i class="fas fa-spinner fa-spin product-empty-state-icon"></i>
-                                <strong>운영 공지를 불러오는 중입니다.</strong>
-                                <p>현재 필터 기준 목록과 상태 요약을 함께 계산하고 있습니다.</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+                this.renderTableState('loading', '운영 공지를 불러오는 중입니다.', '현재 필터 기준 목록과 상태 요약을 함께 계산하고 있습니다.');
             }
 
             const res = await fetch(`/api/admin/settings/notices/list?${params.toString()}`);
@@ -188,7 +178,7 @@ const NoticeList = {
             this.setResultMeta('결과 메타 확인 불가');
             this.setPageMeta('페이지 메타 확인 불가');
             this.renderStats(null);
-            document.getElementById('noticeListBody').innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger">${err.message}</td></tr>`;
+            this.renderTableState('error', '운영 공지 목록을 불러오지 못했습니다.', err.message);
             document.getElementById('noticePagination').innerHTML = '';
             this.setListStateMeta('error', err.message, 0, 0, '');
             this.syncStatCardState();
@@ -459,6 +449,37 @@ const NoticeList = {
 
     setPageMeta(message) {
         document.getElementById('noticePageMeta').textContent = message;
+    },
+
+    renderTableState(type, title, description) {
+        const tbody = document.getElementById('noticeListBody');
+        if (!tbody) return;
+
+        const content = type === 'loading'
+            ? `
+                <div class="product-loading-state">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `
+            : `
+                <div class="product-empty-state">
+                    <div class="product-empty-state__icon ${type === 'error' ? 'text-danger' : 'text-primary'}">
+                        <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-bullhorn'}"></i>
+                    </div>
+                    <strong>${this.escapeHtml(title)}</strong>
+                    <p>${this.escapeHtml(description)}</p>
+                </div>
+            `;
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-5">
+                    ${content}
+                </td>
+            </tr>
+        `;
     },
 
     setListStateMeta(state, message, visibleCount, totalElements, querySignature) {

@@ -231,7 +231,15 @@
                     </tr>
                     </thead>
                     <tbody id="noticeListBody">
-                    <tr><td colspan="7" class="text-center py-5">데이터를 불러오는 중입니다...</td></tr>
+                    <tr>
+                        <td colspan="7" class="py-5">
+                            <div class="product-loading-state">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                <strong>운영 공지를 불러오는 중입니다.</strong>
+                                <p>현재 필터 기준 목록과 상태 요약을 함께 계산하고 있습니다.</p>
+                            </div>
+                        </td>
+                    </tr>
                     </tbody>
                 </table>
             </div>

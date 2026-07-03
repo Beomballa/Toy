@@ -15,6 +15,7 @@ const NoticeList = {
     },
     selectedNoticeNos: new Set(),
     saveInFlight: false,
+    exportInFlight: false,
     bulkInFlight: false,
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
@@ -298,8 +299,12 @@ const NoticeList = {
     },
 
     async exportCsv() {
+        if (this.exportInFlight) {
+            return;
+        }
         const button = document.getElementById('btnExportNoticeCsv');
         try {
+            this.exportInFlight = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             const params = this.buildParams();
             params.delete('page');
@@ -308,6 +313,7 @@ const NoticeList = {
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
+            this.exportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },

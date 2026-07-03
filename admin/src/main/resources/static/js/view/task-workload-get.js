@@ -4,6 +4,7 @@ const TaskWorkloadDetail = {
     operationPolicy: null,
     reassignModal: null,
     reassignDetail: null,
+    isOpeningReassignModal: false,
     isCompletingTask: false,
     isRaisingPriority: false,
     isApplyingReassignment: false,
@@ -97,7 +98,9 @@ const TaskWorkloadDetail = {
             if (assigneeSelect) {
                 assigneeSelect.value = applyButton.dataset.adminNo || '';
             }
+            this.syncSelectedRecommendationState();
         });
+        document.getElementById('taskReassignAssignee')?.addEventListener('change', () => this.syncSelectedRecommendationState());
         document.getElementById('btnTaskReassignApply')?.addEventListener('click', () => this.applyReassignment());
         document.getElementById('taskWorkloadActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
     },
@@ -475,6 +478,9 @@ const TaskWorkloadDetail = {
     },
 
     async openReassignModal(taskNo, sourceLabel = '워크로드 상세') {
+        if (this.isOpeningReassignModal) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
             return;
@@ -499,6 +505,7 @@ const TaskWorkloadDetail = {
         this.reassignModal?.show();
 
         try {
+            this.isOpeningReassignModal = true;
             const data = await this.fetchTaskDetail(taskNo);
             this.reassignDetail = { ...data, sourceLabel };
             if (metaEl) {
@@ -506,6 +513,7 @@ const TaskWorkloadDetail = {
             }
             this.renderReassignAssigneeOptions(data.assigneeOptions || [], data.assigneeAdminNo);
             this.renderReassignRecommendations(data.assignmentRecommendations || []);
+            this.syncSelectedRecommendationState();
             this.syncOverdueActionState();
         } catch (error) {
             if (metaEl) metaEl.textContent = error.message;
@@ -516,6 +524,8 @@ const TaskWorkloadDetail = {
                     </div>
                 `;
             }
+        } finally {
+            this.isOpeningReassignModal = false;
         }
     },
 
@@ -551,6 +561,16 @@ const TaskWorkloadDetail = {
                 </div>
             </div>
         `).join('');
+        this.syncSelectedRecommendationState();
+    },
+
+    syncSelectedRecommendationState() {
+        const selectedAdminNo = document.getElementById('taskReassignAssignee')?.value || '';
+        document.querySelectorAll('[data-role="apply-reassign-recommendation"]').forEach((button) => {
+            const active = (button.dataset.adminNo || '') === selectedAdminNo;
+            button.classList.toggle('btn-dark', active);
+            button.classList.toggle('btn-outline-dark', !active);
+        });
     },
 
     renderSectionState(elementId, type, title, description, icon = 'fa-circle-info') {
@@ -582,6 +602,14 @@ const TaskWorkloadDetail = {
             return;
         }
         const assigneeAdminNo = this.parseOptionalNumber(document.getElementById('taskReassignAssignee')?.value);
+        if (assigneeAdminNo != null && (!Number.isFinite(assigneeAdminNo) || assigneeAdminNo <= 0)) {
+            await CommonJS.alert('담당자 선택값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (Number(this.reassignDetail.assigneeAdminNo || 0) === Number(assigneeAdminNo || 0)) {
+            await CommonJS.alert('이미 해당 담당자로 배정되어 있습니다.', '알림', 'info');
+            return;
+        }
         const confirmed = await CommonJS.confirm('선택한 담당자로 재배정하시겠습니까?', '재배정 확인');
         if (!confirmed) return;
 
@@ -608,6 +636,7 @@ const TaskWorkloadDetail = {
         } finally {
             this.isApplyingReassignment = false;
             this.setReassignBusyState(false);
+            await this.applyOperationPolicy(this.operationPolicy);
             this.syncOverdueActionState();
         }
     },

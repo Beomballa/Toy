@@ -64,7 +64,7 @@ const TaskDetailPage = {
         document.getElementById('taskAssignmentRecommendationList')?.addEventListener('click', (event) => {
             const applyButton = event.target.closest('[data-role="apply-task-recommendation"]');
             if (applyButton) {
-                this.applyRecommendation(Number(applyButton.dataset.adminNo));
+                this.applyRecommendation(Number(applyButton.dataset.adminNo), applyButton);
             }
         });
         document.getElementById('taskDetailActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
@@ -227,6 +227,10 @@ const TaskDetailPage = {
 
         if (!payload.title) {
             await CommonJS.alert('작업 제목을 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if (!this.validateTaskPayload(payload)) {
+            await CommonJS.alert('담당자 또는 작업 기한 입력값을 다시 확인하세요.', '알림', 'warning');
             return;
         }
 
@@ -396,6 +400,7 @@ const TaskDetailPage = {
             if (shouldResetCommentEditor) {
                 this.resetCommentEditor();
             }
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -631,7 +636,7 @@ const TaskDetailPage = {
             .replaceAll("'", '&#39;');
     },
 
-    async applyRecommendation(adminNo) {
+    async applyRecommendation(adminNo, button = null) {
         if (this.isApplyingRecommendation) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 배정 추천 적용'), '알림', 'warning');
@@ -639,12 +644,21 @@ const TaskDetailPage = {
         }
         const detail = this.state.currentDetail;
         if (!detail) return;
+        if (!Number.isFinite(adminNo) || adminNo <= 0) {
+            await CommonJS.alert('추천 담당자 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (Number(detail.assigneeAdminNo || 0) === adminNo) {
+            await CommonJS.alert('이미 해당 담당자로 배정되어 있습니다.', '알림', 'info');
+            return;
+        }
 
         const confirmed = await CommonJS.confirm('추천 담당자로 바로 배정하시겠습니까?', '배정 확인');
         if (!confirmed) return;
 
         try {
             this.isApplyingRecommendation = true;
+            this.setBusyButton(button, true, '배정 중...');
             this.setCollectionButtonsDisabled('[data-role="apply-task-recommendation"]', true);
             const response = await fetch('/api/admin/settings/tasks/save', {
                 method: 'POST',
@@ -671,8 +685,23 @@ const TaskDetailPage = {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
             this.isApplyingRecommendation = false;
+            this.setBusyButton(button, false);
             this.setCollectionButtonsDisabled('[data-role="apply-task-recommendation"]', false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
+    },
+
+    validateTaskPayload(payload) {
+        if (!payload) {
+            return false;
+        }
+        if (payload.assigneeAdminNo != null && (!Number.isFinite(payload.assigneeAdminNo) || payload.assigneeAdminNo <= 0)) {
+            return false;
+        }
+        if (payload.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(payload.dueDate)) {
+            return false;
+        }
+        return true;
     },
 
     setBusyButton(button, isBusy, busyText = '처리 중...') {

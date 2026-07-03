@@ -1,4 +1,5 @@
 const ProductFrontDisplayList = {
+    exportInFlight: false,
     state: {
         keyword: '',
         status: '',
@@ -200,14 +201,19 @@ const ProductFrontDisplayList = {
     },
 
     async exportCsv() {
+        if (this.exportInFlight) {
+            return;
+        }
         const button = document.getElementById('btnExportDisplay');
         const params = this.buildParams();
         try {
+            this.exportInFlight = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             await CommonJS.downloadFile(`/api/admin/product/front-display/export?${params.toString()}`, 'front-display-products.csv');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
+            this.exportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },

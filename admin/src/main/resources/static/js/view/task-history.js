@@ -109,6 +109,12 @@ const TaskHistoryPage = {
     },
 
     async loadHistory() {
+        const startDate = document.getElementById('taskHistoryStartDate')?.value;
+        const endDate = document.getElementById('taskHistoryEndDate')?.value;
+        if (startDate && endDate && startDate > endDate) {
+            this.renderError('시작일은 종료일보다 늦을 수 없습니다.');
+            return;
+        }
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('운영 작업 이력을 불러오는 중입니다...');

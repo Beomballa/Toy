@@ -111,6 +111,12 @@ const NoticeHistoryPage = {
     },
 
     async loadHistory() {
+        const startDate = document.getElementById('noticeHistoryStartDate')?.value;
+        const endDate = document.getElementById('noticeHistoryEndDate')?.value;
+        if (startDate && endDate && startDate > endDate) {
+            this.renderError('시작일은 종료일보다 늦을 수 없습니다.');
+            return;
+        }
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('운영 공지 이력을 불러오는 중입니다...');

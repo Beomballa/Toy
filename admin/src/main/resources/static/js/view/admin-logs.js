@@ -129,6 +129,29 @@ const AdminLogPage = {
         if (this.isLoading) {
             return;
         }
+        const startDate = document.getElementById('logStartDate')?.value;
+        const endDate = document.getElementById('logEndDate')?.value;
+        if (startDate && endDate && startDate > endDate) {
+            document.getElementById('logPagination').innerHTML = '';
+            this.renderSummary(null);
+            this.setMetaText('활동 로그 조회 실패');
+            this.setResultMetaText('시작일은 종료일보다 늦을 수 없습니다.');
+            this.setPageMetaText('페이지 메타 확인 불가');
+            document.getElementById('logFilterMeta').textContent = '적용 필터 확인 불가';
+            document.getElementById('logListBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-empty-state">
+                            <div class="product-empty-state__icon text-danger">
+                                <i class="fas fa-triangle-exclamation"></i>
+                            </div>
+                            <strong>활동 로그를 불러오지 못했습니다.</strong>
+                            <p>시작일은 종료일보다 늦을 수 없습니다.</p>
+                        </div>
+                    </td>
+                </tr>`;
+            return;
+        }
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('활동 로그를 불러오는 중입니다...');

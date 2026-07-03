@@ -85,6 +85,8 @@ const OrderHistoryPage = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.syncReturnLinks();
+            this.syncQuickFilterState();
+            this.syncDatePresetState();
             this.loadHistory();
         });
     },
@@ -106,6 +108,7 @@ const OrderHistoryPage = {
         this.state.historyNo = params.get('historyNo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         CommonJS.bindMainLogoNavigation(this.state.returnTo);
         CommonJS.renderSourceContextNotice({ noticeId: 'orderHistorySourceContextNotice', source: this.state.source });
     },
@@ -325,6 +328,7 @@ const OrderHistoryPage = {
         this.state.page = 0;
         this.state.size = 20;
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         this.loadHistory();
     },
 
@@ -439,7 +443,37 @@ const OrderHistoryPage = {
         }
 
         this.state.page = 0;
+        this.syncDatePresetState();
         this.loadHistory();
+    },
+
+    syncDatePresetState() {
+        const startDate = document.getElementById('historyStartDate')?.value || '';
+        const endDate = document.getElementById('historyEndDate')?.value || '';
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const todayLabel = formatDate(today);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        document.querySelectorAll('[data-order-history-date-preset]').forEach((button) => {
+            const preset = button.dataset.orderHistoryDatePreset;
+            const active = (
+                (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
+                (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
+                (preset === '30days' && startDate === formatDate(thirtyDaysAgo) && endDate === todayLabel) ||
+                (preset === 'clear' && !startDate && !endDate)
+            );
+            button.classList.toggle('btn-secondary', active);
+            button.classList.toggle('btn-outline-secondary', !active);
+        });
     },
 
     highlightHistoryRow(historyNo) {

@@ -1,5 +1,6 @@
 const ProductHistoryPage = {
     initialized: false,
+    isExporting: false,
     state: {
         page: 0,
         size: 20,
@@ -274,25 +275,25 @@ const ProductHistoryPage = {
     },
 
     async exportCsv() {
-        const button = document.getElementById('btnExportProductHistoryCsv');
-        if (button?.dataset.loading === 'true') {
+        if (this.isExporting) {
             return;
         }
-
-        const params = this.buildParams();
-        if (button) {
-            button.dataset.loading = 'true';
-            button.disabled = true;
-        }
+        const button = document.getElementById('btnExportProductHistoryCsv');
         try {
+            this.isExporting = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            const startDate = document.getElementById('historyStartDate')?.value || '';
+            const endDate = document.getElementById('historyEndDate')?.value || '';
+            if (startDate && endDate && startDate > endDate) {
+                throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+            }
+            const params = this.buildParams();
             await CommonJS.downloadFile(`/api/admin/product/history/export?${params.toString()}`);
         } catch (error) {
-            await CommonJS.alert(error.message || '상품 변경 이력 CSV를 내보내지 못했습니다.');
+            await CommonJS.alert(error.message || '상품 변경 이력 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
-            if (button) {
-                button.dataset.loading = 'false';
-                button.disabled = false;
-            }
+            this.isExporting = false;
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 

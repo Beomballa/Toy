@@ -1,6 +1,7 @@
 const TaskHistoryPage = {
     initialized: false,
     modal: null,
+    isExporting: false,
     state: {
         page: 0,
         size: 20,
@@ -62,6 +63,8 @@ const TaskHistoryPage = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.syncReturnLinks();
+            this.syncQuickFilterState();
+            this.syncDatePresetState();
             this.loadHistory();
         });
     },
@@ -81,6 +84,7 @@ const TaskHistoryPage = {
         this.state.source = params.get('source') || '';
         document.getElementById('taskHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         CommonJS.bindMainLogoNavigation(this.state.returnTo);
         CommonJS.renderSourceContextNotice({ noticeId: 'taskHistorySourceContextNotice', source: this.state.source });
     },
@@ -362,8 +366,12 @@ const TaskHistoryPage = {
     },
 
     async exportCsv() {
+        if (this.isExporting) {
+            return;
+        }
         const button = document.getElementById('btnExportTaskHistoryCsv');
         try {
+            this.isExporting = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             const startDate = document.getElementById('taskHistoryStartDate')?.value || '';
             const endDate = document.getElementById('taskHistoryEndDate')?.value || '';
@@ -378,6 +386,7 @@ const TaskHistoryPage = {
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
+            this.isExporting = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },
@@ -394,6 +403,7 @@ const TaskHistoryPage = {
         this.state.size = 20;
         this.state.logNo = '';
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         this.loadHistory();
     },
 
@@ -493,7 +503,37 @@ const TaskHistoryPage = {
         }
 
         this.state.page = 0;
+        this.syncDatePresetState();
         this.loadHistory();
+    },
+
+    syncDatePresetState() {
+        const startDate = document.getElementById('taskHistoryStartDate')?.value || '';
+        const endDate = document.getElementById('taskHistoryEndDate')?.value || '';
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const todayLabel = formatDate(today);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        document.querySelectorAll('[data-task-history-date-preset]').forEach((button) => {
+            const preset = button.dataset.taskHistoryDatePreset;
+            const active = (
+                (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
+                (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
+                (preset === '30days' && startDate === formatDate(thirtyDaysAgo) && endDate === todayLabel) ||
+                (preset === 'clear' && !startDate && !endDate)
+            );
+            button.classList.toggle('btn-secondary', active);
+            button.classList.toggle('btn-outline-secondary', !active);
+        });
     },
 
     async openDeepLinkedLogIfNeeded(items) {

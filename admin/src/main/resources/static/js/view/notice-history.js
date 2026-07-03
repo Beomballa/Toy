@@ -2,6 +2,7 @@ const NoticeHistoryPage = {
     initialized: false,
     modal: null,
     isOpeningDetail: false,
+    isExporting: false,
     state: {
         page: 0,
         size: 20,
@@ -64,6 +65,8 @@ const NoticeHistoryPage = {
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
             this.syncReturnLinks();
+            this.syncQuickFilterState();
+            this.syncDatePresetState();
             this.loadHistory();
         });
     },
@@ -83,6 +86,7 @@ const NoticeHistoryPage = {
         this.state.logNo = params.get('logNo') || '';
         document.getElementById('noticeHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeHistorySourceContextNotice', source: this.state.source });
         CommonJS.bindMainLogoNavigation(this.state.returnTo);
     },
@@ -276,27 +280,27 @@ const NoticeHistoryPage = {
 
     async exportCsv() {
         const button = document.getElementById('btnExportNoticeHistoryCsv');
-        if (button?.dataset.loading === 'true') {
+        if (this.isExporting) {
             return;
         }
-        const params = this.buildParams();
-        params.delete('page');
-        params.delete('size');
-        params.delete('logNo');
-
-        if (button) {
-            button.dataset.loading = 'true';
-            button.disabled = true;
-        }
         try {
+            this.isExporting = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            const startDate = document.getElementById('noticeHistoryStartDate')?.value || '';
+            const endDate = document.getElementById('noticeHistoryEndDate')?.value || '';
+            if (startDate && endDate && startDate > endDate) {
+                throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+            }
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
+            params.delete('logNo');
             await CommonJS.downloadFile(`/api/admin/settings/notices/history/export?${params.toString()}`);
         } catch (error) {
-            await CommonJS.alert(error.message || '운영 공지 이력 CSV를 내보내지 못했습니다.');
+            await CommonJS.alert(error.message || '운영 공지 이력 CSV를 내보내지 못했습니다.', '오류', 'error');
         } finally {
-            if (button) {
-                button.dataset.loading = 'false';
-                button.disabled = false;
-            }
+            this.isExporting = false;
+            CommonJS.setButtonDisabled(button, false);
         }
     },
 
@@ -378,6 +382,7 @@ const NoticeHistoryPage = {
         this.state.size = 20;
         this.state.logNo = '';
         this.syncQuickFilterState();
+        this.syncDatePresetState();
         this.loadHistory();
     },
 
@@ -479,7 +484,37 @@ const NoticeHistoryPage = {
         }
 
         this.state.page = 0;
+        this.syncDatePresetState();
         this.loadHistory();
+    },
+
+    syncDatePresetState() {
+        const startDate = document.getElementById('noticeHistoryStartDate')?.value || '';
+        const endDate = document.getElementById('noticeHistoryEndDate')?.value || '';
+        const today = new Date();
+        const formatDate = (value) => {
+            const year = value.getFullYear();
+            const month = String(value.getMonth() + 1).padStart(2, '0');
+            const day = String(value.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const todayLabel = formatDate(today);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        document.querySelectorAll('[data-notice-history-date-preset]').forEach((button) => {
+            const preset = button.dataset.noticeHistoryDatePreset;
+            const active = (
+                (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
+                (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
+                (preset === '30days' && startDate === formatDate(thirtyDaysAgo) && endDate === todayLabel) ||
+                (preset === 'clear' && !startDate && !endDate)
+            );
+            button.classList.toggle('btn-secondary', active);
+            button.classList.toggle('btn-outline-secondary', !active);
+        });
     },
 
     async openDeepLinkedLogIfNeeded(items) {

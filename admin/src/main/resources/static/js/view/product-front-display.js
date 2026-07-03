@@ -163,6 +163,9 @@ const ProductFrontDisplayList = {
     },
 
     async load() {
+        if (!this.validateState()) {
+            return;
+        }
         const params = this.buildParams();
         try {
             this.renderLoading();
@@ -185,16 +188,10 @@ const ProductFrontDisplayList = {
     },
 
     search() {
-        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('displayKeyword')?.value) || '';
-        this.state.status = document.getElementById('displayStatus')?.value || '';
-        this.state.brandNo = document.getElementById('displayBrand')?.value || '';
-        this.state.categoryNo = document.getElementById('displayCategory')?.value || '';
-        this.state.configured = document.getElementById('displayConfigured')?.value || '';
-        this.state.contentStatus = document.getElementById('displayContentStatus')?.value || '';
-        this.state.featuredOnly = document.getElementById('featuredOnly')?.checked || false;
-        this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
-        this.state.lowStockThreshold = this.normalizeLowStockThreshold(document.getElementById('displayLowStockThreshold')?.value);
-        this.state.sort = document.getElementById('displaySort')?.value || 'FEATURED';
+        this.updateStateFromInputs();
+        if (!this.validateState()) {
+            return;
+        }
         this.syncFilterInputs();
         this.syncUrlState();
         this.load();
@@ -205,10 +202,14 @@ const ProductFrontDisplayList = {
             return;
         }
         const button = document.getElementById('btnExportDisplay');
-        const params = this.buildParams();
         try {
+            this.updateStateFromInputs();
+            if (!this.validateState()) {
+                return;
+            }
             this.exportInFlight = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            const params = this.buildParams();
             await CommonJS.downloadFile(`/api/admin/product/front-display/export?${params.toString()}`, 'front-display-products.csv');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
@@ -454,6 +455,29 @@ const ProductFrontDisplayList = {
     normalizeLowStockThreshold(rawValue) {
         const parsed = Number(rawValue || this.initialLowStockThreshold);
         return Number.isFinite(parsed) && parsed > 0 ? parsed : this.initialLowStockThreshold;
+    },
+
+    updateStateFromInputs() {
+        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('displayKeyword')?.value) || '';
+        this.state.status = document.getElementById('displayStatus')?.value || '';
+        this.state.brandNo = document.getElementById('displayBrand')?.value || '';
+        this.state.categoryNo = document.getElementById('displayCategory')?.value || '';
+        this.state.configured = document.getElementById('displayConfigured')?.value || '';
+        this.state.contentStatus = document.getElementById('displayContentStatus')?.value || '';
+        this.state.featuredOnly = document.getElementById('featuredOnly')?.checked || false;
+        this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
+        this.state.lowStockThreshold = this.normalizeLowStockThreshold(document.getElementById('displayLowStockThreshold')?.value);
+        this.state.sort = document.getElementById('displaySort')?.value || 'FEATURED';
+    },
+
+    validateState() {
+        const rawThreshold = document.getElementById('displayLowStockThreshold')?.value || String(this.state.lowStockThreshold);
+        const parsed = Number(rawThreshold);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+            void CommonJS.alert('저재고 기준은 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
     },
 
     applySummaryFilter(type) {

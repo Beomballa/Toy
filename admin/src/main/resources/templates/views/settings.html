@@ -462,6 +462,9 @@
         modal: null,
         historyDetailModal: null,
         operationPolicy: null,
+        saveAdminInFlight: false,
+        deletingAdminNos: new Set(),
+        historyDetailInFlight: false,
         adminState: {
             page: 0,
             size: 10
@@ -583,6 +586,7 @@
         async getList() {
             try {
                 this.syncPageState();
+                this.renderAdminLoadingState();
                 const res = await fetch(`/api/admin/users/list?${this.buildAdminListParams().toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '관리자 목록을 불러오지 못했습니다.'));
@@ -591,6 +595,11 @@
                 this.renderList(data);
             } catch (err) {
                 document.getElementById('adminListMetaText').textContent = err.message;
+                document.getElementById('adminFilterMeta').textContent = '적용 필터 확인 불가';
+                document.getElementById('adminPageMeta').textContent = '페이지 메타 확인 불가';
+                document.getElementById('adminResultSummary').textContent = '관리자 계정 현황을 불러오지 못했습니다.';
+                this.renderAdminSummary(null);
+                document.getElementById('adminPagination').innerHTML = '';
                 document.getElementById('adminListBody').innerHTML = `
                     <tr>
                         <td colspan="7" class="py-5">
@@ -752,6 +761,23 @@
             this.renderAdminPagination(data);
             this.updateAdminActionState();
         },
+        renderAdminLoadingState() {
+            document.getElementById('adminListMetaText').textContent = '관리자 계정 목록과 권한 상태를 불러오는 중입니다...';
+            document.getElementById('adminFilterMeta').textContent = '적용 필터를 계산하는 중입니다...';
+            document.getElementById('adminPageMeta').textContent = '페이지 메타를 계산하는 중입니다...';
+            document.getElementById('adminResultSummary').textContent = '관리자 계정 현황을 조회하는 중입니다.';
+            document.getElementById('adminPagination').innerHTML = '';
+            document.getElementById('adminListBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-loading-state">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>관리자 계정 목록을 불러오는 중입니다.</strong>
+                            <p>현재 필터 조건에 맞는 계정, 권한, 상태 정보를 조회하고 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>`;
+        },
         renderAdminSummary(summary) {
             const safeSummary = summary || {};
             document.getElementById('adminSummaryTotalCount').textContent = Number(safeSummary.totalCount || 0).toLocaleString();
@@ -858,6 +884,9 @@
             this.modal.show();
         },
         async saveAdmin() {
+            if (this.saveAdminInFlight) {
+                return;
+            }
             if (this.operationPolicy?.maintenanceMode) {
                 await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리자 계정 저장'), '알림', 'warning');
                 return;
@@ -879,6 +908,8 @@
             }
 
             try {
+                this.saveAdminInFlight = true;
+                CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), true, '저장 중입니다.');
                 const res = await fetch('/api/admin/users/save', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -895,10 +926,16 @@
                 this.getList();
             } catch (err) {
                 CommonJS.alert(err.message, '오류', 'error');
+            } finally {
+                this.saveAdminInFlight = false;
+                CommonJS.setButtonDisabled(document.getElementById('btnSaveAdmin'), false);
             }
         },
         async deleteAdmin(adminNo, adminName) {
             if (!Number.isFinite(adminNo) || adminNo <= 0) {
+                return;
+            }
+            if (this.deletingAdminNos.has(adminNo)) {
                 return;
             }
             if (this.operationPolicy?.maintenanceMode) {
@@ -910,6 +947,7 @@
                 return;
             }
             try {
+                this.deletingAdminNos.add(adminNo);
                 const res = await fetch(`/api/admin/users/delete?no=${adminNo}`, { method: 'DELETE' });
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '관리자 삭제에 실패했습니다.'));
@@ -918,6 +956,8 @@
                 this.getList();
             } catch (err) {
                 CommonJS.alert(err.message, '오류', 'error');
+            } finally {
+                this.deletingAdminNos.delete(adminNo);
             }
         },
         resetAdminFilters() {
@@ -947,8 +987,32 @@
         },
         async getSystemSettingHistory() {
             try {
+                const startDate = document.getElementById('systemSettingHistoryStartDate').value;
+                const endDate = document.getElementById('systemSettingHistoryEndDate').value;
+                if (startDate && endDate && startDate > endDate) {
+                    document.getElementById('systemSettingHistoryMetaText').textContent = '시작일은 종료일보다 늦을 수 없습니다.';
+                    document.getElementById('systemSettingHistoryFilterMeta').textContent = '적용 필터 확인 불가';
+                    document.getElementById('systemSettingHistoryPageMeta').textContent = '페이지 메타 확인 불가';
+                    document.getElementById('systemSettingHistoryResultSummary').textContent = '설정 변경 이력을 불러오지 못했습니다.';
+                    this.renderSystemSettingHistorySummary(null);
+                    document.getElementById('systemSettingHistoryPagination').innerHTML = '';
+                    document.getElementById('systemSettingHistoryBody').innerHTML = `
+                        <tr>
+                            <td colspan="7" class="py-5">
+                                <div class="product-empty-state">
+                                    <div class="product-empty-state__icon text-danger">
+                                        <i class="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                    <strong>설정 변경 이력을 불러오지 못했습니다.</strong>
+                                    <p>시작일은 종료일보다 늦을 수 없습니다.</p>
+                                </div>
+                            </td>
+                        </tr>`;
+                    return;
+                }
                 const params = this.buildSystemHistoryParams();
                 this.syncPageState();
+                this.renderSystemSettingHistoryLoadingState();
                 const res = await fetch(`/api/admin/settings/system/history?${params.toString()}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 이력을 불러오지 못했습니다.'));
@@ -958,6 +1022,11 @@
                 await this.openDeepLinkedSystemHistoryIfNeeded(data.items || []);
             } catch (err) {
                 document.getElementById('systemSettingHistoryMetaText').textContent = err.message;
+                document.getElementById('systemSettingHistoryFilterMeta').textContent = '적용 필터 확인 불가';
+                document.getElementById('systemSettingHistoryPageMeta').textContent = '페이지 메타 확인 불가';
+                document.getElementById('systemSettingHistoryResultSummary').textContent = '설정 변경 이력을 불러오지 못했습니다.';
+                this.renderSystemSettingHistorySummary(null);
+                document.getElementById('systemSettingHistoryPagination').innerHTML = '';
                 document.getElementById('systemSettingHistoryBody').innerHTML = `
                     <tr>
                         <td colspan="7" class="py-5">
@@ -971,6 +1040,23 @@
                         </td>
                     </tr>`;
             }
+        },
+        renderSystemSettingHistoryLoadingState() {
+            document.getElementById('systemSettingHistoryMetaText').textContent = '설정 변경 이력을 불러오는 중입니다...';
+            document.getElementById('systemSettingHistoryFilterMeta').textContent = '적용 필터를 계산하는 중입니다...';
+            document.getElementById('systemSettingHistoryPageMeta').textContent = '페이지 메타를 계산하는 중입니다...';
+            document.getElementById('systemSettingHistoryResultSummary').textContent = '최신 설정 변경 이력을 조회하는 중입니다.';
+            document.getElementById('systemSettingHistoryPagination').innerHTML = '';
+            document.getElementById('systemSettingHistoryBody').innerHTML = `
+                <tr>
+                    <td colspan="7" class="py-5">
+                        <div class="product-loading-state">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                            <strong>설정 변경 이력을 불러오는 중입니다.</strong>
+                            <p>선택한 필터 조건에 맞는 최근 설정 변경 기록과 요약을 계산하고 있습니다.</p>
+                        </div>
+                    </td>
+                </tr>`;
         },
         readSystemHistoryStateFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -1075,6 +1161,9 @@
             if (!Number.isFinite(historyNo) || historyNo <= 0) {
                 return;
             }
+            if (this.historyDetailInFlight) {
+                return;
+            }
             document.getElementById('systemSettingHistoryDetailBody').innerHTML = `
                 <div class="product-loading-state py-4">
                     <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
@@ -1084,6 +1173,7 @@
             `;
             this.historyDetailModal.show();
             try {
+                this.historyDetailInFlight = true;
                 const res = await fetch(`/api/admin/settings/system/history/get?historyNo=${historyNo}`);
                 if (!res.ok) {
                     throw new Error(await CommonJS.extractErrorMessage(res, '설정 변경 상세를 불러오지 못했습니다.'));
@@ -1148,7 +1238,9 @@
                         </div>
                         <strong>설정 변경 상세를 불러오지 못했습니다.</strong>
                         <p>${err.message}</p>
-                    </div>`;
+                        </div>`;
+            } finally {
+                this.historyDetailInFlight = false;
             }
         },
         renderSystemSettingHistorySummary(summary) {
@@ -1215,6 +1307,11 @@
             const button = document.getElementById('btnExportSystemHistory');
             const params = this.buildSystemHistoryExportParams();
             try {
+                const startDate = document.getElementById('systemSettingHistoryStartDate').value;
+                const endDate = document.getElementById('systemSettingHistoryEndDate').value;
+                if (startDate && endDate && startDate > endDate) {
+                    throw new Error('시작일은 종료일보다 늦을 수 없습니다.');
+                }
                 CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
                 await CommonJS.downloadFile(`/api/admin/settings/system/history/export?${params.toString()}`, 'system-setting-history.csv');
             } catch (err) {

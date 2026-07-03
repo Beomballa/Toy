@@ -62,7 +62,7 @@ const NoticeDetailPage = {
     },
 
     async loadDetail() {
-        if (!this.state.noticeNo) {
+        if (!this.isValidNoticeNo(this.state.noticeNo)) {
             this.renderError('운영 공지 번호가 없습니다.');
             return;
         }
@@ -162,8 +162,16 @@ const NoticeDetailPage = {
             await CommonJS.alert('공지 제목과 내용을 입력하세요.', '알림', 'warning');
             return;
         }
+        if (!this.isValidYn(payload.isActive) || !this.isValidYn(payload.isPinned)) {
+            await CommonJS.alert('유효하지 않은 공지 상태 값입니다.', '알림', 'warning');
+            return;
+        }
         if (!this.validateNoticePeriod(payload.startDtm, payload.endDtm)) {
             await CommonJS.alert('시작 일시는 종료 일시보다 늦을 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (this.isSameAsCurrentDetail(payload, detail)) {
+            await CommonJS.alert('변경된 내용이 없습니다.', '알림', 'info');
             return;
         }
 
@@ -204,6 +212,10 @@ const NoticeDetailPage = {
         }
 
         const nextActive = detail.isActive === 'Y' ? 'N' : 'Y';
+        if (!this.isValidNoticeNo(detail.noticeNo) || !this.isValidYn(nextActive)) {
+            await CommonJS.alert('유효하지 않은 공지 상태 변경 요청입니다.', '알림', 'warning');
+            return;
+        }
         try {
             this.isTogglingActive = true;
             this.setBusyButton(document.getElementById('btnNoticeDetailToggleActive'), true, '처리 중...');
@@ -234,6 +246,10 @@ const NoticeDetailPage = {
         }
         const detail = this.state.currentDetail;
         if (!detail) {
+            return;
+        }
+        if (!this.isValidNoticeNo(detail.noticeNo)) {
+            await CommonJS.alert('유효하지 않은 운영 공지 번호입니다.', '알림', 'warning');
             return;
         }
 
@@ -409,6 +425,23 @@ const NoticeDetailPage = {
             return true;
         }
         return startDtm <= endDtm;
+    },
+
+    isValidNoticeNo(noticeNo) {
+        return Number.isInteger(Number(noticeNo)) && Number(noticeNo) > 0;
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
+    },
+
+    isSameAsCurrentDetail(payload, detail) {
+        return payload.title === (detail.title || '').trim()
+            && payload.content === (detail.content || '').trim()
+            && payload.isActive === (detail.isActive || 'Y')
+            && payload.isPinned === (detail.isPinned || 'N')
+            && (payload.startDtm || null) === (detail.startDtm || null)
+            && (payload.endDtm || null) === (detail.endDtm || null);
     },
 
     setLastActionMeta(action, status, sourceLabel = '운영 공지 상세') {

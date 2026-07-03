@@ -89,20 +89,25 @@ const ProductFrontDisplayList = {
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const lowStockThreshold = Number(params.get('lowStockThreshold') || this.initialLowStockThreshold);
+        const sort = params.get('sort') || 'FEATURED';
+        const configured = params.get('configured') || '';
+        const contentStatus = params.get('contentStatus') || '';
+        const brandNo = params.get('brandNo') || '';
+        const categoryNo = params.get('categoryNo') || '';
 
         this.state = {
             keyword: CommonJS.normalizeOptionalText(params.get('keyword')) || '',
             status: params.get('status') || '',
-            brandNo: params.get('brandNo') || '',
-            categoryNo: params.get('categoryNo') || '',
-            configured: params.get('configured') || '',
-            contentStatus: params.get('contentStatus') || '',
+            brandNo: this.isValidOptionalPositiveNumber(brandNo) ? brandNo : '',
+            categoryNo: this.isValidOptionalPositiveNumber(categoryNo) ? categoryNo : '',
+            configured: this.isValidConfiguredValue(configured) ? configured : '',
+            contentStatus: this.isValidContentStatusValue(contentStatus) ? contentStatus : '',
             featuredOnly: params.get('featuredOnly') === 'true',
             lowStockOnly: params.get('lowStockOnly') === 'true',
             lowStockThreshold: Number.isFinite(lowStockThreshold) && lowStockThreshold > 0
                 ? lowStockThreshold
                 : this.initialLowStockThreshold,
-            sort: params.get('sort') || 'FEATURED',
+            sort: this.isValidSortValue(sort) ? sort : 'FEATURED',
             source: params.get('source') || '',
             returnTo: params.get('returnTo') || ''
         };
@@ -477,6 +482,26 @@ const ProductFrontDisplayList = {
             void CommonJS.alert('저재고 기준은 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
         }
+        if (!this.isValidOptionalPositiveNumber(this.state.brandNo)) {
+            void CommonJS.alert('브랜드 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidOptionalPositiveNumber(this.state.categoryNo)) {
+            void CommonJS.alert('카테고리 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidConfiguredValue(this.state.configured)) {
+            void CommonJS.alert('노출 설정 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidContentStatusValue(this.state.contentStatus)) {
+            void CommonJS.alert('전시 문구 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidSortValue(this.state.sort)) {
+            void CommonJS.alert('정렬 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
         return true;
     },
 
@@ -543,6 +568,25 @@ const ProductFrontDisplayList = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    isValidOptionalPositiveNumber(value) {
+        if (!value) {
+            return true;
+        }
+        return /^\d+$/.test(String(value)) && Number(value) > 0;
+    },
+
+    isValidConfiguredValue(value) {
+        return value === '' || value === 'CONFIGURED' || value === 'UNCONFIGURED';
+    },
+
+    isValidContentStatusValue(value) {
+        return value === '' || value === 'READY' || value === 'INCOMPLETE';
+    },
+
+    isValidSortValue(value) {
+        return ['FEATURED', 'STOCK_ASC', 'STOCK_DESC', 'PRICE_HIGH', 'PRICE_LOW', 'LATEST'].includes(value);
     }
 };
 

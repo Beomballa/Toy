@@ -19,7 +19,7 @@ const ContentEdit = {
     async init() {
         if (this.initialized) return;
         this.initialized = true;
-        this.id = document.getElementById('contentId').value;
+        this.id = this.normalizeContentId(document.getElementById('contentId').value);
         this.initialBoardType = ContentBoardConfig.normalizeBoardType(
             document.getElementById('initialBoardType')?.value
         );
@@ -85,6 +85,11 @@ const ContentEdit = {
     },
 
     async getDetail() {
+        if (!this.isValidContentId(this.id)) {
+            await CommonJS.alert('유효하지 않은 콘텐츠 번호입니다.', '알림', 'warning');
+            location.href = this.getListPath();
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/content/get?id=${this.id}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -229,8 +234,21 @@ const ContentEdit = {
             }
             return;
         }
+        if (!this.isValidStatus(status) || !this.isValidYn(publicYn) || !this.isValidYn(pinnedYn)) {
+            this.setStatus('유효하지 않은 공개 상태 또는 게시 상태입니다.', 4000);
+            if (!isAutoSave) {
+                await CommonJS.alert('유효하지 않은 공개 상태 또는 게시 상태입니다.', '알림', 'warning');
+            }
+            return;
+        }
 
         // 자동 저장은 실제 변경이 생긴 경우에만 보내서 불필요한 저장 요청을 줄인다.
+        if (this.isSameAsInitial(normalizedTitle, normalizedContent, boardType, productNo, status, publicYn, pinnedYn)) {
+            if (!isAutoSave) {
+                await CommonJS.alert('변경된 내용이 없습니다.', '알림', 'info');
+            }
+            return;
+        }
         if (isAutoSave && 
             normalizedTitle === this.initialData.title && 
             normalizedContent === this.initialData.content && 
@@ -296,6 +314,10 @@ const ContentEdit = {
 
     async deleteContent() {
         if (this.isDeleting) {
+            return;
+        }
+        if (!this.isValidContentId(this.id)) {
+            await CommonJS.alert('삭제할 콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
@@ -387,6 +409,33 @@ const ContentEdit = {
         }
         const parsed = Number(rawValue);
         return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    normalizeContentId(rawValue) {
+        const parsed = Number(rawValue);
+        return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    isValidContentId(contentId) {
+        return Number.isSafeInteger(Number(contentId)) && Number(contentId) > 0;
+    },
+
+    isValidStatus(status) {
+        return status === 'DRAFT' || status === 'PUBLISHED';
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
+    },
+
+    isSameAsInitial(title, content, boardType, productNo, status, publicYn, pinnedYn) {
+        return title === this.initialData.title
+            && content === this.initialData.content
+            && boardType === this.initialData.boardType
+            && productNo === this.initialData.productNo
+            && status === this.initialData.status
+            && publicYn === this.initialData.publicYn
+            && pinnedYn === this.initialData.pinnedYn;
     },
 
     syncVisibilitySummary() {

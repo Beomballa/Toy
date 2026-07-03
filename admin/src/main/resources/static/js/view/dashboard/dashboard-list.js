@@ -479,11 +479,17 @@ const DashBoardListJS = {
     },
 
     buildNoticeDetailPath(noticeNo, source = 'dashboard-notice-detail') {
+        if (!this.isPositiveId(noticeNo)) {
+            return this.buildNoticeListPath({}, source);
+        }
         const returnTo = this.buildNoticeListPath({}, source);
         return `/admin/settings/notices/get?no=${noticeNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     buildNoticeHistoryPath(noticeNo, source = 'dashboard-notice-history') {
+        if (!this.isPositiveId(noticeNo)) {
+            return this.buildNoticeListPath({}, source);
+        }
         const returnTo = this.buildNoticeListPath({}, source);
         return `/admin/settings/notices/history?noticeNo=${noticeNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
@@ -520,18 +526,30 @@ const DashBoardListJS = {
     },
 
     buildTaskHistoryPath(taskNo, source = 'dashboard-task-history') {
+        if (!this.isPositiveId(taskNo)) {
+            return this.buildTaskListPath({}, source);
+        }
         const returnTo = this.buildTaskListPath({}, source);
         return `/admin/settings/tasks/history?taskNo=${taskNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     buildTaskWorkloadDetailPath(adminNo, source = 'dashboard-workload-detail') {
+        if (!this.isPositiveId(adminNo)) {
+            return this.buildTaskWorkloadPath({}, source);
+        }
         const returnTo = this.buildTaskWorkloadPath({}, source);
         return `/admin/settings/tasks/workloads/get?adminNo=${adminNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     buildActivityLogPathFromBase(basePath, source = 'dashboard-activity-log') {
         if (!basePath) return '#';
-        const targetUrl = new URL(basePath, window.location.origin);
+        let targetUrl;
+        try {
+            targetUrl = new URL(basePath, window.location.origin);
+        } catch (error) {
+            console.error('활동 로그 경로 파싱 실패:', error);
+            return '#';
+        }
         targetUrl.searchParams.set('returnTo', this.getReturnTo());
         if (source) {
             targetUrl.searchParams.set('source', source);
@@ -543,7 +561,13 @@ const DashBoardListJS = {
         if (!basePath || basePath.startsWith('javascript:')) {
             return '';
         }
-        const targetUrl = new URL(basePath, window.location.origin);
+        let targetUrl;
+        try {
+            targetUrl = new URL(basePath, window.location.origin);
+        } catch (error) {
+            console.error('대시보드 진입 경로 파싱 실패:', error);
+            return '';
+        }
         if (source && !targetUrl.searchParams.get('source')) {
             targetUrl.searchParams.set('source', source);
         }
@@ -693,11 +717,19 @@ const DashBoardListJS = {
     },
 
     goToOrderDetail(orderNo) {
+        if (!this.isPositiveId(orderNo)) {
+            void CommonJS.alert('주문 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         const returnTo = encodeURIComponent(this.getReturnTo());
         location.href = `/admin/orders/get?no=${orderNo}&source=dashboard-recent-order-detail&returnTo=${returnTo}`;
     },
 
     goToProductDetail(productNo) {
+        if (!this.isPositiveId(productNo)) {
+            void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         const returnTo = encodeURIComponent(this.getReturnTo());
         location.href = `/admin/products/get?no=${productNo}&source=dashboard-low-stock-detail&returnTo=${returnTo}`;
     },
@@ -757,6 +789,10 @@ const DashBoardListJS = {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    },
+
+    isPositiveId(value) {
+        return Number.isFinite(Number(value)) && Number(value) > 0;
     },
 
     escapeHtml(value) {

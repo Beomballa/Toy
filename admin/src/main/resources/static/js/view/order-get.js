@@ -9,7 +9,7 @@ const OrderDetail = {
         this.source = params.get('source') || '';
         this.isSubmitting = false;
         this.operationPolicy = null;
-        if (!this.orderNo) {
+        if (!this.isValidOrderNo(this.orderNo)) {
             await CommonJS.alert('잘못된 접근입니다.', '오류', 'error');
             location.href = this.returnTo;
             return;
@@ -75,6 +75,7 @@ const OrderDetail = {
     },
 
     renderDetail(data) {
+        this.currentDetail = data;
         this.renderSummary(data);
         this.renderActionVisibility(data);
         this.renderDeliveryInfo(data);
@@ -261,9 +262,21 @@ const OrderDetail = {
             await CommonJS.alert('택배사와 운송장 번호를 모두 입력하세요.', '알림', 'warning');
             return;
         }
+        if (!this.validateDeliveryPayload(company, tracking)) {
+            await CommonJS.alert('배송 정보 입력값을 다시 확인하세요.', '알림', 'warning');
+            return;
+        }
 
         companyInput.value = company;
         trackingInput.value = tracking;
+        if (
+            this.currentDetail?.showDeliveryInfo &&
+            (this.currentDetail.deliveryCompany || '') === company &&
+            (this.currentDetail.trackingNum || '') === tracking
+        ) {
+            await CommonJS.alert('변경된 배송 정보가 없습니다.', '알림', 'info');
+            return;
+        }
 
         await this.submitOrderAction({
             url: '/api/admin/orders/delivery',
@@ -285,7 +298,19 @@ const OrderDetail = {
             return;
         }
 
-        const adminMemo = (document.getElementById('adminMemo')?.value || '').trim();
+        const adminMemo = this.normalizeAdminMemo(document.getElementById('adminMemo')?.value || '');
+        const memoInput = document.getElementById('adminMemo');
+        if (memoInput) {
+            memoInput.value = adminMemo;
+        }
+        if (adminMemo.length > 500) {
+            await CommonJS.alert('관리 메모는 500자 이하로 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if ((this.currentDetail?.adminMemo || '') === adminMemo) {
+            await CommonJS.alert('변경된 관리 메모가 없습니다.', '알림', 'info');
+            return;
+        }
         await this.submitOrderAction({
             url: '/api/admin/orders/memo',
             method: 'PATCH',
@@ -364,6 +389,27 @@ const OrderDetail = {
                 button.disabled = disabled;
             }
         });
+    },
+
+    validateDeliveryPayload(company, tracking) {
+        if (!company || !tracking) {
+            return false;
+        }
+        if (company.length > 50) {
+            return false;
+        }
+        if (!/^[A-Za-z0-9-]+$/.test(tracking) || tracking.length > 50) {
+            return false;
+        }
+        return true;
+    },
+
+    normalizeAdminMemo(rawValue) {
+        return String(rawValue || '').trim().replace(/\s+/g, ' ');
+    },
+
+    isValidOrderNo(orderNo) {
+        return /^\d+$/.test(String(orderNo || '')) && Number(orderNo) > 0;
     }
 };
 

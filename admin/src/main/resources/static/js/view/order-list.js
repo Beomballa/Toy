@@ -148,6 +148,17 @@ const OrderList = {
             return;
         }
         this.captureFilterState();
+        if (!this.validateDateRange()) {
+            this.renderSummaryState('error', '상태별 집계를 불러오지 않았습니다.', '조회 기간과 검색 조건을 다시 확인해주세요.');
+            this.renderTableState('error', '주문 내역을 불러오지 않았습니다.', '조회 기간과 검색 조건을 다시 확인해주세요.');
+            this.renderMeta({
+                totalElements: 0,
+                currentPage: this.state.page,
+                totalPages: 0,
+                errorMessage: '조회 조건 확인 필요'
+            });
+            return;
+        }
         const params = new URLSearchParams({
             page: this.state.page,
             size: this.state.size,
@@ -589,13 +600,15 @@ const OrderList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
+        const page = Number(params.get('page') || 0);
+        const size = Number(params.get('size') || 10);
         return {
-            page: Number(params.get('page') || 0),
-            size: Number(params.get('size') || 10),
+            page: Number.isFinite(page) && page >= 0 ? page : 0,
+            size: Number.isFinite(size) && size > 0 ? size : 10,
             status: params.get('status') || '',
             startDate: params.get('startDate') || '',
             endDate: params.get('endDate') || '',
-            searchKeyword: params.get('searchKeyword') || '',
+            searchKeyword: (params.get('searchKeyword') || '').trim().replace(/\s+/g, ' '),
             source: params.get('source') || '',
             returnTo: params.get('returnTo') || ''
         };

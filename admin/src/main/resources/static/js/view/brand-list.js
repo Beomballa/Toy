@@ -492,6 +492,10 @@ const BrandList = {
         document.getElementById('brandModalTitle').innerText = '신규 브랜드 등록';
 
         if (brandNo) {
+            if (!this.isValidBrandNo(brandNo)) {
+                await CommonJS.alert('유효하지 않은 브랜드 번호입니다.', '알림', 'warning');
+                return;
+            }
             try {
                 const res = await fetch(`/api/admin/brands/get?no=${brandNo}`);
                 if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 정보를 불러오지 못했습니다.'));
@@ -519,17 +523,22 @@ const BrandList = {
             return;
         }
         const brandNo = document.getElementById('brandNo').value;
-        const nameKo = document.getElementById('nameKo').value;
+        const parsedBrandNo = brandNo ? Number(brandNo) : null;
+        const nameKo = CommonJS.normalizeOptionalText(document.getElementById('nameKo').value);
         if (!nameKo) {
             await CommonJS.alert('브랜드명을 입력하세요.', '알림', 'warning');
             return;
         }
+        if (brandNo && !this.isValidBrandNo(parsedBrandNo)) {
+            await CommonJS.alert('유효하지 않은 브랜드 번호입니다.', '알림', 'warning');
+            return;
+        }
 
         const data = {
-            brandNo: brandNo || null,
+            brandNo: parsedBrandNo,
             nameKo: nameKo,
-            nameEn: document.getElementById('nameEn').value,
-            logoUrl: document.getElementById('logoUrl').value,
+            nameEn: CommonJS.normalizeOptionalText(document.getElementById('nameEn').value) || '',
+            logoUrl: CommonJS.normalizeOptionalText(document.getElementById('logoUrl').value) || '',
             isActive: document.getElementById('isActive').value
         };
 
@@ -557,6 +566,10 @@ const BrandList = {
 
     async deleteBrand(brandNo) {
         if (this.deleteInFlight.has(brandNo)) {
+            return;
+        }
+        if (!this.isValidBrandNo(brandNo)) {
+            await CommonJS.alert('유효하지 않은 브랜드 번호입니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -669,6 +682,10 @@ const BrandList = {
             .replaceAll('>', '&gt;')
             .replaceAll('"', '&quot;')
             .replaceAll("'", '&#39;');
+    },
+
+    isValidBrandNo(brandNo) {
+        return Number.isInteger(Number(brandNo)) && Number(brandNo) > 0;
     }
 };
 

@@ -185,6 +185,10 @@ const CategoryList = {
     },
 
     async getDepth2List(parentNo, parentName) {
+        if (!this.isValidCategoryNo(parentNo)) {
+            await CommonJS.alert('유효하지 않은 상위 카테고리 번호입니다.', '알림', 'warning');
+            return;
+        }
         this.state.selectedParentNo = parentNo;
         this.state.selectedParentName = parentName;
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
@@ -481,6 +485,14 @@ const CategoryList = {
             await CommonJS.alert('유지보수 모드에서는 카테고리 등록 및 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
+        if (!this.isValidCategoryDepth(depth)) {
+            await CommonJS.alert('유효하지 않은 카테고리 깊이입니다.', '알림', 'warning');
+            return;
+        }
+        if (depth === 2 && !item && !this.isValidCategoryNo(this.state.selectedParentNo)) {
+            await CommonJS.alert('중분류를 추가할 대분류를 먼저 선택하세요.', '알림', 'warning');
+            return;
+        }
         document.getElementById('categoryForm').reset();
         document.getElementById('categoryNo').value = '';
         document.getElementById('depth').value = depth;
@@ -514,17 +526,32 @@ const CategoryList = {
             await CommonJS.alert('유지보수 모드에서는 카테고리 저장이 불가능합니다.', '알림', 'warning');
             return;
         }
-        const name = document.getElementById('categoryName').value;
+        const categoryNo = document.getElementById('categoryNo').value;
+        const parentNo = document.getElementById('parentNo').value;
+        const depth = Number(document.getElementById('depth').value);
+        const name = CommonJS.normalizeOptionalText(document.getElementById('categoryName').value);
         if (!name) {
             await CommonJS.alert('카테고리명을 입력하세요.', '알림', 'warning');
             return;
         }
+        if (categoryNo && !this.isValidCategoryNo(Number(categoryNo))) {
+            await CommonJS.alert('유효하지 않은 카테고리 번호입니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidCategoryDepth(depth)) {
+            await CommonJS.alert('유효하지 않은 카테고리 깊이입니다.', '알림', 'warning');
+            return;
+        }
+        if (depth === 2 && !this.isValidCategoryNo(Number(parentNo))) {
+            await CommonJS.alert('중분류는 유효한 상위 카테고리가 필요합니다.', '알림', 'warning');
+            return;
+        }
 
         const data = {
-            categoryNo: document.getElementById('categoryNo').value || null,
-            parentNo: document.getElementById('parentNo').value,
+            categoryNo: categoryNo ? Number(categoryNo) : null,
+            parentNo: parentNo ? Number(parentNo) : null,
             name: name,
-            depth: document.getElementById('depth').value,
+            depth: depth,
             isActive: document.getElementById('isCategoryActive').value
         };
 
@@ -558,6 +585,10 @@ const CategoryList = {
 
     async deleteCategory(no) {
         if (this.deleteInFlight.has(no)) {
+            return;
+        }
+        if (!this.isValidCategoryNo(no)) {
+            await CommonJS.alert('유효하지 않은 카테고리 번호입니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -686,6 +717,14 @@ const CategoryList = {
             return;
         }
         this.getDepth2List(matchedParent.categoryNo, matchedParent.name);
+    },
+
+    isValidCategoryNo(categoryNo) {
+        return Number.isInteger(Number(categoryNo)) && Number(categoryNo) > 0;
+    },
+
+    isValidCategoryDepth(depth) {
+        return Number(depth) === 1 || Number(depth) === 2;
     },
 
     renderDepth2Empty() {

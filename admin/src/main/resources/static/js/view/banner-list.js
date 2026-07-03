@@ -599,6 +599,13 @@ const BannerList = {
             return;
         }
         const bannerNo = Number(this.state.bannerNo);
+        if (!this.isValidBannerNo(bannerNo)) {
+            this.state.bannerNo = '';
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+            return;
+        }
         const target = items.find((item) => item.bannerNo === bannerNo);
         if (target) {
             await this.openEditModal(target);
@@ -611,6 +618,10 @@ const BannerList = {
     },
 
     async openBannerDetail(bannerNo, source = '목록') {
+        if (!this.isValidBannerNo(bannerNo)) {
+            await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+            return;
+        }
         try {
             this.state.bannerNo = String(bannerNo);
             this.state.source = source;
@@ -641,6 +652,10 @@ const BannerList = {
             await CommonJS.alert('유지보수 모드에서는 배너 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
+        if (!item || !this.isValidBannerNo(item.bannerNo)) {
+            await CommonJS.alert('유효하지 않은 배너 정보입니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('bannerNo').value = item.bannerNo;
         document.getElementById('title').value = item.title;
         document.getElementById('imageUrl').value = item.imageUrl;
@@ -663,19 +678,37 @@ const BannerList = {
         }
         const formData = {
             bannerNo: document.getElementById('bannerNo').value || null,
-            title: document.getElementById('title').value,
-            imageUrl: document.getElementById('imageUrl').value,
-            targetUrl: document.getElementById('targetUrl').value,
+            title: CommonJS.normalizeOptionalText(document.getElementById('title').value),
+            imageUrl: CommonJS.normalizeOptionalText(document.getElementById('imageUrl').value),
+            targetUrl: CommonJS.normalizeOptionalText(document.getElementById('targetUrl').value) || '',
             startDtm: document.getElementById('startDtm').value,
             endDtm: document.getElementById('endDtm').value,
             sortOrder: document.getElementById('sortOrder').value,
             isActive: document.getElementById('isActive').value
         };
+        const parsedBannerNo = formData.bannerNo ? Number(formData.bannerNo) : null;
+        const parsedSortOrder = Number(formData.sortOrder);
 
         if (!formData.title || !formData.imageUrl || !formData.startDtm || !formData.endDtm) {
             await CommonJS.alert('필수 항목을 모두 입력하세요.', '알림', 'warning');
             return;
         }
+        if (parsedBannerNo != null && !this.isValidBannerNo(parsedBannerNo)) {
+            await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+            return;
+        }
+        if (!Number.isInteger(parsedSortOrder) || parsedSortOrder < 0) {
+            await CommonJS.alert('정렬 순서는 0 이상의 숫자여야 합니다.', '알림', 'warning');
+            document.getElementById('sortOrder')?.focus();
+            return;
+        }
+        if (!this.validateBannerPeriod(formData.startDtm, formData.endDtm)) {
+            await CommonJS.alert('노출 시작 일시는 종료 일시보다 늦을 수 없습니다.', '알림', 'warning');
+            document.getElementById('endDtm')?.focus();
+            return;
+        }
+        formData.bannerNo = parsedBannerNo;
+        formData.sortOrder = parsedSortOrder;
 
         try {
             this.saveInFlight = true;
@@ -703,6 +736,14 @@ const BannerList = {
         if (this.toggleInFlight.has(no)) {
             return;
         }
+        if (!this.isValidBannerNo(no)) {
+            await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidActiveValue(isActive)) {
+            await CommonJS.alert('유효하지 않은 배너 상태 값입니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 배너 상태 변경이 불가능합니다.', '알림', 'warning');
             return;
@@ -722,6 +763,10 @@ const BannerList = {
 
     async deleteBanner(no) {
         if (this.deleteInFlight.has(no)) {
+            return;
+        }
+        if (!this.isValidBannerNo(no)) {
+            await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -766,6 +811,21 @@ const BannerList = {
         if (exposureStatus === 'SCHEDULED') return '대기';
         if (exposureStatus === 'ENDED') return '종료';
         return exposureStatus || '전체';
+    },
+
+    isValidBannerNo(bannerNo) {
+        return Number.isInteger(Number(bannerNo)) && Number(bannerNo) > 0;
+    },
+
+    isValidActiveValue(isActive) {
+        return isActive === 'Y' || isActive === 'N';
+    },
+
+    validateBannerPeriod(startDtm, endDtm) {
+        if (!startDtm || !endDtm) {
+            return true;
+        }
+        return new Date(startDtm).getTime() <= new Date(endDtm).getTime();
     }
 };
 

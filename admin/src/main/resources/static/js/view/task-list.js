@@ -8,6 +8,7 @@ const TaskList = {
     isDuplicatingTask: false,
     isApplyingBulk: false,
     isBulkDuplicatingTask: false,
+    isExportingTask: false,
     selectedTaskNos: new Set(),
     state: {
         page: 0,
@@ -1007,8 +1008,12 @@ const TaskList = {
     },
 
     async exportCsv() {
+        if (this.isExportingTask) {
+            return;
+        }
         const button = document.getElementById('btnExportTaskCsv');
         try {
+            this.isExportingTask = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             this.updateStateFromInputs();
             if (this.hasInvalidDueDateRange()) {
@@ -1021,6 +1026,7 @@ const TaskList = {
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
+            this.isExportingTask = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },

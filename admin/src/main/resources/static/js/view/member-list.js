@@ -4,6 +4,7 @@ const MemberListPage = {
     selectedMember: null,
     operationPolicy: null,
     detailActionInFlight: false,
+    detailLoadInFlight: false,
     exportInFlight: false,
     state: {
         page: 0,
@@ -383,9 +384,13 @@ const MemberListPage = {
     },
 
     async openDetail(memberId) {
+        if (this.detailLoadInFlight) {
+            return;
+        }
         this.setDetailLoadingState('회원 상세를 불러오는 중입니다.', '프로필, 권한, 상태 정보를 정리하고 있습니다.');
         this.modal.show();
         try {
+            this.detailLoadInFlight = true;
             const data = await this.fetchMemberDetail(memberId);
             this.renderDetail(data);
         } catch (err) {
@@ -399,6 +404,8 @@ const MemberListPage = {
                 </div>
             `;
             this.setDetailActionState(true);
+        } finally {
+            this.detailLoadInFlight = false;
         }
     },
 

@@ -267,6 +267,11 @@ const ProductCreate = {
             options: validationResult.options
         };
         const frontDisplay = validationResult.frontDisplay;
+        if (!this.validateFrontDisplayRank(frontDisplay)) {
+            await CommonJS.alert('프론트 노출 순서를 다시 확인해주세요.', '알림', 'warning');
+            document.getElementById('frontDisplayRank')?.focus();
+            return;
+        }
 
         try {
             this.isSubmitting = true;
@@ -443,6 +448,16 @@ const ProductCreate = {
 
     invalidResult(message, focusElement) {
         return { valid: false, message, focusElement };
+    },
+
+    validateFrontDisplayRank(frontDisplay) {
+        if (!frontDisplay) {
+            return false;
+        }
+        if (!frontDisplay.featured) {
+            return frontDisplay.featuredRank === 999;
+        }
+        return Number.isFinite(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
     },
 
     normalizeRequiredText(value) {

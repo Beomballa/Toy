@@ -21,7 +21,7 @@ const ContentDetail = {
         this.state.returnTo = window.initialContentDetail?.returnTo || params.get('returnTo');
         this.state.source = window.initialContentDetail?.source || params.get('source') || '';
 
-        if (!this.state.id) {
+        if (!this.isValidContentId(this.state.id)) {
             await CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error');
             window.location.href = this.getListPath();
             return;
@@ -204,5 +204,9 @@ const ContentDetail = {
             button.textContent = button.dataset.originalText;
             delete button.dataset.originalText;
         }
+    },
+
+    isValidContentId(id) {
+        return /^\d+$/.test(String(id || '')) && Number(id) > 0;
     }
 };

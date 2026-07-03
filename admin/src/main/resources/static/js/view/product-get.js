@@ -19,7 +19,7 @@ const ProductDetail = {
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
         this.source = urlParams.get('source') || '';
 
-        if (!this.productNo) {
+        if (!this.isValidProductNo(this.productNo)) {
             await CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error');
             window.location.href = this.returnTo;
             return;
@@ -111,6 +111,10 @@ const ProductDetail = {
         }
         const confirmed = await CommonJS.confirm('현재 상품을 복제하시겠습니까?');
         if (!confirmed) {
+            return;
+        }
+        if (!this.productData) {
+            await CommonJS.alert('상품 상세를 다시 불러온 후 시도해주세요.', '알림', 'warning');
             return;
         }
 
@@ -378,6 +382,10 @@ const ProductDetail = {
         }
         const isConfirm = await CommonJS.confirm('정말로 이 상품을 삭제하시겠습니까?', '상품 삭제 확인', 'error');
         if (!isConfirm) return;
+        if (!this.productData) {
+            await CommonJS.alert('상품 상세를 다시 불러온 후 시도해주세요.', '알림', 'warning');
+            return;
+        }
 
         try {
             this.isDeleting = true;
@@ -447,6 +455,10 @@ const ProductDetail = {
             button.textContent = button.dataset.originalText;
             delete button.dataset.originalText;
         }
+    },
+
+    isValidProductNo(productNo) {
+        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
     },
 
     buildLogPathFromBase(basePath) {

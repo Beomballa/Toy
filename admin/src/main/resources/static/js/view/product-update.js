@@ -5,6 +5,7 @@ const ProductUpdate = {
     returnTo: '/admin/products',
     source: '',
     isSubmitting: false,
+    isResettingFrontDisplay: false,
     operationPolicy: null,
     frontDisplayData: null,
     frontDisplayRankGuide: null,
@@ -20,7 +21,7 @@ const ProductUpdate = {
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
         this.source = urlParams.get('source') || '';
 
-        if (!this.productNo) {
+        if (!this.isValidProductNo(this.productNo)) {
             await CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error');
             window.location.href = this.returnTo;
             return;
@@ -340,6 +341,11 @@ const ProductUpdate = {
             options: validationResult.options
         };
         const frontDisplayData = validationResult.frontDisplay;
+        if (!this.validateFrontDisplayRank(frontDisplayData)) {
+            await CommonJS.alert('프론트 노출 순서를 다시 확인해주세요.', '알림', 'warning');
+            document.getElementById('frontDisplayRank')?.focus();
+            return;
+        }
 
         try {
             // 수정 API는 옵션 삭제/재등록까지 같이 처리하므로 중복 요청을 먼저 막습니다.
@@ -386,6 +392,9 @@ const ProductUpdate = {
     },
 
     async resetFrontDisplay() {
+        if (this.isResettingFrontDisplay) {
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('프론트 노출 정보 초기화'), '알림', 'warning');
             return;
@@ -397,6 +406,7 @@ const ProductUpdate = {
         }
 
         try {
+            this.isResettingFrontDisplay = true;
             this.setSubmitDisabled(true);
             const response = await fetch(`/api/admin/product/front-display/${this.productNo}`, {
                 method: 'DELETE'
@@ -411,6 +421,7 @@ const ProductUpdate = {
             console.error('Front Display Reset Error:', error);
             await CommonJS.alert(error.message || '프론트 노출 정보 초기화 중 오류가 발생했습니다.', '오류', 'error');
         } finally {
+            this.isResettingFrontDisplay = false;
             this.setSubmitDisabled(false);
             await this.applyOperationPolicy(this.operationPolicy);
         }
@@ -522,6 +533,20 @@ const ProductUpdate = {
 
     normalizeOptionalText(value) {
         return CommonJS.normalizeOptionalText(value);
+    },
+
+    validateFrontDisplayRank(frontDisplay) {
+        if (!frontDisplay) {
+            return false;
+        }
+        if (!frontDisplay.featured) {
+            return frontDisplay.featuredRank === 999;
+        }
+        return Number.isFinite(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
+    },
+
+    isValidProductNo(productNo) {
+        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
     },
 
     syncReturnLinks() {

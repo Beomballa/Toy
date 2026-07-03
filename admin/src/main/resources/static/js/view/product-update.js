@@ -207,7 +207,7 @@ const ProductUpdate = {
 
         const guide = this.frontDisplayRankGuide;
         if (!guide) {
-            hint.textContent = 'Featured 순번 정보를 불러오는 중입니다.';
+            hint.textContent = 'Featured 순번 가이드를 불러오는 중입니다.';
             hint.classList.remove('text-danger');
             hint.classList.add('text-muted');
             return;

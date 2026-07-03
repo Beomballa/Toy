@@ -574,6 +574,10 @@ const NoticeList = {
             await CommonJS.alert('공지 제목과 내용을 입력하세요.', '알림', 'warning');
             return;
         }
+        if (!this.validateNoticePeriod(formData.startDtm, formData.endDtm)) {
+            await CommonJS.alert('시작 일시는 종료 일시보다 늦을 수 없습니다.', '알림', 'warning');
+            return;
+        }
 
         try {
             this.saveInFlight = true;
@@ -655,6 +659,13 @@ const NoticeList = {
 
     toNullableDateTime(value) {
         return value ? `${value}:00` : null;
+    },
+
+    validateNoticePeriod(startDtm, endDtm) {
+        if (!startDtm || !endDtm) {
+            return true;
+        }
+        return startDtm <= endDtm;
     },
 
     toDateTimeLocalValue(value) {

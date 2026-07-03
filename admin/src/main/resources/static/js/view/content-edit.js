@@ -214,16 +214,26 @@ const ContentEdit = {
         const status = document.getElementById('status').value || 'DRAFT';
         const publicYn = document.getElementById('publicYn').value || 'Y';
         const pinnedYn = document.getElementById('pinnedYn').value || 'N';
+        const normalizedTitle = title.trim();
+        const normalizedContent = content.trim();
+        const parsedProductNo = this.parseProductNo(productNo);
 
-        if (!title.trim()) {
+        if (!normalizedTitle) {
             if (!isAutoSave) await CommonJS.alert('제목을 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if (productNo && parsedProductNo == null) {
+            this.setStatus('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', 4000);
+            if (!isAutoSave) {
+                await CommonJS.alert('상품 번호는 1 이상의 숫자만 입력하세요.', '알림', 'warning');
+            }
             return;
         }
 
         // 자동 저장은 실제 변경이 생긴 경우에만 보내서 불필요한 저장 요청을 줄인다.
         if (isAutoSave && 
-            title === this.initialData.title && 
-            content === this.initialData.content && 
+            normalizedTitle === this.initialData.title && 
+            normalizedContent === this.initialData.content && 
             boardType === this.initialData.boardType &&
             productNo === this.initialData.productNo &&
             status === this.initialData.status &&
@@ -233,6 +243,7 @@ const ContentEdit = {
         }
 
         this.isSaving = true;
+        this.setSaveDisabled(true, isAutoSave ? '자동 저장 중...' : '저장 중...');
         this.setStatus(isAutoSave ? '자동 저장 중...' : '저장 중...');
 
         try {
@@ -241,10 +252,10 @@ const ContentEdit = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id: this.id || null,
-                    title: title,
-                    content: content,
+                    title: normalizedTitle,
+                    content: normalizedContent,
                     boardType: boardType,
-                    productNo: productNo ? Number(productNo) : null,
+                    productNo: parsedProductNo,
                     status: status,
                     publicYn: publicYn,
                     pinnedYn: pinnedYn
@@ -263,7 +274,7 @@ const ContentEdit = {
                 window.history.replaceState({}, '', url);
             }
 
-            this.initialData = { title, content, boardType, productNo, status, publicYn, pinnedYn };
+            this.initialData = { title: normalizedTitle, content: normalizedContent, boardType, productNo, status, publicYn, pinnedYn };
             this.setStatus(isAutoSave ? '임시 저장되었습니다.' : '저장되었습니다.', 3000);
 
             if (!isAutoSave) {
@@ -278,6 +289,8 @@ const ContentEdit = {
             }
         } finally {
             this.isSaving = false;
+            this.setSaveDisabled(false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -333,6 +346,47 @@ const ContentEdit = {
             deleteButton.textContent = deleteButton.dataset.originalText;
             delete deleteButton.dataset.originalText;
         }
+    },
+
+    setSaveDisabled(disabled, label = '저장 중...') {
+        const saveButton = document.getElementById('btnSave');
+        const saveLabel = document.getElementById('btnSaveLabel');
+        if (!saveButton) {
+            return;
+        }
+        if (disabled) {
+            if (!saveButton.dataset.originalText) {
+                saveButton.dataset.originalText = saveLabel?.textContent || saveButton.textContent;
+            }
+            saveButton.disabled = true;
+            if (saveLabel) {
+                saveLabel.textContent = label;
+            } else {
+                saveButton.textContent = label;
+            }
+            return;
+        }
+        saveButton.disabled = false;
+        const originalText = saveButton.dataset.originalText || '저장';
+        if (saveLabel) {
+            saveLabel.textContent = originalText;
+        } else {
+            saveButton.textContent = originalText;
+        }
+        if (saveButton.dataset.originalText) {
+            delete saveButton.dataset.originalText;
+        }
+    },
+
+    parseProductNo(rawValue) {
+        if (!rawValue) {
+            return null;
+        }
+        if (!/^\d+$/.test(rawValue)) {
+            return null;
+        }
+        const parsed = Number(rawValue);
+        return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     syncVisibilitySummary() {

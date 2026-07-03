@@ -129,7 +129,7 @@ const TaskWorkloadDetail = {
             this.renderDetail(data);
         } catch (error) {
             document.getElementById('taskWorkloadDetailTitle').textContent = error.message;
-            document.getElementById('workloadDetailMetaText').textContent = '상세 메타 확인 불가';
+            document.getElementById('workloadDetailMetaText').textContent = '담당자 워크로드 상세를 확인할 수 없습니다.';
             this.renderSectionState('workloadRecentTasksBody', 'error', '최근 작업을 불러오지 못했습니다.', error.message);
             this.renderSectionState('workloadOverdueTasksBody', 'error', '기한 초과 작업을 확인할 수 없습니다.', '지연 작업 목록을 다시 불러오거나 운영 작업 목록에서 직접 확인해주세요.');
             this.renderSectionState('workloadRecentCommentsBody', 'error', '최근 메모를 확인할 수 없습니다.', '메모 이력을 다시 불러오거나 관련 작업 상세에서 직접 확인해주세요.');
@@ -483,7 +483,7 @@ const TaskWorkloadDetail = {
         const metaEl = document.getElementById('taskReassignModalMeta');
         const listEl = document.getElementById('taskReassignRecommendationList');
         const selectEl = document.getElementById('taskReassignAssignee');
-        if (metaEl) metaEl.textContent = '재배정 정보를 불러오는 중입니다...';
+        if (metaEl) metaEl.textContent = '재배정 가능한 담당자와 추천 점수를 불러오는 중입니다...';
         if (listEl) {
             listEl.innerHTML = `
                 <div class="col-12">

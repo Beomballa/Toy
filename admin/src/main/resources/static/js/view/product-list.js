@@ -26,6 +26,7 @@ const ProductList = {
     operationPolicy: null,
     isDeletingProduct: false,
     isCloningProduct: false,
+    isExporting: false,
     bulkInFlight: false,
     selectedProductNos: new Set(),
 
@@ -65,8 +66,15 @@ const ProductList = {
         });
         document.getElementById('btnSearchProducts')?.addEventListener('click', () => this.applySearchFilter());
         document.getElementById('btnExportProducts')?.addEventListener('click', async () => {
+            if (this.isExporting) {
+                return;
+            }
             const button = document.getElementById('btnExportProducts');
             try {
+                if (!this.validateState()) {
+                    return;
+                }
+                this.isExporting = true;
                 CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
                 const params = new URLSearchParams(this.buildQueryString());
                 params.delete('page');
@@ -75,6 +83,7 @@ const ProductList = {
             } catch (error) {
                 await CommonJS.alert(error.message, '오류', 'error');
             } finally {
+                this.isExporting = false;
                 CommonJS.setButtonDisabled(button, false);
             }
         });

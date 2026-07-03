@@ -1,5 +1,6 @@
 const ContentList = {
     initialized: false,
+    exportInFlight: false,
     state: {
         page: Number(new URLSearchParams(window.location.search).get('page') || 0),
         size: 9,
@@ -116,6 +117,9 @@ const ContentList = {
             this.state.productLinked = document.getElementById('contentProductLinkedFilter')?.value || '';
             this.state.productNo = document.getElementById('contentProductNoFilter')?.value.trim() || '';
             this.state.page = 0;
+            if (!this.validateState()) {
+                return;
+            }
             this.pushState();
             this.getList();
         });
@@ -194,6 +198,9 @@ const ContentList = {
     },
 
     async getList() {
+        if (!this.validateState()) {
+            return;
+        }
         const params = new URLSearchParams({
             page: this.state.page,
             size: this.state.size,
@@ -640,15 +647,32 @@ const ContentList = {
     },
 
     async exportCsv() {
+        if (this.exportInFlight) {
+            return;
+        }
         const button = document.getElementById('btnExportContentCsv');
         try {
+            if (!this.validateState()) {
+                return;
+            }
+            this.exportInFlight = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             await CommonJS.downloadFile(`/api/admin/content/export?${this.buildQueryParams().toString()}`, `contents-${this.state.boardType}.csv`);
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
+            this.exportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
         }
+    },
+
+    validateState() {
+        if (this.state.startDate && this.state.endDate && this.state.startDate > this.state.endDate) {
+            void CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
+            return false;
+        }
+
+        return true;
     }
 };
 

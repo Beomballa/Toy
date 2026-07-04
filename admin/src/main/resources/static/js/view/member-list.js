@@ -87,8 +87,8 @@ const MemberListPage = {
         document.getElementById('memberMasterYn').value = params.get('masterYn') || '';
         document.getElementById('memberDelYn').value = params.get('delYn') || '';
         document.getElementById('memberInitYn').value = params.get('initYn') || '';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('memberPageSize').value = String(this.state.size);
@@ -114,6 +114,7 @@ const MemberListPage = {
     },
 
     async getList() {
+        this.validateState();
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setMetaText('회원 목록을 불러오는 중입니다...');
@@ -216,7 +217,14 @@ const MemberListPage = {
             </tr>
         `).join('');
         tbody.querySelectorAll('[data-role="open-member-detail"]').forEach((button) => {
-            button.addEventListener('click', () => this.openDetail(Number(button.dataset.memberId)));
+            button.addEventListener('click', () => {
+                const memberId = this.normalizeOptionalPositiveNumber(button.dataset.memberId);
+                if (memberId == null) {
+                    void CommonJS.alert('유효한 회원 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openDetail(memberId);
+            });
         });
     },
 
@@ -256,8 +264,7 @@ const MemberListPage = {
                 if (Number.isNaN(targetPage) || targetPage === this.state.page) {
                     return;
                 }
-                this.state.page = targetPage;
-                this.getList();
+                this.goPage(targetPage);
             });
         });
     },
@@ -371,6 +378,7 @@ const MemberListPage = {
         try {
             this.exportInFlight = true;
             CommonJS.setButtonDisabled(document.getElementById('btnExportMember'), true, '내보내는 중입니다.');
+            this.validateState();
             const params = this.buildParams();
             params.delete('page');
             params.delete('size');
@@ -384,6 +392,10 @@ const MemberListPage = {
     },
 
     async openDetail(memberId) {
+        if (!this.isPositiveNumber(memberId)) {
+            await CommonJS.alert('유효한 회원 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.detailLoadInFlight) {
             return;
         }
@@ -410,6 +422,9 @@ const MemberListPage = {
     },
 
     async fetchMemberDetail(memberId) {
+        if (!this.isPositiveNumber(memberId)) {
+            throw new Error('유효한 회원 번호를 확인할 수 없습니다.');
+        }
         const res = await fetch(`/api/admin/members/get?id=${memberId}`);
         if (!res.ok) {
             throw new Error(await CommonJS.extractErrorMessage(res, '회원 상세를 불러오지 못했습니다.'));
@@ -561,6 +576,10 @@ const MemberListPage = {
         if (!this.selectedMember || this.detailActionInFlight) {
             return;
         }
+        if (!this.isPositiveNumber(Number(this.selectedMember.id))) {
+            await CommonJS.alert('유효한 회원 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert('유지보수 모드에서는 회원 상태 변경이 불가능합니다.', '알림', 'warning');
             return;
@@ -617,6 +636,62 @@ const MemberListPage = {
 
     setPageMetaText(message) {
         document.getElementById('memberPageMeta').textContent = message;
+    },
+
+    goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        this.state.page = page;
+        this.getList();
+    },
+
+    validateState() {
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('memberKeyword').value) || '';
+        const masterYn = document.getElementById('memberMasterYn').value;
+        const delYn = document.getElementById('memberDelYn').value;
+        const initYn = document.getElementById('memberInitYn').value;
+        this.state.size = this.normalizePageSize(document.getElementById('memberPageSize')?.value);
+
+        if (keyword.length > 100) {
+            throw new Error('검색어는 100자 이하로 입력하세요.');
+        }
+        if (masterYn && !this.isValidYn(masterYn)) {
+            throw new Error('마스터 여부 필터 값이 올바르지 않습니다.');
+        }
+        if (delYn && !this.isValidYn(delYn)) {
+            throw new Error('탈퇴 여부 필터 값이 올바르지 않습니다.');
+        }
+        if (initYn && !this.isValidYn(initYn)) {
+            throw new Error('초기 비밀번호 여부 필터 값이 올바르지 않습니다.');
+        }
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 20;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isPositiveNumber(number) ? number : null;
+    },
+
+    isPositiveNumber(value) {
+        return Number.isInteger(value) && value > 0;
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
     },
 
     setPaginationSummary(message) {

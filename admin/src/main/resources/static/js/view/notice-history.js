@@ -222,7 +222,7 @@ const NoticeHistoryPage = {
         }
         pagination.innerHTML = html;
         pagination.querySelectorAll('[data-role="go-notice-history-page"]').forEach((button) => {
-            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+            button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 

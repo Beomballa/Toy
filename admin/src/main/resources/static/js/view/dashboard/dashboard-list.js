@@ -79,7 +79,7 @@ const DashBoardListJS = {
                 return;
             }
             this.markDashboardSection('recent-order', true);
-            this.goToOrderDetail(Number(detailButton.dataset.orderNo));
+            this.goToOrderDetail(this.normalizePositiveId(detailButton.dataset.orderNo));
         });
         document.getElementById('lowStockListBody')?.addEventListener('click', (event) => {
             const detailButton = event.target.closest('[data-role="dashboard-product-detail"]');
@@ -87,7 +87,7 @@ const DashBoardListJS = {
                 return;
             }
             this.markDashboardSection('low-stock', true);
-            this.goToProductDetail(Number(detailButton.dataset.productNo));
+            this.goToProductDetail(this.normalizePositiveId(detailButton.dataset.productNo));
         });
     },
 
@@ -793,6 +793,11 @@ const DashBoardListJS = {
 
     isPositiveId(value) {
         return Number.isFinite(Number(value)) && Number(value) > 0;
+    },
+
+    normalizePositiveId(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     escapeHtml(value) {

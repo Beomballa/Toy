@@ -365,7 +365,7 @@ const CategoryList = {
         `).join('');
 
         paginationEl.querySelectorAll('[data-role="go-category-page"]').forEach((button) => {
-            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+            button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 
@@ -504,6 +504,7 @@ const CategoryList = {
 
     goPage(page) {
         if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.state.page = page;

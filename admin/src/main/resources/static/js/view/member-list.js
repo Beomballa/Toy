@@ -260,8 +260,8 @@ const MemberListPage = {
         pagination.querySelectorAll('[data-page]').forEach((link) => {
             link.addEventListener('click', (event) => {
                 event.preventDefault();
-                const targetPage = Number(link.dataset.page);
-                if (Number.isNaN(targetPage) || targetPage === this.state.page) {
+                const targetPage = this.normalizePage(link.dataset.page);
+                if (targetPage === this.state.page) {
                     return;
                 }
                 this.goPage(targetPage);

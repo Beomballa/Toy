@@ -109,7 +109,7 @@ const OrderList = {
             if (!pageButton) {
                 return;
             }
-            this.goPage(Number(pageButton.dataset.page));
+            this.goPage(this.normalizePage(pageButton.dataset.page));
         });
 
         // 검색 조건은 URL에 남겨서 새로고침/뒤로가기 때도 같은 문맥을 유지한다.

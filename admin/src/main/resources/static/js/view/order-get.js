@@ -4,7 +4,7 @@ const OrderDetail = {
         if (this.initialized) return;
         this.initialized = true;
         const params = new URLSearchParams(window.location.search);
-        this.orderNo = params.get('no');
+        this.orderNo = this.normalizeOrderNo(params.get('no'));
         this.returnTo = params.get('returnTo') || '/admin/orders/list';
         this.source = params.get('source') || '';
         this.isSubmitting = false;
@@ -32,6 +32,10 @@ const OrderDetail = {
         document.getElementById('btnCancelOrder')?.addEventListener('click', () => this.cancelOrder());
         document.getElementById('btnSaveAdminMemo')?.addEventListener('click', () => this.saveAdminMemo());
         document.getElementById('btnOpenOrderHistory')?.addEventListener('click', () => {
+            if (!this.isValidOrderNo(this.orderNo)) {
+                void CommonJS.alert('유효한 주문 번호를 확인할 수 없습니다.', '알림', 'warning');
+                return;
+            }
             const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
             const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
             window.location.href = `/admin/orders/history?orderNo=${this.orderNo}&returnTo=${returnTo}${sourceQuery}`;
@@ -79,7 +83,7 @@ const OrderDetail = {
         this.renderSummary(data);
         this.renderActionVisibility(data);
         this.renderDeliveryInfo(data);
-        this.renderOrderItems(data.items);
+        this.renderOrderItems(Array.isArray(data.items) ? data.items : []);
         this.renderAdminMemo(data.adminMemo);
         this.renderOrderHistory(data.histories || []);
         void this.applyOperationPolicy(this.operationPolicy);
@@ -92,7 +96,7 @@ const OrderDetail = {
         document.getElementById('orderDt').textContent = data.orderDt;
         document.getElementById('orderDtMeta').textContent = `주문일시 ${data.orderDt || '-'}`;
         document.getElementById('totalAmount').textContent = data.totalAmount;
-        document.getElementById('itemCount').textContent = data.items.length;
+        document.getElementById('itemCount').textContent = Array.isArray(data.items) ? data.items.length : 0;
 
         const statusMeta = CommonJS.getOrderStatusMeta(data.statusCode);
         const badge = document.getElementById('orderStatusBadge');
@@ -199,6 +203,10 @@ const OrderDetail = {
     },
 
     async completeDelivery() {
+        if (!this.isValidCurrentOrderAction()) {
+            await CommonJS.alert('유효한 주문 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('배송 완료 처리'), '알림', 'warning');
             return;
@@ -230,6 +238,10 @@ const OrderDetail = {
     },
 
     async cancelOrder() {
+        if (!this.isValidCurrentOrderAction()) {
+            await CommonJS.alert('유효한 주문 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('주문 취소'), '알림', 'warning');
             return;
@@ -248,6 +260,10 @@ const OrderDetail = {
     },
 
     async saveDelivery() {
+        if (!this.isValidCurrentOrderAction()) {
+            await CommonJS.alert('유효한 주문 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('배송 정보 저장'), '알림', 'warning');
             return;
@@ -293,6 +309,10 @@ const OrderDetail = {
     },
 
     async saveAdminMemo() {
+        if (!this.isValidCurrentOrderAction()) {
+            await CommonJS.alert('유효한 주문 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('관리 메모 저장'), '알림', 'warning');
             return;
@@ -326,6 +346,10 @@ const OrderDetail = {
 
     async submitOrderAction({ url, method = 'POST', payload, successMessage, fallbackErrorMessage, logLabel }) {
         if (this.isSubmitting) {
+            return;
+        }
+        if (!this.isValidOrderActionPayload(payload)) {
+            await CommonJS.alert('주문 처리 요청 값이 올바르지 않습니다.', '알림', 'warning');
             return;
         }
 
@@ -410,6 +434,30 @@ const OrderDetail = {
 
     isValidOrderNo(orderNo) {
         return /^\d+$/.test(String(orderNo || '')) && Number(orderNo) > 0;
+    },
+
+    normalizeOrderNo(orderNo) {
+        return this.isValidOrderNo(orderNo) ? String(Number(orderNo)) : null;
+    },
+
+    isValidCurrentOrderAction() {
+        return this.isValidOrderNo(this.orderNo) && this.currentDetail && this.isValidOrderNo(this.currentDetail.orderNo || this.orderNo);
+    },
+
+    isValidOrderActionPayload(payload) {
+        if (!payload || !this.isValidOrderNo(payload.orderNo)) {
+            return false;
+        }
+        if (payload.reason != null && String(payload.reason).length > 200) {
+            return false;
+        }
+        if ('adminMemo' in payload && String(payload.adminMemo || '').length > 500) {
+            return false;
+        }
+        if ('deliveryCompany' in payload || 'trackingNum' in payload) {
+            return this.validateDeliveryPayload(payload.deliveryCompany, payload.trackingNum);
+        }
+        return true;
     }
 };
 

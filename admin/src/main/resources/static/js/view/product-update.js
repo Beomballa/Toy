@@ -17,7 +17,7 @@ const ProductUpdate = {
         this.initialized = true;
 
         const urlParams = new URLSearchParams(window.location.search);
-        this.productNo = urlParams.get('no');
+        this.productNo = this.normalizeProductNo(urlParams.get('no'));
         this.returnTo = urlParams.get('returnTo') || '/admin/products';
         this.source = urlParams.get('source') || '';
 
@@ -70,6 +70,10 @@ const ProductUpdate = {
         });
         document.getElementById('btnAddOption').addEventListener('click', () => this.addOption());
         document.getElementById('btnCancelEdit')?.addEventListener('click', () => {
+            if (!this.isValidProductNo(this.productNo)) {
+                void CommonJS.alert('상품 번호가 유효하지 않습니다.', '알림', 'warning');
+                return;
+            }
             const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
             window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}${sourceQuery}`;
         });
@@ -153,7 +157,7 @@ const ProductUpdate = {
         document.getElementById('frontDisplayDescription').value = data?.description || '';
         document.getElementById('frontDisplayMood').value = data?.mood || '';
         document.getElementById('frontDisplayFeatured').value = String(Boolean(data?.featured));
-        document.getElementById('frontDisplayRank').value = data?.featuredRank || 999;
+        document.getElementById('frontDisplayRank').value = this.normalizeFeaturedRankValue(data?.featuredRank, Boolean(data?.featured));
         this.applyFeaturedToggleBehavior();
     },
 
@@ -313,6 +317,10 @@ const ProductUpdate = {
         if (this.isSubmitting) {
             return;
         }
+        if (!this.isValidProductNo(this.productNo)) {
+            await CommonJS.alert('상품 번호가 유효하지 않습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
             return;
@@ -341,6 +349,10 @@ const ProductUpdate = {
             options: validationResult.options
         };
         const frontDisplayData = validationResult.frontDisplay;
+        if (!this.isValidFrontDisplayPayload(frontDisplayData)) {
+            await CommonJS.alert('프론트 노출 입력값을 다시 확인해주세요.', '알림', 'warning');
+            return;
+        }
         if (!this.validateFrontDisplayRank(frontDisplayData)) {
             await CommonJS.alert('프론트 노출 순서를 다시 확인해주세요.', '알림', 'warning');
             document.getElementById('frontDisplayRank')?.focus();
@@ -393,6 +405,10 @@ const ProductUpdate = {
 
     async resetFrontDisplay() {
         if (this.isResettingFrontDisplay) {
+            return;
+        }
+        if (!this.isValidProductNo(this.productNo)) {
+            await CommonJS.alert('상품 번호가 유효하지 않습니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -452,6 +468,8 @@ const ProductUpdate = {
 
         if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
         if (!brandNo) return this.invalidResult('브랜드를 선택해주세요.', brandNoEl);
+        if (!this.isValidProductLookupId(categoryNo)) return this.invalidResult('카테고리 값이 올바르지 않습니다.', categoryNoEl);
+        if (!this.isValidProductLookupId(brandNo)) return this.invalidResult('브랜드 값이 올바르지 않습니다.', brandNoEl);
         if (!nameKo) return this.invalidResult('상품명을 입력해주세요.', nameKoEl);
         if (nameKo.length > 200) return this.invalidResult('상품명은 200자 이내로 입력해주세요.', nameKoEl);
         if (modelNum && modelNum.length > 200) return this.invalidResult('모델 번호는 200자 이내로 입력해주세요.', modelNumEl);
@@ -547,6 +565,38 @@ const ProductUpdate = {
 
     isValidProductNo(productNo) {
         return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
+    },
+
+    normalizeProductNo(productNo) {
+        return this.isValidProductNo(productNo) ? String(Number(productNo)) : null;
+    },
+
+    isValidProductLookupId(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+    },
+
+    normalizeFeaturedRankValue(rank, featured) {
+        const parsed = Number(rank);
+        if (!featured) {
+            return 999;
+        }
+        return Number.isInteger(parsed) && parsed >= 1 && parsed <= 999 ? parsed : (this.frontDisplayRankGuide?.recommendedRank || 1);
+    },
+
+    isValidFrontDisplayPayload(frontDisplay) {
+        if (!frontDisplay || !this.isValidProductNo(frontDisplay.productNo)) {
+            return false;
+        }
+        if (!frontDisplay.headline || frontDisplay.headline.length > 120) {
+            return false;
+        }
+        if (!frontDisplay.description || frontDisplay.description.length > 1000) {
+            return false;
+        }
+        if (!frontDisplay.mood || frontDisplay.mood.length > 120) {
+            return false;
+        }
+        return this.validateFrontDisplayRank(frontDisplay);
     },
 
     syncReturnLinks() {

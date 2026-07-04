@@ -139,7 +139,12 @@ const TaskList = {
             }
             const editButton = event.target.closest('[data-role="edit-task"]');
             if (editButton) {
-                void this.openEditModal(JSON.parse(editButton.dataset.task));
+                const task = this.parseTaskDataset(editButton.dataset.task);
+                if (!task) {
+                    void CommonJS.alert('수정할 운영 작업 정보를 읽을 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                void this.openEditModal(task);
                 return;
             }
 
@@ -1369,6 +1374,15 @@ const TaskList = {
         }
         const number = Number(value);
         return this.isPositiveNumber(number) ? number : null;
+    },
+
+    parseTaskDataset(value) {
+        try {
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('운영 작업 dataset 파싱 실패:', error);
+            return null;
+        }
     },
 
     isPositiveNumber(value) {

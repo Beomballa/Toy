@@ -84,7 +84,12 @@ const BannerList = {
             }
             const editButton = event.target.closest('[data-role="edit-banner"]');
             if (editButton) {
-                this.openEditModal(JSON.parse(editButton.dataset.banner));
+                const banner = this.parseBannerDataset(editButton.dataset.banner);
+                if (!banner) {
+                    void CommonJS.alert('수정할 배너 정보를 읽을 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openEditModal(banner);
                 return;
             }
 
@@ -890,6 +895,15 @@ const BannerList = {
         }
         const number = Number(value);
         return this.isValidBannerNo(number) ? number : null;
+    },
+
+    parseBannerDataset(value) {
+        try {
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('배너 dataset 파싱 실패:', error);
+            return null;
+        }
     }
 };
 

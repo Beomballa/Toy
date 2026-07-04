@@ -93,7 +93,12 @@ const NoticeList = {
             }
             const editButton = event.target.closest('[data-role="edit-notice"]');
             if (editButton) {
-                this.openEditModal(JSON.parse(editButton.dataset.notice));
+                const notice = this.parseNoticeDataset(editButton.dataset.notice);
+                if (!notice) {
+                    void CommonJS.alert('수정할 운영 공지 정보를 읽을 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openEditModal(notice);
                 return;
             }
 
@@ -805,7 +810,9 @@ const NoticeList = {
     },
 
     getCurrentPageItems() {
-        return Array.from(document.querySelectorAll('[data-role="edit-notice"]')).map((button) => JSON.parse(button.dataset.notice));
+        return Array.from(document.querySelectorAll('[data-role="edit-notice"]'))
+            .map((button) => this.parseNoticeDataset(button.dataset.notice))
+            .filter(Boolean);
     },
 
     async applyBulkOperation() {
@@ -1058,6 +1065,15 @@ const NoticeList = {
         }
         const number = Number(value);
         return this.isPositiveNumber(number) ? number : null;
+    },
+
+    parseNoticeDataset(value) {
+        try {
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('운영 공지 dataset 파싱 실패:', error);
+            return null;
+        }
     },
 
     isPositiveNumber(value) {

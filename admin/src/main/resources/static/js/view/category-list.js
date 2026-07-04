@@ -100,7 +100,12 @@ const CategoryList = {
             const editRootButton = event.target.closest('[data-role="edit-root-category"]');
             if (editRootButton) {
                 event.stopPropagation();
-                this.openModal(1, JSON.parse(editRootButton.dataset.category));
+                const category = this.parseCategoryDataset(editRootButton.dataset.category);
+                if (!category) {
+                    void CommonJS.alert('수정할 카테고리 정보를 읽을 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openModal(1, category);
             }
         });
         document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
@@ -116,7 +121,12 @@ const CategoryList = {
 
             const editSubButton = event.target.closest('[data-role="edit-sub-category"]');
             if (editSubButton) {
-                this.openModal(2, JSON.parse(editSubButton.dataset.category));
+                const category = this.parseCategoryDataset(editSubButton.dataset.category);
+                if (!category) {
+                    void CommonJS.alert('수정할 카테고리 정보를 읽을 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openModal(2, category);
                 return;
             }
 
@@ -783,6 +793,15 @@ const CategoryList = {
     normalizeOptionalPositiveNumber(value) {
         const parsed = Number(value);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    parseCategoryDataset(value) {
+        try {
+            return value ? JSON.parse(value) : null;
+        } catch (error) {
+            console.error('카테고리 dataset 파싱 실패:', error);
+            return null;
+        }
     },
 
     renderDepth2Empty() {

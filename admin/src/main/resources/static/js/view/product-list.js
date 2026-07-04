@@ -140,7 +140,7 @@ const ProductList = {
 
             const checkbox = e.target.closest('[data-role="select-product"]');
             if (checkbox) {
-                this.toggleSelection(Number(checkbox.dataset.productNo), checkbox.checked);
+                this.toggleSelection(this._normalizeOptionalPositiveNumber(checkbox.dataset.productNo), checkbox.checked);
                 return;
             }
 
@@ -160,23 +160,34 @@ const ProductList = {
                     void CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
                     return;
                 }
-                if (!this._isPositiveNumber(editButton.dataset.productNo)) {
+                const productNo = this._normalizeOptionalPositiveNumber(editButton.dataset.productNo);
+                if (!this._isPositiveNumber(productNo)) {
                     void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/products/update?no=${editButton.dataset.productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
+                location.href = `/admin/products/update?no=${productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
                 return;
             }
 
             const cloneButton = e.target.closest('[data-role="clone-product"]');
             if (cloneButton) {
-                this.cloneProduct(cloneButton.dataset.productNo);
+                const productNo = this._normalizeOptionalPositiveNumber(cloneButton.dataset.productNo);
+                if (!this._isPositiveNumber(productNo)) {
+                    void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.cloneProduct(productNo);
                 return;
             }
 
             const deleteButton = e.target.closest('[data-role="delete-product"]');
             if (deleteButton) {
-                this.deleteProduct(deleteButton.dataset.productNo);
+                const productNo = this._normalizeOptionalPositiveNumber(deleteButton.dataset.productNo);
+                if (!this._isPositiveNumber(productNo)) {
+                    void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteProduct(productNo);
             }
         });
 
@@ -220,7 +231,7 @@ const ProductList = {
             if (!pageButton) {
                 return;
             }
-            this.goPage(Number(pageButton.dataset.page));
+            this.goPage(this._normalizePage(pageButton.dataset.page));
         });
         window.addEventListener('popstate', () => {
             this._readStateFromUrl();
@@ -599,6 +610,10 @@ const ProductList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.getList();
     },
@@ -669,6 +684,10 @@ const ProductList = {
         if (this.isDeletingProduct) {
             return;
         }
+        if (!this._isPositiveNumber(no)) {
+            await CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 삭제'), '알림', 'warning');
             return;
@@ -709,6 +728,10 @@ const ProductList = {
 
     async cloneProduct(productNo) {
         if (this.isCloningProduct) {
+            return;
+        }
+        if (!this._isPositiveNumber(productNo)) {
+            await CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -764,15 +787,19 @@ const ProductList = {
         }
 
         const items = Array.from(document.querySelectorAll('[data-role="select-product"]'))
-            .map((checkbox) => ({productNo: Number(checkbox.dataset.productNo)}))
-            .filter((item) => Number.isFinite(item.productNo));
+            .map((checkbox) => ({productNo: this._normalizeOptionalPositiveNumber(checkbox.dataset.productNo)}))
+            .filter((item) => this._isPositiveNumber(item.productNo));
         this.updateSelectionMeta(items);
     },
 
     toggleSelectCurrentPage(checked) {
         document.querySelectorAll('[data-role="select-product"]').forEach((checkbox) => {
+            const productNo = this._normalizeOptionalPositiveNumber(checkbox.dataset.productNo);
+            if (!this._isPositiveNumber(productNo)) {
+                checkbox.checked = false;
+                return;
+            }
             checkbox.checked = checked;
-            const productNo = Number(checkbox.dataset.productNo);
             if (checked) {
                 this.selectedProductNos.add(productNo);
                 return;
@@ -781,8 +808,8 @@ const ProductList = {
         });
 
         const items = Array.from(document.querySelectorAll('[data-role="select-product"]'))
-            .map((checkbox) => ({productNo: Number(checkbox.dataset.productNo)}))
-            .filter((item) => Number.isFinite(item.productNo));
+            .map((checkbox) => ({productNo: this._normalizeOptionalPositiveNumber(checkbox.dataset.productNo)}))
+            .filter((item) => this._isPositiveNumber(item.productNo));
         this.updateSelectionMeta(items);
     },
 

@@ -53,18 +53,33 @@ const TaskDetailPage = {
         document.getElementById('taskCommentList')?.addEventListener('click', (event) => {
             const editButton = event.target.closest('[data-role="edit-task-comment"]');
             if (editButton) {
-                this.startCommentEdit(Number(editButton.dataset.commentNo));
+                const commentNo = this.normalizePositiveNumber(editButton.dataset.commentNo);
+                if (!this.isValidCommentNo(commentNo)) {
+                    void CommonJS.alert('수정할 메모 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.startCommentEdit(commentNo);
                 return;
             }
             const deleteButton = event.target.closest('[data-role="delete-task-comment"]');
             if (deleteButton) {
-                this.deleteComment(Number(deleteButton.dataset.commentNo));
+                const commentNo = this.normalizePositiveNumber(deleteButton.dataset.commentNo);
+                if (!this.isValidCommentNo(commentNo)) {
+                    void CommonJS.alert('삭제할 메모 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteComment(commentNo);
             }
         });
         document.getElementById('taskAssignmentRecommendationList')?.addEventListener('click', (event) => {
             const applyButton = event.target.closest('[data-role="apply-task-recommendation"]');
             if (applyButton) {
-                this.applyRecommendation(Number(applyButton.dataset.adminNo), applyButton);
+                const adminNo = this.normalizePositiveNumber(applyButton.dataset.adminNo);
+                if (!Number.isFinite(adminNo) || adminNo <= 0) {
+                    void CommonJS.alert('추천 담당자 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.applyRecommendation(adminNo, applyButton);
             }
         });
         document.getElementById('taskDetailActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
@@ -654,6 +669,11 @@ const TaskDetailPage = {
     parseOptionalNumber(value) {
         if (value == null || value === '') return null;
         return Number(value);
+    },
+
+    normalizePositiveNumber(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     escapeHtml(value) {

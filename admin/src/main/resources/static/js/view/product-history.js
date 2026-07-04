@@ -26,7 +26,7 @@ const ProductHistoryPage = {
         document.getElementById('btnResetProductHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('historyPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('historyPageSize')?.value || 20);
+            this.state.size = this.normalizePageSize(document.getElementById('historyPageSize')?.value);
             this.loadHistory();
         });
         document.getElementById('historyKeyword')?.addEventListener('keydown', (event) => {
@@ -108,6 +108,7 @@ const ProductHistoryPage = {
         if (orderType && orderType !== 'latest') params.set('orderType', orderType);
         if (this.state.source) params.set('source', this.state.source);
         if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
+        this.state.size = this.normalizePageSize(document.getElementById('historyPageSize')?.value);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -119,6 +120,9 @@ const ProductHistoryPage = {
     },
 
     async loadHistory() {
+        if (!this.validateState()) {
+            return;
+        }
         const startDate = document.getElementById('historyStartDate')?.value;
         const endDate = document.getElementById('historyEndDate')?.value;
         if (startDate && endDate && startDate > endDate) {
@@ -194,6 +198,9 @@ const ProductHistoryPage = {
     },
 
     buildProductDetailPath(productNo) {
+        if (!this.isPositiveNumber(productNo)) {
+            return '#';
+        }
         const params = new URLSearchParams();
         params.set('no', String(productNo));
         params.set('returnTo', this.getReturnTo());
@@ -282,6 +289,9 @@ const ProductHistoryPage = {
         try {
             this.isExporting = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            if (!this.validateState()) {
+                return;
+            }
             const startDate = document.getElementById('historyStartDate')?.value || '';
             const endDate = document.getElementById('historyEndDate')?.value || '';
             if (startDate && endDate && startDate > endDate) {
@@ -316,6 +326,10 @@ const ProductHistoryPage = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.loadHistory();
     },
@@ -463,6 +477,39 @@ const ProductHistoryPage = {
         if (document.getElementById('historyEndDate')?.value) count += 1;
         if ((document.getElementById('historyOrderType')?.value || 'latest') !== 'latest') count += 1;
         return count;
+    },
+
+    validateState() {
+        const productNo = document.getElementById('historyProductNo')?.value.trim() || '';
+        const actorNo = document.getElementById('historyActorNo')?.value.trim() || '';
+        const orderType = document.getElementById('historyOrderType')?.value || 'latest';
+        if (productNo && !this.isPositiveNumber(productNo)) {
+            void CommonJS.alert('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (actorNo && !this.isPositiveNumber(actorNo)) {
+            void CommonJS.alert('작업자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['latest', 'oldest'].includes(orderType)) {
+            void CommonJS.alert('정렬 조건이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     }
 };
 

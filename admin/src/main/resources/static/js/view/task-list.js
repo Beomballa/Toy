@@ -130,7 +130,11 @@ const TaskList = {
         document.getElementById('taskListBody')?.addEventListener('click', (event) => {
             const checkbox = event.target.closest('[data-role="select-task"]');
             if (checkbox) {
-                this.toggleSelection(Number(checkbox.dataset.taskNo), checkbox.checked);
+                const taskNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.taskNo);
+                if (taskNo == null) {
+                    return;
+                }
+                this.toggleSelection(taskNo, checkbox.checked);
                 return;
             }
             const editButton = event.target.closest('[data-role="edit-task"]');
@@ -141,19 +145,34 @@ const TaskList = {
 
             const statusButton = event.target.closest('[data-role="update-task-status"]');
             if (statusButton) {
-                this.updateStatus(Number(statusButton.dataset.taskNo), statusButton.dataset.status);
+                const taskNo = this.normalizeOptionalPositiveNumber(statusButton.dataset.taskNo);
+                if (taskNo == null) {
+                    void CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.updateStatus(taskNo, statusButton.dataset.status);
                 return;
             }
 
             const duplicateButton = event.target.closest('[data-role="duplicate-task"]');
             if (duplicateButton) {
-                this.duplicateTask(Number(duplicateButton.dataset.taskNo));
+                const taskNo = this.normalizeOptionalPositiveNumber(duplicateButton.dataset.taskNo);
+                if (taskNo == null) {
+                    void CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.duplicateTask(taskNo);
                 return;
             }
 
             const deleteButton = event.target.closest('[data-role="delete-task"]');
             if (deleteButton) {
-                this.deleteTask(Number(deleteButton.dataset.taskNo));
+                const taskNo = this.normalizeOptionalPositiveNumber(deleteButton.dataset.taskNo);
+                if (taskNo == null) {
+                    void CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteTask(taskNo);
             }
         });
     },
@@ -925,14 +944,15 @@ const TaskList = {
 
     updateSelectionMetaFromDom() {
         const items = Array.from(document.querySelectorAll('[data-role="select-task"]')).map((checkbox) => ({
-            taskNo: Number(checkbox.dataset.taskNo)
-        }));
+            taskNo: this.normalizeOptionalPositiveNumber(checkbox.dataset.taskNo)
+        })).filter((item) => item.taskNo != null);
         this.updateSelectionMeta(items);
     },
 
     getCurrentPageTaskNos() {
         return Array.from(document.querySelectorAll('[data-role="select-task"]'))
-            .map((checkbox) => Number(checkbox.dataset.taskNo));
+            .map((checkbox) => this.normalizeOptionalPositiveNumber(checkbox.dataset.taskNo))
+            .filter((taskNo) => taskNo != null);
     },
 
     applyStatFilter(type) {

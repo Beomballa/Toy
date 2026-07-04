@@ -256,7 +256,7 @@ const TaskWorkloadList = {
 
         paginationEl.querySelectorAll('[data-role="go-page"]').forEach((button) => {
             button.addEventListener('click', () => {
-                this.goPage(Number(button.dataset.page));
+                this.goPage(this.normalizePage(button.dataset.page));
             });
         });
     },

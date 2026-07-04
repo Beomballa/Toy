@@ -536,7 +536,7 @@ const TaskList = {
         `).join('');
 
         paginationEl.querySelectorAll('[data-role="go-task-page"]').forEach((button) => {
-            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+            button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 

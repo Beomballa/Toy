@@ -434,7 +434,7 @@ const NoticeList = {
         `).join('');
 
         paginationEl.querySelectorAll('[data-role="go-notice-page"]').forEach((button) => {
-            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+            button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 

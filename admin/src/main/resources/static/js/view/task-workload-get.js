@@ -117,7 +117,7 @@ const TaskWorkloadDetail = {
     async loadDetail() {
         try {
             const adminNo = Number(this.bootstrap.adminNo || 0);
-            if (!adminNo) {
+            if (!this.isValidAdminNo(adminNo)) {
                 throw new Error('담당자 번호가 올바르지 않습니다.');
             }
             const params = new URLSearchParams();
@@ -411,6 +411,10 @@ const TaskWorkloadDetail = {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 완료 처리'), '알림', 'warning');
             return;
         }
+        if (!this.isValidTaskNo(taskNo)) {
+            await CommonJS.alert('완료 처리할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         const confirmed = await CommonJS.confirm('이 작업을 완료 처리하시겠습니까?', '완료 처리');
         if (!confirmed) return;
 
@@ -440,6 +444,10 @@ const TaskWorkloadDetail = {
         if (this.isRaisingPriority) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 우선순위 변경'), '알림', 'warning');
+            return;
+        }
+        if (!this.isValidTaskNo(taskNo)) {
+            await CommonJS.alert('우선순위를 변경할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
 
@@ -483,6 +491,10 @@ const TaskWorkloadDetail = {
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('기한 초과 작업 재배정'), '알림', 'warning');
+            return;
+        }
+        if (!this.isValidTaskNo(taskNo)) {
+            await CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.reassignDetail = { sourceLabel };
@@ -599,6 +611,10 @@ const TaskWorkloadDetail = {
         }
         if (!this.reassignDetail) {
             await CommonJS.alert('재배정할 작업 정보를 다시 불러와 주세요.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidTaskNo(this.reassignDetail.taskNo)) {
+            await CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         const assigneeAdminNo = this.parseOptionalNumber(document.getElementById('taskReassignAssignee')?.value);
@@ -803,6 +819,9 @@ const TaskWorkloadDetail = {
     },
 
     async fetchTaskDetail(taskNo) {
+        if (!this.isValidTaskNo(taskNo)) {
+            throw new Error('작업 번호가 올바르지 않습니다.');
+        }
         const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
         if (!response.ok) {
             throw new Error(await CommonJS.extractErrorMessage(response, '작업 상세를 불러오지 못했습니다.'));
@@ -811,6 +830,9 @@ const TaskWorkloadDetail = {
     },
 
     async saveTaskDetail(payload, fallbackMessage) {
+        if (!this.validateTaskPayload(payload)) {
+            throw new Error('작업 저장 요청값이 올바르지 않습니다.');
+        }
         const response = await fetch('/api/admin/settings/tasks/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -824,6 +846,51 @@ const TaskWorkloadDetail = {
     parseOptionalNumber(value) {
         if (value == null || value === '') return null;
         return Number(value);
+    },
+
+    validateTaskPayload(payload) {
+        if (!payload) {
+            return false;
+        }
+        if (!this.isValidTaskNo(payload.taskNo)) {
+            return false;
+        }
+        if (!this.isValidTaskStatus(payload.status)) {
+            return false;
+        }
+        if (!this.isValidTaskPriority(payload.priority)) {
+            return false;
+        }
+        if (!this.isValidYn(payload.isPinned)) {
+            return false;
+        }
+        if (payload.assigneeAdminNo != null && !this.isValidAdminNo(payload.assigneeAdminNo)) {
+            return false;
+        }
+        if (payload.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(payload.dueDate)) {
+            return false;
+        }
+        return true;
+    },
+
+    isValidTaskNo(taskNo) {
+        return Number.isInteger(Number(taskNo)) && Number(taskNo) > 0;
+    },
+
+    isValidAdminNo(adminNo) {
+        return Number.isInteger(Number(adminNo)) && Number(adminNo) > 0;
+    },
+
+    isValidTaskStatus(status) {
+        return ['TODO', 'IN_PROGRESS', 'DONE', 'HOLD'].includes(status);
+    },
+
+    isValidTaskPriority(priority) {
+        return ['HIGH', 'MEDIUM', 'LOW'].includes(priority);
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
     },
 
     escapeHtml(value) {

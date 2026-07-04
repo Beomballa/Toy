@@ -86,7 +86,7 @@ const TaskDetailPage = {
     },
 
     async loadDetail() {
-        if (!this.state.taskNo) {
+        if (!this.isValidTaskNo(this.state.taskNo)) {
             this.renderError('운영 작업 번호가 없습니다.');
             return;
         }
@@ -233,6 +233,10 @@ const TaskDetailPage = {
             await CommonJS.alert('담당자 또는 작업 기한 입력값을 다시 확인하세요.', '알림', 'warning');
             return;
         }
+        if (this.isSameAsCurrentDetail(payload, detail)) {
+            await CommonJS.alert('변경된 작업 정보가 없습니다.', '알림', 'info');
+            return;
+        }
 
         try {
             this.isSavingDetail = true;
@@ -269,6 +273,10 @@ const TaskDetailPage = {
         if (!detail) return;
 
         const nextStatus = detail.status === 'DONE' ? 'IN_PROGRESS' : 'DONE';
+        if (!this.isValidTaskNo(detail.taskNo) || !this.isValidTaskStatus(nextStatus)) {
+            await CommonJS.alert('유효하지 않은 작업 상태 변경 요청입니다.', '알림', 'warning');
+            return;
+        }
         try {
             this.isTogglingStatus = true;
             this.setBusyButton(document.getElementById('btnTaskDetailToggleStatus'), true, '처리 중...');
@@ -299,6 +307,10 @@ const TaskDetailPage = {
         }
         const detail = this.state.currentDetail;
         if (!detail) return;
+        if (!this.isValidTaskNo(detail.taskNo)) {
+            await CommonJS.alert('유효하지 않은 운영 작업 번호입니다.', '알림', 'warning');
+            return;
+        }
 
         const confirmed = await CommonJS.confirm('운영 작업을 삭제하시겠습니까?', '삭제 확인');
         if (!confirmed) return;
@@ -328,9 +340,22 @@ const TaskDetailPage = {
             return;
         }
         const contentEl = document.getElementById('taskCommentContent');
-        const content = (contentEl?.value || '').trim();
+        const content = CommonJS.normalizeRequiredText(contentEl?.value || '');
         if (!content) {
             await CommonJS.alert('메모 내용을 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if (content.length > 2000) {
+            await CommonJS.alert('작업 메모는 2000자 이하로 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if (this.state.editingCommentNo != null && !this.isValidCommentNo(this.state.editingCommentNo)) {
+            await CommonJS.alert('수정할 작업 메모 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        const editingComment = this.state.currentDetail?.comments?.find((item) => Number(item.commentNo) === Number(this.state.editingCommentNo));
+        if (editingComment && CommonJS.normalizeRequiredText(editingComment.content || '') === content) {
+            await CommonJS.alert('변경된 메모 내용이 없습니다.', '알림', 'info');
             return;
         }
 
@@ -372,6 +397,10 @@ const TaskDetailPage = {
         if (this.isDeletingComment) return;
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 메모 삭제'), '알림', 'warning');
+            return;
+        }
+        if (!this.isValidTaskNo(this.state.taskNo) || !this.isValidCommentNo(commentNo)) {
+            await CommonJS.alert('삭제할 작업 메모 정보가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         const confirmed = await CommonJS.confirm('작업 메모를 삭제하시겠습니까?', '삭제 확인');
@@ -695,6 +724,18 @@ const TaskDetailPage = {
         if (!payload) {
             return false;
         }
+        if (!this.isValidTaskNo(payload.taskNo)) {
+            return false;
+        }
+        if (!this.isValidTaskStatus(payload.status)) {
+            return false;
+        }
+        if (!this.isValidTaskPriority(payload.priority)) {
+            return false;
+        }
+        if (!this.isValidYn(payload.isPinned)) {
+            return false;
+        }
         if (payload.assigneeAdminNo != null && (!Number.isFinite(payload.assigneeAdminNo) || payload.assigneeAdminNo <= 0)) {
             return false;
         }
@@ -702,6 +743,36 @@ const TaskDetailPage = {
             return false;
         }
         return true;
+    },
+
+    isValidTaskNo(taskNo) {
+        return Number.isInteger(Number(taskNo)) && Number(taskNo) > 0;
+    },
+
+    isValidCommentNo(commentNo) {
+        return Number.isInteger(Number(commentNo)) && Number(commentNo) > 0;
+    },
+
+    isValidTaskStatus(status) {
+        return ['TODO', 'IN_PROGRESS', 'DONE', 'HOLD'].includes(status);
+    },
+
+    isValidTaskPriority(priority) {
+        return ['HIGH', 'MEDIUM', 'LOW'].includes(priority);
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
+    },
+
+    isSameAsCurrentDetail(payload, detail) {
+        return payload.title === CommonJS.normalizeRequiredText(detail.title || '')
+            && payload.description === (CommonJS.normalizeOptionalText(detail.description || '') || '')
+            && payload.status === (detail.status || 'TODO')
+            && payload.priority === (detail.priority || 'MEDIUM')
+            && Number(payload.assigneeAdminNo || 0) === Number(detail.assigneeAdminNo || 0)
+            && (payload.dueDate || null) === (detail.dueDate || null)
+            && payload.isPinned === (detail.isPinned || 'N');
     },
 
     setBusyButton(button, isBusy, busyText = '처리 중...') {

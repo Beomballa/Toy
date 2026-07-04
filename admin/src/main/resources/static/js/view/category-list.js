@@ -78,13 +78,22 @@ const CategoryList = {
             const checkbox = event.target.closest('[data-role="select-root-category"]');
             if (checkbox) {
                 event.stopPropagation();
-                this.toggleSelection(Number(checkbox.dataset.categoryNo), checkbox.checked);
+                const categoryNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.categoryNo);
+                if (categoryNo == null) {
+                    return;
+                }
+                this.toggleSelection(categoryNo, checkbox.checked);
                 return;
             }
 
             const parentItem = event.target.closest('[data-role="select-parent"]');
             if (parentItem) {
-                this.getDepth2List(Number(parentItem.dataset.parentNo), parentItem.dataset.parentName);
+                const parentNo = this.normalizeOptionalPositiveNumber(parentItem.dataset.parentNo);
+                if (parentNo == null) {
+                    void CommonJS.alert('유효하지 않은 상위 카테고리 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.getDepth2List(parentNo, parentItem.dataset.parentName);
                 return;
             }
 
@@ -97,7 +106,11 @@ const CategoryList = {
         document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
             const checkbox = event.target.closest('[data-role="select-sub-category"]');
             if (checkbox) {
-                this.toggleSelection(Number(checkbox.dataset.categoryNo), checkbox.checked);
+                const categoryNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.categoryNo);
+                if (categoryNo == null) {
+                    return;
+                }
+                this.toggleSelection(categoryNo, checkbox.checked);
                 return;
             }
 
@@ -109,7 +122,12 @@ const CategoryList = {
 
             const deleteSubButton = event.target.closest('[data-role="delete-sub-category"]');
             if (deleteSubButton) {
-                this.deleteCategory(Number(deleteSubButton.dataset.categoryNo));
+                const categoryNo = this.normalizeOptionalPositiveNumber(deleteSubButton.dataset.categoryNo);
+                if (categoryNo == null) {
+                    void CommonJS.alert('유효하지 않은 카테고리 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteCategory(categoryNo);
             }
         });
         window.addEventListener('popstate', () => {
@@ -126,7 +144,7 @@ const CategoryList = {
         this.state.isActive = params.get('isActive') || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
-        this.state.selectedParentNo = this.isValidCategoryNo(Number(params.get('parentNo') || 0)) ? Number(params.get('parentNo')) : null;
+        this.state.selectedParentNo = this.normalizeOptionalPositiveNumber(params.get('parentNo'));
         document.getElementById('categoryKeyword').value = this.state.keyword;
         document.getElementById('categoryIsActiveFilter').value = this.state.isActive;
         document.getElementById('categoryPageSize').value = String(this.state.size);
@@ -356,6 +374,9 @@ const CategoryList = {
             return;
         }
         this._updateStateFromInputs();
+        if (!this.validateState()) {
+            return;
+        }
         try {
             this.exportInFlight = true;
             CommonJS.setButtonDisabled(document.getElementById('btnExportCategory'), true, '내보내는 중입니다.');
@@ -421,7 +442,10 @@ const CategoryList = {
     toggleSelectVisibleSubPage(checked) {
         document.querySelectorAll('[data-role="select-sub-category"]').forEach((checkbox) => {
             checkbox.checked = checked;
-            const categoryNo = Number(checkbox.dataset.categoryNo);
+            const categoryNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.categoryNo);
+            if (categoryNo == null) {
+                return;
+            }
             if (checked) {
                 this.selectedCategoryNos.add(categoryNo);
             } else {
@@ -446,8 +470,8 @@ const CategoryList = {
     updateSelectionMeta() {
         const totalSelected = this.selectedCategoryNos.size;
         const visibleSubNos = Array.from(document.querySelectorAll('[data-role="select-sub-category"]'))
-                .map((checkbox) => Number(checkbox.dataset.categoryNo))
-                .filter((categoryNo) => Number.isFinite(categoryNo));
+                .map((checkbox) => this.normalizeOptionalPositiveNumber(checkbox.dataset.categoryNo))
+                .filter((categoryNo) => categoryNo != null);
         const visibleSubNoSet = new Set(visibleSubNos);
         const visibleSubSelected = Array.from(this.selectedCategoryNos).filter((categoryNo) => visibleSubNoSet.has(categoryNo)).length;
         const metaEl = document.getElementById('categorySelectionMeta');
@@ -706,7 +730,7 @@ const CategoryList = {
     _updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value) || '';
         this.state.isActive = document.getElementById('categoryIsActiveFilter').value || '';
-        this.state.size = Number(document.getElementById('categoryPageSize').value || 10);
+        this.state.size = this.normalizePageSize(document.getElementById('categoryPageSize').value);
     },
 
     restoreSelectedParent() {
@@ -753,6 +777,11 @@ const CategoryList = {
     normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     renderDepth2Empty() {

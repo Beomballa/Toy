@@ -2,21 +2,19 @@ const ContentList = {
     initialized: false,
     exportInFlight: false,
     state: {
-        page: Number(new URLSearchParams(window.location.search).get('page') || 0),
+        page: 0,
         size: 9,
-        boardType: ContentBoardConfig.normalizeBoardType(
-            window.initialContentBoardType || new URLSearchParams(window.location.search).get('boardType')
-        ),
-        keyword: new URLSearchParams(window.location.search).get('keyword') || '',
-        status: new URLSearchParams(window.location.search).get('status') || '',
-        publicYn: new URLSearchParams(window.location.search).get('publicYn') || '',
-        startDate: new URLSearchParams(window.location.search).get('startDate') || '',
-        endDate: new URLSearchParams(window.location.search).get('endDate') || '',
-        pinnedOnly: new URLSearchParams(window.location.search).get('pinnedOnly') === 'true',
-        productLinked: new URLSearchParams(window.location.search).get('productLinked') || '',
-        productNo: new URLSearchParams(window.location.search).get('productNo') || '',
-        source: new URLSearchParams(window.location.search).get('source') || '',
-        returnTo: new URLSearchParams(window.location.search).get('returnTo') || '',
+        boardType: ContentBoardConfig.normalizeBoardType(window.initialContentBoardType),
+        keyword: '',
+        status: '',
+        publicYn: '',
+        startDate: '',
+        endDate: '',
+        pinnedOnly: false,
+        productLinked: '',
+        productNo: '',
+        source: '',
+        returnTo: '',
         selectedIds: new Set(),
         currentPageIds: [],
         lastBulkResultMessage: '아직 일괄 적용 결과가 없습니다.'
@@ -77,20 +75,8 @@ const ContentList = {
         });
 
         window.addEventListener('popstate', () => {
-            const params = new URLSearchParams(window.location.search);
             // 히스토리 이동 시 URL이 현재 게시판 상태의 기준이 된다.
-            this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType'));
-            this.state.keyword = params.get('keyword') || '';
-            this.state.status = params.get('status') || '';
-            this.state.publicYn = params.get('publicYn') || '';
-            this.state.startDate = params.get('startDate') || '';
-            this.state.endDate = params.get('endDate') || '';
-            this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
-            this.state.productLinked = params.get('productLinked') || '';
-            this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
-            this.state.source = params.get('source') || '';
-            this.state.returnTo = params.get('returnTo') || '';
-            this.state.page = this.normalizePage(params.get('page'));
+            this.normalizeStateFromUrl();
             this.syncSearchField();
             this.setInitialTab();
             this.updateSidebarActive();
@@ -401,9 +387,15 @@ const ContentList = {
     },
 
     renderPagination(data) {
-        const { totalPages, currentPage: curr } = data;
+        const totalPages = Number(data.totalPages || 0);
+        const curr = Number(data.currentPage || 0);
         const pagination = document.getElementById('pagination');
         if (!pagination) return;
+
+        if (totalPages <= 1) {
+            pagination.innerHTML = '';
+            return;
+        }
 
         let html = '';
         for (let i = 0; i < totalPages; i++) {
@@ -504,7 +496,11 @@ const ContentList = {
     bindSelectionEvents() {
         document.querySelectorAll('.content-select-checkbox').forEach((checkbox) => {
             checkbox.addEventListener('change', () => {
-                const id = Number(checkbox.dataset.contentId);
+                const id = this.normalizeNumericId(checkbox.dataset.contentId);
+                if (id == null) {
+                    checkbox.checked = false;
+                    return;
+                }
                 if (checkbox.checked) {
                     this.state.selectedIds.add(id);
                 } else {
@@ -518,11 +514,13 @@ const ContentList = {
     bindRowActions() {
         document.querySelectorAll('[data-role="content-detail"]').forEach((button) => {
             button.addEventListener('click', () => {
-                if (!this.isPositiveNumber(button.dataset.contentId)) {
+                const contentId = this.normalizeNumericId(button.dataset.contentId);
+                const boardType = ContentBoardConfig.normalizeBoardType(button.dataset.boardType);
+                if (contentId == null) {
                     void CommonJS.alert('콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
+                location.href = `/admin/content/get?id=${contentId}&boardType=${boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
         document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
@@ -532,11 +530,13 @@ const ContentList = {
                     await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
                     return;
                 }
-                if (!this.isPositiveNumber(button.dataset.contentId)) {
+                const contentId = this.normalizeNumericId(button.dataset.contentId);
+                const boardType = ContentBoardConfig.normalizeBoardType(button.dataset.boardType);
+                if (contentId == null) {
                     await CommonJS.alert('콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;
                 }
-                location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
+                location.href = `/admin/content/edit?id=${contentId}&boardType=${boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
     },
@@ -683,6 +683,10 @@ const ContentList = {
             void CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
             return false;
         }
+        if (this.state.keyword && this.state.keyword.length > 100) {
+            void CommonJS.alert('검색어는 100자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
         if (this.state.productNo && !this.isPositiveNumber(this.state.productNo)) {
             void CommonJS.alert('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
@@ -705,6 +709,16 @@ const ContentList = {
 
     normalizeStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
+        this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType') || window.initialContentBoardType);
+        this.state.keyword = params.get('keyword') || '';
+        this.state.status = params.get('status') || '';
+        this.state.publicYn = params.get('publicYn') || '';
+        this.state.startDate = params.get('startDate') || '';
+        this.state.endDate = params.get('endDate') || '';
+        this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
+        this.state.productLinked = params.get('productLinked') || '';
+        this.state.source = params.get('source') || '';
+        this.state.returnTo = params.get('returnTo') || '';
         this.state.page = this.normalizePage(params.get('page'));
         this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
     },
@@ -716,6 +730,10 @@ const ContentList = {
 
     normalizeOptionalPositiveNumber(value) {
         return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    normalizeNumericId(value) {
+        return this.isPositiveNumber(value) ? Number(value) : null;
     },
 
     isPositiveNumber(value) {

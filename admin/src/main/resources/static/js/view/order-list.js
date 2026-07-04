@@ -40,7 +40,7 @@ const OrderList = {
 
         document.getElementById('pageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('pageSize')?.value || 10);
+            this.state.size = this.normalizePageSize(document.getElementById('pageSize')?.value);
             this.pushState();
             this.getList();
         });
@@ -96,7 +96,12 @@ const OrderList = {
             if (!detailButton) {
                 return;
             }
-            location.href = this.buildDetailUrl(detailButton.dataset.orderNo);
+            const orderNo = this.normalizeOptionalPositiveNumber(detailButton.dataset.orderNo);
+            if (orderNo == null) {
+                void CommonJS.alert('유효한 주문 번호를 확인할 수 없습니다.', '알림', 'warning');
+                return;
+            }
+            location.href = this.buildDetailUrl(orderNo);
         });
 
         document.getElementById('pagination')?.addEventListener('click', (event) => {
@@ -366,6 +371,10 @@ const OrderList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.pushState();
         this.getList();
@@ -538,6 +547,9 @@ const OrderList = {
     },
 
     buildDetailUrl(orderNo) {
+        if (!this.isPositiveNumber(Number(orderNo))) {
+            return '#';
+        }
         const returnTo = encodeURIComponent(`${window.location.pathname}?${this.buildQueryString()}`);
         return `/admin/orders/get?no=${orderNo}&source=order-list&returnTo=${returnTo}`;
     },
@@ -600,11 +612,9 @@ const OrderList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        const page = Number(params.get('page') || 0);
-        const size = Number(params.get('size') || 10);
         return {
-            page: Number.isFinite(page) && page >= 0 ? page : 0,
-            size: Number.isFinite(size) && size > 0 ? size : 10,
+            page: this.normalizePage(params.get('page')),
+            size: this.normalizePageSize(params.get('size')),
             status: params.get('status') || '',
             startDate: params.get('startDate') || '',
             endDate: params.get('endDate') || '',
@@ -615,6 +625,7 @@ const OrderList = {
     },
 
     buildStateParams() {
+        this.validateState();
         // URL state를 한 곳에서만 조립해야 필터 항목이 늘어나도 popstate와 상세 복귀가 같이 유지됩니다.
         const params = new URLSearchParams({
             page: this.state.page,
@@ -629,6 +640,35 @@ const OrderList = {
         if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
 
         return params;
+    },
+
+    validateState() {
+        if (this.state.status && !['ORDERED', 'PAID', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(this.state.status)) {
+            throw new Error('주문 상태 필터 값이 올바르지 않습니다.');
+        }
+        this.state.size = this.normalizePageSize(this.state.size);
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isPositiveNumber(number) ? number : null;
+    },
+
+    isPositiveNumber(value) {
+        return Number.isInteger(value) && value > 0;
     }
 };
 

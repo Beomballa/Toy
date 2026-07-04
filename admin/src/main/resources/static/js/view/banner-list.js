@@ -75,7 +75,11 @@ const BannerList = {
         document.getElementById('bannerListBody')?.addEventListener('click', (event) => {
             const checkbox = event.target.closest('[data-role="select-banner"]');
             if (checkbox) {
-                this.toggleSelection(Number(checkbox.dataset.bannerNo), checkbox.checked);
+                const bannerNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.bannerNo);
+                if (bannerNo == null) {
+                    return;
+                }
+                this.toggleSelection(bannerNo, checkbox.checked);
                 return;
             }
             const editButton = event.target.closest('[data-role="edit-banner"]');
@@ -86,19 +90,34 @@ const BannerList = {
 
             const detailButton = event.target.closest('[data-role="open-banner-detail"]');
             if (detailButton) {
-                this.openBannerDetail(Number(detailButton.dataset.bannerNo), '목록 제목');
+                const bannerNo = this.normalizeOptionalPositiveNumber(detailButton.dataset.bannerNo);
+                if (bannerNo == null) {
+                    void CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.openBannerDetail(bannerNo, '목록 제목');
                 return;
             }
 
             const toggleButton = event.target.closest('[data-role="toggle-banner"]');
             if (toggleButton) {
-                this.toggleActive(Number(toggleButton.dataset.bannerNo), toggleButton.dataset.nextActive);
+                const bannerNo = this.normalizeOptionalPositiveNumber(toggleButton.dataset.bannerNo);
+                if (bannerNo == null) {
+                    void CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.toggleActive(bannerNo, toggleButton.dataset.nextActive);
                 return;
             }
 
             const deleteButton = event.target.closest('[data-role="delete-banner"]');
             if (deleteButton) {
-                this.deleteBanner(Number(deleteButton.dataset.bannerNo));
+                const bannerNo = this.normalizeOptionalPositiveNumber(deleteButton.dataset.bannerNo);
+                if (bannerNo == null) {
+                    void CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteBanner(bannerNo);
             }
         });
         document.getElementById('bannerKeyword')?.addEventListener('keydown', (event) => {
@@ -476,7 +495,10 @@ const BannerList = {
     toggleSelectCurrentPage(checked) {
         document.querySelectorAll('[data-role="select-banner"]').forEach((checkbox) => {
             checkbox.checked = checked;
-            const bannerNo = Number(checkbox.dataset.bannerNo);
+            const bannerNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.bannerNo);
+            if (bannerNo == null) {
+                return;
+            }
             if (checked) {
                 this.selectedBannerNos.add(bannerNo);
             } else {
@@ -800,7 +822,7 @@ const BannerList = {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value) || '';
         this.state.isActive = document.getElementById('bannerIsActiveFilter').value || '';
         this.state.exposureStatus = document.getElementById('bannerExposureStatusFilter').value || '';
-        this.state.size = Number(document.getElementById('bannerPageSize').value || 10);
+        this.state.size = this.normalizePageSize(document.getElementById('bannerPageSize').value);
     },
 
     escapeHtml(value) {
@@ -858,6 +880,14 @@ const BannerList = {
     normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isValidBannerNo(number) ? number : null;
     }
 };
 

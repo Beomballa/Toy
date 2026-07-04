@@ -57,7 +57,12 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryBody')?.addEventListener('click', (event) => {
             const detailButton = event.target.closest('[data-role="open-task-log-detail"]');
             if (detailButton) {
-                this.openDetail(Number(detailButton.dataset.logNo));
+                const logNo = this.normalizeOptionalPositiveNumber(detailButton.dataset.logNo);
+                if (logNo == null) {
+                    void CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openDetail(logNo);
             }
         });
         window.addEventListener('popstate', () => {
@@ -225,7 +230,7 @@ const TaskHistoryPage = {
         }
         pagination.innerHTML = html;
         pagination.querySelectorAll('[data-role="go-task-history-page"]').forEach((button) => {
-            button.addEventListener('click', () => this.goPage(Number(button.dataset.page)));
+            button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 
@@ -369,6 +374,7 @@ const TaskHistoryPage = {
 
     goPage(page) {
         if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.state.page = page;

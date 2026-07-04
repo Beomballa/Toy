@@ -84,7 +84,11 @@ const NoticeList = {
         document.getElementById('noticeListBody')?.addEventListener('click', (event) => {
             const checkbox = event.target.closest('[data-role="select-notice"]');
             if (checkbox) {
-                this.toggleSelection(Number(checkbox.dataset.noticeNo), checkbox.checked);
+                const noticeNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.noticeNo);
+                if (noticeNo == null) {
+                    return;
+                }
+                this.toggleSelection(noticeNo, checkbox.checked);
                 return;
             }
             const editButton = event.target.closest('[data-role="edit-notice"]');
@@ -95,26 +99,36 @@ const NoticeList = {
 
             const toggleButton = event.target.closest('[data-role="toggle-notice"]');
             if (toggleButton) {
-                this.toggleActive(Number(toggleButton.dataset.noticeNo), toggleButton.dataset.nextActive);
+                const noticeNo = this.normalizeOptionalPositiveNumber(toggleButton.dataset.noticeNo);
+                if (noticeNo == null) {
+                    void CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.toggleActive(noticeNo, toggleButton.dataset.nextActive);
                 return;
             }
 
             const deleteButton = event.target.closest('[data-role="delete-notice"]');
             if (deleteButton) {
-                this.deleteNotice(Number(deleteButton.dataset.noticeNo));
+                const noticeNo = this.normalizeOptionalPositiveNumber(deleteButton.dataset.noticeNo);
+                if (noticeNo == null) {
+                    void CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteNotice(noticeNo);
             }
         });
     },
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.isPinned = params.get('isPinned') || '';
         this.state.visibilityStatus = params.get('visibilityStatus') || '';
-        this.state.noticeNo = params.get('noticeNo') || '';
+        this.state.noticeNo = this.normalizeOptionalPositiveNumber(params.get('noticeNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('noticeKeyword').value = this.state.keyword;
@@ -131,7 +145,7 @@ const NoticeList = {
         this.state.isActive = document.getElementById('noticeIsActiveFilter').value;
         this.state.isPinned = document.getElementById('noticeIsPinnedFilter').value;
         this.state.visibilityStatus = document.getElementById('noticeVisibilityStatusFilter').value;
-        this.state.size = Number(document.getElementById('noticePageSize').value || 10);
+        this.state.size = this.normalizePageSize(document.getElementById('noticePageSize').value);
     },
 
     buildParams() {
@@ -151,6 +165,7 @@ const NoticeList = {
     async getList() {
         try {
             this.updateStateFromInputs();
+            this.validateState();
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.syncHistoryLink();
@@ -518,6 +533,10 @@ const NoticeList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.getList();
     },
@@ -606,6 +625,14 @@ const NoticeList = {
     },
 
     async toggleActive(noticeNo, isActive) {
+        if (!this.isPositiveNumber(noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidYn(isActive)) {
+            await CommonJS.alert('변경할 공지 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         if (this.toggleInFlight.has(noticeNo)) {
             return;
         }
@@ -630,6 +657,10 @@ const NoticeList = {
     },
 
     async deleteNotice(noticeNo) {
+        if (!this.isPositiveNumber(noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.deleteInFlight.has(noticeNo)) {
             return;
         }
@@ -994,6 +1025,51 @@ const NoticeList = {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    validateState() {
+        if (this.state.keyword.length > 100) {
+            throw new Error('검색어는 100자 이하로 입력하세요.');
+        }
+        if (this.state.isActive && !this.isValidYn(this.state.isActive)) {
+            throw new Error('공지 활성 상태 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.isPinned && !this.isValidYn(this.state.isPinned)) {
+            throw new Error('공지 고정 상태 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.visibilityStatus && !this.isValidVisibilityStatus(this.state.visibilityStatus)) {
+            throw new Error('공지 노출 상태 필터 값이 올바르지 않습니다.');
+        }
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isPositiveNumber(number) ? number : null;
+    },
+
+    isPositiveNumber(value) {
+        return Number.isInteger(value) && value > 0;
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
+    },
+
+    isValidVisibilityStatus(value) {
+        return ['LIVE', 'SCHEDULED', 'ENDED', 'INACTIVE'].includes(value);
     },
 
     escapeHtml(value) {

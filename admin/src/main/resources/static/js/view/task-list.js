@@ -160,24 +160,24 @@ const TaskList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
         this.state.status = params.get('status') || '';
         this.state.priority = params.get('priority') || '';
-        this.state.assigneeAdminNo = params.get('assigneeAdminNo') || '';
+        this.state.assigneeAdminNo = this.normalizeOptionalPositiveNumber(params.get('assigneeAdminNo'))?.toString() || '';
         this.state.isPinned = params.get('isPinned') || '';
         this.state.commentedOnly = params.get('commentedOnly') || '';
-        this.state.dueWithinDays = params.get('dueWithinDays') || '';
+        this.state.dueWithinDays = this.normalizeOptionalPositiveNumber(params.get('dueWithinDays'))?.toString() || '';
         this.state.dueState = params.get('dueState') || '';
         this.state.sortBy = params.get('sortBy') || 'PINNED_DUE';
         this.state.dueDateFrom = params.get('dueDateFrom') || '';
         this.state.dueDateTo = params.get('dueDateTo') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.unassignedOnly = params.get('unassignedOnly') || '';
-        this.state.taskNo = params.get('taskNo') || '';
-        this.state.openTaskNo = params.get('openTaskNo') || '';
-        this.state.focusTaskNo = params.get('focusTaskNo') || '';
+        this.state.taskNo = this.normalizeOptionalPositiveNumber(params.get('taskNo'))?.toString() || '';
+        this.state.openTaskNo = this.normalizeOptionalPositiveNumber(params.get('openTaskNo'))?.toString() || '';
+        this.state.focusTaskNo = this.normalizeOptionalPositiveNumber(params.get('focusTaskNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('taskKeyword').value = this.state.keyword;
@@ -210,7 +210,7 @@ const TaskList = {
         this.state.sortBy = document.getElementById('taskSortBy').value || 'PINNED_DUE';
         this.state.dueDateFrom = document.getElementById('taskDueDateFrom').value;
         this.state.dueDateTo = document.getElementById('taskDueDateTo').value;
-        this.state.size = Number(document.getElementById('taskPageSize').value || 10);
+        this.state.size = this.normalizePageSize(document.getElementById('taskPageSize').value);
         this.state.overdueOnly = document.getElementById('taskOverdueOnly')?.checked ? 'Y' : '';
         this.state.unassignedOnly = document.getElementById('taskUnassignedOnly')?.checked ? 'Y' : '';
         this.state.taskNo = this.parseOptionalNumber(document.getElementById('taskNoFilter')?.value)?.toString() || '';
@@ -247,6 +247,7 @@ const TaskList = {
     async getList() {
         try {
             this.updateStateFromInputs();
+            this.validateState();
             if (this.hasInvalidDueDateRange()) {
                 throw new Error('기한 시작일은 종료일보다 늦을 수 없습니다.');
             }
@@ -606,6 +607,14 @@ const TaskList = {
     },
 
     async updateStatus(taskNo, status) {
+        if (!this.isPositiveNumber(taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidTaskStatus(status)) {
+            await CommonJS.alert('변경할 작업 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         if (this.isUpdatingStatus) {
             return;
         }
@@ -634,6 +643,10 @@ const TaskList = {
     },
 
     async deleteTask(taskNo) {
+        if (!this.isPositiveNumber(taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.isDeletingTask) {
             return;
         }
@@ -666,6 +679,10 @@ const TaskList = {
     },
 
     async duplicateTask(taskNo) {
+        if (!this.isPositiveNumber(taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
         if (this.isDuplicatingTask) {
             return;
         }
@@ -963,6 +980,10 @@ const TaskList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.getList();
     },
@@ -1016,6 +1037,7 @@ const TaskList = {
             this.isExportingTask = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             this.updateStateFromInputs();
+            this.validateState();
             if (this.hasInvalidDueDateRange()) {
                 throw new Error('기한 시작일은 종료일보다 늦을 수 없습니다.');
             }
@@ -1237,11 +1259,17 @@ const TaskList = {
     },
 
     buildTaskDetailPath(taskNo, source = 'task-list-detail') {
+        if (!this.isPositiveNumber(Number(taskNo))) {
+            return '#';
+        }
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
         return `/admin/settings/tasks?taskNo=${taskNo}&openTaskNo=${taskNo}&focusTaskNo=${taskNo}&returnTo=${returnTo}&source=${encodeURIComponent(source)}`;
     },
 
     buildTaskLogPath(taskNo) {
+        if (!this.isPositiveNumber(Number(taskNo))) {
+            return '#';
+        }
         const params = new URLSearchParams();
         params.set('actionType', 'TASK_');
         params.set('targetId', String(taskNo));
@@ -1273,6 +1301,70 @@ const TaskList = {
             return null;
         }
         return Number(value);
+    },
+
+    validateState() {
+        if (this.state.keyword.length > 100) {
+            throw new Error('검색어는 100자 이하로 입력하세요.');
+        }
+        if (this.state.status && !this.isValidTaskStatus(this.state.status)) {
+            throw new Error('작업 상태 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.priority && !this.isValidTaskPriority(this.state.priority)) {
+            throw new Error('우선순위 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.isPinned && !this.isValidYn(this.state.isPinned)) {
+            throw new Error('고정 여부 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.commentedOnly && !['Y', 'N'].includes(this.state.commentedOnly)) {
+            throw new Error('댓글 여부 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.dueState && !['OVERDUE', 'TODAY', 'UPCOMING', 'NONE'].includes(this.state.dueState)) {
+            throw new Error('기한 상태 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.sortBy && !['PINNED_DUE', 'DUE_ASC', 'DUE_DESC', 'PRIORITY_DESC', 'LATEST'].includes(this.state.sortBy)) {
+            throw new Error('정렬 조건 값이 올바르지 않습니다.');
+        }
+        if (this.state.overdueOnly && this.state.overdueOnly !== 'Y') {
+            throw new Error('기한 초과 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.unassignedOnly && this.state.unassignedOnly !== 'Y') {
+            throw new Error('미배정 필터 값이 올바르지 않습니다.');
+        }
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isPositiveNumber(number) ? number : null;
+    },
+
+    isPositiveNumber(value) {
+        return Number.isInteger(value) && value > 0;
+    },
+
+    isValidTaskStatus(value) {
+        return ['TODO', 'IN_PROGRESS', 'DONE', 'ON_HOLD'].includes(value);
+    },
+
+    isValidTaskPriority(value) {
+        return ['HIGH', 'MEDIUM', 'LOW'].includes(value);
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
     },
 
     resolveBulkAssigneeAdminNo() {

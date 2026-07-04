@@ -50,14 +50,14 @@ const TaskWorkloadList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
         this.state.priority = params.get('priority') || '';
         this.state.overdueOnly = params.get('overdueOnly') || '';
         this.state.sortBy = params.get('sortBy') || 'OVERDUE_DESC';
-        this.state.adminNo = params.get('adminNo') || '';
-        this.state.focusAdminNo = params.get('focusAdminNo') || '';
+        this.state.adminNo = this.normalizeOptionalPositiveNumber(params.get('adminNo'))?.toString() || '';
+        this.state.focusAdminNo = this.normalizeOptionalPositiveNumber(params.get('focusAdminNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
 
@@ -81,6 +81,7 @@ const TaskWorkloadList = {
         this.state.priority = document.getElementById('taskWorkloadPriority')?.value || '';
         this.state.overdueOnly = document.getElementById('taskWorkloadOverdueOnly')?.checked ? 'Y' : '';
         this.state.sortBy = document.getElementById('taskWorkloadSortBy')?.value || 'OVERDUE_DESC';
+        this.state.size = this.normalizePageSize(document.getElementById('taskWorkloadPageSize')?.value);
     },
 
     buildParams() {
@@ -103,6 +104,7 @@ const TaskWorkloadList = {
             return;
         }
         this.updateStateFromInputs();
+        this.validateState();
         const params = this.buildParams();
         params.delete('page');
         params.delete('size');
@@ -124,6 +126,7 @@ const TaskWorkloadList = {
             return;
         }
         this.updateStateFromInputs();
+        this.validateState();
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
         this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
@@ -253,10 +256,18 @@ const TaskWorkloadList = {
 
         paginationEl.querySelectorAll('[data-role="go-page"]').forEach((button) => {
             button.addEventListener('click', () => {
-                this.state.page = Number(button.dataset.page);
-                this.getList();
+                this.goPage(Number(button.dataset.page));
             });
         });
+    },
+
+    goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        this.state.page = page;
+        this.getList();
     },
 
     resetFilters() {
@@ -343,8 +354,8 @@ const TaskWorkloadList = {
 
     async openDeepLinkedAssigneeIfNeeded(items) {
         if (!this.state.adminNo) return;
-        const adminNo = Number(this.state.adminNo);
-        if (!adminNo) {
+        const adminNo = this.normalizeOptionalPositiveNumber(this.state.adminNo);
+        if (adminNo == null) {
             this.state.adminNo = '';
             return;
         }
@@ -362,6 +373,9 @@ const TaskWorkloadList = {
     },
 
     buildWorkloadDetailPath(adminNo) {
+        if (!this.isPositiveNumber(Number(adminNo))) {
+            return '#';
+        }
         const returnParams = this.buildParams();
         returnParams.set('focusAdminNo', String(adminNo));
         returnParams.delete('adminNo');
@@ -430,5 +444,42 @@ const TaskWorkloadList = {
         if (sortBy === 'TODO_DESC') return '대기 작업 많은 순';
         if (sortBy === 'NAME_ASC') return '담당자명 순';
         return '기한 초과 우선';
+    },
+
+    validateState() {
+        if (this.state.keyword.length > 100) {
+            throw new Error('검색어는 100자 이하로 입력하세요.');
+        }
+        if (this.state.priority && !['HIGH', 'MEDIUM', 'LOW'].includes(this.state.priority)) {
+            throw new Error('우선순위 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.overdueOnly && this.state.overdueOnly !== 'Y') {
+            throw new Error('기한 초과 필터 값이 올바르지 않습니다.');
+        }
+        if (this.state.sortBy && !['OVERDUE_DESC', 'TOTAL_DESC', 'TODO_DESC', 'NAME_ASC'].includes(this.state.sortBy)) {
+            throw new Error('정렬 조건 값이 올바르지 않습니다.');
+        }
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 10;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return this.isPositiveNumber(number) ? number : null;
+    },
+
+    isPositiveNumber(value) {
+        return Number.isInteger(value) && value > 0;
     }
 };

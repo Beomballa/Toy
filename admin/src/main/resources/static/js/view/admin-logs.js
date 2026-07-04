@@ -47,13 +47,18 @@ const AdminLogPage = {
         });
         document.getElementById('logPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('logPageSize')?.value || 20);
+            this.state.size = this.normalizePageSize(document.getElementById('logPageSize')?.value);
             this.getList();
         });
         document.getElementById('logListBody')?.addEventListener('click', (event) => {
             const detailButton = event.target.closest('[data-role="open-log-detail"]');
             if (detailButton) {
-                this.openDetail(Number(detailButton.dataset.logNo));
+                const logNo = this.normalizeOptionalPositiveNumber(detailButton.dataset.logNo);
+                if (logNo == null) {
+                    void CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openDetail(logNo);
             }
         });
         ['logAdminNo', 'logAdminKeyword', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
@@ -81,9 +86,9 @@ const AdminLogPage = {
         document.getElementById('logTargetId').value = params.get('targetId') || '';
         document.getElementById('logStartDate').value = params.get('startDate') || '';
         document.getElementById('logEndDate').value = params.get('endDate') || '';
-        this.state.logNo = params.get('logNo') || '';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'))?.toString() || '';
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = params.get('returnTo') || '/admin/settings/logs';
         this.state.source = params.get('source') || '';
         document.getElementById('logPageSize').value = String(this.state.size);
@@ -127,6 +132,9 @@ const AdminLogPage = {
 
     async getList() {
         if (this.isLoading) {
+            return;
+        }
+        if (!this.validateState()) {
             return;
         }
         const startDate = document.getElementById('logStartDate')?.value;
@@ -286,6 +294,10 @@ const AdminLogPage = {
         if (this.isOpeningDetail) {
             return;
         }
+        if (this.normalizeOptionalPositiveNumber(logNo) == null) {
+            await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         document.getElementById('logDetailBody').innerHTML = `
             <div class="product-loading-state py-4">
                 <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
@@ -354,6 +366,10 @@ const AdminLogPage = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.state.page = page;
         this.getList();
     },
@@ -472,6 +488,9 @@ const AdminLogPage = {
         if (this.isExporting) {
             return;
         }
+        if (!this.validateState()) {
+            return;
+        }
         const params = this.buildExportParams();
         const exportButton = document.getElementById('btnExportLog');
         try {
@@ -495,8 +514,8 @@ const AdminLogPage = {
         if (!this.state.logNo) {
             return;
         }
-        const logNo = Number(this.state.logNo);
-        if (!Number.isFinite(logNo) || logNo <= 0) {
+        const logNo = this.normalizeOptionalPositiveNumber(this.state.logNo);
+        if (logNo == null) {
             this.state.logNo = '';
             return;
         }
@@ -588,6 +607,46 @@ const AdminLogPage = {
         const month = String(value.getMonth() + 1).padStart(2, '0');
         const day = String(value.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    },
+
+    validateState() {
+        const adminNo = document.getElementById('logAdminNo')?.value.trim() || '';
+        const targetId = document.getElementById('logTargetId')?.value.trim() || '';
+        const startDate = document.getElementById('logStartDate')?.value || '';
+        const endDate = document.getElementById('logEndDate')?.value || '';
+        this.state.size = this.normalizePageSize(document.getElementById('logPageSize')?.value);
+
+        if (adminNo && this.normalizeOptionalPositiveNumber(adminNo) == null) {
+            void CommonJS.alert('관리자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (targetId && this.normalizeOptionalPositiveNumber(targetId) == null) {
+            void CommonJS.alert('대상 ID는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (startDate && endDate && startDate > endDate) {
+            void CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(value) {
+        const page = Number(value);
+        return Number.isInteger(page) && page >= 0 ? page : 0;
+    },
+
+    normalizePageSize(value) {
+        const size = Number(value);
+        return Number.isInteger(size) && size > 0 ? size : 20;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        if (value == null || value === '') {
+            return null;
+        }
+        const number = Number(value);
+        return Number.isInteger(number) && number > 0 ? number : null;
     }
 };
 

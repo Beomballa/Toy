@@ -26,7 +26,7 @@ const OrderHistoryPage = {
         document.getElementById('btnResetOrderHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('historyPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('historyPageSize')?.value || 20);
+            this.state.size = this.normalizePageSize(document.getElementById('historyPageSize')?.value);
             this.loadHistory();
         });
         document.getElementById('historyKeyword')?.addEventListener('keydown', (event) => {
@@ -69,6 +69,9 @@ const OrderHistoryPage = {
             try {
                 this.isExporting = true;
                 CommonJS.setButtonDisabled(document.getElementById('btnExportOrderHistory'), true, '내보내는 중입니다.');
+                if (!this.validateState()) {
+                    return;
+                }
                 const startDate = document.getElementById('historyStartDate')?.value || '';
                 const endDate = document.getElementById('historyEndDate')?.value || '';
                 if (startDate && endDate && startDate > endDate) {
@@ -135,6 +138,7 @@ const OrderHistoryPage = {
         if (this.state.returnTo && this.state.returnTo !== '/admin/orders/list') params.set('returnTo', this.state.returnTo);
         if (this.state.source) params.set('source', this.state.source);
         if (this.state.historyNo) params.set('historyNo', this.state.historyNo);
+        this.state.size = this.normalizePageSize(document.getElementById('historyPageSize')?.value);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -314,6 +318,7 @@ const OrderHistoryPage = {
 
     goPage(page) {
         if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.state.page = page;
@@ -497,8 +502,8 @@ const OrderHistoryPage = {
         if (!this.state.historyNo) {
             return;
         }
-        const historyNo = Number(this.state.historyNo);
-        if (!Number.isFinite(historyNo) || historyNo <= 0) {
+        const historyNo = this.normalizeOptionalPositiveNumber(this.state.historyNo);
+        if (!historyNo) {
             this.state.historyNo = '';
         } else if (items.some((item) => item.historyNo === historyNo)) {
             this.state.historyNo = '';

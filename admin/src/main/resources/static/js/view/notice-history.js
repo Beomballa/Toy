@@ -30,7 +30,7 @@ const NoticeHistoryPage = {
         document.getElementById('btnResetNoticeHistory')?.addEventListener('click', () => this.resetFilters());
         document.getElementById('noticeHistoryPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('noticeHistoryPageSize')?.value || 20);
+            this.state.size = this.normalizePageSize(document.getElementById('noticeHistoryPageSize')?.value);
             this.loadHistory();
         });
         ['noticeHistoryNoticeNo', 'noticeHistoryAdminNo', 'noticeHistoryAdminKeyword', 'noticeHistoryStartDate', 'noticeHistoryEndDate'].forEach((id) => {
@@ -59,7 +59,12 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryBody')?.addEventListener('click', (event) => {
             const detailButton = event.target.closest('[data-role="open-notice-log-detail"]');
             if (detailButton) {
-                this.openDetail(Number(detailButton.dataset.logNo));
+                const logNo = this.normalizeOptionalPositiveNumber(detailButton.dataset.logNo);
+                if (!logNo) {
+                    void CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openDetail(logNo);
             }
         });
         window.addEventListener('popstate', () => {
@@ -109,6 +114,7 @@ const NoticeHistoryPage = {
         if (this.state.logNo) params.set('logNo', this.state.logNo);
         if (this.state.returnTo && this.state.returnTo !== '/admin/settings/notices') params.set('returnTo', this.state.returnTo);
         if (this.state.source) params.set('source', this.state.source);
+        this.state.size = this.normalizePageSize(document.getElementById('noticeHistoryPageSize')?.value);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         return params;
@@ -293,6 +299,9 @@ const NoticeHistoryPage = {
         try {
             this.isExporting = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            if (!this.validateState()) {
+                return;
+            }
             const startDate = document.getElementById('noticeHistoryStartDate')?.value || '';
             const endDate = document.getElementById('noticeHistoryEndDate')?.value || '';
             if (startDate && endDate && startDate > endDate) {
@@ -374,6 +383,7 @@ const NoticeHistoryPage = {
 
     goPage(page) {
         if (!Number.isInteger(page) || page < 0) {
+            void CommonJS.alert('이동할 페이지 정보가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.state.page = page;
@@ -531,8 +541,8 @@ const NoticeHistoryPage = {
         if (!this.state.logNo) {
             return;
         }
-        const logNo = Number(this.state.logNo);
-        if (!Number.isFinite(logNo) || logNo <= 0) {
+        const logNo = this.normalizeOptionalPositiveNumber(this.state.logNo);
+        if (!logNo) {
             this.state.logNo = '';
             return;
         }

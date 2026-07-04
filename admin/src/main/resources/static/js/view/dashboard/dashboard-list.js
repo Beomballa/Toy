@@ -777,9 +777,12 @@ const DashBoardListJS = {
             returnTo: this.getReturnTo()
         });
 
-        if (filters.status) params.set('status', filters.status);
-        if (filters.startDate) params.set('startDate', filters.startDate);
-        if (filters.endDate) params.set('endDate', filters.endDate);
+        const normalizedStatus = this.normalizeOrderStatus(filters.status);
+        const normalizedStartDate = this.normalizeDateString(filters.startDate);
+        const normalizedEndDate = this.normalizeDateString(filters.endDate);
+        if (normalizedStatus) params.set('status', normalizedStatus);
+        if (normalizedStartDate) params.set('startDate', normalizedStartDate);
+        if (normalizedEndDate) params.set('endDate', normalizedEndDate);
 
         location.href = `/admin/orders/list?${params.toString()}`;
     },
@@ -798,6 +801,14 @@ const DashBoardListJS = {
     normalizePositiveId(value) {
         const parsed = Number(value);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    normalizeOrderStatus(value) {
+        return ['PREPARING', 'SHIPPED', 'CANCELLED'].includes(value) ? value : '';
+    },
+
+    normalizeDateString(value) {
+        return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) ? value : '';
     },
 
     escapeHtml(value) {

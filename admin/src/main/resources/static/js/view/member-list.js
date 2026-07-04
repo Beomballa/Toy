@@ -66,7 +66,7 @@ const MemberListPage = {
             }
         });
         document.querySelectorAll('[data-summary-filter]').forEach((button) => {
-            button.addEventListener('click', () => this.applySummaryFilter(button.dataset.summaryFilter));
+            button.addEventListener('click', () => this.applySummaryFilter(this.normalizeSummaryFilter(button.dataset.summaryFilter)));
         });
         document.getElementById('btnToggleMasterYn')?.addEventListener('click', () => this.toggleMemberStatus('master'));
         document.getElementById('btnToggleMemberStatus')?.addEventListener('click', () => this.toggleMemberStatus('deleted'));
@@ -170,7 +170,7 @@ const MemberListPage = {
         document.getElementById('memberSummaryDeleted').textContent = this.formatCount(data.deletedCount);
         document.getElementById('memberSummaryTempPassword').textContent = this.formatCount(data.tempPasswordCount);
         document.querySelectorAll('[data-summary-filter]').forEach((button) => {
-            const active = this.isSummaryFilterActive(button.dataset.summaryFilter);
+            const active = this.isSummaryFilterActive(this.normalizeSummaryFilter(button.dataset.summaryFilter));
             button.classList.toggle('border-dark', active);
             button.classList.toggle('shadow', active);
         });
@@ -334,15 +334,16 @@ const MemberListPage = {
     },
 
     applySummaryFilter(filterType) {
-        if (filterType === 'MASTER') {
+        const normalizedFilterType = this.normalizeSummaryFilter(filterType);
+        if (normalizedFilterType === 'MASTER') {
             document.getElementById('memberMasterYn').value = 'Y';
             document.getElementById('memberDelYn').value = '';
             document.getElementById('memberInitYn').value = '';
-        } else if (filterType === 'DELETED') {
+        } else if (normalizedFilterType === 'DELETED') {
             document.getElementById('memberMasterYn').value = '';
             document.getElementById('memberDelYn').value = 'Y';
             document.getElementById('memberInitYn').value = '';
-        } else if (filterType === 'TEMP_PASSWORD') {
+        } else if (normalizedFilterType === 'TEMP_PASSWORD') {
             document.getElementById('memberMasterYn').value = '';
             document.getElementById('memberDelYn').value = '';
             document.getElementById('memberInitYn').value = 'Y';
@@ -356,16 +357,17 @@ const MemberListPage = {
     },
 
     isSummaryFilterActive(filterType) {
+        const normalizedFilterType = this.normalizeSummaryFilter(filterType);
         const masterYn = document.getElementById('memberMasterYn').value;
         const delYn = document.getElementById('memberDelYn').value;
         const initYn = document.getElementById('memberInitYn').value;
-        if (filterType === 'MASTER') {
+        if (normalizedFilterType === 'MASTER') {
             return masterYn === 'Y' && !delYn && !initYn;
         }
-        if (filterType === 'DELETED') {
+        if (normalizedFilterType === 'DELETED') {
             return delYn === 'Y' && !masterYn && !initYn;
         }
-        if (filterType === 'TEMP_PASSWORD') {
+        if (normalizedFilterType === 'TEMP_PASSWORD') {
             return initYn === 'Y' && !masterYn && !delYn;
         }
         return !masterYn && !delYn && !initYn;
@@ -684,6 +686,10 @@ const MemberListPage = {
         }
         const number = Number(value);
         return this.isPositiveNumber(number) ? number : null;
+    },
+
+    normalizeSummaryFilter(value) {
+        return ['MASTER', 'DELETED', 'TEMP_PASSWORD'].includes(value) ? value : 'ALL';
     },
 
     isPositiveNumber(value) {

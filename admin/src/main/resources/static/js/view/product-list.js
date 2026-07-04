@@ -129,7 +129,7 @@ const ProductList = {
 
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
-                const productNo = productNameEl.dataset.id;
+                const productNo = this._normalizeOptionalPositiveNumber(productNameEl.dataset.id);
                 if (!this._isPositiveNumber(productNo)) {
                     void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;

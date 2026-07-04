@@ -14,7 +14,7 @@ const ContentDetail = {
         if (this.initialized) return;
         this.initialized = true;
         const params = new URLSearchParams(window.location.search);
-        this.state.id = window.initialContentDetail?.id || params.get('id');
+        this.state.id = this.normalizeContentId(window.initialContentDetail?.id || params.get('id'));
         this.state.boardType = ContentBoardConfig.normalizeBoardType(
             window.initialContentDetail?.boardType || params.get('boardType')
         );
@@ -46,6 +46,10 @@ const ContentDetail = {
                 await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정'), '알림', 'warning');
                 return;
             }
+            if (!this.isValidContentId(this.state.id)) {
+                await CommonJS.alert('문서 번호가 올바르지 않습니다.', '알림', 'warning');
+                return;
+            }
             const returnToQuery = this.state.returnTo ? `&returnTo=${encodeURIComponent(this.state.returnTo)}` : '';
             const sourceQuery = this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : '';
             window.location.href = `/admin/content/edit?id=${this.state.id}&boardType=${this.state.boardType}${sourceQuery}${returnToQuery}`;
@@ -73,7 +77,7 @@ const ContentDetail = {
         try {
             const response = await fetch(`/api/admin/content/get?id=${this.state.id}`);
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(await CommonJS.extractErrorMessage(response, '상세 내용을 불러오는 중 오류가 발생했습니다.'));
             }
 
             const data = await response.json();
@@ -145,7 +149,7 @@ const ContentDetail = {
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(await CommonJS.extractErrorMessage(response, '삭제 처리 중 오류가 발생했습니다.'));
             }
 
             await CommonJS.alert('삭제되었습니다.', '성공', 'success');
@@ -208,5 +212,9 @@ const ContentDetail = {
 
     isValidContentId(id) {
         return /^\d+$/.test(String(id || '')) && Number(id) > 0;
+    },
+
+    normalizeContentId(id) {
+        return this.isValidContentId(id) ? String(Number(id)) : null;
     }
 };

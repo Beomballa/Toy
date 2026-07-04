@@ -28,7 +28,7 @@ const NoticeDetailPage = {
 
     readBootstrapState() {
         const bootstrapState = window.noticeDetailBootstrap || {};
-        this.state.noticeNo = Number(bootstrapState.noticeNo || 0);
+        this.state.noticeNo = this.normalizeNoticeNo(bootstrapState.noticeNo);
         this.state.returnTo = bootstrapState.returnTo || '/admin/settings/notices';
         this.state.source = bootstrapState.source || '';
         this.syncReturnLinks();
@@ -125,7 +125,8 @@ const NoticeDetailPage = {
             return;
         }
         const detail = this.state.currentDetail;
-        if (!detail) {
+        if (!detail || !this.isValidNoticeNo(detail.noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 정보를 확인할 수 없습니다.', '알림', 'warning');
             return;
         }
         document.getElementById('noticeDetailEditTitle').value = detail.title || '';
@@ -144,7 +145,8 @@ const NoticeDetailPage = {
             return;
         }
         const detail = this.state.currentDetail;
-        if (!detail) {
+        if (!detail || !this.isValidNoticeNo(detail.noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 정보를 확인할 수 없습니다.', '알림', 'warning');
             return;
         }
 
@@ -207,7 +209,8 @@ const NoticeDetailPage = {
             return;
         }
         const detail = this.state.currentDetail;
-        if (!detail) {
+        if (!detail || !this.isValidNoticeNo(detail.noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 정보를 확인할 수 없습니다.', '알림', 'warning');
             return;
         }
 
@@ -429,6 +432,10 @@ const NoticeDetailPage = {
 
     isValidNoticeNo(noticeNo) {
         return Number.isInteger(Number(noticeNo)) && Number(noticeNo) > 0;
+    },
+
+    normalizeNoticeNo(noticeNo) {
+        return this.isValidNoticeNo(noticeNo) ? Number(noticeNo) : null;
     },
 
     isValidYn(value) {

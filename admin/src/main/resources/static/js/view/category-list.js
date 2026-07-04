@@ -120,13 +120,13 @@ const CategoryList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
-        this.state.selectedParentNo = Number(params.get('parentNo') || 0) || null;
+        this.state.selectedParentNo = this.isValidCategoryNo(Number(params.get('parentNo') || 0)) ? Number(params.get('parentNo')) : null;
         document.getElementById('categoryKeyword').value = this.state.keyword;
         document.getElementById('categoryIsActiveFilter').value = this.state.isActive;
         document.getElementById('categoryPageSize').value = String(this.state.size);
@@ -150,6 +150,9 @@ const CategoryList = {
     async getDepth1List() {
         try {
             this._updateStateFromInputs();
+            if (!this.validateState()) {
+                return;
+            }
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setMetaText('카테고리 목록을 불러오는 중입니다...');
@@ -476,6 +479,9 @@ const CategoryList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.getDepth1List();
     },
@@ -725,6 +731,28 @@ const CategoryList = {
 
     isValidCategoryDepth(depth) {
         return Number(depth) === 1 || Number(depth) === 2;
+    },
+
+    validateState() {
+        if (this.state.keyword && this.state.keyword.length > 100) {
+            void CommonJS.alert('검색어는 100자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.isActive && !['Y', 'N'].includes(this.state.isActive)) {
+            void CommonJS.alert('활성 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
     },
 
     renderDepth2Empty() {

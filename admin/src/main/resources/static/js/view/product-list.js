@@ -130,6 +130,10 @@ const ProductList = {
             const productNameEl = e.target.closest('.product-name');
             if (productNameEl) {
                 const productNo = productNameEl.dataset.id;
+                if (!this._isPositiveNumber(productNo)) {
+                    void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
                 location.href = `/admin/products/get?no=${productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
                 return;
             }
@@ -154,6 +158,10 @@ const ProductList = {
             if (editButton) {
                 if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
                     void CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 수정'), '알림', 'warning');
+                    return;
+                }
+                if (!this._isPositiveNumber(editButton.dataset.productNo)) {
+                    void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;
                 }
                 location.href = `/admin/products/update?no=${editButton.dataset.productNo}&source=product-list&returnTo=${encodeURIComponent(this.getReturnTo())}`;
@@ -991,10 +999,10 @@ const ProductList = {
 
     _readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
-        this.state.brandNo = params.get('brandNo') || '';
-        this.state.categoryNo = params.get('categoryNo') || '';
+        this.state.page = this._normalizePage(params.get('page'));
+        this.state.size = this._normalizePageSize(params.get('size'));
+        this.state.brandNo = this._normalizeOptionalPositiveNumber(params.get('brandNo'));
+        this.state.categoryNo = this._normalizeOptionalPositiveNumber(params.get('categoryNo'));
         this.state.status = params.get('status') || '';
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
         this.state.lowStockThreshold = this._normalizeLowStockThreshold(params.get('lowStockThreshold') || this.defaultLowStockThreshold);
@@ -1232,8 +1240,42 @@ const ProductList = {
             void CommonJS.alert('검색어는 50자 이하로 입력해주세요.', '알림', 'warning');
             return false;
         }
+        if (this.state.brandNo && !this._isPositiveNumber(this.state.brandNo)) {
+            void CommonJS.alert('브랜드 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.categoryNo && !this._isPositiveNumber(this.state.categoryNo)) {
+            void CommonJS.alert('카테고리 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.status && !['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(this.state.status)) {
+            void CommonJS.alert('상품 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['r', 'p', 'c'].includes(this.state.orderType)) {
+            void CommonJS.alert('정렬 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
 
         return true;
+    },
+
+    _normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    _normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+    },
+
+    _normalizeOptionalPositiveNumber(value) {
+        return this._isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    _isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     },
 
     _syncUrlState() {

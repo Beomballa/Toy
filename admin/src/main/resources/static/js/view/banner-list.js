@@ -116,12 +116,12 @@ const BannerList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 10);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
         this.state.isActive = params.get('isActive') || '';
         this.state.exposureStatus = params.get('exposureStatus') || '';
-        this.state.bannerNo = params.get('bannerNo') || '';
+        this.state.bannerNo = this.isValidBannerNo(params.get('bannerNo')) ? String(Number(params.get('bannerNo'))) : '';
         this.state.pageSource = params.get('source') || '';
         this.state.source = this.state.pageSource;
         this.state.returnTo = params.get('returnTo') || '';
@@ -149,6 +149,9 @@ const BannerList = {
     async getList() {
         try {
             this._updateStateFromInputs();
+            if (!this.validateState()) {
+                return;
+            }
             const params = this.buildParams();
             history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
             this.setFilterMeta('적용 필터를 계산하는 중입니다...');
@@ -590,6 +593,9 @@ const BannerList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.getList();
     },
@@ -826,6 +832,32 @@ const BannerList = {
             return true;
         }
         return new Date(startDtm).getTime() <= new Date(endDtm).getTime();
+    },
+
+    validateState() {
+        if (this.state.keyword && this.state.keyword.length > 100) {
+            void CommonJS.alert('검색어는 100자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.isActive && !this.isValidActiveValue(this.state.isActive)) {
+            void CommonJS.alert('활성 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.exposureStatus && !['LIVE', 'SCHEDULED', 'ENDED'].includes(this.state.exposureStatus)) {
+            void CommonJS.alert('노출 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
     }
 };
 

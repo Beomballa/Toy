@@ -554,8 +554,8 @@ const TaskHistoryPage = {
 
     async openDeepLinkedLogIfNeeded(items) {
         if (!this.state.logNo) return;
-        const logNo = Number(this.state.logNo);
-        if (!logNo) {
+        const logNo = this.normalizeOptionalPositiveNumber(this.state.logNo);
+        if (logNo == null) {
             this.state.logNo = '';
             return;
         }

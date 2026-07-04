@@ -529,8 +529,9 @@ const AdminLogPage = {
     },
 
     highlightLogRow(logNo) {
+        const targetLogNo = this.normalizeOptionalPositiveNumber(logNo);
         document.querySelectorAll('[data-log-row]').forEach((row) => {
-            row.classList.toggle('table-active', Number(row.dataset.logRow) === Number(logNo));
+            row.classList.toggle('table-active', this.normalizeOptionalPositiveNumber(row.dataset.logRow) === targetLogNo);
         });
     },
 

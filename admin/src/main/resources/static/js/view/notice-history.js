@@ -556,8 +556,9 @@ const NoticeHistoryPage = {
     },
 
     highlightLogRow(logNo) {
+        const targetLogNo = this.normalizeOptionalPositiveNumber(logNo);
         document.querySelectorAll('[data-notice-log-row]').forEach((row) => {
-            const selected = Number(row.dataset.noticeLogRow) === Number(logNo);
+            const selected = this.normalizeOptionalPositiveNumber(row.dataset.noticeLogRow) === targetLogNo;
             row.classList.toggle('table-active', selected);
             if (selected) {
                 row.scrollIntoView({ block: 'center', behavior: 'smooth' });

@@ -488,9 +488,9 @@ const OrderHistoryPage = {
     },
 
     highlightHistoryRow(historyNo) {
-        const targetHistoryNo = Number(historyNo || 0);
+        const targetHistoryNo = this.normalizeOptionalPositiveNumber(historyNo);
         document.querySelectorAll('[data-order-history-row]').forEach((row) => {
-            const selected = Number(row.dataset.orderHistoryRow) === targetHistoryNo;
+            const selected = this.normalizeOptionalPositiveNumber(row.dataset.orderHistoryRow) === targetHistoryNo;
             row.classList.toggle('table-active', selected);
             if (selected) {
                 row.scrollIntoView({ block: 'center', behavior: 'smooth' });

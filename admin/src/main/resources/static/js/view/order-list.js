@@ -74,7 +74,7 @@ const OrderList = {
 
         document.querySelectorAll('[data-date-preset]').forEach((button) => {
             button.addEventListener('click', () => {
-                this.applyDatePreset(Number(button.dataset.datePreset || 0));
+                this.applyDatePreset(this.normalizeDatePreset(button.dataset.datePreset));
                 this.pushState();
                 this.getList();
             });
@@ -518,7 +518,7 @@ const OrderList = {
     syncDatePresetButtons() {
         const activePreset = this.resolveActiveDatePreset();
         document.querySelectorAll('[data-date-preset]').forEach((button) => {
-            const isActive = Number(button.dataset.datePreset || 0) === activePreset;
+            const isActive = this.normalizeDatePreset(button.dataset.datePreset) === activePreset;
             button.classList.toggle('btn-dark', isActive);
             button.classList.toggle('text-white', isActive);
             button.classList.toggle('btn-outline-light', !isActive);
@@ -657,6 +657,11 @@ const OrderList = {
     normalizePageSize(value) {
         const size = Number(value);
         return Number.isInteger(size) && size > 0 ? size : 10;
+    },
+
+    normalizeDatePreset(value) {
+        const preset = Number(value);
+        return Number.isInteger(preset) && preset >= 0 ? preset : 0;
     },
 
     normalizeOptionalPositiveNumber(value) {

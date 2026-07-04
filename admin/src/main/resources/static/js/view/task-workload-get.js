@@ -30,65 +30,125 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadRecentTasksBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo), '최근 작업');
+                const taskNo = this.normalizeTaskNo(completeButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('완료 처리할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.completeTask(taskNo, '최근 작업');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 작업');
+                const taskNo = this.normalizeTaskNo(priorityButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('우선순위를 변경할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.raisePriority(taskNo, '최근 작업');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 작업');
+                const taskNo = this.normalizeTaskNo(reassignButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openReassignModal(taskNo, '최근 작업');
             }
         });
         document.getElementById('workloadOverdueTasksBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-overdue-task"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo), '기한 초과 작업');
+                const taskNo = this.normalizeTaskNo(completeButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('완료 처리할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.completeTask(taskNo, '기한 초과 작업');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-overdue-priority"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo), '기한 초과 작업');
+                const taskNo = this.normalizeTaskNo(priorityButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('우선순위를 변경할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.raisePriority(taskNo, '기한 초과 작업');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-overdue-task"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo), '기한 초과 작업');
+                const taskNo = this.normalizeTaskNo(reassignButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openReassignModal(taskNo, '기한 초과 작업');
             }
         });
         document.getElementById('workloadRecentCommentsBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo), '최근 메모');
+                const taskNo = this.normalizeTaskNo(completeButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('완료 처리할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.completeTask(taskNo, '최근 메모');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 메모');
+                const taskNo = this.normalizeTaskNo(priorityButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('우선순위를 변경할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.raisePriority(taskNo, '최근 메모');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 메모');
+                const taskNo = this.normalizeTaskNo(reassignButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openReassignModal(taskNo, '최근 메모');
             }
         });
         document.getElementById('workloadRecentHistoriesBody')?.addEventListener('click', (event) => {
             const completeButton = event.target.closest('[data-role="complete-task-from-context"]');
             if (completeButton) {
-                this.completeTask(Number(completeButton.dataset.taskNo), '최근 활동');
+                const taskNo = this.normalizeTaskNo(completeButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('완료 처리할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.completeTask(taskNo, '최근 활동');
                 return;
             }
             const priorityButton = event.target.closest('[data-role="raise-priority-from-context"]');
             if (priorityButton) {
-                this.raisePriority(Number(priorityButton.dataset.taskNo), '최근 활동');
+                const taskNo = this.normalizeTaskNo(priorityButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('우선순위를 변경할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.raisePriority(taskNo, '최근 활동');
                 return;
             }
             const reassignButton = event.target.closest('[data-role="reassign-task-from-context"]');
             if (reassignButton) {
-                this.openReassignModal(Number(reassignButton.dataset.taskNo), '최근 활동');
+                const taskNo = this.normalizeTaskNo(reassignButton.dataset.taskNo);
+                if (!this.isValidTaskNo(taskNo)) {
+                    void CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.openReassignModal(taskNo, '최근 활동');
             }
         });
         document.getElementById('taskReassignRecommendationList')?.addEventListener('click', (event) => {
@@ -875,6 +935,11 @@ const TaskWorkloadDetail = {
 
     isValidTaskNo(taskNo) {
         return Number.isInteger(Number(taskNo)) && Number(taskNo) > 0;
+    },
+
+    normalizeTaskNo(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     isValidAdminNo(adminNo) {

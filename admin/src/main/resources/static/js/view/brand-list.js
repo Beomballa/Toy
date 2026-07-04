@@ -397,15 +397,19 @@ const BrandList = {
             this.selectedBrandNos.delete(brandNo);
         }
         const items = Array.from(document.querySelectorAll('[data-role="select-brand"]'))
-            .map((checkbox) => ({ brandNo: Number(checkbox.dataset.brandNo) }))
-            .filter((item) => Number.isFinite(item.brandNo));
+            .map((checkbox) => ({ brandNo: this.normalizeOptionalPositiveNumber(checkbox.dataset.brandNo) }))
+            .filter((item) => Number.isFinite(item.brandNo) && item.brandNo > 0);
         this.updateSelectionMeta(items);
     },
 
     toggleSelectCurrentPage(checked) {
         document.querySelectorAll('[data-role="select-brand"]').forEach((checkbox) => {
+            const brandNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.brandNo);
+            if (brandNo == null) {
+                checkbox.checked = false;
+                return;
+            }
             checkbox.checked = checked;
-            const brandNo = Number(checkbox.dataset.brandNo);
             if (checked) {
                 this.selectedBrandNos.add(brandNo);
             } else {
@@ -413,8 +417,8 @@ const BrandList = {
             }
         });
         const items = Array.from(document.querySelectorAll('[data-role="select-brand"]'))
-            .map((checkbox) => ({ brandNo: Number(checkbox.dataset.brandNo) }))
-            .filter((item) => Number.isFinite(item.brandNo));
+            .map((checkbox) => ({ brandNo: this.normalizeOptionalPositiveNumber(checkbox.dataset.brandNo) }))
+            .filter((item) => Number.isFinite(item.brandNo) && item.brandNo > 0);
         this.updateSelectionMeta(items);
     },
 

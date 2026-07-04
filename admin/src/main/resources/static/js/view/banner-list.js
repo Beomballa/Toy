@@ -487,18 +487,19 @@ const BannerList = {
             this.selectedBannerNos.delete(bannerNo);
         }
         const items = Array.from(document.querySelectorAll('[data-role="select-banner"]'))
-            .map((checkbox) => ({ bannerNo: Number(checkbox.dataset.bannerNo) }))
-            .filter((item) => Number.isFinite(item.bannerNo));
+            .map((checkbox) => ({ bannerNo: this.normalizeOptionalPositiveNumber(checkbox.dataset.bannerNo) }))
+            .filter((item) => Number.isFinite(item.bannerNo) && item.bannerNo > 0);
         this.updateSelectionMeta(items);
     },
 
     toggleSelectCurrentPage(checked) {
         document.querySelectorAll('[data-role="select-banner"]').forEach((checkbox) => {
-            checkbox.checked = checked;
             const bannerNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.bannerNo);
             if (bannerNo == null) {
+                checkbox.checked = false;
                 return;
             }
+            checkbox.checked = checked;
             if (checked) {
                 this.selectedBannerNos.add(bannerNo);
             } else {
@@ -506,8 +507,8 @@ const BannerList = {
             }
         });
         const items = Array.from(document.querySelectorAll('[data-role="select-banner"]'))
-            .map((checkbox) => ({ bannerNo: Number(checkbox.dataset.bannerNo) }))
-            .filter((item) => Number.isFinite(item.bannerNo));
+            .map((checkbox) => ({ bannerNo: this.normalizeOptionalPositiveNumber(checkbox.dataset.bannerNo) }))
+            .filter((item) => Number.isFinite(item.bannerNo) && item.bannerNo > 0);
         this.updateSelectionMeta(items);
     },
 

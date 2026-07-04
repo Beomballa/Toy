@@ -79,11 +79,11 @@ const NoticeHistoryPage = {
         document.getElementById('noticeHistoryAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('noticeHistoryStartDate').value = params.get('startDate') || '';
         document.getElementById('noticeHistoryEndDate').value = params.get('endDate') || '';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = params.get('returnTo') || '/admin/settings/notices';
         this.state.source = params.get('source') || '';
-        this.state.logNo = params.get('logNo') || '';
+        this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'));
         document.getElementById('noticeHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         this.syncDatePresetState();
@@ -115,6 +115,9 @@ const NoticeHistoryPage = {
     },
 
     async loadHistory() {
+        if (!this.validateState()) {
+            return;
+        }
         const startDate = document.getElementById('noticeHistoryStartDate')?.value;
         const endDate = document.getElementById('noticeHistoryEndDate')?.value;
         if (startDate && endDate && startDate > endDate) {
@@ -219,6 +222,10 @@ const NoticeHistoryPage = {
 
     async openDetail(logNo) {
         if (this.isOpeningDetail) {
+            return;
+        }
+        if (!this.isPositiveNumber(logNo)) {
+            await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 공지 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
@@ -366,6 +373,9 @@ const NoticeHistoryPage = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.loadHistory();
     },
@@ -565,6 +575,43 @@ const NoticeHistoryPage = {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    validateState() {
+        const noticeNo = document.getElementById('noticeHistoryNoticeNo')?.value.trim() || '';
+        const adminNo = document.getElementById('noticeHistoryAdminNo')?.value.trim() || '';
+        const actionType = document.getElementById('noticeHistoryActionType')?.value || 'NOTICE_';
+        if (noticeNo && !this.isPositiveNumber(noticeNo)) {
+            void CommonJS.alert('공지 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (adminNo && !this.isPositiveNumber(adminNo)) {
+            void CommonJS.alert('관리자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!(actionType === 'NOTICE_' || actionType.startsWith('NOTICE_'))) {
+            void CommonJS.alert('작업 종류 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     },
 
     escapeHtml(value) {

@@ -101,11 +101,11 @@ const OrderHistoryPage = {
         document.getElementById('historyActorNo').value = params.get('actorNo') || '';
         document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
         document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = params.get('returnTo') || '/admin/orders/list';
         this.state.source = params.get('source') || '';
-        this.state.historyNo = params.get('historyNo') || '';
+        this.state.historyNo = this.normalizeOptionalPositiveNumber(params.get('historyNo'));
         document.getElementById('historyPageSize').value = String(this.state.size);
         this.syncQuickFilterState();
         this.syncDatePresetState();
@@ -149,6 +149,9 @@ const OrderHistoryPage = {
     },
 
     async loadHistory() {
+        if (!this.validateState()) {
+            return;
+        }
         const startDate = document.getElementById('historyStartDate')?.value;
         const endDate = document.getElementById('historyEndDate')?.value;
         if (startDate && endDate && startDate > endDate) {
@@ -310,6 +313,9 @@ const OrderHistoryPage = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.loadHistory();
     },
@@ -500,6 +506,43 @@ const OrderHistoryPage = {
             return;
         }
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
+    },
+
+    validateState() {
+        const orderNo = document.getElementById('historyOrderNo')?.value.trim() || '';
+        const actorNo = document.getElementById('historyActorNo')?.value.trim() || '';
+        const orderType = document.getElementById('historyOrderType')?.value || 'latest';
+        if (orderNo && !this.isPositiveNumber(orderNo)) {
+            void CommonJS.alert('주문 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (actorNo && !this.isPositiveNumber(actorNo)) {
+            void CommonJS.alert('작업자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['latest', 'oldest'].includes(orderType)) {
+            void CommonJS.alert('정렬 조건이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     }
 };
 

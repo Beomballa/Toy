@@ -77,9 +77,9 @@ const TaskHistoryPage = {
         document.getElementById('taskHistoryAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('taskHistoryStartDate').value = params.get('startDate') || '';
         document.getElementById('taskHistoryEndDate').value = params.get('endDate') || '';
-        this.state.logNo = params.get('logNo') || '';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'));
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = params.get('returnTo') || '/admin/settings/tasks';
         this.state.source = params.get('source') || '';
         document.getElementById('taskHistoryPageSize').value = String(this.state.size);
@@ -113,6 +113,9 @@ const TaskHistoryPage = {
     },
 
     async loadHistory() {
+        if (!this.validateState()) {
+            return;
+        }
         const startDate = document.getElementById('taskHistoryStartDate')?.value;
         const endDate = document.getElementById('taskHistoryEndDate')?.value;
         if (startDate && endDate && startDate > endDate) {
@@ -227,6 +230,10 @@ const TaskHistoryPage = {
     },
 
     async openDetail(logNo) {
+        if (!this.isPositiveNumber(logNo)) {
+            await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 작업 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
         this.setDetailStateMeta('loading', '로그 상세를 불러오는 중입니다.', logNo, '', '');
         this.modal.show();
@@ -361,6 +368,9 @@ const TaskHistoryPage = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.loadHistory();
     },
@@ -613,6 +623,43 @@ const TaskHistoryPage = {
             logButton.href = logPath || '#';
             logButton.classList.toggle('d-none', !logPath);
         }
+    },
+
+    validateState() {
+        const taskNo = document.getElementById('taskHistoryTaskNo')?.value.trim() || '';
+        const adminNo = document.getElementById('taskHistoryAdminNo')?.value.trim() || '';
+        const actionType = document.getElementById('taskHistoryActionType')?.value || 'TASK_';
+        if (taskNo && !this.isPositiveNumber(taskNo)) {
+            void CommonJS.alert('작업 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (adminNo && !this.isPositiveNumber(adminNo)) {
+            void CommonJS.alert('관리자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!(actionType === 'TASK_' || actionType.startsWith('TASK_'))) {
+            void CommonJS.alert('작업 종류 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        return true;
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     },
 
 };

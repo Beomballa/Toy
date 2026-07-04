@@ -25,6 +25,7 @@ const ContentList = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        this.normalizeStateFromUrl();
         this.syncSearchField();
         this.setInitialTab();
         this.updateSidebarActive();
@@ -86,10 +87,10 @@ const ContentList = {
             this.state.endDate = params.get('endDate') || '';
             this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
             this.state.productLinked = params.get('productLinked') || '';
-            this.state.productNo = params.get('productNo') || '';
+            this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
             this.state.source = params.get('source') || '';
             this.state.returnTo = params.get('returnTo') || '';
-            this.state.page = Number(params.get('page') || 0);
+            this.state.page = this.normalizePage(params.get('page'));
             this.syncSearchField();
             this.setInitialTab();
             this.updateSidebarActive();
@@ -115,7 +116,7 @@ const ContentList = {
             this.state.endDate = document.getElementById('contentEndDate')?.value || '';
             this.state.pinnedOnly = document.getElementById('contentPinnedOnly')?.checked || false;
             this.state.productLinked = document.getElementById('contentProductLinkedFilter')?.value || '';
-            this.state.productNo = document.getElementById('contentProductNoFilter')?.value.trim() || '';
+            this.state.productNo = this.normalizeOptionalPositiveNumber(document.getElementById('contentProductNoFilter')?.value.trim() || '');
             this.state.page = 0;
             if (!this.validateState()) {
                 return;
@@ -415,6 +416,9 @@ const ContentList = {
     },
 
     goPage(page) {
+        if (!Number.isInteger(page) || page < 0) {
+            return;
+        }
         this.state.page = page;
         this.pushState();
         this.getList();
@@ -514,6 +518,10 @@ const ContentList = {
     bindRowActions() {
         document.querySelectorAll('[data-role="content-detail"]').forEach((button) => {
             button.addEventListener('click', () => {
+                if (!this.isPositiveNumber(button.dataset.contentId)) {
+                    void CommonJS.alert('콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
                 location.href = `/admin/content/get?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
@@ -522,6 +530,10 @@ const ContentList = {
                 const settings = await CommonJS.fetchSystemSettings();
                 if (CommonJS.isCommunityWriteBlocked(settings)) {
                     await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
+                    return;
+                }
+                if (!this.isPositiveNumber(button.dataset.contentId)) {
+                    await CommonJS.alert('콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
                     return;
                 }
                 location.href = `/admin/content/edit?id=${button.dataset.contentId}&boardType=${button.dataset.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
@@ -671,8 +683,43 @@ const ContentList = {
             void CommonJS.alert('시작일은 종료일보다 늦을 수 없습니다.', '알림', 'warning');
             return false;
         }
+        if (this.state.productNo && !this.isPositiveNumber(this.state.productNo)) {
+            void CommonJS.alert('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['', 'DRAFT', 'PUBLISHED'].includes(this.state.status)) {
+            void CommonJS.alert('게시 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['', 'Y', 'N'].includes(this.state.publicYn)) {
+            void CommonJS.alert('공개 여부 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!['', 'Y', 'N'].includes(this.state.productLinked)) {
+            void CommonJS.alert('상품 연결 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
 
         return true;
+    },
+
+    normalizeStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
+    },
+
+    normalizePage(page) {
+        const parsed = Number(page);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    isPositiveNumber(value) {
+        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
     }
 };
 

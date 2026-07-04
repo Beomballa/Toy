@@ -451,11 +451,12 @@ const CategoryList = {
 
     toggleSelectVisibleSubPage(checked) {
         document.querySelectorAll('[data-role="select-sub-category"]').forEach((checkbox) => {
-            checkbox.checked = checked;
             const categoryNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.categoryNo);
             if (categoryNo == null) {
+                checkbox.checked = false;
                 return;
             }
+            checkbox.checked = checked;
             if (checked) {
                 this.selectedCategoryNos.add(categoryNo);
             } else {

@@ -712,9 +712,10 @@ const NoticeList = {
     },
 
     applyStatFilter(type) {
+        const normalizedType = this.normalizeStatFilter(type);
         this.state.page = 0;
         const currentQuickFilter = this.resolveActiveStatFilter();
-        if (currentQuickFilter === type || (type === 'total' && !currentQuickFilter)) {
+        if (currentQuickFilter === normalizedType || (normalizedType === 'total' && !currentQuickFilter)) {
             document.getElementById('noticeIsActiveFilter').value = '';
             document.getElementById('noticeIsPinnedFilter').value = '';
             document.getElementById('noticeVisibilityStatusFilter').value = '';
@@ -724,7 +725,7 @@ const NoticeList = {
         document.getElementById('noticeIsActiveFilter').value = '';
         document.getElementById('noticeIsPinnedFilter').value = '';
         document.getElementById('noticeVisibilityStatusFilter').value = '';
-        switch (type) {
+        switch (normalizedType) {
             case 'total':
                 break;
             case 'live':
@@ -1074,6 +1075,10 @@ const NoticeList = {
             console.error('운영 공지 dataset 파싱 실패:', error);
             return null;
         }
+    },
+
+    normalizeStatFilter(value) {
+        return ['total', 'live', 'scheduled', 'ended', 'inactive', 'pinned'].includes(value) ? value : 'total';
     },
 
     isPositiveNumber(value) {

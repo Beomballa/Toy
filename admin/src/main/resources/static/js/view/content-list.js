@@ -38,7 +38,8 @@ const ContentList = {
 
     setInitialTab() {
         document.querySelectorAll('.content-board-tab[data-board-type]').forEach(el => {
-            if (el.dataset.boardType === this.state.boardType) {
+            const boardType = ContentBoardConfig.normalizeBoardType(el.dataset.boardType);
+            if (boardType === this.state.boardType) {
                 el.classList.add('active');
             } else {
                 el.classList.remove('active');
@@ -48,7 +49,7 @@ const ContentList = {
 
     updateSidebarActive() {
         document.querySelectorAll('.nav-link[data-community-nav]').forEach(el => {
-            const boardType = el.dataset.communityNav;
+            const boardType = ContentBoardConfig.normalizeBoardType(el.dataset.communityNav);
             if (boardType === this.state.boardType) {
                 el.classList.add('active');
             } else {
@@ -62,9 +63,14 @@ const ContentList = {
         document.querySelectorAll('.content-board-tab[data-board-type]').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.preventDefault();
+                const boardType = ContentBoardConfig.normalizeBoardType(el.dataset.boardType);
+                if (boardType !== el.dataset.boardType) {
+                    void CommonJS.alert('게시판 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
                 document.querySelectorAll('.content-board-tab[data-board-type]').forEach(link => link.classList.remove('active'));
                 el.classList.add('active');
-                this.state.boardType = el.dataset.boardType;
+                this.state.boardType = boardType;
                 this.state.page = 0;
 
                 this.pushState();
@@ -567,6 +573,9 @@ const ContentList = {
     updateCurrentPageSelection(checked) {
         // 선택 집합은 페이지 이동 후에도 유지해서, 여러 페이지를 넘겨가며 일괄 적용할 수 있게 둔다.
         this.state.currentPageIds.forEach((id) => {
+            if (this.normalizeNumericId(id) == null) {
+                return;
+            }
             if (checked) {
                 this.state.selectedIds.add(id);
             } else {

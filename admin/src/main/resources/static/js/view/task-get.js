@@ -32,9 +32,9 @@ const TaskDetailPage = {
 
     readBootstrapState() {
         const bootstrapState = window.taskDetailBootstrap || {};
-        this.state.taskNo = Number(bootstrapState.taskNo || 0);
-        this.state.returnTo = bootstrapState.returnTo || '/admin/settings/tasks';
-        this.state.source = bootstrapState.source || '';
+        this.state.taskNo = this.normalizePositiveNumber(bootstrapState.taskNo);
+        this.state.returnTo = CommonJS.normalizeOptionalText(bootstrapState.returnTo) || '/admin/settings/tasks';
+        this.state.source = CommonJS.normalizeOptionalText(bootstrapState.source) || '';
         this.syncReturnLinks();
         this.syncReturnContextMeta();
         CommonJS.renderSourceContextNotice({ noticeId: 'taskDetailSourceContextNotice', source: this.state.source });
@@ -667,8 +667,8 @@ const TaskDetailPage = {
     },
 
     parseOptionalNumber(value) {
-        if (value == null || value === '') return null;
-        return Number(value);
+        const normalized = this.normalizePositiveNumber(value);
+        return normalized == null ? null : normalized;
     },
 
     normalizePositiveNumber(value) {

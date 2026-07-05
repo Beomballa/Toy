@@ -12,6 +12,9 @@ const TaskWorkloadDetail = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
+        this.bootstrap.adminNo = this.normalizeTaskNo(this.bootstrap.adminNo);
+        this.bootstrap.returnTo = CommonJS.normalizeOptionalText(this.bootstrap.returnTo) || '/admin/settings/tasks/workloads';
+        this.bootstrap.source = CommonJS.normalizeOptionalText(this.bootstrap.source) || '';
         const modalEl = document.getElementById('taskReassignModal');
         if (modalEl) {
             this.reassignModal = new bootstrap.Modal(modalEl);
@@ -19,7 +22,7 @@ const TaskWorkloadDetail = {
         this.bindEvents();
         this.syncReturnLinks();
         this.syncReturnContextMeta();
-        CommonJS.bindMainLogoNavigation(this.bootstrap.returnTo || '/admin/settings/tasks/workloads/get');
+        CommonJS.bindMainLogoNavigation(this.bootstrap.returnTo || '/admin/settings/tasks/workloads');
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadDetailSourceContextNotice', source: this.bootstrap.source || '' });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
@@ -176,7 +179,7 @@ const TaskWorkloadDetail = {
 
     async loadDetail() {
         try {
-            const adminNo = Number(this.bootstrap.adminNo || 0);
+            const adminNo = this.normalizeTaskNo(this.bootstrap.adminNo);
             if (!this.isValidAdminNo(adminNo)) {
                 throw new Error('담당자 번호가 올바르지 않습니다.');
             }
@@ -904,8 +907,8 @@ const TaskWorkloadDetail = {
     },
 
     parseOptionalNumber(value) {
-        if (value == null || value === '') return null;
-        return Number(value);
+        const normalized = this.normalizeTaskNo(value);
+        return normalized == null ? null : normalized;
     },
 
     validateTaskPayload(payload) {

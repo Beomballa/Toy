@@ -518,11 +518,12 @@ const DashBoardListJS = {
     },
 
     buildTaskDetailPath(taskNo, source = 'dashboard-task-detail') {
-        return this.buildTaskListPath({
-            taskNo,
-            openTaskNo: taskNo,
-            focusTaskNo: taskNo
-        }, source);
+        const normalizedTaskNo = this.normalizePositiveId(taskNo);
+        if (!normalizedTaskNo) {
+            return this.buildTaskListPath({}, source);
+        }
+        const returnTo = this.buildTaskListPath({}, source);
+        return `/admin/settings/tasks/get?no=${normalizedTaskNo}&source=${source}&returnTo=${encodeURIComponent(returnTo)}`;
     },
 
     buildTaskHistoryPath(taskNo, source = 'dashboard-task-history') {

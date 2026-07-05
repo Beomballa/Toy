@@ -1230,15 +1230,16 @@ const ProductList = {
     },
 
     _updateStateFromInputs() {
-        this.state.brandNo = document.getElementById('brandNo').value;
-        this.state.categoryNo = document.getElementById('categoryNo').value;
+        this.state.brandNo = this._normalizeOptionalPositiveNumber(document.getElementById('brandNo').value);
+        this.state.categoryNo = this._normalizeOptionalPositiveNumber(document.getElementById('categoryNo').value);
         this.state.status = document.getElementById('statusFilter').value;
         this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
         this.state.lowStockThreshold = this._normalizeLowStockThreshold(document.getElementById('lowStockThreshold').value);
         this.state.createdTodayOnly = document.getElementById('createdTodayOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
-        this.state.size = Number(document.getElementById('pageSize').value || 10);
-        this.state.orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
+        this.state.size = this._normalizePageSize(document.getElementById('pageSize').value || 10);
+        const orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
+        this.state.orderType = ['r', 'p', 'c'].includes(orderType) ? orderType : 'r';
     },
 
     _hasPendingSearchInput() {

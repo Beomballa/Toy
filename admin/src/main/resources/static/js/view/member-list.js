@@ -103,9 +103,9 @@ const MemberListPage = {
         const delYn = document.getElementById('memberDelYn').value;
         const initYn = document.getElementById('memberInitYn').value;
         if (keyword) params.set('keyword', keyword);
-        if (masterYn) params.set('masterYn', masterYn);
-        if (delYn) params.set('delYn', delYn);
-        if (initYn) params.set('initYn', initYn);
+        if (this.isValidYn(masterYn)) params.set('masterYn', masterYn);
+        if (this.isValidYn(delYn)) params.set('delYn', delYn);
+        if (this.isValidYn(initYn)) params.set('initYn', initYn);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         if (this.state.source) params.set('source', this.state.source);

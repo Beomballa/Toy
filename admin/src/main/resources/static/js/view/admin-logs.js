@@ -33,7 +33,7 @@ const AdminLogPage = {
             card.addEventListener('click', () => this.applySummaryDatePreset(card.dataset.logSummaryDatePreset));
         });
         document.querySelectorAll('[data-log-date-preset]').forEach((button) => {
-            button.addEventListener('click', () => this.applyDatePreset(button.dataset.logDatePreset));
+            button.addEventListener('click', () => this.applyDatePreset(this.normalizeDatePreset(button.dataset.logDatePreset)));
         });
         document.getElementById('btnSearchLog')?.addEventListener('click', () => {
             this.state.page = 0;
@@ -447,11 +447,12 @@ const AdminLogPage = {
     },
 
     applySummaryDatePreset(preset) {
-        this.applyDatePreset(preset);
+        this.applyDatePreset(this.normalizeDatePreset(preset));
         this.syncSummaryCardState();
     },
 
     applyDatePreset(preset) {
+        const normalizedPreset = this.normalizeDatePreset(preset);
         const startDateInput = document.getElementById('logStartDate');
         const endDateInput = document.getElementById('logEndDate');
         if (!startDateInput || !endDateInput) {
@@ -465,14 +466,14 @@ const AdminLogPage = {
             return `${year}-${month}-${day}`;
         };
 
-        if (preset === 'clear') {
+        if (normalizedPreset === 'clear') {
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
             const startDate = new Date(today);
-            if (preset === '7days') {
+            if (normalizedPreset === '7days') {
                 startDate.setDate(startDate.getDate() - 6);
-            } else if (preset === '30days') {
+            } else if (normalizedPreset === '30days') {
                 startDate.setDate(startDate.getDate() - 29);
             }
             startDateInput.value = formatDate(startDate);
@@ -591,7 +592,7 @@ const AdminLogPage = {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
         document.querySelectorAll('[data-log-date-preset]').forEach((button) => {
-            const preset = button.dataset.logDatePreset;
+            const preset = this.normalizeDatePreset(button.dataset.logDatePreset);
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
                 (preset === '7days' && startDate === this.resolveDateLabel(sevenDaysAgo) && endDate === todayLabel) ||
@@ -648,6 +649,10 @@ const AdminLogPage = {
         }
         const number = Number(value);
         return Number.isInteger(number) && number > 0 ? number : null;
+    },
+
+    normalizeDatePreset(value) {
+        return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
     }
 };
 

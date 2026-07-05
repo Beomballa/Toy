@@ -438,10 +438,11 @@ const BannerList = {
     },
 
     applyStatFilter(type) {
+        const normalizedType = this.normalizeStatFilter(type);
         this.state.page = 0;
         document.getElementById('bannerExposureStatusFilter').value = '';
         document.getElementById('bannerIsActiveFilter').value = '';
-        switch (type) {
+        switch (normalizedType) {
             case 'live':
                 document.getElementById('bannerExposureStatusFilter').value = 'LIVE';
                 break;
@@ -904,6 +905,10 @@ const BannerList = {
             console.error('배너 dataset 파싱 실패:', error);
             return null;
         }
+    },
+
+    normalizeStatFilter(value) {
+        return ['total', 'live', 'scheduled', 'ended', 'inactive'].includes(value) ? value : 'total';
     }
 };
 

@@ -460,9 +460,10 @@ const BrandList = {
     },
 
     applyStatFilter(type) {
+        const normalizedType = this.normalizeStatFilter(type);
         this.state.page = 0;
         document.getElementById('brandIsActiveFilter').value = '';
-        switch (type) {
+        switch (normalizedType) {
             case 'active':
                 document.getElementById('brandIsActiveFilter').value = 'Y';
                 break;
@@ -737,6 +738,10 @@ const BrandList = {
         }
         const number = Number(value);
         return this.isValidBrandNo(number) ? number : null;
+    },
+
+    normalizeStatFilter(value) {
+        return ['total', 'active', 'inactive'].includes(value) ? value : 'total';
     }
 };
 

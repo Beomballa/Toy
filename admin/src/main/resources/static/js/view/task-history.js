@@ -42,14 +42,14 @@ const TaskHistoryPage = {
         });
         document.querySelectorAll('.task-history-quick-filter[data-action-type]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('taskHistoryActionType').value = button.dataset.actionType || 'TASK_';
+                document.getElementById('taskHistoryActionType').value = this.normalizeActionType(button.dataset.actionType);
                 this.state.page = 0;
                 this.syncQuickFilterState();
                 this.loadHistory();
             });
         });
         document.querySelectorAll('[data-task-history-date-preset]').forEach((button) => {
-            button.addEventListener('click', () => this.applyDatePreset(button.dataset.taskHistoryDatePreset));
+            button.addEventListener('click', () => this.applyDatePreset(this.normalizeDatePreset(button.dataset.taskHistoryDatePreset)));
         });
         document.getElementById('btnBackToTaskSource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
@@ -301,9 +301,9 @@ const TaskHistoryPage = {
     },
 
     syncQuickFilterState() {
-        const currentActionType = document.getElementById('taskHistoryActionType')?.value || 'TASK_';
+        const currentActionType = this.normalizeActionType(document.getElementById('taskHistoryActionType')?.value);
         document.querySelectorAll('.task-history-quick-filter[data-action-type]').forEach((button) => {
-            const active = (button.dataset.actionType || 'TASK_') === currentActionType;
+            const active = this.normalizeActionType(button.dataset.actionType) === currentActionType;
             button.classList.toggle('active', active);
             button.classList.toggle('btn-dark', active);
             button.classList.toggle('btn-outline-dark', !active);
@@ -490,6 +490,7 @@ const TaskHistoryPage = {
     },
 
     applyDatePreset(preset) {
+        const normalizedPreset = this.normalizeDatePreset(preset);
         const startDateInput = document.getElementById('taskHistoryStartDate');
         const endDateInput = document.getElementById('taskHistoryEndDate');
         if (!startDateInput || !endDateInput) {
@@ -504,14 +505,14 @@ const TaskHistoryPage = {
             return `${year}-${month}-${day}`;
         };
 
-        if (preset === 'clear') {
+        if (normalizedPreset === 'clear') {
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
             const startDate = new Date(today);
-            if (preset === '7days') {
+            if (normalizedPreset === '7days') {
                 startDate.setDate(startDate.getDate() - 6);
-            } else if (preset === '30days') {
+            } else if (normalizedPreset === '30days') {
                 startDate.setDate(startDate.getDate() - 29);
             }
             startDateInput.value = formatDate(startDate);
@@ -540,7 +541,7 @@ const TaskHistoryPage = {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
         document.querySelectorAll('[data-task-history-date-preset]').forEach((button) => {
-            const preset = button.dataset.taskHistoryDatePreset;
+            const preset = this.normalizeDatePreset(button.dataset.taskHistoryDatePreset);
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
                 (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
@@ -662,6 +663,14 @@ const TaskHistoryPage = {
 
     normalizeOptionalPositiveNumber(value) {
         return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    normalizeDatePreset(value) {
+        return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
+    },
+
+    normalizeActionType(value) {
+        return value === 'TASK_' || String(value || '').startsWith('TASK_') ? String(value || 'TASK_') : 'TASK_';
     },
 
     isPositiveNumber(value) {

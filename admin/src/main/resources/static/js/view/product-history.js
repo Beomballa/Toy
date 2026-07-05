@@ -56,7 +56,7 @@ const ProductHistoryPage = {
             });
         });
         document.querySelectorAll('[data-product-history-date-preset]').forEach((button) => {
-            button.addEventListener('click', () => this.applyDatePreset(button.dataset.productHistoryDatePreset));
+            button.addEventListener('click', () => this.applyDatePreset(this.normalizeDatePreset(button.dataset.productHistoryDatePreset)));
         });
         window.addEventListener('popstate', () => {
             this.readStateFromUrl();
@@ -394,6 +394,7 @@ const ProductHistoryPage = {
     },
 
     applyDatePreset(preset) {
+        const normalizedPreset = this.normalizeDatePreset(preset);
         const startDateInput = document.getElementById('historyStartDate');
         const endDateInput = document.getElementById('historyEndDate');
         if (!startDateInput || !endDateInput) {
@@ -408,14 +409,14 @@ const ProductHistoryPage = {
             return `${year}-${month}-${day}`;
         };
 
-        if (preset === 'clear') {
+        if (normalizedPreset === 'clear') {
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
             const startDate = new Date(today);
-            if (preset === '7days') {
+            if (normalizedPreset === '7days') {
                 startDate.setDate(startDate.getDate() - 6);
-            } else if (preset === '30days') {
+            } else if (normalizedPreset === '30days') {
                 startDate.setDate(startDate.getDate() - 29);
             }
             startDateInput.value = formatDate(startDate);
@@ -454,7 +455,7 @@ const ProductHistoryPage = {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
         document.querySelectorAll('[data-product-history-date-preset]').forEach((button) => {
-            const preset = button.dataset.productHistoryDatePreset;
+            const preset = this.normalizeDatePreset(button.dataset.productHistoryDatePreset);
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
                 (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
@@ -506,6 +507,10 @@ const ProductHistoryPage = {
     normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    normalizeDatePreset(value) {
+        return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
     },
 
     isPositiveNumber(value) {

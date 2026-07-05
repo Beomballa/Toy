@@ -56,7 +56,7 @@ const OrderHistoryPage = {
             });
         });
         document.querySelectorAll('[data-order-history-date-preset]').forEach((button) => {
-            button.addEventListener('click', () => this.applyDatePreset(button.dataset.orderHistoryDatePreset));
+            button.addEventListener('click', () => this.applyDatePreset(this.normalizeDatePreset(button.dataset.orderHistoryDatePreset)));
         });
         document.getElementById('btnBackToOrderHistorySource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
@@ -425,6 +425,7 @@ const OrderHistoryPage = {
     },
 
     applyDatePreset(preset) {
+        const normalizedPreset = this.normalizeDatePreset(preset);
         const startDateInput = document.getElementById('historyStartDate');
         const endDateInput = document.getElementById('historyEndDate');
         if (!startDateInput || !endDateInput) {
@@ -439,14 +440,14 @@ const OrderHistoryPage = {
             return `${year}-${month}-${day}`;
         };
 
-        if (preset === 'clear') {
+        if (normalizedPreset === 'clear') {
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
             const startDate = new Date(today);
-            if (preset === '7days') {
+            if (normalizedPreset === '7days') {
                 startDate.setDate(startDate.getDate() - 6);
-            } else if (preset === '30days') {
+            } else if (normalizedPreset === '30days') {
                 startDate.setDate(startDate.getDate() - 29);
             }
             startDateInput.value = formatDate(startDate);
@@ -475,7 +476,7 @@ const OrderHistoryPage = {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
         document.querySelectorAll('[data-order-history-date-preset]').forEach((button) => {
-            const preset = button.dataset.orderHistoryDatePreset;
+            const preset = this.normalizeDatePreset(button.dataset.orderHistoryDatePreset);
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
                 (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
@@ -544,6 +545,10 @@ const OrderHistoryPage = {
 
     normalizeOptionalPositiveNumber(value) {
         return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    normalizeDatePreset(value) {
+        return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
     },
 
     isPositiveNumber(value) {

@@ -24,10 +24,10 @@ const AdminLogPage = {
 
     bindEvents() {
         document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
-            button.addEventListener('click', () => this.applyQuickFilter(button.dataset.logQuickFilter));
+            button.addEventListener('click', () => this.applyQuickFilter(this.normalizeActionType(button.dataset.logQuickFilter)));
         });
         document.querySelectorAll('[data-log-summary-filter]').forEach((card) => {
-            card.addEventListener('click', () => this.applySummaryFilter(card.dataset.logSummaryFilter));
+            card.addEventListener('click', () => this.applySummaryFilter(this.normalizeActionType(card.dataset.logSummaryFilter)));
         });
         document.querySelectorAll('[data-log-summary-date-preset]').forEach((card) => {
             card.addEventListener('click', () => this.applySummaryDatePreset(card.dataset.logSummaryDatePreset));
@@ -431,7 +431,7 @@ const AdminLogPage = {
     },
 
     applyQuickFilter(actionType) {
-        document.getElementById('logActionType').value = actionType || '';
+        document.getElementById('logActionType').value = this.normalizeActionType(actionType);
         this.state.page = 0;
         this.syncQuickFilterState();
         this.syncSummaryCardState();
@@ -439,7 +439,7 @@ const AdminLogPage = {
     },
 
     applySummaryFilter(actionType) {
-        document.getElementById('logActionType').value = actionType || '';
+        document.getElementById('logActionType').value = this.normalizeActionType(actionType);
         this.state.page = 0;
         this.syncQuickFilterState();
         this.syncSummaryCardState();
@@ -649,6 +649,10 @@ const AdminLogPage = {
         }
         const number = Number(value);
         return Number.isInteger(number) && number > 0 ? number : null;
+    },
+
+    normalizeActionType(value) {
+        return CommonJS.normalizeOptionalText(value) || '';
     },
 
     normalizeDatePreset(value) {

@@ -49,7 +49,7 @@ const ProductHistoryPage = {
         });
         document.querySelectorAll('.product-history-quick-filter[data-action-type]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('historyActionType').value = button.dataset.actionType || '';
+                document.getElementById('historyActionType').value = this.normalizeActionType(button.dataset.actionType);
                 this.state.page = 0;
                 this.syncQuickFilterState();
                 this.loadHistory();
@@ -69,7 +69,7 @@ const ProductHistoryPage = {
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         document.getElementById('historyProductNo').value = params.get('productNo') || '';
-        document.getElementById('historyActionType').value = params.get('actionType') || '';
+        document.getElementById('historyActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
         document.getElementById('historyKeyword').value = params.get('keyword') || '';
@@ -90,7 +90,7 @@ const ProductHistoryPage = {
     buildParams() {
         const params = new URLSearchParams();
         const productNo = document.getElementById('historyProductNo').value.trim();
-        const actionType = document.getElementById('historyActionType').value;
+        const actionType = this.normalizeActionType(document.getElementById('historyActionType').value);
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
@@ -429,9 +429,9 @@ const ProductHistoryPage = {
     },
 
     syncQuickFilterState() {
-        const currentActionType = document.getElementById('historyActionType')?.value || '';
+        const currentActionType = this.normalizeActionType(document.getElementById('historyActionType')?.value);
         document.querySelectorAll('.product-history-quick-filter[data-action-type]').forEach((button) => {
-            const active = (button.dataset.actionType || '') === currentActionType;
+            const active = this.normalizeActionType(button.dataset.actionType) === currentActionType;
             button.classList.toggle('active', active);
             button.classList.toggle('btn-dark', active);
             button.classList.toggle('btn-outline-dark', !active);
@@ -507,6 +507,10 @@ const ProductHistoryPage = {
     normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+    },
+
+    normalizeActionType(value) {
+        return CommonJS.normalizeOptionalText(value) || '';
     },
 
     normalizeDatePreset(value) {

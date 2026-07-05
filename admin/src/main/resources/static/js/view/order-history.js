@@ -49,7 +49,7 @@ const OrderHistoryPage = {
         });
         document.querySelectorAll('.history-quick-filter[data-action-type]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('historyActionType').value = button.dataset.actionType || '';
+                document.getElementById('historyActionType').value = this.normalizeActionType(button.dataset.actionType);
                 this.state.page = 0;
                 this.syncQuickFilterState();
                 this.loadHistory();
@@ -97,7 +97,7 @@ const OrderHistoryPage = {
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         document.getElementById('historyOrderNo').value = params.get('orderNo') || '';
-        document.getElementById('historyActionType').value = params.get('actionType') || '';
+        document.getElementById('historyActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
         document.getElementById('historyKeyword').value = params.get('keyword') || '';
@@ -119,7 +119,7 @@ const OrderHistoryPage = {
     buildParams() {
         const params = new URLSearchParams();
         const orderNo = document.getElementById('historyOrderNo').value.trim();
-        const actionType = document.getElementById('historyActionType').value;
+        const actionType = this.normalizeActionType(document.getElementById('historyActionType').value);
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
@@ -395,11 +395,12 @@ const OrderHistoryPage = {
     },
 
     syncQuickFilterState() {
-        const currentActionType = document.getElementById('historyActionType')?.value || '';
+        const currentActionType = this.normalizeActionType(document.getElementById('historyActionType')?.value);
         document.querySelectorAll('.history-quick-filter[data-action-type]').forEach((button) => {
-            button.classList.toggle('active', (button.dataset.actionType || '') === currentActionType);
-            button.classList.toggle('btn-dark', (button.dataset.actionType || '') === currentActionType);
-            button.classList.toggle('btn-outline-dark', (button.dataset.actionType || '') !== currentActionType);
+            const actionType = this.normalizeActionType(button.dataset.actionType);
+            button.classList.toggle('active', actionType === currentActionType);
+            button.classList.toggle('btn-dark', actionType === currentActionType);
+            button.classList.toggle('btn-outline-dark', actionType !== currentActionType);
         });
     },
 
@@ -545,6 +546,10 @@ const OrderHistoryPage = {
 
     normalizeOptionalPositiveNumber(value) {
         return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    normalizeActionType(value) {
+        return CommonJS.normalizeOptionalText(value) || '';
     },
 
     normalizeDatePreset(value) {

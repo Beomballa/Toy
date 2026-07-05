@@ -88,7 +88,7 @@ const OrderList = {
             if (!summaryButton) {
                 return;
             }
-            this.applyStatusSummaryFilter(summaryButton.dataset.statusCode || '');
+            this.applyStatusSummaryFilter(this.normalizeStatusCode(summaryButton.dataset.statusCode));
         });
 
         document.getElementById('orderListTableBody')?.addEventListener('click', (event) => {
@@ -413,8 +413,9 @@ const OrderList = {
     },
 
     applyStatusSummaryFilter(statusCode) {
+        const normalizedStatusCode = this.normalizeStatusCode(statusCode);
         this.state.page = 0;
-        this.state.status = this.state.status === (statusCode || '') ? '' : (statusCode || '');
+        this.state.status = this.state.status === normalizedStatusCode ? '' : normalizedStatusCode;
         this.syncFilterFields();
         this.pushState();
         this.getList();
@@ -662,6 +663,10 @@ const OrderList = {
     normalizeDatePreset(value) {
         const preset = Number(value);
         return Number.isInteger(preset) && preset >= 0 ? preset : 0;
+    },
+
+    normalizeStatusCode(value) {
+        return ['', 'ORDERED', 'PAID', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(value) ? value : '';
     },
 
     normalizeOptionalPositiveNumber(value) {

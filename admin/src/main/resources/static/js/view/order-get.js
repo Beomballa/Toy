@@ -5,8 +5,8 @@ const OrderDetail = {
         this.initialized = true;
         const params = new URLSearchParams(window.location.search);
         this.orderNo = this.normalizeOrderNo(params.get('no'));
-        this.returnTo = params.get('returnTo') || '/admin/orders/list';
-        this.source = params.get('source') || '';
+        this.returnTo = CommonJS.normalizeOptionalText(params.get('returnTo')) || '/admin/orders/list';
+        this.source = CommonJS.normalizeOptionalText(params.get('source')) || '';
         this.isSubmitting = false;
         this.operationPolicy = null;
         if (!this.isValidOrderNo(this.orderNo)) {
@@ -90,6 +90,7 @@ const OrderDetail = {
     },
 
     renderSummary(data) {
+        const normalizedStatusCode = this.normalizeOrderStatusCode(data.statusCode);
         document.getElementById('orderNumDisplay').textContent = data.orderNum;
         document.getElementById('buyerName').textContent = data.buyerName;
         document.getElementById('buyerPhone').textContent = data.buyerPhone;
@@ -98,7 +99,7 @@ const OrderDetail = {
         document.getElementById('totalAmount').textContent = data.totalAmount;
         document.getElementById('itemCount').textContent = Array.isArray(data.items) ? data.items.length : 0;
 
-        const statusMeta = CommonJS.getOrderStatusMeta(data.statusCode);
+        const statusMeta = CommonJS.getOrderStatusMeta(normalizedStatusCode);
         const badge = document.getElementById('orderStatusBadge');
         badge.textContent = data.statusDesc;
         badge.className = `badge rounded-pill ${statusMeta.badgeClass}`;
@@ -438,6 +439,12 @@ const OrderDetail = {
 
     normalizeOrderNo(orderNo) {
         return this.isValidOrderNo(orderNo) ? String(Number(orderNo)) : null;
+    },
+
+    normalizeOrderStatusCode(statusCode) {
+        return ['ORDERED', 'PAID', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(statusCode)
+            ? statusCode
+            : 'ORDERED';
     },
 
     isValidCurrentOrderAction() {

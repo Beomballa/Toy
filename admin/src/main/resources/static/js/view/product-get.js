@@ -15,9 +15,9 @@ const ProductDetail = {
         this.initialized = true;
 
         const urlParams = new URLSearchParams(window.location.search);
-        this.productNo = urlParams.get('no');
-        this.returnTo = urlParams.get('returnTo') || '/admin/products';
-        this.source = urlParams.get('source') || '';
+        this.productNo = this.normalizeProductNo(urlParams.get('no'));
+        this.returnTo = CommonJS.normalizeOptionalText(urlParams.get('returnTo')) || '/admin/products';
+        this.source = CommonJS.normalizeOptionalText(urlParams.get('source')) || '';
 
         if (!this.isValidProductNo(this.productNo)) {
             await CommonJS.alert('상품 번호가 올바르지 않습니다.', '오류', 'error');
@@ -181,6 +181,7 @@ const ProductDetail = {
         setText('releaseDt', data.releaseDt);
         setText('crtDtm', data.crtDtm);
         setText('uptDtm', data.uptDtm);
+        const normalizedStatusCode = this.normalizeProductStatusCode(data.statusCode);
         setText('statusTextValue', data.statusDesc || '판매중');
         setText('brandChip', data.brandName || '브랜드 -');
         setText('modelChip', data.productModel || '모델 -');
@@ -252,8 +253,7 @@ const ProductDetail = {
 
         const statusBadge = document.getElementById('statusBadge');
         if (statusBadge) {
-            const statusCode = data.statusCode || 'ACTIVE';
-            const statusMeta = CommonJS.getProductStatusMeta(statusCode);
+            const statusMeta = CommonJS.getProductStatusMeta(normalizedStatusCode);
             statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${data.statusDesc || '판매중'}</span>`;
         }
     },
@@ -459,6 +459,14 @@ const ProductDetail = {
 
     isValidProductNo(productNo) {
         return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
+    },
+
+    normalizeProductNo(productNo) {
+        return this.isValidProductNo(productNo) ? String(Number(productNo)) : null;
+    },
+
+    normalizeProductStatusCode(statusCode) {
+        return ['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(statusCode) ? statusCode : 'ACTIVE';
     },
 
     buildLogPathFromBase(basePath) {

@@ -18,8 +18,8 @@ const ProductUpdate = {
 
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = this.normalizeProductNo(urlParams.get('no'));
-        this.returnTo = urlParams.get('returnTo') || '/admin/products';
-        this.source = urlParams.get('source') || '';
+        this.returnTo = CommonJS.normalizeOptionalText(urlParams.get('returnTo')) || '/admin/products';
+        this.source = CommonJS.normalizeOptionalText(urlParams.get('source')) || '';
 
         if (!this.isValidProductNo(this.productNo)) {
             await CommonJS.alert('상품 번호가 유효하지 않습니다.', '오류', 'error');
@@ -125,7 +125,7 @@ const ProductUpdate = {
         document.getElementById('releasePrice').value = data.releasePrice || 0;
         document.getElementById('releaseDt').value = data.releaseDt || '';
         document.getElementById('thumbnailUrl').value = data.thumbnailUrl || '';
-        document.getElementById('productStatus').value = data.statusCode || 'ACTIVE';
+        document.getElementById('productStatus').value = this.normalizeProductStatus(data.statusCode);
 
         const tbody = document.getElementById('optionTableBody');
         tbody.innerHTML = '';
@@ -345,7 +345,7 @@ const ProductUpdate = {
             releasePrice: validationResult.releasePrice,
             releaseDt: document.getElementById('releaseDt').value || null,
             thumbnailUrl: validationResult.thumbnailUrl,
-            status: document.getElementById('productStatus').value,
+            status: this.normalizeProductStatus(document.getElementById('productStatus').value),
             options: validationResult.options
         };
         const frontDisplayData = validationResult.frontDisplay;
@@ -476,6 +476,8 @@ const ProductUpdate = {
         if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
         if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
         if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+        const productStatus = this.normalizeProductStatus(document.getElementById('productStatus').value);
+        if (!productStatus) return this.invalidResult('상품 상태 값이 올바르지 않습니다.', document.getElementById('productStatus'));
         if (!frontDisplayHeadline) return this.invalidResult('프론트 헤드라인을 입력해주세요.', frontDisplayHeadlineEl);
         if (frontDisplayHeadline.length > 120) return this.invalidResult('프론트 헤드라인은 120자 이내로 입력해주세요.', frontDisplayHeadlineEl);
         if (!frontDisplayDescription) return this.invalidResult('프론트 설명 문구를 입력해주세요.', frontDisplayDescriptionEl);
@@ -509,7 +511,8 @@ const ProductUpdate = {
                 mood: frontDisplayMood,
                 featured: isFeatured,
                 featuredRank: isFeatured ? frontDisplayRank : 999
-            }
+            },
+            productStatus
         };
     },
 
@@ -573,6 +576,10 @@ const ProductUpdate = {
 
     isValidProductLookupId(value) {
         return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+    },
+
+    normalizeProductStatus(status) {
+        return ['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(status) ? status : '';
     },
 
     normalizeFeaturedRankValue(rank, featured) {

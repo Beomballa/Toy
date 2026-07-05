@@ -155,6 +155,10 @@ const TaskList = {
                     void CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
                     return;
                 }
+                if (!this.isValidTaskStatus(statusButton.dataset.status)) {
+                    void CommonJS.alert('변경할 작업 상태 값이 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
                 this.updateStatus(taskNo, statusButton.dataset.status);
                 return;
             }

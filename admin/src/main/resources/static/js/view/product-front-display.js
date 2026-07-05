@@ -63,10 +63,10 @@ const ProductFrontDisplayList = {
         if (this.state.categoryNo) {
             params.set('categoryNo', this.state.categoryNo);
         }
-        if (this.state.configured) {
+        if (this.isValidConfiguredValue(this.state.configured) && this.state.configured) {
             params.set('configured', this.state.configured);
         }
-        if (this.state.contentStatus) {
+        if (this.isValidContentStatusValue(this.state.contentStatus) && this.state.contentStatus) {
             params.set('contentStatus', this.state.contentStatus);
         }
         if (this.state.featuredOnly) {
@@ -76,7 +76,7 @@ const ProductFrontDisplayList = {
             params.set('lowStockOnly', 'true');
         }
         params.set('lowStockThreshold', String(this.state.lowStockThreshold));
-        params.set('sort', this.state.sort);
+        params.set('sort', this.isValidSortValue(this.state.sort) ? this.state.sort : 'FEATURED');
         if (this.state.source) {
             params.set('source', this.state.source);
         }
@@ -465,14 +465,19 @@ const ProductFrontDisplayList = {
     updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('displayKeyword')?.value) || '';
         this.state.status = document.getElementById('displayStatus')?.value || '';
-        this.state.brandNo = document.getElementById('displayBrand')?.value || '';
-        this.state.categoryNo = document.getElementById('displayCategory')?.value || '';
-        this.state.configured = document.getElementById('displayConfigured')?.value || '';
-        this.state.contentStatus = document.getElementById('displayContentStatus')?.value || '';
+        const brandNo = document.getElementById('displayBrand')?.value || '';
+        const categoryNo = document.getElementById('displayCategory')?.value || '';
+        const configured = document.getElementById('displayConfigured')?.value || '';
+        const contentStatus = document.getElementById('displayContentStatus')?.value || '';
+        const sort = document.getElementById('displaySort')?.value || 'FEATURED';
+        this.state.brandNo = this.isValidOptionalPositiveNumber(brandNo) ? brandNo : '';
+        this.state.categoryNo = this.isValidOptionalPositiveNumber(categoryNo) ? categoryNo : '';
+        this.state.configured = this.isValidConfiguredValue(configured) ? configured : '';
+        this.state.contentStatus = this.isValidContentStatusValue(contentStatus) ? contentStatus : '';
         this.state.featuredOnly = document.getElementById('featuredOnly')?.checked || false;
         this.state.lowStockOnly = document.getElementById('lowStockOnly')?.checked || false;
         this.state.lowStockThreshold = this.normalizeLowStockThreshold(document.getElementById('displayLowStockThreshold')?.value);
-        this.state.sort = document.getElementById('displaySort')?.value || 'FEATURED';
+        this.state.sort = this.isValidSortValue(sort) ? sort : 'FEATURED';
     },
 
     validateState() {

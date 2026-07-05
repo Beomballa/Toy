@@ -51,7 +51,7 @@ const NoticeHistoryPage = {
             });
         });
         document.querySelectorAll('[data-notice-history-date-preset]').forEach((button) => {
-            button.addEventListener('click', () => this.applyDatePreset(button.dataset.noticeHistoryDatePreset));
+            button.addEventListener('click', () => this.applyDatePreset(this.normalizeDatePreset(button.dataset.noticeHistoryDatePreset)));
         });
         document.getElementById('btnBackToNoticeSource')?.addEventListener('click', () => {
             window.location.href = this.state.returnTo;
@@ -475,6 +475,7 @@ const NoticeHistoryPage = {
     },
 
     applyDatePreset(preset) {
+        const normalizedPreset = this.normalizeDatePreset(preset);
         const startDateInput = document.getElementById('noticeHistoryStartDate');
         const endDateInput = document.getElementById('noticeHistoryEndDate');
         if (!startDateInput || !endDateInput) {
@@ -489,14 +490,14 @@ const NoticeHistoryPage = {
             return `${year}-${month}-${day}`;
         };
 
-        if (preset === 'clear') {
+        if (normalizedPreset === 'clear') {
             startDateInput.value = '';
             endDateInput.value = '';
         } else {
             const startDate = new Date(today);
-            if (preset === '7days') {
+            if (normalizedPreset === '7days') {
                 startDate.setDate(startDate.getDate() - 6);
-            } else if (preset === '30days') {
+            } else if (normalizedPreset === '30days') {
                 startDate.setDate(startDate.getDate() - 29);
             }
             startDateInput.value = formatDate(startDate);
@@ -525,7 +526,7 @@ const NoticeHistoryPage = {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
         document.querySelectorAll('[data-notice-history-date-preset]').forEach((button) => {
-            const preset = button.dataset.noticeHistoryDatePreset;
+            const preset = this.normalizeDatePreset(button.dataset.noticeHistoryDatePreset);
             const active = (
                 (preset === 'today' && startDate === todayLabel && endDate === todayLabel) ||
                 (preset === '7days' && startDate === formatDate(sevenDaysAgo) && endDate === todayLabel) ||
@@ -623,6 +624,10 @@ const NoticeHistoryPage = {
 
     normalizeActionType(value) {
         return value === 'NOTICE_' || String(value || '').startsWith('NOTICE_') ? String(value || 'NOTICE_') : 'NOTICE_';
+    },
+
+    normalizeDatePreset(value) {
+        return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
     },
 
     isPositiveNumber(value) {

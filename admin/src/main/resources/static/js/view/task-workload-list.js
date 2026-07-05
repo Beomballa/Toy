@@ -53,9 +53,12 @@ const TaskWorkloadList = {
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.keyword = params.get('keyword') || '';
-        this.state.priority = params.get('priority') || '';
-        this.state.overdueOnly = params.get('overdueOnly') || '';
-        this.state.sortBy = params.get('sortBy') || 'OVERDUE_DESC';
+        const priority = params.get('priority') || '';
+        const overdueOnly = params.get('overdueOnly') || '';
+        const sortBy = params.get('sortBy') || 'OVERDUE_DESC';
+        this.state.priority = ['HIGH', 'MEDIUM', 'LOW'].includes(priority) ? priority : '';
+        this.state.overdueOnly = overdueOnly === 'Y' ? 'Y' : '';
+        this.state.sortBy = ['OVERDUE_DESC', 'TOTAL_DESC', 'TODO_DESC', 'NAME_ASC'].includes(sortBy) ? sortBy : 'OVERDUE_DESC';
         this.state.adminNo = this.normalizeOptionalPositiveNumber(params.get('adminNo'))?.toString() || '';
         this.state.focusAdminNo = this.normalizeOptionalPositiveNumber(params.get('focusAdminNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
@@ -78,9 +81,11 @@ const TaskWorkloadList = {
 
     updateStateFromInputs() {
         this.state.keyword = (document.getElementById('taskWorkloadKeyword')?.value || '').trim();
-        this.state.priority = document.getElementById('taskWorkloadPriority')?.value || '';
+        const priority = document.getElementById('taskWorkloadPriority')?.value || '';
+        this.state.priority = ['HIGH', 'MEDIUM', 'LOW'].includes(priority) ? priority : '';
         this.state.overdueOnly = document.getElementById('taskWorkloadOverdueOnly')?.checked ? 'Y' : '';
-        this.state.sortBy = document.getElementById('taskWorkloadSortBy')?.value || 'OVERDUE_DESC';
+        const sortBy = document.getElementById('taskWorkloadSortBy')?.value || 'OVERDUE_DESC';
+        this.state.sortBy = ['OVERDUE_DESC', 'TOTAL_DESC', 'TODO_DESC', 'NAME_ASC'].includes(sortBy) ? sortBy : 'OVERDUE_DESC';
         this.state.size = this.normalizePageSize(document.getElementById('taskWorkloadPageSize')?.value);
     },
 

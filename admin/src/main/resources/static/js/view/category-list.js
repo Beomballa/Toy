@@ -168,7 +168,7 @@ const CategoryList = {
         params.set('size', String(this.state.size));
         params.set('depth', '1');
         if (this.state.keyword) params.set('keyword', this.state.keyword);
-        if (this.state.isActive) params.set('isActive', this.state.isActive);
+        if (this.state.isActive && ['Y', 'N'].includes(this.state.isActive)) params.set('isActive', this.state.isActive);
         if (this.state.selectedParentNo) params.set('parentNo', String(this.state.selectedParentNo));
         if (this.state.source) params.set('source', this.state.source);
         if (this.state.returnTo) params.set('returnTo', this.state.returnTo);

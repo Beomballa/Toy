@@ -435,10 +435,10 @@ const ContentList = {
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
         }
-        if (this.state.status) {
+        if (['', 'DRAFT', 'PUBLISHED'].includes(this.state.status) && this.state.status) {
             params.set('status', this.state.status);
         }
-        if (this.state.publicYn) {
+        if (['', 'Y', 'N'].includes(this.state.publicYn) && this.state.publicYn) {
             params.set('publicYn', this.state.publicYn);
         }
         if (this.state.startDate) {
@@ -450,7 +450,7 @@ const ContentList = {
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
         }
-        if (this.state.productLinked) {
+        if (['', 'Y', 'N'].includes(this.state.productLinked) && this.state.productLinked) {
             params.set('productLinked', this.state.productLinked);
         }
         if (this.state.productNo) {

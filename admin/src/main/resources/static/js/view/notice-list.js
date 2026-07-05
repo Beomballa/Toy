@@ -158,9 +158,9 @@ const NoticeList = {
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         if (this.state.keyword) params.set('keyword', this.state.keyword);
-        if (this.state.isActive) params.set('isActive', this.state.isActive);
-        if (this.state.isPinned) params.set('isPinned', this.state.isPinned);
-        if (this.state.visibilityStatus) params.set('visibilityStatus', this.state.visibilityStatus);
+        if (this.state.isActive && this.isValidYn(this.state.isActive)) params.set('isActive', this.state.isActive);
+        if (this.state.isPinned && this.isValidYn(this.state.isPinned)) params.set('isPinned', this.state.isPinned);
+        if (this.state.visibilityStatus && this.isValidVisibilityStatus(this.state.visibilityStatus)) params.set('visibilityStatus', this.state.visibilityStatus);
         if (this.state.noticeNo) params.set('noticeNo', this.state.noticeNo);
         if (this.state.source) params.set('source', this.state.source);
         if (this.state.returnTo) params.set('returnTo', this.state.returnTo);
@@ -798,13 +798,22 @@ const NoticeList = {
 
     toggleSelectCurrentPage(checked) {
         this.getCurrentPageItems().forEach((item) => {
+            const noticeNo = this.normalizeOptionalPositiveNumber(item.noticeNo);
+            if (noticeNo == null) {
+                return;
+            }
             if (checked) {
-                this.selectedNoticeNos.add(item.noticeNo);
+                this.selectedNoticeNos.add(noticeNo);
             } else {
-                this.selectedNoticeNos.delete(item.noticeNo);
+                this.selectedNoticeNos.delete(noticeNo);
             }
         });
         document.querySelectorAll('[data-role="select-notice"]').forEach((checkbox) => {
+            const noticeNo = this.normalizeOptionalPositiveNumber(checkbox.dataset.noticeNo);
+            if (noticeNo == null) {
+                checkbox.checked = false;
+                return;
+            }
             checkbox.checked = checked;
         });
         this.updateSelectionMeta(this.getCurrentPageItems());

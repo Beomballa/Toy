@@ -83,10 +83,10 @@ const MemberListPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('memberKeyword').value = params.get('keyword') || '';
-        document.getElementById('memberMasterYn').value = params.get('masterYn') || '';
-        document.getElementById('memberDelYn').value = params.get('delYn') || '';
-        document.getElementById('memberInitYn').value = params.get('initYn') || '';
+        document.getElementById('memberKeyword').value = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        document.getElementById('memberMasterYn').value = this.normalizeYnFilterValue(params.get('masterYn'));
+        document.getElementById('memberDelYn').value = this.normalizeYnFilterValue(params.get('delYn'));
+        document.getElementById('memberInitYn').value = this.normalizeYnFilterValue(params.get('initYn'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.source = params.get('source') || '';
@@ -99,13 +99,13 @@ const MemberListPage = {
     buildParams() {
         const params = new URLSearchParams();
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('memberKeyword').value);
-        const masterYn = document.getElementById('memberMasterYn').value;
-        const delYn = document.getElementById('memberDelYn').value;
-        const initYn = document.getElementById('memberInitYn').value;
+        const masterYn = this.normalizeYnFilterValue(document.getElementById('memberMasterYn').value);
+        const delYn = this.normalizeYnFilterValue(document.getElementById('memberDelYn').value);
+        const initYn = this.normalizeYnFilterValue(document.getElementById('memberInitYn').value);
         if (keyword) params.set('keyword', keyword);
-        if (this.isValidYn(masterYn)) params.set('masterYn', masterYn);
-        if (this.isValidYn(delYn)) params.set('delYn', delYn);
-        if (this.isValidYn(initYn)) params.set('initYn', initYn);
+        if (masterYn) params.set('masterYn', masterYn);
+        if (delYn) params.set('delYn', delYn);
+        if (initYn) params.set('initYn', initYn);
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         if (this.state.source) params.set('source', this.state.source);
@@ -690,6 +690,10 @@ const MemberListPage = {
 
     normalizeSummaryFilter(value) {
         return ['MASTER', 'DELETED', 'TEMP_PASSWORD'].includes(value) ? value : 'ALL';
+    },
+
+    normalizeYnFilterValue(value) {
+        return this.isValidYn(value) ? value : '';
     },
 
     isPositiveNumber(value) {

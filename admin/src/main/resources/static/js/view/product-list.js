@@ -856,7 +856,7 @@ const ProductList = {
             return;
         }
 
-        const status = document.getElementById('bulkProductStatus')?.value || '';
+        const status = this._normalizeProductStatus(document.getElementById('bulkProductStatus')?.value);
         if (!status) {
             await CommonJS.alert('변경할 상태를 선택해주세요.', '알림', 'warning');
             return;
@@ -1030,12 +1030,12 @@ const ProductList = {
         this.state.size = this._normalizePageSize(params.get('size'));
         this.state.brandNo = this._normalizeOptionalPositiveNumber(params.get('brandNo'));
         this.state.categoryNo = this._normalizeOptionalPositiveNumber(params.get('categoryNo'));
-        this.state.status = params.get('status') || '';
+        this.state.status = this._normalizeProductStatus(params.get('status'));
         this.state.lowStockOnly = params.get('lowStockOnly') === 'true';
         this.state.lowStockThreshold = this._normalizeLowStockThreshold(params.get('lowStockThreshold') || this.defaultLowStockThreshold);
         this.state.createdTodayOnly = params.get('createdTodayOnly') === 'true';
-        this.state.searchKeyword = params.get('searchKeyword') || '';
-        this.state.orderType = params.get('orderType') || 'r';
+        this.state.searchKeyword = CommonJS.normalizeOptionalText(params.get('searchKeyword')) || '';
+        this.state.orderType = this._normalizeOrderType(params.get('orderType'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
     },
@@ -1232,14 +1232,14 @@ const ProductList = {
     _updateStateFromInputs() {
         this.state.brandNo = this._normalizeOptionalPositiveNumber(document.getElementById('brandNo').value);
         this.state.categoryNo = this._normalizeOptionalPositiveNumber(document.getElementById('categoryNo').value);
-        this.state.status = document.getElementById('statusFilter').value;
+        this.state.status = this._normalizeProductStatus(document.getElementById('statusFilter').value);
         this.state.lowStockOnly = document.getElementById('lowStockOnly').checked;
         this.state.lowStockThreshold = this._normalizeLowStockThreshold(document.getElementById('lowStockThreshold').value);
         this.state.createdTodayOnly = document.getElementById('createdTodayOnly').checked;
         this.state.searchKeyword = document.getElementById('searchKeyword').value.trim().replaceAll(/\s+/g, ' ');
         this.state.size = this._normalizePageSize(document.getElementById('pageSize').value || 10);
         const orderType = document.getElementById('orderType').getAttribute('data-current-value') || 'r';
-        this.state.orderType = ['r', 'p', 'c'].includes(orderType) ? orderType : 'r';
+        this.state.orderType = this._normalizeOrderType(orderType);
     },
 
     _hasPendingSearchInput() {
@@ -1276,11 +1276,11 @@ const ProductList = {
             void CommonJS.alert('카테고리 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
-        if (this.state.status && !['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(this.state.status)) {
+        if (this.state.status && !this._normalizeProductStatus(this.state.status)) {
             void CommonJS.alert('상품 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
-        if (!['r', 'p', 'c'].includes(this.state.orderType)) {
+        if (this.state.orderType !== this._normalizeOrderType(this.state.orderType)) {
             void CommonJS.alert('정렬 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
@@ -1296,6 +1296,14 @@ const ProductList = {
     _normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+    },
+
+    _normalizeProductStatus(value) {
+        return ['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(value) ? value : '';
+    },
+
+    _normalizeOrderType(value) {
+        return ['r', 'p', 'c'].includes(value) ? value : 'r';
     },
 
     _normalizeOptionalPositiveNumber(value) {

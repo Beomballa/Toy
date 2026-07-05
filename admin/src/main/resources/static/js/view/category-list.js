@@ -150,8 +150,8 @@ const CategoryList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
-        this.state.isActive = params.get('isActive') || '';
+        this.state.keyword = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        this.state.isActive = this.normalizeYnFilterValue(params.get('isActive'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         this.state.selectedParentNo = this.normalizeOptionalPositiveNumber(params.get('parentNo'));
@@ -741,7 +741,7 @@ const CategoryList = {
 
     _updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('categoryKeyword').value) || '';
-        this.state.isActive = document.getElementById('categoryIsActiveFilter').value || '';
+        this.state.isActive = this.normalizeYnFilterValue(document.getElementById('categoryIsActiveFilter').value);
         this.state.size = this.normalizePageSize(document.getElementById('categoryPageSize').value);
     },
 
@@ -769,12 +769,16 @@ const CategoryList = {
         return Number(depth) === 1 || Number(depth) === 2;
     },
 
+    normalizeYnFilterValue(value) {
+        return ['Y', 'N'].includes(value) ? value : '';
+    },
+
     validateState() {
         if (this.state.keyword && this.state.keyword.length > 100) {
             void CommonJS.alert('검색어는 100자 이하로 입력하세요.', '알림', 'warning');
             return false;
         }
-        if (this.state.isActive && !['Y', 'N'].includes(this.state.isActive)) {
+        if (this.state.isActive && !this.normalizeYnFilterValue(this.state.isActive)) {
             void CommonJS.alert('활성 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }

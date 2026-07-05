@@ -68,16 +68,16 @@ const ProductHistoryPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('historyProductNo').value = params.get('productNo') || '';
+        document.getElementById('historyProductNo').value = this.normalizeOptionalPositiveNumber(params.get('productNo'));
         document.getElementById('historyActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
-        document.getElementById('historyKeyword').value = params.get('keyword') || '';
-        document.getElementById('historyActorNo').value = params.get('actorNo') || '';
-        document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
-        document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
-        this.state.page = Number(params.get('page') || 0);
-        this.state.size = Number(params.get('size') || 20);
+        document.getElementById('historyKeyword').value = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        document.getElementById('historyActorNo').value = this.normalizeOptionalPositiveNumber(params.get('actorNo'));
+        document.getElementById('historyActorKeyword').value = CommonJS.normalizeOptionalText(params.get('actorKeyword')) || '';
+        document.getElementById('historyOrderType').value = this.normalizeOrderType(params.get('orderType'));
+        this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('historyPageSize').value = String(this.state.size);
@@ -89,14 +89,14 @@ const ProductHistoryPage = {
 
     buildParams() {
         const params = new URLSearchParams();
-        const productNo = document.getElementById('historyProductNo').value.trim();
+        const productNo = this.normalizeOptionalPositiveNumber(document.getElementById('historyProductNo').value);
         const actionType = this.normalizeActionType(document.getElementById('historyActionType').value);
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
-        const actorNo = document.getElementById('historyActorNo').value.trim();
+        const actorNo = this.normalizeOptionalPositiveNumber(document.getElementById('historyActorNo').value);
         const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword').value);
-        const orderType = document.getElementById('historyOrderType').value || 'latest';
+        const orderType = this.normalizeOrderType(document.getElementById('historyOrderType').value);
 
         if (productNo) params.set('productNo', productNo);
         if (actionType) params.set('actionType', actionType);
@@ -483,7 +483,7 @@ const ProductHistoryPage = {
     validateState() {
         const productNo = document.getElementById('historyProductNo')?.value.trim() || '';
         const actorNo = document.getElementById('historyActorNo')?.value.trim() || '';
-        const orderType = document.getElementById('historyOrderType')?.value || 'latest';
+        const orderType = this.normalizeOrderType(document.getElementById('historyOrderType')?.value);
         if (productNo && !this.isPositiveNumber(productNo)) {
             void CommonJS.alert('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
@@ -515,6 +515,14 @@ const ProductHistoryPage = {
 
     normalizeDatePreset(value) {
         return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
+    },
+
+    normalizeOrderType(value) {
+        return ['latest', 'oldest'].includes(value) ? value : 'latest';
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isPositiveNumber(value) ? String(Number(value)) : '';
     },
 
     isPositiveNumber(value) {

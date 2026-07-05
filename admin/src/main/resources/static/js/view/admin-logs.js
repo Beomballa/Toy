@@ -80,10 +80,10 @@ const AdminLogPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('logAdminNo').value = params.get('adminNo') || '';
-        document.getElementById('logAdminKeyword').value = params.get('adminKeyword') || '';
-        document.getElementById('logActionType').value = params.get('actionType') || '';
-        document.getElementById('logTargetId').value = params.get('targetId') || '';
+        document.getElementById('logAdminNo').value = this.normalizeOptionalPositiveNumber(params.get('adminNo'))?.toString() || '';
+        document.getElementById('logAdminKeyword').value = CommonJS.normalizeOptionalText(params.get('adminKeyword')) || '';
+        document.getElementById('logActionType').value = this.normalizeActionType(params.get('actionType'));
+        document.getElementById('logTargetId').value = this.normalizeOptionalPositiveNumber(params.get('targetId'))?.toString() || '';
         document.getElementById('logStartDate').value = params.get('startDate') || '';
         document.getElementById('logEndDate').value = params.get('endDate') || '';
         this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'))?.toString() || '';
@@ -101,10 +101,10 @@ const AdminLogPage = {
 
     buildParams() {
         const params = new URLSearchParams();
-        const adminNo = document.getElementById('logAdminNo').value.trim();
+        const adminNo = this.normalizeOptionalPositiveNumber(document.getElementById('logAdminNo').value);
         const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('logAdminKeyword').value);
         const actionType = this.normalizeActionType(document.getElementById('logActionType').value);
-        const targetId = document.getElementById('logTargetId').value.trim();
+        const targetId = this.normalizeOptionalPositiveNumber(document.getElementById('logTargetId').value);
         const startDate = document.getElementById('logStartDate').value;
         const endDate = document.getElementById('logEndDate').value;
 

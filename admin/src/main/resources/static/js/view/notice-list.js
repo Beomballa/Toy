@@ -129,10 +129,10 @@ const NoticeList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
-        this.state.isActive = params.get('isActive') || '';
-        this.state.isPinned = params.get('isPinned') || '';
-        this.state.visibilityStatus = params.get('visibilityStatus') || '';
+        this.state.keyword = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        this.state.isActive = this.normalizeYnFilterValue(params.get('isActive'));
+        this.state.isPinned = this.normalizeYnFilterValue(params.get('isPinned'));
+        this.state.visibilityStatus = this.normalizeVisibilityStatusValue(params.get('visibilityStatus'));
         this.state.noticeNo = this.normalizeOptionalPositiveNumber(params.get('noticeNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
@@ -146,10 +146,10 @@ const NoticeList = {
     },
 
     updateStateFromInputs() {
-        this.state.keyword = document.getElementById('noticeKeyword').value.trim();
-        this.state.isActive = document.getElementById('noticeIsActiveFilter').value;
-        this.state.isPinned = document.getElementById('noticeIsPinnedFilter').value;
-        this.state.visibilityStatus = document.getElementById('noticeVisibilityStatusFilter').value;
+        this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('noticeKeyword').value) || '';
+        this.state.isActive = this.normalizeYnFilterValue(document.getElementById('noticeIsActiveFilter').value);
+        this.state.isPinned = this.normalizeYnFilterValue(document.getElementById('noticeIsPinnedFilter').value);
+        this.state.visibilityStatus = this.normalizeVisibilityStatusValue(document.getElementById('noticeVisibilityStatusFilter').value);
         this.state.size = this.normalizePageSize(document.getElementById('noticePageSize').value);
     },
 
@@ -841,8 +841,8 @@ const NoticeList = {
 
         const payload = {
             noticeNos: Array.from(this.selectedNoticeNos),
-            isActive: document.getElementById('bulkNoticeIsActive').value || null,
-            isPinned: document.getElementById('bulkNoticeIsPinned').value || null
+            isActive: this.normalizeBulkYnActionValue(document.getElementById('bulkNoticeIsActive').value),
+            isPinned: this.normalizeBulkYnActionValue(document.getElementById('bulkNoticeIsPinned').value)
         };
 
         if (!payload.isActive && !payload.isPinned) {
@@ -1048,13 +1048,13 @@ const NoticeList = {
         if (this.state.keyword.length > 100) {
             throw new Error('검색어는 100자 이하로 입력하세요.');
         }
-        if (this.state.isActive && !this.isValidYn(this.state.isActive)) {
+        if (this.state.isActive && !this.normalizeYnFilterValue(this.state.isActive)) {
             throw new Error('공지 활성 상태 필터 값이 올바르지 않습니다.');
         }
-        if (this.state.isPinned && !this.isValidYn(this.state.isPinned)) {
+        if (this.state.isPinned && !this.normalizeYnFilterValue(this.state.isPinned)) {
             throw new Error('공지 고정 상태 필터 값이 올바르지 않습니다.');
         }
-        if (this.state.visibilityStatus && !this.isValidVisibilityStatus(this.state.visibilityStatus)) {
+        if (this.state.visibilityStatus && !this.normalizeVisibilityStatusValue(this.state.visibilityStatus)) {
             throw new Error('공지 노출 상태 필터 값이 올바르지 않습니다.');
         }
     },
@@ -1088,6 +1088,18 @@ const NoticeList = {
 
     normalizeStatFilter(value) {
         return ['total', 'live', 'scheduled', 'ended', 'inactive', 'pinned'].includes(value) ? value : 'total';
+    },
+
+    normalizeYnFilterValue(value) {
+        return this.isValidYn(value) ? value : '';
+    },
+
+    normalizeVisibilityStatusValue(value) {
+        return this.isValidVisibilityStatus(value) ? value : '';
+    },
+
+    normalizeBulkYnActionValue(value) {
+        return this.isValidYn(value) ? value : null;
     },
 
     isPositiveNumber(value) {

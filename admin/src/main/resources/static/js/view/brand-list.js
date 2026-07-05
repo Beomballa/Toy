@@ -117,8 +117,8 @@ const BrandList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
-        this.state.isActive = params.get('isActive') || '';
+        this.state.keyword = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        this.state.isActive = this.normalizeActiveFilterValue(params.get('isActive'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         document.getElementById('brandKeyword').value = this.state.keyword;
@@ -696,7 +696,7 @@ const BrandList = {
 
     _updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('brandKeyword').value) || '';
-        this.state.isActive = document.getElementById('brandIsActiveFilter').value || '';
+        this.state.isActive = this.normalizeActiveFilterValue(document.getElementById('brandIsActiveFilter').value);
         this.state.size = this.normalizePageSize(document.getElementById('brandPageSize').value);
     },
 
@@ -713,11 +713,15 @@ const BrandList = {
         return Number.isInteger(Number(brandNo)) && Number(brandNo) > 0;
     },
 
+    normalizeActiveFilterValue(isActive) {
+        return ['Y', 'N'].includes(isActive) ? isActive : '';
+    },
+
     validateState() {
         if (this.state.keyword.length > 100) {
             throw new Error('검색어는 100자 이하로 입력하세요.');
         }
-        if (this.state.isActive && !['Y', 'N'].includes(this.state.isActive)) {
+        if (this.state.isActive && !this.normalizeActiveFilterValue(this.state.isActive)) {
             throw new Error('브랜드 활성 상태 필터 값이 올바르지 않습니다.');
         }
     },

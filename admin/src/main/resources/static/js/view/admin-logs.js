@@ -103,7 +103,7 @@ const AdminLogPage = {
         const params = new URLSearchParams();
         const adminNo = document.getElementById('logAdminNo').value.trim();
         const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('logAdminKeyword').value);
-        const actionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType').value);
+        const actionType = this.normalizeActionType(document.getElementById('logActionType').value);
         const targetId = document.getElementById('logTargetId').value.trim();
         const startDate = document.getElementById('logStartDate').value;
         const endDate = document.getElementById('logEndDate').value;
@@ -558,22 +558,22 @@ const AdminLogPage = {
     },
 
     syncQuickFilterState() {
-        const currentActionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value) || '';
+        const currentActionType = this.normalizeActionType(document.getElementById('logActionType')?.value);
         document.querySelectorAll('[data-log-quick-filter]').forEach((button) => {
-            const active = (button.dataset.logQuickFilter || '') === currentActionType;
+            const active = this.normalizeActionType(button.dataset.logQuickFilter) === currentActionType;
             button.classList.toggle('btn-secondary', active);
             button.classList.toggle('btn-outline-secondary', !active);
         });
     },
 
     syncSummaryCardState() {
-        const currentActionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value) || '';
+        const currentActionType = this.normalizeActionType(document.getElementById('logActionType')?.value);
         const today = this.resolveDateLabel(new Date());
         const startDate = document.getElementById('logStartDate')?.value || '';
         const endDate = document.getElementById('logEndDate')?.value || '';
 
         document.querySelectorAll('[data-log-summary-filter]').forEach((card) => {
-            card.classList.toggle('stat-card-active', (card.dataset.logSummaryFilter || '') === currentActionType);
+            card.classList.toggle('stat-card-active', this.normalizeActionType(card.dataset.logSummaryFilter) === currentActionType);
         });
         document.querySelectorAll('[data-log-summary-date-preset]').forEach((card) => {
             const active = card.dataset.logSummaryDatePreset === 'today' && startDate === today && endDate === today;

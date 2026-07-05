@@ -162,8 +162,8 @@ const BannerList = {
         params.set('page', String(this.state.page));
         params.set('size', String(this.state.size));
         if (this.state.keyword) params.set('keyword', this.state.keyword);
-        if (this.state.isActive) params.set('isActive', this.state.isActive);
-        if (this.state.exposureStatus) params.set('exposureStatus', this.state.exposureStatus);
+        if (this.state.isActive && ['Y', 'N'].includes(this.state.isActive)) params.set('isActive', this.state.isActive);
+        if (['LIVE', 'SCHEDULED', 'ENDED'].includes(this.state.exposureStatus)) params.set('exposureStatus', this.state.exposureStatus);
         if (this.state.bannerNo) params.set('bannerNo', this.state.bannerNo);
         if (this.state.pageSource) params.set('source', this.state.pageSource);
         if (this.state.returnTo) params.set('returnTo', this.state.returnTo);

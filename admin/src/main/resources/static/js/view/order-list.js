@@ -381,7 +381,7 @@ const OrderList = {
     },
 
     captureFilterState() {
-        this.state.status = document.getElementById('orderStatus')?.value || '';
+        this.state.status = this.normalizeStatusCode(document.getElementById('orderStatus')?.value);
         this.state.startDate = document.getElementById('startDate')?.value || '';
         this.state.endDate = document.getElementById('endDate')?.value || '';
         const rawKeyword = document.getElementById('searchKeyword')?.value || '';
@@ -616,7 +616,7 @@ const OrderList = {
         return {
             page: this.normalizePage(params.get('page')),
             size: this.normalizePageSize(params.get('size')),
-            status: params.get('status') || '',
+            status: this.normalizeStatusCode(params.get('status')),
             startDate: params.get('startDate') || '',
             endDate: params.get('endDate') || '',
             searchKeyword: (params.get('searchKeyword') || '').trim().replace(/\s+/g, ' '),

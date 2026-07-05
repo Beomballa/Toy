@@ -101,13 +101,13 @@ const ContentList = {
 
         document.getElementById('contentSearchForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            this.state.keyword = document.getElementById('contentSearchKeyword')?.value.trim() || '';
-            this.state.status = document.getElementById('contentStatusFilter')?.value || '';
-            this.state.publicYn = document.getElementById('contentPublicFilter')?.value || '';
+            this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('contentSearchKeyword')?.value) || '';
+            this.state.status = this.normalizeStatusValue(document.getElementById('contentStatusFilter')?.value);
+            this.state.publicYn = this.normalizeYnFilterValue(document.getElementById('contentPublicFilter')?.value);
             this.state.startDate = document.getElementById('contentStartDate')?.value || '';
             this.state.endDate = document.getElementById('contentEndDate')?.value || '';
             this.state.pinnedOnly = document.getElementById('contentPinnedOnly')?.checked || false;
-            this.state.productLinked = document.getElementById('contentProductLinkedFilter')?.value || '';
+            this.state.productLinked = this.normalizeYnFilterValue(document.getElementById('contentProductLinkedFilter')?.value);
             this.state.productNo = this.normalizeOptionalPositiveNumber(document.getElementById('contentProductNoFilter')?.value.trim() || '');
             this.state.page = 0;
             if (!this.validateState()) {
@@ -196,7 +196,7 @@ const ContentList = {
         }
         const params = new URLSearchParams({
             page: this.state.page,
-            size: this.state.size,
+            size: String(this.state.size),
             boardType: this.state.boardType
         });
         if (this.state.keyword) {
@@ -432,13 +432,14 @@ const ContentList = {
     buildQueryParams() {
         const params = new URLSearchParams({ boardType: this.state.boardType });
         params.set('page', String(this.state.page));
+        params.set('size', String(this.state.size));
         if (this.state.keyword) {
             params.set('keyword', this.state.keyword);
         }
-        if (['', 'DRAFT', 'PUBLISHED'].includes(this.state.status) && this.state.status) {
+        if (this.normalizeStatusValue(this.state.status)) {
             params.set('status', this.state.status);
         }
-        if (['', 'Y', 'N'].includes(this.state.publicYn) && this.state.publicYn) {
+        if (this.normalizeYnFilterValue(this.state.publicYn)) {
             params.set('publicYn', this.state.publicYn);
         }
         if (this.state.startDate) {
@@ -450,7 +451,7 @@ const ContentList = {
         if (this.state.pinnedOnly) {
             params.set('pinnedOnly', 'true');
         }
-        if (['', 'Y', 'N'].includes(this.state.productLinked) && this.state.productLinked) {
+        if (this.normalizeYnFilterValue(this.state.productLinked)) {
             params.set('productLinked', this.state.productLinked);
         }
         if (this.state.productNo) {
@@ -596,9 +597,9 @@ const ContentList = {
 
         const payload = {
             ids: Array.from(this.state.selectedIds),
-            status: document.getElementById('contentBulkStatus')?.value || null,
-            publicYn: document.getElementById('contentBulkPublicYn')?.value || null,
-            pinnedYn: document.getElementById('contentBulkPinnedYn')?.value || null
+            status: this.normalizeBulkStatusValue(document.getElementById('contentBulkStatus')?.value),
+            publicYn: this.normalizeBulkYnActionValue(document.getElementById('contentBulkPublicYn')?.value),
+            pinnedYn: this.normalizeBulkYnActionValue(document.getElementById('contentBulkPinnedYn')?.value)
         };
 
         if (!payload.status && !payload.publicYn && !payload.pinnedYn) {
@@ -701,15 +702,15 @@ const ContentList = {
             void CommonJS.alert('상품 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
         }
-        if (!['', 'DRAFT', 'PUBLISHED'].includes(this.state.status)) {
+        if (this.state.status !== this.normalizeStatusValue(this.state.status)) {
             void CommonJS.alert('게시 상태 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
-        if (!['', 'Y', 'N'].includes(this.state.publicYn)) {
+        if (this.state.publicYn !== this.normalizeYnFilterValue(this.state.publicYn)) {
             void CommonJS.alert('공개 여부 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
-        if (!['', 'Y', 'N'].includes(this.state.productLinked)) {
+        if (this.state.productLinked !== this.normalizeYnFilterValue(this.state.productLinked)) {
             void CommonJS.alert('상품 연결 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
@@ -720,25 +721,47 @@ const ContentList = {
     normalizeStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType') || window.initialContentBoardType);
-        this.state.keyword = params.get('keyword') || '';
-        const status = params.get('status') || '';
-        const publicYn = params.get('publicYn') || '';
+        this.state.keyword = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        const status = this.normalizeStatusValue(params.get('status'));
+        const publicYn = this.normalizeYnFilterValue(params.get('publicYn'));
         this.state.startDate = params.get('startDate') || '';
         this.state.endDate = params.get('endDate') || '';
         this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
-        const productLinked = params.get('productLinked') || '';
+        const productLinked = this.normalizeYnFilterValue(params.get('productLinked'));
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         this.state.page = this.normalizePage(params.get('page'));
+        this.state.size = this.normalizePageSize(params.get('size'));
         this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
-        this.state.status = ['', 'DRAFT', 'PUBLISHED'].includes(status) ? status : '';
-        this.state.publicYn = ['', 'Y', 'N'].includes(publicYn) ? publicYn : '';
-        this.state.productLinked = ['', 'Y', 'N'].includes(productLinked) ? productLinked : '';
+        this.state.status = status;
+        this.state.publicYn = publicYn;
+        this.state.productLinked = productLinked;
     },
 
     normalizePage(page) {
         const parsed = Number(page);
         return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    normalizePageSize(size) {
+        const parsed = Number(size);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : 9;
+    },
+
+    normalizeStatusValue(value) {
+        return ['', 'DRAFT', 'PUBLISHED'].includes(value) ? value : '';
+    },
+
+    normalizeYnFilterValue(value) {
+        return ['', 'Y', 'N'].includes(value) ? value : '';
+    },
+
+    normalizeBulkStatusValue(value) {
+        return ['PUBLISHED', 'DRAFT'].includes(value) ? value : null;
+    },
+
+    normalizeBulkYnActionValue(value) {
+        return ['Y', 'N'].includes(value) ? value : null;
     },
 
     normalizeOptionalPositiveNumber(value) {

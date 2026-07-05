@@ -142,9 +142,9 @@ const BannerList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
-        this.state.isActive = params.get('isActive') || '';
-        this.state.exposureStatus = params.get('exposureStatus') || '';
+        this.state.keyword = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        this.state.isActive = this.normalizeActiveFilterValue(params.get('isActive'));
+        this.state.exposureStatus = this.normalizeExposureStatusValue(params.get('exposureStatus'));
         this.state.bannerNo = this.isValidBannerNo(params.get('bannerNo')) ? String(Number(params.get('bannerNo'))) : '';
         this.state.pageSource = params.get('source') || '';
         this.state.source = this.state.pageSource;
@@ -828,8 +828,8 @@ const BannerList = {
 
     _updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('bannerKeyword').value) || '';
-        this.state.isActive = document.getElementById('bannerIsActiveFilter').value || '';
-        this.state.exposureStatus = document.getElementById('bannerExposureStatusFilter').value || '';
+        this.state.isActive = this.normalizeActiveFilterValue(document.getElementById('bannerIsActiveFilter').value);
+        this.state.exposureStatus = this.normalizeExposureStatusValue(document.getElementById('bannerExposureStatusFilter').value);
         this.state.size = this.normalizePageSize(document.getElementById('bannerPageSize').value);
     },
 
@@ -857,6 +857,14 @@ const BannerList = {
         return isActive === 'Y' || isActive === 'N';
     },
 
+    normalizeActiveFilterValue(isActive) {
+        return this.isValidActiveValue(isActive) ? isActive : '';
+    },
+
+    normalizeExposureStatusValue(exposureStatus) {
+        return ['LIVE', 'SCHEDULED', 'ENDED'].includes(exposureStatus) ? exposureStatus : '';
+    },
+
     validateBannerPeriod(startDtm, endDtm) {
         if (!startDtm || !endDtm) {
             return true;
@@ -873,7 +881,7 @@ const BannerList = {
             void CommonJS.alert('활성 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
-        if (this.state.exposureStatus && !['LIVE', 'SCHEDULED', 'ENDED'].includes(this.state.exposureStatus)) {
+        if (this.state.exposureStatus && !this.normalizeExposureStatusValue(this.state.exposureStatus)) {
             void CommonJS.alert('노출 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }

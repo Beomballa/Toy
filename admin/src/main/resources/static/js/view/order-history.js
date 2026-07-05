@@ -96,14 +96,14 @@ const OrderHistoryPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('historyOrderNo').value = params.get('orderNo') || '';
+        document.getElementById('historyOrderNo').value = this.normalizeOptionalPositiveNumber(params.get('orderNo'));
         document.getElementById('historyActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('historyStartDate').value = params.get('startDate') || '';
         document.getElementById('historyEndDate').value = params.get('endDate') || '';
-        document.getElementById('historyKeyword').value = params.get('keyword') || '';
-        document.getElementById('historyActorNo').value = params.get('actorNo') || '';
-        document.getElementById('historyActorKeyword').value = params.get('actorKeyword') || '';
-        document.getElementById('historyOrderType').value = params.get('orderType') || 'latest';
+        document.getElementById('historyKeyword').value = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        document.getElementById('historyActorNo').value = this.normalizeOptionalPositiveNumber(params.get('actorNo'));
+        document.getElementById('historyActorKeyword').value = CommonJS.normalizeOptionalText(params.get('actorKeyword')) || '';
+        document.getElementById('historyOrderType').value = this.normalizeOrderType(params.get('orderType'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = params.get('returnTo') || '/admin/orders/list';
@@ -118,14 +118,14 @@ const OrderHistoryPage = {
 
     buildParams() {
         const params = new URLSearchParams();
-        const orderNo = document.getElementById('historyOrderNo').value.trim();
+        const orderNo = this.normalizeOptionalPositiveNumber(document.getElementById('historyOrderNo').value);
         const actionType = this.normalizeActionType(document.getElementById('historyActionType').value);
         const startDate = document.getElementById('historyStartDate').value;
         const endDate = document.getElementById('historyEndDate').value;
         const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword').value);
-        const actorNo = document.getElementById('historyActorNo').value.trim();
+        const actorNo = this.normalizeOptionalPositiveNumber(document.getElementById('historyActorNo').value);
         const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword').value);
-        const orderType = document.getElementById('historyOrderType').value || 'latest';
+        const orderType = this.normalizeOrderType(document.getElementById('historyOrderType').value);
 
         if (orderNo) params.set('orderNo', orderNo);
         if (actionType) params.set('actionType', actionType);
@@ -518,7 +518,7 @@ const OrderHistoryPage = {
     validateState() {
         const orderNo = document.getElementById('historyOrderNo')?.value.trim() || '';
         const actorNo = document.getElementById('historyActorNo')?.value.trim() || '';
-        const orderType = document.getElementById('historyOrderType')?.value || 'latest';
+        const orderType = this.normalizeOrderType(document.getElementById('historyOrderType')?.value);
         if (orderNo && !this.isPositiveNumber(orderNo)) {
             void CommonJS.alert('주문 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
@@ -554,6 +554,10 @@ const OrderHistoryPage = {
 
     normalizeDatePreset(value) {
         return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
+    },
+
+    normalizeOrderType(value) {
+        return ['latest', 'oldest'].includes(value) ? value : 'latest';
     },
 
     isPositiveNumber(value) {

@@ -18,8 +18,8 @@ const ContentDetail = {
         this.state.boardType = ContentBoardConfig.normalizeBoardType(
             window.initialContentDetail?.boardType || params.get('boardType')
         );
-        this.state.returnTo = window.initialContentDetail?.returnTo || params.get('returnTo');
-        this.state.source = window.initialContentDetail?.source || params.get('source') || '';
+        this.state.returnTo = CommonJS.normalizeOptionalText(window.initialContentDetail?.returnTo || params.get('returnTo'));
+        this.state.source = CommonJS.normalizeOptionalText(window.initialContentDetail?.source || params.get('source')) || '';
 
         if (!this.isValidContentId(this.state.id)) {
             await CommonJS.alert('문서 번호가 올바르지 않습니다.', '오류', 'error');
@@ -82,7 +82,7 @@ const ContentDetail = {
 
             const data = await response.json();
             this.state.data = data;
-            this.state.boardType = data.boardType || this.state.boardType;
+            this.state.boardType = ContentBoardConfig.normalizeBoardType(data.boardType || this.state.boardType);
             this.applyBoardMeta(this.state.boardType);
             CommonJS.bindMainLogoNavigation(this.getListPath());
             this.renderDetail(data);

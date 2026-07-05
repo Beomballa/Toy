@@ -29,8 +29,8 @@ const NoticeDetailPage = {
     readBootstrapState() {
         const bootstrapState = window.noticeDetailBootstrap || {};
         this.state.noticeNo = this.normalizeNoticeNo(bootstrapState.noticeNo);
-        this.state.returnTo = bootstrapState.returnTo || '/admin/settings/notices';
-        this.state.source = bootstrapState.source || '';
+        this.state.returnTo = CommonJS.normalizeOptionalText(bootstrapState.returnTo) || '/admin/settings/notices';
+        this.state.source = CommonJS.normalizeOptionalText(bootstrapState.source) || '';
         this.syncReturnLinks();
         this.syncReturnContextMeta();
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeDetailSourceContextNotice', source: this.state.source });
@@ -131,8 +131,8 @@ const NoticeDetailPage = {
         }
         document.getElementById('noticeDetailEditTitle').value = detail.title || '';
         document.getElementById('noticeDetailEditContent').value = detail.content || '';
-        document.getElementById('noticeDetailEditIsActive').value = detail.isActive || 'Y';
-        document.getElementById('noticeDetailEditIsPinned').value = detail.isPinned || 'N';
+        document.getElementById('noticeDetailEditIsActive').value = this.normalizeYnValue(detail.isActive, 'Y');
+        document.getElementById('noticeDetailEditIsPinned').value = this.normalizeYnValue(detail.isPinned, 'N');
         document.getElementById('noticeDetailEditStartDtm').value = this.toDateTimeLocalValue(detail.startDtm);
         document.getElementById('noticeDetailEditEndDtm').value = this.toDateTimeLocalValue(detail.endDtm);
         this.modal?.show();
@@ -154,8 +154,8 @@ const NoticeDetailPage = {
             noticeNo: detail.noticeNo,
             title: document.getElementById('noticeDetailEditTitle').value.trim(),
             content: document.getElementById('noticeDetailEditContent').value.trim(),
-            isActive: document.getElementById('noticeDetailEditIsActive').value,
-            isPinned: document.getElementById('noticeDetailEditIsPinned').value,
+            isActive: this.normalizeYnValue(document.getElementById('noticeDetailEditIsActive').value, 'Y'),
+            isPinned: this.normalizeYnValue(document.getElementById('noticeDetailEditIsPinned').value, 'N'),
             startDtm: this.toNullableDateTime(document.getElementById('noticeDetailEditStartDtm').value),
             endDtm: this.toNullableDateTime(document.getElementById('noticeDetailEditEndDtm').value)
         };
@@ -440,6 +440,10 @@ const NoticeDetailPage = {
 
     isValidYn(value) {
         return value === 'Y' || value === 'N';
+    },
+
+    normalizeYnValue(value, fallback = 'Y') {
+        return this.isValidYn(value) ? value : fallback;
     },
 
     isSameAsCurrentDetail(payload, detail) {

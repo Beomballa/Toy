@@ -23,16 +23,16 @@ const ContentEdit = {
         this.initialBoardType = ContentBoardConfig.normalizeBoardType(
             document.getElementById('initialBoardType')?.value
         );
-        this.returnTo = document.getElementById('contentReturnTo')?.value || '';
-        this.source = document.getElementById('contentSource')?.value || '';
+        this.returnTo = CommonJS.normalizeOptionalText(document.getElementById('contentReturnTo')?.value) || '';
+        this.source = CommonJS.normalizeOptionalText(document.getElementById('contentSource')?.value) || '';
         const boardTypeSelect = document.getElementById('boardType');
 
         if (boardTypeSelect) {
             boardTypeSelect.value = this.initialBoardType;
         }
-        document.getElementById('status').value = this.initialData.status;
-        document.getElementById('publicYn').value = this.initialData.publicYn;
-        document.getElementById('pinnedYn').value = this.initialData.pinnedYn;
+        document.getElementById('status').value = this.normalizeStatusValue(this.initialData.status);
+        document.getElementById('publicYn').value = this.normalizeYnValue(this.initialData.publicYn, 'Y');
+        document.getElementById('pinnedYn').value = this.normalizeYnValue(this.initialData.pinnedYn, 'N');
 
         this.bindEvents();
         this.applyBoardMeta(boardTypeSelect?.value || this.initialBoardType);
@@ -97,22 +97,22 @@ const ContentEdit = {
             const data = await res.json();
             document.getElementById('title').value = data.title || '';
             document.getElementById('content').value = data.content || '';
-            document.getElementById('boardType').value = data.boardType || 'NOTICE';
+            document.getElementById('boardType').value = ContentBoardConfig.normalizeBoardType(data.boardType || 'NOTICE');
             document.getElementById('productNo').value = data.productNo || '';
-            document.getElementById('status').value = data.status || 'DRAFT';
-            document.getElementById('publicYn').value = data.publicYn || 'Y';
-            document.getElementById('pinnedYn').value = data.pinnedYn || 'N';
+            document.getElementById('status').value = this.normalizeStatusValue(data.status);
+            document.getElementById('publicYn').value = this.normalizeYnValue(data.publicYn, 'Y');
+            document.getElementById('pinnedYn').value = this.normalizeYnValue(data.pinnedYn, 'N');
             
             this.initialData = {
-                title: data.title,
-                content: data.content,
-                boardType: data.boardType,
+                title: data.title || '',
+                content: data.content || '',
+                boardType: ContentBoardConfig.normalizeBoardType(data.boardType),
                 productNo: data.productNo ? String(data.productNo) : '',
-                status: data.status || 'DRAFT',
-                publicYn: data.publicYn || 'Y',
-                pinnedYn: data.pinnedYn || 'N'
+                status: this.normalizeStatusValue(data.status),
+                publicYn: this.normalizeYnValue(data.publicYn, 'Y'),
+                pinnedYn: this.normalizeYnValue(data.pinnedYn, 'N')
             };
-            this.applyBoardMeta(data.boardType || 'NOTICE');
+            this.applyBoardMeta(this.initialData.boardType);
             this.syncVisibilitySummary();
             this.syncProductSummary();
         } catch (err) {
@@ -216,9 +216,9 @@ const ContentEdit = {
         const content = document.getElementById('content').value;
         const boardType = ContentBoardConfig.normalizeBoardType(document.getElementById('boardType').value);
         const productNo = document.getElementById('productNo').value.trim();
-        const status = document.getElementById('status').value || 'DRAFT';
-        const publicYn = document.getElementById('publicYn').value || 'Y';
-        const pinnedYn = document.getElementById('pinnedYn').value || 'N';
+        const status = this.normalizeStatusValue(document.getElementById('status').value);
+        const publicYn = this.normalizeYnValue(document.getElementById('publicYn').value, 'Y');
+        const pinnedYn = this.normalizeYnValue(document.getElementById('pinnedYn').value, 'N');
         const normalizedTitle = title.trim();
         const normalizedContent = content.trim();
         const parsedProductNo = this.parseProductNo(productNo);
@@ -426,6 +426,14 @@ const ContentEdit = {
 
     isValidYn(value) {
         return value === 'Y' || value === 'N';
+    },
+
+    normalizeStatusValue(status) {
+        return this.isValidStatus(status) ? status : 'DRAFT';
+    },
+
+    normalizeYnValue(value, fallback = 'Y') {
+        return this.isValidYn(value) ? value : fallback;
     },
 
     isSameAsInitial(title, content, boardType, productNo, status, publicYn, pinnedYn) {

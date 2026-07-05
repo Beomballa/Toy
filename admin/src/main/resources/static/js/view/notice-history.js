@@ -44,7 +44,7 @@ const NoticeHistoryPage = {
         });
         document.querySelectorAll('.notice-history-quick-filter[data-action-type]').forEach((button) => {
             button.addEventListener('click', () => {
-                document.getElementById('noticeHistoryActionType').value = button.dataset.actionType || 'NOTICE_';
+                document.getElementById('noticeHistoryActionType').value = this.normalizeActionType(button.dataset.actionType);
                 this.state.page = 0;
                 this.syncQuickFilterState();
                 this.loadHistory();
@@ -79,7 +79,7 @@ const NoticeHistoryPage = {
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
         document.getElementById('noticeHistoryNoticeNo').value = params.get('noticeNo') || '';
-        document.getElementById('noticeHistoryActionType').value = params.get('actionType') || 'NOTICE_';
+        document.getElementById('noticeHistoryActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('noticeHistoryAdminNo').value = params.get('adminNo') || '';
         document.getElementById('noticeHistoryAdminKeyword').value = params.get('adminKeyword') || '';
         document.getElementById('noticeHistoryStartDate').value = params.get('startDate') || '';
@@ -99,7 +99,7 @@ const NoticeHistoryPage = {
     buildParams() {
         const params = new URLSearchParams();
         const noticeNo = document.getElementById('noticeHistoryNoticeNo').value.trim();
-        const actionType = document.getElementById('noticeHistoryActionType').value || 'NOTICE_';
+        const actionType = this.normalizeActionType(document.getElementById('noticeHistoryActionType').value);
         const adminNo = document.getElementById('noticeHistoryAdminNo').value.trim();
         const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('noticeHistoryAdminKeyword').value) || '';
         const startDate = document.getElementById('noticeHistoryStartDate').value;
@@ -321,9 +321,9 @@ const NoticeHistoryPage = {
     },
 
     syncQuickFilterState() {
-        const currentActionType = document.getElementById('noticeHistoryActionType')?.value || 'NOTICE_';
+        const currentActionType = this.normalizeActionType(document.getElementById('noticeHistoryActionType')?.value);
         document.querySelectorAll('.notice-history-quick-filter[data-action-type]').forEach((button) => {
-            const active = (button.dataset.actionType || 'NOTICE_') === currentActionType;
+            const active = this.normalizeActionType(button.dataset.actionType) === currentActionType;
             button.classList.toggle('active', active);
             button.classList.toggle('btn-dark', active);
             button.classList.toggle('btn-outline-dark', !active);
@@ -619,6 +619,10 @@ const NoticeHistoryPage = {
 
     normalizeOptionalPositiveNumber(value) {
         return this.isPositiveNumber(value) ? String(Number(value)) : '';
+    },
+
+    normalizeActionType(value) {
+        return value === 'NOTICE_' || String(value || '').startsWith('NOTICE_') ? String(value || 'NOTICE_') : 'NOTICE_';
     },
 
     isPositiveNumber(value) {

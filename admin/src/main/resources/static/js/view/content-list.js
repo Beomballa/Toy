@@ -721,16 +721,19 @@ const ContentList = {
         const params = new URLSearchParams(window.location.search);
         this.state.boardType = ContentBoardConfig.normalizeBoardType(params.get('boardType') || window.initialContentBoardType);
         this.state.keyword = params.get('keyword') || '';
-        this.state.status = params.get('status') || '';
-        this.state.publicYn = params.get('publicYn') || '';
+        const status = params.get('status') || '';
+        const publicYn = params.get('publicYn') || '';
         this.state.startDate = params.get('startDate') || '';
         this.state.endDate = params.get('endDate') || '';
         this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
-        this.state.productLinked = params.get('productLinked') || '';
+        const productLinked = params.get('productLinked') || '';
         this.state.source = params.get('source') || '';
         this.state.returnTo = params.get('returnTo') || '';
         this.state.page = this.normalizePage(params.get('page'));
         this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));
+        this.state.status = ['', 'DRAFT', 'PUBLISHED'].includes(status) ? status : '';
+        this.state.publicYn = ['', 'Y', 'N'].includes(publicYn) ? publicYn : '';
+        this.state.productLinked = ['', 'Y', 'N'].includes(productLinked) ? productLinked : '';
     },
 
     normalizePage(page) {

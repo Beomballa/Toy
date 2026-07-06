@@ -1033,6 +1033,22 @@
     min-width: 920px;
 }
 
+.main-content .table-responsive > .admin-table--order-detail-items {
+    min-width: 840px;
+}
+
+.main-content .table-responsive > .admin-table--product-options {
+    min-width: 760px;
+}
+
+.main-content .table-responsive > .admin-table--system-setting-history {
+    min-width: 1120px;
+}
+
+.main-content .table-responsive > .admin-table--admin-account-list {
+    min-width: 980px;
+}
+
 .task-action-notice__actions {
     display: flex;
     flex-wrap: wrap;

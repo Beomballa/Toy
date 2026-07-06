@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,65 +12,11 @@
 </head>
 <body>
 
-<!-- 사이드바 -->
-<nav class="sidebar">
-  <div class="sidebar-brand">
-    <div class="sidebar-brand-icon" id="main-logo">GS</div>
-    <div class="sidebar-brand-text">Grade Stock</div>
-  </div>
-
-  <div class="nav-section">
-    <div class="nav-section-title">Main Menu</div>
-    <a class="nav-link" href="/admin/dashboard">
-      <i class="fas fa-chart-line"></i>
-      대시보드
-    </a>
-    <a class="nav-link active" href="/admin/products">
-      <i class="fas fa-box"></i>
-      상품 관리
-    </a>
-    <a class="nav-link" href="/admin/market">
-      <i class="fas fa-chart-bar"></i>
-      실시간 시세
-    </a>
-    <a class="nav-link" href="/admin/orders">
-      <i class="fas fa-shopping-cart"></i>
-      주문 관리
-    </a>
-  </div>
-
-  <div class="nav-section">
-    <div class="nav-section-title">Community</div>
-    <a class="nav-link" href="/admin/discuss">
-      <i class="fas fa-comments"></i>
-      종목 토론방
-    </a>
-    <a class="nav-link" href="/admin/style">
-      <i class="fas fa-camera"></i>
-      스타일 피드
-    </a>
-    <a class="nav-link" href="/admin/members">
-      <i class="fas fa-users"></i>
-      회원 관리
-    </a>
-  </div>
-
-  <div class="nav-section">
-    <div class="nav-section-title">System</div>
-    <a class="nav-link" href="/admin/permissions">
-      <i class="fas fa-shield-alt"></i>
-      권한 관리
-    </a>
-    <a class="nav-link" href="/admin/settings">
-      <i class="fas fa-cog"></i>
-      시스템 설정
-    </a>
-  </div>
-</nav>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <!-- 메인 콘텐츠 -->
-<main class="main-content detail-main">
-  <div class="detail-scroll-content">
+<main class="main-content admin-page-shell detail-main admin-form-page">
+  <div class="detail-scroll-content admin-form-page">
   <!-- 페이지 헤더 -->
   <div class="page-header">
     <nav aria-label="breadcrumb">

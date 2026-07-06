@@ -28,7 +28,7 @@
                 <div class="small text-muted mt-2 d-none" id="orderHistorySourceContextNotice" data-source-context=""></div>
                 <div class="small text-muted" id="orderHistoryResultSummary">현재 적용된 필터를 기준으로 주문 처리 이력을 조회합니다.</div>
             </div>
-            <div class="d-flex gap-2">
+            <div class="admin-page-actions">
                 <button type="button" class="btn btn-outline-secondary" id="btnExportOrderHistory">CSV 다운로드</button>
                 <button type="button" class="btn btn-outline-secondary" id="btnBackToOrderHistorySource">이전 화면으로</button>
             </div>
@@ -146,14 +146,14 @@
             </div>
         </div>
         <div class="card-body border-bottom py-2">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="admin-search-meta-row">
                 <div class="small text-muted" id="orderHistoryResultMeta">결과 메타를 계산하는 중입니다...</div>
                 <div class="small text-muted" id="orderHistoryPageMeta">페이지 메타 계산 중</div>
             </div>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 admin-table--order-history">
                     <thead class="table-light">
                     <tr>
                         <th class="ps-4">이력 번호</th>

@@ -24,7 +24,7 @@
         </nav>
         <div class="page-title-wrapper">
             <h1 class="page-title">배너 관리</h1>
-            <div class="d-flex gap-2">
+            <div class="admin-page-actions">
                 <button type="button" class="btn btn-outline-dark" id="btnExportBannerCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
                 <button type="button" class="btn btn-primary" id="btnNewBanner"><i class="fas fa-plus me-2"></i>신규 배너 등록</button>
             </div>
@@ -162,7 +162,7 @@
             </div>
         </div>
         <div class="card-body border-bottom py-2">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="admin-search-meta-row">
                 <div class="small text-muted" id="bannerResultMeta">결과 메타를 계산하는 중입니다...</div>
                 <div class="small text-muted" id="bannerPageMeta">페이지 메타를 계산하는 중입니다...</div>
             </div>
@@ -176,7 +176,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 admin-table--banner-list">
                     <thead class="table-light">
                         <tr>
                             <th class="ps-4 table-col-80">선택</th>

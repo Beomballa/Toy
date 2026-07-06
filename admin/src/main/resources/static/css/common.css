@@ -969,6 +969,16 @@
     min-width: 880px;
 }
 
+.main-content .table-responsive > .admin-table--task-list {
+    min-width: 1120px;
+}
+
+.task-action-notice__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .admin-search-meta-row {
     display: flex;
     flex-wrap: wrap;
@@ -1142,6 +1152,10 @@
     align-items: start;
 }
 
+.admin-selection-grid--task {
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) minmax(280px, 1.2fr);
+}
+
 .admin-selection-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1292,6 +1306,10 @@
 
     .admin-list-toolbar__actions {
         justify-content: flex-start;
+    }
+
+    .admin-selection-grid--task {
+        grid-template-columns: 1fr;
     }
 }
 

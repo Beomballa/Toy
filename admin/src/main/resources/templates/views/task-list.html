@@ -67,13 +67,13 @@
 
     <div class="alert alert-success d-none mb-4" id="taskListActionNotice" role="status"
          data-visible="N" data-action="" data-status="">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-            <div id="taskListActionNoticeText">마지막 조치 결과를 불러오는 중입니다.</div>
-            <div class="d-flex align-items-center gap-2">
-                <div class="d-flex gap-2" id="taskListActionNoticeActions"></div>
-                <button type="button" class="btn-close" aria-label="닫기" id="taskListActionNoticeClose"></button>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div id="taskListActionNoticeText">마지막 조치 결과를 불러오는 중입니다.</div>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="task-action-notice__actions" id="taskListActionNoticeActions"></div>
+                    <button type="button" class="btn-close" aria-label="닫기" id="taskListActionNoticeClose"></button>
+                </div>
             </div>
-        </div>
     </div>
 
     <div class="card animate-in admin-panel-card admin-filter-panel">
@@ -228,7 +228,7 @@
                     </div>
                     <div class="small text-muted" id="taskSelectionMeta">선택된 작업이 없습니다.</div>
                 </div>
-                <div class="admin-selection-grid">
+                <div class="admin-selection-grid admin-selection-grid--task">
                     <div class="admin-filter-field">
                         <label class="admin-filter-label">일괄 상태 변경</label>
                         <select id="bulkTaskStatus" class="form-select">
@@ -316,7 +316,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 admin-table--task-list">
                     <thead class="table-light">
                     <tr>
                         <th class="ps-4 table-col-80">

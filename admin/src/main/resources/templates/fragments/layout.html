@@ -58,7 +58,7 @@
            href="/admin/content/list?boardType=QNA">
             <i class="fas fa-circle-question"></i> 문의사항
         </a>
-        <a class="nav-link" href="/admin/members"><i class="fas fa-users"></i> 회원 관리</a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('members') ? 'active' : ''}" href="/admin/members"><i class="fas fa-users"></i> 회원 관리</a>
     </div>
 
     <div class="nav-section">

@@ -81,6 +81,13 @@ public class AdminOperationNoticeRestController {
         return ResponseEntity.ok(new BaseSimpleResDto());
     }
 
+    @PatchMapping("/pinned/{no}")
+    public ResponseEntity<BaseSimpleResDto> updatePinned(@PathVariable("no") Long noticeNo, @RequestParam("isPinned") String isPinned) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminOperationNoticeService.updatePinned(noticeNo, isPinned);
+        return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
     @DeleteMapping("/delete")
     public ResponseEntity<Void> delete(@RequestParam("no") Long noticeNo) {
         adminOperationPolicyService.assertAdminWriteAllowed();

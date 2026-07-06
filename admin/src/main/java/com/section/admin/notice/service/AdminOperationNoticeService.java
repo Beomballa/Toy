@@ -185,6 +185,13 @@ public class AdminOperationNoticeService {
     }
 
     @Transactional
+    public void updatePinned(Long noticeNo, String isPinned) {
+        AdminOperationNotice notice = getNotice(noticeNo);
+        notice.updatePinned(normalizeFlag(isPinned, "N"));
+        adminLogService.recordCurrentAdminLog("NOTICE_PINNED_UPDATE", notice.getNoticeNo());
+    }
+
+    @Transactional
     public void deleteNotice(Long noticeNo) {
         AdminOperationNotice notice = getNotice(noticeNo);
         adminOperationNoticeRepository.delete(notice);

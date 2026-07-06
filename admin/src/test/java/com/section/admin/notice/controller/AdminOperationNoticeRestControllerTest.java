@@ -223,6 +223,14 @@ class AdminOperationNoticeRestControllerTest {
     }
 
     @Test
+    @DisplayName("운영 공지 고정 상태 변경 API는 성공 응답을 반환한다")
+    void updatePinnedReturnsOk() throws Exception {
+        mockMvc.perform(patch("/api/admin/settings/notices/pinned/3?isPinned=Y"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.resultCode").value("200"));
+    }
+
+    @Test
     @DisplayName("운영 공지 삭제 API는 성공 응답을 반환한다")
     void deleteReturnsOk() throws Exception {
         mockMvc.perform(delete("/api/admin/settings/notices/delete").param("no", "3"))

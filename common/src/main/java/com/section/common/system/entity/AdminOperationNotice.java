@@ -56,4 +56,8 @@ public class AdminOperationNotice extends BaseEntity {
     public void updateActive(String isActive) {
         this.isActive = isActive;
     }
+
+    public void updatePinned(String isPinned) {
+        this.isPinned = isPinned;
+    }
 }

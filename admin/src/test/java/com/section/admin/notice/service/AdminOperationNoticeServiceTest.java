@@ -145,6 +145,24 @@ class AdminOperationNoticeServiceTest {
     }
 
     @Test
+    @DisplayName("운영 공지 고정 상태 변경은 고정값만 갱신한다")
+    void updatePinnedChangesStatus() {
+        AdminOperationNotice notice = AdminOperationNotice.builder()
+                .noticeNo(4L)
+                .title("점검")
+                .content("점검 내용")
+                .isActive("Y")
+                .isPinned("N")
+                .build();
+        when(adminOperationNoticeRepository.findById(4L)).thenReturn(Optional.of(notice));
+
+        adminOperationNoticeService.updatePinned(4L, "Y");
+
+        assertEquals("Y", notice.getIsPinned());
+        verify(adminLogService).recordCurrentAdminLog("NOTICE_PINNED_UPDATE", 4L);
+    }
+
+    @Test
     @DisplayName("운영 공지 삭제는 존재하는 공지만 삭제하고 로그를 남긴다")
     void deleteNoticeDeletesExistingEntity() {
         AdminOperationNotice notice = AdminOperationNotice.builder()

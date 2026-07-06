@@ -113,6 +113,17 @@ const NoticeList = {
                 return;
             }
 
+            const pinButton = event.target.closest('[data-role="toggle-notice-pinned"]');
+            if (pinButton) {
+                const noticeNo = this.normalizeOptionalPositiveNumber(pinButton.dataset.noticeNo);
+                if (noticeNo == null) {
+                    void CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                this.togglePinned(noticeNo, pinButton.dataset.nextPinned);
+                return;
+            }
+
             const deleteButton = event.target.closest('[data-role="delete-notice"]');
             if (deleteButton) {
                 const noticeNo = this.normalizeOptionalPositiveNumber(deleteButton.dataset.noticeNo);
@@ -254,6 +265,7 @@ const NoticeList = {
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeHistoryPath(item.historyPath)}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeLogPathFromBase(item.activityLogPath, item.noticeNo)}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
+                    <button class="btn btn-sm btn-outline-warning me-1" data-role="toggle-notice-pinned" data-notice-no="${item.noticeNo}" data-next-pinned="${item.isPinned === 'Y' ? 'N' : 'Y'}">${item.isPinned === 'Y' ? '고정해제' : '고정'}</button>
                     <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>
                 </td>
@@ -658,6 +670,38 @@ const NoticeList = {
             await CommonJS.alert(err.message, '오류', 'error');
         } finally {
             this.toggleInFlight.delete(noticeNo);
+        }
+    },
+
+    async togglePinned(noticeNo, isPinned) {
+        if (!this.isPositiveNumber(noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidYn(isPinned)) {
+            await CommonJS.alert('변경할 고정 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (this.toggleInFlight.has(`pinned-${noticeNo}`)) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 고정 상태 변경'), '알림', 'warning');
+            return;
+        }
+        try {
+            this.toggleInFlight.add(`pinned-${noticeNo}`);
+            const res = await fetch(`/api/admin/settings/notices/pinned/${noticeNo}?isPinned=${isPinned}`, {
+                method: 'PATCH'
+            });
+            if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '공지 고정 상태를 변경하지 못했습니다.'));
+            this.setLastActionMeta('toggle-pinned', 'success', '목록 고정 상태 변경', noticeNo);
+            await this.getList();
+        } catch (err) {
+            this.setLastActionMeta('toggle-pinned', 'error', '목록 고정 상태 변경', noticeNo);
+            await CommonJS.alert(err.message, '오류', 'error');
+        } finally {
+            this.toggleInFlight.delete(`pinned-${noticeNo}`);
         }
     },
 

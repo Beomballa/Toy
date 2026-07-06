@@ -977,6 +977,10 @@
     min-width: 960px;
 }
 
+.main-content .table-responsive > .admin-table--order-list {
+    min-width: 1080px;
+}
+
 .task-action-notice__actions {
     display: flex;
     flex-wrap: wrap;

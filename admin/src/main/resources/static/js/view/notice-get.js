@@ -4,6 +4,7 @@ const NoticeDetailPage = {
     operationPolicy: null,
     isSavingDetail: false,
     isTogglingActive: false,
+    isTogglingPinned: false,
     isDeletingNotice: false,
     state: {
         noticeNo: null,
@@ -42,6 +43,7 @@ const NoticeDetailPage = {
         });
         document.getElementById('btnNoticeDetailEdit')?.addEventListener('click', () => this.openEditModal());
         document.getElementById('btnNoticeDetailSave')?.addEventListener('click', () => this.saveDetail());
+        document.getElementById('btnNoticeDetailTogglePinned')?.addEventListener('click', () => this.togglePinned());
         document.getElementById('btnNoticeDetailToggleActive')?.addEventListener('click', () => this.toggleActive());
         document.getElementById('btnNoticeDetailDelete')?.addEventListener('click', () => this.deleteNotice());
         document.getElementById('noticeDetailActionNoticeClose')?.addEventListener('click', () => this.hideLastActionNotice(true));
@@ -53,6 +55,7 @@ const NoticeDetailPage = {
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제');
             CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailEdit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailTogglePinned'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailToggleActive'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailDelete'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnNoticeDetailSave'), disabled, reason);
@@ -95,6 +98,7 @@ const NoticeDetailPage = {
         document.getElementById('btnNoticeDetailHistory').href = historyPath;
         document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
         document.getElementById('btnNoticeDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
+        document.getElementById('btnNoticeDetailTogglePinned').textContent = data.isPinned === 'Y' ? '고정 해제' : '고정';
         document.getElementById('btnNoticeDetailToggleActive').textContent = data.isActive === 'Y' ? '비활성' : '활성';
         this.renderRecentHistories(data.recentHistories || []);
 
@@ -237,6 +241,45 @@ const NoticeDetailPage = {
         } finally {
             this.isTogglingActive = false;
             this.setBusyButton(document.getElementById('btnNoticeDetailToggleActive'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    async togglePinned() {
+        if (this.isTogglingPinned) return;
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 수정 및 삭제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail || !this.isValidNoticeNo(detail.noticeNo)) {
+            await CommonJS.alert('유효한 운영 공지 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+
+        const nextPinned = detail.isPinned === 'Y' ? 'N' : 'Y';
+        if (!this.isValidNoticeNo(detail.noticeNo) || !this.isValidYn(nextPinned)) {
+            await CommonJS.alert('유효하지 않은 공지 고정 변경 요청입니다.', '알림', 'warning');
+            return;
+        }
+        try {
+            this.isTogglingPinned = true;
+            this.setBusyButton(document.getElementById('btnNoticeDetailTogglePinned'), true, '처리 중...');
+            const response = await fetch(`/api/admin/settings/notices/pinned/${detail.noticeNo}?isPinned=${nextPinned}`, {
+                method: 'PATCH'
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '공지 고정 상태를 변경하지 못했습니다.'));
+            }
+            this.setLastActionMeta('toggle-pinned', 'success', '상세 고정 변경');
+            await this.loadDetail();
+            await CommonJS.alert('운영 공지 고정 상태가 변경되었습니다.', '성공', 'success');
+        } catch (error) {
+            this.setLastActionMeta('toggle-pinned', 'error', '상세 고정 변경');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isTogglingPinned = false;
+            this.setBusyButton(document.getElementById('btnNoticeDetailTogglePinned'), false);
             await this.applyOperationPolicy(this.operationPolicy);
         }
     },
@@ -487,6 +530,8 @@ const NoticeDetailPage = {
         const templates = {
             'save-detail:success': '운영 공지 수정 내용을 반영했습니다.',
             'save-detail:error': '운영 공지 수정에 실패했습니다.',
+            'toggle-pinned:success': '운영 공지 고정 상태를 변경했습니다.',
+            'toggle-pinned:error': '운영 공지 고정 상태 변경에 실패했습니다.',
             'toggle-active:success': '운영 공지 상태를 변경했습니다.',
             'toggle-active:error': '운영 공지 상태 변경에 실패했습니다.',
             'delete-notice:success': '운영 공지 삭제를 반영했습니다.',
@@ -494,9 +539,11 @@ const NoticeDetailPage = {
         };
         const variants = {
             'save-detail:success': 'alert-success',
+            'toggle-pinned:success': 'alert-warning',
             'toggle-active:success': 'alert-primary',
             'delete-notice:success': 'alert-warning',
             'save-detail:error': 'alert-danger',
+            'toggle-pinned:error': 'alert-danger',
             'toggle-active:error': 'alert-danger',
             'delete-notice:error': 'alert-danger'
         };

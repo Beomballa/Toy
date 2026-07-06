@@ -1,6 +1,11 @@
 package com.section.admin.dashboard.service;
 
 import com.section.admin.dashboard.res.DashboardResponse;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayListResponse;
+import com.section.admin.product.res.ProductFrontDisplaySummaryResponse;
+import com.section.admin.product.service.AdminProductService;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.OrderRepository;
@@ -50,6 +55,8 @@ class AdminDashBoardServiceTest {
     private AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     @Mock
     private AdminUserRepository adminUserRepository;
+    @Mock
+    private AdminProductService adminProductService;
 
     @InjectMocks
     private AdminDashBoardService adminDashBoardService;
@@ -120,6 +127,17 @@ class AdminDashBoardServiceTest {
         when(adminUserRepository.findAllById(anyList())).thenReturn(List.of(
                 AdminUser.builder().adminNo(4L).name("관리자A").loginId("adminA").password("pw").build()
         ));
+        when(adminProductService.getFrontDisplayProducts(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
+                .thenReturn(new ProductFrontDisplayDashboardResponse(
+                        new ProductFrontDisplaySummaryResponse(3, 1, 2, 1, 2, 1, 1, 20L),
+                        List.of(
+                                new ProductFrontDisplayListResponse(101L, "전시 누락 상품", "브랜드A", "카테고리A", 100000, 8L, "ACTIVE", "판매중", false, false, null, null, null, true, 1),
+                                new ProductFrontDisplayListResponse(102L, "문구 보완 상품", "브랜드B", "카테고리B", 90000, 45L, "ACTIVE", "판매중", true, false, "헤드라인", null, null, false, 999),
+                                new ProductFrontDisplayListResponse(103L, "정상 상품", "브랜드C", "카테고리C", 85000, 50L, "ACTIVE", "판매중", true, true, "헤드라인", "설명", "무드", false, 999)
+                        ),
+                        null,
+                        null
+                ));
         when(orderRepository.getTopBrandsBySales(anyInt())).thenReturn(List.of(
                 Map.of("brandNo", 1L, "amount", 1000L),
                 Map.of("brandNo", 2L, "amount", 2000L)
@@ -131,6 +149,11 @@ class AdminDashBoardServiceTest {
 
         DashboardResponse response = adminDashBoardService.getDashboardData();
 
+        assertEquals(3, response.frontDisplaySnapshot().summary().totalCount());
+        assertEquals(2, response.frontDisplaySnapshot().summary().unconfiguredCount());
+        assertEquals(2, response.frontDisplaySnapshot().actionItems().size());
+        assertEquals("전시 누락 상품", response.frontDisplaySnapshot().actionItems().get(0).productName());
+        assertEquals("노출 미설정 · 전시 문구 보완 · 저재고", response.frontDisplaySnapshot().actionItems().get(0).issueLabel());
         assertEquals(1, response.operationNotices().size());
         assertEquals("배송 지연 안내", response.operationNotices().get(0).title());
         assertEquals("/admin/settings/notices?noticeNo=10", response.operationNotices().get(0).targetPath());
@@ -191,6 +214,13 @@ class AdminDashBoardServiceTest {
         when(adminOperationTaskRepository.getTaskWorkloadSummary(org.mockito.ArgumentMatchers.any(AdminOperationTaskWorkloadListQuery.class), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new AdminOperationTaskWorkloadSummaryDto(0L, 0L, 0L, 0L));
         when(adminUserRepository.findAllById(anyList())).thenReturn(List.of());
+        when(adminProductService.getFrontDisplayProducts(org.mockito.ArgumentMatchers.any(ProductFrontDisplayListRequest.class)))
+                .thenReturn(new ProductFrontDisplayDashboardResponse(
+                        new ProductFrontDisplaySummaryResponse(0, 0, 0, 0, 0, 0, 0, 20L),
+                        List.of(),
+                        null,
+                        null
+                ));
         when(brandRepository.findAllById(anyList())).thenReturn(List.of());
 
         DashboardResponse response = adminDashBoardService.getDashboardData();

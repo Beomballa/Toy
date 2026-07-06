@@ -7,6 +7,7 @@ import java.util.List;
 
 public record DashboardResponse(
         SummaryCounts summary,
+        FrontDisplaySnapshot frontDisplaySnapshot,
         List<OperationNotice> operationNotices,
         List<OperationTask> operationTasks,
         List<UnassignedTask> unassignedTasks,
@@ -24,6 +25,38 @@ public record DashboardResponse(
             long preparingCount,
             long shippingCount,
             long cancelledCount
+    ) {}
+
+    public record FrontDisplaySnapshot(
+            FrontDisplaySummary summary,
+            List<FrontDisplayActionItem> actionItems,
+            String listPath,
+            String unconfiguredPath,
+            String incompleteContentPath,
+            String lowStockPath
+    ) {}
+
+    public record FrontDisplaySummary(
+            int totalCount,
+            int configuredCount,
+            int unconfiguredCount,
+            int readyContentCount,
+            int incompleteContentCount,
+            int featuredCount,
+            int lowStockCount,
+            long lowStockThreshold
+    ) {}
+
+    public record FrontDisplayActionItem(
+            Long productNo,
+            String productName,
+            String brandName,
+            Long totalStock,
+            boolean displayConfigured,
+            boolean contentReady,
+            boolean featured,
+            String issueLabel,
+            String issueDetail
     ) {}
 
     public record RecentOrder(

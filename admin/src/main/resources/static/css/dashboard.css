@@ -27,6 +27,44 @@
     background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98));
 }
 
+.dashboard-mini-stat-card {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.dashboard-mini-stat-card:hover {
+    border-color: rgba(15, 23, 42, 0.18);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    transform: translateY(-2px);
+}
+
+.dashboard-action-list {
+    display: grid;
+    gap: 12px;
+}
+
+.dashboard-action-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 18px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+}
+
+.dashboard-action-item__body {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.dashboard-action-item__actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 0 auto;
+}
+
 /* 리스트 그룹 아이템 스타일 */
 .list-group-item .date-badge {
     font-size: 0.8rem;
@@ -42,5 +80,15 @@
     .dashboard-card-header__actions {
         width: 100%;
         justify-content: flex-start;
+    }
+
+    .dashboard-action-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .dashboard-action-item__actions {
+        width: 100%;
+        justify-content: space-between;
     }
 }

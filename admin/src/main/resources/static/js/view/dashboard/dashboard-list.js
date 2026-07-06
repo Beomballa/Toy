@@ -89,6 +89,9 @@ const DashBoardListJS = {
             this.markDashboardSection('low-stock', true);
             this.goToProductDetail(this.normalizePositiveId(detailButton.dataset.productNo));
         });
+        document.getElementById('frontDisplaySection')?.addEventListener('click', () => {
+            this.markDashboardSection('front-display', true);
+        });
     },
 
     async getStats() {
@@ -98,6 +101,7 @@ const DashBoardListJS = {
 
             const data = await res.json();
             this.renderSummary(data.summary);
+            this.renderFrontDisplaySnapshot(data.frontDisplaySnapshot);
             this.renderOperationNotices(data.operationNotices);
             this.renderOperationTasks(data.operationTasks);
             this.renderUnassignedTasks(data.unassignedTasks);
@@ -110,6 +114,8 @@ const DashBoardListJS = {
             this.renderTopBrandsChart(data.topBrands);
         } catch (err) {
             console.error('대시보드 데이터 로드 실패:', err);
+            this.renderSectionState('frontDisplaySummaryBody', 'error', '프론트 전시 요약을 불러오지 못했습니다.', '전시 현황 계산에 필요한 데이터를 다시 확인해주세요.');
+            this.renderSectionState('frontDisplayActionBody', 'error', '전시 우선 조치 대상을 불러오지 못했습니다.', '상품 전시 관리 메뉴에서 직접 전시 상태를 확인해주세요.');
             this.renderSectionState('operationNoticeBody', 'error', '운영 공지를 불러오지 못했습니다.', '잠시 후 다시 시도하거나 운영 공지 메뉴에서 직접 확인해주세요.');
             this.renderSectionState('operationTaskBody', 'error', '운영 작업을 불러오지 못했습니다.', '지금 확인이 필요한 작업을 불러오지 못했습니다.');
             this.renderSectionState('unassignedTaskBody', 'error', '미지정 작업을 불러오지 못했습니다.', '담당자 배정이 필요한 작업 목록을 불러오지 못했습니다.');
@@ -379,6 +385,95 @@ const DashBoardListJS = {
         this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'ready', '', 4);
     },
 
+    renderFrontDisplaySnapshot(snapshot) {
+        const summaryBody = document.getElementById('frontDisplaySummaryBody');
+        const actionBody = document.getElementById('frontDisplayActionBody');
+        if (!summaryBody || !actionBody) return;
+
+        if (!snapshot || !snapshot.summary) {
+            this.renderSectionState('frontDisplaySummaryBody', 'error', '프론트 전시 요약을 확인할 수 없습니다.', '전시 상태 요약 계산에 필요한 데이터를 다시 확인해주세요.');
+            this.renderSectionState('frontDisplayActionBody', 'error', '전시 우선 조치 대상을 확인할 수 없습니다.', '전시 관리 화면에서 직접 상태를 점검해주세요.');
+            return;
+        }
+
+        const summary = snapshot.summary;
+        summaryBody.innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-3 col-sm-6">
+                    <a class="text-decoration-none" href="${this.buildProductFrontDisplayPath({}, 'dashboard-front-display-summary')}">
+                        <div class="border rounded-3 p-3 h-100 dashboard-mini-stat-card">
+                            <div class="text-muted small mb-1">전시 대상</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.totalCount || 0).toLocaleString()}</div>
+                            <div class="small text-muted mt-2">Featured ${Number(summary.featuredCount || 0).toLocaleString()}건</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a class="text-decoration-none" href="${this.buildProductFrontDisplayPath({ configured: 'UNCONFIGURED' }, 'dashboard-front-display-unconfigured-summary')}">
+                        <div class="border rounded-3 p-3 h-100 dashboard-mini-stat-card">
+                            <div class="text-muted small mb-1">노출 설정</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.configuredCount || 0).toLocaleString()}</div>
+                            <div class="small text-danger mt-2">미설정 ${Number(summary.unconfiguredCount || 0).toLocaleString()}건</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a class="text-decoration-none" href="${this.buildProductFrontDisplayPath({ contentStatus: 'INCOMPLETE' }, 'dashboard-front-display-content-summary')}">
+                        <div class="border rounded-3 p-3 h-100 dashboard-mini-stat-card">
+                            <div class="text-muted small mb-1">전시 문구</div>
+                            <div class="fw-bold fs-5 text-dark">${Number(summary.readyContentCount || 0).toLocaleString()}</div>
+                            <div class="small text-danger mt-2">보완 ${Number(summary.incompleteContentCount || 0).toLocaleString()}건</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <a class="text-decoration-none" href="${this.buildProductFrontDisplayPath({ lowStockOnly: 'true' }, 'dashboard-front-display-low-stock-summary')}">
+                        <div class="border rounded-3 p-3 h-100 dashboard-mini-stat-card">
+                            <div class="text-muted small mb-1">저재고 전시</div>
+                            <div class="fw-bold fs-5 text-danger">${Number(summary.lowStockCount || 0).toLocaleString()}</div>
+                            <div class="small text-muted mt-2">기준 ${Number(summary.lowStockThreshold || 0).toLocaleString()}개 미만</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        `;
+
+        if (!snapshot.actionItems || snapshot.actionItems.length === 0) {
+            this.renderSectionState('frontDisplayActionBody', 'empty', '즉시 보완이 필요한 전시 상품이 없습니다.', '현재 기준으로 노출 누락, 문구 보완, 저재고 이슈가 있는 전시 상품이 없습니다.');
+            return;
+        }
+
+        actionBody.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                <div>
+                    <div class="fw-bold text-dark">우선 조치 상품</div>
+                    <div class="small text-muted">노출 미설정, 전시 문구 보완, 저재고 조건을 기준으로 바로 손봐야 할 상품만 추렸습니다.</div>
+                </div>
+                <a class="btn btn-sm btn-outline-secondary" href="${this.buildProductFrontDisplayPath({}, 'dashboard-front-display-action-list')}">전시 관리로 이동</a>
+            </div>
+            <div class="dashboard-action-list">
+                ${snapshot.actionItems.map((item) => `
+                    <div class="dashboard-action-item">
+                        <div class="dashboard-action-item__body">
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                <a class="fw-bold text-decoration-none text-dark"
+                                   href="${this.buildProductUpdatePath(item.productNo, 'dashboard-front-display-update')}">${this.escapeHtml(item.productName)}</a>
+                                ${item.featured ? '<span class="badge text-bg-dark">Featured</span>' : ''}
+                                <span class="badge text-bg-light">${this.escapeHtml(item.issueLabel)}</span>
+                            </div>
+                            <div class="small text-muted mb-1">${this.escapeHtml(item.brandName || '-')}</div>
+                            <div class="small text-dark">${this.escapeHtml(item.issueDetail)}</div>
+                        </div>
+                        <div class="dashboard-action-item__actions">
+                            <span class="small text-muted">${Number(item.totalStock || 0).toLocaleString()}개</span>
+                            <a class="btn btn-sm btn-outline-primary" href="${this.buildProductUpdatePath(item.productNo, 'dashboard-front-display-update')}">수정</a>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    },
+
     renderSectionState(elementId, type, title, description) {
         const body = document.getElementById(elementId);
         if (!body) return;
@@ -515,6 +610,26 @@ const DashBoardListJS = {
         });
         params.set('source', source);
         return `/admin/settings/tasks/workloads?${params.toString()}`;
+    },
+
+    buildProductFrontDisplayPath(filters = {}, source = 'dashboard-front-display') {
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([key, value]) => {
+            if (value != null && value !== '') {
+                params.set(key, String(value));
+            }
+        });
+        params.set('source', source);
+        params.set('returnTo', this.getReturnTo());
+        return `/admin/products/front-display?${params.toString()}`;
+    },
+
+    buildProductUpdatePath(productNo, source = 'dashboard-product-update') {
+        const normalizedProductNo = this.normalizePositiveId(productNo);
+        if (!normalizedProductNo) {
+            return this.buildProductFrontDisplayPath({}, source);
+        }
+        return `/admin/products/update?no=${normalizedProductNo}&source=${source}&returnTo=${encodeURIComponent(this.getReturnTo())}`;
     },
 
     buildTaskDetailPath(taskNo, source = 'dashboard-task-detail') {

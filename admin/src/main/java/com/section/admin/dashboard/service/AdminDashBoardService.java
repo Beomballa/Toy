@@ -1,6 +1,11 @@
 package com.section.admin.dashboard.service;
 
 import com.section.admin.dashboard.res.DashboardResponse;
+import com.section.admin.product.req.ProductFrontDisplayListRequest;
+import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
+import com.section.admin.product.res.ProductFrontDisplayListResponse;
+import com.section.admin.product.res.ProductFrontDisplaySummaryResponse;
+import com.section.admin.product.service.AdminProductService;
 import com.section.admin.order.support.OrderViewFormatter;
 import com.section.admin.task.support.AdminTaskLinkSupport;
 import com.section.common.commerce.dto.ProductListResDto;
@@ -32,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +52,7 @@ public class AdminDashBoardService {
     private final AdminOperationTaskRepository adminOperationTaskRepository;
     private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     private final AdminUserRepository adminUserRepository;
+    private final AdminProductService adminProductService;
 
     public DashboardResponse getDashboardData() {
         // 1. 오늘 요약 정보
@@ -65,6 +72,7 @@ public class AdminDashBoardService {
                 shippingCount.longValue(),
                 cancelledCount.longValue()
         );
+        DashboardResponse.FrontDisplaySnapshot frontDisplaySnapshot = buildFrontDisplaySnapshot();
 
         List<DashboardResponse.OperationNotice> operationNotices = adminOperationNoticeRepository
                 .getActiveDashboardNotices(LocalDateTime.now(), 3)
@@ -158,7 +166,38 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, operationNotices, operationTasks, unassignedTaskItems, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(summary, frontDisplaySnapshot, operationNotices, operationTasks, unassignedTaskItems, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+    }
+
+    private DashboardResponse.FrontDisplaySnapshot buildFrontDisplaySnapshot() {
+        ProductFrontDisplayDashboardResponse frontDisplayProducts = adminProductService.getFrontDisplayProducts(
+                new ProductFrontDisplayListRequest(null, null, null, null, null, null, false, false, null, "FEATURED")
+        );
+        ProductFrontDisplaySummaryResponse summary = frontDisplayProducts.summary();
+        List<DashboardResponse.FrontDisplayActionItem> actionItems = frontDisplayProducts.items().stream()
+                .filter(item -> requiresFrontDisplayAction(item, summary.lowStockThreshold()))
+                .sorted((left, right) -> Integer.compare(frontDisplayIssueScore(right, summary.lowStockThreshold()), frontDisplayIssueScore(left, summary.lowStockThreshold())))
+                .limit(5)
+                .map(item -> toFrontDisplayActionItem(item, summary.lowStockThreshold()))
+                .toList();
+
+        return new DashboardResponse.FrontDisplaySnapshot(
+                new DashboardResponse.FrontDisplaySummary(
+                        summary.totalCount(),
+                        summary.configuredCount(),
+                        summary.unconfiguredCount(),
+                        summary.readyContentCount(),
+                        summary.incompleteContentCount(),
+                        summary.featuredCount(),
+                        summary.lowStockCount(),
+                        summary.lowStockThreshold()
+                ),
+                actionItems,
+                "/admin/products/front-display",
+                "/admin/products/front-display?configured=UNCONFIGURED",
+                "/admin/products/front-display?contentStatus=INCOMPLETE",
+                "/admin/products/front-display?lowStockOnly=true"
+        );
     }
 
     private List<DashboardResponse.ChartData> normalizeSalesChart(List<Map<String, Object>> rawChart) {
@@ -178,6 +217,71 @@ public class AdminDashBoardService {
                 })
                 .toList();
     }
+
+    private boolean requiresFrontDisplayAction(ProductFrontDisplayListResponse item, long lowStockThreshold) {
+        return !item.displayConfigured() || !item.contentReady() || isLowStock(item.totalStock(), lowStockThreshold);
+    }
+
+    private int frontDisplayIssueScore(ProductFrontDisplayListResponse item, long lowStockThreshold) {
+        int score = 0;
+        if (!item.displayConfigured()) {
+            score += 3;
+        }
+        if (!item.contentReady()) {
+            score += 2;
+        }
+        if (isLowStock(item.totalStock(), lowStockThreshold)) {
+            score += 1;
+        }
+        if (item.featured()) {
+            score += 1;
+        }
+        return score;
+    }
+
+    private DashboardResponse.FrontDisplayActionItem toFrontDisplayActionItem(ProductFrontDisplayListResponse item, long lowStockThreshold) {
+        StringJoiner issueJoiner = new StringJoiner(" · ");
+        if (!item.displayConfigured()) {
+            issueJoiner.add("노출 미설정");
+        }
+        if (!item.contentReady()) {
+            issueJoiner.add("전시 문구 보완");
+        }
+        if (isLowStock(item.totalStock(), lowStockThreshold)) {
+            issueJoiner.add("저재고");
+        }
+
+        String issueDetail = buildFrontDisplayIssueDetail(item, lowStockThreshold);
+        return new DashboardResponse.FrontDisplayActionItem(
+                item.productNo(),
+                item.productName(),
+                item.brandName(),
+                item.totalStock(),
+                item.displayConfigured(),
+                item.contentReady(),
+                item.featured(),
+                issueJoiner.length() == 0 ? "정상" : issueJoiner.toString(),
+                issueDetail
+        );
+    }
+
+    private String buildFrontDisplayIssueDetail(ProductFrontDisplayListResponse item, long lowStockThreshold) {
+        StringJoiner detailJoiner = new StringJoiner(" · ");
+        detailJoiner.add(item.displayConfigured() ? "노출 설정 완료" : "노출 설정 필요");
+        detailJoiner.add(item.contentReady() ? "전시 문구 준비 완료" : "헤드라인/설명/무드 보완 필요");
+        if (isLowStock(item.totalStock(), lowStockThreshold)) {
+            detailJoiner.add("재고 " + item.totalStock() + "개");
+        }
+        if (item.featured()) {
+            detailJoiner.add("Featured");
+        }
+        return detailJoiner.toString();
+    }
+
+    private boolean isLowStock(Long totalStock, long lowStockThreshold) {
+        return totalStock != null && totalStock < lowStockThreshold;
+    }
+
 
     private DashboardResponse.OperationNotice toOperationNotice(AdminOperationNotice notice) {
         return new DashboardResponse.OperationNotice(

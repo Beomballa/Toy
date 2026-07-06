@@ -160,6 +160,31 @@
         </div>
     </section>
 
+    <div class="card admin-panel-card admin-table-card mb-4" id="frontDisplaySection" data-dashboard-section="front-display">
+        <div class="card-header bg-white py-3 admin-card-header dashboard-card-header">
+            <h6 class="fw-bold mb-0">프론트 전시 점검</h6>
+            <div class="admin-card-header__actions dashboard-card-header__actions">
+                <a href="/admin/products/front-display?source=dashboard-front-display-list" data-entry-source="dashboard-front-display-list" data-entry-target="front-display-list" class="btn btn-sm btn-outline-secondary">전체보기</a>
+                <a href="/admin/products/front-display?configured=UNCONFIGURED&source=dashboard-front-display-unconfigured" data-entry-source="dashboard-front-display-unconfigured" data-entry-target="front-display-list" class="btn btn-sm btn-outline-secondary">노출 미설정</a>
+                <a href="/admin/products/front-display?contentStatus=INCOMPLETE&source=dashboard-front-display-content" data-entry-source="dashboard-front-display-content" data-entry-target="front-display-list" class="btn btn-sm btn-outline-secondary">문구 보완</a>
+            </div>
+        </div>
+        <div class="card-body border-bottom" id="frontDisplaySummaryBody">
+            <div class="product-loading-state py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <strong>프론트 전시 상태를 불러오는 중입니다.</strong>
+                <p>노출 누락, 문구 보완, 저재고 전시 상품을 정리하고 있습니다.</p>
+            </div>
+        </div>
+        <div class="card-body" id="frontDisplayActionBody">
+            <div class="product-loading-state py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <strong>우선 조치 대상을 계산하는 중입니다.</strong>
+                <p>전시 점검이 필요한 상품을 중요도 순으로 추리고 있습니다.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- 차트 섹션 -->
     <div class="row mb-4">
         <div class="col-12">

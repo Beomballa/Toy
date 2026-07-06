@@ -2,6 +2,7 @@ package com.section.admin.user.controller;
 
 import com.section.admin.base.res.BaseSimpleResDto;
 import com.section.admin.user.req.AdminMemberListRequest;
+import com.section.admin.user.req.AdminMemberBulkStatusUpdateRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
@@ -62,5 +63,11 @@ public class AdminMemberRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminMemberService.updateMemberStatus(memberId, req);
         return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
+    @PatchMapping("/status/bulk")
+    public ResponseEntity<AdminMemberService.BulkStatusUpdateResult> updateStatusBulk(@Valid @RequestBody AdminMemberBulkStatusUpdateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminMemberService.updateMemberStatuses(req));
     }
 }

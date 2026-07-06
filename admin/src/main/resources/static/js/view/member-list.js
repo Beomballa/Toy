@@ -6,6 +6,9 @@ const MemberListPage = {
     detailActionInFlight: false,
     detailLoadInFlight: false,
     exportInFlight: false,
+    bulkUpdateInFlight: false,
+    selectedMemberIds: new Set(),
+    currentPageMemberIds: [],
     state: {
         page: 0,
         size: 20,
@@ -41,10 +44,18 @@ const MemberListPage = {
         });
         document.getElementById('btnExportMember')?.addEventListener('click', () => this.exportList());
         document.getElementById('btnResetMember')?.addEventListener('click', () => this.resetFilters());
+        document.getElementById('btnApplyMemberBulk')?.addEventListener('click', () => this.applyBulkStatus());
+        document.getElementById('btnClearMemberSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('memberPageSize')?.addEventListener('change', (event) => {
             this.state.size = Number(event.target.value || 20);
             this.state.page = 0;
             this.getList();
+        });
+        document.getElementById('memberSelectPage')?.addEventListener('change', (event) => {
+            this.togglePageSelection(event.target.checked);
+        });
+        document.getElementById('memberSelectAll')?.addEventListener('change', (event) => {
+            this.togglePageSelection(event.target.checked);
         });
         document.getElementById('memberMasterYn')?.addEventListener('change', () => {
             this.state.page = 0;
@@ -140,9 +151,10 @@ const MemberListPage = {
         } catch (err) {
             const tbody = document.getElementById('memberListBody');
             if (tbody) {
+                this.currentPageMemberIds = [];
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="py-5">
+                        <td colspan="8" class="py-5">
                             <div class="product-empty-state">
                                 <div class="product-empty-state__icon text-danger">
                                     <i class="fa-solid fa-triangle-exclamation"></i>
@@ -154,6 +166,7 @@ const MemberListPage = {
                     </tr>
                 `;
             }
+            this.syncSelectionUi();
             this.setMetaText('회원 목록 조회 실패');
             this.setFilterMetaText(err.message);
             this.setResultMetaText('결과 메타 확인 불가');
@@ -179,9 +192,10 @@ const MemberListPage = {
     renderList(items) {
         const tbody = document.getElementById('memberListBody');
         if (!items.length) {
+            this.currentPageMemberIds = [];
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="py-5">
+                    <td colspan="8" class="py-5">
                         <div class="product-empty-state">
                             <i class="fas fa-users-slash product-empty-state-icon"></i>
                             <strong>조건에 맞는 회원이 없습니다.</strong>
@@ -190,10 +204,14 @@ const MemberListPage = {
                     </td>
                 </tr>
             `;
+            this.syncSelectionUi();
             return;
         }
         tbody.innerHTML = items.map(item => `
             <tr>
+                <td class="ps-4">
+                    <input type="checkbox" class="form-check-input" data-role="select-member" data-member-id="${item.id}" ${this.selectedMemberIds.has(item.id) ? 'checked' : ''}>
+                </td>
                 <td class="ps-4 text-muted small">${item.id}</td>
                 <td>
                     <div class="fw-bold text-dark">${item.name || 'Unknown'}</div>
@@ -216,6 +234,22 @@ const MemberListPage = {
                 </td>
             </tr>
         `).join('');
+        this.currentPageMemberIds = items.map((item) => item.id).filter((id) => this.isPositiveNumber(id));
+        tbody.querySelectorAll('[data-role="select-member"]').forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const memberId = this.normalizeOptionalPositiveNumber(checkbox.dataset.memberId);
+                if (memberId == null) {
+                    checkbox.checked = false;
+                    return;
+                }
+                if (checkbox.checked) {
+                    this.selectedMemberIds.add(memberId);
+                } else {
+                    this.selectedMemberIds.delete(memberId);
+                }
+                this.syncSelectionUi();
+            });
+        });
         tbody.querySelectorAll('[data-role="open-member-detail"]').forEach((button) => {
             button.addEventListener('click', () => {
                 const memberId = this.normalizeOptionalPositiveNumber(button.dataset.memberId);
@@ -226,6 +260,7 @@ const MemberListPage = {
                 this.openDetail(memberId);
             });
         });
+        this.syncSelectionUi();
     },
 
     renderMeta(data) {
@@ -293,9 +328,10 @@ const MemberListPage = {
         if (!tbody) {
             return;
         }
+        this.currentPageMemberIds = [];
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" class="py-5">
+                <td colspan="8" class="py-5">
                     <div class="product-loading-state">
                         <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                         <strong>회원 목록을 불러오는 중입니다.</strong>
@@ -304,6 +340,7 @@ const MemberListPage = {
                 </td>
             </tr>
         `;
+        this.syncSelectionUi();
     },
 
     buildEmptyStateMessage() {
@@ -390,6 +427,112 @@ const MemberListPage = {
         } finally {
             this.exportInFlight = false;
             CommonJS.setButtonDisabled(document.getElementById('btnExportMember'), false);
+        }
+    },
+
+    togglePageSelection(checked) {
+        this.currentPageMemberIds.forEach((memberId) => {
+            if (checked) {
+                this.selectedMemberIds.add(memberId);
+            } else {
+                this.selectedMemberIds.delete(memberId);
+            }
+        });
+        document.querySelectorAll('[data-role="select-member"]').forEach((checkbox) => {
+            checkbox.checked = checked;
+        });
+        this.syncSelectionUi();
+    },
+
+    clearSelection() {
+        this.selectedMemberIds.clear();
+        document.getElementById('memberSelectPage').checked = false;
+        document.getElementById('memberSelectAll').checked = false;
+        document.querySelectorAll('[data-role="select-member"]').forEach((checkbox) => {
+            checkbox.checked = false;
+        });
+        this.syncSelectionUi();
+    },
+
+    syncSelectionUi() {
+        const selectedCount = this.selectedMemberIds.size;
+        const pageSelectedCount = this.currentPageMemberIds.filter((memberId) => this.selectedMemberIds.has(memberId)).length;
+        const isPageFullySelected = this.currentPageMemberIds.length > 0 && pageSelectedCount === this.currentPageMemberIds.length;
+        const selectionMeta = document.getElementById('memberSelectionMeta');
+        if (selectionMeta) {
+            selectionMeta.textContent = selectedCount > 0
+                ? `선택된 회원 ${selectedCount.toLocaleString()}명`
+                : '선택된 회원이 없습니다.';
+        }
+        const selectPage = document.getElementById('memberSelectPage');
+        const selectAll = document.getElementById('memberSelectAll');
+        if (selectPage) {
+            selectPage.checked = isPageFullySelected;
+            selectPage.indeterminate = pageSelectedCount > 0 && !isPageFullySelected;
+        }
+        if (selectAll) {
+            selectAll.checked = isPageFullySelected;
+            selectAll.indeterminate = pageSelectedCount > 0 && !isPageFullySelected;
+        }
+    },
+
+    async applyBulkStatus() {
+        if (this.bulkUpdateInFlight) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 회원 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.selectedMemberIds.size) {
+            await CommonJS.alert('변경할 회원을 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const masterYn = document.getElementById('bulkMemberMasterYn')?.value || '';
+        const delYn = document.getElementById('bulkMemberDelYn')?.value || '';
+        if (!masterYn && !delYn) {
+            await CommonJS.alert('변경할 항목을 하나 이상 선택하세요.', '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`선택한 회원 ${this.selectedMemberIds.size}명의 상태를 일괄 변경하시겠습니까?`, '회원 일괄 변경');
+        if (!confirmed) {
+            return;
+        }
+
+        const payload = {
+            memberIds: Array.from(this.selectedMemberIds),
+            masterMember: masterYn ? masterYn === 'Y' : null,
+            deleted: delYn ? delYn === 'Y' : null
+        };
+
+        try {
+            this.bulkUpdateInFlight = true;
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyMemberBulk'), true, '일괄 적용 중입니다.');
+            const response = await fetch('/api/admin/members/status/bulk', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '회원 일괄 변경에 실패했습니다.'));
+            }
+            const result = await response.json();
+            await CommonJS.alert(
+                `요청 ${Number(result.requestedCount || 0).toLocaleString()}명 · 변경 ${Number(result.updatedCount || 0).toLocaleString()}명 · 유지 ${Number(result.unchangedCount || 0).toLocaleString()}명`,
+                '회원 일괄 변경 결과',
+                'success'
+            );
+            this.clearSelection();
+            document.getElementById('bulkMemberMasterYn').value = '';
+            document.getElementById('bulkMemberDelYn').value = '';
+            await this.getList();
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.bulkUpdateInFlight = false;
+            CommonJS.setButtonDisabled(document.getElementById('btnApplyMemberBulk'), false);
         }
     },
 

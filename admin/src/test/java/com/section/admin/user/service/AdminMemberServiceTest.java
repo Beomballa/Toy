@@ -1,10 +1,13 @@
 package com.section.admin.user.service;
 
 import com.section.admin.user.req.AdminMemberListRequest;
+import com.section.admin.user.req.AdminMemberBulkStatusUpdateRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
 import com.section.admin.user.res.AdminMemberSummaryResponse;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import com.section.common.base.entity.type.YN;
 import com.section.common.system.dto.AccountListResDto;
 import com.section.common.system.dto.AccountSummaryDto;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -147,6 +151,45 @@ class AdminMemberServiceTest {
 
         assertEquals(YN.Y, account.getMasterYn());
         assertEquals(YN.Y, account.getDelYn());
+    }
+
+    @Test
+    @DisplayName("회원 일괄 상태 변경은 선택한 회원의 권한과 상태를 함께 갱신한다")
+    void updateMemberStatusesUpdatesFlags() {
+        Account first = new Account();
+        first.setId(4L);
+        first.setMasterYn(YN.N);
+        first.setDelYn(YN.N);
+
+        Account second = new Account();
+        second.setId(5L);
+        second.setMasterYn(YN.Y);
+        second.setDelYn(YN.N);
+
+        when(accountRepository.findAllById(List.of(4L, 5L)))
+                .thenReturn(List.of(first, second));
+
+        AdminMemberService.BulkStatusUpdateResult result = adminMemberService.updateMemberStatuses(
+                new AdminMemberBulkStatusUpdateRequest(List.of(4L, 5L), true, true)
+        );
+
+        assertEquals(2, result.requestedCount());
+        assertEquals(2, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
+        assertEquals(YN.Y, first.getMasterYn());
+        assertEquals(YN.Y, first.getDelYn());
+        assertEquals(YN.Y, second.getMasterYn());
+        assertEquals(YN.Y, second.getDelYn());
+    }
+
+    @Test
+    @DisplayName("회원 일괄 상태 변경은 변경 항목이 없으면 INVALID_INPUT_VALUE 예외를 던진다")
+    void updateMemberStatusesThrowsWhenNoChangesProvided() {
+        BusinessException exception = assertThrows(BusinessException.class, () ->
+                adminMemberService.updateMemberStatuses(new AdminMemberBulkStatusUpdateRequest(List.of(4L), null, null))
+        );
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
     }
 
     @Test

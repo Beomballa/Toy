@@ -3,6 +3,7 @@ package com.section.admin.user.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
+import com.section.admin.user.req.AdminMemberBulkStatusUpdateRequest;
 import com.section.admin.user.req.AdminMemberStatusUpdateRequest;
 import com.section.admin.user.res.AdminMemberDetailResponse;
 import com.section.admin.user.res.AdminMemberListResponse;
@@ -135,5 +136,20 @@ class AdminMemberRestControllerTest {
                         .content(objectMapper.writeValueAsString(new AdminMemberStatusUpdateRequest(true, false))))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"));
+    }
+
+    @Test
+    @DisplayName("회원 일괄 상태 변경 API는 변경 결과를 반환한다")
+    void updateStatusBulkReturnsResult() throws Exception {
+        when(adminMemberService.updateMemberStatuses(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminMemberService.BulkStatusUpdateResult(3, 2, 1, 0));
+
+        mockMvc.perform(patch("/api/admin/members/status/bulk")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminMemberBulkStatusUpdateRequest(List.of(1L, 2L, 3L), true, false))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.updatedCount").value(2))
+                .andExpect(jsonPath("$.unchangedCount").value(1));
     }
 }

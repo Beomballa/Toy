@@ -18,6 +18,7 @@ const CategoryList = {
     exportInFlight: false,
     bulkInFlight: false,
     selectedCategoryNos: new Set(),
+    toggleInFlight: new Set(),
     deleteInFlight: new Set(),
 
     init() {
@@ -46,6 +47,9 @@ const CategoryList = {
             CommonJS.setButtonDisabled(document.getElementById('btnSaveCategory'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnApplyCategoryBulk'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteCategory'), disabled, reason);
+            document.querySelectorAll('[data-role="toggle-category-active"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -106,6 +110,19 @@ const CategoryList = {
                     return;
                 }
                 this.openModal(1, category);
+                return;
+            }
+
+            const toggleRootButton = event.target.closest('[data-role="toggle-category-active"]');
+            if (toggleRootButton) {
+                event.stopPropagation();
+                const categoryNo = this.normalizeOptionalPositiveNumber(toggleRootButton.dataset.categoryNo);
+                const nextActive = this.normalizeYnFilterValue(toggleRootButton.dataset.nextActive);
+                if (categoryNo == null || !nextActive) {
+                    void CommonJS.alert('변경할 카테고리 상태 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.toggleActive(categoryNo, nextActive);
             }
         });
         document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
@@ -138,6 +155,18 @@ const CategoryList = {
                     return;
                 }
                 this.deleteCategory(categoryNo);
+                return;
+            }
+
+            const toggleSubButton = event.target.closest('[data-role="toggle-category-active"]');
+            if (toggleSubButton) {
+                const categoryNo = this.normalizeOptionalPositiveNumber(toggleSubButton.dataset.categoryNo);
+                const nextActive = this.normalizeYnFilterValue(toggleSubButton.dataset.nextActive);
+                if (categoryNo == null || !nextActive) {
+                    void CommonJS.alert('변경할 카테고리 상태 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.toggleActive(categoryNo, nextActive);
             }
         });
         window.addEventListener('popstate', () => {
@@ -280,9 +309,15 @@ const CategoryList = {
                         <span class="category-item__code">#${item.categoryNo}</span>
                         <span class="category-item__hint">선택 시 중분류 목록을 오른쪽에서 확인합니다.</span>
                     </div>
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                        ${item.isActive === 'Y' ? '사용중' : '중지'}
-                    </span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
+                            ${item.isActive === 'Y' ? '사용중' : '중지'}
+                        </span>
+                        <button class="btn btn-sm btn-outline-dark"
+                                data-role="toggle-category-active"
+                                data-category-no="${item.categoryNo}"
+                                data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -329,6 +364,10 @@ const CategoryList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-sub-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <button class="btn btn-sm btn-outline-dark me-1"
+                            data-role="toggle-category-active"
+                            data-category-no="${item.categoryNo}"
+                            data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-sub-category" data-category-no="${item.categoryNo}">삭제</button>
                 </td>
             </tr>
@@ -653,6 +692,38 @@ const CategoryList = {
             await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다.', '오류', 'error');
         } finally {
             this.deleteInFlight.delete(no);
+        }
+    },
+
+    async toggleActive(no, isActive) {
+        if (this.toggleInFlight.has(no)) {
+            return;
+        }
+        if (!this.isValidCategoryNo(no)) {
+            await CommonJS.alert('유효하지 않은 카테고리 번호입니다.', '알림', 'warning');
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 카테고리 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            this.toggleInFlight.add(no);
+            const res = await fetch(`/api/admin/categories/active/${no}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive })
+            });
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '카테고리 상태 변경에 실패했습니다.'));
+            }
+            await this.getDepth1List();
+            await CommonJS.alert(`카테고리 상태를 ${isActive === 'Y' ? '사용' : '중지'}로 변경했습니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '카테고리 상태 변경에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.toggleInFlight.delete(no);
         }
     },
 

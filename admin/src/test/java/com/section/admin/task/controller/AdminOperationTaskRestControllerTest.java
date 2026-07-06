@@ -8,6 +8,7 @@ import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
+import com.section.admin.task.req.AdminOperationTaskQuickOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskHistoryListResponse;
@@ -287,6 +288,31 @@ class AdminOperationTaskRestControllerTest {
         mockMvc.perform(patch("/api/admin/settings/tasks/status/3?status=DONE"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"));
+    }
+
+    @Test
+    @DisplayName("운영 작업 빠른 변경 API는 결과 응답을 반환한다")
+    void quickOperateReturnsResult() throws Exception {
+        when(adminOperationTaskService.quickOperate(org.mockito.ArgumentMatchers.eq(3L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminOperationTaskService.BulkOperateResult(1, 1, 0));
+
+        mockMvc.perform(patch("/api/admin/settings/tasks/3/quick-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskQuickOperateRequest(null, "HIGH", null, null, "Y"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(1))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(0));
+    }
+
+    @Test
+    @DisplayName("운영 작업 빠른 변경 API는 변경 항목이 없으면 400을 반환한다")
+    void quickOperateReturnsBadRequestWhenOperateFieldMissing() throws Exception {
+        mockMvc.perform(patch("/api/admin/settings/tasks/3/quick-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new AdminOperationTaskQuickOperateRequest(null, null, null, null, null))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
     }
 
     @Test

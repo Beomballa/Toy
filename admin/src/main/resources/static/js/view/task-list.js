@@ -9,6 +9,7 @@ const TaskList = {
     isApplyingBulk: false,
     isBulkDuplicatingTask: false,
     isExportingTask: false,
+    quickOperateInFlight: new Set(),
     selectedTaskNos: new Set(),
     state: {
         page: 0,
@@ -160,6 +161,31 @@ const TaskList = {
                     return;
                 }
                 this.updateStatus(taskNo, statusButton.dataset.status);
+                return;
+            }
+
+            const quickOperateButton = event.target.closest('[data-role="quick-operate-task"]');
+            if (quickOperateButton) {
+                const taskNo = this.normalizeOptionalPositiveNumber(quickOperateButton.dataset.taskNo);
+                if (taskNo == null) {
+                    void CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                const payload = {};
+                if (this.isValidTaskPriority(quickOperateButton.dataset.priority)) {
+                    payload.priority = quickOperateButton.dataset.priority;
+                }
+                if (this.isValidYn(quickOperateButton.dataset.isPinned)) {
+                    payload.isPinned = quickOperateButton.dataset.isPinned;
+                }
+                if (quickOperateButton.dataset.assigneeMode === 'CLEAR') {
+                    payload.assigneeMode = 'CLEAR';
+                }
+                if (Object.keys(payload).length === 0) {
+                    void CommonJS.alert('변경할 작업 속성 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.quickOperateTask(taskNo, payload);
                 return;
             }
 
@@ -406,12 +432,24 @@ const TaskList = {
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
                     <button class="btn btn-sm btn-outline-secondary me-1" data-role="duplicate-task" data-task-no="${item.taskNo}">복제</button>
+                    <button class="btn btn-sm ${item.isPinned === 'Y' ? 'btn-dark' : 'btn-outline-dark'} me-1"
+                            data-role="quick-operate-task"
+                            data-task-no="${item.taskNo}"
+                            data-is-pinned="${item.isPinned === 'Y' ? 'N' : 'Y'}">${item.isPinned === 'Y' ? '고정해제' : '고정'}</button>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskHistoryPathFromBase(item.historyPath)}">${item.historyLabel}</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskLogPathFromBase(item.activityLogPath, item.taskNo)}">${item.activityLogLabel}</a>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">상태</button>
                         <ul class="dropdown-menu dropdown-menu-end">
                             ${this.renderStatusMenu(item)}
+                        </ul>
+                    </div>
+                    <div class="btn-group ms-1">
+                        <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">우선순위</button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            ${this.renderPriorityMenu(item)}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button type="button" class="dropdown-item" data-role="quick-operate-task" data-task-no="${item.taskNo}" data-assignee-mode="CLEAR">담당 해제</button></li>
                         </ul>
                     </div>
                     <button class="btn btn-sm btn-outline-danger ms-1" data-role="delete-task" data-task-no="${item.taskNo}">삭제</button>
@@ -666,6 +704,43 @@ const TaskList = {
         } finally {
             this.isUpdatingStatus = false;
             this.setCollectionButtonsDisabled('[data-role="update-task-status"]', false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    async quickOperateTask(taskNo, payload) {
+        if (!this.isPositiveNumber(taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 번호를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (this.quickOperateInFlight.has(taskNo)) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 빠른 변경'), '알림', 'warning');
+            return;
+        }
+        try {
+            this.quickOperateInFlight.add(taskNo);
+            this.setCollectionButtonsDisabled(`[data-role="quick-operate-task"][data-task-no="${taskNo}"]`, true);
+            const response = await fetch(`/api/admin/settings/tasks/${taskNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 빠른 변경에 실패했습니다.'));
+            }
+            const result = await response.json();
+            this.setLastActionMeta('quick-operate', 'success', '목록 빠른 변경', taskNo);
+            await this.getList();
+            await CommonJS.alert(`요청 ${result.requestedCount}건 · 변경 ${result.updatedCount}건 · 유지 ${result.unchangedCount}건`, '빠른 변경 결과', 'success');
+        } catch (error) {
+            this.setLastActionMeta('quick-operate', 'error', '목록 빠른 변경', taskNo);
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.quickOperateInFlight.delete(taskNo);
+            this.setCollectionButtonsDisabled(`[data-role="quick-operate-task"][data-task-no="${taskNo}"]`, false);
             await this.applyOperationPolicy(this.operationPolicy);
         }
     },
@@ -1199,6 +1274,8 @@ const TaskList = {
             'save-task:error': '운영 작업 저장에 실패했습니다.',
             'update-status:success': `${taskLabel} 상태를 변경했습니다.`,
             'update-status:error': `${taskLabel} 상태 변경에 실패했습니다.`,
+            'quick-operate:success': `${taskLabel} 빠른 변경을 반영했습니다.`,
+            'quick-operate:error': `${taskLabel} 빠른 변경에 실패했습니다.`,
             'delete-task:success': `${taskLabel} 삭제를 반영했습니다.`,
             'delete-task:error': `${taskLabel} 삭제에 실패했습니다.`,
             'duplicate-task:success': `${taskLabel} 복제를 반영했습니다.`,
@@ -1213,6 +1290,7 @@ const TaskList = {
         const variants = {
             'save-task:success': 'alert-success',
             'update-status:success': 'alert-primary',
+            'quick-operate:success': 'alert-primary',
             'delete-task:success': 'alert-warning',
             'duplicate-task:success': 'alert-info',
             'bulk-duplicate:success': 'alert-info',
@@ -1220,6 +1298,7 @@ const TaskList = {
             'bulk-delete:success': 'alert-warning',
             'save-task:error': 'alert-danger',
             'update-status:error': 'alert-danger',
+            'quick-operate:error': 'alert-danger',
             'delete-task:error': 'alert-danger',
             'duplicate-task:error': 'alert-danger',
             'bulk-duplicate:error': 'alert-danger',
@@ -1473,6 +1552,23 @@ const TaskList = {
             default:
                 return 'text-bg-secondary';
         }
+    },
+
+    renderPriorityMenu(item) {
+        const options = [
+            { value: 'HIGH', label: '높음' },
+            { value: 'MEDIUM', label: '보통' },
+            { value: 'LOW', label: '낮음' }
+        ];
+        return options.map((option) => `
+            <li>
+                <button type="button"
+                        class="dropdown-item ${item.priority === option.value ? 'active' : ''}"
+                        data-role="quick-operate-task"
+                        data-task-no="${item.taskNo}"
+                        data-priority="${option.value}">${option.label}</button>
+            </li>
+        `).join('');
     },
 
     escapeHtml(value) {

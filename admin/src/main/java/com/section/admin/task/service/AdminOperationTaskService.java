@@ -8,6 +8,7 @@ import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkDeleteRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
+import com.section.admin.task.req.AdminOperationTaskQuickOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
@@ -199,6 +200,46 @@ public class AdminOperationTaskService {
         AdminOperationTask task = getTask(taskNo);
         task.updateStatus(normalizeStatus(status));
         adminLogService.recordCurrentAdminLog("TASK_STATUS_UPDATE", taskNo);
+    }
+
+    @Transactional
+    public BulkOperateResult quickOperate(Long taskNo, AdminOperationTaskQuickOperateRequest req) {
+        String normalizedStatus = req.normalizedStatus();
+        String normalizedPriority = req.normalizedPriority();
+        boolean hasAssigneeChange = req.hasAssigneeChange();
+        Long normalizedAssigneeAdminNo = req.normalizedAssigneeAdminNo() == null ? null : normalizeAssigneeAdminNo(req.normalizedAssigneeAdminNo());
+        String normalizedPinned = req.normalizedIsPinned();
+
+        AdminOperationTask task = getTask(taskNo);
+        boolean changed = false;
+        if (normalizedStatus != null && !normalizedStatus.equalsIgnoreCase(task.getStatus())) {
+            changed = true;
+        }
+        if (normalizedPriority != null && !normalizedPriority.equalsIgnoreCase(task.getPriority())) {
+            changed = true;
+        }
+        if (normalizedPinned != null && !normalizedPinned.equalsIgnoreCase(task.getIsPinned())) {
+            changed = true;
+        }
+        if (hasAssigneeChange && !Objects.equals(normalizedAssigneeAdminNo, task.getAssigneeAdminNo())) {
+            changed = true;
+        }
+
+        if (!changed) {
+            return new BulkOperateResult(1, 0, 1);
+        }
+
+        task.update(
+                task.getTitle(),
+                task.getDescription(),
+                normalizedStatus == null ? task.getStatus() : normalizedStatus,
+                normalizedPriority == null ? task.getPriority() : normalizedPriority,
+                hasAssigneeChange ? normalizedAssigneeAdminNo : task.getAssigneeAdminNo(),
+                task.getDueDate(),
+                normalizedPinned == null ? task.getIsPinned() : normalizedPinned
+        );
+        adminLogService.recordCurrentAdminLog("TASK_QUICK_UPDATE", task.getTaskNo());
+        return new BulkOperateResult(1, 1, 0);
     }
 
     @Transactional

@@ -8,6 +8,7 @@ import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskBulkOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
+import com.section.admin.task.req.AdminOperationTaskQuickOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
 import com.section.admin.task.res.AdminOperationTaskListResponse;
@@ -254,6 +255,56 @@ class AdminOperationTaskServiceTest {
 
         assertEquals("DONE", task.getStatus());
         verify(adminLogService).recordCurrentAdminLog("TASK_STATUS_UPDATE", 7L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 빠른 변경은 우선순위와 고정 상태를 즉시 반영한다")
+    void quickOperateUpdatesPriorityAndPinned() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(8L)
+                .title("빠른 변경")
+                .description("설명")
+                .status("TODO")
+                .priority("MEDIUM")
+                .assigneeAdminNo(3L)
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(8L)).thenReturn(Optional.of(task));
+
+        var result = adminOperationTaskService.quickOperate(
+                8L,
+                new AdminOperationTaskQuickOperateRequest(null, "HIGH", null, null, "Y")
+        );
+
+        assertEquals(1, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
+        assertEquals("HIGH", task.getPriority());
+        assertEquals("Y", task.getIsPinned());
+        verify(adminLogService).recordCurrentAdminLog("TASK_QUICK_UPDATE", 8L);
+    }
+
+    @Test
+    @DisplayName("운영 작업 빠른 변경은 값이 동일하면 유지 건수로 반환한다")
+    void quickOperateReturnsUnchangedWhenNoDiff() {
+        AdminOperationTask task = AdminOperationTask.builder()
+                .taskNo(9L)
+                .title("변경 없음")
+                .description("설명")
+                .status("TODO")
+                .priority("LOW")
+                .assigneeAdminNo(null)
+                .isPinned("N")
+                .build();
+        when(adminOperationTaskRepository.findById(9L)).thenReturn(Optional.of(task));
+
+        var result = adminOperationTaskService.quickOperate(
+                9L,
+                new AdminOperationTaskQuickOperateRequest(null, "LOW", null, null, "N")
+        );
+
+        assertEquals(0, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
     }
 
     @Test
@@ -537,7 +588,7 @@ class AdminOperationTaskServiceTest {
                         && "TODO".equals(task.getStatus())
                         && "MEDIUM".equals(task.getPriority())
                         && Long.valueOf(4L).equals(task.getAssigneeAdminNo())
-                        && LocalDate.of(2026, 6, 15).equals(task.getDueDate())
+                        && task.getDueDate() == null
                         && "Y".equals(task.getIsPinned())
         ));
         verify(adminOperationTaskCommentRepository).saveAll(argThat(comments ->

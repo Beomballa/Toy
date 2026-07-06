@@ -8,6 +8,7 @@ import com.section.admin.task.req.AdminOperationTaskBulkDuplicateRequest;
 import com.section.admin.task.req.AdminOperationTaskCommentSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskHistoryListRequest;
 import com.section.admin.task.req.AdminOperationTaskListRequest;
+import com.section.admin.task.req.AdminOperationTaskQuickOperateRequest;
 import com.section.admin.task.req.AdminOperationTaskSaveRequest;
 import com.section.admin.task.req.AdminOperationTaskWorkloadListRequest;
 import com.section.admin.task.res.AdminOperationTaskDetailResponse;
@@ -18,6 +19,8 @@ import com.section.admin.task.res.AdminOperationTaskWorkloadListResponse;
 import com.section.admin.task.service.AdminOperationTaskHistoryService;
 import com.section.admin.task.service.AdminOperationTaskService;
 import com.section.admin.task.service.AdminOperationTaskWorkloadService;
+import com.section.common.base.exception.BusinessException;
+import com.section.common.base.exception.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -116,6 +119,18 @@ public class AdminOperationTaskRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOperationTaskService.updateStatus(taskNo, status);
         return ResponseEntity.ok(new BaseSimpleResDto());
+    }
+
+    @PatchMapping("/{no}/quick-operate")
+    public ResponseEntity<AdminOperationTaskService.BulkOperateResult> quickOperate(
+            @PathVariable("no") Long taskNo,
+            @RequestBody AdminOperationTaskQuickOperateRequest req
+    ) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        if (!req.hasOperateField()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return ResponseEntity.ok(adminOperationTaskService.quickOperate(taskNo, req));
     }
 
     @PostMapping("/{no}/duplicate")

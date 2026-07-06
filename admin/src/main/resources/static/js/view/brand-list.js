@@ -14,6 +14,7 @@ const BrandList = {
     exportInFlight: false,
     bulkInFlight: false,
     selectedBrandNos: new Set(),
+    toggleInFlight: new Set(),
     deleteInFlight: new Set(),
 
     init() {
@@ -41,6 +42,9 @@ const BrandList = {
             CommonJS.setButtonDisabled(document.getElementById('btnSaveBrand'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnApplyBrandBulk'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnBulkDeleteBrand'), disabled, reason);
+            document.querySelectorAll('[data-role="toggle-brand-active"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -98,6 +102,18 @@ const BrandList = {
                     return;
                 }
                 this.deleteBrand(brandNo);
+                return;
+            }
+
+            const toggleButton = event.target.closest('[data-role="toggle-brand-active"]');
+            if (toggleButton) {
+                const brandNo = this.normalizeOptionalPositiveNumber(toggleButton.dataset.brandNo);
+                const nextActive = this.normalizeActiveFilterValue(toggleButton.dataset.nextActive);
+                if (brandNo == null || !nextActive) {
+                    void CommonJS.alert('변경할 브랜드 상태 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.toggleActive(brandNo, nextActive);
             }
         });
         document.getElementById('brandKeyword')?.addEventListener('keydown', (event) => {
@@ -212,6 +228,10 @@ const BrandList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-brand" data-brand-no="${item.brandNo}">수정</button>
+                    <button class="btn btn-sm btn-outline-dark me-1"
+                            data-role="toggle-brand-active"
+                            data-brand-no="${item.brandNo}"
+                            data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-brand" data-brand-no="${item.brandNo}">삭제</button>
                 </td>
             </tr>
@@ -614,6 +634,38 @@ const BrandList = {
             await CommonJS.alert(err.message || '삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)', '오류', 'error');
         } finally {
             this.deleteInFlight.delete(brandNo);
+        }
+    },
+
+    async toggleActive(brandNo, isActive) {
+        if (this.toggleInFlight.has(brandNo)) {
+            return;
+        }
+        if (!this.isValidBrandNo(brandNo)) {
+            await CommonJS.alert('유효하지 않은 브랜드 번호입니다.', '알림', 'warning');
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert('유지보수 모드에서는 브랜드 상태 변경이 불가능합니다.', '알림', 'warning');
+            return;
+        }
+
+        try {
+            this.toggleInFlight.add(brandNo);
+            const res = await fetch(`/api/admin/brands/active/${brandNo}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive })
+            });
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 상태 변경에 실패했습니다.'));
+            }
+            await this.getList();
+            await CommonJS.alert(`브랜드 상태를 ${isActive === 'Y' ? '사용' : '중지'}로 변경했습니다.`, '성공', 'success');
+        } catch (err) {
+            await CommonJS.alert(err.message || '브랜드 상태 변경에 실패했습니다.', '오류', 'error');
+        } finally {
+            this.toggleInFlight.delete(brandNo);
         }
     },
 

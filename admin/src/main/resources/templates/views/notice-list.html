@@ -81,7 +81,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
             <div class="fw-semibold" id="noticeListActionNoticeText"></div>
             <div class="d-flex align-items-center gap-2">
-                <div class="d-flex gap-2" id="noticeListActionNoticeActions"></div>
+                <div class="task-action-notice__actions" id="noticeListActionNoticeActions"></div>
                 <button type="button" class="btn-close" aria-label="알림 닫기" id="noticeListActionNoticeClose"></button>
             </div>
         </div>
@@ -195,7 +195,7 @@
             </div>
         </div>
         <div class="card-body border-bottom py-2">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="admin-search-meta-row">
                 <div class="small text-muted" id="noticeResultMeta">결과 메타를 계산하는 중입니다...</div>
                 <div class="small text-muted" id="noticePageMeta">페이지 메타를 계산하는 중입니다...</div>
             </div>
@@ -216,7 +216,7 @@
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0 admin-table--notice-list">
                     <thead class="table-light">
                     <tr>
                         <th class="ps-4 table-col-80">

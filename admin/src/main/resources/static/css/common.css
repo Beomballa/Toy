@@ -981,6 +981,10 @@
     min-width: 1080px;
 }
 
+.main-content .table-responsive > .admin-table--notice-list {
+    min-width: 1040px;
+}
+
 .task-action-notice__actions {
     display: flex;
     flex-wrap: wrap;

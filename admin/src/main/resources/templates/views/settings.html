@@ -15,7 +15,7 @@
 <nav th:replace="~{fragments/layout :: sidebar}"></nav>
 
 <main class="main-content admin-page-shell detail-main">
-    <div class="detail-scroll-content admin-detail-page">
+    <div class="detail-scroll-content detail-scroll-content--fit admin-detail-page">
     <div class="page-header admin-detail-header">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
@@ -33,7 +33,7 @@
     <div class="row g-4">
         <div class="col-lg-12">
             <div class="card animate-in admin-panel-card">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3 admin-card-header">
                     <div>
                         <h6 class="card-title mb-0">운영 설정</h6>
                         <div class="small text-muted mt-1">운영 제한, 커뮤니티 작성, 주문 내보내기 정책과 기본 저재고 기준을 한 화면에서 관리합니다.</div>
@@ -94,12 +94,12 @@
 
         <div class="col-lg-12">
             <div class="card animate-in admin-panel-card admin-table-card">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3 admin-card-header">
                     <div>
                         <h6 class="card-title mb-0">설정 변경 이력</h6>
                         <div class="small text-muted mt-1" id="systemSettingHistoryMetaText">설정 변경 이력을 불러오는 중입니다...</div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="admin-card-header__actions">
                         <button class="btn btn-sm btn-outline-success" id="btnExportSystemHistory">
                             <i class="fas fa-file-csv me-1"></i>CSV 내보내기
                         </button>
@@ -247,12 +247,12 @@
         <!-- 관리자 계정 관리 -->
         <div class="col-lg-12">
             <div class="card animate-in admin-panel-card admin-table-card">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-white py-3 admin-card-header">
                     <div>
                         <h6 class="card-title mb-0">관리자 계정 관리</h6>
                         <div class="small text-muted mt-1" id="adminListMetaText">관리자 계정 목록과 권한 상태를 불러오는 중입니다...</div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="admin-card-header__actions">
                         <button class="btn btn-sm btn-outline-success" id="btnExportAdminCsv"><i class="fas fa-file-csv me-1"></i>CSV 내보내기</button>
                         <button class="btn btn-sm btn-primary" id="btnNewAdmin"><i class="fas fa-user-plus me-1"></i>계정 추가</button>
                     </div>

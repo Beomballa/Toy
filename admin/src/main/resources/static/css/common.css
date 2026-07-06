@@ -36,6 +36,10 @@
     min-width: 1040px;
 }
 
+.detail-scroll-content--fit {
+    min-width: 0;
+}
+
 .operation-policy-banner {
     display: flex;
     align-items: flex-start;
@@ -715,6 +719,21 @@
 .admin-panel-card .card-header {
     border-bottom: 1px solid #edf2f7;
     background: transparent;
+}
+
+.admin-card-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.admin-card-header__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .admin-panel-card .card-body,
@@ -1404,6 +1423,15 @@
 
     .admin-detail-actions .btn {
         width: 100%;
+    }
+
+    .admin-card-header__actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .admin-card-header__actions .btn {
+        flex: 1 1 100%;
     }
 }
 .hover-card:hover {

@@ -28,6 +28,7 @@ const ProductList = {
     isCloningProduct: false,
     isExporting: false,
     bulkInFlight: false,
+    quickOperateInFlight: new Set(),
     selectedProductNos: new Set(),
 
     init(brands = [], categories = [], initialLowStockThreshold = 100) {
@@ -177,6 +178,17 @@ const ProductList = {
                     return;
                 }
                 this.cloneProduct(productNo);
+                return;
+            }
+
+            const quickOperateButton = e.target.closest('[data-role="quick-operate-product"]');
+            if (quickOperateButton) {
+                const productNo = this._normalizeOptionalPositiveNumber(quickOperateButton.dataset.productNo);
+                if (!this._isPositiveNumber(productNo)) {
+                    void CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.quickOperateProduct(productNo, quickOperateButton.dataset.status);
                 return;
             }
 
@@ -402,6 +414,14 @@ const ProductList = {
                 </td>
                 <td class="small text-muted">${item.crtDtm}</td>
                 <td class="text-end pe-4">
+                    <div class="btn-group me-1">
+                        <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            상태
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            ${this.renderQuickStatusMenu(item)}
+                        </ul>
+                    </div>
                     <button type="button"
                             class="btn btn-icon btn-secondary me-1 btn-image-search"
                             data-product-name="${item.productName || ''}"
@@ -436,6 +456,25 @@ const ProductList = {
         `).join('');
         this._setListStateMeta('ready', '', items.length);
         this.updateSelectionMeta(items);
+    },
+
+    renderQuickStatusMenu(item) {
+        const options = [
+            {code: 'ACTIVE', label: '판매중'},
+            {code: 'HIDDEN', label: '숨김'},
+            {code: 'SOLD_OUT', label: '품절'}
+        ];
+        return options.map((option) => `
+            <li>
+                <button type="button"
+                        class="dropdown-item ${item.statusCode === option.code ? 'active' : ''}"
+                        data-role="quick-operate-product"
+                        data-product-no="${item.productNo}"
+                        data-status="${option.code}">
+                    ${option.label}${item.statusCode === option.code ? ' 적용중' : ''}
+                </button>
+            </li>
+        `).join('');
     },
 
     _renderPagination(data) {
@@ -771,6 +810,61 @@ const ProductList = {
 
     _setCloneButtonsDisabled(disabled) {
         document.querySelectorAll('[data-role="clone-product"]').forEach((button) => {
+            button.disabled = disabled;
+        });
+    },
+
+    async quickOperateProduct(productNo, status) {
+        if (this.quickOperateInFlight.has(productNo)) {
+            return;
+        }
+        const normalizedStatus = this._normalizeProductStatus(status);
+        if (!this._isPositiveNumber(productNo)) {
+            await CommonJS.alert('상품 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (!normalizedStatus) {
+            await CommonJS.alert('변경할 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 상태 변경'), '알림', 'warning');
+            return;
+        }
+
+        try {
+            this.quickOperateInFlight.add(productNo);
+            this._setQuickOperateButtonsDisabled(productNo, true);
+            const response = await fetch(`/api/admin/product/${productNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({status: normalizedStatus})
+            });
+
+            if (!response.ok) {
+                const message = await CommonJS.extractErrorMessage(response, '상품 상태 변경에 실패했습니다.');
+                await CommonJS.alert(message, '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            await this.getList();
+            await CommonJS.alert(
+                `상태 변경 완료\n변경 ${result.updatedCount}건 · 동일 상태 ${result.unchangedCount}건`,
+                '성공',
+                'success'
+            );
+        } catch (error) {
+            console.error('상품 빠른 상태 변경 실패:', error);
+            await CommonJS.alert('상품 상태 변경 중 오류가 발생했습니다.', '오류', 'error');
+        } finally {
+            this.quickOperateInFlight.delete(productNo);
+            this._setQuickOperateButtonsDisabled(productNo, false);
+        }
+    },
+
+    _setQuickOperateButtonsDisabled(productNo, disabled) {
+        document.querySelectorAll(`[data-role="quick-operate-product"][data-product-no="${productNo}"]`).forEach((button) => {
             button.disabled = disabled;
         });
     },

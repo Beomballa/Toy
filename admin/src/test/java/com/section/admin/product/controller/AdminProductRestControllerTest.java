@@ -7,6 +7,7 @@ import com.section.admin.product.req.ProductBulkOperateRequest;
 import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
+import com.section.admin.product.req.ProductQuickOperateRequest;
 import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
 import com.section.admin.product.res.ProductFrontDisplayRankGuideResponse;
 import com.section.admin.product.req.ProductUpdateRequest;
@@ -535,6 +536,23 @@ class AdminProductRestControllerTest {
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("A001"))
                 .andExpect(jsonPath("$.message").value("현재 관리자 유지보수 모드입니다."));
+    }
+
+    @Test
+    @DisplayName("상품 빠른 상태 변경 API는 집계 결과를 반환한다")
+    void quickOperateProductReturnsSummary() throws Exception {
+        when(adminProductService.quickOperateProduct(org.mockito.ArgumentMatchers.eq(4L), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new AdminProductService.BulkOperateResult(1, 1, 0, 0, 0));
+
+        mockMvc.perform(patch("/api/admin/product/4/quick-operate")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new ProductQuickOperateRequest("SOLD_OUT"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(1))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(0))
+                .andExpect(jsonPath("$.blockedCount").value(0))
+                .andExpect(jsonPath("$.missingCount").value(0));
     }
 
     @Test

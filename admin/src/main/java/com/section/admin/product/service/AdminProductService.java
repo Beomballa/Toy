@@ -8,6 +8,7 @@ import com.section.admin.product.req.ProductCreateRequest;
 import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.req.ProductQuickOperateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDetailResponse;
 import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
@@ -409,6 +410,29 @@ public class AdminProductService {
         clearFrontDisplayMetadata(product.getId());
         recordProductHistory(productNo, ProductHistoryActionType.DELETED, "상품이 삭제 처리되었습니다.", ProductStatus.DELETE.name(), 0, 0L);
         log.info("상품 번호 {} 가 성공적으로 논리 삭제되었습니다.", productNo);
+    }
+
+    @Transactional
+    public BulkOperateResult quickOperateProduct(Long productNo, ProductQuickOperateRequest request) {
+        Product product = productRepository.findById(productNo)
+                .filter(item -> !ProductStatus.DELETE.name().equals(item.getStatus()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
+        ProductStatus targetStatus = request.normalizedStatus();
+        if (targetStatus.name().equals(product.getStatus())) {
+            return new BulkOperateResult(1, 0, 1, 0, 0);
+        }
+
+        product.changeStatus(targetStatus);
+        synchronizeFrontDisplayForStatus(product);
+        recordProductHistory(
+                product.getId(),
+                ProductHistoryActionType.UPDATED,
+                "상품 상태가 빠르게 변경되었습니다. 변경 상태: " + targetStatus.name(),
+                targetStatus.name(),
+                0,
+                0L
+        );
+        return new BulkOperateResult(1, 1, 0, 0, 0);
     }
 
     @Transactional

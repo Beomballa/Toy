@@ -8,6 +8,7 @@ import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.req.ProductQuickOperateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductDefaultResDto;
 import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
@@ -64,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -691,6 +693,72 @@ class AdminProductServiceTest {
                         && history.getSummary().contains("일괄 변경")
                         && history.getStatusSnapshot().equals(ProductStatus.HIDDEN.name())
         ));
+    }
+
+    @Test
+    @DisplayName("상품 빠른 상태 변경은 단건 결과와 이력을 함께 반영한다")
+    void quickOperateProductUpdatesEligibleProduct() {
+        FrontProductDisplay featuredDisplay = FrontProductDisplay.builder()
+                .productNo(1L)
+                .headline("Grey precision")
+                .description("전시 설명")
+                .mood("Sharp tone")
+                .featuredYn("Y")
+                .featuredRank(2)
+                .build();
+        Product product = Product.builder()
+                .id(1L)
+                .status(ProductStatus.ACTIVE.name())
+                .nameKo("A")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .build();
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.of(featuredDisplay));
+        when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminProductService.BulkOperateResult result = adminProductService.quickOperateProduct(
+                1L,
+                new ProductQuickOperateRequest("HIDDEN")
+        );
+
+        assertEquals(1, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
+        verify(frontProductDisplayRepository).save(argThat(display ->
+                display.getProductNo().equals(1L)
+                        && display.getFeaturedYn().equals("N")
+                        && display.getFeaturedRank().equals(999)
+        ));
+        verify(productChangeHistoryRepository).save(argThat(history ->
+                history.getProductNo().equals(1L)
+                        && history.getSummary().contains("빠르게 변경")
+                        && history.getStatusSnapshot().equals(ProductStatus.HIDDEN.name())
+        ));
+    }
+
+    @Test
+    @DisplayName("상품 빠른 상태 변경은 동일 상태 요청이면 미변경으로 집계한다")
+    void quickOperateProductReturnsUnchangedWhenSameStatus() {
+        Product product = Product.builder()
+                .id(2L)
+                .status(ProductStatus.SOLD_OUT.name())
+                .nameKo("B")
+                .brandNo(1L)
+                .categoryNo(1L)
+                .build();
+        when(productRepository.findById(2L)).thenReturn(Optional.of(product));
+
+        AdminProductService.BulkOperateResult result = adminProductService.quickOperateProduct(
+                2L,
+                new ProductQuickOperateRequest("SOLD_OUT")
+        );
+
+        assertEquals(1, result.requestedCount());
+        assertEquals(0, result.updatedCount());
+        assertEquals(1, result.unchangedCount());
+        verify(productChangeHistoryRepository, never()).save(any());
     }
 
     @Test

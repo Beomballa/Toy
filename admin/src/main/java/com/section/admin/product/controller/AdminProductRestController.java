@@ -9,6 +9,7 @@ import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.req.ProductFrontDisplaySaveRequest;
 import com.section.admin.product.req.ProductHistoryListRequest;
 import com.section.admin.product.req.ProductListRequest;
+import com.section.admin.product.req.ProductQuickOperateRequest;
 import com.section.admin.product.req.ProductUpdateRequest;
 import com.section.admin.product.res.ProductCreateResponse;
 import com.section.admin.product.res.ProductDetailResponse;
@@ -159,6 +160,15 @@ public class AdminProductRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminProductService.deleteProduct(productNo);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/product/{no}/quick-operate")
+    public ResponseEntity<AdminProductService.BulkOperateResult> quickOperateProduct(
+            @PathVariable("no") Long productNo,
+            @RequestBody ProductQuickOperateRequest request
+    ) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        return ResponseEntity.ok(adminProductService.quickOperateProduct(productNo, request));
     }
 
     @PatchMapping("/product/bulk-operate")

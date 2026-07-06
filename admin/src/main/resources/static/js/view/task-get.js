@@ -4,6 +4,7 @@ const TaskDetailPage = {
     operationPolicy: null,
     isSavingDetail: false,
     isTogglingStatus: false,
+    isTogglingPinned: false,
     isDeletingTask: false,
     isSavingComment: false,
     isDeletingComment: false,
@@ -46,6 +47,7 @@ const TaskDetailPage = {
         });
         document.getElementById('btnTaskDetailEdit')?.addEventListener('click', () => this.openEditModal());
         document.getElementById('btnTaskDetailSave')?.addEventListener('click', () => this.saveDetail());
+        document.getElementById('btnTaskDetailTogglePinned')?.addEventListener('click', () => this.togglePinned());
         document.getElementById('btnTaskDetailToggleStatus')?.addEventListener('click', () => this.toggleStatus());
         document.getElementById('btnTaskDetailDelete')?.addEventListener('click', () => this.deleteTask());
         document.getElementById('btnTaskCommentSave')?.addEventListener('click', () => this.saveComment());
@@ -91,6 +93,7 @@ const TaskDetailPage = {
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = CommonJS.getAdminWriteBlockedReason('운영 작업 수정 및 삭제');
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailEdit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailTogglePinned'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailToggleStatus'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailDelete'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailSave'), disabled, reason);
@@ -138,6 +141,7 @@ const TaskDetailPage = {
         document.getElementById('btnTaskDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
         document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
         document.getElementById('btnTaskDetailLogsMore').href = this.buildLogPathFromBase(data.activityLogPath);
+        document.getElementById('btnTaskDetailTogglePinned').textContent = data.isPinned === 'Y' ? '고정 해제' : '고정';
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
         this.renderRecentHistories(data.recentHistories || []);
         this.renderComments(data.comments || []);
@@ -310,6 +314,43 @@ const TaskDetailPage = {
         } finally {
             this.isTogglingStatus = false;
             this.setBusyButton(document.getElementById('btnTaskDetailToggleStatus'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    async togglePinned() {
+        if (this.isTogglingPinned) return;
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 고정 변경'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail || !this.isValidTaskNo(detail.taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+
+        const nextPinned = detail.isPinned === 'Y' ? 'N' : 'Y';
+        try {
+            this.isTogglingPinned = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailTogglePinned'), true, '처리 중...');
+            const response = await fetch(`/api/admin/settings/tasks/${detail.taskNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isPinned: nextPinned })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 고정 상태를 변경하지 못했습니다.'));
+            }
+            this.setLastActionMeta('toggle-pinned', 'success', '고정 변경');
+            await this.loadDetail();
+            await CommonJS.alert('운영 작업 고정 상태가 변경되었습니다.', '성공', 'success');
+        } catch (error) {
+            this.setLastActionMeta('toggle-pinned', 'error', '고정 변경');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isTogglingPinned = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailTogglePinned'), false);
             await this.applyOperationPolicy(this.operationPolicy);
         }
     },
@@ -881,6 +922,8 @@ const TaskDetailPage = {
         const templates = {
             'save-detail:success': '운영 작업 수정 내용을 반영했습니다.',
             'save-detail:error': '운영 작업 수정에 실패했습니다.',
+            'toggle-pinned:success': '운영 작업 고정 상태를 변경했습니다.',
+            'toggle-pinned:error': '운영 작업 고정 상태 변경에 실패했습니다.',
             'toggle-status:success': '운영 작업 상태를 변경했습니다.',
             'toggle-status:error': '운영 작업 상태 변경에 실패했습니다.',
             'save-comment:success': '작업 메모를 등록했습니다.',
@@ -894,12 +937,14 @@ const TaskDetailPage = {
         };
         const variants = {
             'save-detail:success': 'alert-success',
+            'toggle-pinned:success': 'alert-warning',
             'toggle-status:success': 'alert-primary',
             'save-comment:success': 'alert-success',
             'update-comment:success': 'alert-success',
             'delete-comment:success': 'alert-warning',
             'apply-recommendation:success': 'alert-primary',
             'save-detail:error': 'alert-danger',
+            'toggle-pinned:error': 'alert-danger',
             'toggle-status:error': 'alert-danger',
             'save-comment:error': 'alert-danger',
             'update-comment:error': 'alert-danger',

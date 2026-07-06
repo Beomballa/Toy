@@ -77,6 +77,18 @@ public class DocumentService {
     }
 
     @Transactional
+    public BulkOperateResult operateDocument(
+            Long id,
+            Document.PublishStatus status,
+            YN publicYn,
+            YN pinnedYn
+    ) {
+        Document document = getDocument(id);
+        int updatedCount = document.applyOperateValues(status, publicYn, pinnedYn) ? 1 : 0;
+        return BulkOperateResult.of(1, updatedCount, 0);
+    }
+
+    @Transactional
     public BulkOperateResult bulkOperateDocuments(
             Set<Long> ids,
             Document.PublishStatus status,

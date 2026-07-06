@@ -221,6 +221,32 @@ class DocumentServiceTest {
     }
 
     @Test
+    @DisplayName("단건 운영 액션은 기존 엔티티를 바로 변경하고 결과 집계를 반환한다")
+    void operateDocumentUpdatesSingleEntity() {
+        Document document = new Document();
+        document.setId(15L);
+        document.setStatus(Document.PublishStatus.DRAFT);
+        document.setPublicYn(YN.N);
+        document.setPinnedYn(YN.N);
+        when(documentRepository.findById(15L)).thenReturn(Optional.of(document));
+
+        DocumentService.BulkOperateResult result = documentService.operateDocument(
+                15L,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                null
+        );
+
+        assertEquals(1, result.requestedCount());
+        assertEquals(1, result.updatedCount());
+        assertEquals(0, result.unchangedCount());
+        assertEquals(0, result.missingCount());
+        assertEquals(Document.PublishStatus.PUBLISHED, document.getStatus());
+        assertEquals(YN.Y, document.getPublicYn());
+        assertEquals(YN.N, document.getPinnedYn());
+    }
+
+    @Test
     @DisplayName("콘텐츠 CSV 조회는 첫 페이지 기준 제한 건수만 가져온다")
     void getDocumentExportListUsesFirstPageLimit() {
         DocumentListItemDto item = new DocumentListItemDto();

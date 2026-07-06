@@ -3,6 +3,7 @@ package com.section.admin.content.controller;
 import com.section.admin.content.req.ContentSaveRequest;
 import com.section.admin.content.req.ContentBulkOperateRequest;
 import com.section.admin.content.req.ContentBulkDeleteRequest;
+import com.section.admin.content.req.ContentQuickOperateRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
@@ -120,6 +121,23 @@ public class AdminContentRestController {
         adminOperationPolicyService.assertCommunityWriteAllowed();
         documentService.deleteDocument(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/operate")
+    public ResponseEntity<DocumentService.BulkOperateResult> operate(
+            @PathVariable("id") Long id,
+            @RequestBody ContentQuickOperateRequest request
+    ) {
+        adminOperationPolicyService.assertCommunityWriteAllowed();
+        if (!request.hasOperateField()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return ResponseEntity.ok(documentService.operateDocument(
+                id,
+                request.normalizedStatus(),
+                request.normalizedPublicYn(),
+                request.normalizedPinnedYn()
+        ));
     }
 
     @PatchMapping("/bulk-operate")

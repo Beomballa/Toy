@@ -346,6 +346,36 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 빠른 운영 액션은 단건 상태 변경 결과를 반환한다")
+    void operateReturnsSingleUpdateResult() throws Exception {
+        when(documentService.operateDocument(any(), any(), any(), any()))
+                .thenReturn(DocumentService.BulkOperateResult.of(1, 1, 0));
+
+        mockMvc.perform(patch("/api/admin/content/21/operate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BulkOperatePayload(
+                                null, "DRAFT", "N", null
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(1))
+                .andExpect(jsonPath("$.updatedCount").value(1))
+                .andExpect(jsonPath("$.unchangedCount").value(0))
+                .andExpect(jsonPath("$.missingCount").value(0));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 빠른 운영 액션은 변경 값이 없으면 400 INVALID_INPUT_VALUE를 반환한다")
+    void operateReturnsBadRequestWhenOperateFieldMissing() throws Exception {
+        mockMvc.perform(patch("/api/admin/content/21/operate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(new BulkOperatePayload(
+                                null, null, null, null
+                        ))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
+    }
+
+    @Test
     @DisplayName("콘텐츠 일괄 운영은 변경 항목이 없으면 400 INVALID_INPUT_VALUE를 반환한다")
     void bulkOperateReturnsBadRequestWhenOperateFieldMissing() throws Exception {
         mockMvc.perform(patch("/api/admin/content/bulk-operate")

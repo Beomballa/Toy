@@ -1,6 +1,7 @@
 const ContentList = {
     initialized: false,
     exportInFlight: false,
+    actionInFlightIds: new Set(),
     state: {
         page: 0,
         size: 9,
@@ -185,6 +186,9 @@ const ContentList = {
             document.querySelectorAll('[data-role="content-edit"]').forEach((button) => {
                 CommonJS.setButtonDisabled(button, disabled, reason);
             });
+            document.querySelectorAll('[data-role="content-status-toggle"], [data-role="content-visibility-toggle"], [data-role="content-delete"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, disabled, reason);
+            });
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }
@@ -325,7 +329,16 @@ const ContentList = {
                         <span class="content-board-card-date">${item.crtDtm}</span>
                         <div class="content-board-card-actions">
                             <button class="btn btn-sm btn-light" data-role="content-detail" data-content-id="${item.id}" data-board-type="${item.boardType}">상세</button>
+                            <button class="btn btn-sm btn-outline-dark"
+                                    data-role="content-status-toggle"
+                                    data-content-id="${item.id}"
+                                    data-next-status="${item.status === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED'}">${item.status === 'PUBLISHED' ? '임시저장' : '게시'}</button>
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    data-role="content-visibility-toggle"
+                                    data-content-id="${item.id}"
+                                    data-next-public-yn="${item.publicYn === 'Y' ? 'N' : 'Y'}">${item.publicYn === 'Y' ? '비공개' : '공개'}</button>
                             <button class="btn btn-sm btn-outline-primary" data-role="content-edit" data-content-id="${item.id}" data-board-type="${item.boardType}">수정</button>
+                            <button class="btn btn-sm btn-outline-danger" data-role="content-delete" data-content-id="${item.id}">삭제</button>
                         </div>
                     </div>
                 </div>
@@ -547,6 +560,38 @@ const ContentList = {
                 location.href = `/admin/content/edit?id=${contentId}&boardType=${boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}`;
             });
         });
+        document.querySelectorAll('[data-role="content-status-toggle"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const contentId = this.normalizeNumericId(button.dataset.contentId);
+                const nextStatus = this.normalizeBulkStatusValue(button.dataset.nextStatus);
+                if (contentId == null || !nextStatus) {
+                    void CommonJS.alert('변경할 게시 상태 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.applyQuickOperate(contentId, { status: nextStatus });
+            });
+        });
+        document.querySelectorAll('[data-role="content-visibility-toggle"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const contentId = this.normalizeNumericId(button.dataset.contentId);
+                const nextPublicYn = this.normalizeBulkYnActionValue(button.dataset.nextPublicYn);
+                if (contentId == null || !nextPublicYn) {
+                    void CommonJS.alert('변경할 공개 상태 정보가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.applyQuickOperate(contentId, { publicYn: nextPublicYn });
+            });
+        });
+        document.querySelectorAll('[data-role="content-delete"]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const contentId = this.normalizeNumericId(button.dataset.contentId);
+                if (contentId == null) {
+                    void CommonJS.alert('삭제할 콘텐츠 번호가 올바르지 않습니다.', '알림', 'warning');
+                    return;
+                }
+                this.deleteSingleContent(contentId);
+            });
+        });
     },
 
     getCurrentLocation() {
@@ -686,6 +731,73 @@ const ContentList = {
         } finally {
             this.exportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
+        }
+    },
+
+    async applyQuickOperate(contentId, payload) {
+        if (this.actionInFlightIds.has(contentId)) {
+            return;
+        }
+        const settings = await CommonJS.fetchSystemSettings();
+        if (CommonJS.isCommunityWriteBlocked(settings)) {
+            await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 수정'), '알림', 'warning');
+            return;
+        }
+
+        this.actionInFlightIds.add(contentId);
+        try {
+            const response = await fetch(`/api/admin/content/${contentId}/operate`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            if (!response.ok) {
+                await CommonJS.alert(await CommonJS.extractErrorMessage(response, '콘텐츠 상태 변경에 실패했습니다.'), '오류', 'error');
+                return;
+            }
+
+            const result = await response.json();
+            this.state.lastBulkResultMessage = `콘텐츠 ${contentId}번에 빠른 운영 액션을 적용했습니다. 변경 ${result.updatedCount}건, 유지 ${result.unchangedCount}건입니다.`;
+            this.syncSelectionState();
+            this.getList();
+        } finally {
+            this.actionInFlightIds.delete(contentId);
+        }
+    },
+
+    async deleteSingleContent(contentId) {
+        if (this.actionInFlightIds.has(contentId)) {
+            return;
+        }
+        const settings = await CommonJS.fetchSystemSettings();
+        if (CommonJS.isCommunityWriteBlocked(settings)) {
+            await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(settings, '커뮤니티 삭제'), '알림', 'warning');
+            return;
+        }
+
+        const confirmed = await CommonJS.confirm(`콘텐츠 ${contentId}번을 삭제하시겠습니까?`);
+        if (!confirmed) {
+            return;
+        }
+
+        this.actionInFlightIds.add(contentId);
+        try {
+            const response = await fetch(`/api/admin/content/delete?id=${contentId}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) {
+                await CommonJS.alert(await CommonJS.extractErrorMessage(response, '콘텐츠 삭제에 실패했습니다.'), '오류', 'error');
+                return;
+            }
+
+            this.state.selectedIds.delete(contentId);
+            this.state.lastBulkResultMessage = `콘텐츠 ${contentId}번을 삭제했습니다.`;
+            this.syncSelectionState();
+            this.getList();
+        } finally {
+            this.actionInFlightIds.delete(contentId);
         }
     },
 

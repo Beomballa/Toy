@@ -973,6 +973,10 @@
     min-width: 1120px;
 }
 
+.main-content .table-responsive > .admin-table--member-list {
+    min-width: 960px;
+}
+
 .task-action-notice__actions {
     display: flex;
     flex-wrap: wrap;

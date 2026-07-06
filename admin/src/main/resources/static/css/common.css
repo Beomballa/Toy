@@ -1025,6 +1025,14 @@
     min-width: 1160px;
 }
 
+.main-content .table-responsive > .admin-table--front-display {
+    min-width: 1140px;
+}
+
+.main-content .table-responsive > .admin-table--dashboard-orders {
+    min-width: 920px;
+}
+
 .task-action-notice__actions {
     display: flex;
     flex-wrap: wrap;

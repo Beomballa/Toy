@@ -23,9 +23,9 @@
                 <li class="breadcrumb-item active">운영 작업</li>
             </ol>
         </nav>
-        <div class="page-title-wrapper d-flex justify-content-between align-items-center gap-3 flex-wrap">
+        <div class="page-title-wrapper">
             <h1 class="page-title mb-0">운영 작업</h1>
-            <div class="d-flex gap-2 flex-wrap">
+            <div class="admin-page-actions">
                 <button type="button" class="btn btn-outline-dark" id="btnExportTaskCsv"><i class="fas fa-download me-2"></i>CSV 내보내기</button>
                 <button type="button" class="btn btn-primary" id="btnNewTask"><i class="fas fa-plus me-2"></i>신규 작업 등록</button>
             </div>
@@ -58,7 +58,7 @@
 
     <div class="card animate-in admin-panel-card">
         <div class="card-body py-3">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="admin-search-meta-row">
                 <div class="small text-muted" id="taskStatsContextText">카드 기준을 계산하는 중입니다...</div>
                 <div class="small text-muted" id="taskStatsNotice" data-stats-context="">카드 기준을 계산하는 중입니다...</div>
             </div>
@@ -292,7 +292,7 @@
             </div>
         </div>
         <div class="card-body border-bottom py-2">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div class="admin-search-meta-row">
                 <div class="small text-muted" id="taskFilterMeta">적용 필터를 계산하는 중입니다...</div>
                 <div class="small text-muted" id="taskResultMeta">결과 메타를 계산하는 중입니다...</div>
                 <div class="small text-muted" id="taskPageMeta">페이지 메타를 계산하는 중입니다...</div>

@@ -40,6 +40,29 @@ const OrderDetail = {
             const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
             window.location.href = `/admin/orders/history?orderNo=${this.orderNo}&returnTo=${returnTo}${sourceQuery}`;
         });
+        document.getElementById('orderItemsTableBody')?.addEventListener('click', (event) => {
+            const detailButton = event.target.closest('[data-role="open-order-item-product"]');
+            if (detailButton) {
+                const productNo = this.normalizeOrderNo(detailButton.dataset.productNo);
+                if (!productNo) {
+                    void CommonJS.alert('유효한 상품 번호를 확인할 수 없습니다.', '알림', 'warning');
+                    return;
+                }
+                const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+                const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+                window.location.href = `/admin/products/get?no=${productNo}&returnTo=${returnTo}${sourceQuery}`;
+                return;
+            }
+
+            const imageButton = event.target.closest('[data-role="search-order-item-image"]');
+            if (imageButton) {
+                CommonJS.openImageSearch(
+                    imageButton.dataset.productName,
+                    imageButton.dataset.productNo,
+                    ''
+                );
+            }
+        });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -150,6 +173,21 @@ const OrderDetail = {
                 <td>
                     <div class="fw-bold text-dark">${item.productName}</div>
                     <div class="text-muted small">상품번호: ${item.productNo}</div>
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                data-role="open-order-item-product"
+                                data-product-no="${item.productNo}">
+                            상품 상세
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-secondary"
+                                data-role="search-order-item-image"
+                                data-product-name="${CommonJS.escapeHtml(item.productName || '')}"
+                                data-product-no="${item.productNo}">
+                            이미지 검색
+                        </button>
+                    </div>
                 </td>
                 <td class="text-center fw-medium">${item.count}개</td>
                 <td class="text-end pe-4 fw-bold text-primary">${item.orderPrice}</td>

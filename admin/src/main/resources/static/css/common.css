@@ -1000,6 +1000,72 @@
     margin-bottom: 0;
 }
 
+.admin-modal-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.admin-modal-form .mb-3 {
+    margin-bottom: 0 !important;
+}
+
+.admin-modal-form .modal-form-row,
+.admin-modal-form .row.g-3 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+}
+
+.admin-modal-form .modal-form-row > [class*="col-"],
+.admin-modal-form .row.g-3 > [class*="col-"] {
+    width: auto;
+    padding: 0;
+    min-width: 0;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-12,
+.admin-modal-form .row.g-3 > .col-12 {
+    grid-column: span 12;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-6,
+.admin-modal-form .row.g-3 > .col-md-6 {
+    grid-column: span 6;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-5,
+.admin-modal-form .row.g-3 > .col-md-5 {
+    grid-column: span 5;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-4,
+.admin-modal-form .row.g-3 > .col-md-4 {
+    grid-column: span 4;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-3,
+.admin-modal-form .row.g-3 > .col-md-3 {
+    grid-column: span 3;
+}
+
+.admin-modal-form .modal-form-row > .modal-form-col-2,
+.admin-modal-form .row.g-3 > .col-md-2 {
+    grid-column: span 2;
+}
+
+.admin-modal-form .modal-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.admin-modal-form .modal-form-actions-end {
+    display: flex;
+    align-items: flex-end;
+}
+
 .admin-form-actions {
     display: flex;
     justify-content: flex-end;

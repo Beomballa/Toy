@@ -397,28 +397,28 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="adminForm">
+                <form id="adminForm" class="admin-modal-form">
                     <input type="hidden" id="adminNo">
-                    <div class="mb-3">
+                    <div class="mb-3 admin-card-form-block">
                         <label class="form-label fw-bold">로그인 ID</label>
                         <input type="text" id="loginId" class="form-control" required>
                     </div>
-                    <div class="mb-3" id="passwordWrapper">
+                    <div class="mb-3 admin-card-form-block" id="passwordWrapper">
                         <label class="form-label fw-bold">비밀번호</label>
                         <input type="password" id="password" class="form-control">
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 admin-card-form-block">
                         <label class="form-label fw-bold">이름</label>
                         <input type="text" id="name" class="form-control" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 admin-card-form-block">
                         <label class="form-label fw-bold">권한</label>
                         <select id="role" class="form-select">
                             <option value="ROLE_ADMIN">일반 관리자</option>
                             <option value="ROLE_SUPER">최고 관리자</option>
                         </select>
                     </div>
-                    <div class="mb-3">
+                    <div class="mb-3 admin-card-form-block">
                         <label class="form-label fw-bold">상태</label>
                         <select id="status" class="form-select">
                             <option value="ACTIVE">활성</option>

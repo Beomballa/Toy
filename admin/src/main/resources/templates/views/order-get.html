@@ -100,8 +100,9 @@
             <div class="card animate-in admin-detail-card admin-form-card hidden-default" id="deliveryInputCard">
                 <div class="card-header admin-detail-side-header"><span class="card-title text-primary"><i class="fas fa-truck me-2"></i>배송 정보 등록</span></div>
                 <div class="card-body admin-detail-body">
-                    <form id="deliveryForm" class="row g-3">
-                        <div class="col-md-5">
+                    <form id="deliveryForm" class="admin-modal-form">
+                        <div class="row g-3">
+                        <div class="col-md-5 modal-form-field">
                             <label class="form-label small fw-bold">택배사</label>
                             <select id="deliveryCompany" class="form-select">
                                 <option value="">택배사 선택</option>
@@ -111,16 +112,17 @@
                                 <option value="우체국택배">우체국택배</option>
                             </select>
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-5 modal-form-field">
                             <label class="form-label small fw-bold">운송장 번호</label>
                             <input type="text" id="trackingNum" class="form-control" placeholder="숫자만 입력">
                         </div>
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-2 modal-form-actions-end">
                             <button type="submit" class="btn btn-primary w-100" id="btnSaveDelivery">발송</button>
                         </div>
-                        <div class="col-12">
+                        <div class="col-12 modal-form-field">
                             <label class="form-label small fw-bold">처리 사유</label>
                             <input type="text" id="orderActionReason" class="form-control" maxlength="200" placeholder="상태 변경 사유를 남길 수 있습니다.">
+                        </div>
                         </div>
                     </form>
                 </div>
@@ -133,12 +135,12 @@
                     <button type="button" class="btn btn-sm btn-success hidden-default" id="btnCompleteDelivery">배송 완료 처리</button>
                 </div>
                 <div class="card-body admin-detail-body">
-                    <div class="row">
-                        <div class="col-6">
+                    <div class="row g-3">
+                        <div class="col-md-6 admin-card-form-field">
                             <label class="admin-detail-side-label d-block">택배사</label>
                             <div id="displayCompany" class="fw-bold fs-5">-</div>
                         </div>
-                        <div class="col-6">
+                        <div class="col-md-6 admin-card-form-field">
                             <label class="admin-detail-side-label d-block">운송장 번호</label>
                             <div id="displayTracking" class="fw-bold fs-5 text-primary">-</div>
                         </div>

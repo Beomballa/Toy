@@ -881,6 +881,78 @@
     padding: 1.35rem;
 }
 
+/* Shared admin form rhythm inside card bodies */
+.admin-page-shell .card-body .row > [class*="col-"] {
+    min-width: 0;
+}
+
+.admin-page-shell .card-body .row.g-2 > [class*="col-"],
+.admin-page-shell .card-body .row.g-3 > [class*="col-"],
+.admin-page-shell .card-body .row.g-4 > [class*="col-"],
+.admin-page-shell .card-body .row.gy-2 > [class*="col-"],
+.admin-page-shell .card-body .row.gy-3 > [class*="col-"],
+.admin-page-shell .card-body .row.gy-4 > [class*="col-"] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.admin-page-shell .card-body .form-label,
+.admin-page-shell .card-body .admin-filter-label,
+.admin-page-shell .card-body .small.text-muted {
+    line-height: 1.45;
+}
+
+.admin-page-shell .card-body .form-label,
+.admin-page-shell .card-body .admin-filter-label {
+    margin-bottom: 0;
+}
+
+.admin-page-shell .card-body .form-control,
+.admin-page-shell .card-body .form-select,
+.admin-page-shell .card-body .form-control-sm,
+.admin-page-shell .card-body .form-select-sm,
+.admin-page-shell .card-body textarea.form-control,
+.admin-page-shell .card-body input[type="date"],
+.admin-page-shell .card-body input[type="datetime-local"],
+.admin-page-shell .card-body input[type="number"],
+.admin-page-shell .card-body input[type="text"],
+.admin-page-shell .card-body input[type="password"],
+.admin-page-shell .card-body input[type="email"] {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    align-self: stretch;
+}
+
+.admin-page-shell .card-body textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.admin-page-shell .card-body .input-group,
+.admin-page-shell .card-body .form-check,
+.admin-page-shell .card-body .form-switch {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-page-shell .card-body .form-check.form-switch {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.admin-page-shell .card-body .form-check.form-switch .form-check-input {
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
+}
+
+.admin-page-shell .card-body .form-check.form-switch .form-check-label {
+    margin: 0;
+    line-height: 1.5;
+}
+
 .admin-form-actions {
     display: flex;
     justify-content: flex-end;

@@ -7,6 +7,7 @@ const ProductDetail = {
     operationPolicy: null,
     isCloning: false,
     isDeleting: false,
+    isQuickOperating: false,
 
     async init(bootstrapProduct = null) {
         if (this.initialized) {
@@ -86,6 +87,20 @@ const ProductDetail = {
         if (btnCloneProduct) {
             btnCloneProduct.addEventListener('click', () => this.cloneProduct());
         }
+
+        document.getElementById('productQuickStatusMenu')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-role="product-quick-status"]');
+            if (!button) {
+                return;
+            }
+            this.quickOperateStatus(button.dataset.status);
+        });
+
+        document.getElementById('btnFrontDisplayManage')?.addEventListener('click', () => {
+            const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+            const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
+            window.location.href = `/admin/products/update?no=${this.productNo}&returnTo=${returnTo}${sourceQuery}`;
+        });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -96,8 +111,54 @@ const ProductDetail = {
             CommonJS.setButtonDisabled(document.getElementById('btnEdit'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnDelete'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnCloneProduct'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnProductQuickStatus'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnFrontDisplayManage'), disabled, reason);
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
+        }
+    },
+
+    async quickOperateStatus(status) {
+        if (this.isQuickOperating) {
+            return;
+        }
+        const normalizedStatus = this.normalizeProductStatusCode(status);
+        if (!this.productData || !this.isValidProductNo(this.productNo)) {
+            await CommonJS.alert('상품 상세를 다시 불러온 후 시도해주세요.', '알림', 'warning');
+            return;
+        }
+        if (!normalizedStatus) {
+            await CommonJS.alert('변경할 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('상품 상태 변경'), '알림', 'warning');
+            return;
+        }
+        if (normalizedStatus === this.normalizeProductStatusCode(this.productData.statusCode)) {
+            await CommonJS.alert('이미 같은 상태입니다.', '알림', 'info');
+            return;
+        }
+
+        try {
+            this.isQuickOperating = true;
+            this.setBusyButton(document.getElementById('btnProductQuickStatus'), true, '처리 중...');
+            const response = await fetch(`/api/admin/product/${this.productNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: normalizedStatus })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '상품 상태 변경에 실패했습니다.'));
+            }
+            await this.loadProductDetail();
+            await CommonJS.alert('상품 상태가 변경되었습니다.', '성공', 'success');
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isQuickOperating = false;
+            this.setBusyButton(document.getElementById('btnProductQuickStatus'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 

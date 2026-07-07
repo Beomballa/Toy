@@ -51,6 +51,19 @@
                     <button type="button" class="btn btn-secondary" id="btnCloneProduct">
                         <i class="fas fa-copy me-2"></i>복제
                     </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-dark dropdown-toggle" id="btnProductQuickStatus" data-bs-toggle="dropdown" aria-expanded="false">
+                            상태 변경
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="productQuickStatusMenu">
+                            <li><button type="button" class="dropdown-item" data-role="product-quick-status" data-status="ACTIVE">판매중</button></li>
+                            <li><button type="button" class="dropdown-item" data-role="product-quick-status" data-status="HIDDEN">숨김</button></li>
+                            <li><button type="button" class="dropdown-item" data-role="product-quick-status" data-status="SOLD_OUT">품절</button></li>
+                        </ul>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary" id="btnFrontDisplayManage">
+                        <i class="fas fa-wand-magic-sparkles me-2"></i>전시 관리
+                    </button>
                     <button type="button" class="btn btn-primary" id="btnEdit">
                         <i class="fas fa-edit me-2"></i>수정
                     </button>

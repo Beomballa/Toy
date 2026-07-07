@@ -442,7 +442,7 @@
                 <h5 class="modal-title fw-bold">설정 변경 상세</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="systemSettingHistoryDetailBody">
+            <div class="modal-body admin-modal-form" id="systemSettingHistoryDetailBody">
                 <div class="product-loading-state py-4">
                     <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
                     <strong>설정 변경 상세를 불러오는 중입니다.</strong>
@@ -1182,50 +1182,50 @@
                 }
                 const data = await res.json();
                 document.getElementById('systemSettingHistoryDetailBody').innerHTML = `
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <div class="small text-muted">이력 번호</div>
-                            <div class="fw-bold">${data.historyNo}</div>
+                    <div class="admin-modal-detail-grid">
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">이력 번호</div>
+                            <div class="admin-modal-detail-value">${data.historyNo}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">변경 시각</div>
-                            <div class="fw-bold">${data.changedAt || '-'}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">변경 시각</div>
+                            <div class="admin-modal-detail-value">${data.changedAt || '-'}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">설정 항목</div>
-                            <div class="fw-bold">${data.settingName}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">설정 항목</div>
+                            <div class="admin-modal-detail-value">${data.settingName}</div>
                             <div class="text-muted small">${data.settingKey}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">작업자</div>
-                            <div class="fw-bold">${data.changedAdminName}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">작업자</div>
+                            <div class="admin-modal-detail-value">${data.changedAdminName}</div>
                             <div class="text-muted small">${this.formatAdminNo(data.changedAdminNo)}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">변경 전</div>
-                            <div class="fw-bold">${data.beforeValueLabel}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">변경 전</div>
+                            <div class="admin-modal-detail-value">${data.beforeValueLabel}</div>
                             <div class="text-muted small">raw: ${data.beforeValue ?? '-'}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">변경 후</div>
-                            <div class="fw-bold">${data.afterValueLabel}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">변경 후</div>
+                            <div class="admin-modal-detail-value">${data.afterValueLabel}</div>
                             <div class="text-muted small">raw: ${data.afterValue ?? '-'}</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="small text-muted">현재 적용값</div>
-                            <div class="fw-bold">${data.currentValueLabel}</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                            <div class="admin-modal-detail-label">현재 적용값</div>
+                            <div class="admin-modal-detail-value">${data.currentValueLabel}</div>
                             <div class="text-muted small">raw: ${data.currentValue ?? '-'}</div>
                             <div class="small mt-1 ${data.currentValueMatched ? 'text-success' : 'text-warning'}">
                                 ${data.currentValueMatched ? '이 이력이 현재 설정에 그대로 반영되어 있습니다.' : '이 이력 이후 더 최근 설정 변경이 반영되었습니다.'}
                             </div>
                         </div>
-                        <div class="col-md-12">
-                            <div class="small text-muted">변경 요약</div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
+                            <div class="admin-modal-detail-label">변경 요약</div>
                             <div class="border rounded p-3 bg-light">${data.changeSummary}</div>
                         </div>
-                        <div class="col-md-12">
-                            <div class="small text-muted">IP 주소</div>
-                            <div><code>${data.changedIpAddress || '-'}</code></div>
+                        <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
+                            <div class="admin-modal-detail-label">IP 주소</div>
+                            <div class="admin-modal-detail-value"><code>${data.changedIpAddress || '-'}</code></div>
                         </div>
                     </div>
                 `;

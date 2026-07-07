@@ -1000,6 +1000,40 @@
     margin-bottom: 0;
 }
 
+.admin-modal-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.admin-modal-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+}
+
+.admin-modal-detail-item--span-12 { grid-column: span 12; }
+.admin-modal-detail-item--span-6 { grid-column: span 6; }
+
+.admin-modal-detail-label {
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.admin-modal-detail-value {
+    min-width: 0;
+    color: #0f172a;
+    font-weight: 700;
+    line-height: 1.5;
+}
+
+.admin-modal-detail-value code {
+    font-weight: 600;
+}
+
 .admin-modal-form {
     display: grid;
     gap: 1rem;
@@ -1312,6 +1346,18 @@
     gap: 1rem;
 }
 
+.admin-search-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    align-self: stretch;
+    justify-content: space-between;
+}
+
+.admin-search-side .admin-filter-actions {
+    justify-content: flex-start;
+}
+
 .admin-search-section {
     padding: 1rem 1.05rem;
     border: 1px solid #ececec;
@@ -1428,6 +1474,10 @@
     grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 0.9fr) minmax(0, 1.5fr);
     gap: 1rem;
     align-items: start;
+}
+
+.admin-selection-grid .admin-filter-field {
+    gap: 0.75rem;
 }
 
 .admin-selection-grid--task {

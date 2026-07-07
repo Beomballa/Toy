@@ -151,7 +151,7 @@ body {
 }
 
 /* 메인 콘텐츠 */
-.main-content {
+.main-content:not(.admin-page-shell) {
     margin-left: 272px;
     padding: 2.1rem 2.4rem 3.2rem;
     min-height: 100vh;
@@ -159,26 +159,26 @@ body {
 }
 
 /* 헤더 */
-.page-header {
+.main-content:not(.admin-page-shell) .page-header {
     margin-bottom: 1.75rem;
 }
 
-.breadcrumb {
+.main-content:not(.admin-page-shell) .breadcrumb {
     background: none;
     padding: 0;
     margin-bottom: 1rem;
     font-size: 0.875rem;
 }
 
-.breadcrumb-item {
+.main-content:not(.admin-page-shell) .breadcrumb-item {
     color: var(--text-tertiary);
 }
 
-.breadcrumb-item.active {
+.main-content:not(.admin-page-shell) .breadcrumb-item.active {
     color: var(--text-secondary);
 }
 
-.page-title-wrapper {
+.main-content:not(.admin-page-shell) .page-title-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -186,7 +186,7 @@ body {
     flex-wrap: wrap;
 }
 
-.page-title {
+.main-content:not(.admin-page-shell) .page-title {
     font-size: 1.92rem;
     font-weight: 800;
     color: var(--text-primary);
@@ -281,7 +281,7 @@ body {
 .stat-change.negative { color: var(--danger-color); }
 
 /* 카드 */
-.card {
+.main-content:not(.admin-page-shell) .card {
     background: var(--bg-white);
     border-radius: var(--radius-lg);
     border: 1px solid #ececec;
@@ -290,7 +290,7 @@ body {
     overflow: hidden;
 }
 
-.card-header {
+.main-content:not(.admin-page-shell) .card-header {
     background: var(--bg-white);
     border-bottom: 1px solid #f0f0f0;
     padding: 1.1rem 1.5rem;
@@ -299,20 +299,20 @@ body {
     align-items: center;
 }
 
-.card-title {
+.main-content:not(.admin-page-shell) .card-title {
     font-size: 1.125rem;
     font-weight: 700;
     color: var(--text-primary);
     margin: 0;
 }
 
-.card-subtitle {
+.main-content:not(.admin-page-shell) .card-subtitle {
     font-size: 0.875rem;
     color: var(--text-tertiary);
     margin-left: 0.5rem;
 }
 
-.card-body {
+.main-content:not(.admin-page-shell) .card-body {
     padding: 1.5rem;
 }
 
@@ -460,12 +460,12 @@ body {
     overflow-x: auto;
 }
 
-.table {
+.main-content:not(.admin-page-shell) .table {
     width: 100%;
     margin: 0;
 }
 
-.table thead th {
+.main-content:not(.admin-page-shell) .table thead th {
     background: #fbfbfb;
     color: #7a7a7a;
     font-weight: 700;
@@ -477,18 +477,18 @@ body {
     white-space: nowrap;
 }
 
-.table tbody td {
+.main-content:not(.admin-page-shell) .table tbody td {
     padding: 1rem 1.25rem;
     vertical-align: middle;
     border-bottom: 1px solid #f3f3f3;
     color: var(--text-primary);
 }
 
-.table tbody tr {
+.main-content:not(.admin-page-shell) .table tbody tr {
     transition: all 0.2s ease;
 }
 
-.table tbody tr:hover {
+.main-content:not(.admin-page-shell) .table tbody tr:hover {
     background: #fcfcfc;
 }
 
@@ -570,7 +570,7 @@ body {
         transform: translateX(-100%);
     }
 
-    .main-content {
+    .main-content:not(.admin-page-shell) {
         margin-left: 0;
         max-width: 100%;
         width: 100%;

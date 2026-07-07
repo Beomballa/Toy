@@ -59,6 +59,7 @@ const ContentDetail = {
         document.getElementById('btnDeleteContent')?.addEventListener('click', () => {
             this.deleteContent();
         });
+        document.getElementById('btnOpenContentProduct')?.addEventListener('click', () => this.openLinkedProduct());
         document.getElementById('btnToggleContentStatus')?.addEventListener('click', () => this.toggleContentStatus());
         document.getElementById('btnToggleContentPublic')?.addEventListener('click', () => this.toggleContentPublic());
         document.getElementById('btnToggleContentPinned')?.addEventListener('click', () => this.toggleContentPinned());
@@ -70,6 +71,7 @@ const ContentDetail = {
             const disabled = CommonJS.isCommunityWriteBlocked(this.operationPolicy);
             const reason = CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 수정 및 삭제');
 
+            CommonJS.setButtonDisabled(document.getElementById('btnOpenContentProduct'), false);
             CommonJS.setButtonDisabled(document.getElementById('btnToggleContentStatus'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnToggleContentPublic'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnToggleContentPinned'), disabled, reason);
@@ -115,12 +117,24 @@ const ContentDetail = {
         this.setText('contentCreatedMeta', `등록 ${data.crtDtm || '-'}`);
         this.setText('contentUpdatedMeta', `수정 ${data.uptDtm || '-'}`);
         this.setText('contentViewsMeta', `조회 ${(data.viewCnt ?? 0).toLocaleString()}회`);
+        this.setButtonText('btnOpenContentProduct', data.productNo ? `상품 #${data.productNo}` : '연결 상품 없음');
         const nextStatusLabel = data.status === 'PUBLISHED' ? '임시저장' : '게시';
         const nextPublicLabel = data.publicYn === 'Y' ? '비공개' : '공개';
         const nextPinnedLabel = data.pinnedYn === 'Y' ? '고정 해제' : '고정';
         this.setButtonText('btnToggleContentStatus', nextStatusLabel);
         this.setButtonText('btnToggleContentPublic', nextPublicLabel);
         this.setButtonText('btnToggleContentPinned', nextPinnedLabel);
+    },
+
+    async openLinkedProduct() {
+        const productNo = this.normalizeOptionalProductNo(this.state.data?.productNo);
+        if (!productNo) {
+            await CommonJS.alert('연결된 상품이 없습니다.', '알림', 'info');
+            return;
+        }
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        const sourceQuery = this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : '';
+        window.location.href = `/admin/products/get?no=${productNo}&returnTo=${returnTo}${sourceQuery}`;
     },
 
     async toggleContentStatus() {
@@ -294,5 +308,11 @@ const ContentDetail = {
 
     normalizeContentId(id) {
         return this.isValidContentId(id) ? String(Number(id)) : null;
+    },
+
+    normalizeOptionalProductNo(productNo) {
+        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0
+            ? String(Number(productNo))
+            : null;
     }
 };

@@ -219,30 +219,30 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="bannerForm">
+                <form id="bannerForm" class="admin-modal-form">
                     <input type="hidden" id="bannerNo">
-                    <div class="row">
-                        <div class="col-md-12 mb-3">
+                    <div class="row g-3">
+                        <div class="col-12 modal-form-field">
                             <label class="form-label fw-bold">배너 제목</label>
                             <input type="text" id="title" class="form-control" placeholder="관리용 제목을 입력하세요" required>
                         </div>
-                        <div class="col-md-12 mb-3">
+                        <div class="col-12 modal-form-field">
                             <label class="form-label fw-bold">이미지 URL</label>
                             <input type="text" id="imageUrl" class="form-control" placeholder="https://..." required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">시작 일시</label>
                             <input type="datetime-local" id="startDtm" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">종료 일시</label>
                             <input type="datetime-local" id="endDtm" class="form-control" required>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">정렬 순서</label>
                             <input type="number" id="sortOrder" class="form-control" value="0">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">사용 여부</label>
                             <select id="isActive" class="form-select">
                                 <option value="Y">사용중</option>

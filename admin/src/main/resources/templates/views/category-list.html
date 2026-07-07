@@ -167,11 +167,11 @@
         <div class="modal-content">
             <div class="modal-header"><h5 class="modal-title fw-bold" id="categoryModalTitle">카테고리 관리</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
-                <form id="categoryForm">
+                <form id="categoryForm" class="admin-modal-form">
                     <input type="hidden" id="categoryNo"><input type="hidden" id="parentNo"><input type="hidden" id="depth">
-                    <div class="mb-3 hidden-default" id="parentNameWrapper"><label class="form-label text-muted small">상위 카테고리</label><div id="parentDisplay" class="fw-bold"></div></div>
-                    <div class="mb-3"><label class="form-label fw-bold">카테고리명</label><input type="text" id="categoryName" class="form-control" required></div>
-                    <div class="mb-3">
+                    <div class="admin-card-form-block hidden-default" id="parentNameWrapper"><label class="form-label text-muted small">상위 카테고리</label><div id="parentDisplay" class="fw-bold"></div></div>
+                    <div class="admin-card-form-block"><label class="form-label fw-bold">카테고리명</label><input type="text" id="categoryName" class="form-control" required></div>
+                    <div class="admin-card-form-block">
                         <label class="form-label fw-bold">사용 여부</label>
                         <select id="isCategoryActive" class="form-select">
                             <option value="Y">사용중</option>

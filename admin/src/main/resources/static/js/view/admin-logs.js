@@ -314,12 +314,32 @@ const AdminLogPage = {
             }
             const data = await res.json();
             document.getElementById('logDetailBody').innerHTML = `
-                <div class="mb-2"><strong>로그 번호</strong> ${data.logNo}</div>
-                <div class="mb-2"><strong>관리자</strong> ${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
-                <div class="mb-2"><strong>작업 종류</strong> ${data.actionType}</div>
-                <div class="mb-2"><strong>대상</strong> ${data.targetPath ? `<a class="text-decoration-none" href="${this.buildTargetPath(data.targetPath)}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
-                <div class="mb-2"><strong>IP 주소</strong> ${data.ipAddress}</div>
-                <div><strong>작업 일시</strong> ${data.actionDtm}</div>
+                <div class="admin-modal-detail-grid">
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                        <div class="admin-modal-detail-label">로그 번호</div>
+                        <div class="admin-modal-detail-value">${data.logNo}</div>
+                    </div>
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                        <div class="admin-modal-detail-label">작업 일시</div>
+                        <div class="admin-modal-detail-value">${data.actionDtm || '-'}</div>
+                    </div>
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                        <div class="admin-modal-detail-label">관리자</div>
+                        <div class="admin-modal-detail-value">${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
+                    </div>
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
+                        <div class="admin-modal-detail-label">작업 종류</div>
+                        <div class="admin-modal-detail-value">${data.actionType || '-'}</div>
+                    </div>
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
+                        <div class="admin-modal-detail-label">대상</div>
+                        <div class="admin-modal-detail-value">${data.targetPath ? `<a class="text-decoration-none" href="${this.buildTargetPath(data.targetPath)}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                    </div>
+                    <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
+                        <div class="admin-modal-detail-label">IP 주소</div>
+                        <div class="admin-modal-detail-value"><code>${data.ipAddress || '-'}</code></div>
+                    </div>
+                </div>
             `;
             this.state.logNo = String(logNo);
             this.highlightLogRow(logNo);

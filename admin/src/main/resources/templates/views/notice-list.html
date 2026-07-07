@@ -260,33 +260,33 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="noticeForm">
+                <form id="noticeForm" class="admin-modal-form">
                     <input type="hidden" id="noticeNo">
-                    <div class="mb-3">
+                    <div class="admin-card-form-block">
                         <label class="form-label fw-bold">공지 제목</label>
                         <input type="text" id="noticeTitle" class="form-control" maxlength="200" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="admin-card-form-block">
                         <label class="form-label fw-bold">공지 내용</label>
                         <textarea id="noticeContent" class="form-control" rows="6" maxlength="5000" required></textarea>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
+                    <div class="row g-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">시작 일시</label>
                             <input type="datetime-local" id="noticeStartDtm" class="form-control">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">종료 일시</label>
                             <input type="datetime-local" id="noticeEndDtm" class="form-control">
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">상태</label>
                             <select id="noticeIsActive" class="form-select">
                                 <option value="Y">활성</option>
                                 <option value="N">비활성</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6 modal-form-field">
                             <label class="form-label fw-bold">고정 여부</label>
                             <select id="noticeIsPinned" class="form-select">
                                 <option value="N">일반</option>

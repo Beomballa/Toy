@@ -61,22 +61,22 @@
                         </div>
                         <span id="saveStatus" class="community-editor-status"></span>
                     </div>
-                    <div class="card-body community-editor-body">
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-4">
+                    <div class="card-body community-editor-body admin-card-form-grid">
+                        <div class="row g-3 mb-4 admin-card-form-row">
+                            <div class="col-md-4 admin-card-form-field">
                                 <label for="status" class="community-editor-label">게시 상태</label>
                                 <select id="status" class="form-select">
                                     <option th:each="status : ${publishStatuses}" th:value="${status}" th:text="${status}"></option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 admin-card-form-field">
                                 <label for="publicYn" class="community-editor-label">공개 여부</label>
                                 <select id="publicYn" class="form-select">
                                     <option value="Y">공개</option>
                                     <option value="N">비공개</option>
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-4 admin-card-form-field">
                                 <label for="pinnedYn" class="community-editor-label">고정글 여부</label>
                                 <select id="pinnedYn" class="form-select">
                                     <option value="N">일반글</option>
@@ -84,17 +84,17 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="community-editor-field">
+                        <div class="community-editor-field admin-card-form-block">
                             <label for="title" class="community-editor-label">제목</label>
                             <input type="text" id="title" class="form-control notion-title community-editor-title-input" placeholder="제목을 입력하세요">
                         </div>
-                        <div class="community-editor-field mt-3">
+                        <div class="community-editor-field mt-3 admin-card-form-block">
                             <label for="productNo" class="community-editor-label">연결 상품번호</label>
                             <input type="number" id="productNo" class="form-control" min="1" step="1" placeholder="연결할 상품번호가 있으면 입력하세요">
                             <div class="form-text">스타일 피드, 토론방처럼 상품과 연결되는 게시글에만 입력합니다.</div>
                         </div>
                         <div class="community-editor-divider"></div>
-                        <div class="community-editor-field">
+                        <div class="community-editor-field admin-card-form-block">
                             <label for="content" class="community-editor-label">본문</label>
                             <textarea id="content" class="form-control notion-content community-editor-content-input" rows="15" placeholder="내용을 입력하세요..."></textarea>
                         </div>

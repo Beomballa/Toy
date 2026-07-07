@@ -40,7 +40,7 @@
                     </div>
                     <button class="btn btn-sm btn-dark" id="btnSaveSystemSettings"><i class="fas fa-save me-1"></i>설정 저장</button>
                 </div>
-                <div class="card-body">
+                <div class="card-body admin-card-form-grid admin-card-form-grid--compact">
                     <div class="admin-settings-grid">
                         <section class="admin-settings-control">
                             <div class="admin-settings-control__header">
@@ -77,7 +77,9 @@
                                 <label class="form-label fw-bold mb-0" for="lowStockDefaultThreshold">기본 저재고 임계값</label>
                                 <div class="admin-settings-control__hint">상품 관리, 주문 관리 등에서 공통으로 참조하는 기본 재고 경고 기준입니다.</div>
                             </div>
-                            <input type="number" min="1" id="lowStockDefaultThreshold" class="form-control" placeholder="100">
+                            <div class="admin-card-form-block">
+                                <input type="number" min="1" id="lowStockDefaultThreshold" class="form-control" placeholder="100">
+                            </div>
                         </section>
                     </div>
                     <div class="admin-search-meta-row mt-3">

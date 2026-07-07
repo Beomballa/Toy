@@ -953,6 +953,53 @@
     line-height: 1.5;
 }
 
+.admin-card-form-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.admin-card-form-grid--compact {
+    gap: 0.85rem;
+}
+
+.admin-card-form-row {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-card-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.admin-card-form-field--span-12 { grid-column: span 12; }
+.admin-card-form-field--span-8 { grid-column: span 8; }
+.admin-card-form-field--span-6 { grid-column: span 6; }
+.admin-card-form-field--span-4 { grid-column: span 4; }
+.admin-card-form-field--span-3 { grid-column: span 3; }
+
+.admin-card-form-field .form-text,
+.admin-card-form-grid .form-text {
+    margin-top: 0;
+    line-height: 1.45;
+}
+
+.admin-card-form-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.admin-card-form-block > .form-label,
+.admin-card-form-block > .admin-filter-label {
+    margin-bottom: 0;
+}
+
 .admin-form-actions {
     display: flex;
     justify-content: flex-end;

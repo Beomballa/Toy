@@ -5,6 +5,8 @@ const TaskDetailPage = {
     isSavingDetail: false,
     isTogglingStatus: false,
     isTogglingPinned: false,
+    isCyclingPriority: false,
+    isClearingAssignee: false,
     isDeletingTask: false,
     isSavingComment: false,
     isDeletingComment: false,
@@ -47,6 +49,8 @@ const TaskDetailPage = {
         });
         document.getElementById('btnTaskDetailEdit')?.addEventListener('click', () => this.openEditModal());
         document.getElementById('btnTaskDetailSave')?.addEventListener('click', () => this.saveDetail());
+        document.getElementById('btnTaskDetailCyclePriority')?.addEventListener('click', () => this.cyclePriority());
+        document.getElementById('btnTaskDetailClearAssignee')?.addEventListener('click', () => this.clearAssignee());
         document.getElementById('btnTaskDetailTogglePinned')?.addEventListener('click', () => this.togglePinned());
         document.getElementById('btnTaskDetailToggleStatus')?.addEventListener('click', () => this.toggleStatus());
         document.getElementById('btnTaskDetailDelete')?.addEventListener('click', () => this.deleteTask());
@@ -93,6 +97,8 @@ const TaskDetailPage = {
             const disabled = CommonJS.isAdminWriteBlocked(this.operationPolicy);
             const reason = CommonJS.getAdminWriteBlockedReason('운영 작업 수정 및 삭제');
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailEdit'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailCyclePriority'), disabled, reason);
+            CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailClearAssignee'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailTogglePinned'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailToggleStatus'), disabled, reason);
             CommonJS.setButtonDisabled(document.getElementById('btnTaskDetailDelete'), disabled, reason);
@@ -141,6 +147,8 @@ const TaskDetailPage = {
         document.getElementById('btnTaskDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
         document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
         document.getElementById('btnTaskDetailLogsMore').href = this.buildLogPathFromBase(data.activityLogPath);
+        document.getElementById('btnTaskDetailCyclePriority').textContent = `${this.resolveNextPriorityLabel(data.priority || 'MEDIUM')}로 변경`;
+        document.getElementById('btnTaskDetailClearAssignee').textContent = data.assigneeAdminNo ? '담당 해제' : '담당 없음';
         document.getElementById('btnTaskDetailTogglePinned').textContent = data.isPinned === 'Y' ? '고정 해제' : '고정';
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
         this.renderRecentHistories(data.recentHistories || []);
@@ -314,6 +322,81 @@ const TaskDetailPage = {
         } finally {
             this.isTogglingStatus = false;
             this.setBusyButton(document.getElementById('btnTaskDetailToggleStatus'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    async cyclePriority() {
+        if (this.isCyclingPriority) return;
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 우선순위 변경'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail || !this.isValidTaskNo(detail.taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        const nextPriority = this.resolveNextPriority(detail.priority || 'MEDIUM');
+        try {
+            this.isCyclingPriority = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailCyclePriority'), true, '처리 중...');
+            const response = await fetch(`/api/admin/settings/tasks/${detail.taskNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ priority: nextPriority })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 우선순위를 변경하지 못했습니다.'));
+            }
+            this.setLastActionMeta('cycle-priority', 'success', '우선순위 변경');
+            await this.loadDetail();
+            await CommonJS.alert('운영 작업 우선순위가 변경되었습니다.', '성공', 'success');
+        } catch (error) {
+            this.setLastActionMeta('cycle-priority', 'error', '우선순위 변경');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isCyclingPriority = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailCyclePriority'), false);
+            await this.applyOperationPolicy(this.operationPolicy);
+        }
+    },
+
+    async clearAssignee() {
+        if (this.isClearingAssignee) return;
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 작업 담당 해제'), '알림', 'warning');
+            return;
+        }
+        const detail = this.state.currentDetail;
+        if (!detail || !this.isValidTaskNo(detail.taskNo)) {
+            await CommonJS.alert('유효한 운영 작업 정보를 확인할 수 없습니다.', '알림', 'warning');
+            return;
+        }
+        if (!detail.assigneeAdminNo) {
+            await CommonJS.alert('이미 담당자가 해제되어 있습니다.', '알림', 'info');
+            return;
+        }
+        try {
+            this.isClearingAssignee = true;
+            this.setBusyButton(document.getElementById('btnTaskDetailClearAssignee'), true, '처리 중...');
+            const response = await fetch(`/api/admin/settings/tasks/${detail.taskNo}/quick-operate`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assigneeMode: 'CLEAR' })
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 담당자를 해제하지 못했습니다.'));
+            }
+            this.setLastActionMeta('clear-assignee', 'success', '담당 해제');
+            await this.loadDetail();
+            await CommonJS.alert('운영 작업 담당자가 해제되었습니다.', '성공', 'success');
+        } catch (error) {
+            this.setLastActionMeta('clear-assignee', 'error', '담당 해제');
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.isClearingAssignee = false;
+            this.setBusyButton(document.getElementById('btnTaskDetailClearAssignee'), false);
             await this.applyOperationPolicy(this.operationPolicy);
         }
     },
@@ -922,6 +1005,10 @@ const TaskDetailPage = {
         const templates = {
             'save-detail:success': '운영 작업 수정 내용을 반영했습니다.',
             'save-detail:error': '운영 작업 수정에 실패했습니다.',
+            'cycle-priority:success': '운영 작업 우선순위를 변경했습니다.',
+            'cycle-priority:error': '운영 작업 우선순위 변경에 실패했습니다.',
+            'clear-assignee:success': '운영 작업 담당자를 해제했습니다.',
+            'clear-assignee:error': '운영 작업 담당자 해제에 실패했습니다.',
             'toggle-pinned:success': '운영 작업 고정 상태를 변경했습니다.',
             'toggle-pinned:error': '운영 작업 고정 상태 변경에 실패했습니다.',
             'toggle-status:success': '운영 작업 상태를 변경했습니다.',
@@ -937,6 +1024,8 @@ const TaskDetailPage = {
         };
         const variants = {
             'save-detail:success': 'alert-success',
+            'cycle-priority:success': 'alert-primary',
+            'clear-assignee:success': 'alert-warning',
             'toggle-pinned:success': 'alert-warning',
             'toggle-status:success': 'alert-primary',
             'save-comment:success': 'alert-success',
@@ -944,6 +1033,8 @@ const TaskDetailPage = {
             'delete-comment:success': 'alert-warning',
             'apply-recommendation:success': 'alert-primary',
             'save-detail:error': 'alert-danger',
+            'cycle-priority:error': 'alert-danger',
+            'clear-assignee:error': 'alert-danger',
             'toggle-pinned:error': 'alert-danger',
             'toggle-status:error': 'alert-danger',
             'save-comment:error': 'alert-danger',
@@ -968,6 +1059,19 @@ const TaskDetailPage = {
             logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${logPath}">활동 로그</a>` : ''
             ].join('')
         });
+    },
+
+    resolveNextPriority(priority) {
+        if (priority === 'HIGH') return 'MEDIUM';
+        if (priority === 'MEDIUM') return 'LOW';
+        return 'HIGH';
+    },
+
+    resolveNextPriorityLabel(priority) {
+        const nextPriority = this.resolveNextPriority(priority);
+        if (nextPriority === 'HIGH') return '높음';
+        if (nextPriority === 'MEDIUM') return '보통';
+        return '낮음';
     },
 
     hideLastActionNotice(clearMeta = false) {

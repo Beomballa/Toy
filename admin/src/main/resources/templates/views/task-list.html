@@ -361,18 +361,18 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="taskForm">
+                <form id="taskForm" class="admin-modal-form">
                     <input type="hidden" id="taskNo">
-                    <div class="mb-3">
+                    <div class="admin-card-form-block">
                         <label class="form-label fw-bold">작업 제목</label>
                         <input type="text" id="taskTitle" class="form-control" maxlength="200" required>
                     </div>
-                    <div class="mb-3">
+                    <div class="admin-card-form-block">
                         <label class="form-label fw-bold">작업 설명</label>
                         <textarea id="taskDescription" class="form-control" rows="5" maxlength="5000"></textarea>
                     </div>
-                    <div class="row">
-                        <div class="col-md-3 mb-3">
+                    <div class="row g-3">
+                        <div class="col-md-3 modal-form-field">
                             <label class="form-label fw-bold">상태</label>
                             <select id="taskStatus" class="form-select">
                                 <option value="TODO">대기</option>
@@ -381,7 +381,7 @@
                                 <option value="HOLD">보류</option>
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 modal-form-field">
                             <label class="form-label fw-bold">우선순위</label>
                             <select id="taskPriority" class="form-select">
                                 <option value="HIGH">높음</option>
@@ -389,17 +389,17 @@
                                 <option value="LOW">낮음</option>
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 modal-form-field">
                             <label class="form-label fw-bold">담당자</label>
                             <select id="taskAssignee" class="form-select">
                                 <option value="">미지정</option>
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 modal-form-field">
                             <label class="form-label fw-bold">기한</label>
                             <input type="date" id="taskDueDate" class="form-control">
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-3 modal-form-field">
                             <label class="form-label fw-bold">고정 여부</label>
                             <select id="taskIsPinned" class="form-select">
                                 <option value="N">일반</option>

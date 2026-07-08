@@ -1,4 +1,5 @@
 (function () {
+    const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -39,6 +40,8 @@
         catalogCountText: document.getElementById("catalogCountText"),
         catalogSummaryText: document.getElementById("catalogSummaryText"),
         featuredGrid: document.getElementById("featuredGrid"),
+        recentViewedSection: document.getElementById("recentViewedSection"),
+        recentViewedGrid: document.getElementById("recentViewedGrid"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
         todaySignalText: document.getElementById("todaySignalText"),
@@ -61,6 +64,7 @@
         bindEvents();
         renderHeroMetrics();
         renderFeatured();
+        renderRecentViewed();
         renderSignals();
         renderCatalog();
     }
@@ -438,6 +442,7 @@
         populateFilters();
         renderHeroMetrics();
         renderFeatured();
+        renderRecentViewed();
         renderSignals();
         renderCatalog();
     }
@@ -543,6 +548,39 @@
 
     function detailPageUrl(productId) {
         return `/front/products/${productId}${window.location.search || ""}`;
+    }
+
+    function renderRecentViewed() {
+        if (!elements.recentViewedSection || !elements.recentViewedGrid) {
+            return;
+        }
+        const recentProducts = readRecentProducts().slice(0, 3);
+        if (!recentProducts.length) {
+            elements.recentViewedSection.hidden = true;
+            return;
+        }
+        elements.recentViewedSection.hidden = false;
+        elements.recentViewedGrid.innerHTML = recentProducts.map((product) => `
+            <a class="detail-related-card" href="${detailPageUrl(product.id)}">
+                <span class="detail-related-card__brand">${product.brand || "-"}</span>
+                <strong>${product.headline || product.name || "-"}</strong>
+                <p>${product.name || "-"} · ${product.model || "-"}</p>
+                <div class="detail-related-card__meta">
+                    <span>${product.priceLabel || formatPrice(product.price)}</span>
+                    <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
+                    <span>최근 확인</span>
+                </div>
+            </a>
+        `).join("");
+    }
+
+    function readRecentProducts() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(RECENT_VIEWED_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed.filter((item) => item?.id) : [];
+        } catch (error) {
+            return [];
+        }
     }
 
     function bindProductButtons(container) {

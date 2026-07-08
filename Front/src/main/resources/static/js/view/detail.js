@@ -1,6 +1,8 @@
 (function () {
     const bootstrap = window.frontProductDetailBootstrap || {};
     const productId = Number(bootstrap.productId || 0);
+    const RECENT_VIEWED_KEY = "front-recent-viewed-products";
+    const RECENT_VIEWED_LIMIT = 6;
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -12,6 +14,8 @@
         detailOverviewGrid: document.getElementById("detailOverviewGrid"),
         detailOptionGrid: document.getElementById("detailOptionGrid"),
         detailRelatedGrid: document.getElementById("detailRelatedGrid"),
+        detailRecentSection: document.getElementById("detailRecentSection"),
+        detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
         detailCatalogLink: document.getElementById("detailCatalogLink")
@@ -151,6 +155,59 @@
         return `/front/products/${nextProductId}${window.location.search || ""}`;
     }
 
+    function saveRecentProduct(product) {
+        if (!product?.id) {
+            return;
+        }
+        const previous = readRecentProducts().filter((item) => Number(item.id) !== Number(product.id));
+        const current = {
+            id: product.id,
+            brand: product.brand,
+            name: product.name,
+            headline: product.headline,
+            model: product.model,
+            price: product.price,
+            priceLabel: product.priceLabel,
+            stock: product.stock,
+            stockStatus: product.stockStatus
+        };
+        const next = [current].concat(previous).slice(0, RECENT_VIEWED_LIMIT);
+        window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+    }
+
+    function readRecentProducts() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(RECENT_VIEWED_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function renderRecentProducts(currentProductId) {
+        if (!elements.detailRecentSection || !elements.detailRecentGrid) {
+            return;
+        }
+        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(currentProductId)).slice(0, 3);
+        if (!recentProducts.length) {
+            elements.detailRecentSection.hidden = true;
+            return;
+        }
+        elements.detailRecentSection.hidden = false;
+        elements.detailRecentGrid.innerHTML = recentProducts.map((item) => `
+            <a class="detail-related-card" href="${buildProductUrl(item.id)}">
+                <span class="detail-related-card__brand">${item.brand || "-"}</span>
+                <strong>${item.headline || item.name || "-"}</strong>
+                <p>${item.name || "-"} · ${item.model || "-"}</p>
+                <div class="detail-related-card__meta">
+                    <span>${item.priceLabel || formatPrice(item.price)}</span>
+                    <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
+                    <span>다시 보기</span>
+                </div>
+            </a>
+        `).join("");
+    }
+
     async function init() {
         if (!productId) {
             return;
@@ -178,11 +235,13 @@
             if (elements.detailStockText) {
                 elements.detailStockText.textContent = `총 재고 ${product.stock}개 · 등록 ${product.createdDate || "-"}`;
             }
+            saveRecentProduct(product);
             renderMeta(product);
             renderSignals(product);
             renderOverview(product);
             renderOptions(product);
             renderRelated(product);
+            renderRecentProducts(product.id);
         } catch (error) {
             if (elements.detailTitle) {
                 elements.detailTitle.textContent = "상품 상세를 불러오지 못했습니다.";

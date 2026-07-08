@@ -1,4 +1,5 @@
 (function () {
+    const BOOKMARK_PRODUCTS_KEY = "front-bookmark-products";
     const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const DEFAULT_STATE = {
@@ -48,6 +49,11 @@
         compareBoardTitle: document.getElementById("compareBoardTitle"),
         compareBoardText: document.getElementById("compareBoardText"),
         clearCompareButton: document.getElementById("clearCompareButton"),
+        bookmarkBoardSection: document.getElementById("bookmarkBoardSection"),
+        bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
+        bookmarkBoardTitle: document.getElementById("bookmarkBoardTitle"),
+        bookmarkBoardText: document.getElementById("bookmarkBoardText"),
+        clearBookmarkButton: document.getElementById("clearBookmarkButton"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
         todaySignalText: document.getElementById("todaySignalText"),
@@ -72,6 +78,7 @@
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();
+        renderBookmarkBoard();
         renderSignals();
         renderCatalog();
     }
@@ -249,12 +256,21 @@
             renderCompareBoard();
             renderCatalog();
         });
+        elements.clearBookmarkButton?.addEventListener("click", () => {
+            writeBookmarkProducts([]);
+            renderBookmarkBoard();
+            renderCatalog();
+        });
         elements.catalogGrid?.addEventListener("click", (event) => {
             const compareButton = event.target.closest("[data-compare-product-id]");
-            if (!compareButton) {
+            if (compareButton) {
+                toggleCompareProduct(Number(compareButton.dataset.compareProductId));
                 return;
             }
-            toggleCompareProduct(Number(compareButton.dataset.compareProductId));
+            const bookmarkButton = event.target.closest("[data-bookmark-product-id]");
+            if (bookmarkButton) {
+                toggleBookmarkProduct(Number(bookmarkButton.dataset.bookmarkProductId));
+            }
         });
         window.addEventListener("popstate", async () => {
             hydrateStateFromUrl();
@@ -336,6 +352,8 @@
 
     function renderCatalog() {
         const list = filteredProducts();
+        const comparedIds = new Set(readCompareProducts().map((product) => Number(product.id)));
+        const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
         renderCatalogSummary(list);
 
         if (!elements.catalogGrid) {
@@ -375,8 +393,11 @@
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${product.mood}</div>
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
-                        <button class="catalog-compare-button ${isComparedProduct(product.id) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
-                            ${isComparedProduct(product.id) ? "비교 해제" : "비교 담기"}
+                        <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
+                            ${bookmarkedIds.has(Number(product.id)) ? "찜 해제" : "찜하기"}
+                        </button>
+                        <button class="catalog-compare-button ${comparedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
+                            ${comparedIds.has(Number(product.id)) ? "비교 해제" : "비교 담기"}
                         </button>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
@@ -466,6 +487,7 @@
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();
+        renderBookmarkBoard();
         renderSignals();
         renderCatalog();
     }
@@ -642,6 +664,42 @@
         });
     }
 
+    function renderBookmarkBoard() {
+        if (!elements.bookmarkBoardSection || !elements.bookmarkBoardGrid) {
+            return;
+        }
+        const bookmarkedProducts = readBookmarkProducts();
+        if (!bookmarkedProducts.length) {
+            elements.bookmarkBoardSection.hidden = true;
+            return;
+        }
+        elements.bookmarkBoardSection.hidden = false;
+        setText(elements.bookmarkBoardTitle, `${bookmarkedProducts.length}개 관심 상품을 저장했습니다.`);
+        setText(elements.bookmarkBoardText, buildBookmarkSummary(bookmarkedProducts));
+        elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.map((product) => `
+            <article class="detail-related-card compare-card">
+                <span class="detail-related-card__brand">${product.brand || "-"}</span>
+                <strong>${product.headline || product.name || "-"}</strong>
+                <p>${product.name || "-"} · ${product.model || "-"} · ${product.category || "-"}</p>
+                <div class="detail-related-card__meta">
+                    <span>${product.priceLabel || formatPrice(product.price)}</span>
+                    <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
+                    <span>${product.featured ? "Featured" : "Watchlist"}</span>
+                </div>
+                <div class="compare-card__actions">
+                    <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
+                    <button class="catalog-reset-button" type="button" data-remove-bookmark-id="${product.id}">제거</button>
+                </div>
+            </article>
+        `).join("");
+
+        elements.bookmarkBoardGrid.querySelectorAll("[data-remove-bookmark-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                removeBookmarkProduct(Number(button.dataset.removeBookmarkId));
+            });
+        });
+    }
+
     function toggleCompareProduct(productId) {
         const source = products.find((product) => Number(product.id) === Number(productId));
         if (!source) {
@@ -676,6 +734,41 @@
         renderCatalog();
     }
 
+    function toggleBookmarkProduct(productId) {
+        const source = products.find((product) => Number(product.id) === Number(productId));
+        if (!source) {
+            return;
+        }
+        const current = readBookmarkProducts();
+        const exists = current.some((product) => Number(product.id) === Number(productId));
+        if (exists) {
+            writeBookmarkProducts(current.filter((product) => Number(product.id) !== Number(productId)));
+        } else {
+            const summary = {
+                id: source.id,
+                brand: source.brand,
+                name: source.name,
+                headline: source.headline,
+                model: source.model,
+                category: source.category,
+                price: source.price,
+                priceLabel: source.priceLabel,
+                stock: source.stock,
+                stockStatus: source.stockStatus,
+                featured: Boolean(source.featured)
+            };
+            writeBookmarkProducts([summary].concat(current).slice(0, 6));
+        }
+        renderBookmarkBoard();
+        renderCatalog();
+    }
+
+    function removeBookmarkProduct(productId) {
+        writeBookmarkProducts(readBookmarkProducts().filter((product) => Number(product.id) !== Number(productId)));
+        renderBookmarkBoard();
+        renderCatalog();
+    }
+
     function readCompareProducts() {
         try {
             const parsed = JSON.parse(window.localStorage.getItem(COMPARE_PRODUCTS_KEY) || "[]");
@@ -693,6 +786,19 @@
         return readCompareProducts().some((product) => Number(product.id) === Number(productId));
     }
 
+    function readBookmarkProducts() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(BOOKMARK_PRODUCTS_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed.filter((item) => item?.id) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function writeBookmarkProducts(bookmarkedProducts) {
+        window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarkedProducts));
+    }
+
     function buildCompareSummary(comparedProducts) {
         if (comparedProducts.length < 2) {
             return "하나를 더 담으면 가격과 재고 차이를 더 명확하게 비교할 수 있습니다.";
@@ -702,6 +808,14 @@
         const priceGap = Math.max(...prices) - Math.min(...prices);
         const stockGap = Math.max(...stocks) - Math.min(...stocks);
         return `최고가와 최저가 차이는 ${formatPrice(priceGap)}, 재고 차이는 ${stockGap}개입니다.`;
+    }
+
+    function buildBookmarkSummary(bookmarkedProducts) {
+        const featuredCount = bookmarkedProducts.filter((product) => product.featured).length;
+        if (!featuredCount) {
+            return "관심 상품을 모아두고 필요할 때 상세나 비교 보드로 바로 이동할 수 있습니다.";
+        }
+        return `${featuredCount}개 상품이 Featured 라인에 포함되어 있어 드롭 우선 확인용으로도 쓸 수 있습니다.`;
     }
 
     function bindProductButtons(container) {

@@ -736,22 +736,46 @@ select {
     text-underline-offset: 3px;
 }
 
+.catalog-bookmark-button,
 .catalog-compare-button {
     min-height: 36px;
     padding: 0 12px;
     border-radius: 999px;
-    border: 1px solid rgba(20, 108, 98, 0.18);
-    background: rgba(20, 108, 98, 0.06);
-    color: #115e59;
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
     transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
 }
 
+.catalog-bookmark-button {
+    border: 1px solid rgba(183, 121, 31, 0.18);
+    background: rgba(183, 121, 31, 0.08);
+    color: #9a670d;
+}
+
+.catalog-compare-button {
+    border: 1px solid rgba(20, 108, 98, 0.18);
+    background: rgba(20, 108, 98, 0.06);
+    color: #115e59;
+}
+
+.catalog-bookmark-button:hover,
 .catalog-compare-button:hover {
     transform: translateY(-1px);
+}
+
+.catalog-bookmark-button:hover {
+    background: rgba(183, 121, 31, 0.14);
+}
+
+.catalog-compare-button:hover {
     background: rgba(20, 108, 98, 0.12);
+}
+
+.catalog-bookmark-button.is-active {
+    background: rgba(214, 91, 46, 0.12);
+    border-color: rgba(214, 91, 46, 0.18);
+    color: var(--brand-deep);
 }
 
 .catalog-compare-button.is-active {

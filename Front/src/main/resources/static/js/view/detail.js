@@ -12,7 +12,9 @@
         detailOverviewGrid: document.getElementById("detailOverviewGrid"),
         detailOptionGrid: document.getElementById("detailOptionGrid"),
         detailRelatedGrid: document.getElementById("detailRelatedGrid"),
-        detailFocusRelated: document.getElementById("detailFocusRelated")
+        detailFocusRelated: document.getElementById("detailFocusRelated"),
+        backToCatalogLink: document.getElementById("backToCatalogLink"),
+        detailCatalogLink: document.getElementById("detailCatalogLink")
     };
 
     function formatPrice(price) {
@@ -118,7 +120,7 @@
             return;
         }
         elements.detailRelatedGrid.innerHTML = related.map((item) => `
-            <a class="detail-related-card" href="/front/products/${item.id}">
+            <a class="detail-related-card" href="${buildProductUrl(item.id)}">
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
                 <p>${item.reason}</p>
@@ -131,10 +133,29 @@
         `).join("");
     }
 
+    function syncCatalogLinks() {
+        const catalogUrl = buildCatalogUrl();
+        if (elements.backToCatalogLink) {
+            elements.backToCatalogLink.href = catalogUrl;
+        }
+        if (elements.detailCatalogLink) {
+            elements.detailCatalogLink.href = `${catalogUrl}#catalog`;
+        }
+    }
+
+    function buildCatalogUrl() {
+        return `/front${window.location.search || ""}`;
+    }
+
+    function buildProductUrl(nextProductId) {
+        return `/front/products/${nextProductId}${window.location.search || ""}`;
+    }
+
     async function init() {
         if (!productId) {
             return;
         }
+        syncCatalogLinks();
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });

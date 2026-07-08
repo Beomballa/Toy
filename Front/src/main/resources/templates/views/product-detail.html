@@ -24,7 +24,7 @@
             <a href="#detailOptions">Options</a>
             <a href="#detailRelated">Related</a>
         </nav>
-        <a class="topbar-action" href="/front">카탈로그로 복귀</a>
+        <a class="topbar-action" href="/front" id="backToCatalogLink">카탈로그로 복귀</a>
     </header>
 
     <main class="detail-page" id="detailPage" th:attr="data-product-id=${productId}">
@@ -37,7 +37,7 @@
                 <h1 id="detailTitle">상품 상세를 불러오는 중입니다.</h1>
                 <p class="detail-description" id="detailDescription">선택한 상품의 카테고리, 재고, 옵션, 연관 상품을 정리하고 있습니다.</p>
                 <div class="detail-actions">
-                    <a class="hero-primary" href="/front#catalog">카탈로그 보기</a>
+                    <a class="hero-primary" href="/front#catalog" id="detailCatalogLink">카탈로그 보기</a>
                     <button class="hero-secondary" type="button" id="detailFocusRelated">연관 상품 보기</button>
                 </div>
             </div>

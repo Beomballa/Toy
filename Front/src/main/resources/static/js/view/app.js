@@ -271,7 +271,7 @@
                         <div class="catalog-card__meta">총 재고 ${product.stock}개</div>
                     </div>
                     <div class="catalog-card__action">
-                        <a class="catalog-card__link" href="/front/products/${product.id}">페이지 보기</a>
+                        <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
@@ -351,7 +351,7 @@
                     </div>
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${product.mood}</div>
-                        <a class="catalog-card__link" href="/front/products/${product.id}">페이지 보기</a>
+                        <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
@@ -541,6 +541,10 @@
         return allowedValues.includes(value) ? value : fallbackValue;
     }
 
+    function detailPageUrl(productId) {
+        return `/front/products/${productId}${window.location.search || ""}`;
+    }
+
     function bindProductButtons(container) {
         container.querySelectorAll("[data-product-id]").forEach((button) => {
             button.addEventListener("click", () => openDrawer(Number(button.dataset.productId)));
@@ -587,7 +591,7 @@
                 <h3>${product.priceLabel || formatPrice(product.price)}</h3>
                 <p class="product-drawer__description">현재 총 재고 ${product.stock}개 · 무드 키워드 ${product.mood}</p>
                 <div class="product-drawer__cta">
-                    <a class="catalog-card__button product-drawer__cta-link" href="/front/products/${product.id}">상세 페이지 이동</a>
+                    <a class="catalog-card__button product-drawer__cta-link" href="${detailPageUrl(product.id)}">상세 페이지 이동</a>
                 </div>
             </div>
             <div class="product-drawer__group">

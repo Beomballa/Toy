@@ -7,6 +7,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 class FrontViewControllerTest {
@@ -27,5 +28,14 @@ class FrontViewControllerTest {
         mockMvc.perform(get("/front"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("views/index"));
+    }
+
+    @Test
+    @DisplayName("상품 상세 경로는 상세 뷰와 상품 번호를 반환한다")
+    void productDetailReturnsDetailView() throws Exception {
+        mockMvc.perform(get("/front/products/101"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/product-detail"))
+                .andExpect(model().attribute("productId", 101L));
     }
 }

@@ -246,7 +246,10 @@
                         <div class="spotlight-card__price">${product.priceLabel || formatPrice(product.price)}</div>
                         <div class="catalog-card__meta">총 재고 ${product.stock}개</div>
                     </div>
-                    <button class="catalog-card__button" type="button" data-product-id="${product.id}">상세 보기</button>
+                    <div class="catalog-card__action">
+                        <a class="catalog-card__link" href="/front/products/${product.id}">페이지 보기</a>
+                        <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
+                    </div>
                 </div>
             </article>
         `).join("");
@@ -324,7 +327,8 @@
                     </div>
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${product.mood}</div>
-                        <button class="catalog-card__button" type="button" data-product-id="${product.id}">상세 보기</button>
+                        <a class="catalog-card__link" href="/front/products/${product.id}">페이지 보기</a>
+                        <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
             </article>
@@ -450,6 +454,9 @@
                 <strong>발매가</strong>
                 <h3>${product.priceLabel || formatPrice(product.price)}</h3>
                 <p class="product-drawer__description">현재 총 재고 ${product.stock}개 · 무드 키워드 ${product.mood}</p>
+                <div class="product-drawer__cta">
+                    <a class="catalog-card__button product-drawer__cta-link" href="/front/products/${product.id}">상세 페이지 이동</a>
+                </div>
             </div>
             <div class="product-drawer__group">
                 <strong>사이즈별 재고</strong>

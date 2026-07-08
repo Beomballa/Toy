@@ -1,4 +1,5 @@
 (function () {
+    const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const DEFAULT_STATE = {
         search: "",
@@ -42,6 +43,11 @@
         featuredGrid: document.getElementById("featuredGrid"),
         recentViewedSection: document.getElementById("recentViewedSection"),
         recentViewedGrid: document.getElementById("recentViewedGrid"),
+        compareBoardSection: document.getElementById("compareBoardSection"),
+        compareBoardGrid: document.getElementById("compareBoardGrid"),
+        compareBoardTitle: document.getElementById("compareBoardTitle"),
+        compareBoardText: document.getElementById("compareBoardText"),
+        clearCompareButton: document.getElementById("clearCompareButton"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
         todaySignalText: document.getElementById("todaySignalText"),
@@ -65,6 +71,7 @@
         renderHeroMetrics();
         renderFeatured();
         renderRecentViewed();
+        renderCompareBoard();
         renderSignals();
         renderCatalog();
     }
@@ -237,6 +244,18 @@
             syncControls();
             await refreshCatalog();
         });
+        elements.clearCompareButton?.addEventListener("click", () => {
+            writeCompareProducts([]);
+            renderCompareBoard();
+            renderCatalog();
+        });
+        elements.catalogGrid?.addEventListener("click", (event) => {
+            const compareButton = event.target.closest("[data-compare-product-id]");
+            if (!compareButton) {
+                return;
+            }
+            toggleCompareProduct(Number(compareButton.dataset.compareProductId));
+        });
         window.addEventListener("popstate", async () => {
             hydrateStateFromUrl();
             syncControls();
@@ -356,6 +375,9 @@
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${product.mood}</div>
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
+                        <button class="catalog-compare-button ${isComparedProduct(product.id) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
+                            ${isComparedProduct(product.id) ? "비교 해제" : "비교 담기"}
+                        </button>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
@@ -443,6 +465,7 @@
         renderHeroMetrics();
         renderFeatured();
         renderRecentViewed();
+        renderCompareBoard();
         renderSignals();
         renderCatalog();
     }
@@ -581,6 +604,104 @@
         } catch (error) {
             return [];
         }
+    }
+
+    function renderCompareBoard() {
+        if (!elements.compareBoardSection || !elements.compareBoardGrid) {
+            return;
+        }
+        const comparedProducts = readCompareProducts();
+        if (!comparedProducts.length) {
+            elements.compareBoardSection.hidden = true;
+            return;
+        }
+        elements.compareBoardSection.hidden = false;
+        setText(elements.compareBoardTitle, `${comparedProducts.length}개 상품을 비교 중입니다.`);
+        setText(elements.compareBoardText, buildCompareSummary(comparedProducts));
+        elements.compareBoardGrid.innerHTML = comparedProducts.map((product) => `
+            <article class="detail-related-card compare-card">
+                <span class="detail-related-card__brand">${product.brand || "-"}</span>
+                <strong>${product.headline || product.name || "-"}</strong>
+                <p>${product.name || "-"} · ${product.model || "-"} · ${product.category || "-"}</p>
+                <div class="detail-related-card__meta">
+                    <span>${product.priceLabel || formatPrice(product.price)}</span>
+                    <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
+                    <span>재고 ${product.stock}개</span>
+                </div>
+                <div class="compare-card__actions">
+                    <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
+                    <button class="catalog-reset-button" type="button" data-remove-compare-id="${product.id}">제거</button>
+                </div>
+            </article>
+        `).join("");
+
+        elements.compareBoardGrid.querySelectorAll("[data-remove-compare-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                removeCompareProduct(Number(button.dataset.removeCompareId));
+            });
+        });
+    }
+
+    function toggleCompareProduct(productId) {
+        const source = products.find((product) => Number(product.id) === Number(productId));
+        if (!source) {
+            return;
+        }
+        const current = readCompareProducts();
+        const exists = current.some((product) => Number(product.id) === Number(productId));
+        if (exists) {
+            writeCompareProducts(current.filter((product) => Number(product.id) !== Number(productId)));
+        } else {
+            const summary = {
+                id: source.id,
+                brand: source.brand,
+                name: source.name,
+                headline: source.headline,
+                model: source.model,
+                category: source.category,
+                price: source.price,
+                priceLabel: source.priceLabel,
+                stock: source.stock,
+                stockStatus: source.stockStatus
+            };
+            writeCompareProducts([summary].concat(current).slice(0, 3));
+        }
+        renderCompareBoard();
+        renderCatalog();
+    }
+
+    function removeCompareProduct(productId) {
+        writeCompareProducts(readCompareProducts().filter((product) => Number(product.id) !== Number(productId)));
+        renderCompareBoard();
+        renderCatalog();
+    }
+
+    function readCompareProducts() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(COMPARE_PRODUCTS_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed.filter((item) => item?.id) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function writeCompareProducts(productsToCompare) {
+        window.localStorage.setItem(COMPARE_PRODUCTS_KEY, JSON.stringify(productsToCompare));
+    }
+
+    function isComparedProduct(productId) {
+        return readCompareProducts().some((product) => Number(product.id) === Number(productId));
+    }
+
+    function buildCompareSummary(comparedProducts) {
+        if (comparedProducts.length < 2) {
+            return "하나를 더 담으면 가격과 재고 차이를 더 명확하게 비교할 수 있습니다.";
+        }
+        const prices = comparedProducts.map((product) => Number(product.price || 0));
+        const stocks = comparedProducts.map((product) => Number(product.stock || 0));
+        const priceGap = Math.max(...prices) - Math.min(...prices);
+        const stockGap = Math.max(...stocks) - Math.min(...stocks);
+        return `최고가와 최저가 차이는 ${formatPrice(priceGap)}, 재고 차이는 ${stockGap}개입니다.`;
     }
 
     function bindProductButtons(container) {

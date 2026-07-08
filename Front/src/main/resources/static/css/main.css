@@ -736,6 +736,46 @@ select {
     text-underline-offset: 3px;
 }
 
+.catalog-compare-button {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(20, 108, 98, 0.18);
+    background: rgba(20, 108, 98, 0.06);
+    color: #115e59;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.catalog-compare-button:hover {
+    transform: translateY(-1px);
+    background: rgba(20, 108, 98, 0.12);
+}
+
+.catalog-compare-button.is-active {
+    background: rgba(214, 91, 46, 0.1);
+    border-color: rgba(214, 91, 46, 0.18);
+    color: var(--brand-deep);
+}
+
+.catalog-summary--compare {
+    margin-bottom: 16px;
+}
+
+.compare-card {
+    gap: 14px;
+}
+
+.compare-card__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+}
+
 .catalog-empty {
     grid-column: 1 / -1;
     padding: 32px;

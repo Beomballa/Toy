@@ -1424,12 +1424,12 @@ body {
 }
 
 @media (max-width: 768px) {
-    .stats-grid {
+    .main-content:not(.admin-page-shell) .stats-grid {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
 
-    .page-title {
+    .main-content:not(.admin-page-shell) .page-title {
         font-size: 1.5rem;
     }
 
@@ -1446,10 +1446,10 @@ body {
         word-break: break-word;
     }
 
-    .product-filter-summary,
-    .card-body,
-    .card-header,
-    .card-footer {
+    .main-content:not(.admin-page-shell) .product-filter-summary,
+    .main-content:not(.admin-page-shell) .card-body,
+    .main-content:not(.admin-page-shell) .card-header,
+    .main-content:not(.admin-page-shell) .card-footer {
         padding-left: 1rem;
         padding-right: 1rem;
     }

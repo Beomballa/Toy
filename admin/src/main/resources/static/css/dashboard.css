@@ -5,7 +5,7 @@
 }
 .card-link:hover .card {
     transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.1);
     transition: all 0.2s ease-in-out;
 }
 
@@ -19,22 +19,32 @@
 }
 
 .dashboard-section-focus {
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18), 0 18px 38px rgba(15, 23, 42, 0.08);
-    border-color: rgba(37, 99, 235, 0.28);
+    box-shadow: 0 0 0 2px rgba(31, 107, 79, 0.16), 0 22px 44px rgba(15, 23, 42, 0.1);
+    border-color: rgba(31, 107, 79, 0.3);
 }
 
 .dashboard-section-focus .card-header {
-    background: linear-gradient(180deg, rgba(239, 246, 255, 0.96), rgba(255, 255, 255, 0.98));
+    background: linear-gradient(180deg, rgba(239, 248, 243, 0.98), rgba(255, 255, 255, 0.98));
 }
 
 .dashboard-mini-stat-card {
+    border: 1px solid rgba(221, 229, 236, 0.92);
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 251, 0.97));
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .dashboard-mini-stat-card:hover {
-    border-color: rgba(15, 23, 42, 0.18);
-    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+    border-color: rgba(31, 107, 79, 0.2);
+    box-shadow: 0 18px 34px rgba(15, 23, 42, 0.09);
     transform: translateY(-2px);
+}
+
+.dashboard-card-header {
+    background:
+        radial-gradient(circle at top right, rgba(31, 107, 79, 0.08), transparent 28%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 251, 252, 0.96)) !important;
 }
 
 .dashboard-action-list {
@@ -48,9 +58,11 @@
     align-items: center;
     gap: 16px;
     padding: 16px 18px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 18px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.96));
+    border: 1px solid rgba(221, 229, 236, 0.94);
+    border-radius: 20px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(247, 250, 251, 0.97));
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .dashboard-action-item__body {
@@ -63,6 +75,15 @@
     align-items: center;
     gap: 12px;
     flex: 0 0 auto;
+}
+
+#lowStockListBody .list-group-item {
+    border-bottom: 1px solid #edf2f6 !important;
+    background: transparent;
+}
+
+#lowStockListBody .list-group-item:last-child {
+    border-bottom: 0 !important;
 }
 
 /* 리스트 그룹 아이템 스타일 */

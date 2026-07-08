@@ -1701,6 +1701,133 @@
     background: rgba(31, 107, 79, 0.035);
 }
 
+.admin-page-shell .product-filter-summary,
+.admin-page-shell .content-board-toolbar,
+.admin-page-shell .content-board-toolbar--search,
+.admin-page-shell .content-board-toolbar--bulk,
+.admin-page-shell .content-board-toolbar--result {
+    border: 1px solid var(--admin-border);
+    border-radius: 24px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(247, 250, 251, 0.96) 100%);
+    box-shadow: var(--admin-shadow-soft);
+}
+
+.admin-page-shell .product-filter-summary {
+    padding: 1.05rem 1.2rem;
+}
+
+.admin-page-shell .product-filter-summary-label,
+.admin-page-shell .product-master-filter-section__desc,
+.admin-page-shell .product-master-flag-card__desc,
+.admin-page-shell .product-master-bulk-panel__desc,
+.admin-page-shell .product-master-filter-actions__hint,
+.admin-page-shell .content-board-search-section__desc,
+.admin-page-shell .content-board-bulk-description,
+.admin-page-shell .content-board-result-meta,
+.admin-page-shell .content-board-description {
+    color: var(--admin-text-muted);
+}
+
+.admin-page-shell .product-filter-summary-copy strong,
+.admin-page-shell .product-master-filter-section__title,
+.admin-page-shell .product-master-bulk-panel__title,
+.admin-page-shell .content-board-search-section__title,
+.admin-page-shell .content-board-bulk-title,
+.admin-page-shell .content-board-card-title {
+    color: var(--admin-text);
+}
+
+.admin-page-shell .product-filter-chip,
+.admin-page-shell .content-board-selection-summary,
+.admin-page-shell .content-board-card-badge,
+.admin-page-shell .content-board-check--boxed {
+    border-color: var(--admin-border-strong);
+    background: var(--admin-surface-muted);
+    color: #314255;
+}
+
+.admin-page-shell .product-master-filter-section,
+.admin-page-shell .product-master-flag-card,
+.admin-page-shell .product-master-bulk-card,
+.admin-page-shell .content-board-search-section,
+.admin-page-shell .content-board-bulk-group,
+.admin-page-shell .content-board-card {
+    border-color: var(--admin-border);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.99) 0%, rgba(247, 250, 251, 0.97) 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.admin-page-shell .product-master-filter-layout {
+    gap: 1rem;
+}
+
+.admin-page-shell .product-master-filter-grid,
+.admin-page-shell .content-board-search-grid,
+.admin-page-shell .content-board-search-grid--secondary {
+    align-items: start;
+}
+
+.admin-page-shell .product-master-bulk-grid,
+.admin-page-shell .content-board-bulk-controls {
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.admin-page-shell .product-front-display-toggle-item {
+    border-color: var(--admin-border);
+    background: linear-gradient(180deg, #ffffff 0%, #f7fafb 100%);
+}
+
+.admin-page-shell .product-front-display-toggle-item.is-active {
+    border-color: rgba(31, 107, 79, 0.42);
+    background: linear-gradient(180deg, #f3fcf7 0%, #ebf8f0 100%);
+    box-shadow: 0 14px 26px rgba(17, 70, 52, 0.12);
+}
+
+.admin-page-shell .content-board-tabs {
+    gap: 0.55rem;
+    padding: 0.35rem;
+    border: 1px solid var(--admin-border);
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.84);
+    box-shadow: var(--admin-shadow-soft);
+}
+
+.admin-page-shell .content-board-tab {
+    border-radius: 16px;
+    border: 1px solid transparent;
+}
+
+.admin-page-shell .content-board-tab.active {
+    background: linear-gradient(180deg, var(--admin-accent) 0%, var(--admin-accent-strong) 100%);
+    color: #ffffff;
+    box-shadow: 0 12px 24px rgba(17, 70, 52, 0.18);
+}
+
+.admin-page-shell .content-board-form-actions {
+    gap: 0.75rem;
+}
+
+.admin-page-shell .content-board-form-actions .btn {
+    min-height: 42px;
+}
+
+.admin-page-shell .content-board-search-field,
+.admin-page-shell .content-board-date-range {
+    border-radius: 14px;
+}
+
+.admin-page-shell .content-board-card {
+    border-radius: 22px;
+    box-shadow: var(--admin-shadow-soft);
+}
+
+.admin-page-shell .content-board-card-footer {
+    border-top-color: #e9eff4;
+}
+
 .order-id,
 .order-id-display {
     font-family: 'Monaco', monospace;

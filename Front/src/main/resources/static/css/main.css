@@ -468,6 +468,124 @@ select {
     margin-bottom: 44px;
 }
 
+.discovery-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.15fr);
+    gap: 16px;
+    margin-bottom: 44px;
+}
+
+.discovery-card {
+    padding: 20px;
+    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid var(--line);
+    box-shadow: var(--card-shadow);
+}
+
+.section-heading--compact {
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.section-heading--compact p:last-child {
+    max-width: 280px;
+}
+
+.discovery-rank-list,
+.discovery-shortcut-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.discovery-shortcut-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.brand-rank-card,
+.category-shortcut-card {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: #fafafa;
+    border-radius: 18px;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.brand-rank-card:hover,
+.category-shortcut-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--card-shadow-strong);
+    border-color: rgba(17, 17, 17, 0.08);
+}
+
+.brand-rank-card {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 16px;
+}
+
+.brand-rank-card__order {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 16px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.brand-rank-card__body {
+    display: grid;
+    gap: 4px;
+}
+
+.brand-rank-card__body strong,
+.category-shortcut-card strong {
+    font-size: 0.96rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.brand-rank-card__body span,
+.brand-rank-card__meta,
+.category-shortcut-card span,
+.category-shortcut-card em {
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-style: normal;
+}
+
+.brand-rank-card__meta {
+    padding-left: 8px;
+    white-space: nowrap;
+}
+
+.category-shortcut-card {
+    display: grid;
+    gap: 8px;
+    padding: 18px 16px;
+}
+
+.category-shortcut-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
 #recentViewedSection,
 #compareBoardSection,
 #bookmarkBoardSection,
@@ -1349,6 +1467,11 @@ select {
 }
 
 @media (max-width: 1100px) {
+    .discovery-strip,
+    .discovery-shortcut-grid {
+        grid-template-columns: 1fr;
+    }
+
     .topbar__main {
         flex-wrap: wrap;
     }
@@ -1441,6 +1564,19 @@ select {
 
     .spotlight {
         margin-bottom: 32px;
+    }
+
+    .discovery-strip {
+        margin-bottom: 32px;
+    }
+
+    .brand-rank-card {
+        grid-template-columns: 44px minmax(0, 1fr);
+    }
+
+    .brand-rank-card__meta {
+        grid-column: 2;
+        padding-left: 0;
     }
 
     #recentViewedSection::before,

@@ -41,6 +41,8 @@
         catalogTags: document.getElementById("catalogTags"),
         catalogCountText: document.getElementById("catalogCountText"),
         catalogSummaryText: document.getElementById("catalogSummaryText"),
+        brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
+        categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         featuredGrid: document.getElementById("featuredGrid"),
         recentViewedSection: document.getElementById("recentViewedSection"),
         recentViewedGrid: document.getElementById("recentViewedGrid"),
@@ -75,6 +77,8 @@
         syncControls();
         bindEvents();
         renderHeroMetrics();
+        renderBrandSpotlight();
+        renderCategoryShortcuts();
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();
@@ -285,6 +289,93 @@
         setText(elements.metricToday, String(metrics.latestDropCount || 0));
     }
 
+    function renderBrandSpotlight() {
+        if (!elements.brandSpotlightGrid) {
+            return;
+        }
+        const rankedBrands = brandFacets.slice(0, 5).map((facet) => {
+            const brandProducts = products.filter((product) => product.brand === facet.value);
+            return {
+                brand: facet.value,
+                count: facet.count,
+                lowStockCount: brandProducts.filter((product) => product.stock < lowStockThresholdValue()).length,
+                category: brandProducts[0]?.category || "Curated"
+            };
+        });
+
+        if (!rankedBrands.length) {
+            elements.brandSpotlightGrid.innerHTML = `
+                <article class="catalog-empty">
+                    <strong>브랜드 데이터를 준비 중입니다.</strong>
+                    <p>상품을 불러오면 상단 랭킹을 보여줍니다.</p>
+                </article>
+            `;
+            return;
+        }
+
+        elements.brandSpotlightGrid.innerHTML = rankedBrands.map((item, index) => `
+            <button class="brand-rank-card" type="button" data-brand-rank="${item.brand}">
+                <span class="brand-rank-card__order">${String(index + 1).padStart(2, "0")}</span>
+                <div class="brand-rank-card__body">
+                    <strong>${item.brand}</strong>
+                    <span>${item.count}개 상품 · 긴장 재고 ${item.lowStockCount}개</span>
+                </div>
+                <span class="brand-rank-card__meta">${item.category}</span>
+            </button>
+        `).join("");
+
+        elements.brandSpotlightGrid.querySelectorAll("[data-brand-rank]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                state.brand = button.dataset.brandRank;
+                syncControls();
+                await refreshCatalog();
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+    }
+
+    function renderCategoryShortcuts() {
+        if (!elements.categoryShortcutGrid) {
+            return;
+        }
+        const rankedCategories = categoryFacets.slice(0, 6).map((facet) => {
+            const categoryProducts = products.filter((product) => product.category === facet.value);
+            return {
+                category: facet.value,
+                count: facet.count,
+                lowStockCount: categoryProducts.filter((product) => product.stock < lowStockThresholdValue()).length
+            };
+        });
+
+        if (!rankedCategories.length) {
+            elements.categoryShortcutGrid.innerHTML = `
+                <article class="catalog-empty">
+                    <strong>카테고리 데이터를 준비 중입니다.</strong>
+                    <p>상품을 불러오면 바로가기 카드를 보여줍니다.</p>
+                </article>
+            `;
+            return;
+        }
+
+        elements.categoryShortcutGrid.innerHTML = rankedCategories.map((item) => `
+            <button class="category-shortcut-card" type="button" data-category-shortcut="${item.category}">
+                <span class="category-shortcut-card__badge">${brandInitials(item.category)}</span>
+                <strong>${item.category}</strong>
+                <span>${item.count}개 상품</span>
+                <em>${item.lowStockCount ? `품절 임박 ${item.lowStockCount}개` : "재고 안정"}</em>
+            </button>
+        `).join("");
+
+        elements.categoryShortcutGrid.querySelectorAll("[data-category-shortcut]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                state.category = button.dataset.categoryShortcut;
+                syncControls();
+                await refreshCatalog();
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+    }
+
     function renderFeatured() {
         if (!elements.featuredGrid) {
             return;
@@ -488,6 +579,8 @@
         await loadProducts();
         populateFilters();
         renderHeroMetrics();
+        renderBrandSpotlight();
+        renderCategoryShortcuts();
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();

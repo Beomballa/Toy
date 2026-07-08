@@ -43,6 +43,8 @@
         catalogSummaryText: document.getElementById("catalogSummaryText"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
+        latestDropGrid: document.getElementById("latestDropGrid"),
+        lowStockGrid: document.getElementById("lowStockGrid"),
         featuredGrid: document.getElementById("featuredGrid"),
         recentViewedSection: document.getElementById("recentViewedSection"),
         recentViewedGrid: document.getElementById("recentViewedGrid"),
@@ -79,6 +81,7 @@
         renderHeroMetrics();
         renderBrandSpotlight();
         renderCategoryShortcuts();
+        renderSignalStrip();
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();
@@ -376,6 +379,68 @@
         });
     }
 
+    function renderSignalStrip() {
+        renderLatestDrops();
+        renderLowStockHighlights();
+    }
+
+    function renderLatestDrops() {
+        if (!elements.latestDropGrid) {
+            return;
+        }
+        const latestCreatedDate = metrics.latestCreatedDate;
+        const latestProducts = products
+            .filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate)
+            .slice(0, 4);
+
+        if (!latestProducts.length) {
+            elements.latestDropGrid.innerHTML = `
+                <article class="catalog-empty">
+                    <strong>신규 드롭을 준비 중입니다.</strong>
+                    <p>최근 등록된 상품을 불러오면 이곳에 보여줍니다.</p>
+                </article>
+            `;
+            return;
+        }
+
+        elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, "방금 등록")).join("");
+    }
+
+    function renderLowStockHighlights() {
+        if (!elements.lowStockGrid) {
+            return;
+        }
+        const lowStockProducts = products
+            .filter((product) => product.stock < lowStockThresholdValue())
+            .sort((left, right) => left.stock - right.stock)
+            .slice(0, 4);
+
+        if (!lowStockProducts.length) {
+            elements.lowStockGrid.innerHTML = `
+                <article class="catalog-empty">
+                    <strong>긴장 재고 상품이 없습니다.</strong>
+                    <p>현재 기준으로는 안정 재고 상품이 더 많습니다.</p>
+                </article>
+            `;
+            return;
+        }
+
+        elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, `재고 ${product.stock}개`)).join("");
+    }
+
+    function signalFeedCard(product, kicker) {
+        return `
+            <a class="signal-feed-card" href="${detailPageUrl(product.id)}">
+                ${productVisualMarkup(product, "signal-feed-card__visual")}
+                <div class="signal-feed-card__body">
+                    <span class="signal-feed-card__kicker">${kicker}</span>
+                    <strong>${product.headline || product.name}</strong>
+                    <p>${product.brand} · ${product.category} · ${product.priceLabel || formatPrice(product.price)}</p>
+                </div>
+            </a>
+        `;
+    }
+
     function renderFeatured() {
         if (!elements.featuredGrid) {
             return;
@@ -581,6 +646,7 @@
         renderHeroMetrics();
         renderBrandSpotlight();
         renderCategoryShortcuts();
+        renderSignalStrip();
         renderFeatured();
         renderRecentViewed();
         renderCompareBoard();

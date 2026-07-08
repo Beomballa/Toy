@@ -292,6 +292,7 @@
         const featuredProducts = products.filter((product) => product.featured).slice(0, 3);
         elements.featuredGrid.innerHTML = featuredProducts.map((product, index) => `
             <article class="spotlight-card ${index === 0 ? "spotlight-card--accent" : ""}">
+                ${productVisualMarkup(product, "spotlight-card__visual")}
                 <div>
                     <div class="spotlight-card__top">
                         <span class="spotlight-card__label">${product.brand}</span>
@@ -372,12 +373,13 @@
 
         elements.catalogGrid.innerHTML = list.map((product) => `
             <article class="catalog-card">
+                ${productVisualMarkup(product, "catalog-card__visual")}
                 <div class="catalog-card__header">
                     <div>
                         <span class="catalog-card__label">${product.brand}</span>
-                        <h3 class="catalog-card__title">${product.headline || product.name}</h3>
+                        <h3 class="catalog-card__title">${product.name}</h3>
                         <div class="catalog-card__meta">
-                            <span>${product.name}</span>
+                            <span>${product.headline || product.name}</span>
                             <span>${product.category}</span>
                             <span>${product.model}</span>
                         </div>
@@ -393,12 +395,14 @@
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${product.mood}</div>
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
-                        <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
-                            ${bookmarkedIds.has(Number(product.id)) ? "찜 해제" : "찜하기"}
-                        </button>
-                        <button class="catalog-compare-button ${comparedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
-                            ${comparedIds.has(Number(product.id)) ? "비교 해제" : "비교 담기"}
-                        </button>
+                        <div class="catalog-card__action-group">
+                            <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
+                                ${bookmarkedIds.has(Number(product.id)) ? "찜 해제" : "찜하기"}
+                            </button>
+                            <button class="catalog-compare-button ${comparedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
+                                ${comparedIds.has(Number(product.id)) ? "비교 해제" : "비교 담기"}
+                            </button>
+                        </div>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
@@ -607,6 +611,7 @@
         elements.recentViewedSection.hidden = false;
         elements.recentViewedGrid.innerHTML = recentProducts.map((product) => `
             <a class="detail-related-card" href="${detailPageUrl(product.id)}">
+                ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
                 <p>${product.name || "-"} · ${product.model || "-"}</p>
@@ -642,6 +647,7 @@
         setText(elements.compareBoardText, buildCompareSummary(comparedProducts));
         elements.compareBoardGrid.innerHTML = comparedProducts.map((product) => `
             <article class="detail-related-card compare-card">
+                ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
                 <p>${product.name || "-"} · ${product.model || "-"} · ${product.category || "-"}</p>
@@ -678,6 +684,7 @@
         setText(elements.bookmarkBoardText, buildBookmarkSummary(bookmarkedProducts));
         elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.map((product) => `
             <article class="detail-related-card compare-card">
+                ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
                 <p>${product.name || "-"} · ${product.model || "-"} · ${product.category || "-"}</p>
@@ -816,6 +823,28 @@
             return "관심 상품을 모아두고 필요할 때 상세나 비교 보드로 바로 이동할 수 있습니다.";
         }
         return `${featuredCount}개 상품이 Featured 라인에 포함되어 있어 드롭 우선 확인용으로도 쓸 수 있습니다.`;
+    }
+
+    function productVisualMarkup(product, className) {
+        return `
+            <div class="${className}">
+                <span class="${className}-badge">${brandInitials(product.brand)}</span>
+                <div class="${className}-copy">
+                    <strong>${product.category || "Curated"}</strong>
+                    <span>${product.model || product.name || "-"}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function brandInitials(brand) {
+        return String(brand || "GS")
+            .trim()
+            .split(/\s+/)
+            .map((token) => token.charAt(0))
+            .join("")
+            .slice(0, 2)
+            .toUpperCase();
     }
 
     function bindProductButtons(container) {

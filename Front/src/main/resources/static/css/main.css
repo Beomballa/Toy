@@ -506,6 +506,61 @@ select {
     gap: 12px;
 }
 
+.spotlight-card__visual,
+.catalog-card__visual,
+.detail-related-card__visual {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    min-height: 176px;
+    padding: 18px;
+    border-radius: 20px;
+    background:
+        linear-gradient(135deg, #f2f2f2 0%, #fafafa 55%, #efefef 100%);
+    border: 1px solid rgba(17, 17, 17, 0.04);
+}
+
+.spotlight-card__visual-badge,
+.catalog-card__visual-badge,
+.detail-related-card__visual-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+}
+
+.spotlight-card__visual-copy,
+.catalog-card__visual-copy,
+.detail-related-card__visual-copy {
+    display: grid;
+    justify-items: end;
+    gap: 6px;
+    text-align: right;
+}
+
+.spotlight-card__visual-copy strong,
+.catalog-card__visual-copy strong,
+.detail-related-card__visual-copy strong {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #444444;
+}
+
+.spotlight-card__visual-copy span,
+.catalog-card__visual-copy span,
+.detail-related-card__visual-copy span {
+    color: #8a8a8a;
+    font-size: 0.82rem;
+    line-height: 1.45;
+}
+
 .spotlight-card__label,
 .catalog-card__label {
     color: #666666;
@@ -767,13 +822,13 @@ select {
 .catalog-card__copy {
     margin: 0;
     line-height: 1.65;
-    font-size: 0.94rem;
-    color: #4f5b69;
+    font-size: 0.9rem;
+    color: #6b6b6b;
 }
 
 .catalog-card__footer {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 12px;
     margin-top: auto;
@@ -782,8 +837,15 @@ select {
 .catalog-card__action {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     align-items: flex-end;
+}
+
+.catalog-card__action-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
 }
 
 .catalog-card__link {
@@ -1168,7 +1230,7 @@ select {
 .detail-related-card {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     padding: 20px;
     transition: transform 0.18s ease, box-shadow 0.18s ease;
 }

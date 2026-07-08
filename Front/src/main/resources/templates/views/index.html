@@ -156,8 +156,14 @@
             </div>
 
             <div class="catalog-summary">
-                <strong id="catalogCountText">상품을 계산 중입니다.</strong>
-                <div class="catalog-tags" id="catalogTags"></div>
+                <div class="catalog-summary__headline">
+                    <strong id="catalogCountText">상품을 계산 중입니다.</strong>
+                    <p id="catalogSummaryText">현재 탐색 조건을 정리하고 있습니다.</p>
+                </div>
+                <div class="catalog-summary__actions">
+                    <button class="catalog-reset-button" type="button" id="resetFiltersButton">조건 초기화</button>
+                    <div class="catalog-tags" id="catalogTags"></div>
+                </div>
             </div>
 
             <div class="catalog-grid" id="catalogGrid"></div>

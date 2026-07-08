@@ -1,5 +1,5 @@
 (function () {
-    const state = {
+    const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
         category: "ALL",
@@ -8,6 +8,9 @@
         lowStockThreshold: "20",
         featuredOnly: "ALL",
         priceBand: "ALL"
+    };
+    const state = {
+        ...DEFAULT_STATE
     };
     let products = [];
     let metrics = {
@@ -34,6 +37,7 @@
         catalogGrid: document.getElementById("catalogGrid"),
         catalogTags: document.getElementById("catalogTags"),
         catalogCountText: document.getElementById("catalogCountText"),
+        catalogSummaryText: document.getElementById("catalogSummaryText"),
         featuredGrid: document.getElementById("featuredGrid"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
@@ -45,12 +49,15 @@
         drawerBody: document.getElementById("drawerBody"),
         closeDrawerButton: document.getElementById("closeDrawerButton"),
         focusLowStockButton: document.getElementById("focusLowStockButton"),
-        openDrawerFromTop: document.getElementById("openDrawerFromTop")
+        openDrawerFromTop: document.getElementById("openDrawerFromTop"),
+        resetFiltersButton: document.getElementById("resetFiltersButton")
     };
 
     async function init() {
+        hydrateStateFromUrl();
         await loadProducts();
         populateFilters();
+        syncControls();
         bindEvents();
         renderHeroMetrics();
         renderFeatured();
@@ -214,6 +221,23 @@
                 openDrawer(primary.id);
             }
         });
+        elements.catalogTags?.addEventListener("click", (event) => {
+            const actionButton = event.target.closest("[data-filter-remove]");
+            if (!actionButton) {
+                return;
+            }
+            removeFilter(actionButton.dataset.filterRemove);
+        });
+        elements.resetFiltersButton?.addEventListener("click", async () => {
+            resetState();
+            syncControls();
+            await refreshCatalog();
+        });
+        window.addEventListener("popstate", async () => {
+            hydrateStateFromUrl();
+            syncControls();
+            await refreshCatalog();
+        });
     }
 
     function renderHeroMetrics() {
@@ -339,61 +363,69 @@
 
     function renderCatalogSummary(list) {
         setText(elements.catalogCountText, `${list.length}개 상품이 현재 조건에 맞습니다.`);
+        setText(elements.catalogSummaryText, buildSummaryText(list.length));
         if (!elements.catalogTags) {
             return;
         }
 
         const tags = [];
         if (state.brand !== "ALL") {
-            tags.push(`브랜드 ${state.brand}`);
+            tags.push({ label: `브랜드 ${state.brand}`, key: "brand" });
         }
         if (state.category !== "ALL") {
-            tags.push(`카테고리 ${state.category}`);
+            tags.push({ label: `카테고리 ${state.category}`, key: "category" });
         }
         if (state.stock === "LOW") {
-            tags.push(`품절 임박 ${state.lowStockThreshold}개 미만`);
+            tags.push({ label: `품절 임박 ${state.lowStockThreshold}개 미만`, key: "stock" });
         }
         if (state.stock === "STABLE") {
-            tags.push(`재고 안정 ${state.lowStockThreshold}개 이상`);
+            tags.push({ label: `재고 안정 ${state.lowStockThreshold}개 이상`, key: "stock" });
         }
         if (state.featuredOnly === "FEATURED") {
-            tags.push("Featured만");
+            tags.push({ label: "Featured만", key: "featuredOnly" });
         }
         if (state.priceBand === "UNDER_200") {
-            tags.push("20만원 미만");
+            tags.push({ label: "20만원 미만", key: "priceBand" });
         }
         if (state.priceBand === "BETWEEN_200_300") {
-            tags.push("20만원-30만원");
+            tags.push({ label: "20만원-30만원", key: "priceBand" });
         }
         if (state.priceBand === "OVER_300") {
-            tags.push("30만원 초과");
+            tags.push({ label: "30만원 초과", key: "priceBand" });
         }
         if (state.search) {
-            tags.push(`검색 ${state.search}`);
+            tags.push({ label: `검색 ${state.search}`, key: "search" });
         }
         if (state.sort === "FEATURED") {
-            tags.push("대표 노출순");
+            tags.push({ label: "대표 노출순", key: "sort" });
         }
         if (state.sort === "NAME_ASC") {
-            tags.push("상품명 오름차순");
+            tags.push({ label: "상품명 오름차순", key: "sort" });
         }
         if (state.sort === "PRICE_HIGH") {
-            tags.push("발매가 높은 순");
+            tags.push({ label: "발매가 높은 순", key: "sort" });
         }
         if (state.sort === "PRICE_LOW") {
-            tags.push("발매가 낮은 순");
+            tags.push({ label: "발매가 낮은 순", key: "sort" });
         }
         if (state.sort === "STOCK_ASC") {
-            tags.push("재고 낮은 순");
+            tags.push({ label: "재고 낮은 순", key: "sort" });
         }
         if (state.sort === "STOCK_DESC") {
-            tags.push("재고 높은 순");
+            tags.push({ label: "재고 높은 순", key: "sort" });
         }
         if (!tags.length) {
-            tags.push("전체 탐색");
+            tags.push({ label: "전체 탐색", key: "" });
         }
 
-        elements.catalogTags.innerHTML = tags.map((tag) => `<span class="catalog-tag">${tag}</span>`).join("");
+        elements.catalogTags.innerHTML = tags.map((tag) => tag.key
+            ? `
+                <button class="catalog-tag catalog-tag--interactive" type="button" data-filter-remove="${tag.key}">
+                    <span>${tag.label}</span>
+                    <span class="catalog-tag__remove" aria-hidden="true">×</span>
+                </button>
+            `
+            : `<span class="catalog-tag">${tag.label}</span>`).join("");
     }
 
     function filteredProducts() {
@@ -401,12 +433,112 @@
     }
 
     async function refreshCatalog() {
+        syncUrlState();
         await loadProducts();
         populateFilters();
         renderHeroMetrics();
         renderFeatured();
         renderSignals();
         renderCatalog();
+    }
+
+    function hydrateStateFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        state.search = (params.get("search") || DEFAULT_STATE.search).trim().toLowerCase();
+        state.brand = params.get("brand") || DEFAULT_STATE.brand;
+        state.category = params.get("category") || DEFAULT_STATE.category;
+        state.stock = normalizeStateValue(params.get("stock"), ["ALL", "LOW", "STABLE"], DEFAULT_STATE.stock);
+        state.sort = normalizeStateValue(
+            params.get("sort"),
+            ["LATEST", "NAME_ASC", "PRICE_HIGH", "PRICE_LOW", "STOCK_ASC", "STOCK_DESC", "FEATURED"],
+            DEFAULT_STATE.sort
+        );
+        state.lowStockThreshold = normalizeStateValue(
+            params.get("lowStockThreshold"),
+            ["10", "20", "30", "50"],
+            DEFAULT_STATE.lowStockThreshold
+        );
+        state.featuredOnly = normalizeStateValue(params.get("featuredOnly"), ["ALL", "FEATURED"], DEFAULT_STATE.featuredOnly);
+        state.priceBand = normalizeStateValue(
+            params.get("priceBand"),
+            ["ALL", "UNDER_200", "BETWEEN_200_300", "OVER_300"],
+            DEFAULT_STATE.priceBand
+        );
+    }
+
+    function syncUrlState() {
+        const params = new URLSearchParams();
+        Object.entries(state).forEach(([key, value]) => {
+            if (value && value !== DEFAULT_STATE[key]) {
+                params.set(key, value);
+            }
+        });
+        const nextUrl = params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname;
+        window.history.replaceState({}, "", nextUrl);
+    }
+
+    function syncControls() {
+        if (elements.searchInput) {
+            elements.searchInput.value = state.search;
+        }
+        if (elements.brandFilter) {
+            elements.brandFilter.value = state.brand;
+        }
+        if (elements.categoryFilter) {
+            elements.categoryFilter.value = state.category;
+        }
+        if (elements.stockFilter) {
+            elements.stockFilter.value = state.stock;
+        }
+        if (elements.featuredOnlyFilter) {
+            elements.featuredOnlyFilter.value = state.featuredOnly;
+        }
+        if (elements.priceBandFilter) {
+            elements.priceBandFilter.value = state.priceBand;
+        }
+        if (elements.sortFilter) {
+            elements.sortFilter.value = state.sort;
+        }
+        if (elements.lowStockThresholdFilter) {
+            elements.lowStockThresholdFilter.value = state.lowStockThreshold;
+        }
+    }
+
+    function removeFilter(key) {
+        if (!key || !(key in DEFAULT_STATE)) {
+            return;
+        }
+        state[key] = DEFAULT_STATE[key];
+        if (key === "stock") {
+            state.lowStockThreshold = DEFAULT_STATE.lowStockThreshold;
+        }
+        if (key === "featuredOnly" && state.sort === "FEATURED") {
+            state.sort = DEFAULT_STATE.sort;
+        }
+        syncControls();
+        refreshCatalog();
+    }
+
+    function resetState() {
+        Object.assign(state, DEFAULT_STATE);
+    }
+
+    function buildSummaryText(count) {
+        const activeFilters = Object.entries(state)
+            .filter(([key, value]) => value !== DEFAULT_STATE[key])
+            .map(([key]) => key);
+
+        if (!activeFilters.length) {
+            return "브랜드, 카테고리, 가격대 조건 없이 전체 카탈로그를 보고 있습니다.";
+        }
+        if (!count) {
+            return "현재 조건에서는 결과가 없어 일부 필터를 해제하는 편이 좋습니다.";
+        }
+        return `${activeFilters.length}개 조건이 적용된 상태이며, 공유 가능한 URL로 탐색 상태를 유지합니다.`;
+    }
+
+    function normalizeStateValue(value, allowedValues, fallbackValue) {
+        return allowedValues.includes(value) ? value : fallbackValue;
     }
 
     function bindProductButtons(container) {

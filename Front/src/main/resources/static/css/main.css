@@ -564,6 +564,30 @@ select {
     gap: 14px;
 }
 
+.catalog-summary__headline {
+    display: grid;
+    gap: 6px;
+}
+
+.catalog-summary__headline strong {
+    color: var(--ink);
+}
+
+.catalog-summary__headline p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.55;
+}
+
+.catalog-summary__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
 .catalog-intro {
     display: grid;
     grid-template-columns: 140px minmax(0, 1fr);
@@ -591,17 +615,59 @@ select {
     gap: 8px;
 }
 
+.catalog-reset-button,
 .catalog-tag {
     display: inline-flex;
     align-items: center;
     min-height: 32px;
     padding: 0 12px;
     border-radius: 999px;
-    background: #fff;
     border: 1px solid var(--line);
-    color: var(--muted);
     font-size: 0.84rem;
     font-weight: 700;
+}
+
+.catalog-reset-button {
+    background: rgba(22, 24, 29, 0.04);
+    color: var(--ink);
+    cursor: pointer;
+    transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.catalog-reset-button:hover {
+    transform: translateY(-1px);
+    background: rgba(214, 91, 46, 0.08);
+    border-color: rgba(214, 91, 46, 0.16);
+}
+
+.catalog-tag {
+    background: #fff;
+    color: var(--muted);
+}
+
+.catalog-tag--interactive {
+    gap: 8px;
+    background: rgba(20, 108, 98, 0.08);
+    color: #115e59;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.catalog-tag--interactive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(20, 108, 98, 0.1);
+    border-color: rgba(20, 108, 98, 0.16);
+}
+
+.catalog-tag__remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(20, 108, 98, 0.12);
+    font-size: 0.78rem;
 }
 
 .catalog-grid {
@@ -1032,6 +1098,11 @@ select {
         align-items: flex-start;
     }
 
+    .catalog-summary__actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
     .hero-copy {
         padding: 28px 22px;
     }
@@ -1051,6 +1122,11 @@ select {
 
     .catalog-intro {
         grid-template-columns: 1fr;
+    }
+
+    .catalog-reset-button {
+        width: 100%;
+        justify-content: center;
     }
 
     .catalog-card__footer,

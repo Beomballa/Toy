@@ -871,6 +871,7 @@
 
             elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
+            ${productVisualMarkup(product, "product-drawer__visual")}
             <div class="product-drawer__meta">
                 <span class="product-drawer__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                 <span class="product-drawer__pill is-stable-stock">${product.brand}</span>
@@ -879,13 +880,24 @@
             <h3>${product.headline || product.name}</h3>
             <div class="product-drawer__meta">
                 <span>${product.name}</span>
+                <span>${product.model}</span>
+                <span>${product.category}</span>
             </div>
             <p class="product-drawer__description">${product.description}</p>
             <div class="product-drawer__group">
-                <div class="product-drawer__meta">
-                    <span>카테고리 ${product.category}</span>
-                    <span>모델 ${product.model}</span>
-                    <span>등록 ${product.createdDate}</span>
+                <div class="product-drawer__overview">
+                    <div class="product-drawer__overview-card">
+                        <span>카테고리</span>
+                        <strong>${product.category}</strong>
+                    </div>
+                    <div class="product-drawer__overview-card">
+                        <span>모델</span>
+                        <strong>${product.model}</strong>
+                    </div>
+                    <div class="product-drawer__overview-card">
+                        <span>등록일</span>
+                        <strong>${product.createdDate}</strong>
+                    </div>
                 </div>
             </div>
             <div class="product-drawer__group">
@@ -918,6 +930,7 @@
                 <div class="product-drawer__related-list">
                     ${product.relatedProducts.map((related) => `
                         <button class="product-drawer__related-card" type="button" data-product-id="${related.id}">
+                            ${productVisualMarkup(related, "product-drawer__related-visual")}
                             <span class="product-drawer__related-brand">${related.brand}</span>
                             <strong>${related.name}</strong>
                             <span class="product-drawer__related-meta">${related.reason} · ${related.model} · ${related.priceLabel || formatPrice(related.price)} · ${related.stockStatus || stockLabel(related.stock)}</span>

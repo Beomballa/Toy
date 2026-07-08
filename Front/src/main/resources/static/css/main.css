@@ -999,7 +999,7 @@ select {
 }
 
 .page-shell--detail {
-    width: min(1260px, calc(100vw - 32px));
+    width: min(1280px, calc(100vw - 40px));
 }
 
 .topbar--detail {
@@ -1016,12 +1016,12 @@ select {
 .detail-page {
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 34px;
 }
 
 .detail-hero {
     display: grid;
-    grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.8fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.82fr);
     gap: 18px;
 }
 
@@ -1031,24 +1031,22 @@ select {
 .detail-info-card,
 .detail-option-card,
 .detail-related-card {
-    border-radius: 28px;
-    background: rgba(255, 253, 248, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.84);
+    border-radius: 24px;
+    background: #ffffff;
+    border: 1px solid var(--line);
     box-shadow: var(--card-shadow);
 }
 
 .detail-hero__main {
-    padding: 36px 38px;
-    background:
-        radial-gradient(circle at top right, rgba(214, 91, 46, 0.1), transparent 26%),
-        linear-gradient(180deg, rgba(255, 253, 248, 0.95) 0%, rgba(248, 243, 236, 0.9) 100%);
+    padding: 38px 40px;
+    background: linear-gradient(135deg, #f3f3f3 0%, #ffffff 62%, #fafafa 100%);
 }
 
 .detail-hero__side {
-    padding: 22px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
 .detail-meta-row {
@@ -1059,17 +1057,18 @@ select {
 
 .detail-hero h1 {
     margin: 14px 0 0;
-    font-family: "Space Grotesk", "Noto Sans KR", sans-serif;
-    font-size: clamp(2.2rem, 4vw, 4rem);
-    line-height: 0.98;
-    letter-spacing: -0.06em;
+    font-family: "Noto Sans KR", sans-serif;
+    font-size: clamp(2rem, 3.8vw, 3rem);
+    line-height: 1.2;
+    letter-spacing: -0.045em;
+    font-weight: 800;
 }
 
 .detail-description {
-    margin: 18px 0 0;
+    margin: 16px 0 0;
     color: var(--muted);
-    font-size: 1rem;
-    line-height: 1.85;
+    font-size: 0.98rem;
+    line-height: 1.78;
 }
 
 .detail-actions {
@@ -1081,24 +1080,25 @@ select {
 
 .detail-price-card {
     padding: 22px;
-    border-radius: 24px;
-    color: #fff7ef;
-    background: linear-gradient(135deg, #13161c 0%, #25403b 50%, #8c2f14 100%);
-    box-shadow: var(--card-shadow-strong);
+    border-radius: 20px;
+    color: #ffffff;
+    background: #111111;
+    box-shadow: none;
 }
 
 .detail-price-card p,
 .detail-price-card span {
     margin: 0;
-    color: rgba(255, 247, 239, 0.82);
+    color: rgba(255, 255, 255, 0.74);
 }
 
 .detail-price-card strong {
     display: block;
     margin: 10px 0 8px;
-    font-family: "Space Grotesk", "Noto Sans KR", sans-serif;
-    font-size: 2.3rem;
-    letter-spacing: -0.06em;
+    font-family: "Noto Sans KR", sans-serif;
+    font-size: 2rem;
+    letter-spacing: -0.05em;
+    font-weight: 800;
 }
 
 .detail-signal-list {
@@ -1125,7 +1125,7 @@ select {
 .detail-option-card span,
 .detail-related-card__brand {
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: 0.8rem;
     font-weight: 700;
     letter-spacing: -0.01em;
 }
@@ -1135,7 +1135,7 @@ select {
 .detail-related-card strong {
     display: block;
     margin-top: 8px;
-    font-size: 1.04rem;
+    font-size: 1rem;
     color: var(--ink);
 }
 
@@ -1148,8 +1148,8 @@ select {
 
 #recentViewedSection .detail-related-card,
 #detailRecentSection .detail-related-card {
-    background: rgba(255, 253, 248, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.84);
+    background: #ffffff;
+    border: 1px solid var(--line);
     border-radius: 24px;
     box-shadow: var(--card-shadow);
 }
@@ -1266,6 +1266,10 @@ select {
         width: 100%;
     }
 
+    .topbar--detail {
+        align-items: flex-start;
+    }
+
     .catalog-summary__actions {
         width: 100%;
         justify-content: flex-start;
@@ -1307,6 +1311,10 @@ select {
 
     .detail-actions {
         flex-direction: column;
+    }
+
+    .detail-hero__main {
+        padding: 28px 22px;
     }
 
     .catalog-card__action {

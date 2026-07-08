@@ -11,18 +11,30 @@
 </head>
 <body>
 <div class="page-shell page-shell--detail">
+    <div class="utility-bar">
+        <div class="utility-bar__links">
+            <a href="/front">메인으로</a>
+            <a href="#detailHero">상품 요약</a>
+            <a href="#detailRelated">연관 상품</a>
+        </div>
+        <div class="utility-bar__meta">
+            <span>Product Detail</span>
+            <span>Marketplace edit</span>
+        </div>
+    </div>
+
     <header class="topbar topbar--detail">
         <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
             <span class="brand-mark__badge">GS</span>
             <span class="brand-mark__copy">
                 <strong>Grade Stock</strong>
-                <span>Curated launch board</span>
+                <span>Marketplace edit</span>
             </span>
         </a>
         <nav class="topbar-nav" aria-label="상세 탐색">
-            <a href="#detailHero">Overview</a>
-            <a href="#detailOptions">Options</a>
-            <a href="#detailRelated">Related</a>
+            <a href="#detailHero">SUMMARY</a>
+            <a href="#detailOptions">OPTIONS</a>
+            <a href="#detailRelated">RELATED</a>
         </nav>
         <a class="topbar-action" href="/front" id="backToCatalogLink">카탈로그로 복귀</a>
     </header>
@@ -30,7 +42,7 @@
     <main class="detail-page" id="detailPage" th:attr="data-product-id=${productId}">
         <section class="detail-hero" id="detailHero">
             <div class="detail-hero__main">
-                <p class="eyebrow">Product Detail</p>
+                <p class="eyebrow">Product Summary</p>
                 <div class="detail-meta-row" id="detailMetaRow">
                     <span class="product-drawer__pill is-stable-stock">데이터 로딩 중</span>
                 </div>
@@ -38,7 +50,7 @@
                 <p class="detail-description" id="detailDescription">선택한 상품의 카테고리, 재고, 옵션, 연관 상품을 정리하고 있습니다.</p>
                 <div class="detail-actions">
                     <a class="hero-primary" href="/front#catalog" id="detailCatalogLink">카탈로그 보기</a>
-                    <button class="hero-secondary" type="button" id="detailFocusRelated">연관 상품 보기</button>
+                    <button class="hero-secondary" type="button" id="detailFocusRelated">비교 상품 보기</button>
                 </div>
             </div>
             <aside class="detail-hero__side">

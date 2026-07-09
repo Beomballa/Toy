@@ -37,6 +37,30 @@
         return Number(stock || 0) < lowStockThreshold() ? "is-low-stock" : "is-stable-stock";
     }
 
+    function brandInitials(brand) {
+        if (!brand) {
+            return "GS";
+        }
+        return brand
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((token) => token.charAt(0).toUpperCase())
+            .join("");
+    }
+
+    function productVisualMarkup(product, className) {
+        return `
+            <div class="${className}">
+                <span class="${className}__badge">${brandInitials(product.brand)}</span>
+                <div class="${className}__copy">
+                    <strong>${product.brand || "Grade Stock"}</strong>
+                    <span>${product.category || product.model || product.reason || "Curated pick"}</span>
+                </div>
+            </div>
+        `;
+    }
+
     function renderMeta(product) {
         if (!elements.detailMetaRow) {
             return;
@@ -125,6 +149,7 @@
         }
         elements.detailRelatedGrid.innerHTML = related.map((item) => `
             <a class="detail-related-card" href="${buildProductUrl(item.id)}">
+                ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
                 <p>${item.reason}</p>
@@ -196,6 +221,7 @@
         elements.detailRecentSection.hidden = false;
         elements.detailRecentGrid.innerHTML = recentProducts.map((item) => `
             <a class="detail-related-card" href="${buildProductUrl(item.id)}">
+                ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand || "-"}</span>
                 <strong>${item.headline || item.name || "-"}</strong>
                 <p>${item.name || "-"} · ${item.model || "-"}</p>

@@ -15,6 +15,12 @@
     --surface-glow: none;
     --card-shadow: 0 1px 0 rgba(17, 17, 17, 0.04);
     --card-shadow-strong: 0 10px 24px rgba(17, 17, 17, 0.08);
+    --text-xs: 0.74rem;
+    --text-sm: 0.82rem;
+    --text-base: 0.92rem;
+    --text-md: 1rem;
+    --text-lg: 1.18rem;
+    --text-xl: 1.38rem;
 }
 
 * {
@@ -57,7 +63,7 @@ select {
     gap: 20px;
     min-height: 40px;
     color: #7d7d7d;
-    font-size: 0.76rem;
+    font-size: var(--text-xs);
 }
 
 .utility-bar__links,
@@ -124,7 +130,7 @@ select {
 }
 
 .brand-mark__copy strong {
-    font-size: 1rem;
+    font-size: var(--text-md);
     font-weight: 800;
 }
 
@@ -149,7 +155,7 @@ select {
 }
 
 .topbar-nav a {
-    font-size: 0.96rem;
+    font-size: var(--text-base);
     font-weight: 700;
     position: relative;
     color: var(--ink);
@@ -189,7 +195,7 @@ select {
 
 .topbar-subnav a {
     color: #666666;
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
     font-weight: 600;
 }
 
@@ -277,7 +283,7 @@ select {
 .eyebrow {
     margin: 0 0 14px;
     color: #7b7b7b;
-    font-size: 0.74rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -295,7 +301,7 @@ select {
 .hero-description {
     max-width: 640px;
     margin: 18px 0 0;
-    font-size: 0.98rem;
+    font-size: var(--text-base);
     line-height: 1.75;
 }
 
@@ -323,13 +329,13 @@ select {
 }
 
 .hero-shortcuts strong {
-    font-size: 0.92rem;
+    font-size: var(--text-base);
     font-weight: 700;
 }
 
 .hero-shortcuts span {
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: var(--text-sm);
     line-height: 1.5;
 }
 
@@ -350,7 +356,7 @@ select {
 
 .hero-metrics dt {
     color: var(--muted);
-    font-size: 0.76rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -359,7 +365,7 @@ select {
 .hero-metrics dd {
     margin: 10px 0 0;
     font-family: "Noto Sans KR", sans-serif;
-    font-size: 1.68rem;
+    font-size: clamp(1.45rem, 2vw, 1.68rem);
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -383,14 +389,14 @@ select {
 .hero-panel__label {
     margin: 0 0 10px;
     color: rgba(255, 255, 255, 0.62);
-    font-size: 0.74rem;
+    font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.1em;
 }
 
 .hero-panel__card strong {
     display: block;
-    font-size: 1.06rem;
+    font-size: var(--text-md);
     line-height: 1.5;
 }
 
@@ -407,13 +413,13 @@ select {
 }
 
 .hero-panel__headline strong {
-    font-size: 1rem;
+    font-size: var(--text-md);
     font-weight: 700;
 }
 
 .hero-panel__headline span {
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: var(--text-base);
     line-height: 1.6;
 }
 
@@ -432,13 +438,13 @@ select {
 .signal-card strong {
     display: block;
     margin-bottom: 6px;
-    font-size: 0.98rem;
+    font-size: var(--text-base);
 }
 
 .signal-card span {
     display: block;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     line-height: 1.6;
 }
 
@@ -461,7 +467,7 @@ select {
     margin: 6px 0 0;
     line-height: 1.65;
     max-width: 720px;
-    font-size: 0.94rem;
+    font-size: var(--text-base);
 }
 
 .spotlight {
@@ -545,7 +551,7 @@ select {
     border-radius: 16px;
     background: #111111;
     color: #ffffff;
-    font-size: 0.92rem;
+    font-size: var(--text-base);
     font-weight: 800;
 }
 
@@ -556,7 +562,7 @@ select {
 
 .brand-rank-card__body strong,
 .category-shortcut-card strong {
-    font-size: 0.96rem;
+    font-size: var(--text-base);
     font-weight: 700;
     color: var(--ink);
 }
@@ -566,7 +572,7 @@ select {
 .category-shortcut-card span,
 .category-shortcut-card em {
     color: var(--muted);
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     font-style: normal;
 }
 
@@ -590,7 +596,7 @@ select {
     border-radius: 14px;
     background: #111111;
     color: #ffffff;
-    font-size: 0.9rem;
+    font-size: var(--text-base);
     font-weight: 800;
 }
 
@@ -631,7 +637,7 @@ select {
     border-radius: 14px;
     background: #111111;
     color: #ffffff;
-    font-size: 0.84rem;
+    font-size: var(--text-sm);
     font-weight: 800;
 }
 
@@ -643,13 +649,13 @@ select {
 }
 
 .signal-feed-card__visual-copy strong {
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     color: #444444;
 }
 
 .signal-feed-card__visual-copy span {
     color: #8a8a8a;
-    font-size: 0.76rem;
+    font-size: var(--text-xs);
 }
 
 .signal-feed-card__body {
@@ -660,14 +666,14 @@ select {
 
 .signal-feed-card__kicker {
     color: #666666;
-    font-size: 0.74rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
 }
 
 .signal-feed-card__body strong {
-    font-size: 0.98rem;
+    font-size: var(--text-base);
     font-weight: 700;
     line-height: 1.45;
 }
@@ -675,7 +681,7 @@ select {
 .signal-feed-card__body p {
     margin: 0;
     color: var(--muted);
-    font-size: 0.84rem;
+    font-size: var(--text-sm);
     line-height: 1.55;
 }
 
@@ -762,7 +768,7 @@ select {
     border-radius: 16px;
     background: #111111;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: var(--text-md);
     font-weight: 800;
     letter-spacing: -0.04em;
 }
@@ -779,7 +785,7 @@ select {
 .spotlight-card__visual-copy strong,
 .catalog-card__visual-copy strong,
 .detail-related-card__visual-copy strong {
-    font-size: 0.88rem;
+    font-size: var(--text-base);
     font-weight: 700;
     color: #444444;
 }
@@ -788,14 +794,14 @@ select {
 .catalog-card__visual-copy span,
 .detail-related-card__visual-copy span {
     color: #8a8a8a;
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     line-height: 1.45;
 }
 
 .spotlight-card__label,
 .catalog-card__label {
     color: #666666;
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -809,7 +815,7 @@ select {
     min-height: 30px;
     padding: 0 12px;
     border-radius: 999px;
-    font-size: 0.8rem;
+    font-size: var(--text-sm);
     font-weight: 700;
 }
 
@@ -826,7 +832,7 @@ select {
 .spotlight-card__title,
 .catalog-card__title {
     margin: 12px 0 8px;
-    font-size: 1.16rem;
+    font-size: var(--text-lg);
     line-height: 1.4;
     letter-spacing: -0.03em;
     font-weight: 700;
@@ -837,7 +843,7 @@ select {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
 }
 
 .spotlight-card__footer {
@@ -851,14 +857,14 @@ select {
 .spotlight-card__price,
 .catalog-card__price {
     font-family: "Noto Sans KR", sans-serif;
-    font-size: 1.3rem;
+    font-size: var(--text-xl);
     font-weight: 800;
     letter-spacing: -0.04em;
 }
 
 .catalog-toolbar {
     display: grid;
-    grid-template-columns: 2fr repeat(6, minmax(0, 1fr));
+    grid-template-columns: 2fr repeat(6, minmax(120px, 1fr));
     gap: 12px;
     padding: 16px;
     position: sticky;
@@ -871,14 +877,19 @@ select {
     box-shadow: var(--card-shadow);
 }
 
+.catalog-toolbar > * {
+    min-width: 0;
+}
+
 .toolbar-field {
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-width: 0;
 }
 
 .toolbar-field label {
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     color: var(--muted);
     letter-spacing: -0.01em;
@@ -886,12 +897,14 @@ select {
 
 .toolbar-field input,
 .toolbar-field select {
+    width: 100%;
     min-height: 40px;
     padding: 0 12px;
     border: 1px solid var(--line-strong);
     border-radius: 12px;
     background: #fff;
     outline: none;
+    font-size: var(--text-sm);
 }
 
 .toolbar-field input:focus,
@@ -922,7 +935,7 @@ select {
 .catalog-summary__headline p {
     margin: 0;
     color: var(--muted);
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     line-height: 1.55;
 }
 
@@ -945,7 +958,7 @@ select {
 
 .catalog-intro strong {
     font-family: "Noto Sans KR", sans-serif;
-    font-size: 1rem;
+    font-size: var(--text-md);
     letter-spacing: -0.03em;
     font-weight: 800;
 }
@@ -970,7 +983,7 @@ select {
     padding: 0 12px;
     border-radius: 999px;
     border: 1px solid var(--line);
-    font-size: 0.84rem;
+    font-size: var(--text-sm);
     font-weight: 700;
 }
 
@@ -1014,7 +1027,7 @@ select {
     height: 18px;
     border-radius: 50%;
     background: rgba(20, 108, 98, 0.12);
-    font-size: 0.78rem;
+    font-size: var(--text-xs);
 }
 
 .catalog-grid {
@@ -1056,7 +1069,7 @@ select {
 .catalog-card__copy {
     margin: 0;
     line-height: 1.65;
-    font-size: 0.9rem;
+    font-size: var(--text-sm);
     color: #6b6b6b;
 }
 
@@ -1084,7 +1097,7 @@ select {
 
 .catalog-card__link {
     color: var(--brand-deep);
-    font-size: 0.86rem;
+    font-size: var(--text-sm);
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 3px;
@@ -1095,7 +1108,7 @@ select {
     min-height: 36px;
     padding: 0 12px;
     border-radius: 999px;
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     font-weight: 700;
     cursor: pointer;
     transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
@@ -1196,7 +1209,7 @@ select {
     border: none;
     border-radius: 50%;
     background: rgba(23, 23, 23, 0.08);
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     cursor: pointer;
 }
 
@@ -1206,7 +1219,7 @@ select {
 
 .product-drawer__body h3 {
     margin: 8px 0 14px;
-    font-size: 1.8rem;
+    font-size: clamp(1.34rem, 2vw, 1.56rem);
     letter-spacing: -0.04em;
 }
 
@@ -1233,7 +1246,7 @@ select {
     border-radius: 14px;
     background: #111111;
     color: #ffffff;
-    font-size: 0.94rem;
+    font-size: var(--text-base);
     font-weight: 800;
 }
 
@@ -1247,14 +1260,14 @@ select {
 
 .product-drawer__visual-copy strong,
 .product-drawer__related-visual-copy strong {
-    font-size: 0.86rem;
+    font-size: var(--text-sm);
     color: #444444;
 }
 
 .product-drawer__visual-copy span,
 .product-drawer__related-visual-copy span {
     color: #8a8a8a;
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
 }
 
 .product-drawer__group {
@@ -1265,7 +1278,7 @@ select {
 
 .product-drawer__group strong {
     display: block;
-    font-size: 0.92rem;
+    font-size: var(--text-base);
     letter-spacing: -0.01em;
 }
 
@@ -1286,12 +1299,12 @@ select {
 
 .product-drawer__overview-card span {
     color: var(--muted);
-    font-size: 0.76rem;
+    font-size: var(--text-xs);
     font-weight: 700;
 }
 
 .product-drawer__overview-card strong {
-    font-size: 0.95rem;
+    font-size: var(--text-base);
 }
 
 .product-drawer__meta {
@@ -1357,12 +1370,12 @@ select {
 }
 
 .product-drawer__related-brand {
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
     font-weight: 700;
 }
 
 .product-drawer__related-meta {
-    font-size: 0.92rem;
+    font-size: var(--text-sm);
 }
 
 .page-shell--detail {
@@ -1434,7 +1447,7 @@ select {
 .detail-description {
     margin: 16px 0 0;
     color: var(--muted);
-    font-size: 0.98rem;
+    font-size: var(--text-base);
     line-height: 1.78;
 }
 
@@ -1463,7 +1476,7 @@ select {
     display: block;
     margin: 10px 0 8px;
     font-family: "Noto Sans KR", sans-serif;
-    font-size: 2rem;
+    font-size: clamp(1.5rem, 2.2vw, 1.76rem);
     letter-spacing: -0.05em;
     font-weight: 800;
 }
@@ -1492,7 +1505,7 @@ select {
 .detail-option-card span,
 .detail-related-card__brand {
     color: var(--muted);
-    font-size: 0.8rem;
+    font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: -0.01em;
 }
@@ -1502,7 +1515,7 @@ select {
 .detail-related-card strong {
     display: block;
     margin-top: 8px;
-    font-size: 1rem;
+    font-size: var(--text-md);
     color: var(--ink);
 }
 
@@ -1528,7 +1541,7 @@ select {
     padding: 6px 10px;
     border-radius: 999px;
     font-style: normal;
-    font-size: 0.82rem;
+    font-size: var(--text-sm);
     font-weight: 700;
 }
 
@@ -1556,7 +1569,27 @@ select {
     flex-wrap: wrap;
     gap: 8px;
     color: var(--muted);
-    font-size: 0.88rem;
+    font-size: var(--text-sm);
+}
+
+@media (max-width: 1280px) {
+    .catalog-toolbar {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .toolbar-field--search {
+        grid-column: span 2;
+    }
+}
+
+@media (max-width: 900px) {
+    .catalog-toolbar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .toolbar-field--search {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 1100px) {

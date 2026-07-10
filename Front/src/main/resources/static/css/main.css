@@ -1060,6 +1060,64 @@ select {
     margin-bottom: 14px;
 }
 
+.catalog-memory-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.catalog-memory-block {
+    display: grid;
+    gap: 12px;
+    padding: 18px 20px;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), #fbfbfb 100%);
+    box-shadow: var(--card-shadow);
+}
+
+.catalog-memory-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.catalog-memory-head strong {
+    font-size: var(--text-md);
+    letter-spacing: -0.03em;
+}
+
+.catalog-memory-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.catalog-memory-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: #ffffff;
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.catalog-memory-item button {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0;
+}
+
 .catalog-preset-button {
     display: inline-flex;
     align-items: center;
@@ -1987,6 +2045,7 @@ select {
     .spotlight-grid,
     .catalog-grid,
     .catalog-insight-grid,
+    .catalog-memory-strip,
     .detail-overview-grid,
     .detail-option-grid,
     .detail-related-grid {
@@ -2131,6 +2190,7 @@ select {
     .spotlight-grid,
     .catalog-grid,
     .catalog-insight-grid,
+    .catalog-memory-strip,
     .detail-overview-grid,
     .detail-option-grid,
     .detail-related-grid {
@@ -2143,6 +2203,11 @@ select {
 
     .catalog-intro {
         grid-template-columns: 1fr;
+    }
+
+    .catalog-memory-head {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
     .catalog-toolbar {

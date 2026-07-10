@@ -2,6 +2,10 @@
     const BOOKMARK_PRODUCTS_KEY = "front-bookmark-products";
     const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
+    const SAVED_VIEWS_KEY = "front-saved-views";
+    const SEARCH_HISTORY_KEY = "front-search-history";
+    const LAST_CATALOG_STATE_KEY = "front-last-catalog-state";
+    const LAST_DRAWER_PRODUCT_KEY = "front-last-drawer-product";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -53,6 +57,12 @@
         jumpFirstProductButton: document.getElementById("jumpFirstProductButton"),
         randomProductButton: document.getElementById("randomProductButton"),
         clearSearchButton: document.getElementById("clearSearchButton"),
+        saveCurrentViewButton: document.getElementById("saveCurrentViewButton"),
+        restoreLastStateButton: document.getElementById("restoreLastStateButton"),
+        clearSearchHistoryButton: document.getElementById("clearSearchHistoryButton"),
+        reopenLastDrawerButton: document.getElementById("reopenLastDrawerButton"),
+        savedViewList: document.getElementById("savedViewList"),
+        searchHistoryList: document.getElementById("searchHistoryList"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
@@ -111,6 +121,8 @@
         renderCategoryShortcuts();
         renderSignalStrip();
         renderFeatured();
+        renderSavedViews();
+        renderSearchHistory();
         renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
@@ -330,6 +342,32 @@
             syncControls();
             await refreshCatalog();
             showToast("검색어를 비웠습니다.", "전체 조건 흐름으로 다시 탐색할 수 있습니다.");
+        });
+        elements.saveCurrentViewButton?.addEventListener("click", () => {
+            saveCurrentView();
+        });
+        elements.restoreLastStateButton?.addEventListener("click", async () => {
+            if (!restoreLastCatalogState()) {
+                showToast("복구할 마지막 조건이 없습니다.", "먼저 탐색 조건을 적용한 뒤 다시 시도해주세요.", true);
+                return;
+            }
+            syncControls();
+            await refreshCatalog();
+            showToast("마지막 탐색 조건을 복구했습니다.", "직전에 보던 카탈로그 흐름으로 돌아왔습니다.");
+        });
+        elements.clearSearchHistoryButton?.addEventListener("click", () => {
+            window.localStorage.removeItem(SEARCH_HISTORY_KEY);
+            renderSearchHistory();
+            showToast("검색 기록을 비웠습니다.", "최근 검색어 목록이 초기화되었습니다.");
+        });
+        elements.reopenLastDrawerButton?.addEventListener("click", () => {
+            const lastDrawerProductId = Number(window.localStorage.getItem(LAST_DRAWER_PRODUCT_KEY) || 0);
+            if (!lastDrawerProductId) {
+                showToast("마지막으로 본 상품이 없습니다.", "먼저 상품 상세를 열어주세요.", true);
+                return;
+            }
+            openDrawer(lastDrawerProductId);
+            showToast("마지막으로 보던 상품을 열었습니다.", "이전 탐색 흐름을 바로 이어갈 수 있습니다.");
         });
         elements.jumpFirstProductButton?.addEventListener("click", () => {
             const firstProduct = filteredProducts()[0];
@@ -935,6 +973,8 @@
 
     async function refreshCatalog() {
         syncUrlState();
+        persistLastCatalogState();
+        persistSearchHistory();
         await loadProducts();
         populateFilters();
         renderHeroMetrics();
@@ -942,6 +982,8 @@
         renderCategoryShortcuts();
         renderSignalStrip();
         renderFeatured();
+        renderSavedViews();
+        renderSearchHistory();
         renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
@@ -1029,6 +1071,141 @@
 
     function resetState() {
         Object.assign(state, DEFAULT_STATE);
+    }
+
+    function saveCurrentView() {
+        const summary = viewSummaryLabel();
+        const current = readSavedViews().filter((item) => item.summary !== summary);
+        const next = [{
+            summary,
+            snapshot: { ...state }
+        }].concat(current).slice(0, 6);
+        window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next));
+        renderSavedViews();
+        showToast("현재 탐색 조건을 저장했습니다.", `${summary} 조건으로 다시 돌아올 수 있습니다.`);
+    }
+
+    function renderSavedViews() {
+        if (!elements.savedViewList) {
+            return;
+        }
+        const savedViews = readSavedViews();
+        if (!savedViews.length) {
+            elements.savedViewList.innerHTML = `<span class="catalog-tag">저장된 탐색이 없습니다.</span>`;
+            return;
+        }
+        elements.savedViewList.innerHTML = savedViews.map((item, index) => `
+            <div class="catalog-memory-item">
+                <span data-saved-view-index="${index}">${item.summary}</span>
+                <button type="button" data-remove-saved-view-index="${index}" aria-label="저장 탐색 삭제">×</button>
+            </div>
+        `).join("");
+        elements.savedViewList.querySelectorAll("[data-saved-view-index]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const selected = readSavedViews()[Number(button.dataset.savedViewIndex)];
+                if (!selected?.snapshot) {
+                    return;
+                }
+                Object.assign(state, DEFAULT_STATE, selected.snapshot);
+                syncControls();
+                await refreshCatalog();
+                showToast("저장한 탐색을 불러왔습니다.", `${selected.summary} 조건으로 다시 탐색합니다.`);
+            });
+        });
+        elements.savedViewList.querySelectorAll("[data-remove-saved-view-index]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const next = readSavedViews().filter((_, index) => index !== Number(button.dataset.removeSavedViewIndex));
+                window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next));
+                renderSavedViews();
+                showToast("저장한 탐색을 삭제했습니다.", "더 이상 목록에 노출되지 않습니다.");
+            });
+        });
+    }
+
+    function renderSearchHistory() {
+        if (!elements.searchHistoryList) {
+            return;
+        }
+        const history = readSearchHistory();
+        if (!history.length) {
+            elements.searchHistoryList.innerHTML = `<span class="catalog-tag">최근 검색이 없습니다.</span>`;
+            return;
+        }
+        elements.searchHistoryList.innerHTML = history.map((keyword) => `
+            <button class="catalog-memory-item" type="button" data-history-keyword="${keyword}">
+                <span>${keyword}</span>
+            </button>
+        `).join("");
+        elements.searchHistoryList.querySelectorAll("[data-history-keyword]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                state.search = button.dataset.historyKeyword || "";
+                syncControls();
+                await refreshCatalog();
+                showToast("최근 검색어를 적용했습니다.", `${state.search} 기준으로 다시 탐색합니다.`);
+            });
+        });
+    }
+
+    function persistLastCatalogState() {
+        window.localStorage.setItem(LAST_CATALOG_STATE_KEY, JSON.stringify(state));
+    }
+
+    function restoreLastCatalogState() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(LAST_CATALOG_STATE_KEY) || "{}");
+            const merged = { ...DEFAULT_STATE, ...parsed };
+            Object.assign(state, merged);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function persistSearchHistory() {
+        if (!state.search) {
+            return;
+        }
+        const current = readSearchHistory().filter((keyword) => keyword !== state.search);
+        const next = [state.search].concat(current).slice(0, 8);
+        window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+    }
+
+    function readSavedViews() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function readSearchHistory() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function viewSummaryLabel() {
+        const labels = [];
+        if (state.brand !== "ALL") {
+            labels.push(state.brand);
+        }
+        if (state.category !== "ALL") {
+            labels.push(state.category);
+        }
+        if (state.search) {
+            labels.push(`검색:${state.search}`);
+        }
+        if (state.stock === "LOW") {
+            labels.push("저재고");
+        }
+        if (state.featuredOnly === "FEATURED") {
+            labels.push("Featured");
+        }
+        return labels.length ? labels.join(" · ") : "전체 탐색";
     }
 
     function buildSummaryText(count) {
@@ -1544,6 +1721,7 @@
             return;
         }
 
+        window.localStorage.setItem(LAST_DRAWER_PRODUCT_KEY, String(productId));
         const list = filteredProducts();
         const currentIndex = list.findIndex((item) => Number(item.id) === Number(productId));
         const previousProduct = currentIndex > 0 ? list[currentIndex - 1] : null;

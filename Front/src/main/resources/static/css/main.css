@@ -1126,6 +1126,12 @@ select {
     border-color: rgba(214, 91, 46, 0.16);
 }
 
+.catalog-reset-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .catalog-tag {
     background: #fff;
     color: var(--muted);

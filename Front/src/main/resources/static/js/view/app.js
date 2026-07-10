@@ -292,6 +292,56 @@
         setText(elements.metricToday, String(metrics.latestDropCount || 0));
     }
 
+    function featuredRankLabel(product) {
+        if (product.featuredRank) {
+            return `Featured ${product.featuredRank}`;
+        }
+        return product.model || "Curated";
+    }
+
+    function stockPressureLabel(stock) {
+        const quantity = Number(stock || 0);
+        if (quantity <= 5) {
+            return "즉시 확인";
+        }
+        if (quantity < lowStockThresholdValue()) {
+            return "품절 임박";
+        }
+        return "재고 안정";
+    }
+
+    function stockPressureDetail(stock) {
+        const quantity = Number(stock || 0);
+        if (quantity <= 5) {
+            return `재고 ${quantity}개로 즉시 대응이 필요합니다.`;
+        }
+        if (quantity < lowStockThresholdValue()) {
+            return `재고 ${quantity}개로 긴장 구간에 들어가 있습니다.`;
+        }
+        return `재고 ${quantity}개로 비교적 안정적인 구간입니다.`;
+    }
+
+    function relativeDropLabel(createdDate) {
+        if (!createdDate) {
+            return "최근 등록";
+        }
+        const latestCreatedDate = metrics.latestCreatedDate;
+        if (latestCreatedDate && createdDate === latestCreatedDate) {
+            return "오늘 등록";
+        }
+        return `${createdDate} 등록`;
+    }
+
+    function moodLabel(product) {
+        return product.mood || product.category || "Curated";
+    }
+
+    function compactProductContext(product) {
+        return [product.brand, product.category, product.priceLabel || formatPrice(product.price)]
+            .filter(Boolean)
+            .join(" · ");
+    }
+
     function renderBrandSpotlight() {
         if (!elements.brandSpotlightGrid) {
             return;
@@ -302,7 +352,8 @@
                 brand: facet.value,
                 count: facet.count,
                 lowStockCount: brandProducts.filter((product) => product.stock < lowStockThresholdValue()).length,
-                category: brandProducts[0]?.category || "Curated"
+                category: brandProducts[0]?.category || "Curated",
+                mood: brandProducts[0]?.mood || "Core"
             };
         });
 
@@ -321,7 +372,7 @@
                 <span class="brand-rank-card__order">${String(index + 1).padStart(2, "0")}</span>
                 <div class="brand-rank-card__body">
                     <strong>${item.brand}</strong>
-                    <span>${item.count}개 상품 · 긴장 재고 ${item.lowStockCount}개</span>
+                    <span>${item.count}개 상품 · 긴장 재고 ${item.lowStockCount}개 · ${item.mood}</span>
                 </div>
                 <span class="brand-rank-card__meta">${item.category}</span>
             </button>
@@ -343,10 +394,12 @@
         }
         const rankedCategories = categoryFacets.slice(0, 6).map((facet) => {
             const categoryProducts = products.filter((product) => product.category === facet.value);
+            const lowStockCount = categoryProducts.filter((product) => product.stock < lowStockThresholdValue()).length;
             return {
                 category: facet.value,
                 count: facet.count,
-                lowStockCount: categoryProducts.filter((product) => product.stock < lowStockThresholdValue()).length
+                lowStockCount,
+                pressure: facet.count ? Math.round((lowStockCount / facet.count) * 100) : 0
             };
         });
 
@@ -365,7 +418,7 @@
                 <span class="category-shortcut-card__badge">${brandInitials(item.category)}</span>
                 <strong>${item.category}</strong>
                 <span>${item.count}개 상품</span>
-                <em>${item.lowStockCount ? `품절 임박 ${item.lowStockCount}개` : "재고 안정"}</em>
+                <em>${item.lowStockCount ? `긴장 재고 ${item.lowStockCount}개 · ${item.pressure}%` : "재고 안정"}</em>
             </button>
         `).join("");
 
@@ -403,7 +456,7 @@
             return;
         }
 
-        elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, "방금 등록")).join("");
+        elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, relativeDropLabel(product.createdDate))).join("");
     }
 
     function renderLowStockHighlights() {
@@ -425,7 +478,7 @@
             return;
         }
 
-        elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, `재고 ${product.stock}개`)).join("");
+        elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, stockPressureLabel(product.stock))).join("");
     }
 
     function signalFeedCard(product, kicker) {
@@ -435,7 +488,7 @@
                 <div class="signal-feed-card__body">
                     <span class="signal-feed-card__kicker">${kicker}</span>
                     <strong>${product.headline || product.name}</strong>
-                    <p>${product.brand} · ${product.category} · ${product.priceLabel || formatPrice(product.price)}</p>
+                    <p>${compactProductContext(product)} · ${stockPressureDetail(product.stock)}</p>
                 </div>
             </a>
         `;
@@ -458,13 +511,13 @@
                     <div class="spotlight-card__meta">
                         <span>${product.name}</span>
                         <span>${product.category}</span>
-                        <span>${product.featuredRank ? `Featured ${product.featuredRank}` : product.model}</span>
+                        <span>${featuredRankLabel(product)}</span>
                     </div>
                 </div>
                 <div class="spotlight-card__footer">
                     <div>
                         <div class="spotlight-card__price">${product.priceLabel || formatPrice(product.price)}</div>
-                        <div class="catalog-card__meta">총 재고 ${product.stock}개</div>
+                        <div class="catalog-card__meta">${stockPressureDetail(product.stock)}</div>
                     </div>
                     <div class="catalog-card__action">
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
@@ -486,17 +539,20 @@
         const latestProducts = products
             .filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate)
             .sort((left, right) => left.stock - right.stock);
-        const primarySignal = latestProducts[0] || products[0];
+        const lowStockProducts = products
+            .filter((product) => product.stock < lowStockThresholdValue())
+            .sort((left, right) => left.stock - right.stock);
+        const primarySignal = lowStockProducts[0] || latestProducts[0] || products[0];
 
         if (primarySignal) {
-            setText(elements.todaySignalTitle, `${primarySignal.name}이 최신 드롭 기준 가장 빠른 반응을 보이고 있습니다.`);
-            setText(elements.todaySignalText, `${primarySignal.brand} · ${primarySignal.category} · 재고 ${primarySignal.stock}개`);
+            setText(elements.todaySignalTitle, `${primarySignal.headline || primarySignal.name}을 우선 확인해야 합니다.`);
+            setText(elements.todaySignalText, `${compactProductContext(primarySignal)} · ${stockPressureDetail(primarySignal.stock)}`);
         }
 
         const signals = [
-            `${metrics.featuredCount || products.filter((product) => product.featured).length}개 상품이 이번 주 큐레이션에 묶여 있습니다.`,
-            `${metrics.lowStockCount || products.filter((product) => product.stock < lowStockThresholdValue()).length}개 상품이 재고 긴장 구간에 있습니다.`,
-            `${metrics.totalStock || (products[0] ? products.reduce((sum, product) => sum + product.stock, 0) : 0)}개 재고를 첫 화면 기준으로 추적 중입니다.`
+            `${metrics.featuredCount || products.filter((product) => product.featured).length}개 상품이 이번 주 큐레이션에 포함되어 우선 노출 중입니다.`,
+            `${metrics.lowStockCount || products.filter((product) => product.stock < lowStockThresholdValue()).length}개 상품이 재고 긴장 구간에 있어 빠른 확인이 필요합니다.`,
+            `${metrics.totalStock || (products[0] ? products.reduce((sum, product) => sum + product.stock, 0) : 0)}개 재고와 ${metrics.latestDropCount || latestProducts.length}건 최신 드롭을 첫 화면에서 함께 추적합니다.`
         ];
 
         elements.signalList.innerHTML = signals.map((message, index) => `
@@ -537,7 +593,7 @@
                         <div class="catalog-card__meta">
                             <span>${product.headline || product.name}</span>
                             <span>${product.category}</span>
-                            <span>${product.model}</span>
+                            <span>${featuredRankLabel(product)}</span>
                         </div>
                     </div>
                     <span class="catalog-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
@@ -546,10 +602,10 @@
                 <div class="catalog-card__footer">
                     <div>
                         <div class="catalog-card__price">${product.priceLabel || formatPrice(product.price)}</div>
-                        <div class="catalog-card__meta">총 재고 ${product.stock}개 · ${product.createdDate}</div>
+                        <div class="catalog-card__meta">${relativeDropLabel(product.createdDate)} · ${stockPressureDetail(product.stock)}</div>
                     </div>
                     <div class="catalog-card__action">
-                        <div class="catalog-card__meta">${product.mood}</div>
+                        <div class="catalog-card__meta">${moodLabel(product)}</div>
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
                         <div class="catalog-card__action-group">
                             <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
@@ -973,15 +1029,20 @@
         const stocks = comparedProducts.map((product) => Number(product.stock || 0));
         const priceGap = Math.max(...prices) - Math.min(...prices);
         const stockGap = Math.max(...stocks) - Math.min(...stocks);
-        return `최고가와 최저가 차이는 ${formatPrice(priceGap)}, 재고 차이는 ${stockGap}개입니다.`;
+        const categories = new Set(comparedProducts.map((product) => product.category).filter(Boolean));
+        const categoryHint = categories.size === 1 ? "같은 카테고리 안에서 비교 중입니다." : `${categories.size}개 카테고리를 함께 보고 있습니다.`;
+        return `최고가와 최저가 차이는 ${formatPrice(priceGap)}, 재고 차이는 ${stockGap}개입니다. ${categoryHint}`;
     }
 
     function buildBookmarkSummary(bookmarkedProducts) {
         const featuredCount = bookmarkedProducts.filter((product) => product.featured).length;
+        const lowStockCount = bookmarkedProducts.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
         if (!featuredCount) {
-            return "관심 상품을 모아두고 필요할 때 상세나 비교 보드로 바로 이동할 수 있습니다.";
+            return lowStockCount
+                ? `${lowStockCount}개 상품이 긴장 재고 구간에 있어 우선 확인용 보드로 활용할 수 있습니다.`
+                : "관심 상품을 모아두고 필요할 때 상세나 비교 보드로 바로 이동할 수 있습니다.";
         }
-        return `${featuredCount}개 상품이 Featured 라인에 포함되어 있어 드롭 우선 확인용으로도 쓸 수 있습니다.`;
+        return `${featuredCount}개 상품이 Featured 라인에 포함되어 있고, ${lowStockCount}개 상품은 긴장 재고 구간에 있습니다.`;
     }
 
     function productVisualMarkup(product, className) {
@@ -1072,12 +1133,18 @@
                 <div class="product-drawer__options">
                     ${Array.isArray(product.options) && product.options.length ? product.options.map((option) => `
                         <div class="product-drawer__option">
-                            <span>${option.name}</span>
+                            <div>
+                                <strong>${option.name}</strong>
+                                <span>${stockLabel(option.stock)}</span>
+                            </div>
                             <strong>${option.stock}개</strong>
                         </div>
                     `).join("") : `
                         <div class="product-drawer__option">
-                            <span>등록된 옵션이 없습니다.</span>
+                            <div>
+                                <strong>등록된 옵션이 없습니다.</strong>
+                                <span>세부 옵션 정보가 아직 준비되지 않았습니다.</span>
+                            </div>
                             <strong>-</strong>
                         </div>
                     `}

@@ -37,6 +37,17 @@
         return Number(stock || 0) < lowStockThreshold() ? "is-low-stock" : "is-stable-stock";
     }
 
+    function stockPressureDetail(stock) {
+        const quantity = Number(stock || 0);
+        if (quantity <= 5) {
+            return `재고 ${quantity}개로 즉시 확인이 필요합니다.`;
+        }
+        if (quantity < lowStockThreshold()) {
+            return `재고 ${quantity}개로 긴장 구간에 들어가 있습니다.`;
+        }
+        return `재고 ${quantity}개로 안정적으로 유지되고 있습니다.`;
+    }
+
     function brandInitials(brand) {
         if (!brand) {
             return "GS";
@@ -78,9 +89,9 @@
             return;
         }
         const signals = [
-            `${product.stock}개 재고로 ${product.stockStatus || stockLabel(product.stock)} 상태입니다.`,
-            `${product.model} 모델 기준으로 ${product.category} 라인에 포함됩니다.`,
-            `${product.relatedProducts?.length || 0}개의 연관 상품이 함께 추천됩니다.`
+            stockPressureDetail(product.stock),
+            `${product.model} 모델 기준으로 ${product.category} 라인에 포함되며 무드 키워드는 ${product.mood || "Curated"}입니다.`,
+            `${product.relatedProducts?.length || 0}개의 연관 상품과 ${product.options?.length || 0}개의 옵션 구성을 함께 확인할 수 있습니다.`
         ];
         elements.detailSignalList.innerHTML = signals.map((message, index) => `
             <article class="signal-card">
@@ -152,7 +163,7 @@
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
-                <p>${item.reason}</p>
+                <p>${item.reason} · ${stockPressureDetail(item.stock)}</p>
                 <div class="detail-related-card__meta">
                     <span>${item.model}</span>
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
@@ -224,7 +235,7 @@
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand || "-"}</span>
                 <strong>${item.headline || item.name || "-"}</strong>
-                <p>${item.name || "-"} · ${item.model || "-"}</p>
+                <p>${item.name || "-"} · ${item.model || "-"} · ${stockPressureDetail(item.stock)}</p>
                 <div class="detail-related-card__meta">
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>

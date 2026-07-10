@@ -271,6 +271,12 @@ select {
     color: var(--ink);
 }
 
+.hero-secondary.is-active {
+    background: #111111;
+    border-color: rgba(17, 17, 17, 0.18);
+    color: #ffffff;
+}
+
 .topbar-action:hover,
 .hero-primary:hover,
 .hero-secondary:hover,

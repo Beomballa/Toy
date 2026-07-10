@@ -281,6 +281,16 @@
                     </div>
                     <div class="catalog-memory-list" id="searchHistoryList"></div>
                 </div>
+                <div class="catalog-memory-block">
+                    <div class="catalog-memory-head">
+                        <strong>숨긴 상품</strong>
+                        <div class="catalog-summary__actions">
+                            <button class="catalog-reset-button" type="button" id="clearHiddenProductsButton">숨김 비우기</button>
+                            <button class="catalog-reset-button" type="button" id="toggleHiddenViewButton">숨긴 상품 보기</button>
+                        </div>
+                    </div>
+                    <div class="catalog-memory-list" id="hiddenProductList"></div>
+                </div>
             </div>
 
             <div class="catalog-toolbar">
@@ -361,6 +371,8 @@
                     <button class="catalog-reset-button" type="button" id="copyCatalogSummaryButton">탐색 요약 복사</button>
                     <button class="catalog-reset-button" type="button" id="jumpFirstProductButton">첫 상품 바로 보기</button>
                     <button class="catalog-reset-button" type="button" id="randomProductButton">랜덤 상품 보기</button>
+                    <button class="catalog-reset-button" type="button" id="toggleCompactViewButton">컴팩트 보기</button>
+                    <button class="catalog-reset-button" type="button" id="toggleTodayOnlyButton">오늘 등록만 보기</button>
                     <button class="catalog-reset-button" type="button" id="clearSearchButton">검색 비우기</button>
                     <button class="catalog-reset-button" type="button" id="resetFiltersButton">조건 초기화</button>
                     <div class="catalog-tags" id="catalogTags"></div>
@@ -370,7 +382,7 @@
             <div class="catalog-grid" id="catalogGrid"></div>
         </section>
     </main>
- </div>
+</div>
 
 <aside class="product-drawer" id="productDrawer" aria-hidden="true">
     <div class="product-drawer__panel">
@@ -382,6 +394,8 @@
         </div>
     </div>
 </aside>
+
+<button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
 <script src="/js/view/app.js"></script>
 </body>

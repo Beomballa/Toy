@@ -1062,7 +1062,7 @@ select {
 
 .catalog-memory-strip {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
     margin-bottom: 14px;
 }
@@ -1283,6 +1283,24 @@ select {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+.catalog-grid.is-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.catalog-grid.is-compact .catalog-card {
+    padding: 18px;
+    gap: 14px;
+}
+
+.catalog-grid.is-compact .catalog-card__visual {
+    min-height: 132px;
+}
+
+.catalog-grid.is-compact .catalog-card__copy {
+    min-height: 0;
+    font-size: var(--text-xs);
+}
+
 .catalog-card::before {
     content: "";
     position: absolute;
@@ -1347,6 +1365,13 @@ select {
     width: 100%;
 }
 
+.catalog-card__quick-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+}
+
 .catalog-card__link {
     display: inline-flex;
     align-items: center;
@@ -1406,6 +1431,18 @@ select {
     background: rgba(214, 91, 46, 0.1);
     border-color: rgba(214, 91, 46, 0.18);
     color: var(--brand-deep);
+}
+
+.catalog-ghost-button {
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: #ffffff;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
 }
 
 .catalog-summary--compare {
@@ -1493,6 +1530,30 @@ select {
 .toast.is-warning {
     border-color: rgba(183, 121, 31, 0.22);
     background: #fffaf2;
+}
+
+.floating-top-button {
+    position: fixed;
+    right: 20px;
+    bottom: 110px;
+    z-index: 70;
+    display: none;
+    width: 54px;
+    height: 54px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.94);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 800;
+    box-shadow: var(--card-shadow-strong);
+    cursor: pointer;
+}
+
+.floating-top-button.is-visible {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .product-drawer {
@@ -2276,6 +2337,7 @@ select {
     .hero-secondary,
     .catalog-bookmark-button,
     .catalog-compare-button,
+    .catalog-ghost-button,
     .product-drawer__cta-link,
     .compare-card__actions .catalog-reset-button,
     .compare-card__actions .catalog-card__link {
@@ -2294,5 +2356,10 @@ select {
     .toast-stack {
         right: 12px;
         bottom: 12px;
+    }
+
+    .floating-top-button {
+        right: 12px;
+        bottom: 96px;
     }
 }

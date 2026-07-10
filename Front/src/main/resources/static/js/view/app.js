@@ -6,6 +6,8 @@
     const SEARCH_HISTORY_KEY = "front-search-history";
     const LAST_CATALOG_STATE_KEY = "front-last-catalog-state";
     const LAST_DRAWER_PRODUCT_KEY = "front-last-drawer-product";
+    const HIDDEN_PRODUCTS_KEY = "front-hidden-products";
+    const VIEW_MODE_KEY = "front-catalog-view-mode";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -18,6 +20,11 @@
     };
     const state = {
         ...DEFAULT_STATE
+    };
+    const uiState = {
+        todayOnly: false,
+        showHiddenProducts: false,
+        viewMode: window.localStorage.getItem(VIEW_MODE_KEY) || "DEFAULT"
     };
     let products = [];
     let metrics = {
@@ -61,8 +68,11 @@
         restoreLastStateButton: document.getElementById("restoreLastStateButton"),
         clearSearchHistoryButton: document.getElementById("clearSearchHistoryButton"),
         reopenLastDrawerButton: document.getElementById("reopenLastDrawerButton"),
+        clearHiddenProductsButton: document.getElementById("clearHiddenProductsButton"),
+        toggleHiddenViewButton: document.getElementById("toggleHiddenViewButton"),
         savedViewList: document.getElementById("savedViewList"),
         searchHistoryList: document.getElementById("searchHistoryList"),
+        hiddenProductList: document.getElementById("hiddenProductList"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
@@ -95,6 +105,8 @@
         sortBookmarkFeaturedButton: document.getElementById("sortBookmarkFeaturedButton"),
         copyBookmarkSummaryButton: document.getElementById("copyBookmarkSummaryButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
+        toggleCompactViewButton: document.getElementById("toggleCompactViewButton"),
+        toggleTodayOnlyButton: document.getElementById("toggleTodayOnlyButton"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
         todaySignalText: document.getElementById("todaySignalText"),
@@ -106,7 +118,8 @@
         closeDrawerButton: document.getElementById("closeDrawerButton"),
         focusLowStockButton: document.getElementById("focusLowStockButton"),
         openDrawerFromTop: document.getElementById("openDrawerFromTop"),
-        resetFiltersButton: document.getElementById("resetFiltersButton")
+        resetFiltersButton: document.getElementById("resetFiltersButton"),
+        scrollTopButton: document.getElementById("scrollTopButton")
     };
 
     async function init() {
@@ -123,12 +136,15 @@
         renderFeatured();
         renderSavedViews();
         renderSearchHistory();
+        renderHiddenProducts();
         renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
         renderBookmarkBoard();
         renderSignals();
         renderCatalog();
+        syncViewButtons();
+        toggleScrollTopVisibility();
     }
 
     async function loadProducts() {
@@ -369,6 +385,20 @@
             openDrawer(lastDrawerProductId);
             showToast("마지막으로 보던 상품을 열었습니다.", "이전 탐색 흐름을 바로 이어갈 수 있습니다.");
         });
+        elements.clearHiddenProductsButton?.addEventListener("click", async () => {
+            window.localStorage.removeItem(HIDDEN_PRODUCTS_KEY);
+            renderHiddenProducts();
+            await refreshCatalog();
+            showToast("숨김 상품을 모두 복구했습니다.", "다시 전체 카탈로그에서 노출됩니다.");
+        });
+        elements.toggleHiddenViewButton?.addEventListener("click", async () => {
+            uiState.showHiddenProducts = !uiState.showHiddenProducts;
+            await refreshCatalog();
+            showToast(
+                uiState.showHiddenProducts ? "숨긴 상품 보기 모드를 켰습니다." : "숨긴 상품 보기 모드를 껐습니다.",
+                uiState.showHiddenProducts ? "숨김 처리한 상품도 목록에 다시 표시됩니다." : "숨긴 상품은 목록에서 제외됩니다."
+            );
+        });
         elements.jumpFirstProductButton?.addEventListener("click", () => {
             const firstProduct = filteredProducts()[0];
             if (!firstProduct) {
@@ -387,6 +417,18 @@
             const product = list[Math.floor(Math.random() * list.length)];
             openDrawer(product.id);
             showToast("랜덤 상품을 열었습니다.", `${product.headline || product.name}을 새로운 시선으로 확인해보세요.`);
+        });
+        elements.toggleCompactViewButton?.addEventListener("click", () => {
+            uiState.viewMode = uiState.viewMode === "COMPACT" ? "DEFAULT" : "COMPACT";
+            window.localStorage.setItem(VIEW_MODE_KEY, uiState.viewMode);
+            renderCatalog();
+            syncViewButtons();
+            showToast(uiState.viewMode === "COMPACT" ? "컴팩트 보기를 켰습니다." : "기본 보기를 복구했습니다.", "카탈로그 카드 밀도를 바로 전환할 수 있습니다.");
+        });
+        elements.toggleTodayOnlyButton?.addEventListener("click", async () => {
+            uiState.todayOnly = !uiState.todayOnly;
+            await refreshCatalog();
+            showToast(uiState.todayOnly ? "오늘 등록만 보기 필터를 켰습니다." : "오늘 등록만 보기 필터를 해제했습니다.", "신규 드롭 기준으로 빠르게 다시 탐색할 수 있습니다.");
         });
         elements.clearRecentViewedButton?.addEventListener("click", () => {
             window.localStorage.removeItem(RECENT_VIEWED_KEY);
@@ -505,6 +547,10 @@
             hydrateStateFromUrl();
             syncControls();
             await refreshCatalog();
+        });
+        window.addEventListener("scroll", toggleScrollTopVisibility, { passive: true });
+        elements.scrollTopButton?.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
         });
     }
 
@@ -789,11 +835,14 @@
         const list = filteredProducts();
         const comparedIds = new Set(readCompareProducts().map((product) => Number(product.id)));
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
+        const hiddenIds = new Set(readHiddenProducts().map((product) => Number(product.id)));
         renderCatalogSummary(list);
 
         if (!elements.catalogGrid) {
             return;
         }
+
+        elements.catalogGrid.classList.toggle("is-compact", uiState.viewMode === "COMPACT");
 
         if (!list.length) {
             elements.catalogGrid.innerHTML = `
@@ -810,6 +859,7 @@
             return;
         }
 
+        elements.catalogGrid.classList.toggle("is-compact", uiState.viewMode === "COMPACT");
         elements.catalogGrid.innerHTML = list.map((product) => `
             <article class="catalog-card">
                 ${productVisualMarkup(product, "catalog-card__visual")}
@@ -842,6 +892,11 @@
                                 ${comparedIds.has(Number(product.id)) ? "비교 해제" : "비교 담기"}
                             </button>
                         </div>
+                        <div class="catalog-card__quick-row">
+                            <button class="catalog-ghost-button" type="button" data-hide-product-id="${product.id}">
+                                ${hiddenIds.has(Number(product.id)) ? "숨김 해제" : "숨기기"}
+                            </button>
+                        </div>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
                     </div>
                 </div>
@@ -849,6 +904,7 @@
         `).join("");
 
         bindProductButtons(elements.catalogGrid);
+        bindHideButtons();
     }
 
     function renderCatalogSummary(list) {
@@ -968,7 +1024,16 @@
     }
 
     function filteredProducts() {
-        return products.slice();
+        const hiddenIds = new Set(readHiddenProducts().map((product) => Number(product.id)));
+        return products.filter((product) => {
+            if (!uiState.showHiddenProducts && hiddenIds.has(Number(product.id))) {
+                return false;
+            }
+            if (uiState.todayOnly && metrics.latestCreatedDate && product.createdDate !== metrics.latestCreatedDate) {
+                return false;
+            }
+            return true;
+        });
     }
 
     async function refreshCatalog() {
@@ -984,12 +1049,14 @@
         renderFeatured();
         renderSavedViews();
         renderSearchHistory();
+        renderHiddenProducts();
         renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
         renderBookmarkBoard();
         renderSignals();
         renderCatalog();
+        syncViewButtons();
     }
 
     function hydrateStateFromUrl() {
@@ -1146,6 +1213,42 @@
         });
     }
 
+    function renderHiddenProducts() {
+        if (!elements.hiddenProductList) {
+            return;
+        }
+        const hiddenProducts = readHiddenProducts();
+        if (!hiddenProducts.length) {
+            elements.hiddenProductList.innerHTML = `<span class="catalog-tag">숨긴 상품이 없습니다.</span>`;
+            syncViewButtons();
+            return;
+        }
+        elements.hiddenProductList.innerHTML = hiddenProducts.map((product, index) => `
+            <div class="catalog-memory-item">
+                <span data-hidden-product-index="${index}">${product.headline || product.name}</span>
+                <button type="button" data-restore-hidden-index="${index}" aria-label="숨긴 상품 복구">복구</button>
+            </div>
+        `).join("");
+        elements.hiddenProductList.querySelectorAll("[data-hidden-product-index]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const selected = readHiddenProducts()[Number(button.dataset.hiddenProductIndex)];
+                if (selected?.id) {
+                    openDrawer(Number(selected.id));
+                }
+            });
+        });
+        elements.hiddenProductList.querySelectorAll("[data-restore-hidden-index]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const next = readHiddenProducts().filter((_, index) => index !== Number(button.dataset.restoreHiddenIndex));
+                window.localStorage.setItem(HIDDEN_PRODUCTS_KEY, JSON.stringify(next));
+                renderHiddenProducts();
+                await refreshCatalog();
+                showToast("숨긴 상품을 복구했습니다.", "카탈로그에서 다시 확인할 수 있습니다.");
+            });
+        });
+        syncViewButtons();
+    }
+
     function persistLastCatalogState() {
         window.localStorage.setItem(LAST_CATALOG_STATE_KEY, JSON.stringify(state));
     }
@@ -1183,6 +1286,15 @@
         try {
             const parsed = JSON.parse(window.localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
             return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function readHiddenProducts() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(HIDDEN_PRODUCTS_KEY) || "[]");
+            return Array.isArray(parsed) ? parsed.filter((item) => item?.id) : [];
         } catch (error) {
             return [];
         }
@@ -1452,6 +1564,10 @@
         return readBookmarkProducts().some((product) => Number(product.id) === Number(productId));
     }
 
+    function isHiddenProduct(productId) {
+        return readHiddenProducts().some((product) => Number(product.id) === Number(productId));
+    }
+
     function readBookmarkProducts() {
         try {
             const parsed = JSON.parse(window.localStorage.getItem(BOOKMARK_PRODUCTS_KEY) || "[]");
@@ -1463,6 +1579,29 @@
 
     function writeBookmarkProducts(bookmarkedProducts) {
         window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarkedProducts));
+    }
+
+    function toggleHiddenProduct(productId) {
+        const source = products.find((product) => Number(product.id) === Number(productId));
+        if (!source) {
+            return;
+        }
+        const current = readHiddenProducts();
+        const exists = current.some((product) => Number(product.id) === Number(productId));
+        if (exists) {
+            window.localStorage.setItem(HIDDEN_PRODUCTS_KEY, JSON.stringify(current.filter((product) => Number(product.id) !== Number(productId))));
+            showToast("숨김 상품을 복구했습니다.", `${source.headline || source.name}이 다시 목록에 노출됩니다.`);
+        } else {
+            const summary = {
+                id: source.id,
+                name: source.name,
+                headline: source.headline,
+                brand: source.brand
+            };
+            window.localStorage.setItem(HIDDEN_PRODUCTS_KEY, JSON.stringify([summary].concat(current).slice(0, 12)));
+            showToast("상품을 숨겼습니다.", `${source.headline || source.name}은 기본 목록에서 제외됩니다.`);
+        }
+        renderHiddenProducts();
     }
 
     function buildCompareSummary(comparedProducts) {
@@ -1592,6 +1731,16 @@
         elements.sortBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkSort === "FEATURED");
     }
 
+    function syncViewButtons() {
+        elements.toggleCompactViewButton?.classList.toggle("is-active", uiState.viewMode === "COMPACT");
+        elements.toggleTodayOnlyButton?.classList.toggle("is-active", uiState.todayOnly);
+        elements.toggleHiddenViewButton?.classList.toggle("is-active", uiState.showHiddenProducts);
+    }
+
+    function toggleScrollTopVisibility() {
+        elements.scrollTopButton?.classList.toggle("is-visible", window.scrollY > 480);
+    }
+
     async function copyTextWithFeedback(text, title, body) {
         try {
             if (navigator.clipboard?.writeText) {
@@ -1716,6 +1865,16 @@
         });
     }
 
+    function bindHideButtons() {
+        elements.catalogGrid?.querySelectorAll("[data-hide-product-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const productId = Number(button.dataset.hideProductId);
+                toggleHiddenProduct(productId);
+                await refreshCatalog();
+            });
+        });
+    }
+
     async function openDrawer(productId) {
         if (!elements.productDrawer || !elements.drawerBody) {
             return;
@@ -1783,6 +1942,9 @@
                     <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-copy-id="${product.id}">
                         요약 복사
                     </button>
+                    <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-hide-id="${product.id}">
+                        ${isHiddenProduct(product.id) ? "숨김 해제" : "숨기기"}
+                    </button>
                 </div>
             </div>
             <div class="product-drawer__group">
@@ -1845,6 +2007,15 @@
             elements.drawerBody.querySelector("[data-drawer-copy-id]")?.addEventListener("click", async () => {
                 const text = summaryTextForDrawer(product);
                 await copyTextWithFeedback(text, "상품 요약을 복사했습니다.", "드로어에서 보고 있던 상품 정보를 바로 전달할 수 있습니다.");
+            });
+            elements.drawerBody.querySelector("[data-drawer-hide-id]")?.addEventListener("click", async () => {
+                toggleHiddenProduct(product.id);
+                await refreshCatalog();
+                if (isHiddenProduct(product.id) && !uiState.showHiddenProducts) {
+                    closeDrawer();
+                    return;
+                }
+                openDrawer(product.id);
             });
             elements.drawerBody.querySelector("[data-drawer-prev-id]")?.addEventListener("click", () => {
                 if (previousProduct) {

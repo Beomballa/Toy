@@ -38,25 +38,35 @@
         sortFilter: document.getElementById("sortFilter"),
         searchInput: document.getElementById("searchInput"),
         catalogGrid: document.getElementById("catalogGrid"),
+        catalogInsightGrid: document.getElementById("catalogInsightGrid"),
+        catalogPresetStrip: document.getElementById("catalogPresetStrip"),
         catalogTags: document.getElementById("catalogTags"),
         catalogCountText: document.getElementById("catalogCountText"),
         catalogSummaryText: document.getElementById("catalogSummaryText"),
+        shareCatalogButton: document.getElementById("shareCatalogButton"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
         lowStockGrid: document.getElementById("lowStockGrid"),
         featuredGrid: document.getElementById("featuredGrid"),
         recentViewedSection: document.getElementById("recentViewedSection"),
+        recentViewedTitle: document.getElementById("recentViewedTitle"),
+        recentViewedText: document.getElementById("recentViewedText"),
         recentViewedGrid: document.getElementById("recentViewedGrid"),
+        clearRecentViewedButton: document.getElementById("clearRecentViewedButton"),
         compareBoardSection: document.getElementById("compareBoardSection"),
         compareBoardGrid: document.getElementById("compareBoardGrid"),
         compareBoardTitle: document.getElementById("compareBoardTitle"),
         compareBoardText: document.getElementById("compareBoardText"),
+        applyCompareCategoryButton: document.getElementById("applyCompareCategoryButton"),
+        applyCompareLowStockButton: document.getElementById("applyCompareLowStockButton"),
         clearCompareButton: document.getElementById("clearCompareButton"),
         bookmarkBoardSection: document.getElementById("bookmarkBoardSection"),
         bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
         bookmarkBoardTitle: document.getElementById("bookmarkBoardTitle"),
         bookmarkBoardText: document.getElementById("bookmarkBoardText"),
+        applyBookmarkFeaturedButton: document.getElementById("applyBookmarkFeaturedButton"),
+        applyBookmarkLowStockButton: document.getElementById("applyBookmarkLowStockButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
@@ -83,6 +93,7 @@
         renderCategoryShortcuts();
         renderSignalStrip();
         renderFeatured();
+        renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
         renderBookmarkBoard();
@@ -258,15 +269,69 @@
             syncControls();
             await refreshCatalog();
         });
+        elements.catalogPresetStrip?.addEventListener("click", async (event) => {
+            const presetButton = event.target.closest("[data-preset]");
+            if (!presetButton) {
+                return;
+            }
+            applyPreset(presetButton.dataset.preset);
+            syncControls();
+            await refreshCatalog();
+        });
+        elements.shareCatalogButton?.addEventListener("click", async () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(shareUrl);
+                }
+                setText(elements.catalogSummaryText, "현재 탐색 URL을 복사했습니다. 같은 조건으로 바로 공유할 수 있습니다.");
+            } catch (error) {
+                window.prompt("현재 조건 URL을 복사하세요.", shareUrl);
+            }
+        });
+        elements.clearRecentViewedButton?.addEventListener("click", () => {
+            window.localStorage.removeItem(RECENT_VIEWED_KEY);
+            renderRecentViewed();
+        });
         elements.clearCompareButton?.addEventListener("click", () => {
             writeCompareProducts([]);
             renderCompareBoard();
             renderCatalog();
         });
+        elements.applyCompareCategoryButton?.addEventListener("click", async () => {
+            const category = dominantCategory(readCompareProducts());
+            if (!category) {
+                return;
+            }
+            state.category = category;
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        elements.applyCompareLowStockButton?.addEventListener("click", async () => {
+            state.stock = "LOW";
+            state.sort = "STOCK_ASC";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
         elements.clearBookmarkButton?.addEventListener("click", () => {
             writeBookmarkProducts([]);
             renderBookmarkBoard();
             renderCatalog();
+        });
+        elements.applyBookmarkFeaturedButton?.addEventListener("click", async () => {
+            state.featuredOnly = "FEATURED";
+            state.sort = "FEATURED";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        elements.applyBookmarkLowStockButton?.addEventListener("click", async () => {
+            state.stock = "LOW";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         elements.catalogGrid?.addEventListener("click", (event) => {
             const compareButton = event.target.closest("[data-compare-product-id]");
@@ -578,8 +643,13 @@
                 <div class="catalog-empty">
                     <strong>조건에 맞는 상품이 없습니다.</strong>
                     <p>필터를 조금 넓히거나 검색어를 비워서 다시 확인해보세요.</p>
+                    <div class="catalog-summary__actions">
+                        <button class="catalog-reset-button" type="button" data-empty-action="RESET">조건 초기화</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="LOW_STOCK">긴장 재고만 보기</button>
+                    </div>
                 </div>
             `;
+            bindEmptyStateButtons();
             return;
         }
 
@@ -691,6 +761,50 @@
             : `<span class="catalog-tag">${tag.label}</span>`).join("");
     }
 
+    function renderCatalogInsights() {
+        if (!elements.catalogInsightGrid) {
+            return;
+        }
+        const list = filteredProducts();
+        const featuredCount = list.filter((product) => product.featured).length;
+        const lowStockCount = list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
+        const averagePrice = list.length
+            ? Math.round(list.reduce((sum, product) => sum + Number(product.price || 0), 0) / list.length)
+            : 0;
+        const leadBrand = dominantBrand(list);
+
+        const insights = [
+            {
+                label: "Visible now",
+                value: `${list.length}개`,
+                description: "현재 조건으로 즉시 확인 가능한 상품 수입니다."
+            },
+            {
+                label: "Featured mix",
+                value: `${featuredCount}개`,
+                description: "대표 노출에 걸린 상품 밀도를 빠르게 파악합니다."
+            },
+            {
+                label: "Low stock",
+                value: `${lowStockCount}개`,
+                description: "긴장 재고 구간 상품 수를 같은 화면에서 추적합니다."
+            },
+            {
+                label: "Lead brand",
+                value: leadBrand || "-",
+                description: list.length ? `평균 발매가 ${formatPrice(averagePrice)} 기준으로 흐름을 읽을 수 있습니다.` : "상품을 불러오면 조건별 흐름을 요약합니다."
+            }
+        ];
+
+        elements.catalogInsightGrid.innerHTML = insights.map((item) => `
+            <article class="catalog-insight-card">
+                <span>${item.label}</span>
+                <strong>${item.value}</strong>
+                <p>${item.description}</p>
+            </article>
+        `).join("");
+    }
+
     function filteredProducts() {
         return products.slice();
     }
@@ -704,6 +818,7 @@
         renderCategoryShortcuts();
         renderSignalStrip();
         renderFeatured();
+        renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
         renderBookmarkBoard();
@@ -824,12 +939,14 @@
             return;
         }
         elements.recentViewedSection.hidden = false;
+        setText(elements.recentViewedTitle, `${recentProducts.length}개 최근 본 상품을 유지하고 있습니다.`);
+        setText(elements.recentViewedText, "방금 본 흐름을 끊지 않고 상세와 카탈로그를 오갈 수 있습니다.");
         elements.recentViewedGrid.innerHTML = recentProducts.map((product) => `
             <a class="detail-related-card" href="${detailPageUrl(product.id)}">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
-                <p>${product.name || "-"} · ${product.model || "-"}</p>
+                <p>${product.name || "-"} · ${product.model || "-"} · ${stockPressureDetail(product.stock)}</p>
                 <div class="detail-related-card__meta">
                     <span>${product.priceLabel || formatPrice(product.price)}</span>
                     <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
@@ -1008,6 +1125,10 @@
         return readCompareProducts().some((product) => Number(product.id) === Number(productId));
     }
 
+    function isBookmarkedProduct(productId) {
+        return readBookmarkProducts().some((product) => Number(product.id) === Number(productId));
+    }
+
     function readBookmarkProducts() {
         try {
             const parsed = JSON.parse(window.localStorage.getItem(BOOKMARK_PRODUCTS_KEY) || "[]");
@@ -1043,6 +1164,59 @@
                 : "관심 상품을 모아두고 필요할 때 상세나 비교 보드로 바로 이동할 수 있습니다.";
         }
         return `${featuredCount}개 상품이 Featured 라인에 포함되어 있고, ${lowStockCount}개 상품은 긴장 재고 구간에 있습니다.`;
+    }
+
+    function dominantCategory(items) {
+        return dominantValue(items, "category");
+    }
+
+    function dominantBrand(items) {
+        return dominantValue(items, "brand");
+    }
+
+    function dominantValue(items, key) {
+        const counts = new Map();
+        items.forEach((item) => {
+            if (!item?.[key]) {
+                return;
+            }
+            counts.set(item[key], (counts.get(item[key]) || 0) + 1);
+        });
+        return Array.from(counts.entries())
+            .sort((left, right) => right[1] - left[1])[0]?.[0] || "";
+    }
+
+    function applyPreset(preset) {
+        if (preset === "RESET") {
+            resetState();
+            return;
+        }
+        resetState();
+        if (preset === "LATEST_DROP") {
+            state.sort = "LATEST";
+        }
+        if (preset === "LOW_STOCK") {
+            state.stock = "LOW";
+            state.sort = "STOCK_ASC";
+        }
+        if (preset === "FEATURED") {
+            state.featuredOnly = "FEATURED";
+            state.sort = "FEATURED";
+        }
+        if (preset === "PREMIUM") {
+            state.priceBand = "OVER_300";
+            state.sort = "PRICE_HIGH";
+        }
+    }
+
+    function bindEmptyStateButtons() {
+        elements.catalogGrid?.querySelectorAll("[data-empty-action]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                applyPreset(button.dataset.emptyAction);
+                syncControls();
+                await refreshCatalog();
+            });
+        });
     }
 
     function productVisualMarkup(product, className) {
@@ -1124,8 +1298,14 @@
                 <strong>발매가</strong>
                 <h3>${product.priceLabel || formatPrice(product.price)}</h3>
                 <p class="product-drawer__description">현재 총 재고 ${product.stock}개 · 무드 키워드 ${product.mood}</p>
-                <div class="product-drawer__cta">
+                <div class="product-drawer__cta product-drawer__cta-group">
                     <a class="catalog-card__button product-drawer__cta-link" href="${detailPageUrl(product.id)}">상세 페이지 이동</a>
+                    <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-bookmark-id="${product.id}">
+                        ${isBookmarkedProduct(product.id) ? "찜 해제" : "찜하기"}
+                    </button>
+                    <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-compare-id="${product.id}">
+                        ${isComparedProduct(product.id) ? "비교 해제" : "비교 담기"}
+                    </button>
                 </div>
             </div>
             <div class="product-drawer__group">
@@ -1166,6 +1346,14 @@
             </div>
             ` : ""}
         `;
+            elements.drawerBody.querySelector("[data-drawer-bookmark-id]")?.addEventListener("click", () => {
+                toggleBookmarkProduct(product.id);
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-compare-id]")?.addEventListener("click", () => {
+                toggleCompareProduct(product.id);
+                openDrawer(product.id);
+            });
             bindProductButtons(elements.drawerBody);
         } catch (error) {
             elements.drawerBody.innerHTML = `

@@ -175,6 +175,15 @@
                     <p>상세에서 확인했던 상품을 다시 열어보고, 같은 탐색 조건으로 이어서 비교할 수 있습니다.</p>
                 </div>
             </div>
+            <div class="catalog-summary catalog-summary--compare">
+                <div class="catalog-summary__headline">
+                    <strong id="recentViewedTitle">최근 본 상품을 정리하는 중입니다.</strong>
+                    <p id="recentViewedText">상세에서 이동한 상품 흐름을 유지합니다.</p>
+                </div>
+                <div class="catalog-summary__actions">
+                    <button class="catalog-reset-button" type="button" id="clearRecentViewedButton">최근 본 상품 비우기</button>
+                </div>
+            </div>
             <div class="detail-related-grid" id="recentViewedGrid"></div>
         </section>
 
@@ -192,6 +201,8 @@
                     <p id="compareBoardText">카탈로그 카드에서 비교 담기 버튼을 눌러 최대 3개까지 비교할 수 있습니다.</p>
                 </div>
                 <div class="catalog-summary__actions">
+                    <button class="catalog-reset-button" type="button" id="applyCompareCategoryButton">같은 카테고리만 보기</button>
+                    <button class="catalog-reset-button" type="button" id="applyCompareLowStockButton">재고 낮은 순 보기</button>
                     <button class="catalog-reset-button" type="button" id="clearCompareButton">비교 초기화</button>
                 </div>
             </div>
@@ -212,6 +223,8 @@
                     <p id="bookmarkBoardText">카탈로그 카드에서 찜하기를 눌러 관심 상품 보드를 채울 수 있습니다.</p>
                 </div>
                 <div class="catalog-summary__actions">
+                    <button class="catalog-reset-button" type="button" id="applyBookmarkFeaturedButton">Featured만 보기</button>
+                    <button class="catalog-reset-button" type="button" id="applyBookmarkLowStockButton">긴장 재고만 보기</button>
                     <button class="catalog-reset-button" type="button" id="clearBookmarkButton">찜 초기화</button>
                 </div>
             </div>
@@ -229,6 +242,14 @@
             <div class="catalog-intro">
                 <strong>탐색 포인트</strong>
                 <p>검색과 재고 필터는 빠르게, 가격대와 Featured 조건은 비교 관점으로 배치해 첫 화면만으로도 카탈로그 성격이 드러나게 구성했습니다.</p>
+            </div>
+
+            <div class="catalog-preset-strip" id="catalogPresetStrip">
+                <button class="catalog-preset-button" type="button" data-preset="LATEST_DROP">오늘 드롭</button>
+                <button class="catalog-preset-button" type="button" data-preset="LOW_STOCK">긴장 재고</button>
+                <button class="catalog-preset-button" type="button" data-preset="FEATURED">Featured</button>
+                <button class="catalog-preset-button" type="button" data-preset="PREMIUM">30만원 이상</button>
+                <button class="catalog-preset-button" type="button" data-preset="RESET">전체 복귀</button>
             </div>
 
             <div class="catalog-toolbar">
@@ -291,12 +312,21 @@
                 </div>
             </div>
 
+            <div class="catalog-insight-grid" id="catalogInsightGrid">
+                <article class="catalog-insight-card">
+                    <span>Visible now</span>
+                    <strong>0</strong>
+                    <p>현재 조건 기준 상품을 계산 중입니다.</p>
+                </article>
+            </div>
+
             <div class="catalog-summary">
                 <div class="catalog-summary__headline">
                     <strong id="catalogCountText">상품을 계산 중입니다.</strong>
                     <p id="catalogSummaryText">현재 탐색 조건을 정리하고 있습니다.</p>
                 </div>
                 <div class="catalog-summary__actions">
+                    <button class="catalog-reset-button" type="button" id="shareCatalogButton">현재 조건 공유</button>
                     <button class="catalog-reset-button" type="button" id="resetFiltersButton">조건 초기화</button>
                     <div class="catalog-tags" id="catalogTags"></div>
                 </div>

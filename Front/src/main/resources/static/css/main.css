@@ -1045,6 +1045,35 @@ select {
     line-height: 1.75;
 }
 
+.catalog-preset-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.catalog-preset-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--ink);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.catalog-preset-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(17, 17, 17, 0.14);
+    box-shadow: var(--card-shadow);
+}
+
 .catalog-tags {
     display: flex;
     flex-wrap: wrap;
@@ -1117,6 +1146,44 @@ select {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 18px;
+}
+
+.catalog-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.catalog-insight-card {
+    display: grid;
+    gap: 8px;
+    min-height: 132px;
+    padding: 18px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), #fbfbfb 100%);
+    box-shadow: var(--card-shadow);
+}
+
+.catalog-insight-card span {
+    color: var(--muted);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.catalog-insight-card strong {
+    font-size: clamp(1.4rem, 2vw, 1.74rem);
+    letter-spacing: -0.04em;
+}
+
+.catalog-insight-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.6;
 }
 
 .catalog-card {
@@ -1449,6 +1516,11 @@ select {
 
 .product-drawer__cta {
     margin-top: 16px;
+}
+
+.product-drawer__cta-group {
+    display: grid;
+    gap: 10px;
 }
 
 .product-drawer__cta-link {
@@ -1810,6 +1882,7 @@ select {
 
     .spotlight-grid,
     .catalog-grid,
+    .catalog-insight-grid,
     .detail-overview-grid,
     .detail-option-grid,
     .detail-related-grid {
@@ -1949,6 +2022,7 @@ select {
 
     .spotlight-grid,
     .catalog-grid,
+    .catalog-insight-grid,
     .detail-overview-grid,
     .detail-option-grid,
     .detail-related-grid {

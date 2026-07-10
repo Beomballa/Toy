@@ -43,6 +43,11 @@
         compareSort: "DEFAULT",
         bookmarkSort: "RECENT"
     };
+    const drawerState = {
+        optionLowStockOnly: false,
+        relatedSort: "DEFAULT",
+        relatedSameBrandOnly: false
+    };
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -2106,6 +2111,8 @@
 
         try {
             const product = await loadProductDetail(productId);
+            const filteredOptions = filteredDrawerOptions(product);
+            const filteredRelatedProducts = filteredDrawerRelatedProducts(product);
 
             elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
@@ -2136,6 +2143,7 @@
                         <span>등록일</span>
                         <strong>${product.createdDate}</strong>
                     </div>
+                    ${drawerInsightCards(product, filteredOptions, filteredRelatedProducts)}
                 </div>
             </div>
             <div class="product-drawer__group">
@@ -2144,6 +2152,9 @@
                 <p class="product-drawer__description">현재 총 재고 ${product.stock}개 · 무드 키워드 ${product.mood}</p>
                 <div class="product-drawer__cta product-drawer__cta-group">
                     <a class="catalog-card__button product-drawer__cta-link" href="${detailPageUrl(product.id)}">상세 페이지 이동</a>
+                    <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-share-id="${product.id}">
+                        링크 공유
+                    </button>
                     <button class="catalog-reset-button product-drawer__cta-link" type="button" data-drawer-bookmark-id="${product.id}">
                         ${isBookmarkedProduct(product.id) ? "찜 해제" : "찜하기"}
                     </button>
@@ -2171,8 +2182,16 @@
             </div>
             <div class="product-drawer__group">
                 <strong>사이즈별 재고</strong>
+                <div class="product-drawer__toolbar">
+                    <button class="catalog-reset-button ${drawerState.optionLowStockOnly ? "is-active" : ""}" type="button" data-drawer-option-low-stock-toggle="${product.id}">
+                        ${drawerState.optionLowStockOnly ? "전체 옵션 보기" : "긴장 옵션만 보기"}
+                    </button>
+                    <button class="catalog-reset-button" type="button" data-drawer-copy-options-id="${product.id}">
+                        옵션 요약 복사
+                    </button>
+                </div>
                 <div class="product-drawer__options">
-                    ${Array.isArray(product.options) && product.options.length ? product.options.map((option) => `
+                    ${filteredOptions.length ? filteredOptions.map((option) => `
                         <div class="product-drawer__option">
                             <div>
                                 <strong>${option.name}</strong>
@@ -2183,19 +2202,36 @@
                     `).join("") : `
                         <div class="product-drawer__option">
                             <div>
-                                <strong>등록된 옵션이 없습니다.</strong>
-                                <span>세부 옵션 정보가 아직 준비되지 않았습니다.</span>
+                                <strong>${drawerState.optionLowStockOnly ? "긴장 구간 옵션이 없습니다." : "등록된 옵션이 없습니다."}</strong>
+                                <span>${drawerState.optionLowStockOnly ? "현재 기준으로는 저재고 옵션이 보이지 않습니다." : "세부 옵션 정보가 아직 준비되지 않았습니다."}</span>
                             </div>
                             <strong>-</strong>
                         </div>
                     `}
                 </div>
             </div>
-            ${Array.isArray(product.relatedProducts) && product.relatedProducts.length ? `
             <div class="product-drawer__group">
                 <strong>연관 상품</strong>
+                <div class="product-drawer__toolbar">
+                    <button class="catalog-reset-button ${drawerState.relatedSort === "STOCK_ASC" ? "is-active" : ""}" type="button" data-drawer-related-sort="STOCK_ASC">
+                        재고 낮은 순
+                    </button>
+                    <button class="catalog-reset-button ${drawerState.relatedSort === "PRICE_HIGH" ? "is-active" : ""}" type="button" data-drawer-related-sort="PRICE_HIGH">
+                        가격 높은 순
+                    </button>
+                    <button class="catalog-reset-button ${drawerState.relatedSameBrandOnly ? "is-active" : ""}" type="button" data-drawer-related-brand-toggle="${product.id}">
+                        ${drawerState.relatedSameBrandOnly ? "전체 브랜드 보기" : "같은 브랜드만"}
+                    </button>
+                    <button class="catalog-reset-button" type="button" data-drawer-related-random-id="${product.id}">
+                        랜덤 연관 보기
+                    </button>
+                    <button class="catalog-reset-button" type="button" data-drawer-copy-related-id="${product.id}">
+                        연관 요약 복사
+                    </button>
+                </div>
+                ${filteredRelatedProducts.length ? `
                 <div class="product-drawer__related-list">
-                    ${product.relatedProducts.map((related) => `
+                    ${filteredRelatedProducts.map((related) => `
                         <button class="product-drawer__related-card" type="button" data-product-id="${related.id}">
                             ${productVisualMarkup(related, "product-drawer__related-visual")}
                             <span class="product-drawer__related-brand">${related.brand}</span>
@@ -2204,9 +2240,21 @@
                         </button>
                     `).join("")}
                 </div>
+                ` : `
+                <div class="product-drawer__option">
+                    <div>
+                        <strong>${drawerState.relatedSameBrandOnly ? "같은 브랜드 기준 연관 상품이 없습니다." : "연관 상품이 없습니다."}</strong>
+                        <span>${drawerState.relatedSameBrandOnly ? "브랜드 필터를 해제하면 더 많은 연관 상품을 볼 수 있습니다." : "추천 흐름이 준비되면 이 영역에 표시됩니다."}</span>
+                    </div>
+                    <strong>-</strong>
+                </div>
+                `}
             </div>
-            ` : ""}
         `;
+            elements.drawerBody.querySelector("[data-drawer-share-id]")?.addEventListener("click", async () => {
+                const shareUrl = `${window.location.origin}${detailPageUrl(product.id)}`;
+                await copyTextWithFeedback(shareUrl, "상세 링크를 복사했습니다.", "현재 보고 있는 상품 상세 링크를 바로 전달할 수 있습니다.");
+            });
             elements.drawerBody.querySelector("[data-drawer-bookmark-id]")?.addEventListener("click", () => {
                 toggleBookmarkProduct(product.id);
                 openDrawer(product.id);
@@ -2218,6 +2266,38 @@
             elements.drawerBody.querySelector("[data-drawer-copy-id]")?.addEventListener("click", async () => {
                 const text = summaryTextForDrawer(product);
                 await copyTextWithFeedback(text, "상품 요약을 복사했습니다.", "드로어에서 보고 있던 상품 정보를 바로 전달할 수 있습니다.");
+            });
+            elements.drawerBody.querySelector("[data-drawer-option-low-stock-toggle]")?.addEventListener("click", () => {
+                drawerState.optionLowStockOnly = !drawerState.optionLowStockOnly;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-copy-options-id]")?.addEventListener("click", async () => {
+                const text = drawerOptionSummaryText(product, filteredOptions);
+                await copyTextWithFeedback(text, "옵션 요약을 복사했습니다.", "현재 보이는 옵션 재고 상태를 바로 전달할 수 있습니다.");
+            });
+            elements.drawerBody.querySelectorAll("[data-drawer-related-sort]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const nextSort = button.dataset.drawerRelatedSort;
+                    drawerState.relatedSort = drawerState.relatedSort === nextSort ? "DEFAULT" : nextSort;
+                    openDrawer(product.id);
+                });
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-brand-toggle]")?.addEventListener("click", () => {
+                drawerState.relatedSameBrandOnly = !drawerState.relatedSameBrandOnly;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-random-id]")?.addEventListener("click", () => {
+                if (!filteredRelatedProducts.length) {
+                    showToast("열 수 있는 연관 상품이 없습니다.", "정렬이나 브랜드 조건을 바꿔 다시 시도해주세요.", true);
+                    return;
+                }
+                const randomRelated = filteredRelatedProducts[Math.floor(Math.random() * filteredRelatedProducts.length)];
+                openDrawer(Number(randomRelated.id));
+                showToast("랜덤 연관 상품을 열었습니다.", `${randomRelated.name} 상세를 이어서 확인할 수 있습니다.`);
+            });
+            elements.drawerBody.querySelector("[data-drawer-copy-related-id]")?.addEventListener("click", async () => {
+                const text = drawerRelatedSummaryText(product, filteredRelatedProducts);
+                await copyTextWithFeedback(text, "연관 상품 요약을 복사했습니다.", "현재 보이는 추천 상품 흐름을 바로 전달할 수 있습니다.");
             });
             elements.drawerBody.querySelector("[data-drawer-hide-id]")?.addEventListener("click", async () => {
                 toggleHiddenProduct(product.id);
@@ -2292,6 +2372,84 @@
             stockPressureDetail(product.stock),
             product.description
         ].filter(Boolean).join("\n");
+    }
+
+    function drawerOptionSummaryText(product, options) {
+        if (!options.length) {
+            return `${product.headline || product.name}\n등록된 옵션이 없습니다.`;
+        }
+        return [
+            `${product.headline || product.name} 옵션 요약`,
+            options.map((option, index) => `${index + 1}. ${option.name} · 재고 ${option.stock}개 · ${stockLabel(option.stock)}`).join("\n")
+        ].join("\n");
+    }
+
+    function drawerRelatedSummaryText(product, relatedProducts) {
+        if (!relatedProducts.length) {
+            return `${product.headline || product.name}\n연관 상품이 없습니다.`;
+        }
+        return [
+            `${product.headline || product.name} 연관 상품 요약`,
+            relatedProducts.map((related, index) => `${index + 1}. ${related.name} · ${related.brand} · ${related.priceLabel || formatPrice(related.price)} · 재고 ${related.stock}개`).join("\n")
+        ].join("\n");
+    }
+
+    function drawerInsightCards(product, options, relatedProducts) {
+        const lowStockOptions = options.filter((option) => Number(option.stock || 0) < lowStockThresholdValue()).length;
+        const sameBrandRelated = relatedProducts.filter((related) => related.brand === product.brand).length;
+        const averageRelatedPrice = relatedProducts.length
+            ? Math.round(relatedProducts.reduce((sum, related) => sum + Number(related.price || 0), 0) / relatedProducts.length)
+            : 0;
+        return [
+            {
+                label: "옵션 수",
+                value: `${options.length}개`,
+                description: lowStockOptions ? `긴장 옵션 ${lowStockOptions}개 포함` : "전체 옵션 흐름 확인"
+            },
+            {
+                label: "연관 상품",
+                value: `${relatedProducts.length}개`,
+                description: sameBrandRelated ? `같은 브랜드 ${sameBrandRelated}개 포함` : "연관 추천 흐름 확인"
+            },
+            {
+                label: "연관 평균가",
+                value: relatedProducts.length ? formatPrice(averageRelatedPrice) : "-",
+                description: relatedProducts.length ? "연관 상품 가격 레벨 비교" : "연관 상품 없음"
+            },
+            {
+                label: "재고 압력",
+                value: stockPressureLabel(product.stock),
+                description: stockPressureDetail(product.stock)
+            }
+        ].map((item) => `
+            <div class="product-drawer__overview-card product-drawer__overview-card--metric">
+                <span>${item.label}</span>
+                <strong>${item.value}</strong>
+                <em>${item.description}</em>
+            </div>
+        `).join("");
+    }
+
+    function filteredDrawerOptions(product) {
+        const options = Array.isArray(product.options) ? product.options.slice() : [];
+        if (drawerState.optionLowStockOnly) {
+            return options.filter((option) => Number(option.stock || 0) < lowStockThresholdValue());
+        }
+        return options;
+    }
+
+    function filteredDrawerRelatedProducts(product) {
+        let relatedProducts = Array.isArray(product.relatedProducts) ? product.relatedProducts.slice() : [];
+        if (drawerState.relatedSameBrandOnly) {
+            relatedProducts = relatedProducts.filter((related) => related.brand === product.brand);
+        }
+        if (drawerState.relatedSort === "STOCK_ASC") {
+            relatedProducts.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+        }
+        if (drawerState.relatedSort === "PRICE_HIGH") {
+            relatedProducts.sort((left, right) => Number(right.price || 0) - Number(left.price || 0));
+        }
+        return relatedProducts;
     }
 
     function setText(element, text) {

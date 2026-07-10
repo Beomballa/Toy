@@ -3,6 +3,10 @@
     const productId = Number(bootstrap.productId || 0);
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const RECENT_VIEWED_LIMIT = 6;
+    const optionSortState = {
+        mode: "STOCK_ASC"
+    };
+    let currentProduct = null;
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -17,6 +21,12 @@
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
+        detailShareButton: document.getElementById("detailShareButton"),
+        detailCopySummaryButton: document.getElementById("detailCopySummaryButton"),
+        detailSectionNav: document.getElementById("detailSectionNav"),
+        detailOptionSortStockButton: document.getElementById("detailOptionSortStockButton"),
+        detailOptionSortNameButton: document.getElementById("detailOptionSortNameButton"),
+        clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
         detailCatalogLink: document.getElementById("detailCatalogLink")
     };
@@ -125,7 +135,8 @@
         if (!elements.detailOptionGrid) {
             return;
         }
-        const options = Array.isArray(product.options) ? product.options : [];
+        syncOptionSortButtons();
+        const options = sortedOptions(product);
         if (!options.length) {
             elements.detailOptionGrid.innerHTML = `
                 <article class="catalog-empty">
@@ -247,13 +258,111 @@
         `).join("");
     }
 
+    function sortedOptions(product) {
+        const options = Array.isArray(product?.options) ? product.options.slice() : [];
+        if (optionSortState.mode === "NAME_ASC") {
+            return options.sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), "ko"));
+        }
+        return options.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+    }
+
+    function syncOptionSortButtons() {
+        elements.detailOptionSortStockButton?.classList.toggle("is-active", optionSortState.mode === "STOCK_ASC");
+        elements.detailOptionSortNameButton?.classList.toggle("is-active", optionSortState.mode === "NAME_ASC");
+    }
+
+    function summaryText(product) {
+        return [
+            product.headline || product.name,
+            product.brand,
+            product.category,
+            product.model,
+            product.priceLabel || formatPrice(product.price),
+            stockPressureDetail(product.stock)
+        ].filter(Boolean).join(" · ");
+    }
+
+    function initSectionNavigation() {
+        const navLinks = Array.from(document.querySelectorAll(".detail-section-nav a[href^=\"#\"]"));
+        if (!navLinks.length || typeof IntersectionObserver === "undefined") {
+            return;
+        }
+        const sections = navLinks
+            .map((link) => {
+                const section = document.querySelector(link.getAttribute("href"));
+                return section ? { link, section } : null;
+            })
+            .filter(Boolean);
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+            if (!visible) {
+                return;
+            }
+            sections.forEach(({ link, section }) => {
+                link.classList.toggle("is-active", section === visible.target);
+            });
+        }, {
+            rootMargin: "-25% 0px -55% 0px",
+            threshold: [0.2, 0.45, 0.7]
+        });
+        sections.forEach(({ section }) => observer.observe(section));
+    }
+
     async function init() {
         if (!productId) {
             return;
         }
         syncCatalogLinks();
+        initSectionNavigation();
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        elements.detailShareButton?.addEventListener("click", async () => {
+            const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(shareUrl);
+                }
+                if (elements.detailDescription) {
+                    elements.detailDescription.textContent = "현재 상품 URL을 복사했습니다. 같은 탐색 조건까지 함께 공유됩니다.";
+                }
+            } catch (error) {
+                window.prompt("현재 상품 URL을 복사하세요.", shareUrl);
+            }
+        });
+        elements.detailCopySummaryButton?.addEventListener("click", async () => {
+            if (!currentProduct) {
+                return;
+            }
+            const text = summaryText(currentProduct);
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                }
+                if (elements.detailDescription) {
+                    elements.detailDescription.textContent = "상품 요약을 복사했습니다. 메신저나 문서에 바로 붙여 넣을 수 있습니다.";
+                }
+            } catch (error) {
+                window.prompt("상품 요약을 복사하세요.", text);
+            }
+        });
+        elements.detailOptionSortStockButton?.addEventListener("click", () => {
+            optionSortState.mode = "STOCK_ASC";
+            if (currentProduct) {
+                renderOptions(currentProduct);
+            }
+        });
+        elements.detailOptionSortNameButton?.addEventListener("click", () => {
+            optionSortState.mode = "NAME_ASC";
+            if (currentProduct) {
+                renderOptions(currentProduct);
+            }
+        });
+        elements.clearDetailRecentButton?.addEventListener("click", () => {
+            window.localStorage.removeItem(RECENT_VIEWED_KEY);
+            renderRecentProducts(productId);
         });
         try {
             const response = await fetch(`/api/front/products/${productId}`);
@@ -261,6 +370,7 @@
                 throw new Error("상품 상세를 불러오지 못했습니다.");
             }
             const product = await response.json();
+            currentProduct = product;
             document.title = `${product.name} | Grade Stock`;
             if (elements.detailTitle) {
                 elements.detailTitle.textContent = product.headline || product.name;

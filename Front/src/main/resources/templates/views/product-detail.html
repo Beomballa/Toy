@@ -51,6 +51,8 @@
                 <div class="detail-actions">
                     <a class="hero-primary" href="/front#catalog" id="detailCatalogLink">카탈로그 보기</a>
                     <button class="hero-secondary" type="button" id="detailFocusRelated">비교 상품 보기</button>
+                    <button class="hero-secondary" type="button" id="detailShareButton">현재 상품 공유</button>
+                    <button class="hero-secondary" type="button" id="detailCopySummaryButton">요약 복사</button>
                 </div>
             </div>
             <aside class="detail-hero__side">
@@ -68,7 +70,15 @@
             </aside>
         </section>
 
-        <section class="detail-section">
+        <nav class="detail-section-nav" id="detailSectionNav" aria-label="상세 빠른 이동">
+            <a href="#detailHero">요약</a>
+            <a href="#detailOverview">개요</a>
+            <a href="#detailOptions">옵션</a>
+            <a href="#detailRelated">연관 상품</a>
+            <a href="#detailRecentSection">최근 본 상품</a>
+        </nav>
+
+        <section class="detail-section" id="detailOverview">
             <div class="section-heading">
                 <p class="eyebrow">Overview</p>
                 <div>
@@ -90,6 +100,10 @@
                 <div>
                     <h2>사이즈별 재고</h2>
                     <p>옵션별 재고를 카드 단위로 정리해 품절 임박 상태를 빠르게 확인할 수 있습니다.</p>
+                </div>
+                <div class="detail-section-actions">
+                    <button class="catalog-reset-button" type="button" id="detailOptionSortStockButton">재고 낮은 순</button>
+                    <button class="catalog-reset-button" type="button" id="detailOptionSortNameButton">옵션명 순</button>
                 </div>
             </div>
             <div class="detail-option-grid" id="detailOptionGrid">
@@ -121,6 +135,9 @@
                 <div>
                     <h2>최근 본 상품</h2>
                     <p>방금 살펴본 상품 흐름을 끊지 않고 바로 다시 비교할 수 있도록 정리했습니다.</p>
+                </div>
+                <div class="detail-section-actions">
+                    <button class="catalog-reset-button" type="button" id="clearDetailRecentButton">최근 본 상품 비우기</button>
                 </div>
             </div>
             <div class="detail-related-grid" id="detailRecentGrid"></div>

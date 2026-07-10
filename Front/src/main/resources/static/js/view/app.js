@@ -88,6 +88,7 @@
         populateFilters();
         syncControls();
         bindEvents();
+        initSectionNavigation();
         renderHeroMetrics();
         renderBrandSpotlight();
         renderCategoryShortcuts();
@@ -146,6 +147,7 @@
         if (elements.lowStockThresholdFilter) {
             elements.lowStockThresholdFilter.value = state.lowStockThreshold;
         }
+        syncPresetButtons();
     }
 
     function populateFilters() {
@@ -197,6 +199,19 @@
         elements.searchInput?.addEventListener("input", (event) => {
             state.search = event.target.value.trim().toLowerCase();
             refreshCatalog();
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "/" || document.activeElement === elements.searchInput) {
+                return;
+            }
+            const target = event.target;
+            const tagName = target?.tagName;
+            if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable) {
+                return;
+            }
+            event.preventDefault();
+            elements.searchInput?.focus();
+            elements.searchInput?.select?.();
         });
         elements.brandFilter?.addEventListener("change", (event) => {
             state.brand = event.target.value;
@@ -777,32 +792,37 @@
             {
                 label: "Visible now",
                 value: `${list.length}개`,
-                description: "현재 조건으로 즉시 확인 가능한 상품 수입니다."
+                description: "현재 조건으로 즉시 확인 가능한 상품 수입니다.",
+                action: "SCROLL_CATALOG"
             },
             {
                 label: "Featured mix",
                 value: `${featuredCount}개`,
-                description: "대표 노출에 걸린 상품 밀도를 빠르게 파악합니다."
+                description: "대표 노출에 걸린 상품 밀도를 빠르게 파악합니다.",
+                action: "FEATURED"
             },
             {
                 label: "Low stock",
                 value: `${lowStockCount}개`,
-                description: "긴장 재고 구간 상품 수를 같은 화면에서 추적합니다."
+                description: "긴장 재고 구간 상품 수를 같은 화면에서 추적합니다.",
+                action: "LOW_STOCK"
             },
             {
                 label: "Lead brand",
                 value: leadBrand || "-",
-                description: list.length ? `평균 발매가 ${formatPrice(averagePrice)} 기준으로 흐름을 읽을 수 있습니다.` : "상품을 불러오면 조건별 흐름을 요약합니다."
+                description: list.length ? `평균 발매가 ${formatPrice(averagePrice)} 기준으로 흐름을 읽을 수 있습니다.` : "상품을 불러오면 조건별 흐름을 요약합니다.",
+                action: leadBrand ? "LEAD_BRAND" : "SCROLL_CATALOG"
             }
         ];
 
         elements.catalogInsightGrid.innerHTML = insights.map((item) => `
-            <article class="catalog-insight-card">
+            <button class="catalog-insight-card" type="button" data-insight-action="${item.action}">
                 <span>${item.label}</span>
                 <strong>${item.value}</strong>
                 <p>${item.description}</p>
-            </article>
+            </button>
         `).join("");
+        bindInsightButtons();
     }
 
     function filteredProducts() {
@@ -1217,6 +1237,84 @@
                 await refreshCatalog();
             });
         });
+    }
+
+    function bindInsightButtons() {
+        elements.catalogInsightGrid?.querySelectorAll("[data-insight-action]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const action = button.dataset.insightAction;
+                if (action === "SCROLL_CATALOG") {
+                    document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    return;
+                }
+                if (action === "LEAD_BRAND") {
+                    const brand = dominantBrand(filteredProducts());
+                    if (!brand) {
+                        return;
+                    }
+                    state.brand = brand;
+                } else {
+                    applyPreset(action);
+                }
+                syncControls();
+                await refreshCatalog();
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+    }
+
+    function syncPresetButtons() {
+        const activePreset = currentPreset();
+        elements.catalogPresetStrip?.querySelectorAll("[data-preset]").forEach((button) => {
+            button.classList.toggle("is-active", button.dataset.preset === activePreset);
+        });
+    }
+
+    function currentPreset() {
+        if (state.featuredOnly === "FEATURED" && state.sort === "FEATURED") {
+            return "FEATURED";
+        }
+        if (state.stock === "LOW" && state.sort === "STOCK_ASC") {
+            return "LOW_STOCK";
+        }
+        if (state.priceBand === "OVER_300" && state.sort === "PRICE_HIGH") {
+            return "PREMIUM";
+        }
+        if (!Object.entries(state).some(([key, value]) => value !== DEFAULT_STATE[key])) {
+            return "RESET";
+        }
+        if (state.sort === "LATEST") {
+            return "LATEST_DROP";
+        }
+        return "";
+    }
+
+    function initSectionNavigation() {
+        const navLinks = Array.from(document.querySelectorAll(".topbar-subnav a[href^=\"#\"]"));
+        if (!navLinks.length || typeof IntersectionObserver === "undefined") {
+            return;
+        }
+        const sections = navLinks
+            .map((link) => {
+                const section = document.querySelector(link.getAttribute("href"));
+                return section ? { link, section } : null;
+            })
+            .filter(Boolean);
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+            if (!visible) {
+                return;
+            }
+            sections.forEach(({ link, section }) => {
+                link.classList.toggle("is-active", section === visible.target);
+            });
+        }, {
+            rootMargin: "-25% 0px -55% 0px",
+            threshold: [0.2, 0.45, 0.7]
+        });
+        sections.forEach(({ section }) => observer.observe(section));
     }
 
     function productVisualMarkup(product, className) {

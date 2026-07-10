@@ -1482,6 +1482,10 @@
     font-weight: 600;
 }
 
+.admin-search-meta-row > * {
+    min-width: 0;
+}
+
 .task-flag-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1689,6 +1693,18 @@
     gap: 0.75rem;
 }
 
+.admin-selection-grid--list-bulk {
+    grid-template-columns: minmax(240px, 1.15fr) repeat(2, minmax(0, 1fr));
+}
+
+.admin-selection-grid--category-bulk {
+    grid-template-columns: minmax(240px, 1.2fr) minmax(220px, 0.9fr) minmax(220px, 0.9fr);
+}
+
+.admin-selection-grid--member-bulk {
+    grid-template-columns: minmax(240px, 1.05fr) repeat(3, minmax(0, 1fr));
+}
+
 .admin-selection-grid--task {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
 }
@@ -1703,6 +1719,35 @@
 .admin-selection-actions .btn {
     min-height: 48px;
     font-weight: 700;
+}
+
+.admin-selection-grid .admin-selection-actions {
+    min-width: 0;
+    height: 100%;
+}
+
+.admin-selection-grid--list-bulk .admin-selection-actions,
+.admin-selection-grid--category-bulk .admin-selection-actions,
+.admin-selection-grid--member-bulk .admin-selection-actions {
+    grid-template-columns: 1fr;
+}
+
+.admin-selection-grid--list-bulk .task-flag-card,
+.admin-selection-grid--category-bulk .task-flag-card,
+.admin-selection-grid--member-bulk .task-flag-card {
+    min-height: 100%;
+}
+
+.admin-chip-row--date .btn {
+    min-width: 74px;
+}
+
+.admin-search-side .admin-filter-actions {
+    width: 100%;
+}
+
+.admin-search-side .admin-filter-actions .btn {
+    min-width: 0;
 }
 
 .admin-page-shell .table-responsive {
@@ -2008,6 +2053,12 @@
     }
 
     .admin-selection-grid--task {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-selection-grid--list-bulk,
+    .admin-selection-grid--category-bulk,
+    .admin-selection-grid--member-bulk {
         grid-template-columns: 1fr;
     }
 }

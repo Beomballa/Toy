@@ -62,6 +62,7 @@ const NoticeList = {
         document.getElementById('btnBulkDeleteNotice')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnClearNoticeSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('noticeSelectPage')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
+        document.getElementById('noticeSelectPageHeader')?.addEventListener('change', (event) => this.toggleSelectCurrentPage(event.target.checked));
         document.getElementById('noticeStatTotalCard')?.addEventListener('click', () => this.applyStatFilter('total'));
         document.getElementById('noticeStatLiveCard')?.addEventListener('click', () => this.applyStatFilter('live'));
         document.getElementById('noticeStatScheduledCard')?.addEventListener('click', () => this.applyStatFilter('scheduled'));
@@ -459,14 +460,7 @@ const NoticeList = {
         const selectionMeta = document.getElementById('noticeSelectionMeta');
         const selectedCount = this.selectedNoticeNos.size;
         const currentPageSelectedCount = (items || []).filter((item) => this.selectedNoticeNos.has(item.noticeNo)).length;
-        const selectPage = document.getElementById('noticeSelectPage');
-        if (selectPage && items && items.length > 0) {
-            selectPage.checked = currentPageSelectedCount === items.length;
-            selectPage.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < items.length;
-        } else if (selectPage) {
-            selectPage.checked = false;
-            selectPage.indeterminate = false;
-        }
+        this.syncSelectPageCheckbox(items, currentPageSelectedCount);
 
         if (selectionMeta) {
             if (selectedCount === 0) {
@@ -487,6 +481,23 @@ const NoticeList = {
 
     setPageMeta(message) {
         document.getElementById('noticePageMeta').textContent = message;
+    },
+
+    syncSelectPageCheckbox(items, currentPageSelectedCount) {
+        const checkboxes = [
+            document.getElementById('noticeSelectPage'),
+            document.getElementById('noticeSelectPageHeader')
+        ].filter(Boolean);
+
+        checkboxes.forEach((checkbox) => {
+            if (items && items.length > 0) {
+                checkbox.checked = currentPageSelectedCount === items.length;
+                checkbox.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < items.length;
+                return;
+            }
+            checkbox.checked = false;
+            checkbox.indeterminate = false;
+        });
     },
 
     renderTableState(type, title, description) {

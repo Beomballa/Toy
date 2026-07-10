@@ -28,20 +28,28 @@
 
     <div class="card animate-in admin-panel-card admin-form-card">
         <div class="card-body">
-            <div class="admin-filter-grid">
-                <div class="admin-filter-field admin-filter-field--span-5">
+            <div class="admin-selection-panel">
+                <div class="admin-selection-panel__head">
+                    <div>
+                        <div class="admin-selection-panel__title">선택 작업</div>
+                        <div class="admin-selection-panel__desc">선택한 카테고리의 상태 변경과 삭제를 한 번에 처리합니다.</div>
+                    </div>
                     <div class="small text-muted" id="categorySelectionMeta">선택된 카테고리가 없습니다.</div>
                 </div>
-                <div class="admin-filter-field admin-filter-field--span-4 admin-card-form-block">
-                    <label class="admin-filter-label">일괄 상태 변경</label>
-                    <select id="bulkCategoryIsActive" class="form-select">
-                        <option value="">변경 안 함</option>
-                        <option value="Y">사용</option>
-                        <option value="N">중지</option>
-                    </select>
-                </div>
-                <div class="admin-filter-field admin-filter-field--span-3">
-                    <div class="admin-submit-bar">
+                <div class="admin-selection-grid admin-selection-grid--category-bulk">
+                    <div class="task-flag-card task-flag-card--select">
+                        <span class="task-flag-card__title">현재 선택 상태</span>
+                        <span class="task-flag-card__desc">좌측 대분류와 우측 중분류에서 선택한 카테고리를 기준으로 일괄 작업을 적용합니다.</span>
+                    </div>
+                    <div class="admin-filter-field admin-card-form-block">
+                        <label class="admin-filter-label">일괄 상태 변경</label>
+                        <select id="bulkCategoryIsActive" class="form-select">
+                            <option value="">변경 안 함</option>
+                            <option value="Y">사용</option>
+                            <option value="N">중지</option>
+                        </select>
+                    </div>
+                    <div class="admin-selection-actions">
                         <button type="button" class="btn btn-outline-dark" id="btnApplyCategoryBulk">일괄 적용</button>
                         <button type="button" class="btn btn-outline-danger" id="btnBulkDeleteCategory">일괄 삭제</button>
                         <button type="button" class="btn btn-outline-secondary" id="btnClearCategorySelection">선택 해제</button>

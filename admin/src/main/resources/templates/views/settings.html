@@ -340,6 +340,7 @@
                             <div class="admin-search-side">
                                 <div class="task-filter-actions__hint">관리자 목록과 설정 이력은 같은 화면에서 각각의 검색 상태를 따로 유지합니다.</div>
                                 <div class="admin-filter-actions">
+                                    <button class="btn btn-sm btn-dark w-100" id="btnSearchAdminFilters">조회</button>
                                     <button class="btn btn-sm btn-outline-secondary w-100" id="btnResetAdminFilters">초기화</button>
                                 </div>
                             </div>
@@ -501,6 +502,10 @@
             document.getElementById('btnExportAdminCsv').addEventListener('click', () => this.exportAdminList());
             document.getElementById('btnSaveAdmin').addEventListener('click', () => this.saveAdmin());
             document.getElementById('btnSaveSystemSettings').addEventListener('click', () => this.saveSystemSettings());
+            document.getElementById('btnSearchAdminFilters').addEventListener('click', () => {
+                this.adminState.page = 0;
+                this.getList();
+            });
             document.getElementById('btnResetAdminFilters').addEventListener('click', () => this.resetAdminFilters());
             document.getElementById('adminPageSize').addEventListener('change', () => {
                 this.adminState.page = 0;

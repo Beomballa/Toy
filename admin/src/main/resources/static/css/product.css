@@ -1983,6 +1983,14 @@ body {
     font-weight: 700;
 }
 
+.content-board-bulk-group--actions {
+    justify-content: space-between;
+}
+
+.content-board-bulk-group--actions .btn {
+    width: 100%;
+}
+
 .content-board-result-meta {
     width: 100%;
     padding: 0.95rem 1.15rem;

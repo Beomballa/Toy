@@ -118,7 +118,7 @@
                     </div>
                     <div class="small text-muted" id="memberSelectionMeta">선택된 회원이 없습니다.</div>
                 </div>
-                <div class="admin-selection-grid">
+                <div class="admin-selection-grid admin-selection-grid--list-bulk admin-selection-grid--member-bulk">
                     <div class="task-flag-card task-flag-card--select">
                         <span class="d-flex align-items-center gap-2">
                             <input class="form-check-input" type="checkbox" id="memberSelectPage">
@@ -133,8 +133,9 @@
                             <option value="Y">마스터 지정</option>
                             <option value="N">일반 회원</option>
                         </select>
-
-                        <label class="admin-filter-label mt-3">일괄 상태 변경</label>
+                    </div>
+                    <div class="admin-filter-field admin-card-form-block">
+                        <label class="admin-filter-label">일괄 상태 변경</label>
                         <select id="bulkMemberDelYn" class="form-select">
                             <option value="">변경 안 함</option>
                             <option value="N">정상</option>

@@ -155,7 +155,14 @@
                     </div>
                     <div class="small text-muted" id="noticeSelectionMeta">선택된 공지가 없습니다.</div>
                 </div>
-                <div class="admin-selection-grid">
+                <div class="admin-selection-grid admin-selection-grid--list-bulk">
+                    <div class="task-flag-card task-flag-card--select">
+                        <span class="d-flex align-items-center gap-2">
+                            <input class="form-check-input" type="checkbox" id="noticeSelectPage">
+                            <span class="task-flag-card__title">현재 페이지 전체 선택</span>
+                        </span>
+                        <span class="task-flag-card__desc">현재 화면에서 보이는 공지만 빠르게 선택하거나 해제합니다.</span>
+                    </div>
                     <div class="admin-filter-field">
                         <label class="admin-filter-label">일괄 상태 변경</label>
                         <select id="bulkNoticeIsActive" class="form-select">
@@ -220,7 +227,7 @@
                     <thead class="table-light">
                     <tr>
                         <th class="ps-4 table-col-80">
-                            <input type="checkbox" id="noticeSelectPage">
+                            <input type="checkbox" id="noticeSelectPageHeader">
                         </th>
                         <th class="table-col-80">No</th>
                         <th>제목</th>

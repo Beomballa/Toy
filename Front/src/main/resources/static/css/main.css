@@ -1396,6 +1396,41 @@ select {
     line-height: 1.6;
 }
 
+.toast-stack {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    z-index: 80;
+    display: grid;
+    gap: 10px;
+    width: min(360px, calc(100vw - 24px));
+}
+
+.toast {
+    display: grid;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: var(--card-shadow-strong);
+}
+
+.toast strong {
+    font-size: var(--text-sm);
+}
+
+.toast span {
+    color: var(--muted);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+
+.toast.is-warning {
+    border-color: rgba(183, 121, 31, 0.22);
+    background: #fffaf2;
+}
+
 .product-drawer {
     position: fixed;
     inset: 0;
@@ -2183,5 +2218,10 @@ select {
     .product-drawer__overview,
     .product-drawer__options {
         grid-template-columns: 1fr;
+    }
+
+    .toast-stack {
+        right: 12px;
+        bottom: 12px;
     }
 }

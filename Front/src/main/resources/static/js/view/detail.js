@@ -7,6 +7,7 @@
         mode: "STOCK_ASC"
     };
     let currentProduct = null;
+    let toastTimerSeed = 0;
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -27,6 +28,7 @@
         detailOptionSortStockButton: document.getElementById("detailOptionSortStockButton"),
         detailOptionSortNameButton: document.getElementById("detailOptionSortNameButton"),
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
+        copyDetailRecentSummaryButton: document.getElementById("copyDetailRecentSummaryButton"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
         detailCatalogLink: document.getElementById("detailCatalogLink")
     };
@@ -310,6 +312,35 @@
         sections.forEach(({ section }) => observer.observe(section));
     }
 
+    function showToast(title, body, isWarning = false) {
+        const stack = ensureToastStack();
+        if (!stack) {
+            return;
+        }
+        const toast = document.createElement("article");
+        toast.className = `toast${isWarning ? " is-warning" : ""}`;
+        toast.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
+        toast.dataset.toastId = String(++toastTimerSeed);
+        stack.appendChild(toast);
+        window.setTimeout(() => {
+            toast.remove();
+            if (!stack.childElementCount) {
+                stack.remove();
+            }
+        }, 2600);
+    }
+
+    function ensureToastStack() {
+        let stack = document.querySelector(".toast-stack");
+        if (stack) {
+            return stack;
+        }
+        stack = document.createElement("div");
+        stack.className = "toast-stack";
+        document.body.appendChild(stack);
+        return stack;
+    }
+
     async function init() {
         if (!productId) {
             return;
@@ -325,9 +356,7 @@
                 if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(shareUrl);
                 }
-                if (elements.detailDescription) {
-                    elements.detailDescription.textContent = "현재 상품 URL을 복사했습니다. 같은 탐색 조건까지 함께 공유됩니다.";
-                }
+                showToast("상품 URL을 복사했습니다.", "같은 탐색 조건까지 함께 공유됩니다.");
             } catch (error) {
                 window.prompt("현재 상품 URL을 복사하세요.", shareUrl);
             }
@@ -341,9 +370,7 @@
                 if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(text);
                 }
-                if (elements.detailDescription) {
-                    elements.detailDescription.textContent = "상품 요약을 복사했습니다. 메신저나 문서에 바로 붙여 넣을 수 있습니다.";
-                }
+                showToast("상품 요약을 복사했습니다.", "메신저나 문서에 바로 붙여 넣을 수 있습니다.");
             } catch (error) {
                 window.prompt("상품 요약을 복사하세요.", text);
             }
@@ -352,17 +379,34 @@
             optionSortState.mode = "STOCK_ASC";
             if (currentProduct) {
                 renderOptions(currentProduct);
+                showToast("옵션을 재고 낮은 순으로 정렬했습니다.", "품절 임박 옵션을 먼저 확인할 수 있습니다.");
             }
         });
         elements.detailOptionSortNameButton?.addEventListener("click", () => {
             optionSortState.mode = "NAME_ASC";
             if (currentProduct) {
                 renderOptions(currentProduct);
+                showToast("옵션을 이름순으로 정렬했습니다.", "사이즈/옵션 라인을 더 빠르게 찾을 수 있습니다.");
             }
         });
         elements.clearDetailRecentButton?.addEventListener("click", () => {
             window.localStorage.removeItem(RECENT_VIEWED_KEY);
             renderRecentProducts(productId);
+            showToast("최근 본 상품을 비웠습니다.", "상세 최근 흐름 보드가 초기화되었습니다.");
+        });
+        elements.copyDetailRecentSummaryButton?.addEventListener("click", async () => {
+            const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+            const text = recentProducts.length
+                ? recentProducts.map((item, index) => `${index + 1}. ${item.headline || item.name} · ${item.model || "-"} · ${item.priceLabel || formatPrice(item.price)}`).join("\n")
+                : "최근 본 상품이 없습니다.";
+            try {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                }
+                showToast("최근 흐름을 복사했습니다.", "상세에서 이어 본 상품 목록을 바로 전달할 수 있습니다.");
+            } catch (error) {
+                window.prompt("최근 흐름을 복사하세요.", text);
+            }
         });
         try {
             const response = await fetch(`/api/front/products/${productId}`);

@@ -27,6 +27,7 @@
     let brandFacets = [];
     let categoryFacets = [];
     const detailCache = new Map();
+    let toastTimerSeed = 0;
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -44,6 +45,8 @@
         catalogCountText: document.getElementById("catalogCountText"),
         catalogSummaryText: document.getElementById("catalogSummaryText"),
         shareCatalogButton: document.getElementById("shareCatalogButton"),
+        copyCatalogSummaryButton: document.getElementById("copyCatalogSummaryButton"),
+        jumpFirstProductButton: document.getElementById("jumpFirstProductButton"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
@@ -54,12 +57,14 @@
         recentViewedText: document.getElementById("recentViewedText"),
         recentViewedGrid: document.getElementById("recentViewedGrid"),
         clearRecentViewedButton: document.getElementById("clearRecentViewedButton"),
+        copyRecentViewedSummaryButton: document.getElementById("copyRecentViewedSummaryButton"),
         compareBoardSection: document.getElementById("compareBoardSection"),
         compareBoardGrid: document.getElementById("compareBoardGrid"),
         compareBoardTitle: document.getElementById("compareBoardTitle"),
         compareBoardText: document.getElementById("compareBoardText"),
         applyCompareCategoryButton: document.getElementById("applyCompareCategoryButton"),
         applyCompareLowStockButton: document.getElementById("applyCompareLowStockButton"),
+        copyCompareSummaryButton: document.getElementById("copyCompareSummaryButton"),
         clearCompareButton: document.getElementById("clearCompareButton"),
         bookmarkBoardSection: document.getElementById("bookmarkBoardSection"),
         bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
@@ -67,6 +72,7 @@
         bookmarkBoardText: document.getElementById("bookmarkBoardText"),
         applyBookmarkFeaturedButton: document.getElementById("applyBookmarkFeaturedButton"),
         applyBookmarkLowStockButton: document.getElementById("applyBookmarkLowStockButton"),
+        copyBookmarkSummaryButton: document.getElementById("copyBookmarkSummaryButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
         signalList: document.getElementById("signalList"),
         todaySignalTitle: document.getElementById("todaySignalTitle"),
@@ -299,19 +305,41 @@
                 if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(shareUrl);
                 }
-                setText(elements.catalogSummaryText, "현재 탐색 URL을 복사했습니다. 같은 조건으로 바로 공유할 수 있습니다.");
+                showToast("탐색 URL을 복사했습니다.", "현재 조건을 그대로 공유할 수 있습니다.");
             } catch (error) {
                 window.prompt("현재 조건 URL을 복사하세요.", shareUrl);
             }
         });
+        elements.copyCatalogSummaryButton?.addEventListener("click", async () => {
+            const text = catalogSummaryClipboardText(filteredProducts());
+            await copyTextWithFeedback(text, "탐색 요약을 복사했습니다.", "현재 보이는 상품 상태를 문서나 메신저로 옮길 수 있습니다.");
+        });
+        elements.jumpFirstProductButton?.addEventListener("click", () => {
+            const firstProduct = filteredProducts()[0];
+            if (!firstProduct) {
+                showToast("이동할 상품이 없습니다.", "먼저 조건을 조정해 상품을 불러와주세요.", true);
+                return;
+            }
+            openDrawer(firstProduct.id);
+            showToast("첫 상품을 열었습니다.", `${firstProduct.headline || firstProduct.name} 상세를 빠르게 확인할 수 있습니다.`);
+        });
         elements.clearRecentViewedButton?.addEventListener("click", () => {
             window.localStorage.removeItem(RECENT_VIEWED_KEY);
             renderRecentViewed();
+            showToast("최근 본 상품을 비웠습니다.", "메인 최근 흐름 보드가 초기화되었습니다.");
+        });
+        elements.copyRecentViewedSummaryButton?.addEventListener("click", async () => {
+            const recentProducts = readRecentProducts().slice(0, 3);
+            const text = recentProducts.length
+                ? recentProducts.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.model || "-"} · ${product.priceLabel || formatPrice(product.price)}`).join("\n")
+                : "최근 본 상품이 없습니다.";
+            await copyTextWithFeedback(text, "최근 흐름을 복사했습니다.", "방금 본 상품 목록을 바로 전달할 수 있습니다.");
         });
         elements.clearCompareButton?.addEventListener("click", () => {
             writeCompareProducts([]);
             renderCompareBoard();
             renderCatalog();
+            showToast("비교 보드를 초기화했습니다.", "비교 대상 상품을 모두 비웠습니다.");
         });
         elements.applyCompareCategoryButton?.addEventListener("click", async () => {
             const category = dominantCategory(readCompareProducts());
@@ -329,11 +357,20 @@
             syncControls();
             await refreshCatalog();
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("비교 기준 필터를 적용했습니다.", "재고가 낮은 순서로 바로 카탈로그를 확인할 수 있습니다.");
+        });
+        elements.copyCompareSummaryButton?.addEventListener("click", async () => {
+            const comparedProducts = readCompareProducts();
+            const text = comparedProducts.length
+                ? `비교 보드\n${buildCompareSummary(comparedProducts)}\n${comparedProducts.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · 재고 ${product.stock}개`).join("\n")}`
+                : "비교 보드에 담긴 상품이 없습니다.";
+            await copyTextWithFeedback(text, "비교 요약을 복사했습니다.", "가격과 재고 차이를 바로 전달할 수 있습니다.");
         });
         elements.clearBookmarkButton?.addEventListener("click", () => {
             writeBookmarkProducts([]);
             renderBookmarkBoard();
             renderCatalog();
+            showToast("관심 상품을 초기화했습니다.", "찜 보드에 담긴 상품을 모두 비웠습니다.");
         });
         elements.applyBookmarkFeaturedButton?.addEventListener("click", async () => {
             state.featuredOnly = "FEATURED";
@@ -347,6 +384,14 @@
             syncControls();
             await refreshCatalog();
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("관심 보드 기준 필터를 적용했습니다.", "긴장 재고 상품만 빠르게 다시 볼 수 있습니다.");
+        });
+        elements.copyBookmarkSummaryButton?.addEventListener("click", async () => {
+            const bookmarkedProducts = readBookmarkProducts();
+            const text = bookmarkedProducts.length
+                ? `관심 상품 보드\n${buildBookmarkSummary(bookmarkedProducts)}\n${bookmarkedProducts.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · ${product.featured ? "Featured" : "Watchlist"}`).join("\n")}`
+                : "관심 상품 보드에 담긴 상품이 없습니다.";
+            await copyTextWithFeedback(text, "관심 보드 요약을 복사했습니다.", "찜한 상품 흐름을 그대로 공유할 수 있습니다.");
         });
         elements.catalogGrid?.addEventListener("click", (event) => {
             const compareButton = event.target.closest("[data-compare-product-id]");
@@ -949,6 +994,14 @@
         return `/front/products/${productId}${window.location.search || ""}`;
     }
 
+    function catalogSummaryClipboardText(list) {
+        return [
+            `탐색 결과 ${list.length}개`,
+            buildSummaryText(list.length),
+            list.slice(0, 5).map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · ${stockLabel(product.stock)}`).join("\n")
+        ].filter(Boolean).join("\n");
+    }
+
     function renderRecentViewed() {
         if (!elements.recentViewedSection || !elements.recentViewedGrid) {
             return;
@@ -1068,6 +1121,7 @@
         const exists = current.some((product) => Number(product.id) === Number(productId));
         if (exists) {
             writeCompareProducts(current.filter((product) => Number(product.id) !== Number(productId)));
+            showToast("비교 대상에서 제외했습니다.", `${source.headline || source.name}을 비교 보드에서 뺐습니다.`);
         } else {
             const summary = {
                 id: source.id,
@@ -1081,6 +1135,11 @@
                 stock: source.stock,
                 stockStatus: source.stockStatus
             };
+            if (current.length >= 3) {
+                showToast("비교 보드는 최대 3개까지 담을 수 있습니다.", "가장 오래 담긴 상품을 교체했습니다.", true);
+            } else {
+                showToast("비교 보드에 담았습니다.", `${source.headline || source.name}을 비교 목록에 추가했습니다.`);
+            }
             writeCompareProducts([summary].concat(current).slice(0, 3));
         }
         renderCompareBoard();
@@ -1102,6 +1161,7 @@
         const exists = current.some((product) => Number(product.id) === Number(productId));
         if (exists) {
             writeBookmarkProducts(current.filter((product) => Number(product.id) !== Number(productId)));
+            showToast("관심 상품에서 제외했습니다.", `${source.headline || source.name}을 찜 보드에서 뺐습니다.`);
         } else {
             const summary = {
                 id: source.id,
@@ -1116,6 +1176,11 @@
                 stockStatus: source.stockStatus,
                 featured: Boolean(source.featured)
             };
+            if (current.length >= 6) {
+                showToast("관심 상품은 최대 6개까지 유지합니다.", "가장 오래 담긴 상품을 교체했습니다.", true);
+            } else {
+                showToast("관심 상품에 담았습니다.", `${source.headline || source.name}을 나중에 다시 볼 수 있습니다.`);
+            }
             writeBookmarkProducts([summary].concat(current).slice(0, 6));
         }
         renderBookmarkBoard();
@@ -1261,6 +1326,48 @@
                 document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
             });
         });
+    }
+
+    async function copyTextWithFeedback(text, title, body) {
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                throw new Error("Clipboard not available");
+            }
+            showToast(title, body);
+        } catch (error) {
+            window.prompt("내용을 복사하세요.", text);
+        }
+    }
+
+    function showToast(title, body, isWarning = false) {
+        const stack = ensureToastStack();
+        if (!stack) {
+            return;
+        }
+        const toast = document.createElement("article");
+        toast.className = `toast${isWarning ? " is-warning" : ""}`;
+        toast.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
+        toast.dataset.toastId = String(++toastTimerSeed);
+        stack.appendChild(toast);
+        window.setTimeout(() => {
+            toast.remove();
+            if (!stack.childElementCount) {
+                stack.remove();
+            }
+        }, 2600);
+    }
+
+    function ensureToastStack() {
+        let stack = document.querySelector(".toast-stack");
+        if (stack) {
+            return stack;
+        }
+        stack = document.createElement("div");
+        stack.className = "toast-stack";
+        document.body.appendChild(stack);
+        return stack;
     }
 
     function syncPresetButtons() {

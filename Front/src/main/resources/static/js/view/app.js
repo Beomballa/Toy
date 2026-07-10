@@ -577,6 +577,21 @@
             const bookmarkButton = event.target.closest("[data-bookmark-product-id]");
             if (bookmarkButton) {
                 toggleBookmarkProduct(Number(bookmarkButton.dataset.bookmarkProductId));
+                return;
+            }
+            const copyButton = event.target.closest("[data-copy-product-id]");
+            if (copyButton) {
+                copyCatalogCardSummary(Number(copyButton.dataset.copyProductId));
+                return;
+            }
+            const shareButton = event.target.closest("[data-share-product-id]");
+            if (shareButton) {
+                shareCatalogCardLink(Number(shareButton.dataset.shareProductId));
+                return;
+            }
+            const focusButton = event.target.closest("[data-card-focus][data-product-id]");
+            if (focusButton) {
+                applyCatalogCardFocus(Number(focusButton.dataset.productId), focusButton.dataset.cardFocus);
             }
         });
         window.addEventListener("popstate", async () => {
@@ -995,6 +1010,11 @@
                     </div>
                     <span class="catalog-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                 </div>
+                <div class="catalog-card__signal-row">
+                    <span class="catalog-card__signal">${relativeDropLabel(product.createdDate)}</span>
+                    <span class="catalog-card__signal">${moodLabel(product)}</span>
+                    <span class="catalog-card__signal">${featuredRankLabel(product)}</span>
+                </div>
                 <p class="catalog-card__copy">${product.description}</p>
                 <div class="catalog-card__footer">
                     <div>
@@ -1004,6 +1024,13 @@
                     <div class="catalog-card__action">
                         <div class="catalog-card__meta">${moodLabel(product)}</div>
                         <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
+                        <div class="catalog-card__focus-grid">
+                            <button class="catalog-focus-button" type="button" data-card-focus="BRAND" data-product-id="${product.id}">브랜드 보기</button>
+                            <button class="catalog-focus-button" type="button" data-card-focus="CATEGORY" data-product-id="${product.id}">카테고리 보기</button>
+                            <button class="catalog-focus-button" type="button" data-card-focus="LOW_STOCK" data-product-id="${product.id}">긴장 재고</button>
+                            <button class="catalog-focus-button" type="button" data-card-focus="FEATURED" data-product-id="${product.id}">Featured 흐름</button>
+                            <button class="catalog-focus-button" type="button" data-card-focus="PREMIUM" data-product-id="${product.id}">고가 상품</button>
+                        </div>
                         <div class="catalog-card__action-group">
                             <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
                                 ${bookmarkedIds.has(Number(product.id)) ? "찜 해제" : "찜하기"}
@@ -1015,6 +1042,12 @@
                         <div class="catalog-card__quick-row">
                             <button class="catalog-ghost-button" type="button" data-hide-product-id="${product.id}">
                                 ${hiddenIds.has(Number(product.id)) ? "숨김 해제" : "숨기기"}
+                            </button>
+                            <button class="catalog-ghost-button" type="button" data-copy-product-id="${product.id}">
+                                카드 복사
+                            </button>
+                            <button class="catalog-ghost-button" type="button" data-share-product-id="${product.id}">
+                                링크 복사
                             </button>
                         </div>
                         <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
@@ -1489,6 +1522,82 @@
             buildSummaryText(list.length),
             list.slice(0, 5).map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · ${stockLabel(product.stock)}`).join("\n")
         ].filter(Boolean).join("\n");
+    }
+
+    async function copyCatalogCardSummary(productId) {
+        const product = products.find((item) => Number(item.id) === Number(productId));
+        if (!product) {
+            return;
+        }
+        const text = [
+            product.headline || product.name,
+            compactProductContext(product),
+            `카테고리 ${product.category} · ${featuredRankLabel(product)}`,
+            stockPressureDetail(product.stock),
+            product.description
+        ].filter(Boolean).join("\n");
+        await copyTextWithFeedback(text, "카드 요약을 복사했습니다.", "현재 상품 카드 정보를 바로 전달할 수 있습니다.");
+    }
+
+    async function shareCatalogCardLink(productId) {
+        const product = products.find((item) => Number(item.id) === Number(productId));
+        if (!product) {
+            return;
+        }
+        const shareUrl = `${window.location.origin}${detailPageUrl(product.id)}`;
+        await copyTextWithFeedback(shareUrl, "상품 링크를 복사했습니다.", "현재 카드의 상세 링크를 바로 전달할 수 있습니다.");
+    }
+
+    async function applyCatalogCardFocus(productId, focusType) {
+        const product = products.find((item) => Number(item.id) === Number(productId));
+        if (!product) {
+            return;
+        }
+        if (focusType === "BRAND") {
+            state.brand = product.brand || "ALL";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("브랜드 흐름으로 전환했습니다.", `${product.brand} 기준으로 카탈로그를 다시 정렬했습니다.`);
+            return;
+        }
+        if (focusType === "CATEGORY") {
+            state.category = product.category || "ALL";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("카테고리 흐름으로 전환했습니다.", `${product.category} 기준으로 비슷한 상품을 다시 확인할 수 있습니다.`);
+            return;
+        }
+        if (focusType === "LOW_STOCK") {
+            state.stock = "LOW";
+            state.sort = "STOCK_ASC";
+            state.brand = product.brand || "ALL";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("긴장 재고 흐름으로 전환했습니다.", `${product.brand} 중심으로 저재고 상품부터 다시 탐색합니다.`);
+            return;
+        }
+        if (focusType === "FEATURED") {
+            state.featuredOnly = "FEATURED";
+            state.sort = "FEATURED";
+            state.brand = product.brand || "ALL";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("featured")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("Featured 흐름으로 전환했습니다.", "대표 노출 상품 기준으로 다시 탐색합니다.");
+            return;
+        }
+        if (focusType === "PREMIUM") {
+            state.priceBand = "OVER_300";
+            state.sort = "PRICE_HIGH";
+            state.category = product.category || "ALL";
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("고가 상품 흐름으로 전환했습니다.", `${product.category} 안에서 가격 상단 상품을 다시 확인할 수 있습니다.`);
+        }
     }
 
     function renderRecentViewed() {

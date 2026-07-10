@@ -1340,6 +1340,24 @@ select {
     color: #6b6b6b;
 }
 
+.catalog-card__signal-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.catalog-card__signal {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 11px;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.05);
+    color: #4a4a4a;
+    font-size: var(--text-xs);
+    font-weight: 700;
+}
+
 .catalog-card__footer {
     display: flex;
     align-items: flex-end;
@@ -1367,6 +1385,13 @@ select {
     display: flex;
     flex-wrap: wrap;
     justify-content: stretch;
+    gap: 8px;
+    width: 100%;
+}
+
+.catalog-card__focus-grid {
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     width: 100%;
 }
@@ -1412,6 +1437,27 @@ select {
     border: 1px solid rgba(20, 108, 98, 0.18);
     background: rgba(20, 108, 98, 0.06);
     color: #115e59;
+}
+
+.catalog-focus-button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid rgba(17, 17, 17, 0.08);
+    border-radius: 999px;
+    background: #ffffff;
+    color: #3d3d3d;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+}
+
+.catalog-focus-button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(17, 17, 17, 0.16);
+    background: #fafafa;
 }
 
 .catalog-bookmark-button:hover,
@@ -2453,6 +2499,7 @@ select {
     .topbar-action,
     .hero-primary,
     .hero-secondary,
+    .catalog-focus-button,
     .catalog-bookmark-button,
     .catalog-compare-button,
     .catalog-ghost-button,

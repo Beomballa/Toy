@@ -113,6 +113,15 @@
         metricCount: document.getElementById("metricCount"),
         metricLowStock: document.getElementById("metricLowStock"),
         metricToday: document.getElementById("metricToday"),
+        flowBoardTitle: document.getElementById("flowBoardTitle"),
+        flowBoardText: document.getElementById("flowBoardText"),
+        flowBoardGrid: document.getElementById("flowBoardGrid"),
+        copyFlowBoardSummaryButton: document.getElementById("copyFlowBoardSummaryButton"),
+        openRecentFlowButton: document.getElementById("openRecentFlowButton"),
+        openCompareFlowButton: document.getElementById("openCompareFlowButton"),
+        openBookmarkFlowButton: document.getElementById("openBookmarkFlowButton"),
+        applyFlowLowStockButton: document.getElementById("applyFlowLowStockButton"),
+        restoreHiddenFlowButton: document.getElementById("restoreHiddenFlowButton"),
         productDrawer: document.getElementById("productDrawer"),
         drawerBody: document.getElementById("drawerBody"),
         closeDrawerButton: document.getElementById("closeDrawerButton"),
@@ -130,6 +139,7 @@
         bindEvents();
         initSectionNavigation();
         renderHeroMetrics();
+        renderFlowBoard();
         renderBrandSpotlight();
         renderCategoryShortcuts();
         renderSignalStrip();
@@ -353,6 +363,24 @@
             const text = catalogSummaryClipboardText(filteredProducts());
             await copyTextWithFeedback(text, "탐색 요약을 복사했습니다.", "현재 보이는 상품 상태를 문서나 메신저로 옮길 수 있습니다.");
         });
+        elements.copyFlowBoardSummaryButton?.addEventListener("click", async () => {
+            await copyTextWithFeedback(buildFlowBoardSummaryText(), "개인 보드 요약을 복사했습니다.", "최근 흐름과 저장 상태를 한 번에 전달할 수 있습니다.");
+        });
+        elements.openRecentFlowButton?.addEventListener("click", () => {
+            handleFlowAction("RECENT");
+        });
+        elements.openCompareFlowButton?.addEventListener("click", () => {
+            handleFlowAction("COMPARE");
+        });
+        elements.openBookmarkFlowButton?.addEventListener("click", () => {
+            handleFlowAction("BOOKMARK");
+        });
+        elements.applyFlowLowStockButton?.addEventListener("click", async () => {
+            await handleFlowAction("LOW_STOCK");
+        });
+        elements.restoreHiddenFlowButton?.addEventListener("click", async () => {
+            await handleFlowAction("RESTORE_HIDDEN");
+        });
         elements.clearSearchButton?.addEventListener("click", async () => {
             state.search = "";
             syncControls();
@@ -433,6 +461,7 @@
         elements.clearRecentViewedButton?.addEventListener("click", () => {
             window.localStorage.removeItem(RECENT_VIEWED_KEY);
             renderRecentViewed();
+            renderFlowBoard();
             showToast("최근 본 상품을 비웠습니다.", "메인 최근 흐름 보드가 초기화되었습니다.");
         });
         elements.copyRecentViewedSummaryButton?.addEventListener("click", async () => {
@@ -457,6 +486,7 @@
         elements.clearCompareButton?.addEventListener("click", () => {
             writeCompareProducts([]);
             renderCompareBoard();
+            renderFlowBoard();
             renderCatalog();
             showToast("비교 보드를 초기화했습니다.", "비교 대상 상품을 모두 비웠습니다.");
         });
@@ -498,6 +528,7 @@
         elements.clearBookmarkButton?.addEventListener("click", () => {
             writeBookmarkProducts([]);
             renderBookmarkBoard();
+            renderFlowBoard();
             renderCatalog();
             showToast("관심 상품을 초기화했습니다.", "찜 보드에 담긴 상품을 모두 비웠습니다.");
         });
@@ -558,6 +589,90 @@
         setText(elements.metricCount, String(metrics.totalCount || products.length));
         setText(elements.metricLowStock, String(metrics.lowStockCount || 0));
         setText(elements.metricToday, String(metrics.latestDropCount || 0));
+    }
+
+    function renderFlowBoard() {
+        if (!elements.flowBoardGrid) {
+            return;
+        }
+        const recentProducts = readRecentProducts();
+        const comparedProducts = readCompareProducts();
+        const bookmarkedProducts = readBookmarkProducts();
+        const hiddenProducts = readHiddenProducts();
+        const managedProductCount = recentProducts.length + comparedProducts.length + bookmarkedProducts.length;
+        const activeBoardCount = [recentProducts, comparedProducts, bookmarkedProducts, hiddenProducts].filter((items) => items.length).length;
+
+        setText(
+            elements.flowBoardTitle,
+            managedProductCount
+                ? `${managedProductCount}개 개인 보드 흐름을 유지하고 있습니다.`
+                : "아직 개인 보드에 누적된 상품이 없습니다."
+        );
+        setText(
+            elements.flowBoardText,
+            activeBoardCount
+                ? `최근 ${recentProducts.length} · 비교 ${comparedProducts.length} · 관심 ${bookmarkedProducts.length} · 숨김 ${hiddenProducts.length} 상태를 홈에서 바로 이어갈 수 있습니다.`
+                : "카탈로그와 상세에서 상품을 둘러보면 최근, 비교, 관심, 숨김 흐름이 자동으로 쌓입니다."
+        );
+
+        const cards = [
+            {
+                action: "RECENT",
+                eyebrow: "Recent",
+                count: recentProducts.length,
+                headline: recentProducts[0]?.headline || recentProducts[0]?.name || "상세에서 본 상품이 아직 없습니다.",
+                description: recentProducts.length
+                    ? "방금 보던 상품부터 다시 열어보고 연관 흐름으로 이어갈 수 있습니다."
+                    : "상세 페이지를 확인하면 최근 본 상품이 이곳에 쌓입니다.",
+                meta: recentProducts.length ? `${recentProducts[0]?.brand || "-"} · ${recentProducts[0]?.priceLabel || formatPrice(recentProducts[0]?.price || 0)}` : "다음 탐색 대기"
+            },
+            {
+                action: "COMPARE",
+                eyebrow: "Compare",
+                count: comparedProducts.length,
+                headline: comparedProducts.length ? buildCompareSummary(comparedProducts) : "비교 보드가 비어 있습니다.",
+                description: comparedProducts.length
+                    ? "가격과 재고 차이를 홈에서 확인한 뒤 바로 비교 보드로 이동할 수 있습니다."
+                    : "카탈로그에서 비교 담기를 누르면 최대 3개까지 유지합니다.",
+                meta: comparedProducts.length ? `${dominantCategory(comparedProducts) || "복합 비교"} · 최대 3개` : "비교 상품 없음"
+            },
+            {
+                action: "BOOKMARK",
+                eyebrow: "Bookmark",
+                count: bookmarkedProducts.length,
+                headline: bookmarkedProducts.length ? buildBookmarkSummary(bookmarkedProducts) : "관심 상품이 아직 없습니다.",
+                description: bookmarkedProducts.length
+                    ? "나중에 다시 볼 상품을 모아두고 상세나 비교 보드로 바로 연결할 수 있습니다."
+                    : "카탈로그나 상세에서 찜하기를 누르면 이 보드에 쌓입니다.",
+                meta: bookmarkedProducts.length ? `${bookmarkedProducts.filter((product) => product.featured).length}개 Featured 포함` : "관심 상품 없음"
+            },
+            {
+                action: "HIDDEN",
+                eyebrow: "Hidden",
+                count: hiddenProducts.length,
+                headline: hiddenProducts.length ? `${hiddenProducts[0]?.headline || hiddenProducts[0]?.name} 외 ${hiddenProducts.length}개 숨김 상태` : "숨긴 상품이 없습니다.",
+                description: hiddenProducts.length
+                    ? "기본 카탈로그에서 제외한 상품을 다시 보여주거나 바로 복구할 수 있습니다."
+                    : "관심이 덜한 상품을 숨기면 메인 카탈로그 밀도를 더 정리할 수 있습니다.",
+                meta: hiddenProducts.length ? "숨긴 상품 보기로 즉시 복귀 가능" : "숨김 없음"
+            }
+        ];
+
+        elements.flowBoardGrid.innerHTML = cards.map((card) => `
+            <button class="flow-board__card" type="button" data-flow-action="${card.action}">
+                <span class="flow-board__eyebrow">${card.eyebrow}</span>
+                <strong class="flow-board__count">${card.count}</strong>
+                <span class="flow-board__headline">${card.headline}</span>
+                <p>${card.description}</p>
+                <span class="flow-board__meta">${card.meta}</span>
+            </button>
+        `).join("");
+
+        elements.flowBoardGrid.querySelectorAll("[data-flow-action]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                await handleFlowAction(button.dataset.flowAction);
+            });
+        });
     }
 
     function featuredRankLabel(product) {
@@ -1043,6 +1158,7 @@
         await loadProducts();
         populateFilters();
         renderHeroMetrics();
+        renderFlowBoard();
         renderBrandSpotlight();
         renderCategoryShortcuts();
         renderSignalStrip();
@@ -1334,6 +1450,26 @@
         return `${activeFilters.length}개 조건이 적용된 상태이며, 공유 가능한 URL로 탐색 상태를 유지합니다.`;
     }
 
+    function buildFlowBoardSummaryText() {
+        const recentProducts = readRecentProducts().slice(0, 3);
+        const comparedProducts = readCompareProducts();
+        const bookmarkedProducts = readBookmarkProducts();
+        const hiddenProducts = readHiddenProducts();
+
+        return [
+            "개인 보드 요약",
+            `최근 본 상품 ${recentProducts.length}개`,
+            recentProducts.length
+                ? recentProducts.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)}`).join("\n")
+                : "최근 본 상품이 없습니다.",
+            `비교 보드 ${comparedProducts.length}개`,
+            comparedProducts.length ? buildCompareSummary(comparedProducts) : "비교 보드가 비어 있습니다.",
+            `관심 상품 ${bookmarkedProducts.length}개`,
+            bookmarkedProducts.length ? buildBookmarkSummary(bookmarkedProducts) : "관심 상품이 없습니다.",
+            `숨김 상품 ${hiddenProducts.length}개`
+        ].filter(Boolean).join("\n");
+    }
+
     function normalizeStateValue(value, allowedValues, fallbackValue) {
         return allowedValues.includes(value) ? value : fallbackValue;
     }
@@ -1493,12 +1629,14 @@
             writeCompareProducts([summary].concat(current).slice(0, 3));
         }
         renderCompareBoard();
+        renderFlowBoard();
         renderCatalog();
     }
 
     function removeCompareProduct(productId) {
         writeCompareProducts(readCompareProducts().filter((product) => Number(product.id) !== Number(productId)));
         renderCompareBoard();
+        renderFlowBoard();
         renderCatalog();
     }
 
@@ -1534,12 +1672,14 @@
             writeBookmarkProducts([summary].concat(current).slice(0, 6));
         }
         renderBookmarkBoard();
+        renderFlowBoard();
         renderCatalog();
     }
 
     function removeBookmarkProduct(productId) {
         writeBookmarkProducts(readBookmarkProducts().filter((product) => Number(product.id) !== Number(productId)));
         renderBookmarkBoard();
+        renderFlowBoard();
         renderCatalog();
     }
 
@@ -1602,6 +1742,7 @@
             showToast("상품을 숨겼습니다.", `${source.headline || source.name}은 기본 목록에서 제외됩니다.`);
         }
         renderHiddenProducts();
+        renderFlowBoard();
     }
 
     function buildCompareSummary(comparedProducts) {
@@ -1873,6 +2014,76 @@
                 await refreshCatalog();
             });
         });
+    }
+
+    async function handleFlowAction(action) {
+        const recentProducts = readRecentProducts();
+        const comparedProducts = readCompareProducts();
+        const bookmarkedProducts = readBookmarkProducts();
+        const hiddenProducts = readHiddenProducts();
+
+        if (action === "RECENT") {
+            if (!recentProducts.length) {
+                showToast("최근 본 상품이 없습니다.", "먼저 상세 페이지를 둘러본 뒤 다시 시도해주세요.", true);
+                return;
+            }
+            openDrawer(Number(recentProducts[0].id));
+            showToast("최근 본 상품을 열었습니다.", `${recentProducts[0].headline || recentProducts[0].name}부터 탐색을 다시 시작합니다.`);
+            return;
+        }
+        if (action === "COMPARE") {
+            if (!comparedProducts.length) {
+                showToast("비교 보드가 비어 있습니다.", "카탈로그에서 비교 담기를 먼저 사용해주세요.", true);
+                return;
+            }
+            document.getElementById("compareBoardSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("비교 보드로 이동합니다.", "담아둔 상품의 가격과 재고 차이를 바로 확인할 수 있습니다.");
+            return;
+        }
+        if (action === "BOOKMARK") {
+            if (!bookmarkedProducts.length) {
+                showToast("관심 상품이 없습니다.", "카탈로그나 상세에서 찜하기를 먼저 사용해주세요.", true);
+                return;
+            }
+            document.getElementById("bookmarkBoardSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("관심 상품 보드로 이동합니다.", "저장한 상품을 다시 비교하거나 상세로 이어갈 수 있습니다.");
+            return;
+        }
+        if (action === "HIDDEN") {
+            if (!hiddenProducts.length) {
+                showToast("숨긴 상품이 없습니다.", "카탈로그에서 숨기기를 사용하면 이 흐름을 관리할 수 있습니다.", true);
+                return;
+            }
+            uiState.showHiddenProducts = true;
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("숨긴 상품 보기를 켰습니다.", "카탈로그에서 제외했던 상품도 다시 확인할 수 있습니다.");
+            return;
+        }
+        if (action === "LOW_STOCK") {
+            const boardProducts = recentProducts.concat(comparedProducts, bookmarkedProducts);
+            state.stock = "LOW";
+            state.sort = "STOCK_ASC";
+            const leadBrand = dominantBrand(boardProducts);
+            if (leadBrand) {
+                state.brand = leadBrand;
+            }
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("개인 보드 기준 긴장 재고 탐색을 적용했습니다.", leadBrand ? `${leadBrand} 중심으로 저재고 상품을 다시 정렬했습니다.` : "저재고 상품부터 빠르게 다시 탐색할 수 있습니다.");
+            return;
+        }
+        if (action === "RESTORE_HIDDEN") {
+            if (!hiddenProducts.length) {
+                showToast("복구할 숨김 상품이 없습니다.", "현재는 전체 상품이 그대로 노출되고 있습니다.", true);
+                return;
+            }
+            window.localStorage.removeItem(HIDDEN_PRODUCTS_KEY);
+            uiState.showHiddenProducts = false;
+            await refreshCatalog();
+            showToast("숨김 상품을 모두 복구했습니다.", "기본 카탈로그에서 다시 전체 상품을 확인할 수 있습니다.");
+        }
     }
 
     async function openDrawer(productId) {

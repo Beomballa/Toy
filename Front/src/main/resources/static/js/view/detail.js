@@ -139,6 +139,7 @@
             <article class="detail-option-card">
                 <span>${option.name}</span>
                 <strong>${option.stock}개</strong>
+                <p>${stockPressureDetail(option.stock)}</p>
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
             </article>
         `).join("");
@@ -165,7 +166,7 @@
                 <strong>${item.name}</strong>
                 <p>${item.reason} · ${stockPressureDetail(item.stock)}</p>
                 <div class="detail-related-card__meta">
-                    <span>${item.model}</span>
+                    <span>모델 ${item.model}</span>
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                 </div>
@@ -237,6 +238,7 @@
                 <strong>${item.headline || item.name || "-"}</strong>
                 <p>${item.name || "-"} · ${item.model || "-"} · ${stockPressureDetail(item.stock)}</p>
                 <div class="detail-related-card__meta">
+                    <span>최근 본 흐름</span>
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                     <span>다시 보기</span>

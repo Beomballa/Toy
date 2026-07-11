@@ -169,6 +169,10 @@
         copyCompareSummaryButton: document.getElementById("copyCompareSummaryButton"),
         addCompareToBookmarkButton: document.getElementById("addCompareToBookmarkButton"),
         openCheapestCompareButton: document.getElementById("openCheapestCompareButton"),
+        sortComparePriceLowButton: document.getElementById("sortComparePriceLowButton"),
+        sortCompareNameButton: document.getElementById("sortCompareNameButton"),
+        copyCompareLinksButton: document.getElementById("copyCompareLinksButton"),
+        openRecommendedCompareButton: document.getElementById("openRecommendedCompareButton"),
         clearCompareButton: document.getElementById("clearCompareButton"),
         bookmarkBoardSection: document.getElementById("bookmarkBoardSection"),
         bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
@@ -775,6 +779,29 @@
             }
             openDrawer(cheapest.id);
             showToast("최저가 비교 상품을 열었습니다.", `${cheapest.headline || cheapest.name}을 바로 확인합니다.`);
+        });
+        elements.sortComparePriceLowButton?.addEventListener("click", () => {
+            boardState.compareSort = "PRICE_LOW";
+            renderCompareBoard();
+            showToast("비교 보드를 낮은 가격순으로 정렬했습니다.", "가격 부담이 낮은 후보부터 확인할 수 있습니다.");
+        });
+        elements.sortCompareNameButton?.addEventListener("click", () => {
+            boardState.compareSort = "NAME_ASC";
+            renderCompareBoard();
+            showToast("비교 보드를 상품명순으로 정렬했습니다.", "상품을 이름 기준으로 빠르게 찾을 수 있습니다.");
+        });
+        elements.copyCompareLinksButton?.addEventListener("click", async () => {
+            const links = readCompareProducts().map((product) => `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`);
+            await copyTextWithFeedback(links.join("\n") || "비교 상품이 없습니다.", "비교 상품 링크를 복사했습니다.", "비교 중인 상세 페이지를 한 번에 공유할 수 있습니다.");
+        });
+        elements.openRecommendedCompareButton?.addEventListener("click", () => {
+            const recommended = recommendedCompareProduct(readCompareProducts());
+            if (!recommended) {
+                showToast("추천할 비교 상품이 없습니다.", "비교 보드에 상품을 먼저 담아주세요.", true);
+                return;
+            }
+            openDrawer(recommended.id);
+            showToast("균형 추천 상품을 열었습니다.", `${recommended.headline || recommended.name}은 가격과 재고 균형이 가장 좋습니다.`);
         });
         elements.clearBookmarkButton?.addEventListener("click", () => {
             writeBookmarkProducts([]);
@@ -2309,6 +2336,9 @@
         syncBoardButtons();
         setText(elements.compareBoardTitle, `${comparedProducts.length}개 상품을 비교 중입니다.`);
         setText(elements.compareBoardText, buildCompareSummary(comparedProducts));
+        const cheapestId = comparedProducts.slice().sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0]?.id;
+        const highestStockId = comparedProducts.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0]?.id;
+        const recommendedId = recommendedCompareProduct(comparedProducts)?.id;
         elements.compareBoardGrid.innerHTML = comparedProducts.map((product) => `
             <article class="detail-related-card compare-card">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
@@ -2319,9 +2349,16 @@
                     <span>${product.priceLabel || formatPrice(product.price)}</span>
                     <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                     <span>재고 ${product.stock}개</span>
+                    ${Number(product.id) === Number(cheapestId) ? "<span>최저가</span>" : ""}
+                    ${Number(product.id) === Number(highestStockId) ? "<span>최다 재고</span>" : ""}
+                    ${Number(product.id) === Number(recommendedId) ? "<span>균형 추천</span>" : ""}
                 </div>
                 <div class="compare-card__actions">
                     <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
+                    <button class="catalog-reset-button" type="button" data-open-compare-id="${product.id}">빠른 보기</button>
+                    <button class="catalog-reset-button" type="button" data-bookmark-compare-id="${product.id}">찜하기</button>
+                    <button class="catalog-reset-button" type="button" data-copy-compare-id="${product.id}">요약 복사</button>
+                    <button class="catalog-reset-button" type="button" data-focus-compare-brand="${product.id}">브랜드 집중</button>
                     <button class="catalog-reset-button" type="button" data-remove-compare-id="${product.id}">제거</button>
                 </div>
             </article>
@@ -2330,6 +2367,37 @@
         elements.compareBoardGrid.querySelectorAll("[data-remove-compare-id]").forEach((button) => {
             button.addEventListener("click", () => {
                 removeCompareProduct(Number(button.dataset.removeCompareId));
+            });
+        });
+        elements.compareBoardGrid.querySelectorAll("[data-open-compare-id]").forEach((button) => {
+            button.addEventListener("click", () => openDrawer(Number(button.dataset.openCompareId)));
+        });
+        elements.compareBoardGrid.querySelectorAll("[data-bookmark-compare-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const product = comparedProducts.find((item) => Number(item.id) === Number(button.dataset.bookmarkCompareId));
+                if (product) {
+                    addProductsToBoard([product], "BOOKMARK");
+                }
+            });
+        });
+        elements.compareBoardGrid.querySelectorAll("[data-copy-compare-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const product = comparedProducts.find((item) => Number(item.id) === Number(button.dataset.copyCompareId));
+                if (product) {
+                    await copyTextWithFeedback(`${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · 재고 ${product.stock}개`, "비교 상품 요약을 복사했습니다.", "선택한 후보 정보를 바로 전달할 수 있습니다.");
+                }
+            });
+        });
+        elements.compareBoardGrid.querySelectorAll("[data-focus-compare-brand]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const product = comparedProducts.find((item) => Number(item.id) === Number(button.dataset.focusCompareBrand));
+                if (!product?.brand) {
+                    return;
+                }
+                state.brand = product.brand;
+                syncControls();
+                await refreshCatalog();
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
             });
         });
     }
@@ -2532,6 +2600,28 @@
         return `최고가와 최저가 차이는 ${formatPrice(priceGap)}, 재고 차이는 ${stockGap}개입니다. ${categoryHint}`;
     }
 
+    function recommendedCompareProduct(items) {
+        if (!items.length) {
+            return null;
+        }
+        const prices = items.map((item) => Number(item.price || 0));
+        const stocks = items.map((item) => Number(item.stock || 0));
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        const minStock = Math.min(...stocks);
+        const maxStock = Math.max(...stocks);
+        const priceRange = maxPrice - minPrice || 1;
+        const stockRange = maxStock - minStock || 1;
+        return items.slice().sort((left, right) => {
+            const score = (item) => {
+                const priceScore = 1 - ((Number(item.price || 0) - minPrice) / priceRange);
+                const stockScore = (Number(item.stock || 0) - minStock) / stockRange;
+                return priceScore * 0.55 + stockScore * 0.45;
+            };
+            return score(right) - score(left);
+        })[0];
+    }
+
     function buildBookmarkSummary(bookmarkedProducts) {
         const featuredCount = bookmarkedProducts.filter((product) => product.featured).length;
         const lowStockCount = bookmarkedProducts.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
@@ -2550,6 +2640,12 @@
         }
         if (boardState.compareSort === "STOCK_ASC") {
             return next.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+        }
+        if (boardState.compareSort === "PRICE_LOW") {
+            return next.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+        }
+        if (boardState.compareSort === "NAME_ASC") {
+            return next.sort((left, right) => String(left.name || left.headline || "").localeCompare(String(right.name || right.headline || ""), "ko"));
         }
         return next;
     }
@@ -2661,6 +2757,8 @@
         elements.sortRecentStockButton?.classList.toggle("is-active", boardState.recentSort === "STOCK_ASC");
         elements.sortComparePriceButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_HIGH");
         elements.sortCompareStockButton?.classList.toggle("is-active", boardState.compareSort === "STOCK_ASC");
+        elements.sortComparePriceLowButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_LOW");
+        elements.sortCompareNameButton?.classList.toggle("is-active", boardState.compareSort === "NAME_ASC");
         elements.sortBookmarkRecentButton?.classList.toggle("is-active", boardState.bookmarkSort === "RECENT");
         elements.sortBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkSort === "FEATURED");
         elements.sortBookmarkPriceButton?.classList.toggle("is-active", boardState.bookmarkSort === "PRICE_LOW");

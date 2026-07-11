@@ -38,6 +38,10 @@
     };
     let brandFacets = [];
     let categoryFacets = [];
+    let searchIndexProducts = [];
+    let activeSearchSuggestions = [];
+    let activeSearchSuggestionIndex = -1;
+    let searchDebounceTimer = null;
     const detailCache = new Map();
     let toastTimerSeed = 0;
     const boardState = {
@@ -74,6 +78,10 @@
         lowStockThresholdFilter: document.getElementById("lowStockThresholdFilter"),
         sortFilter: document.getElementById("sortFilter"),
         searchInput: document.getElementById("searchInput"),
+        clearInlineSearchButton: document.getElementById("clearInlineSearchButton"),
+        searchAssist: document.getElementById("searchAssist"),
+        searchResultStatus: document.getElementById("searchResultStatus"),
+        searchSuggestionList: document.getElementById("searchSuggestionList"),
         catalogGrid: document.getElementById("catalogGrid"),
         catalogPagination: document.getElementById("catalogPagination"),
         catalogPageProgress: document.getElementById("catalogPageProgress"),
@@ -246,6 +254,9 @@
             }
             const payload = await response.json();
             products = Array.isArray(payload?.products) ? payload.products.slice() : [];
+            if (!searchIndexProducts.length || !state.search) {
+                searchIndexProducts = products.slice();
+            }
             metrics = payload?.metrics || metrics;
             brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
             categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
@@ -325,7 +336,46 @@
     function bindEvents() {
         elements.searchInput?.addEventListener("input", (event) => {
             state.search = event.target.value.trim().toLowerCase();
-            refreshCatalog();
+            renderSearchAssist(state.search);
+            window.clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = window.setTimeout(() => {
+                refreshCatalog();
+            }, 300);
+        });
+        elements.searchInput?.addEventListener("focus", () => {
+            renderSearchAssist(elements.searchInput.value.trim().toLowerCase());
+        });
+        elements.searchInput?.addEventListener("keydown", (event) => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                event.preventDefault();
+                moveSearchSuggestion(event.key === "ArrowDown" ? 1 : -1);
+                return;
+            }
+            if (event.key === "Enter") {
+                event.preventDefault();
+                const suggestion = activeSearchSuggestions[activeSearchSuggestionIndex];
+                applySearchSuggestion(suggestion || { query: elements.searchInput.value.trim().toLowerCase() });
+                return;
+            }
+            if (event.key === "Escape") {
+                closeSearchAssist();
+            }
+        });
+        elements.clearInlineSearchButton?.addEventListener("click", () => {
+            applySearchSuggestion({ query: "" });
+            elements.searchInput?.focus();
+        });
+        elements.searchSuggestionList?.addEventListener("click", (event) => {
+            const button = event.target.closest("[data-search-suggestion-index]");
+            if (!button) {
+                return;
+            }
+            applySearchSuggestion(activeSearchSuggestions[Number(button.dataset.searchSuggestionIndex)]);
+        });
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest(".toolbar-field--search")) {
+                closeSearchAssist();
+            }
         });
         document.addEventListener("keydown", (event) => {
             if (event.key !== "/" || document.activeElement === elements.searchInput) {
@@ -1836,6 +1886,113 @@
                 showToast("검색 기록을 삭제했습니다.", "선택한 키워드만 목록에서 제거했습니다.");
             });
         });
+    }
+
+    function renderSearchAssist(keyword = "") {
+        if (!elements.searchAssist || !elements.searchSuggestionList) {
+            return;
+        }
+        const normalized = keyword.trim().toLowerCase();
+        const recentSuggestions = readSearchHistory()
+            .filter((item) => !normalized || item.toLowerCase().includes(normalized))
+            .slice(0, 3)
+            .map((query) => ({ type: "최근", label: query, description: "최근 검색어", query }));
+        const brandSuggestions = uniqueSearchIndexValues("brand")
+            .filter((value) => !normalized || value.toLowerCase().includes(normalized))
+            .slice(0, normalized ? 3 : 2)
+            .map((value) => ({ type: "브랜드", label: value, description: "브랜드 상품만 보기", query: "", brand: value }));
+        const categorySuggestions = uniqueSearchIndexValues("category")
+            .filter((value) => !normalized || value.toLowerCase().includes(normalized))
+            .slice(0, normalized ? 2 : 1)
+            .map((value) => ({ type: "카테고리", label: value, description: "카테고리 상품만 보기", query: "", category: value }));
+        const productSuggestions = searchIndexProducts
+            .filter((product) => normalized && [product.name, product.headline, product.model, product.brand, product.category]
+                .some((value) => String(value || "").toLowerCase().includes(normalized)))
+            .slice(0, 5)
+            .map((product) => ({
+                type: "상품",
+                label: product.name || product.headline,
+                description: `${product.brand || "-"} · ${product.model || "-"} · ${product.priceLabel || formatPrice(product.price)}`,
+                query: product.model || product.name || "",
+                resetFacets: true
+            }));
+
+        activeSearchSuggestions = normalized
+            ? productSuggestions.concat(brandSuggestions, categorySuggestions, recentSuggestions).slice(0, 8)
+            : recentSuggestions.concat(brandSuggestions, categorySuggestions).slice(0, 6);
+        activeSearchSuggestionIndex = activeSearchSuggestions.length ? 0 : -1;
+        elements.searchAssist.hidden = false;
+        elements.searchInput?.setAttribute("aria-expanded", "true");
+        setText(elements.searchResultStatus, activeSearchSuggestions.length
+            ? `${activeSearchSuggestions.length}개 추천 · ↑↓ 이동 · Enter 적용`
+            : "일치하는 추천이 없습니다. Enter로 직접 검색할 수 있습니다.");
+        elements.searchSuggestionList.innerHTML = activeSearchSuggestions.length
+            ? activeSearchSuggestions.map((item, index) => `
+                <button class="catalog-search-suggestion ${index === activeSearchSuggestionIndex ? "is-active" : ""}" type="button" data-search-suggestion-index="${index}" aria-selected="${index === activeSearchSuggestionIndex}">
+                    <span>${escapeMarkup(item.type)}</span>
+                    <strong>${escapeMarkup(item.label)}</strong>
+                    <small>${escapeMarkup(item.description)}</small>
+                </button>
+            `).join("")
+            : `<div class="catalog-search-assist__empty">직접 검색하려면 Enter를 눌러주세요.</div>`;
+    }
+
+    function uniqueSearchIndexValues(key) {
+        return Array.from(new Set(searchIndexProducts.map((product) => product[key]).filter(Boolean)))
+            .sort((left, right) => left.localeCompare(right, "ko"));
+    }
+
+    function moveSearchSuggestion(direction) {
+        if (!activeSearchSuggestions.length) {
+            return;
+        }
+        activeSearchSuggestionIndex = (activeSearchSuggestionIndex + direction + activeSearchSuggestions.length) % activeSearchSuggestions.length;
+        elements.searchSuggestionList?.querySelectorAll("[data-search-suggestion-index]").forEach((button, index) => {
+            const isActive = index === activeSearchSuggestionIndex;
+            button.classList.toggle("is-active", isActive);
+            button.setAttribute("aria-selected", String(isActive));
+        });
+    }
+
+    async function applySearchSuggestion(suggestion) {
+        if (!suggestion) {
+            return;
+        }
+        window.clearTimeout(searchDebounceTimer);
+        state.search = String(suggestion.query || "").trim().toLowerCase();
+        if (suggestion.resetFacets) {
+            state.brand = "ALL";
+            state.category = "ALL";
+        }
+        if (suggestion.brand) {
+            state.brand = suggestion.brand;
+            state.category = "ALL";
+        }
+        if (suggestion.category) {
+            state.category = suggestion.category;
+            state.brand = "ALL";
+        }
+        syncControls();
+        closeSearchAssist();
+        await refreshCatalog();
+        document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function closeSearchAssist() {
+        if (elements.searchAssist) {
+            elements.searchAssist.hidden = true;
+        }
+        elements.searchInput?.setAttribute("aria-expanded", "false");
+        activeSearchSuggestionIndex = -1;
+    }
+
+    function escapeMarkup(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
     }
 
     function renderHiddenProducts() {

@@ -355,7 +355,17 @@
             <div class="catalog-toolbar">
                 <div class="toolbar-field toolbar-field--search">
                     <label for="searchInput">검색</label>
-                    <input id="searchInput" type="text" placeholder="상품명 또는 모델번호">
+                    <div class="catalog-search-box">
+                        <input id="searchInput" type="text" placeholder="상품명, 모델번호, 브랜드 검색" autocomplete="off" aria-expanded="false" aria-controls="searchAssist">
+                        <button type="button" id="clearInlineSearchButton" aria-label="검색어 지우기">×</button>
+                    </div>
+                    <div class="catalog-search-assist" id="searchAssist" hidden>
+                        <div class="catalog-search-assist__head">
+                            <strong>빠른 검색</strong>
+                            <span id="searchResultStatus">검색어를 입력하세요.</span>
+                        </div>
+                        <div class="catalog-search-assist__list" id="searchSuggestionList"></div>
+                    </div>
                 </div>
                 <div class="toolbar-field">
                     <label for="brandFilter">브랜드</label>

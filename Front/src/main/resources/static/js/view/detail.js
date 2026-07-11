@@ -7,11 +7,13 @@
     const RECENT_VIEWED_LIMIT = 6;
     const optionSortState = {
         mode: "STOCK_ASC",
-        lowStockOnly: false
+        lowStockOnly: false,
+        stableOnly: false
     };
     const relatedSortState = {
         mode: "DEFAULT",
-        lowStockOnly: false
+        lowStockOnly: false,
+        sameBrandOnly: false
     };
     let currentProduct = null;
     let toastTimerSeed = 0;
@@ -38,10 +40,17 @@
         detailOptionSortNameButton: document.getElementById("detailOptionSortNameButton"),
         detailOptionLowStockOnlyButton: document.getElementById("detailOptionLowStockOnlyButton"),
         detailCopyOptionSummaryButton: document.getElementById("detailCopyOptionSummaryButton"),
+        detailOptionSortStockHighButton: document.getElementById("detailOptionSortStockHighButton"),
+        detailOptionSortPriceButton: document.getElementById("detailOptionSortPriceButton"),
+        detailOptionStableOnlyButton: document.getElementById("detailOptionStableOnlyButton"),
+        detailCopyAvailableOptionsButton: document.getElementById("detailCopyAvailableOptionsButton"),
         detailRelatedSortStockButton: document.getElementById("detailRelatedSortStockButton"),
         detailRelatedSortPriceButton: document.getElementById("detailRelatedSortPriceButton"),
         detailRelatedLowStockOnlyButton: document.getElementById("detailRelatedLowStockOnlyButton"),
         detailCopyRelatedSummaryButton: document.getElementById("detailCopyRelatedSummaryButton"),
+        detailRelatedSortPriceLowButton: document.getElementById("detailRelatedSortPriceLowButton"),
+        detailRelatedSameBrandButton: document.getElementById("detailRelatedSameBrandButton"),
+        detailRandomRelatedButton: document.getElementById("detailRandomRelatedButton"),
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
         copyDetailRecentSummaryButton: document.getElementById("copyDetailRecentSummaryButton"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
@@ -163,11 +172,14 @@
             `;
             return;
         }
+        const maximumStock = Math.max(1, ...options.map((item) => Number(item.stock || 0)));
         elements.detailOptionGrid.innerHTML = options.map((option) => `
             <article class="detail-option-card">
                 <span>${option.name}</span>
                 <strong>${option.stock}개</strong>
                 <p>${stockPressureDetail(option.stock)}</p>
+                <div class="detail-option-card__price">추가금 ${formatPrice(option.additionalPrice)}</div>
+                <div class="detail-option-card__meter"><span style="width: ${Math.min(100, Math.max(4, Number(option.stock || 0) / maximumStock * 100))}%"></span></div>
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
             </article>
         `).join("");
@@ -188,7 +200,7 @@
             return;
         }
         elements.detailRelatedGrid.innerHTML = related.map((item) => `
-            <a class="detail-related-card" href="${buildProductUrl(item.id)}">
+            <article class="detail-related-card">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
@@ -198,8 +210,15 @@
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                 </div>
-            </a>
+                <div class="detail-related-card__actions">
+                    <a href="${buildProductUrl(item.id)}">상세 보기</a>
+                    <button class="${isComparedProduct(item.id) ? "is-active" : ""}" type="button" data-related-compare-id="${item.id}">${isComparedProduct(item.id) ? "비교 해제" : "비교 담기"}</button>
+                    <button class="${isBookmarkedProduct(item.id) ? "is-active" : ""}" type="button" data-related-bookmark-id="${item.id}">${isBookmarkedProduct(item.id) ? "찜 해제" : "찜하기"}</button>
+                    <button type="button" data-related-copy-id="${item.id}">요약 복사</button>
+                </div>
+            </article>
         `).join("");
+        bindRelatedCardActions(related);
         syncRelatedButtons();
     }
 
@@ -278,11 +297,23 @@
 
     function sortedOptions(product) {
         const options = Array.isArray(product?.options) ? product.options.slice() : [];
-        const visibleOptions = optionSortState.lowStockOnly
-            ? options.filter((option) => Number(option.stock || 0) < lowStockThreshold())
-            : options;
+        const visibleOptions = options.filter((option) => {
+            if (optionSortState.lowStockOnly) {
+                return Number(option.stock || 0) < lowStockThreshold();
+            }
+            if (optionSortState.stableOnly) {
+                return Number(option.stock || 0) >= lowStockThreshold();
+            }
+            return true;
+        });
         if (optionSortState.mode === "NAME_ASC") {
             return visibleOptions.sort((left, right) => String(left.name || "").localeCompare(String(right.name || ""), "ko"));
+        }
+        if (optionSortState.mode === "STOCK_DESC") {
+            return visibleOptions.sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0));
+        }
+        if (optionSortState.mode === "PRICE_HIGH") {
+            return visibleOptions.sort((left, right) => Number(right.additionalPrice || 0) - Number(left.additionalPrice || 0));
         }
         return visibleOptions.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
     }
@@ -291,18 +322,27 @@
         elements.detailOptionSortStockButton?.classList.toggle("is-active", optionSortState.mode === "STOCK_ASC");
         elements.detailOptionSortNameButton?.classList.toggle("is-active", optionSortState.mode === "NAME_ASC");
         elements.detailOptionLowStockOnlyButton?.classList.toggle("is-active", optionSortState.lowStockOnly);
+        elements.detailOptionSortStockHighButton?.classList.toggle("is-active", optionSortState.mode === "STOCK_DESC");
+        elements.detailOptionSortPriceButton?.classList.toggle("is-active", optionSortState.mode === "PRICE_HIGH");
+        elements.detailOptionStableOnlyButton?.classList.toggle("is-active", optionSortState.stableOnly);
     }
 
     function sortedRelatedProducts(product) {
         const related = Array.isArray(product?.relatedProducts) ? product.relatedProducts.slice() : [];
-        const visibleRelated = relatedSortState.lowStockOnly
-            ? related.filter((item) => Number(item.stock || 0) < lowStockThreshold())
-            : related;
+        const visibleRelated = related.filter((item) => {
+            if (relatedSortState.lowStockOnly && Number(item.stock || 0) >= lowStockThreshold()) {
+                return false;
+            }
+            return !relatedSortState.sameBrandOnly || item.brand === product.brand;
+        });
         if (relatedSortState.mode === "STOCK_ASC") {
             return visibleRelated.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
         }
         if (relatedSortState.mode === "PRICE_HIGH") {
             return visibleRelated.sort((left, right) => Number(right.price || 0) - Number(left.price || 0));
+        }
+        if (relatedSortState.mode === "PRICE_LOW") {
+            return visibleRelated.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
         }
         return visibleRelated;
     }
@@ -311,6 +351,50 @@
         elements.detailRelatedSortStockButton?.classList.toggle("is-active", relatedSortState.mode === "STOCK_ASC");
         elements.detailRelatedSortPriceButton?.classList.toggle("is-active", relatedSortState.mode === "PRICE_HIGH");
         elements.detailRelatedLowStockOnlyButton?.classList.toggle("is-active", relatedSortState.lowStockOnly);
+        elements.detailRelatedSortPriceLowButton?.classList.toggle("is-active", relatedSortState.mode === "PRICE_LOW");
+        elements.detailRelatedSameBrandButton?.classList.toggle("is-active", relatedSortState.sameBrandOnly);
+    }
+
+    function bindRelatedCardActions(related) {
+        const findRelated = (id) => related.find((item) => Number(item.id) === Number(id));
+        elements.detailRelatedGrid?.querySelectorAll("[data-related-compare-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const item = findRelated(button.dataset.relatedCompareId);
+                if (item) {
+                    toggleCompareProduct(item);
+                    renderRelated(currentProduct);
+                }
+            });
+        });
+        elements.detailRelatedGrid?.querySelectorAll("[data-related-bookmark-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const item = findRelated(button.dataset.relatedBookmarkId);
+                if (item) {
+                    toggleBookmarkProduct(item);
+                    renderRelated(currentProduct);
+                }
+            });
+        });
+        elements.detailRelatedGrid?.querySelectorAll("[data-related-copy-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const item = findRelated(button.dataset.relatedCopyId);
+                if (item) {
+                    await copyText(`${item.name} · ${item.brand} · ${item.priceLabel || formatPrice(item.price)} · ${stockPressureDetail(item.stock)}`, "연관 상품 요약을 복사했습니다.");
+                }
+            });
+        });
+    }
+
+    async function copyText(text, successTitle) {
+        try {
+            if (!navigator.clipboard?.writeText) {
+                throw new Error("Clipboard not available");
+            }
+            await navigator.clipboard.writeText(text);
+            showToast(successTitle, "메신저나 문서에 바로 붙여 넣을 수 있습니다.");
+        } catch (error) {
+            window.prompt("내용을 복사하세요.", text);
+        }
     }
 
     function summaryText(product) {
@@ -556,6 +640,7 @@
         });
         elements.detailOptionLowStockOnlyButton?.addEventListener("click", () => {
             optionSortState.lowStockOnly = !optionSortState.lowStockOnly;
+            optionSortState.stableOnly = false;
             if (currentProduct) {
                 renderOptions(currentProduct);
                 showToast(optionSortState.lowStockOnly ? "긴장 재고 옵션만 표시합니다." : "전체 옵션 표시로 복구했습니다.", "옵션 목록 밀도를 빠르게 전환할 수 있습니다.");
@@ -575,6 +660,38 @@
                 window.prompt("옵션 요약을 복사하세요.", text);
             }
         });
+        elements.detailOptionSortStockHighButton?.addEventListener("click", () => {
+            optionSortState.mode = "STOCK_DESC";
+            if (currentProduct) {
+                renderOptions(currentProduct);
+                showToast("옵션을 재고 높은 순으로 정렬했습니다.", "선택 여유가 있는 옵션부터 확인할 수 있습니다.");
+            }
+        });
+        elements.detailOptionSortPriceButton?.addEventListener("click", () => {
+            optionSortState.mode = "PRICE_HIGH";
+            if (currentProduct) {
+                renderOptions(currentProduct);
+                showToast("옵션을 추가금 높은 순으로 정렬했습니다.", "옵션별 가격 차이를 빠르게 확인할 수 있습니다.");
+            }
+        });
+        elements.detailOptionStableOnlyButton?.addEventListener("click", () => {
+            optionSortState.stableOnly = !optionSortState.stableOnly;
+            optionSortState.lowStockOnly = false;
+            if (currentProduct) {
+                renderOptions(currentProduct);
+                showToast(optionSortState.stableOnly ? "안정 재고 옵션만 표시합니다." : "전체 옵션 표시로 복구했습니다.", "구매 가능한 옵션 밀도를 빠르게 전환할 수 있습니다.");
+            }
+        });
+        elements.detailCopyAvailableOptionsButton?.addEventListener("click", async () => {
+            if (!currentProduct) {
+                return;
+            }
+            const available = (currentProduct.options || []).filter((option) => Number(option.stock || 0) > 0);
+            const text = available.length
+                ? available.map((option, index) => `${index + 1}. ${option.name} · ${option.stock}개 · 추가금 ${formatPrice(option.additionalPrice)}`).join("\n")
+                : "구매 가능한 옵션이 없습니다.";
+            await copyText(text, "구매 가능 옵션을 복사했습니다.");
+        });
         elements.detailRelatedSortStockButton?.addEventListener("click", () => {
             relatedSortState.mode = "STOCK_ASC";
             if (currentProduct) {
@@ -588,6 +705,32 @@
                 renderRelated(currentProduct);
                 showToast("연관 상품을 가격 높은 순으로 정렬했습니다.", "고가 비교 대상부터 바로 확인할 수 있습니다.");
             }
+        });
+        elements.detailRelatedSortPriceLowButton?.addEventListener("click", () => {
+            relatedSortState.mode = "PRICE_LOW";
+            if (currentProduct) {
+                renderRelated(currentProduct);
+                showToast("연관 상품을 가격 낮은 순으로 정렬했습니다.", "부담이 낮은 비교 후보부터 확인할 수 있습니다.");
+            }
+        });
+        elements.detailRelatedSameBrandButton?.addEventListener("click", () => {
+            relatedSortState.sameBrandOnly = !relatedSortState.sameBrandOnly;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+                showToast(relatedSortState.sameBrandOnly ? "같은 브랜드 연관 상품만 표시합니다." : "전체 브랜드로 복구했습니다.", "브랜드 내부 대안을 빠르게 비교할 수 있습니다.");
+            }
+        });
+        elements.detailRandomRelatedButton?.addEventListener("click", () => {
+            if (!currentProduct) {
+                return;
+            }
+            const related = sortedRelatedProducts(currentProduct);
+            if (!related.length) {
+                showToast("이동할 연관 상품이 없습니다.", "현재 필터를 넓혀 다시 시도해주세요.", true);
+                return;
+            }
+            const item = related[Math.floor(Math.random() * related.length)];
+            window.location.href = buildProductUrl(item.id);
         });
         elements.detailRelatedLowStockOnlyButton?.addEventListener("click", () => {
             relatedSortState.lowStockOnly = !relatedSortState.lowStockOnly;

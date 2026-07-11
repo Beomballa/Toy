@@ -8,6 +8,7 @@
     const LAST_DRAWER_PRODUCT_KEY = "front-last-drawer-product";
     const HIDDEN_PRODUCTS_KEY = "front-hidden-products";
     const VIEW_MODE_KEY = "front-catalog-view-mode";
+    const DISPLAY_PREFERENCES_KEY = "front-catalog-display-preferences";
     const PAGE_SIZE_KEY = "front-catalog-page-size";
     const DEFAULT_STATE = {
         search: "",
@@ -22,10 +23,16 @@
     const state = {
         ...DEFAULT_STATE
     };
+    const savedDisplayPreferences = readDisplayPreferences();
     const uiState = {
         todayOnly: false,
         showHiddenProducts: false,
-        viewMode: window.localStorage.getItem(VIEW_MODE_KEY) || "DEFAULT"
+        viewMode: window.localStorage.getItem(VIEW_MODE_KEY) || "DEFAULT",
+        layout: savedDisplayPreferences.layout || (window.localStorage.getItem(VIEW_MODE_KEY) === "COMPACT" ? "COMFORT" : "STANDARD"),
+        hideDescriptions: Boolean(savedDisplayPreferences.hideDescriptions),
+        hideSignals: Boolean(savedDisplayPreferences.hideSignals),
+        hideActions: Boolean(savedDisplayPreferences.hideActions),
+        reducedMotion: Boolean(savedDisplayPreferences.reducedMotion)
     };
     let products = [];
     let metrics = {
@@ -85,6 +92,16 @@
         searchResultStatus: document.getElementById("searchResultStatus"),
         searchSuggestionList: document.getElementById("searchSuggestionList"),
         catalogGrid: document.getElementById("catalogGrid"),
+        catalogDisplayStatus: document.getElementById("catalogDisplayStatus"),
+        catalogLayoutShopButton: document.getElementById("catalogLayoutShopButton"),
+        catalogLayoutStandardButton: document.getElementById("catalogLayoutStandardButton"),
+        catalogLayoutComfortButton: document.getElementById("catalogLayoutComfortButton"),
+        catalogLayoutListButton: document.getElementById("catalogLayoutListButton"),
+        toggleCatalogDescriptionButton: document.getElementById("toggleCatalogDescriptionButton"),
+        toggleCatalogSignalsButton: document.getElementById("toggleCatalogSignalsButton"),
+        toggleCatalogActionsButton: document.getElementById("toggleCatalogActionsButton"),
+        toggleReducedMotionButton: document.getElementById("toggleReducedMotionButton"),
+        resetCatalogDisplayButton: document.getElementById("resetCatalogDisplayButton"),
         catalogPagination: document.getElementById("catalogPagination"),
         catalogPageProgress: document.getElementById("catalogPageProgress"),
         catalogPageRange: document.getElementById("catalogPageRange"),
@@ -686,11 +703,30 @@
             showToast("랜덤 상품을 열었습니다.", `${product.headline || product.name}을 새로운 시선으로 확인해보세요.`);
         });
         elements.toggleCompactViewButton?.addEventListener("click", () => {
-            uiState.viewMode = uiState.viewMode === "COMPACT" ? "DEFAULT" : "COMPACT";
-            window.localStorage.setItem(VIEW_MODE_KEY, uiState.viewMode);
+            setCatalogLayout(uiState.layout === "COMFORT" ? "STANDARD" : "COMFORT");
+            showToast(uiState.layout === "COMFORT" ? "2열 여유 보기를 켰습니다." : "3열 표준 보기를 복구했습니다.", "카탈로그 카드 밀도를 바로 전환할 수 있습니다.");
+        });
+        elements.catalogLayoutShopButton?.addEventListener("click", () => setCatalogLayout("SHOP"));
+        elements.catalogLayoutStandardButton?.addEventListener("click", () => setCatalogLayout("STANDARD"));
+        elements.catalogLayoutComfortButton?.addEventListener("click", () => setCatalogLayout("COMFORT"));
+        elements.catalogLayoutListButton?.addEventListener("click", () => setCatalogLayout("LIST"));
+        elements.toggleCatalogDescriptionButton?.addEventListener("click", () => toggleCatalogPreference("hideDescriptions", "상품 설명 표시를 변경했습니다."));
+        elements.toggleCatalogSignalsButton?.addEventListener("click", () => toggleCatalogPreference("hideSignals", "상품 시그널 표시를 변경했습니다."));
+        elements.toggleCatalogActionsButton?.addEventListener("click", () => toggleCatalogPreference("hideActions", "빠른 액션 표시를 변경했습니다."));
+        elements.toggleReducedMotionButton?.addEventListener("click", () => toggleCatalogPreference("reducedMotion", "모션 설정을 변경했습니다."));
+        elements.resetCatalogDisplayButton?.addEventListener("click", () => {
+            Object.assign(uiState, {
+                layout: "STANDARD",
+                hideDescriptions: false,
+                hideSignals: false,
+                hideActions: false,
+                reducedMotion: false,
+                viewMode: "DEFAULT"
+            });
+            persistDisplayPreferences();
             renderCatalog();
             syncViewButtons();
-            showToast(uiState.viewMode === "COMPACT" ? "컴팩트 보기를 켰습니다." : "기본 보기를 복구했습니다.", "카탈로그 카드 밀도를 바로 전환할 수 있습니다.");
+            showToast("화면 설정을 초기화했습니다.", "3열 표준 보기와 전체 정보 표시로 복구했습니다.");
         });
         elements.toggleTodayOnlyButton?.addEventListener("click", async () => {
             uiState.todayOnly = !uiState.todayOnly;
@@ -1459,7 +1495,7 @@
             return;
         }
 
-        elements.catalogGrid.classList.toggle("is-compact", uiState.viewMode === "COMPACT");
+        applyCatalogDisplayClasses();
 
         if (!list.length) {
             elements.catalogGrid.innerHTML = `
@@ -1476,7 +1512,7 @@
             return;
         }
 
-        elements.catalogGrid.classList.toggle("is-compact", uiState.viewMode === "COMPACT");
+        applyCatalogDisplayClasses();
         elements.catalogGrid.innerHTML = list.map((product) => `
             <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
@@ -1886,6 +1922,56 @@
 
     function resetState() {
         Object.assign(state, DEFAULT_STATE);
+    }
+
+    function readDisplayPreferences() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(DISPLAY_PREFERENCES_KEY) || "{}");
+            return parsed && typeof parsed === "object" ? parsed : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function persistDisplayPreferences() {
+        window.localStorage.setItem(DISPLAY_PREFERENCES_KEY, JSON.stringify({
+            layout: uiState.layout,
+            hideDescriptions: uiState.hideDescriptions,
+            hideSignals: uiState.hideSignals,
+            hideActions: uiState.hideActions,
+            reducedMotion: uiState.reducedMotion
+        }));
+        window.localStorage.setItem(VIEW_MODE_KEY, uiState.layout === "COMFORT" ? "COMPACT" : "DEFAULT");
+    }
+
+    function setCatalogLayout(layout) {
+        uiState.layout = layout;
+        uiState.viewMode = layout === "COMFORT" ? "COMPACT" : "DEFAULT";
+        persistDisplayPreferences();
+        renderCatalog();
+        syncViewButtons();
+    }
+
+    function toggleCatalogPreference(key, title) {
+        uiState[key] = !uiState[key];
+        persistDisplayPreferences();
+        renderCatalog();
+        syncViewButtons();
+        showToast(title, uiState[key] ? "간결한 상품 탐색 화면으로 전환했습니다." : "전체 상품 정보를 다시 표시합니다.");
+    }
+
+    function applyCatalogDisplayClasses() {
+        if (!elements.catalogGrid) {
+            return;
+        }
+        ["SHOP", "STANDARD", "COMFORT", "LIST"].forEach((layout) => {
+            elements.catalogGrid.classList.toggle(`is-layout-${layout.toLowerCase()}`, uiState.layout === layout);
+        });
+        elements.catalogGrid.classList.toggle("is-compact", uiState.layout === "COMFORT");
+        elements.catalogGrid.classList.toggle("is-description-hidden", uiState.hideDescriptions);
+        elements.catalogGrid.classList.toggle("is-signal-hidden", uiState.hideSignals);
+        elements.catalogGrid.classList.toggle("is-action-hidden", uiState.hideActions);
+        document.body.classList.toggle("is-reduced-motion", uiState.reducedMotion);
     }
 
     function saveCurrentView() {
@@ -2999,9 +3085,20 @@
     }
 
     function syncViewButtons() {
-        elements.toggleCompactViewButton?.classList.toggle("is-active", uiState.viewMode === "COMPACT");
+        elements.toggleCompactViewButton?.classList.toggle("is-active", uiState.layout === "COMFORT");
         elements.toggleTodayOnlyButton?.classList.toggle("is-active", uiState.todayOnly);
         elements.toggleHiddenViewButton?.classList.toggle("is-active", uiState.showHiddenProducts);
+        elements.catalogLayoutShopButton?.classList.toggle("is-active", uiState.layout === "SHOP");
+        elements.catalogLayoutStandardButton?.classList.toggle("is-active", uiState.layout === "STANDARD");
+        elements.catalogLayoutComfortButton?.classList.toggle("is-active", uiState.layout === "COMFORT");
+        elements.catalogLayoutListButton?.classList.toggle("is-active", uiState.layout === "LIST");
+        elements.toggleCatalogDescriptionButton?.classList.toggle("is-active", uiState.hideDescriptions);
+        elements.toggleCatalogSignalsButton?.classList.toggle("is-active", uiState.hideSignals);
+        elements.toggleCatalogActionsButton?.classList.toggle("is-active", uiState.hideActions);
+        elements.toggleReducedMotionButton?.classList.toggle("is-active", uiState.reducedMotion);
+        const layoutLabels = { SHOP: "4열 쇼핑", STANDARD: "3열 표준", COMFORT: "2열 여유", LIST: "리스트" };
+        const hiddenCount = [uiState.hideDescriptions, uiState.hideSignals, uiState.hideActions].filter(Boolean).length;
+        setText(elements.catalogDisplayStatus, `${layoutLabels[uiState.layout]} · ${hiddenCount ? `${hiddenCount}개 정보 숨김` : "전체 정보 표시"}${uiState.reducedMotion ? " · 모션 최소화" : ""}`);
     }
 
     function toggleScrollTopVisibility() {

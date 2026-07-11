@@ -48,6 +48,7 @@
         recentSort: "RECENT",
         compareSort: "DEFAULT",
         bookmarkSort: "RECENT",
+        bookmarkFilter: "ALL",
         latestSort: "DEFAULT",
         lowStockSort: "STOCK_ASC",
         featuredSort: "DEFAULT"
@@ -187,6 +188,11 @@
         addBookmarkToCompareButton: document.getElementById("addBookmarkToCompareButton"),
         copyBookmarkLinksButton: document.getElementById("copyBookmarkLinksButton"),
         copyBookmarkSummaryButton: document.getElementById("copyBookmarkSummaryButton"),
+        sortBookmarkNameButton: document.getElementById("sortBookmarkNameButton"),
+        filterBookmarkLowStockButton: document.getElementById("filterBookmarkLowStockButton"),
+        filterBookmarkFeaturedButton: document.getElementById("filterBookmarkFeaturedButton"),
+        resetBookmarkBoardFilterButton: document.getElementById("resetBookmarkBoardFilterButton"),
+        openRecommendedBookmarkButton: document.getElementById("openRecommendedBookmarkButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
         toggleCompactViewButton: document.getElementById("toggleCompactViewButton"),
         toggleTodayOnlyButton: document.getElementById("toggleTodayOnlyButton"),
@@ -857,6 +863,35 @@
                 ? `관심 상품 보드\n${buildBookmarkSummary(bookmarkedProducts)}\n${bookmarkedProducts.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · ${product.featured ? "Featured" : "Watchlist"}`).join("\n")}`
                 : "관심 상품 보드에 담긴 상품이 없습니다.";
             await copyTextWithFeedback(text, "관심 보드 요약을 복사했습니다.", "찜한 상품 흐름을 그대로 공유할 수 있습니다.");
+        });
+        elements.sortBookmarkNameButton?.addEventListener("click", () => {
+            boardState.bookmarkSort = "NAME_ASC";
+            renderBookmarkBoard();
+            showToast("관심 상품을 이름순으로 정렬했습니다.", "저장한 상품을 이름 기준으로 빠르게 찾을 수 있습니다.");
+        });
+        elements.filterBookmarkLowStockButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "LOW_STOCK";
+            renderBookmarkBoard();
+            showToast("관심 보드에서 저재고만 표시합니다.", "구매 판단이 급한 상품만 남겼습니다.");
+        });
+        elements.filterBookmarkFeaturedButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "FEATURED";
+            renderBookmarkBoard();
+            showToast("관심 보드에서 Featured만 표시합니다.", "대표 큐레이션 상품만 남겼습니다.");
+        });
+        elements.resetBookmarkBoardFilterButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "ALL";
+            renderBookmarkBoard();
+            showToast("관심 보드 필터를 해제했습니다.", "저장한 관심 상품을 모두 표시합니다.");
+        });
+        elements.openRecommendedBookmarkButton?.addEventListener("click", () => {
+            const recommended = recommendedBookmarkProduct(sortedBookmarkProducts(readBookmarkProducts()));
+            if (!recommended) {
+                showToast("추천할 관심 상품이 없습니다.", "현재 보드 필터를 해제하거나 상품을 추가해주세요.", true);
+                return;
+            }
+            openDrawer(recommended.id);
+            showToast("우선 확인 상품을 열었습니다.", `${recommended.headline || recommended.name}을 먼저 확인합니다.`);
         });
         elements.selectVisibleProductsButton?.addEventListener("click", () => {
             currentCatalogPageProducts().forEach((product) => selectedProductIds.add(Number(product.id)));
@@ -2406,16 +2441,18 @@
         if (!elements.bookmarkBoardSection || !elements.bookmarkBoardGrid) {
             return;
         }
-        const bookmarkedProducts = sortedBookmarkProducts(readBookmarkProducts());
-        if (!bookmarkedProducts.length) {
+        const allBookmarkedProducts = readBookmarkProducts();
+        const bookmarkedProducts = sortedBookmarkProducts(allBookmarkedProducts);
+        if (!allBookmarkedProducts.length) {
             elements.bookmarkBoardSection.hidden = true;
             return;
         }
         elements.bookmarkBoardSection.hidden = false;
         syncBoardButtons();
-        setText(elements.bookmarkBoardTitle, `${bookmarkedProducts.length}개 관심 상품을 저장했습니다.`);
+        setText(elements.bookmarkBoardTitle, `${bookmarkedProducts.length} / ${allBookmarkedProducts.length}개 관심 상품을 표시합니다.`);
         setText(elements.bookmarkBoardText, buildBookmarkSummary(bookmarkedProducts));
-        elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.map((product) => `
+        const recommendedId = recommendedBookmarkProduct(bookmarkedProducts)?.id;
+        elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.length ? bookmarkedProducts.map((product) => `
             <article class="detail-related-card compare-card">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
@@ -2425,17 +2462,58 @@
                     <span>${product.priceLabel || formatPrice(product.price)}</span>
                     <span class="${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                     <span>${product.featured ? "Featured" : "Watchlist"}</span>
+                    ${Number(product.id) === Number(recommendedId) ? "<span>우선 확인</span>" : ""}
                 </div>
                 <div class="compare-card__actions">
                     <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
+                    <button class="catalog-reset-button" type="button" data-open-bookmark-id="${product.id}">빠른 보기</button>
+                    <button class="catalog-reset-button" type="button" data-compare-bookmark-id="${product.id}">비교 담기</button>
+                    <button class="catalog-reset-button" type="button" data-copy-bookmark-id="${product.id}">요약 복사</button>
+                    <button class="catalog-reset-button" type="button" data-focus-bookmark-brand="${product.id}">브랜드 집중</button>
                     <button class="catalog-reset-button" type="button" data-remove-bookmark-id="${product.id}">제거</button>
                 </div>
             </article>
-        `).join("");
+        `).join("") : `
+            <article class="catalog-empty">
+                <strong>보드 필터에 맞는 관심 상품이 없습니다.</strong>
+                <p>보드 필터를 해제해 전체 관심 상품을 다시 확인해보세요.</p>
+            </article>
+        `;
 
         elements.bookmarkBoardGrid.querySelectorAll("[data-remove-bookmark-id]").forEach((button) => {
             button.addEventListener("click", () => {
                 removeBookmarkProduct(Number(button.dataset.removeBookmarkId));
+            });
+        });
+        elements.bookmarkBoardGrid.querySelectorAll("[data-open-bookmark-id]").forEach((button) => {
+            button.addEventListener("click", () => openDrawer(Number(button.dataset.openBookmarkId)));
+        });
+        elements.bookmarkBoardGrid.querySelectorAll("[data-compare-bookmark-id]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const product = bookmarkedProducts.find((item) => Number(item.id) === Number(button.dataset.compareBookmarkId));
+                if (product) {
+                    addProductsToBoard([product], "COMPARE");
+                }
+            });
+        });
+        elements.bookmarkBoardGrid.querySelectorAll("[data-copy-bookmark-id]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const product = bookmarkedProducts.find((item) => Number(item.id) === Number(button.dataset.copyBookmarkId));
+                if (product) {
+                    await copyTextWithFeedback(`${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · 재고 ${product.stock}개`, "관심 상품 요약을 복사했습니다.", "선택한 관심 상품 정보를 바로 전달할 수 있습니다.");
+                }
+            });
+        });
+        elements.bookmarkBoardGrid.querySelectorAll("[data-focus-bookmark-brand]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const product = bookmarkedProducts.find((item) => Number(item.id) === Number(button.dataset.focusBookmarkBrand));
+                if (!product?.brand) {
+                    return;
+                }
+                state.brand = product.brand;
+                syncControls();
+                await refreshCatalog();
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
             });
         });
     }
@@ -2662,7 +2740,15 @@
     }
 
     function sortedBookmarkProducts(items) {
-        const next = items.slice();
+        const next = items.filter((item) => {
+            if (boardState.bookmarkFilter === "LOW_STOCK") {
+                return Number(item.stock || 0) < lowStockThresholdValue();
+            }
+            if (boardState.bookmarkFilter === "FEATURED") {
+                return Boolean(item.featured);
+            }
+            return true;
+        });
         if (boardState.bookmarkSort === "FEATURED") {
             return next.sort((left, right) => Number(Boolean(right.featured)) - Number(Boolean(left.featured)));
         }
@@ -2672,7 +2758,26 @@
         if (boardState.bookmarkSort === "STOCK_ASC") {
             return next.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
         }
+        if (boardState.bookmarkSort === "NAME_ASC") {
+            return next.sort((left, right) => String(left.name || left.headline || "").localeCompare(String(right.name || right.headline || ""), "ko"));
+        }
         return next;
+    }
+
+    function recommendedBookmarkProduct(items) {
+        if (!items.length) {
+            return null;
+        }
+        const maxPrice = Math.max(1, ...items.map((item) => Number(item.price || 0)));
+        return items.slice().sort((left, right) => {
+            const score = (item) => {
+                const urgency = Number(item.stock || 0) < lowStockThresholdValue() ? 0.45 : 0;
+                const featured = item.featured ? 0.35 : 0;
+                const affordability = (1 - (Number(item.price || 0) / maxPrice)) * 0.2;
+                return urgency + featured + affordability;
+            };
+            return score(right) - score(left);
+        })[0];
     }
 
     function dominantCategory(items) {
@@ -2763,6 +2868,9 @@
         elements.sortBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkSort === "FEATURED");
         elements.sortBookmarkPriceButton?.classList.toggle("is-active", boardState.bookmarkSort === "PRICE_LOW");
         elements.sortBookmarkStockButton?.classList.toggle("is-active", boardState.bookmarkSort === "STOCK_ASC");
+        elements.sortBookmarkNameButton?.classList.toggle("is-active", boardState.bookmarkSort === "NAME_ASC");
+        elements.filterBookmarkLowStockButton?.classList.toggle("is-active", boardState.bookmarkFilter === "LOW_STOCK");
+        elements.filterBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkFilter === "FEATURED");
     }
 
     function syncCurationButtons() {

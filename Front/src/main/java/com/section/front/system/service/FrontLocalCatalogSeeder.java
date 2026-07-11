@@ -21,8 +21,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,6 +33,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class FrontLocalCatalogSeeder implements ApplicationRunner {
+    private static final int TARGET_ACTIVE_PRODUCT_COUNT = 100;
+    private static final int TARGET_FEATURED_COUNT = 12;
+    private static final int OPTIONS_PER_PRODUCT = 3;
+
     private final JdbcTemplate jdbcTemplate;
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
@@ -42,7 +48,9 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         ensureFrontDisplayTable();
         seedCatalogBase();
+        seedCatalogToTarget();
         seedFrontProductDisplays();
+        seedFrontDisplaysToTarget();
     }
 
     private void ensureFrontDisplayTable() {
@@ -92,10 +100,6 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     }
 
     private void seedFrontProductDisplays() {
-        if (frontProductDisplayRepository.count() > 0) {
-            return;
-        }
-
         Map<String, Product> productsByModel = productRepository.findAll().stream()
                 .collect(Collectors.toMap(Product::getModelNum, product -> product, (left, right) -> left));
 
@@ -115,8 +119,7 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
             boolean featured,
             int featuredRank
     ) {
-        if (product == null) {
-            log.warn("Skip front display seed because target product is missing.");
+        if (product == null || frontProductDisplayRepository.findByProductNo(product.getId()).isPresent()) {
             return;
         }
         frontProductDisplayRepository.save(FrontProductDisplay.builder()
@@ -127,6 +130,104 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
                 .featuredYn(featured ? "Y" : "N")
                 .featuredRank(featuredRank)
                 .build());
+    }
+
+    private void seedCatalogToTarget() {
+        List<Product> existingProducts = productRepository.findAll();
+        int activeCount = (int) existingProducts.stream().filter(Product::isActive).count();
+        if (activeCount >= TARGET_ACTIVE_PRODUCT_COUNT) {
+            return;
+        }
+
+        List<Brand> brands = brandRepository.findByIsActiveOrderByNameKoAsc("Y");
+        List<Category> activeCategories = categoryRepository.findByIsActiveOrderByDepthAscNameAscCategoryNoAsc("Y");
+        List<Category> categories = activeCategories.stream()
+                .filter(category -> category.getDepth() != null && category.getDepth() >= 2)
+                .toList();
+        if (categories.isEmpty()) {
+            categories = activeCategories;
+        }
+        if (brands.isEmpty() || categories.isEmpty()) {
+            log.warn("Skip front demo product seed because active brand or leaf category is missing.");
+            return;
+        }
+
+        Set<String> existingModels = existingProducts.stream()
+                .map(Product::getModelNum)
+                .filter(model -> model != null && !model.isBlank())
+                .collect(Collectors.toCollection(HashSet::new));
+        int sequence = 1;
+        while (activeCount < TARGET_ACTIVE_PRODUCT_COUNT) {
+            String model = "FRONT-DEMO-%03d".formatted(sequence++);
+            if (!existingModels.add(model)) {
+                continue;
+            }
+            int dataIndex = sequence - 2;
+            Brand brand = brands.get(dataIndex % brands.size());
+            Category category = categories.get(dataIndex % categories.size());
+            int price = 89000 + (dataIndex % 16) * 15000;
+            LocalDate releaseDate = LocalDate.now().minusDays(dataIndex % 45L);
+            seedProduct(
+                    brand,
+                    category,
+                    "%s %s 에디션 %03d".formatted(brand.getNameKo(), category.getName(), dataIndex + 1),
+                    model,
+                    price,
+                    releaseDate,
+                    demoOptions(dataIndex)
+            );
+            activeCount++;
+        }
+        log.info("Front demo catalog seed completed: {} active products targeted.", TARGET_ACTIVE_PRODUCT_COUNT);
+    }
+
+    private List<ProductOption> demoOptions(int index) {
+        int baseStock = index % 11;
+        return List.of(
+                option("250", baseStock, 0),
+                option("265", baseStock + 8, index % 4 == 0 ? 5000 : 0),
+                option("280", baseStock + 24, index % 5 == 0 ? 10000 : 0)
+        );
+    }
+
+    private void seedFrontDisplaysToTarget() {
+        List<Product> activeProducts = productRepository.findAll().stream()
+                .filter(Product::isActive)
+                .limit(TARGET_ACTIVE_PRODUCT_COUNT)
+                .toList();
+        Map<Long, FrontProductDisplay> displaysByProduct = frontProductDisplayRepository.findAll().stream()
+                .collect(Collectors.toMap(FrontProductDisplay::getProductNo, display -> display, (left, right) -> left));
+        Set<Integer> featuredRanks = displaysByProduct.values().stream()
+                .filter(FrontProductDisplay::isFeatured)
+                .map(FrontProductDisplay::getFeaturedRank)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        int featuredCount = featuredRanks.size();
+        int nextRank = 1;
+        int displayIndex = 0;
+        for (Product product : activeProducts) {
+            if (displaysByProduct.containsKey(product.getId())) {
+                continue;
+            }
+            while (featuredRanks.contains(nextRank)) {
+                nextRank++;
+            }
+            boolean featured = featuredCount < TARGET_FEATURED_COUNT;
+            int featuredRank = featured ? nextRank : 999;
+            if (featured) {
+                featuredRanks.add(nextRank++);
+                featuredCount++;
+            }
+            frontProductDisplayRepository.save(FrontProductDisplay.builder()
+                    .productNo(product.getId())
+                    .headline("오늘의 셀렉션 %03d".formatted(++displayIndex))
+                    .description("브랜드, 카테고리, 가격대와 재고 흐름을 함께 확인할 수 있도록 구성한 프론트 데모 상품입니다.")
+                    .mood(displayIndex % 3 == 0 ? "daily essential" : displayIndex % 3 == 1 ? "new classic" : "street utility")
+                    .featuredYn(featured ? "Y" : "N")
+                    .featuredRank(featuredRank)
+                    .build());
+        }
+        log.info("Front display seed completed: up to {} active product displays targeted.", TARGET_ACTIVE_PRODUCT_COUNT);
     }
 
     private void seedProduct(
@@ -160,10 +261,14 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     }
 
     private ProductOption option(String optionName, int stockCnt) {
+        return option(optionName, stockCnt, 0);
+    }
+
+    private ProductOption option(String optionName, int stockCnt, int additionalPrice) {
         return ProductOption.builder()
                 .optionName(optionName)
                 .stockCnt(stockCnt)
-                .additionalPrice(0)
+                .additionalPrice(additionalPrice)
                 .build();
     }
 }

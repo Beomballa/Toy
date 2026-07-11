@@ -42,7 +42,10 @@
     const boardState = {
         recentSort: "RECENT",
         compareSort: "DEFAULT",
-        bookmarkSort: "RECENT"
+        bookmarkSort: "RECENT",
+        latestSort: "DEFAULT",
+        lowStockSort: "STOCK_ASC",
+        featuredSort: "DEFAULT"
     };
     const drawerState = {
         optionLowStockOnly: false,
@@ -84,6 +87,16 @@
         latestDropGrid: document.getElementById("latestDropGrid"),
         lowStockGrid: document.getElementById("lowStockGrid"),
         featuredGrid: document.getElementById("featuredGrid"),
+        sortLatestPriceButton: document.getElementById("sortLatestPriceButton"),
+        bookmarkLatestButton: document.getElementById("bookmarkLatestButton"),
+        copyLatestSummaryButton: document.getElementById("copyLatestSummaryButton"),
+        sortLowStockPriceButton: document.getElementById("sortLowStockPriceButton"),
+        compareLowStockButton: document.getElementById("compareLowStockButton"),
+        copyLowStockSummaryButton: document.getElementById("copyLowStockSummaryButton"),
+        sortFeaturedPriceButton: document.getElementById("sortFeaturedPriceButton"),
+        sortFeaturedStockButton: document.getElementById("sortFeaturedStockButton"),
+        bookmarkFeaturedButton: document.getElementById("bookmarkFeaturedButton"),
+        copyFeaturedLinksButton: document.getElementById("copyFeaturedLinksButton"),
         recentViewedSection: document.getElementById("recentViewedSection"),
         recentViewedTitle: document.getElementById("recentViewedTitle"),
         recentViewedText: document.getElementById("recentViewedText"),
@@ -396,6 +409,49 @@
         });
         elements.restoreHiddenFlowButton?.addEventListener("click", async () => {
             await handleFlowAction("RESTORE_HIDDEN");
+        });
+        elements.sortLatestPriceButton?.addEventListener("click", () => {
+            boardState.latestSort = boardState.latestSort === "PRICE_LOW" ? "DEFAULT" : "PRICE_LOW";
+            renderLatestDrops();
+            syncCurationButtons();
+            showToast("신규 드롭 정렬을 변경했습니다.", boardState.latestSort === "PRICE_LOW" ? "가격이 낮은 상품부터 표시합니다." : "최신 등록 흐름으로 복구했습니다.");
+        });
+        elements.bookmarkLatestButton?.addEventListener("click", () => {
+            addProductsToBoard(latestDropProducts(), "BOOKMARK");
+        });
+        elements.copyLatestSummaryButton?.addEventListener("click", async () => {
+            await copyProductCollection(latestDropProducts(), "신규 드롭", "신규 드롭 요약을 복사했습니다.");
+        });
+        elements.sortLowStockPriceButton?.addEventListener("click", () => {
+            boardState.lowStockSort = boardState.lowStockSort === "PRICE_LOW" ? "STOCK_ASC" : "PRICE_LOW";
+            renderLowStockHighlights();
+            syncCurationButtons();
+            showToast("저재고 정렬을 변경했습니다.", boardState.lowStockSort === "PRICE_LOW" ? "가격이 낮은 상품부터 표시합니다." : "재고가 적은 상품부터 표시합니다.");
+        });
+        elements.compareLowStockButton?.addEventListener("click", () => {
+            addProductsToBoard(lowStockHighlightProducts(), "COMPARE");
+        });
+        elements.copyLowStockSummaryButton?.addEventListener("click", async () => {
+            await copyProductCollection(lowStockHighlightProducts(), "저재고 하이라이트", "저재고 요약을 복사했습니다.");
+        });
+        elements.sortFeaturedPriceButton?.addEventListener("click", () => {
+            boardState.featuredSort = "PRICE_LOW";
+            renderFeatured();
+            syncCurationButtons();
+            showToast("Featured를 가격순으로 정렬했습니다.", "가격이 낮은 큐레이션부터 확인할 수 있습니다.");
+        });
+        elements.sortFeaturedStockButton?.addEventListener("click", () => {
+            boardState.featuredSort = "STOCK_ASC";
+            renderFeatured();
+            syncCurationButtons();
+            showToast("Featured를 재고순으로 정렬했습니다.", "구매 판단이 급한 큐레이션부터 확인할 수 있습니다.");
+        });
+        elements.bookmarkFeaturedButton?.addEventListener("click", () => {
+            addProductsToBoard(featuredProducts(), "BOOKMARK");
+        });
+        elements.copyFeaturedLinksButton?.addEventListener("click", async () => {
+            const links = featuredProducts().map((product) => `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`);
+            await copyTextWithFeedback(links.join("\n") || "Featured 상품이 없습니다.", "Featured 링크를 복사했습니다.", "큐레이션 상세 페이지를 한 번에 공유할 수 있습니다.");
         });
         elements.clearSearchButton?.addEventListener("click", async () => {
             state.search = "";
@@ -894,16 +950,42 @@
     function renderSignalStrip() {
         renderLatestDrops();
         renderLowStockHighlights();
+        syncCurationButtons();
+    }
+
+    function latestDropProducts() {
+        const latestCreatedDate = metrics.latestCreatedDate;
+        const list = products.filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate);
+        if (boardState.latestSort === "PRICE_LOW") {
+            return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
+        }
+        return list.slice(0, 4);
+    }
+
+    function lowStockHighlightProducts() {
+        const list = products.filter((product) => product.stock < lowStockThresholdValue());
+        if (boardState.lowStockSort === "PRICE_LOW") {
+            return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
+        }
+        return list.sort((left, right) => left.stock - right.stock).slice(0, 4);
+    }
+
+    function featuredProducts() {
+        const list = products.filter((product) => product.featured);
+        if (boardState.featuredSort === "PRICE_LOW") {
+            return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 3);
+        }
+        if (boardState.featuredSort === "STOCK_ASC") {
+            return list.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0)).slice(0, 3);
+        }
+        return list.slice(0, 3);
     }
 
     function renderLatestDrops() {
         if (!elements.latestDropGrid) {
             return;
         }
-        const latestCreatedDate = metrics.latestCreatedDate;
-        const latestProducts = products
-            .filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate)
-            .slice(0, 4);
+        const latestProducts = latestDropProducts();
 
         if (!latestProducts.length) {
             elements.latestDropGrid.innerHTML = `
@@ -916,16 +998,14 @@
         }
 
         elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, relativeDropLabel(product.createdDate))).join("");
+        bindProductButtons(elements.latestDropGrid);
     }
 
     function renderLowStockHighlights() {
         if (!elements.lowStockGrid) {
             return;
         }
-        const lowStockProducts = products
-            .filter((product) => product.stock < lowStockThresholdValue())
-            .sort((left, right) => left.stock - right.stock)
-            .slice(0, 4);
+        const lowStockProducts = lowStockHighlightProducts();
 
         if (!lowStockProducts.length) {
             elements.lowStockGrid.innerHTML = `
@@ -938,18 +1018,23 @@
         }
 
         elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, stockPressureLabel(product.stock))).join("");
+        bindProductButtons(elements.lowStockGrid);
     }
 
     function signalFeedCard(product, kicker) {
         return `
-            <a class="signal-feed-card" href="${detailPageUrl(product.id)}">
+            <article class="signal-feed-card">
                 ${productVisualMarkup(product, "signal-feed-card__visual")}
                 <div class="signal-feed-card__body">
                     <span class="signal-feed-card__kicker">${kicker}</span>
                     <strong>${product.headline || product.name}</strong>
                     <p>${compactProductContext(product)} · ${stockPressureDetail(product.stock)}</p>
+                    <div class="signal-feed-card__actions">
+                        <a href="${detailPageUrl(product.id)}">상세 보기</a>
+                        <button type="button" data-product-id="${product.id}">빠른 보기</button>
+                    </div>
                 </div>
-            </a>
+            </article>
         `;
     }
 
@@ -957,8 +1042,8 @@
         if (!elements.featuredGrid) {
             return;
         }
-        const featuredProducts = products.filter((product) => product.featured).slice(0, 3);
-        elements.featuredGrid.innerHTML = featuredProducts.map((product, index) => `
+        const curatedProducts = featuredProducts();
+        elements.featuredGrid.innerHTML = curatedProducts.map((product, index) => `
             <article class="spotlight-card ${index === 0 ? "spotlight-card--accent" : ""}">
                 ${productVisualMarkup(product, "spotlight-card__visual")}
                 <div>
@@ -987,6 +1072,7 @@
         `).join("");
 
         bindProductButtons(elements.featuredGrid);
+        syncCurationButtons();
     }
 
     function renderSignals() {
@@ -2091,6 +2177,13 @@
         elements.sortBookmarkStockButton?.classList.toggle("is-active", boardState.bookmarkSort === "STOCK_ASC");
     }
 
+    function syncCurationButtons() {
+        elements.sortLatestPriceButton?.classList.toggle("is-active", boardState.latestSort === "PRICE_LOW");
+        elements.sortLowStockPriceButton?.classList.toggle("is-active", boardState.lowStockSort === "PRICE_LOW");
+        elements.sortFeaturedPriceButton?.classList.toggle("is-active", boardState.featuredSort === "PRICE_LOW");
+        elements.sortFeaturedStockButton?.classList.toggle("is-active", boardState.featuredSort === "STOCK_ASC");
+    }
+
     function syncViewButtons() {
         elements.toggleCompactViewButton?.classList.toggle("is-active", uiState.viewMode === "COMPACT");
         elements.toggleTodayOnlyButton?.classList.toggle("is-active", uiState.todayOnly);
@@ -2112,6 +2205,13 @@
         } catch (error) {
             window.prompt("내용을 복사하세요.", text);
         }
+    }
+
+    async function copyProductCollection(items, heading, successTitle) {
+        const text = items.length
+            ? `${heading}\n${items.map((product, index) => `${index + 1}. ${product.headline || product.name} · ${product.priceLabel || formatPrice(product.price)} · 재고 ${product.stock}개`).join("\n")}`
+            : `${heading} 상품이 없습니다.`;
+        await copyTextWithFeedback(text, successTitle, "상품 가격과 재고 상태를 한 번에 전달할 수 있습니다.");
     }
 
     function showToast(title, body, isWarning = false) {

@@ -167,6 +167,11 @@
                     </div>
                     <p>가장 최근에 등록된 상품을 빠르게 훑고 바로 상세로 이동할 수 있습니다.</p>
                 </div>
+                <div class="section-action-bar">
+                    <button class="catalog-reset-button" type="button" id="sortLatestPriceButton">가격 낮은 순</button>
+                    <button class="catalog-reset-button" type="button" id="bookmarkLatestButton">신규 드롭 모두 찜</button>
+                    <button class="catalog-reset-button" type="button" id="copyLatestSummaryButton">신규 요약 복사</button>
+                </div>
                 <div class="signal-feed" id="latestDropGrid"></div>
             </article>
             <article class="discovery-card">
@@ -176,6 +181,11 @@
                         <h2>저재고 하이라이트</h2>
                     </div>
                     <p>현재 기준 긴장 재고 상품을 먼저 모아 보여줍니다.</p>
+                </div>
+                <div class="section-action-bar">
+                    <button class="catalog-reset-button" type="button" id="sortLowStockPriceButton">가격 낮은 순</button>
+                    <button class="catalog-reset-button" type="button" id="compareLowStockButton">저재고 비교 담기</button>
+                    <button class="catalog-reset-button" type="button" id="copyLowStockSummaryButton">저재고 요약 복사</button>
                 </div>
                 <div class="signal-feed" id="lowStockGrid"></div>
             </article>
@@ -188,6 +198,12 @@
                     <h2>이번 주 큐레이션</h2>
                     <p>브랜드 집중도와 재고 리스크를 함께 보여주는 하이라이트 영역입니다.</p>
                 </div>
+            </div>
+            <div class="section-action-bar section-action-bar--featured">
+                <button class="catalog-reset-button" type="button" id="sortFeaturedPriceButton">가격 낮은 순</button>
+                <button class="catalog-reset-button" type="button" id="sortFeaturedStockButton">재고 낮은 순</button>
+                <button class="catalog-reset-button" type="button" id="bookmarkFeaturedButton">Featured 모두 찜</button>
+                <button class="catalog-reset-button" type="button" id="copyFeaturedLinksButton">Featured 링크 복사</button>
             </div>
             <div class="spotlight-grid" id="featuredGrid"></div>
         </section>

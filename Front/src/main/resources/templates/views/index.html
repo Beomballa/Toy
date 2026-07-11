@@ -458,6 +458,27 @@
             </div>
 
             <div class="catalog-grid" id="catalogGrid"></div>
+            <nav class="catalog-pagination" id="catalogPagination" aria-label="상품 페이지 이동">
+                <div class="catalog-pagination__progress">
+                    <strong id="catalogPageProgress">상품 페이지를 계산 중입니다.</strong>
+                    <span id="catalogPageRange">0 / 0</span>
+                </div>
+                <div class="catalog-pagination__controls">
+                    <label for="catalogPageSize">표시 개수</label>
+                    <select id="catalogPageSize">
+                        <option value="6">6개</option>
+                        <option value="12">12개</option>
+                        <option value="24">24개</option>
+                        <option value="ALL">전체</option>
+                    </select>
+                    <button type="button" id="catalogFirstPageButton">처음</button>
+                    <button type="button" id="catalogPreviousPageButton">이전</button>
+                    <select id="catalogPageSelect" aria-label="페이지 선택"></select>
+                    <button type="button" id="catalogNextPageButton">다음</button>
+                    <button type="button" id="catalogLastPageButton">마지막</button>
+                    <button type="button" id="catalogLoadMoreButton">더 보기</button>
+                </div>
+            </nav>
         </section>
     </main>
 </div>

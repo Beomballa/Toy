@@ -8,6 +8,7 @@
     const LAST_DRAWER_PRODUCT_KEY = "front-last-drawer-product";
     const HIDDEN_PRODUCTS_KEY = "front-hidden-products";
     const VIEW_MODE_KEY = "front-catalog-view-mode";
+    const PAGE_SIZE_KEY = "front-catalog-page-size";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -58,6 +59,11 @@
         hiddenAlphabetical: false
     };
     const selectedProductIds = new Set();
+    const paginationState = {
+        page: 1,
+        size: window.localStorage.getItem(PAGE_SIZE_KEY) || "12",
+        extra: 0
+    };
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -69,6 +75,16 @@
         sortFilter: document.getElementById("sortFilter"),
         searchInput: document.getElementById("searchInput"),
         catalogGrid: document.getElementById("catalogGrid"),
+        catalogPagination: document.getElementById("catalogPagination"),
+        catalogPageProgress: document.getElementById("catalogPageProgress"),
+        catalogPageRange: document.getElementById("catalogPageRange"),
+        catalogPageSize: document.getElementById("catalogPageSize"),
+        catalogPageSelect: document.getElementById("catalogPageSelect"),
+        catalogFirstPageButton: document.getElementById("catalogFirstPageButton"),
+        catalogPreviousPageButton: document.getElementById("catalogPreviousPageButton"),
+        catalogNextPageButton: document.getElementById("catalogNextPageButton"),
+        catalogLastPageButton: document.getElementById("catalogLastPageButton"),
+        catalogLoadMoreButton: document.getElementById("catalogLoadMoreButton"),
         catalogSelection: document.getElementById("catalogSelection"),
         catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
         catalogSelectionText: document.getElementById("catalogSelectionText"),
@@ -367,6 +383,14 @@
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" && elements.productDrawer?.classList.contains("is-open")) {
                 closeDrawer();
+            }
+            if (event.altKey && event.key === "ArrowLeft") {
+                event.preventDefault();
+                moveCatalogPage(paginationState.page - 1);
+            }
+            if (event.altKey && event.key === "ArrowRight") {
+                event.preventDefault();
+                moveCatalogPage(paginationState.page + 1);
             }
         });
         elements.focusLowStockButton?.addEventListener("click", () => {
@@ -758,9 +782,30 @@
             await copyTextWithFeedback(text, "관심 보드 요약을 복사했습니다.", "찜한 상품 흐름을 그대로 공유할 수 있습니다.");
         });
         elements.selectVisibleProductsButton?.addEventListener("click", () => {
-            filteredProducts().forEach((product) => selectedProductIds.add(Number(product.id)));
+            currentCatalogPageProducts().forEach((product) => selectedProductIds.add(Number(product.id)));
             renderCatalog();
             showToast("현재 상품을 모두 선택했습니다.", `${selectedProductIds.size}개 상품을 일괄 작업할 수 있습니다.`);
+        });
+        elements.catalogPageSize?.addEventListener("change", () => {
+            paginationState.size = elements.catalogPageSize.value;
+            paginationState.page = 1;
+            paginationState.extra = 0;
+            window.localStorage.setItem(PAGE_SIZE_KEY, paginationState.size);
+            renderCatalog();
+            showToast("페이지 표시 개수를 변경했습니다.", `${paginationState.size === "ALL" ? "전체" : `${paginationState.size}개`} 단위로 상품을 표시합니다.`);
+        });
+        elements.catalogPageSelect?.addEventListener("change", () => {
+            moveCatalogPage(Number(elements.catalogPageSelect.value));
+        });
+        elements.catalogFirstPageButton?.addEventListener("click", () => moveCatalogPage(1));
+        elements.catalogPreviousPageButton?.addEventListener("click", () => moveCatalogPage(paginationState.page - 1));
+        elements.catalogNextPageButton?.addEventListener("click", () => moveCatalogPage(paginationState.page + 1));
+        elements.catalogLastPageButton?.addEventListener("click", () => moveCatalogPage(catalogPaginationDetails().totalPages));
+        elements.catalogLoadMoreButton?.addEventListener("click", () => {
+            paginationState.extra += 6;
+            paginationState.page = 1;
+            renderCatalog();
+            showToast("상품을 더 불러왔습니다.", `현재 페이지에 최대 ${catalogPaginationDetails().effectiveSize}개 상품을 표시합니다.`);
         });
         elements.clearSelectedProductsButton?.addEventListener("click", () => {
             selectedProductIds.clear();
@@ -1252,12 +1297,16 @@
     }
 
     function renderCatalog() {
-        const list = filteredProducts();
+        const allList = filteredProducts();
+        const details = catalogPaginationDetails(allList);
+        paginationState.page = Math.min(Math.max(1, paginationState.page), details.totalPages);
+        const list = currentCatalogPageProducts(allList);
         const comparedIds = new Set(readCompareProducts().map((product) => Number(product.id)));
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
         const hiddenIds = new Set(readHiddenProducts().map((product) => Number(product.id)));
-        renderCatalogSummary(list);
+        renderCatalogSummary(allList);
         renderCatalogSelection();
+        renderCatalogPagination(allList);
 
         if (!elements.catalogGrid) {
             return;
@@ -1347,6 +1396,63 @@
 
         bindProductButtons(elements.catalogGrid);
         bindHideButtons();
+    }
+
+    function catalogPaginationDetails(list = filteredProducts()) {
+        const total = list.length;
+        const baseSize = paginationState.size === "ALL" ? Math.max(1, total) : Number(paginationState.size || 12);
+        const effectiveSize = paginationState.size === "ALL" ? baseSize : baseSize + paginationState.extra;
+        return {
+            total,
+            effectiveSize,
+            totalPages: Math.max(1, Math.ceil(total / effectiveSize))
+        };
+    }
+
+    function currentCatalogPageProducts(list = filteredProducts()) {
+        const details = catalogPaginationDetails(list);
+        const page = Math.min(Math.max(1, paginationState.page), details.totalPages);
+        const start = (page - 1) * details.effectiveSize;
+        return list.slice(start, start + details.effectiveSize);
+    }
+
+    function moveCatalogPage(nextPage) {
+        const details = catalogPaginationDetails();
+        const clampedPage = Math.min(Math.max(1, Number(nextPage) || 1), details.totalPages);
+        if (clampedPage === paginationState.page && !paginationState.extra) {
+            return;
+        }
+        paginationState.page = clampedPage;
+        paginationState.extra = 0;
+        renderCatalog();
+        document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderCatalogPagination(list) {
+        if (!elements.catalogPagination) {
+            return;
+        }
+        const details = catalogPaginationDetails(list);
+        const start = details.total ? (paginationState.page - 1) * details.effectiveSize + 1 : 0;
+        const end = Math.min(details.total, paginationState.page * details.effectiveSize);
+        setText(elements.catalogPageProgress, `${paginationState.page} / ${details.totalPages} 페이지`);
+        setText(elements.catalogPageRange, `${start}-${end} / 총 ${details.total}개`);
+        if (elements.catalogPageSize) {
+            elements.catalogPageSize.value = paginationState.size;
+        }
+        if (elements.catalogPageSelect) {
+            elements.catalogPageSelect.innerHTML = Array.from({ length: details.totalPages }, (_, index) =>
+                `<option value="${index + 1}">${index + 1} 페이지</option>`
+            ).join("");
+            elements.catalogPageSelect.value = String(paginationState.page);
+        }
+        const isFirst = paginationState.page <= 1;
+        const isLast = paginationState.page >= details.totalPages;
+        elements.catalogFirstPageButton.disabled = isFirst;
+        elements.catalogPreviousPageButton.disabled = isFirst;
+        elements.catalogNextPageButton.disabled = isLast;
+        elements.catalogLastPageButton.disabled = isLast;
+        elements.catalogLoadMoreButton.disabled = paginationState.size === "ALL" || end >= details.total;
     }
 
     function selectedProducts() {
@@ -1518,6 +1624,8 @@
     }
 
     async function refreshCatalog() {
+        paginationState.page = 1;
+        paginationState.extra = 0;
         syncUrlState();
         persistLastCatalogState();
         persistSearchHistory();

@@ -57,6 +57,7 @@
         searchAlphabetical: false,
         hiddenAlphabetical: false
     };
+    const selectedProductIds = new Set();
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -68,6 +69,18 @@
         sortFilter: document.getElementById("sortFilter"),
         searchInput: document.getElementById("searchInput"),
         catalogGrid: document.getElementById("catalogGrid"),
+        catalogSelection: document.getElementById("catalogSelection"),
+        catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
+        catalogSelectionText: document.getElementById("catalogSelectionText"),
+        selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
+        clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
+        compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
+        bookmarkSelectedProductsButton: document.getElementById("bookmarkSelectedProductsButton"),
+        hideSelectedProductsButton: document.getElementById("hideSelectedProductsButton"),
+        copySelectedSummaryButton: document.getElementById("copySelectedSummaryButton"),
+        copySelectedLinksButton: document.getElementById("copySelectedLinksButton"),
+        openUrgentSelectedButton: document.getElementById("openUrgentSelectedButton"),
+        focusSelectedBrandButton: document.getElementById("focusSelectedBrandButton"),
         catalogInsightGrid: document.getElementById("catalogInsightGrid"),
         catalogPresetStrip: document.getElementById("catalogPresetStrip"),
         catalogTags: document.getElementById("catalogTags"),
@@ -744,7 +757,73 @@
                 : "관심 상품 보드에 담긴 상품이 없습니다.";
             await copyTextWithFeedback(text, "관심 보드 요약을 복사했습니다.", "찜한 상품 흐름을 그대로 공유할 수 있습니다.");
         });
+        elements.selectVisibleProductsButton?.addEventListener("click", () => {
+            filteredProducts().forEach((product) => selectedProductIds.add(Number(product.id)));
+            renderCatalog();
+            showToast("현재 상품을 모두 선택했습니다.", `${selectedProductIds.size}개 상품을 일괄 작업할 수 있습니다.`);
+        });
+        elements.clearSelectedProductsButton?.addEventListener("click", () => {
+            selectedProductIds.clear();
+            renderCatalog();
+            showToast("상품 선택을 해제했습니다.", "카탈로그를 기본 상태로 복구했습니다.");
+        });
+        elements.compareSelectedProductsButton?.addEventListener("click", () => {
+            addProductsToBoard(selectedProducts(), "COMPARE");
+        });
+        elements.bookmarkSelectedProductsButton?.addEventListener("click", () => {
+            addProductsToBoard(selectedProducts(), "BOOKMARK");
+        });
+        elements.hideSelectedProductsButton?.addEventListener("click", async () => {
+            const selected = selectedProducts();
+            if (!selected.length) {
+                showToast("숨길 상품이 없습니다.", "카탈로그 카드에서 상품을 먼저 선택해주세요.", true);
+                return;
+            }
+            const current = readHiddenProducts();
+            const next = selected.map(hiddenProductSummary).concat(current).filter((product, index, items) =>
+                items.findIndex((item) => Number(item.id) === Number(product.id)) === index
+            ).slice(0, 12);
+            window.localStorage.setItem(HIDDEN_PRODUCTS_KEY, JSON.stringify(next));
+            selectedProductIds.clear();
+            renderHiddenProducts();
+            renderFlowBoard();
+            await refreshCatalog();
+            showToast("선택 상품을 숨겼습니다.", `${selected.length}개 상품을 기본 목록에서 제외했습니다.`);
+        });
+        elements.copySelectedSummaryButton?.addEventListener("click", async () => {
+            await copyProductCollection(selectedProducts(), "선택 상품", "선택 상품 요약을 복사했습니다.");
+        });
+        elements.copySelectedLinksButton?.addEventListener("click", async () => {
+            const links = selectedProducts().map((product) => `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`);
+            await copyTextWithFeedback(links.join("\n") || "선택한 상품이 없습니다.", "선택 상품 링크를 복사했습니다.", "선택한 상세 페이지를 한 번에 공유할 수 있습니다.");
+        });
+        elements.openUrgentSelectedButton?.addEventListener("click", () => {
+            const urgent = selectedProducts().sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0))[0];
+            if (!urgent) {
+                showToast("열 상품이 없습니다.", "카탈로그 카드에서 상품을 먼저 선택해주세요.", true);
+                return;
+            }
+            openDrawer(urgent.id);
+            showToast("최저 재고 상품을 열었습니다.", `${urgent.headline || urgent.name}을 우선 확인합니다.`);
+        });
+        elements.focusSelectedBrandButton?.addEventListener("click", async () => {
+            const brand = dominantBrand(selectedProducts());
+            if (!brand) {
+                showToast("집중할 브랜드가 없습니다.", "카탈로그 카드에서 상품을 먼저 선택해주세요.", true);
+                return;
+            }
+            state.brand = brand;
+            syncControls();
+            await refreshCatalog();
+            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("대표 브랜드 조건을 적용했습니다.", `${brand} 상품 흐름으로 카탈로그를 좁혔습니다.`);
+        });
         elements.catalogGrid?.addEventListener("click", (event) => {
+            const selectButton = event.target.closest("[data-select-product-id]");
+            if (selectButton) {
+                toggleSelectedProduct(Number(selectButton.dataset.selectProductId));
+                return;
+            }
             const compareButton = event.target.closest("[data-compare-product-id]");
             if (compareButton) {
                 toggleCompareProduct(Number(compareButton.dataset.compareProductId));
@@ -1178,6 +1257,7 @@
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
         const hiddenIds = new Set(readHiddenProducts().map((product) => Number(product.id)));
         renderCatalogSummary(list);
+        renderCatalogSelection();
 
         if (!elements.catalogGrid) {
             return;
@@ -1202,7 +1282,10 @@
 
         elements.catalogGrid.classList.toggle("is-compact", uiState.viewMode === "COMPACT");
         elements.catalogGrid.innerHTML = list.map((product) => `
-            <article class="catalog-card">
+            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}">
+                <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
+                    ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
+                </button>
                 ${productVisualMarkup(product, "catalog-card__visual")}
                 <div class="catalog-card__header">
                     <div>
@@ -1264,6 +1347,45 @@
 
         bindProductButtons(elements.catalogGrid);
         bindHideButtons();
+    }
+
+    function selectedProducts() {
+        return products.filter((product) => selectedProductIds.has(Number(product.id)));
+    }
+
+    function toggleSelectedProduct(productId) {
+        if (selectedProductIds.has(productId)) {
+            selectedProductIds.delete(productId);
+        } else {
+            selectedProductIds.add(productId);
+        }
+        renderCatalog();
+    }
+
+    function hiddenProductSummary(product) {
+        return {
+            id: product.id,
+            name: product.name,
+            headline: product.headline,
+            brand: product.brand
+        };
+    }
+
+    function renderCatalogSelection() {
+        if (!elements.catalogSelection) {
+            return;
+        }
+        const selected = selectedProducts();
+        elements.catalogSelection.classList.toggle("has-selection", Boolean(selected.length));
+        if (!selected.length) {
+            setText(elements.catalogSelectionTitle, "선택한 상품이 없습니다.");
+            setText(elements.catalogSelectionText, "카드에서 선택하거나 현재 상품 전체 선택을 눌러 일괄 작업을 시작할 수 있습니다.");
+            return;
+        }
+        const totalPrice = selected.reduce((sum, product) => sum + Number(product.price || 0), 0);
+        const lowStockCount = selected.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
+        setText(elements.catalogSelectionTitle, `${selected.length}개 상품을 선택했습니다.`);
+        setText(elements.catalogSelectionText, `합계 ${formatPrice(totalPrice)} · 긴장 재고 ${lowStockCount}개 · 대표 브랜드 ${dominantBrand(selected) || "-"}`);
     }
 
     function renderCatalogSummary(list) {

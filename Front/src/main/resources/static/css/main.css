@@ -1500,6 +1500,23 @@ select {
 .catalog-summary--compare {
     margin-bottom: 18px;
     background: #fcfcfc;
+    align-items: start;
+}
+
+#recentViewedSection .catalog-summary__actions,
+#compareBoardSection .catalog-summary__actions,
+#bookmarkBoardSection .catalog-summary__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: min(100%, 650px);
+}
+
+#recentViewedSection .catalog-reset-button,
+#compareBoardSection .catalog-reset-button,
+#bookmarkBoardSection .catalog-reset-button {
+    width: 100%;
+    min-height: 38px;
+    padding-inline: 12px;
 }
 
 .compare-card {
@@ -2211,6 +2228,12 @@ select {
 }
 
 @media (max-width: 1280px) {
+    #recentViewedSection .catalog-summary__actions,
+    #compareBoardSection .catalog-summary__actions,
+    #bookmarkBoardSection .catalog-summary__actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .catalog-toolbar {
         grid-template-columns: repeat(8, minmax(0, 1fr));
     }
@@ -2299,6 +2322,12 @@ select {
 }
 
 @media (max-width: 768px) {
+    #recentViewedSection .catalog-summary__actions,
+    #compareBoardSection .catalog-summary__actions,
+    #bookmarkBoardSection .catalog-summary__actions {
+        grid-template-columns: 1fr;
+    }
+
     .flow-board__summary {
         grid-template-columns: minmax(0, 1fr);
         padding: 20px;

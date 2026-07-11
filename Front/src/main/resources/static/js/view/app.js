@@ -40,6 +40,7 @@
     const detailCache = new Map();
     let toastTimerSeed = 0;
     const boardState = {
+        recentSort: "RECENT",
         compareSort: "DEFAULT",
         bookmarkSort: "RECENT"
     };
@@ -90,6 +91,10 @@
         clearRecentViewedButton: document.getElementById("clearRecentViewedButton"),
         copyRecentViewedSummaryButton: document.getElementById("copyRecentViewedSummaryButton"),
         focusRecentLowStockButton: document.getElementById("focusRecentLowStockButton"),
+        sortRecentPriceButton: document.getElementById("sortRecentPriceButton"),
+        sortRecentStockButton: document.getElementById("sortRecentStockButton"),
+        addRecentToCompareButton: document.getElementById("addRecentToCompareButton"),
+        addRecentToBookmarkButton: document.getElementById("addRecentToBookmarkButton"),
         compareBoardSection: document.getElementById("compareBoardSection"),
         compareBoardGrid: document.getElementById("compareBoardGrid"),
         compareBoardTitle: document.getElementById("compareBoardTitle"),
@@ -99,6 +104,8 @@
         sortComparePriceButton: document.getElementById("sortComparePriceButton"),
         sortCompareStockButton: document.getElementById("sortCompareStockButton"),
         copyCompareSummaryButton: document.getElementById("copyCompareSummaryButton"),
+        addCompareToBookmarkButton: document.getElementById("addCompareToBookmarkButton"),
+        openCheapestCompareButton: document.getElementById("openCheapestCompareButton"),
         clearCompareButton: document.getElementById("clearCompareButton"),
         bookmarkBoardSection: document.getElementById("bookmarkBoardSection"),
         bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
@@ -108,6 +115,10 @@
         applyBookmarkLowStockButton: document.getElementById("applyBookmarkLowStockButton"),
         sortBookmarkRecentButton: document.getElementById("sortBookmarkRecentButton"),
         sortBookmarkFeaturedButton: document.getElementById("sortBookmarkFeaturedButton"),
+        sortBookmarkPriceButton: document.getElementById("sortBookmarkPriceButton"),
+        sortBookmarkStockButton: document.getElementById("sortBookmarkStockButton"),
+        addBookmarkToCompareButton: document.getElementById("addBookmarkToCompareButton"),
+        copyBookmarkLinksButton: document.getElementById("copyBookmarkLinksButton"),
         copyBookmarkSummaryButton: document.getElementById("copyBookmarkSummaryButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
         toggleCompactViewButton: document.getElementById("toggleCompactViewButton"),
@@ -488,6 +499,22 @@
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
             showToast("최근 흐름 기준 저재고 필터를 적용했습니다.", `${recentLowStock.headline || recentLowStock.name}과 비슷한 조건으로 다시 볼 수 있습니다.`);
         });
+        elements.sortRecentPriceButton?.addEventListener("click", () => {
+            boardState.recentSort = "PRICE_LOW";
+            renderRecentViewed();
+            showToast("최근 본 상품을 가격순으로 정렬했습니다.", "부담이 낮은 상품부터 다시 확인할 수 있습니다.");
+        });
+        elements.sortRecentStockButton?.addEventListener("click", () => {
+            boardState.recentSort = "STOCK_ASC";
+            renderRecentViewed();
+            showToast("최근 본 상품을 재고순으로 정렬했습니다.", "구매 판단이 급한 상품부터 확인할 수 있습니다.");
+        });
+        elements.addRecentToCompareButton?.addEventListener("click", () => {
+            addProductsToBoard(readRecentProducts(), "COMPARE");
+        });
+        elements.addRecentToBookmarkButton?.addEventListener("click", () => {
+            addProductsToBoard(readRecentProducts(), "BOOKMARK");
+        });
         elements.clearCompareButton?.addEventListener("click", () => {
             writeCompareProducts([]);
             renderCompareBoard();
@@ -530,6 +557,18 @@
                 : "비교 보드에 담긴 상품이 없습니다.";
             await copyTextWithFeedback(text, "비교 요약을 복사했습니다.", "가격과 재고 차이를 바로 전달할 수 있습니다.");
         });
+        elements.addCompareToBookmarkButton?.addEventListener("click", () => {
+            addProductsToBoard(readCompareProducts(), "BOOKMARK");
+        });
+        elements.openCheapestCompareButton?.addEventListener("click", () => {
+            const cheapest = readCompareProducts().slice().sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0];
+            if (!cheapest) {
+                showToast("빠르게 볼 비교 상품이 없습니다.", "비교 보드에 상품을 먼저 담아주세요.", true);
+                return;
+            }
+            openDrawer(cheapest.id);
+            showToast("최저가 비교 상품을 열었습니다.", `${cheapest.headline || cheapest.name}을 바로 확인합니다.`);
+        });
         elements.clearBookmarkButton?.addEventListener("click", () => {
             writeBookmarkProducts([]);
             renderBookmarkBoard();
@@ -560,6 +599,23 @@
             boardState.bookmarkSort = "FEATURED";
             renderBookmarkBoard();
             showToast("관심 보드를 Featured 우선으로 정렬했습니다.", "대표 노출 상품을 먼저 확인할 수 있습니다.");
+        });
+        elements.sortBookmarkPriceButton?.addEventListener("click", () => {
+            boardState.bookmarkSort = "PRICE_LOW";
+            renderBookmarkBoard();
+            showToast("관심 상품을 가격순으로 정렬했습니다.", "낮은 가격부터 구매 후보를 비교할 수 있습니다.");
+        });
+        elements.sortBookmarkStockButton?.addEventListener("click", () => {
+            boardState.bookmarkSort = "STOCK_ASC";
+            renderBookmarkBoard();
+            showToast("관심 상품을 재고순으로 정렬했습니다.", "재고가 적은 후보를 먼저 확인할 수 있습니다.");
+        });
+        elements.addBookmarkToCompareButton?.addEventListener("click", () => {
+            addProductsToBoard(readBookmarkProducts(), "COMPARE");
+        });
+        elements.copyBookmarkLinksButton?.addEventListener("click", async () => {
+            const links = readBookmarkProducts().map((product) => `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`);
+            await copyTextWithFeedback(links.join("\n") || "관심 상품이 없습니다.", "관심 상품 링크를 복사했습니다.", "저장한 상세 페이지를 한 번에 공유할 수 있습니다.");
         });
         elements.copyBookmarkSummaryButton?.addEventListener("click", async () => {
             const bookmarkedProducts = readBookmarkProducts();
@@ -1604,12 +1660,13 @@
         if (!elements.recentViewedSection || !elements.recentViewedGrid) {
             return;
         }
-        const recentProducts = readRecentProducts().slice(0, 3);
+        const recentProducts = sortedRecentProducts(readRecentProducts()).slice(0, 3);
         if (!recentProducts.length) {
             elements.recentViewedSection.hidden = true;
             return;
         }
         elements.recentViewedSection.hidden = false;
+        syncBoardButtons();
         setText(elements.recentViewedTitle, `${recentProducts.length}개 최근 본 상품을 유지하고 있습니다.`);
         setText(elements.recentViewedText, "방금 본 흐름을 끊지 않고 상세와 카탈로그를 오갈 수 있습니다.");
         elements.recentViewedGrid.innerHTML = recentProducts.map((product) => `
@@ -1634,6 +1691,33 @@
         } catch (error) {
             return [];
         }
+    }
+
+    function addProductsToBoard(sourceProducts, target) {
+        if (!sourceProducts.length) {
+            showToast("옮길 상품이 없습니다.", "현재 보드에 상품을 먼저 추가해주세요.", true);
+            return;
+        }
+        const isCompare = target === "COMPARE";
+        const current = isCompare ? readCompareProducts() : readBookmarkProducts();
+        const limit = isCompare ? 3 : 6;
+        const merged = sourceProducts.concat(current).filter((product, index, items) =>
+            items.findIndex((item) => Number(item.id) === Number(product.id)) === index
+        ).slice(0, limit);
+        if (isCompare) {
+            writeCompareProducts(merged);
+        } else {
+            writeBookmarkProducts(merged);
+        }
+        renderRecentViewed();
+        renderCompareBoard();
+        renderBookmarkBoard();
+        renderFlowBoard();
+        renderCatalog();
+        showToast(
+            isCompare ? "비교 보드에 상품을 담았습니다." : "관심 상품에 모두 담았습니다.",
+            `${merged.length}개 상품을 ${isCompare ? "비교 후보" : "관심 목록"}로 유지합니다.`
+        );
     }
 
     function renderCompareBoard() {
@@ -1894,10 +1978,27 @@
         return next;
     }
 
+    function sortedRecentProducts(items) {
+        const next = items.slice();
+        if (boardState.recentSort === "PRICE_LOW") {
+            return next.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+        }
+        if (boardState.recentSort === "STOCK_ASC") {
+            return next.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+        }
+        return next;
+    }
+
     function sortedBookmarkProducts(items) {
         const next = items.slice();
         if (boardState.bookmarkSort === "FEATURED") {
             return next.sort((left, right) => Number(Boolean(right.featured)) - Number(Boolean(left.featured)));
+        }
+        if (boardState.bookmarkSort === "PRICE_LOW") {
+            return next.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+        }
+        if (boardState.bookmarkSort === "STOCK_ASC") {
+            return next.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
         }
         return next;
     }
@@ -1980,10 +2081,14 @@
     }
 
     function syncBoardButtons() {
+        elements.sortRecentPriceButton?.classList.toggle("is-active", boardState.recentSort === "PRICE_LOW");
+        elements.sortRecentStockButton?.classList.toggle("is-active", boardState.recentSort === "STOCK_ASC");
         elements.sortComparePriceButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_HIGH");
         elements.sortCompareStockButton?.classList.toggle("is-active", boardState.compareSort === "STOCK_ASC");
         elements.sortBookmarkRecentButton?.classList.toggle("is-active", boardState.bookmarkSort === "RECENT");
         elements.sortBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkSort === "FEATURED");
+        elements.sortBookmarkPriceButton?.classList.toggle("is-active", boardState.bookmarkSort === "PRICE_LOW");
+        elements.sortBookmarkStockButton?.classList.toggle("is-active", boardState.bookmarkSort === "STOCK_ASC");
     }
 
     function syncViewButtons() {

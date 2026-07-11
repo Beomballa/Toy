@@ -1131,10 +1131,22 @@ select {
 }
 
 .catalog-memory-head {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: flex-start;
-    justify-content: space-between;
     gap: 12px;
+}
+
+.catalog-memory-head .catalog-summary__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+}
+
+.catalog-memory-head .catalog-reset-button {
+    width: 100%;
+    min-height: 36px;
+    padding-inline: 10px;
 }
 
 .catalog-memory-head strong {
@@ -1169,6 +1181,25 @@ select {
     color: var(--muted);
     cursor: pointer;
     padding: 0;
+}
+
+.catalog-memory-item .catalog-memory-item__primary {
+    max-width: 220px;
+    overflow: hidden;
+    color: var(--ink);
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.catalog-memory-item button:not(.catalog-memory-item__primary) {
+    min-width: 24px;
+    min-height: 24px;
+    padding-inline: 4px;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, 0.05);
+    font-size: var(--text-xs);
+    font-weight: 800;
 }
 
 .catalog-preset-button {

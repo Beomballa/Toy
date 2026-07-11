@@ -52,6 +52,11 @@
         relatedSort: "DEFAULT",
         relatedSameBrandOnly: false
     };
+    const memoryState = {
+        savedReversed: false,
+        searchAlphabetical: false,
+        hiddenAlphabetical: false
+    };
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -75,10 +80,18 @@
         clearSearchButton: document.getElementById("clearSearchButton"),
         saveCurrentViewButton: document.getElementById("saveCurrentViewButton"),
         restoreLastStateButton: document.getElementById("restoreLastStateButton"),
+        reverseSavedViewsButton: document.getElementById("reverseSavedViewsButton"),
+        copySavedViewsButton: document.getElementById("copySavedViewsButton"),
         clearSearchHistoryButton: document.getElementById("clearSearchHistoryButton"),
+        sortSearchHistoryButton: document.getElementById("sortSearchHistoryButton"),
+        copySearchHistoryButton: document.getElementById("copySearchHistoryButton"),
         reopenLastDrawerButton: document.getElementById("reopenLastDrawerButton"),
         clearHiddenProductsButton: document.getElementById("clearHiddenProductsButton"),
         toggleHiddenViewButton: document.getElementById("toggleHiddenViewButton"),
+        sortHiddenProductsButton: document.getElementById("sortHiddenProductsButton"),
+        copyHiddenProductsButton: document.getElementById("copyHiddenProductsButton"),
+        restoreLatestHiddenButton: document.getElementById("restoreLatestHiddenButton"),
+        bookmarkHiddenProductsButton: document.getElementById("bookmarkHiddenProductsButton"),
         savedViewList: document.getElementById("savedViewList"),
         searchHistoryList: document.getElementById("searchHistoryList"),
         hiddenProductList: document.getElementById("hiddenProductList"),
@@ -176,6 +189,7 @@
         renderSavedViews();
         renderSearchHistory();
         renderHiddenProducts();
+        syncMemoryButtons();
         renderCatalogInsights();
         renderRecentViewed();
         renderCompareBoard();
@@ -462,6 +476,17 @@
         elements.saveCurrentViewButton?.addEventListener("click", () => {
             saveCurrentView();
         });
+        elements.reverseSavedViewsButton?.addEventListener("click", () => {
+            memoryState.savedReversed = !memoryState.savedReversed;
+            renderSavedViews();
+            syncMemoryButtons();
+            showToast("저장 탐색 순서를 변경했습니다.", memoryState.savedReversed ? "오래된 조건부터 표시합니다." : "최근 저장한 조건부터 표시합니다.");
+        });
+        elements.copySavedViewsButton?.addEventListener("click", async () => {
+            const savedViews = readSavedViews();
+            const text = savedViews.length ? savedViews.map((item, index) => `${index + 1}. ${item.summary}`).join("\n") : "저장된 탐색이 없습니다.";
+            await copyTextWithFeedback(text, "저장 탐색을 복사했습니다.", "보관한 필터 조건을 한 번에 전달할 수 있습니다.");
+        });
         elements.restoreLastStateButton?.addEventListener("click", async () => {
             if (!restoreLastCatalogState()) {
                 showToast("복구할 마지막 조건이 없습니다.", "먼저 탐색 조건을 적용한 뒤 다시 시도해주세요.", true);
@@ -475,6 +500,16 @@
             window.localStorage.removeItem(SEARCH_HISTORY_KEY);
             renderSearchHistory();
             showToast("검색 기록을 비웠습니다.", "최근 검색어 목록이 초기화되었습니다.");
+        });
+        elements.sortSearchHistoryButton?.addEventListener("click", () => {
+            memoryState.searchAlphabetical = !memoryState.searchAlphabetical;
+            renderSearchHistory();
+            syncMemoryButtons();
+            showToast("검색 기록 순서를 변경했습니다.", memoryState.searchAlphabetical ? "가나다순으로 표시합니다." : "최근 검색순으로 복구했습니다.");
+        });
+        elements.copySearchHistoryButton?.addEventListener("click", async () => {
+            const history = readSearchHistory();
+            await copyTextWithFeedback(history.join("\n") || "최근 검색이 없습니다.", "검색 기록을 복사했습니다.", "최근 탐색 키워드를 한 번에 공유할 수 있습니다.");
         });
         elements.reopenLastDrawerButton?.addEventListener("click", () => {
             const lastDrawerProductId = Number(window.localStorage.getItem(LAST_DRAWER_PRODUCT_KEY) || 0);
@@ -498,6 +533,35 @@
                 uiState.showHiddenProducts ? "숨긴 상품 보기 모드를 켰습니다." : "숨긴 상품 보기 모드를 껐습니다.",
                 uiState.showHiddenProducts ? "숨김 처리한 상품도 목록에 다시 표시됩니다." : "숨긴 상품은 목록에서 제외됩니다."
             );
+        });
+        elements.sortHiddenProductsButton?.addEventListener("click", () => {
+            memoryState.hiddenAlphabetical = !memoryState.hiddenAlphabetical;
+            renderHiddenProducts();
+            syncMemoryButtons();
+            showToast("숨김 상품 순서를 변경했습니다.", memoryState.hiddenAlphabetical ? "상품 이름순으로 표시합니다." : "최근 숨김순으로 복구했습니다.");
+        });
+        elements.copyHiddenProductsButton?.addEventListener("click", async () => {
+            const hiddenProducts = readHiddenProducts();
+            const text = hiddenProducts.map((product, index) => `${index + 1}. ${product.headline || product.name}`).join("\n") || "숨긴 상품이 없습니다.";
+            await copyTextWithFeedback(text, "숨김 목록을 복사했습니다.", "정리한 상품 목록을 한 번에 전달할 수 있습니다.");
+        });
+        elements.restoreLatestHiddenButton?.addEventListener("click", async () => {
+            const hiddenProducts = readHiddenProducts();
+            if (!hiddenProducts.length) {
+                showToast("복구할 숨김 상품이 없습니다.", "상품을 숨긴 뒤 다시 이용해주세요.", true);
+                return;
+            }
+            window.localStorage.setItem(HIDDEN_PRODUCTS_KEY, JSON.stringify(hiddenProducts.slice(1)));
+            renderHiddenProducts();
+            renderFlowBoard();
+            await refreshCatalog();
+            showToast("최근 숨김 상품을 복구했습니다.", `${hiddenProducts[0].headline || hiddenProducts[0].name}이 다시 표시됩니다.`);
+        });
+        elements.bookmarkHiddenProductsButton?.addEventListener("click", () => {
+            const hiddenProducts = readHiddenProducts().map((hidden) =>
+                products.find((product) => Number(product.id) === Number(hidden.id)) || hidden
+            );
+            addProductsToBoard(hiddenProducts, "BOOKMARK");
         });
         elements.jumpFirstProductButton?.addEventListener("click", () => {
             const firstProduct = filteredProducts()[0];
@@ -1390,6 +1454,17 @@
         window.history.replaceState({}, "", nextUrl);
     }
 
+    function catalogUrlForSnapshot(snapshot) {
+        const params = new URLSearchParams();
+        Object.entries({ ...DEFAULT_STATE, ...snapshot }).forEach(([key, value]) => {
+            if (value && value !== DEFAULT_STATE[key]) {
+                params.set(key, value);
+            }
+        });
+        const query = params.toString();
+        return `${window.location.origin}${window.location.pathname}${query ? `?${query}` : ""}`;
+    }
+
     function syncControls() {
         if (elements.searchInput) {
             elements.searchInput.value = state.search;
@@ -1457,10 +1532,15 @@
             elements.savedViewList.innerHTML = `<span class="catalog-tag">저장된 탐색이 없습니다.</span>`;
             return;
         }
-        elements.savedViewList.innerHTML = savedViews.map((item, index) => `
+        const visibleViews = savedViews.map((item, originalIndex) => ({ item, originalIndex }));
+        if (memoryState.savedReversed) {
+            visibleViews.reverse();
+        }
+        elements.savedViewList.innerHTML = visibleViews.map(({ item, originalIndex }) => `
             <div class="catalog-memory-item">
-                <span data-saved-view-index="${index}">${item.summary}</span>
-                <button type="button" data-remove-saved-view-index="${index}" aria-label="저장 탐색 삭제">×</button>
+                <button class="catalog-memory-item__primary" type="button" data-saved-view-index="${originalIndex}">${item.summary}</button>
+                <button type="button" data-copy-saved-view-index="${originalIndex}" aria-label="저장 탐색 링크 복사">링크</button>
+                <button type="button" data-remove-saved-view-index="${originalIndex}" aria-label="저장 탐색 삭제">×</button>
             </div>
         `).join("");
         elements.savedViewList.querySelectorAll("[data-saved-view-index]").forEach((button) => {
@@ -1483,6 +1563,15 @@
                 showToast("저장한 탐색을 삭제했습니다.", "더 이상 목록에 노출되지 않습니다.");
             });
         });
+        elements.savedViewList.querySelectorAll("[data-copy-saved-view-index]").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const selected = readSavedViews()[Number(button.dataset.copySavedViewIndex)];
+                if (!selected?.snapshot) {
+                    return;
+                }
+                await copyTextWithFeedback(catalogUrlForSnapshot(selected.snapshot), "저장 탐색 링크를 복사했습니다.", `${selected.summary} 조건을 그대로 공유할 수 있습니다.`);
+            });
+        });
     }
 
     function renderSearchHistory() {
@@ -1494,10 +1583,12 @@
             elements.searchHistoryList.innerHTML = `<span class="catalog-tag">최근 검색이 없습니다.</span>`;
             return;
         }
-        elements.searchHistoryList.innerHTML = history.map((keyword) => `
-            <button class="catalog-memory-item" type="button" data-history-keyword="${keyword}">
-                <span>${keyword}</span>
-            </button>
+        const visibleHistory = memoryState.searchAlphabetical ? history.slice().sort((left, right) => left.localeCompare(right, "ko")) : history;
+        elements.searchHistoryList.innerHTML = visibleHistory.map((keyword) => `
+            <div class="catalog-memory-item">
+                <button class="catalog-memory-item__primary" type="button" data-history-keyword="${keyword}">${keyword}</button>
+                <button type="button" data-remove-history-keyword="${keyword}" aria-label="검색 기록 삭제">×</button>
+            </div>
         `).join("");
         elements.searchHistoryList.querySelectorAll("[data-history-keyword]").forEach((button) => {
             button.addEventListener("click", async () => {
@@ -1505,6 +1596,14 @@
                 syncControls();
                 await refreshCatalog();
                 showToast("최근 검색어를 적용했습니다.", `${state.search} 기준으로 다시 탐색합니다.`);
+            });
+        });
+        elements.searchHistoryList.querySelectorAll("[data-remove-history-keyword]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const next = readSearchHistory().filter((keyword) => keyword !== button.dataset.removeHistoryKeyword);
+                window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+                renderSearchHistory();
+                showToast("검색 기록을 삭제했습니다.", "선택한 키워드만 목록에서 제거했습니다.");
             });
         });
     }
@@ -1519,10 +1618,14 @@
             syncViewButtons();
             return;
         }
-        elements.hiddenProductList.innerHTML = hiddenProducts.map((product, index) => `
+        const visibleProducts = hiddenProducts.map((product, originalIndex) => ({ product, originalIndex }));
+        if (memoryState.hiddenAlphabetical) {
+            visibleProducts.sort((left, right) => (left.product.headline || left.product.name || "").localeCompare(right.product.headline || right.product.name || "", "ko"));
+        }
+        elements.hiddenProductList.innerHTML = visibleProducts.map(({ product, originalIndex }) => `
             <div class="catalog-memory-item">
-                <span data-hidden-product-index="${index}">${product.headline || product.name}</span>
-                <button type="button" data-restore-hidden-index="${index}" aria-label="숨긴 상품 복구">복구</button>
+                <button class="catalog-memory-item__primary" type="button" data-hidden-product-index="${originalIndex}">${product.headline || product.name}</button>
+                <button type="button" data-restore-hidden-index="${originalIndex}" aria-label="숨긴 상품 복구">복구</button>
             </div>
         `).join("");
         elements.hiddenProductList.querySelectorAll("[data-hidden-product-index]").forEach((button) => {
@@ -2182,6 +2285,12 @@
         elements.sortLowStockPriceButton?.classList.toggle("is-active", boardState.lowStockSort === "PRICE_LOW");
         elements.sortFeaturedPriceButton?.classList.toggle("is-active", boardState.featuredSort === "PRICE_LOW");
         elements.sortFeaturedStockButton?.classList.toggle("is-active", boardState.featuredSort === "STOCK_ASC");
+    }
+
+    function syncMemoryButtons() {
+        elements.reverseSavedViewsButton?.classList.toggle("is-active", memoryState.savedReversed);
+        elements.sortSearchHistoryButton?.classList.toggle("is-active", memoryState.searchAlphabetical);
+        elements.sortHiddenProductsButton?.classList.toggle("is-active", memoryState.hiddenAlphabetical);
     }
 
     function syncViewButtons() {

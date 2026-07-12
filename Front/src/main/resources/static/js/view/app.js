@@ -98,6 +98,8 @@
         }
     ];
     let activeHeroSlide = 0;
+    let heroCarouselTimer = null;
+    let heroPointerStartX = null;
     let drawerReturnFocus = null;
 
     const elements = {
@@ -273,6 +275,7 @@
         heroPreviousButton: document.getElementById("heroPreviousButton"),
         heroNextButton: document.getElementById("heroNextButton"),
         heroSlideStatus: document.getElementById("heroSlideStatus"),
+        heroDots: document.getElementById("heroDots"),
         resetFiltersButton: document.getElementById("resetFiltersButton"),
         scrollTopButton: document.getElementById("scrollTopButton")
     };
@@ -303,6 +306,7 @@
         renderCatalog();
         syncViewButtons();
         renderHeroSlide();
+        initHeroCarousel();
         toggleScrollTopVisibility();
     }
 
@@ -569,8 +573,17 @@
             }
         });
         elements.mobileStoreNav?.addEventListener("click", handleMobileStoreNavigation);
-        elements.heroPreviousButton?.addEventListener("click", () => moveHeroSlide(-1));
-        elements.heroNextButton?.addEventListener("click", () => moveHeroSlide(1));
+        elements.heroPreviousButton?.addEventListener("click", () => moveHeroSlide(-1, true));
+        elements.heroNextButton?.addEventListener("click", () => moveHeroSlide(1, true));
+        elements.heroDots?.addEventListener("click", (event) => {
+            const dot = event.target.closest("[data-hero-slide]");
+            if (!dot) {
+                return;
+            }
+            activeHeroSlide = Number(dot.dataset.heroSlide);
+            renderHeroSlide();
+            restartHeroCarousel();
+        });
         elements.catalogTags?.addEventListener("click", (event) => {
             const actionButton = event.target.closest("[data-filter-remove]");
             if (!actionButton) {
@@ -1288,9 +1301,72 @@
         setText(elements.mobileSavedCount, String(readBookmarkProducts().length));
     }
 
-    function moveHeroSlide(direction) {
+    function moveHeroSlide(direction, restart = false) {
         activeHeroSlide = (activeHeroSlide + direction + heroSlides.length) % heroSlides.length;
         renderHeroSlide();
+        if (restart) {
+            restartHeroCarousel();
+        }
+    }
+
+    function initHeroCarousel() {
+        const hero = document.querySelector(".hero");
+        if (!hero) {
+            return;
+        }
+        renderHeroDots();
+        hero.addEventListener("mouseenter", stopHeroCarousel);
+        hero.addEventListener("mouseleave", startHeroCarousel);
+        hero.addEventListener("focusin", stopHeroCarousel);
+        hero.addEventListener("focusout", (event) => {
+            if (!hero.contains(event.relatedTarget)) {
+                startHeroCarousel();
+            }
+        });
+        hero.addEventListener("pointerdown", (event) => {
+            heroPointerStartX = event.clientX;
+        });
+        hero.addEventListener("pointerup", (event) => {
+            if (heroPointerStartX === null) {
+                return;
+            }
+            const distance = event.clientX - heroPointerStartX;
+            heroPointerStartX = null;
+            if (Math.abs(distance) >= 48) {
+                moveHeroSlide(distance > 0 ? -1 : 1, true);
+            }
+        });
+        document.addEventListener("visibilitychange", () => document.hidden ? stopHeroCarousel() : startHeroCarousel());
+        startHeroCarousel();
+    }
+
+    function renderHeroDots() {
+        if (!elements.heroDots) {
+            return;
+        }
+        elements.heroDots.innerHTML = heroSlides.map((_, index) => `
+            <button type="button" data-hero-slide="${index}" aria-label="${index + 1}번 배너" aria-current="${index === activeHeroSlide ? "true" : "false"}"></button>
+        `).join("");
+    }
+
+    function startHeroCarousel() {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.hidden) {
+            return;
+        }
+        stopHeroCarousel();
+        heroCarouselTimer = window.setInterval(() => moveHeroSlide(1), 5000);
+    }
+
+    function stopHeroCarousel() {
+        if (heroCarouselTimer) {
+            window.clearInterval(heroCarouselTimer);
+            heroCarouselTimer = null;
+        }
+    }
+
+    function restartHeroCarousel() {
+        stopHeroCarousel();
+        startHeroCarousel();
     }
 
     function renderHeroSlide() {
@@ -1307,6 +1383,7 @@
         setText(hero.querySelector(".hero-description"), slide.description);
         hero.dataset.tone = slide.tone;
         setText(elements.heroSlideStatus, `${activeHeroSlide + 1} / ${heroSlides.length}`);
+        renderHeroDots();
     }
 
     function renderHeroMetrics() {

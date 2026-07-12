@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.7")
+                .contains("/css/storefront.css?v=20260712.8")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.7");
+                .contains("/js/view/app.js?v=20260712.8");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.7")
+                .contains("/css/storefront.css?v=20260712.8")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.7");
+                .contains("/js/view/detail.js?v=20260712.8");
     }
 
     @Test
@@ -140,6 +140,27 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-option-card.is-selected")
                 .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
                 .contains(".detail-mobile-actions__primary.has-option");
+    }
+
+    @Test
+    void heroKeepsAccessibleAutoplayAndSwipeContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("aria-roledescription=\"carousel\"")
+                .contains("id=\"heroDots\"");
+        assertThat(script)
+                .contains("initHeroCarousel")
+                .contains("prefers-reduced-motion: reduce")
+                .contains("visibilitychange")
+                .contains("pointerdown")
+                .contains("Math.abs(distance) >= 48")
+                .contains("window.setInterval(() => moveHeroSlide(1), 5000)");
+        assertThat(css)
+                .contains(".hero-carousel-dots")
+                .contains("[aria-current=\"true\"]");
     }
 
     private String readResource(String path) throws IOException {

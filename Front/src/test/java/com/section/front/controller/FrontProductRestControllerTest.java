@@ -58,7 +58,8 @@ class FrontProductRestControllerTest {
                         1,
                         "품절 임박",
                         "289,000원",
-                        List.of(new FrontProductOptionResponse("260", 4))
+                        List.of(new FrontProductOptionResponse("260", 4)),
+                        "/images/product/m990gl6.png"
                 )
         ));
 
@@ -68,6 +69,7 @@ class FrontProductRestControllerTest {
                 .andExpect(jsonPath("$[0].brand").value("New Balance"))
                 .andExpect(jsonPath("$[0].headline").value("Grey precision"))
                 .andExpect(jsonPath("$[0].stockStatus").value("품절 임박"))
+                .andExpect(jsonPath("$[0].thumbnailUrl").value("/images/product/m990gl6.png"))
                 .andExpect(jsonPath("$[0].options[0].name").value("260"));
     }
 
@@ -114,7 +116,8 @@ class FrontProductRestControllerTest {
                         "품절 임박",
                         "289,000원",
                         List.of(new FrontProductOptionResponse("260", 4)),
-                        List.of(new FrontRelatedProductResponse(103L, "ASICS", "Gel-Kayano 14 Oyster", "같은 카테고리", "1201A019-200", 179000, 12, "품절 임박", "179,000원"))
+                        List.of(new FrontRelatedProductResponse(103L, "ASICS", "Gel-Kayano 14 Oyster", "같은 카테고리", "1201A019-200", 179000, 12, "품절 임박", "179,000원", "/images/product/gel-kayano.png")),
+                        "/images/product/m990gl6.png"
                 )
         ));
 
@@ -124,6 +127,8 @@ class FrontProductRestControllerTest {
                 .andExpect(jsonPath("$.name").value("990v6 Grey Day"))
                 .andExpect(jsonPath("$.headline").value("Grey precision"))
                 .andExpect(jsonPath("$.priceLabel").value("289,000원"))
+                .andExpect(jsonPath("$.thumbnailUrl").value("/images/product/m990gl6.png"))
+                .andExpect(jsonPath("$.relatedProducts[0].thumbnailUrl").value("/images/product/gel-kayano.png"))
                 .andExpect(jsonPath("$.relatedProducts[0].reason").value("같은 카테고리"))
                 .andExpect(jsonPath("$.relatedProducts[0].id").value(103L));
     }

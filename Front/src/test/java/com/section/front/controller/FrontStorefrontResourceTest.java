@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.2")
+                .contains("/css/storefront.css?v=20260712.3")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.2");
+                .contains("/js/view/app.js?v=20260712.3");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.2")
+                .contains("/css/storefront.css?v=20260712.3")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.2");
+                .contains("/js/view/detail.js?v=20260712.3");
     }
 
     @Test
@@ -59,7 +59,10 @@ class FrontStorefrontResourceTest {
                 .contains("catalog-card__wish")
                 .contains("data-bookmark-product-id")
                 .contains("catalog-card__button")
-                .contains("aria-label=\"${product.name} 빠른 보기\"");
+                .contains("aria-label=\"${product.name} 빠른 보기\"")
+                .contains("product.thumbnailUrl")
+                .contains("data-product-image")
+                .contains("handleProductImageError");
     }
 
     private String readResource(String path) throws IOException {

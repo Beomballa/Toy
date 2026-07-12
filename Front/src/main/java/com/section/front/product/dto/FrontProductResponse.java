@@ -18,6 +18,7 @@ public record FrontProductResponse(
         Integer featuredRank,
         String stockStatus,
         String priceLabel,
-        List<FrontProductOptionResponse> options
+        List<FrontProductOptionResponse> options,
+        String thumbnailUrl
 ) {
 }

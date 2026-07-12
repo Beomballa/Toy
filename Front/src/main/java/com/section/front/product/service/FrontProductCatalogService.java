@@ -119,7 +119,8 @@ public class FrontProductCatalogService {
                 target.stockStatus(),
                 target.priceLabel(),
                 target.options(),
-                buildRelatedProducts(relatedCatalog, target)
+                buildRelatedProducts(relatedCatalog, target),
+                target.thumbnailUrl()
         ));
     }
 
@@ -177,7 +178,8 @@ public class FrontProductCatalogService {
                 row.featuredRank(),
                 toStockStatus(row.totalStock(), lowStockThreshold),
                 formatPriceLabel(row.releasePrice()),
-                options
+                options,
+                row.thumbnailUrl()
         );
     }
 
@@ -233,7 +235,8 @@ public class FrontProductCatalogService {
                 product.price(),
                 product.stock(),
                 product.stockStatus(),
-                product.priceLabel()
+                product.priceLabel(),
+                product.thumbnailUrl()
         ));
     }
 

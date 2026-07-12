@@ -403,6 +403,25 @@ main#top {
     background: var(--store-surface);
 }
 
+.product-visual--has-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.product-visual__image {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 16px;
+}
+
+.product-visual--has-image:not(.is-image-error) > :not(.product-visual__image) {
+    visibility: hidden;
+}
+
 .catalog-card__visual-link {
     display: block;
     color: inherit;

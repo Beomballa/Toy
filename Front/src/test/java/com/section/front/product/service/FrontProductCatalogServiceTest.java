@@ -104,7 +104,8 @@ class FrontProductCatalogServiceTest {
                         "설명",
                         "Control tone",
                         true,
-                        1
+                        1,
+                        "/images/product/pd-elite.png"
                 )
         ));
         when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(301L)))
@@ -114,6 +115,7 @@ class FrontProductCatalogServiceTest {
 
         assertEquals("2026-06-05", catalog.getFirst().createdDate());
         assertEquals(1, catalog.getFirst().featuredRank());
+        assertEquals("/images/product/pd-elite.png", catalog.getFirst().thumbnailUrl());
     }
 
     @Test
@@ -236,7 +238,8 @@ class FrontProductCatalogServiceTest {
                 description,
                 mood,
                 featured,
-                featuredRank
+                featuredRank,
+                null
         );
     }
 

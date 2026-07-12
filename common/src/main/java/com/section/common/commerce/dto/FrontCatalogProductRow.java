@@ -17,6 +17,7 @@ public record FrontCatalogProductRow(
         String description,
         String mood,
         boolean featured,
-        Integer featuredRank
+        Integer featuredRank,
+        String thumbnailUrl
 ) {
 }

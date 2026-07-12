@@ -9,6 +9,7 @@ public record FrontRelatedProductResponse(
         int price,
         int stock,
         String stockStatus,
-        String priceLabel
+        String priceLabel,
+        String thumbnailUrl
 ) {
 }

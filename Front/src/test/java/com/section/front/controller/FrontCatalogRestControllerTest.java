@@ -59,7 +59,8 @@ class FrontCatalogRestControllerTest {
                         1,
                         "품절 임박",
                         "289,000원",
-                        List.of(new FrontProductOptionResponse("260", 4))
+                        List.of(new FrontProductOptionResponse("260", 4)),
+                        "/images/product/m990gl6.png"
                 )),
                 new FrontCatalogMetricsResponse(1, 1, "2026-06-04", 1, 1, 18),
                 List.of(new FrontCatalogFacetResponse("New Balance", 1)),
@@ -71,6 +72,7 @@ class FrontCatalogRestControllerTest {
                 .andExpect(jsonPath("$.products[0].id").value(101L))
                 .andExpect(jsonPath("$.products[0].headline").value("Grey precision"))
                 .andExpect(jsonPath("$.products[0].priceLabel").value("289,000원"))
+                .andExpect(jsonPath("$.products[0].thumbnailUrl").value("/images/product/m990gl6.png"))
                 .andExpect(jsonPath("$.metrics.latestCreatedDate").value("2026-06-04"))
                 .andExpect(jsonPath("$.metrics.latestDropCount").value(1))
                 .andExpect(jsonPath("$.brandFacets[0].value").value("New Balance"))

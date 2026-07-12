@@ -400,6 +400,7 @@
     }
 
     function bindEvents() {
+        document.addEventListener("error", handleProductImageError, true);
         elements.searchInput?.addEventListener("input", (event) => {
             state.search = event.target.value.trim().toLowerCase();
             renderSearchAssist(state.search);
@@ -3323,8 +3324,10 @@
     }
 
     function productVisualMarkup(product, className) {
+        const thumbnail = String(product.thumbnailUrl || "").trim();
         return `
-            <div class="${className}">
+            <div class="${className}${thumbnail ? " product-visual--has-image" : ""}">
+                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(product.name || product.headline || "상품 이미지")}" loading="lazy" data-product-image>` : ""}
                 <span class="${className}-badge">${brandInitials(product.brand)}</span>
                 <div class="${className}-copy">
                     <strong>${product.category || "Curated"}</strong>
@@ -3332,6 +3335,23 @@
                 </div>
             </div>
         `;
+    }
+
+    function handleProductImageError(event) {
+        if (!event.target.matches?.("[data-product-image]")) {
+            return;
+        }
+        event.target.closest(".product-visual--has-image")?.classList.add("is-image-error");
+        event.target.remove();
+    }
+
+    function escapeAttribute(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#39;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
     }
 
     function brandInitials(brand) {

@@ -19,6 +19,7 @@ public record FrontProductDetailResponse(
         String stockStatus,
         String priceLabel,
         List<FrontProductOptionResponse> options,
-        List<FrontRelatedProductResponse> relatedProducts
+        List<FrontRelatedProductResponse> relatedProducts,
+        String thumbnailUrl
 ) {
 }

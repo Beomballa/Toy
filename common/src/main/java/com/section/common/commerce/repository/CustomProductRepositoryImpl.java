@@ -279,7 +279,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         frontProductDisplay.description,
                         frontProductDisplay.mood,
                         new CaseBuilder().when(frontProductDisplay.featuredYn.eq("Y")).then(true).otherwise(false),
-                        frontProductDisplay.featuredRank
+                        frontProductDisplay.featuredRank,
+                        product.thumbnailUrl
                 ))
                 .from(product)
                 .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
@@ -581,7 +582,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                         frontProductDisplay.description,
                         frontProductDisplay.mood,
                         new CaseBuilder().when(frontProductDisplay.featuredYn.eq("Y")).then(true).otherwise(false),
-                        frontProductDisplay.featuredRank
+                        frontProductDisplay.featuredRank,
+                        product.thumbnailUrl
                 ))
                 .from(product)
                 .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))

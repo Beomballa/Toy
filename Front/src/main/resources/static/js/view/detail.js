@@ -20,6 +20,7 @@
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
+        detailProductVisual: document.getElementById("detailProductVisual"),
         detailVisualBrand: document.getElementById("detailVisualBrand"),
         detailVisualModel: document.getElementById("detailVisualModel"),
         detailDescription: document.getElementById("detailDescription"),
@@ -100,8 +101,10 @@
     }
 
     function productVisualMarkup(product, className) {
+        const thumbnail = String(product.thumbnailUrl || "").trim();
         return `
-            <div class="${className}">
+            <div class="${className}${thumbnail ? " product-visual--has-image" : ""}">
+                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(product.name || "상품 이미지")}" loading="lazy" data-product-image>` : ""}
                 <span class="${className}__badge">${brandInitials(product.brand)}</span>
                 <div class="${className}__copy">
                     <strong>${product.brand || "Grade Stock"}</strong>
@@ -109,6 +112,23 @@
                 </div>
             </div>
         `;
+    }
+
+    function handleProductImageError(event) {
+        if (!event.target.matches?.("[data-product-image]")) {
+            return;
+        }
+        event.target.closest(".product-visual--has-image")?.classList.add("is-image-error");
+        event.target.remove();
+    }
+
+    function escapeAttribute(value) {
+        return String(value)
+            .replaceAll("&", "&amp;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#39;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;");
     }
 
     function renderMeta(product) {
@@ -127,6 +147,26 @@
         if (elements.detailVisualModel) {
             elements.detailVisualModel.textContent = product.model || product.name || "Product";
         }
+        renderDetailThumbnail(product);
+    }
+
+    function renderDetailThumbnail(product) {
+        if (!elements.detailProductVisual) {
+            return;
+        }
+        elements.detailProductVisual.querySelector("[data-product-image]")?.remove();
+        elements.detailProductVisual.classList.remove("product-visual--has-image", "is-image-error");
+        const thumbnail = String(product.thumbnailUrl || "").trim();
+        if (!thumbnail) {
+            return;
+        }
+        const image = document.createElement("img");
+        image.className = "product-visual__image";
+        image.src = thumbnail;
+        image.alt = product.name || "상품 이미지";
+        image.dataset.productImage = "";
+        elements.detailProductVisual.classList.add("product-visual--has-image");
+        elements.detailProductVisual.prepend(image);
     }
 
     function renderSignals(product) {
@@ -594,6 +634,7 @@
             return;
         }
         syncCatalogLinks();
+        document.addEventListener("error", handleProductImageError, true);
         initSectionNavigation();
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });

@@ -20,6 +20,8 @@
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
+        detailVisualBrand: document.getElementById("detailVisualBrand"),
+        detailVisualModel: document.getElementById("detailVisualModel"),
         detailDescription: document.getElementById("detailDescription"),
         detailPrice: document.getElementById("detailPrice"),
         detailStockText: document.getElementById("detailStockText"),
@@ -31,6 +33,7 @@
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
+        detailPrimaryAction: document.getElementById("detailPrimaryAction"),
         detailShareButton: document.getElementById("detailShareButton"),
         detailCopySummaryButton: document.getElementById("detailCopySummaryButton"),
         detailBookmarkButton: document.getElementById("detailBookmarkButton"),
@@ -118,6 +121,12 @@
             <span class="product-drawer__pill is-stable-stock">${product.category}</span>
             ${product.featured ? `<span class="product-drawer__pill">Featured${product.featuredRank ? ` #${product.featuredRank}` : ""}</span>` : ""}
         `;
+        if (elements.detailVisualBrand) {
+            elements.detailVisualBrand.textContent = brandInitials(product.brand);
+        }
+        if (elements.detailVisualModel) {
+            elements.detailVisualModel.textContent = product.model || product.name || "Product";
+        }
     }
 
     function renderSignals(product) {
@@ -588,6 +597,11 @@
         initSectionNavigation();
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        elements.detailPrimaryAction?.addEventListener("click", () => {
+            document.getElementById("detailOptions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            elements.detailPrimaryAction.classList.add("is-active");
+            window.setTimeout(() => elements.detailPrimaryAction?.classList.remove("is-active"), 700);
         });
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;

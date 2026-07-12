@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260712">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260712">
 </head>
 <body>
 <div class="page-shell">
     <div class="utility-bar">
         <div class="utility-bar__links">
-            <a href="#featured">추천</a>
-            <a href="#catalog">상품</a>
-            <a href="#signals">시그널</a>
+            <a href="#catalog">고객센터</a>
+            <a href="#recentViewedSection">마이페이지</a>
+            <a href="#bookmarkBoardSection">관심</a>
+            <a href="#catalog">로그인</a>
         </div>
         <div class="utility-bar__meta">
             <span>Front Edition</span>
@@ -32,34 +34,66 @@
             </a>
             <nav class="topbar-nav" aria-label="주요 탐색">
                 <a href="#top">HOME</a>
-                <a href="#featured">FEATURED</a>
+                <a href="#featured">STYLE</a>
                 <a href="#catalog">SHOP</a>
             </nav>
-            <button class="topbar-action" type="button" id="openDrawerFromTop">추천 상품 보기</button>
+            <div class="topbar-controls">
+                <button class="topbar-search-button" type="button" id="openDrawerFromTop" aria-expanded="false" aria-controls="headerSearchPanel">검색</button>
+                <button class="topbar-menu-button" type="button" id="mobileMenuButton" aria-expanded="false" aria-controls="topbarSubnav" aria-label="메뉴 열기"><span></span><span></span></button>
+            </div>
         </div>
-        <nav class="topbar-subnav" aria-label="카테고리 스트립">
+        <nav class="topbar-subnav" id="topbarSubnav" aria-label="카테고리 스트립">
             <a href="#featured">추천</a>
-            <a href="#recentViewedSection">최근 본 상품</a>
-            <a href="#compareBoardSection">비교 보드</a>
-            <a href="#bookmarkBoardSection">관심 상품</a>
+            <a href="#latestDropGrid">랭킹</a>
+            <a href="#lowStockGrid">빠른배송</a>
+            <a href="#discoveryStrip">브랜드</a>
             <a href="#catalog">신상</a>
-            <a href="#signals">시그널</a>
+            <a href="#catalog">럭셔리</a>
+            <a href="#flowBoard">마이</a>
         </nav>
+        <div class="header-search-panel" id="headerSearchPanel" hidden>
+            <label for="headerSearchInput">상품 검색</label>
+            <div class="header-search-panel__field">
+                <input id="headerSearchInput" type="search" placeholder="브랜드, 상품명, 모델번호 검색" autocomplete="off">
+                <button type="button" id="submitHeaderSearchButton">검색</button>
+                <button type="button" id="closeHeaderSearchButton" aria-label="검색 닫기">닫기</button>
+            </div>
+            <div class="header-search-keywords" aria-label="추천 검색 조건">
+                <button type="button" data-header-preset="LATEST_DROP">신상품</button>
+                <button type="button" data-header-preset="FEATURED">인기 상품</button>
+                <button type="button" data-header-preset="LOW_STOCK">빠른 확인</button>
+            </div>
+        </div>
     </header>
 
     <main id="top">
+        <nav class="home-category-rail" id="homeCategoryRail" aria-label="홈 카테고리 바로가기">
+            <button type="button" data-home-preset="LATEST_DROP"><span>NEW</span><strong>신상품</strong></button>
+            <button type="button" data-home-preset="FEATURED"><span>BEST</span><strong>인기 상품</strong></button>
+            <button type="button" data-home-preset="LOW_STOCK"><span>FAST</span><strong>빠른 확인</strong></button>
+            <button type="button" data-home-target="brandSpotlightGrid"><span>BRAND</span><strong>브랜드</strong></button>
+            <button type="button" data-home-target="categoryShortcutGrid"><span>SHOES</span><strong>카테고리</strong></button>
+            <button type="button" data-home-preset="PREMIUM"><span>LUXURY</span><strong>럭셔리</strong></button>
+            <button type="button" data-home-target="bookmarkBoardSection"><span>WISH</span><strong>관심 상품</strong></button>
+            <button type="button" data-home-target="recentViewedSection"><span>RECENT</span><strong>최근 본 상품</strong></button>
+        </nav>
+
         <section class="hero">
             <div class="hero-copy">
-                <p class="eyebrow">Front Home</p>
-                <h1>지금 살펴봐야 할 상품을 한 화면에서 고르고, 비교하고, 다시 돌아올 수 있게 정리한 메인 홈</h1>
+                <p class="eyebrow">Weekly Selection</p>
+                <h1>이번 주 가장 주목받는<br>새로운 셀렉션</h1>
                 <p class="hero-description">
-                    KREAM 메인처럼 상단에서 탐색 축을 먼저 잡고, 아래에서 추천 상품, 최근 본 상품,
-                    비교 보드, 관심 상품, 카탈로그를 순서대로 이어보는 구조로 재정리했습니다.
+                    지금 주목받는 브랜드와 새롭게 등록된 상품을 만나보세요.
                 </p>
                 <div class="hero-actions">
-                    <a class="hero-primary" href="#featured">추천 보기</a>
-                    <a class="hero-secondary" href="#catalog">전체 상품 보기</a>
+                    <a class="hero-primary" href="#featured">셀렉션 보기</a>
+                    <a class="hero-secondary" href="#catalog">상품 보러가기</a>
                     <button class="hero-secondary" type="button" id="focusLowStockButton">품절 임박만 보기</button>
+                </div>
+                <div class="hero-carousel-controls" aria-label="프로모션 배너 이동">
+                    <button type="button" id="heroPreviousButton" aria-label="이전 배너">이전</button>
+                    <span id="heroSlideStatus">1 / 3</span>
+                    <button type="button" id="heroNextButton" aria-label="다음 배너">다음</button>
                 </div>
                 <div class="hero-shortcuts" aria-label="빠른 메뉴">
                     <div>
@@ -323,6 +357,8 @@
                 <button class="catalog-preset-button" type="button" data-preset="RESET">전체 복귀</button>
             </div>
 
+            <details class="shopping-tools" id="catalogMemoryTools">
+                <summary><span>내 쇼핑 도구</span><strong>저장 탐색 · 최근 검색 · 숨긴 상품</strong></summary>
             <div class="catalog-memory-strip">
                 <div class="catalog-memory-block">
                     <div class="catalog-memory-head">
@@ -363,6 +399,7 @@
                     <div class="catalog-memory-list" id="hiddenProductList"></div>
                 </div>
             </div>
+            </details>
 
             <div class="catalog-toolbar">
                 <div class="toolbar-field toolbar-field--search">
@@ -460,6 +497,8 @@
                 </div>
             </div>
 
+            <details class="shopping-tools shopping-tools--display" id="catalogDisplayTools">
+                <summary><span>화면 및 일괄 설정</span><strong>레이아웃 · 표시 정보 · 선택 상품</strong></summary>
             <section class="catalog-display-panel" aria-label="카탈로그 표시 설정">
                 <div>
                     <span>Display</span>
@@ -496,6 +535,7 @@
                     <button type="button" id="focusSelectedBrandButton">대표 브랜드 집중</button>
                 </div>
             </div>
+            </details>
 
             <div class="catalog-grid" id="catalogGrid"></div>
             <nav class="catalog-pagination" id="catalogPagination" aria-label="상품 페이지 이동">
@@ -521,14 +561,34 @@
             </nav>
         </section>
     </main>
+
+    <footer class="site-footer">
+        <div>
+            <strong>이용안내</strong>
+            <a href="#catalog">검수 기준</a>
+            <a href="#catalog">이용 정책</a>
+            <a href="#catalog">커뮤니티 가이드</a>
+        </div>
+        <div>
+            <strong>고객지원</strong>
+            <a href="#catalog">공지사항</a>
+            <a href="#catalog">자주 묻는 질문</a>
+            <a href="#catalog">문의하기</a>
+        </div>
+        <div class="site-footer__company">
+            <strong>Grade Stock</strong>
+            <p>상품 탐색과 재고 비교를 위한 데모 마켓플레이스입니다.</p>
+            <span>© Grade Stock</span>
+        </div>
+    </footer>
 </div>
 
-<aside class="product-drawer" id="productDrawer" aria-hidden="true">
-    <div class="product-drawer__panel">
+<aside class="product-drawer" id="productDrawer" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="drawerTitle">
+    <div class="product-drawer__panel" tabindex="-1">
         <button class="product-drawer__close" type="button" id="closeDrawerButton" aria-label="닫기">×</button>
         <div class="product-drawer__body" id="drawerBody">
             <p class="eyebrow">Detail</p>
-            <h3>상품을 선택하세요.</h3>
+            <h3 id="drawerTitle">상품을 선택하세요.</h3>
             <p>카탈로그에서 카드를 누르면 상품 상세를 이곳에 보여줍니다.</p>
         </div>
     </div>
@@ -536,6 +596,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js"></script>
+<script src="/js/view/app.js?v=20260712"></script>
 </body>
 </html>

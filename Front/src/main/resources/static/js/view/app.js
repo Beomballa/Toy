@@ -77,6 +77,28 @@
         size: window.localStorage.getItem(PAGE_SIZE_KEY) || "12",
         extra: 0
     };
+    const heroSlides = [
+        {
+            eyebrow: "Weekly Selection",
+            title: "이번 주 가장 주목받는<br>새로운 셀렉션",
+            description: "지금 주목받는 브랜드와 새롭게 등록된 상품을 만나보세요.",
+            tone: "LIGHT"
+        },
+        {
+            eyebrow: "Fast Discovery",
+            title: "재고가 빠르게 움직이는<br>상품을 먼저 확인하세요",
+            description: "현재 재고 흐름을 기준으로 놓치기 쉬운 상품을 빠르게 모았습니다.",
+            tone: "DARK"
+        },
+        {
+            eyebrow: "Curated Brands",
+            title: "취향에 맞는 브랜드를<br>한곳에서 비교하세요",
+            description: "브랜드, 카테고리, 가격 조건을 조합해 원하는 상품을 찾을 수 있습니다.",
+            tone: "TEAL"
+        }
+    ];
+    let activeHeroSlide = 0;
+    let drawerReturnFocus = null;
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -239,6 +261,16 @@
         closeDrawerButton: document.getElementById("closeDrawerButton"),
         focusLowStockButton: document.getElementById("focusLowStockButton"),
         openDrawerFromTop: document.getElementById("openDrawerFromTop"),
+        headerSearchPanel: document.getElementById("headerSearchPanel"),
+        headerSearchInput: document.getElementById("headerSearchInput"),
+        submitHeaderSearchButton: document.getElementById("submitHeaderSearchButton"),
+        closeHeaderSearchButton: document.getElementById("closeHeaderSearchButton"),
+        mobileMenuButton: document.getElementById("mobileMenuButton"),
+        topbarSubnav: document.getElementById("topbarSubnav"),
+        homeCategoryRail: document.getElementById("homeCategoryRail"),
+        heroPreviousButton: document.getElementById("heroPreviousButton"),
+        heroNextButton: document.getElementById("heroNextButton"),
+        heroSlideStatus: document.getElementById("heroSlideStatus"),
         resetFiltersButton: document.getElementById("resetFiltersButton"),
         scrollTopButton: document.getElementById("scrollTopButton")
     };
@@ -267,6 +299,7 @@
         renderSignals();
         renderCatalog();
         syncViewButtons();
+        renderHeroSlide();
         toggleScrollTopVisibility();
     }
 
@@ -409,8 +442,15 @@
             if (!event.target.closest(".toolbar-field--search")) {
                 closeSearchAssist();
             }
+            if (!event.target.closest(".header-search-panel") && !event.target.closest("#openDrawerFromTop")) {
+                closeHeaderSearch();
+            }
         });
         document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeHeaderSearch();
+                closeMobileMenu();
+            }
             if (event.key !== "/" || document.activeElement === elements.searchInput) {
                 return;
             }
@@ -467,6 +507,9 @@
             if (event.key === "Escape" && elements.productDrawer?.classList.contains("is-open")) {
                 closeDrawer();
             }
+            if (event.key === "Tab" && elements.productDrawer?.classList.contains("is-open")) {
+                keepFocusInsideDrawer(event);
+            }
             if (event.altKey && event.key === "ArrowLeft") {
                 event.preventDefault();
                 moveCatalogPage(paginationState.page - 1);
@@ -484,12 +527,44 @@
             refreshCatalog();
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
-        elements.openDrawerFromTop?.addEventListener("click", () => {
-            const primary = filteredProducts()[0] || products[0];
-            if (primary) {
-                openDrawer(primary.id);
+        elements.openDrawerFromTop?.addEventListener("click", openHeaderSearch);
+        elements.closeHeaderSearchButton?.addEventListener("click", closeHeaderSearch);
+        elements.submitHeaderSearchButton?.addEventListener("click", applyHeaderSearch);
+        elements.headerSearchInput?.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                applyHeaderSearch();
+            }
+            if (event.key === "Escape") {
+                closeHeaderSearch();
             }
         });
+        elements.headerSearchPanel?.addEventListener("click", async (event) => {
+            const presetButton = event.target.closest("[data-header-preset]");
+            if (!presetButton) {
+                return;
+            }
+            await applyHomePreset(presetButton.dataset.headerPreset);
+            closeHeaderSearch();
+        });
+        elements.mobileMenuButton?.addEventListener("click", toggleMobileMenu);
+        elements.topbarSubnav?.addEventListener("click", () => closeMobileMenu());
+        elements.homeCategoryRail?.addEventListener("click", async (event) => {
+            const button = event.target.closest("button");
+            if (!button) {
+                return;
+            }
+            if (button.dataset.homePreset) {
+                await applyHomePreset(button.dataset.homePreset);
+                return;
+            }
+            const target = document.getElementById(button.dataset.homeTarget);
+            if (target) {
+                target.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+        elements.heroPreviousButton?.addEventListener("click", () => moveHeroSlide(-1));
+        elements.heroNextButton?.addEventListener("click", () => moveHeroSlide(1));
         elements.catalogTags?.addEventListener("click", (event) => {
             const actionButton = event.target.closest("[data-filter-remove]");
             if (!actionButton) {
@@ -1047,6 +1122,11 @@
             showToast("대표 브랜드 조건을 적용했습니다.", `${brand} 상품 흐름으로 카탈로그를 좁혔습니다.`);
         });
         elements.catalogGrid?.addEventListener("click", (event) => {
+            const previewButton = event.target.closest(".catalog-card__button[data-product-id]");
+            if (previewButton) {
+                openDrawer(Number(previewButton.dataset.productId));
+                return;
+            }
             const selectButton = event.target.closest("[data-select-product-id]");
             if (selectButton) {
                 toggleSelectedProduct(Number(selectButton.dataset.selectProductId));
@@ -1086,6 +1166,77 @@
         elements.scrollTopButton?.addEventListener("click", () => {
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
+    }
+
+    function openHeaderSearch() {
+        if (!elements.headerSearchPanel) {
+            return;
+        }
+        elements.headerSearchPanel.hidden = false;
+        elements.openDrawerFromTop?.setAttribute("aria-expanded", "true");
+        if (elements.headerSearchInput) {
+            elements.headerSearchInput.value = state.search;
+            window.requestAnimationFrame(() => elements.headerSearchInput.focus());
+        }
+    }
+
+    function closeHeaderSearch() {
+        if (!elements.headerSearchPanel) {
+            return;
+        }
+        elements.headerSearchPanel.hidden = true;
+        elements.openDrawerFromTop?.setAttribute("aria-expanded", "false");
+    }
+
+    async function applyHeaderSearch() {
+        state.search = elements.headerSearchInput?.value.trim().toLowerCase() || "";
+        if (elements.searchInput) {
+            elements.searchInput.value = state.search;
+        }
+        closeHeaderSearch();
+        await refreshCatalog();
+        document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    async function applyHomePreset(preset) {
+        applyPreset(preset);
+        syncControls();
+        await refreshCatalog();
+        document.getElementById(preset === "FEATURED" ? "featured" : "catalog")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function toggleMobileMenu() {
+        const isOpen = elements.topbarSubnav?.classList.toggle("is-mobile-open") || false;
+        elements.mobileMenuButton?.classList.toggle("is-active", isOpen);
+        elements.mobileMenuButton?.setAttribute("aria-expanded", String(isOpen));
+    }
+
+    function closeMobileMenu() {
+        elements.topbarSubnav?.classList.remove("is-mobile-open");
+        elements.mobileMenuButton?.classList.remove("is-active");
+        elements.mobileMenuButton?.setAttribute("aria-expanded", "false");
+    }
+
+    function moveHeroSlide(direction) {
+        activeHeroSlide = (activeHeroSlide + direction + heroSlides.length) % heroSlides.length;
+        renderHeroSlide();
+    }
+
+    function renderHeroSlide() {
+        const hero = document.querySelector(".hero");
+        const slide = heroSlides[activeHeroSlide];
+        if (!hero || !slide) {
+            return;
+        }
+        setText(hero.querySelector(".hero-copy > .eyebrow"), slide.eyebrow);
+        const title = hero.querySelector(".hero-copy > h1");
+        if (title) {
+            title.innerHTML = slide.title;
+        }
+        setText(hero.querySelector(".hero-description"), slide.description);
+        hero.dataset.tone = slide.tone;
+        setText(elements.heroSlideStatus, `${activeHeroSlide + 1} / ${heroSlides.length}`);
     }
 
     function renderHeroMetrics() {
@@ -1577,7 +1728,6 @@
             </article>
         `).join("");
 
-        bindProductButtons(elements.catalogGrid);
         bindHideButtons();
     }
 
@@ -3231,7 +3381,11 @@
     }
 
     function bindProductButtons(container) {
-        container.querySelectorAll("[data-product-id]").forEach((button) => {
+        container.querySelectorAll("[data-product-id]:not([data-card-focus])").forEach((button) => {
+            if (button.dataset.previewBound === "true") {
+                return;
+            }
+            button.dataset.previewBound = "true";
             button.addEventListener("click", () => openDrawer(Number(button.dataset.productId)));
         });
     }
@@ -3321,6 +3475,7 @@
             return;
         }
 
+        drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         window.localStorage.setItem(LAST_DRAWER_PRODUCT_KEY, String(productId));
         const list = filteredProducts();
         const currentIndex = list.findIndex((item) => Number(item.id) === Number(productId));
@@ -3328,9 +3483,10 @@
         const nextProduct = currentIndex >= 0 && currentIndex < list.length - 1 ? list[currentIndex + 1] : null;
         elements.productDrawer.classList.add("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "false");
+        document.body.classList.add("has-open-modal");
         elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
-            <h3>상품 상세를 불러오는 중입니다.</h3>
+            <h3 id="drawerTitle">상품 상세를 불러오는 중입니다.</h3>
             <p class="product-drawer__description">선택한 상품 데이터를 확인하고 있습니다.</p>
         `;
 
@@ -3347,7 +3503,7 @@
                 <span class="product-drawer__pill is-stable-stock">${product.brand}</span>
                 ${product.featured ? `<span class="product-drawer__pill">Featured${product.featuredRank ? ` #${product.featuredRank}` : ''}</span>` : ''}
             </div>
-            <h3>${product.headline || product.name}</h3>
+            <h3 id="drawerTitle">${product.headline || product.name}</h3>
             <div class="product-drawer__meta">
                 <span>${product.name}</span>
                 <span>${product.model}</span>
@@ -3544,6 +3700,7 @@
                 }
             });
             bindProductButtons(elements.drawerBody);
+            elements.productDrawer.querySelector(".product-drawer__panel")?.focus();
         } catch (error) {
             elements.drawerBody.innerHTML = `
                 <p class="eyebrow">Detail</p>
@@ -3572,6 +3729,29 @@
         }
         elements.productDrawer.classList.remove("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("has-open-modal");
+        drawerReturnFocus?.focus?.();
+        drawerReturnFocus = null;
+    }
+
+    function keepFocusInsideDrawer(event) {
+        const focusable = Array.from(elements.productDrawer.querySelectorAll(
+            'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter((element) => !element.hidden && element.getClientRects().length);
+        if (!focusable.length) {
+            event.preventDefault();
+            elements.productDrawer.querySelector(".product-drawer__panel")?.focus();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 
     function stockLabel(stock) {

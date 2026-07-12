@@ -1531,13 +1531,9 @@
             return;
         }
         const rankedBrands = brandFacets.slice(0, 5).map((facet) => {
-            const brandProducts = products.filter((product) => product.brand === facet.value);
             return {
                 brand: facet.value,
-                count: facet.count,
-                lowStockCount: brandProducts.filter((product) => product.stock < lowStockThresholdValue()).length,
-                category: brandProducts[0]?.category || "Curated",
-                mood: brandProducts[0]?.mood || "Core"
+                count: facet.count
             };
         });
 
@@ -1552,13 +1548,11 @@
         }
 
         elements.brandSpotlightGrid.innerHTML = rankedBrands.map((item, index) => `
-            <button class="brand-rank-card" type="button" data-brand-rank="${item.brand}">
-                <span class="brand-rank-card__order">${String(index + 1).padStart(2, "0")}</span>
-                <div class="brand-rank-card__body">
-                    <strong>${item.brand}</strong>
-                    <span>${item.count}개 상품 · 긴장 재고 ${item.lowStockCount}개 · ${item.mood}</span>
-                </div>
-                <span class="brand-rank-card__meta">${item.category}</span>
+            <button class="brand-rank-card" type="button" data-brand-rank="${escapeAttribute(item.brand)}">
+                <span class="brand-rank-card__visual" aria-hidden="true">${brandInitials(item.brand)}</span>
+                <strong>${item.brand}</strong>
+                <span>${item.count}개 상품</span>
+                <em>${index + 1}위</em>
             </button>
         `).join("");
 
@@ -1576,16 +1570,10 @@
         if (!elements.categoryShortcutGrid) {
             return;
         }
-        const rankedCategories = categoryFacets.slice(0, 6).map((facet) => {
-            const categoryProducts = products.filter((product) => product.category === facet.value);
-            const lowStockCount = categoryProducts.filter((product) => product.stock < lowStockThresholdValue()).length;
-            return {
-                category: facet.value,
-                count: facet.count,
-                lowStockCount,
-                pressure: facet.count ? Math.round((lowStockCount / facet.count) * 100) : 0
-            };
-        });
+        const rankedCategories = categoryFacets.slice(0, 6).map((facet) => ({
+            category: facet.value,
+            count: facet.count
+        }));
 
         if (!rankedCategories.length) {
             elements.categoryShortcutGrid.innerHTML = `
@@ -1598,11 +1586,10 @@
         }
 
         elements.categoryShortcutGrid.innerHTML = rankedCategories.map((item) => `
-            <button class="category-shortcut-card" type="button" data-category-shortcut="${item.category}">
-                <span class="category-shortcut-card__badge">${brandInitials(item.category)}</span>
+            <button class="category-shortcut-card" type="button" data-category-shortcut="${escapeAttribute(item.category)}">
+                <span class="category-shortcut-card__visual" aria-hidden="true">${brandInitials(item.category)}</span>
                 <strong>${item.category}</strong>
                 <span>${item.count}개 상품</span>
-                <em>${item.lowStockCount ? `긴장 재고 ${item.lowStockCount}개 · ${item.pressure}%` : "재고 안정"}</em>
             </button>
         `).join("");
 

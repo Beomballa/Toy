@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.9")
+                .contains("/css/storefront.css?v=20260712.10")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.9");
+                .contains("/js/view/app.js?v=20260712.10");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.9")
+                .contains("/css/storefront.css?v=20260712.10")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.9");
+                .contains("/js/view/detail.js?v=20260712.10");
     }
 
     @Test
@@ -179,6 +179,26 @@ class FrontStorefrontResourceTest {
                 .contains(".signal-feed")
                 .contains(".rail-product-card")
                 .contains("grid-template-columns: repeat(4, minmax(0, 1fr))");
+    }
+
+    @Test
+    void discoveryKeepsKreamBrandAndCategoryTileContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("인기 브랜드")
+                .contains("카테고리 쇼핑");
+        assertThat(script)
+                .contains("brand-rank-card__visual")
+                .contains("category-shortcut-card__visual")
+                .doesNotContain("긴장 재고 ${item.lowStockCount}개");
+        assertThat(css)
+                .contains("grid-template-columns: repeat(5, minmax(0, 1fr))")
+                .contains("grid-template-columns: repeat(6, minmax(0, 1fr))")
+                .contains(".brand-rank-card__visual")
+                .contains(".category-shortcut-card__visual");
     }
 
     private String readResource(String path) throws IOException {

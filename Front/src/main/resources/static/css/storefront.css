@@ -713,6 +713,78 @@ main#top {
     box-shadow: none;
 }
 
+.discovery-strip {
+    grid-template-columns: 1fr;
+    gap: 56px;
+}
+
+.discovery-strip > .discovery-card {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+}
+
+.discovery-rank-list,
+.discovery-shortcut-grid {
+    display: grid;
+    gap: 16px;
+}
+
+.discovery-rank-list {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.discovery-shortcut-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.brand-rank-card,
+.category-shortcut-card {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: #fff;
+    color: var(--store-ink);
+    text-align: center;
+    cursor: pointer;
+}
+
+.brand-rank-card__visual,
+.category-shortcut-card__visual {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    background: var(--store-surface);
+    color: var(--store-muted);
+    font-size: var(--store-text-search);
+    font-weight: 700;
+}
+
+.brand-rank-card__visual {
+    border-radius: 50%;
+}
+
+.category-shortcut-card__visual {
+    border-radius: var(--store-radius-card);
+}
+
+.brand-rank-card strong,
+.category-shortcut-card strong {
+    margin-top: 4px;
+    font-size: var(--store-text-body);
+}
+
+.brand-rank-card > span:not(.brand-rank-card__visual),
+.brand-rank-card em,
+.category-shortcut-card > span:not(.category-shortcut-card__visual) {
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+    font-style: normal;
+}
+
 .catalog-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -1064,6 +1136,27 @@ main#top {
     .discovery-strip,
     .signal-strip {
         grid-template-columns: 1fr;
+    }
+
+    .discovery-rank-list,
+    .discovery-shortcut-grid {
+        margin-right: -14px;
+        padding-right: 14px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .discovery-rank-list::-webkit-scrollbar,
+    .discovery-shortcut-grid::-webkit-scrollbar {
+        display: none;
+    }
+
+    .discovery-rank-list {
+        grid-template-columns: repeat(5, 104px);
+    }
+
+    .discovery-shortcut-grid {
+        grid-template-columns: repeat(6, 92px);
     }
 
     .spotlight-grid,

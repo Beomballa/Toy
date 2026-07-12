@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.3")
+                .contains("/css/storefront.css?v=20260712.4")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.3");
+                .contains("/js/view/app.js?v=20260712.4");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.3")
+                .contains("/css/storefront.css?v=20260712.4")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.3");
+                .contains("/js/view/detail.js?v=20260712.4");
     }
 
     @Test
@@ -63,6 +63,22 @@ class FrontStorefrontResourceTest {
                 .contains("product.thumbnailUrl")
                 .contains("data-product-image")
                 .contains("handleProductImageError");
+    }
+
+    @Test
+    void catalogKeepsKreamSearchAndFilterStateContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html).contains("role=\"search\" aria-label=\"상품 검색 및 필터\"");
+        assertThat(script)
+                .contains("syncFilterFieldStates")
+                .contains("classList.toggle(\"has-value\"");
+        assertThat(css)
+                .contains(".toolbar-field.has-value select")
+                .contains("min-height: 30px")
+                .contains("font-size: var(--store-text-search)");
     }
 
     private String readResource(String path) throws IOException {

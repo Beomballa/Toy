@@ -375,6 +375,7 @@
         if (elements.sortFilter) {
             elements.sortFilter.value = state.sort;
         }
+        syncFilterFieldStates();
     }
 
     function fillSelect(select, defaultLabel, facets, fallbackValues) {
@@ -2018,6 +2019,23 @@
         if (elements.lowStockThresholdFilter) {
             elements.lowStockThresholdFilter.value = state.lowStockThreshold;
         }
+        syncFilterFieldStates();
+    }
+
+    function syncFilterFieldStates() {
+        const activeStates = new Map([
+            [elements.searchInput, Boolean(state.search)],
+            [elements.brandFilter, state.brand !== DEFAULT_STATE.brand],
+            [elements.categoryFilter, state.category !== DEFAULT_STATE.category],
+            [elements.stockFilter, state.stock !== DEFAULT_STATE.stock],
+            [elements.featuredOnlyFilter, state.featuredOnly !== DEFAULT_STATE.featuredOnly],
+            [elements.priceBandFilter, state.priceBand !== DEFAULT_STATE.priceBand],
+            [elements.lowStockThresholdFilter, state.stock !== DEFAULT_STATE.stock && state.lowStockThreshold !== DEFAULT_STATE.lowStockThreshold],
+            [elements.sortFilter, state.sort !== DEFAULT_STATE.sort]
+        ]);
+        activeStates.forEach((isActive, control) => {
+            control?.closest(".toolbar-field")?.classList.toggle("has-value", isActive);
+        });
     }
 
     function removeFilter(key) {

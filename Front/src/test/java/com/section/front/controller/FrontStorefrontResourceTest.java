@@ -37,6 +37,19 @@ class FrontStorefrontResourceTest {
                 .contains("/js/view/detail.js?v=20260712");
     }
 
+    @Test
+    void storefrontKeepsKreamTypographyScale() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains("--store-text-display: 32px")
+                .contains("--store-text-search: 24px")
+                .contains("--store-text-body: 16px")
+                .contains("--store-text-meta: 13px")
+                .contains("--store-leading-display: 1.2")
+                .contains("--store-leading-body: 1.4");
+    }
+
     private String readResource(String path) throws IOException {
         ClassPathResource resource = new ClassPathResource(path);
         return resource.getContentAsString(StandardCharsets.UTF_8);

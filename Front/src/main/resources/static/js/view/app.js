@@ -267,6 +267,8 @@
         closeHeaderSearchButton: document.getElementById("closeHeaderSearchButton"),
         mobileMenuButton: document.getElementById("mobileMenuButton"),
         topbarSubnav: document.getElementById("topbarSubnav"),
+        mobileStoreNav: document.getElementById("mobileStoreNav"),
+        mobileSavedCount: document.getElementById("mobileSavedCount"),
         homeCategoryRail: document.getElementById("homeCategoryRail"),
         heroPreviousButton: document.getElementById("heroPreviousButton"),
         heroNextButton: document.getElementById("heroNextButton"),
@@ -282,6 +284,7 @@
         syncControls();
         bindEvents();
         initSectionNavigation();
+        initMobileStoreNavigation();
         renderHeroMetrics();
         renderFlowBoard();
         renderBrandSpotlight();
@@ -565,6 +568,7 @@
                 target.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         });
+        elements.mobileStoreNav?.addEventListener("click", handleMobileStoreNavigation);
         elements.heroPreviousButton?.addEventListener("click", () => moveHeroSlide(-1));
         elements.heroNextButton?.addEventListener("click", () => moveHeroSlide(1));
         elements.catalogTags?.addEventListener("click", (event) => {
@@ -1218,6 +1222,70 @@
         elements.topbarSubnav?.classList.remove("is-mobile-open");
         elements.mobileMenuButton?.classList.remove("is-active");
         elements.mobileMenuButton?.setAttribute("aria-expanded", "false");
+    }
+
+    function handleMobileStoreNavigation(event) {
+        const button = event.target.closest("[data-mobile-nav]");
+        if (!button) {
+            return;
+        }
+        const action = button.dataset.mobileNav;
+        if (action === "SEARCH") {
+            syncMobileStoreNavigation("SEARCH");
+            openHeaderSearch();
+            return;
+        }
+        if (action === "SAVED") {
+            const bookmarked = readBookmarkProducts();
+            if (!bookmarked.length) {
+                syncMobileStoreNavigation("SHOP");
+                showToast("관심 상품이 없습니다.", "상품 카드의 관심 버튼을 눌러 저장해보세요.", true);
+                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                return;
+            }
+            syncMobileStoreNavigation("SAVED");
+            renderBookmarkBoard();
+            document.getElementById("bookmarkBoardSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+        }
+        syncMobileStoreNavigation(action);
+        const targetId = action === "HOME" ? "top" : action === "FEATURED" ? "featured" : "catalog";
+        document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function initMobileStoreNavigation() {
+        if (!elements.mobileStoreNav) {
+            return;
+        }
+        syncMobileStoreNavigation("HOME");
+        if (typeof IntersectionObserver === "undefined") {
+            return;
+        }
+        const targets = [
+            ["HOME", document.getElementById("top")],
+            ["FEATURED", document.getElementById("featured")],
+            ["SHOP", document.getElementById("catalog")],
+            ["SAVED", document.getElementById("bookmarkBoardSection")]
+        ].filter(([, section]) => section);
+        const observer = new IntersectionObserver((entries) => {
+            const visible = entries
+                .filter((entry) => entry.isIntersecting)
+                .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+            const active = targets.find(([, section]) => section === visible?.target)?.[0];
+            if (active) {
+                syncMobileStoreNavigation(active);
+            }
+        }, { rootMargin: "-20% 0px -65% 0px", threshold: [0.1, 0.35] });
+        targets.forEach(([, section]) => observer.observe(section));
+    }
+
+    function syncMobileStoreNavigation(activeAction) {
+        if (activeAction) {
+            elements.mobileStoreNav?.querySelectorAll("[data-mobile-nav]").forEach((button) => {
+                button.classList.toggle("is-active", button.dataset.mobileNav === activeAction);
+            });
+        }
+        setText(elements.mobileSavedCount, String(readBookmarkProducts().length));
     }
 
     function moveHeroSlide(direction) {
@@ -2742,6 +2810,7 @@
             return;
         }
         const allBookmarkedProducts = readBookmarkProducts();
+        syncMobileStoreNavigation();
         const bookmarkedProducts = sortedBookmarkProducts(allBookmarkedProducts);
         if (!allBookmarkedProducts.length) {
             elements.bookmarkBoardSection.hidden = true;
@@ -2882,7 +2951,8 @@
                 priceLabel: source.priceLabel,
                 stock: source.stock,
                 stockStatus: source.stockStatus,
-                featured: Boolean(source.featured)
+                featured: Boolean(source.featured),
+                thumbnailUrl: source.thumbnailUrl
             };
             if (current.length >= 6) {
                 showToast("관심 상품은 최대 6개까지 유지합니다.", "가장 오래 담긴 상품을 교체했습니다.", true);

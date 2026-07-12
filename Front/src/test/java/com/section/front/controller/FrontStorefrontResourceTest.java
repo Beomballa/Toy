@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.6")
+                .contains("/css/storefront.css?v=20260712.7")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.6");
+                .contains("/js/view/app.js?v=20260712.7");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.6")
+                .contains("/css/storefront.css?v=20260712.7")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.6");
+                .contains("/js/view/detail.js?v=20260712.7");
     }
 
     @Test
@@ -123,6 +123,23 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-mobile-actions")
                 .contains("grid-template-columns: 58px 58px minmax(0, 1fr)")
                 .contains("body.detail-body");
+    }
+
+    @Test
+    void detailOptionsKeepSelectableSizeContractWithoutFakePrice() throws IOException {
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(script)
+                .contains("data-detail-option")
+                .contains("selectDetailOption")
+                .contains("syncSelectedOptionActions")
+                .contains("aria-pressed=\"${selectedOptionName === option.name}\"")
+                .doesNotContain("추가금 ${formatPrice(option.additionalPrice)}");
+        assertThat(css)
+                .contains(".detail-option-card.is-selected")
+                .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
+                .contains(".detail-mobile-actions__primary.has-option");
     }
 
     private String readResource(String path) throws IOException {

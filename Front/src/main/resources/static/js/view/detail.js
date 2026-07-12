@@ -16,6 +16,7 @@
         sameBrandOnly: false
     };
     let currentProduct = null;
+    let selectedOptionName = "";
     let toastTimerSeed = 0;
 
     const elements = {
@@ -49,7 +50,6 @@
         detailOptionLowStockOnlyButton: document.getElementById("detailOptionLowStockOnlyButton"),
         detailCopyOptionSummaryButton: document.getElementById("detailCopyOptionSummaryButton"),
         detailOptionSortStockHighButton: document.getElementById("detailOptionSortStockHighButton"),
-        detailOptionSortPriceButton: document.getElementById("detailOptionSortPriceButton"),
         detailOptionStableOnlyButton: document.getElementById("detailOptionStableOnlyButton"),
         detailCopyAvailableOptionsButton: document.getElementById("detailCopyAvailableOptionsButton"),
         detailRelatedSortStockButton: document.getElementById("detailRelatedSortStockButton"),
@@ -216,6 +216,10 @@
         }
         syncOptionSortButtons();
         const options = sortedOptions(product);
+        if (selectedOptionName && !options.some((option) => option.name === selectedOptionName)) {
+            selectedOptionName = "";
+            syncSelectedOptionActions({});
+        }
         if (!options.length) {
             elements.detailOptionGrid.innerHTML = `
                 <article class="catalog-empty">
@@ -225,17 +229,38 @@
             `;
             return;
         }
-        const maximumStock = Math.max(1, ...options.map((item) => Number(item.stock || 0)));
         elements.detailOptionGrid.innerHTML = options.map((option) => `
-            <article class="detail-option-card">
+            <button class="detail-option-card ${selectedOptionName === option.name ? "is-selected" : ""}" type="button" data-detail-option="${escapeAttribute(option.name)}" aria-pressed="${selectedOptionName === option.name}" ${Number(option.stock || 0) <= 0 ? "disabled" : ""}>
                 <span>${option.name}</span>
                 <strong>${option.stock}개</strong>
-                <p>${stockPressureDetail(option.stock)}</p>
-                <div class="detail-option-card__price">추가금 ${formatPrice(option.additionalPrice)}</div>
-                <div class="detail-option-card__meter"><span style="width: ${Math.min(100, Math.max(4, Number(option.stock || 0) / maximumStock * 100))}%"></span></div>
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
-            </article>
+            </button>
         `).join("");
+    }
+
+    function selectDetailOption(optionName) {
+        const option = currentProduct?.options?.find((item) => item.name === optionName);
+        if (!option || Number(option.stock || 0) <= 0) {
+            return;
+        }
+        selectedOptionName = selectedOptionName === optionName ? "" : optionName;
+        renderOptions(currentProduct);
+        syncSelectedOptionActions(option);
+    }
+
+    function syncSelectedOptionActions(option) {
+        const selected = Boolean(selectedOptionName);
+        if (elements.detailPrimaryAction) {
+            elements.detailPrimaryAction.textContent = selected ? `${selectedOptionName} 옵션 선택됨` : "구매 옵션 확인";
+        }
+        const mobileLabel = elements.detailMobilePrimaryButton?.querySelector("strong");
+        if (mobileLabel) {
+            mobileLabel.textContent = selected ? `${selectedOptionName} 선택됨` : "옵션 확인";
+        }
+        elements.detailMobilePrimaryButton?.classList.toggle("has-option", selected);
+        if (selected) {
+            showToast("옵션을 선택했습니다.", `${selectedOptionName} · 재고 ${option.stock}개`);
+        }
     }
 
     function renderRelated(product) {
@@ -365,9 +390,6 @@
         if (optionSortState.mode === "STOCK_DESC") {
             return visibleOptions.sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0));
         }
-        if (optionSortState.mode === "PRICE_HIGH") {
-            return visibleOptions.sort((left, right) => Number(right.additionalPrice || 0) - Number(left.additionalPrice || 0));
-        }
         return visibleOptions.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
     }
 
@@ -376,7 +398,6 @@
         elements.detailOptionSortNameButton?.classList.toggle("is-active", optionSortState.mode === "NAME_ASC");
         elements.detailOptionLowStockOnlyButton?.classList.toggle("is-active", optionSortState.lowStockOnly);
         elements.detailOptionSortStockHighButton?.classList.toggle("is-active", optionSortState.mode === "STOCK_DESC");
-        elements.detailOptionSortPriceButton?.classList.toggle("is-active", optionSortState.mode === "PRICE_HIGH");
         elements.detailOptionStableOnlyButton?.classList.toggle("is-active", optionSortState.stableOnly);
     }
 
@@ -668,6 +689,12 @@
         });
         elements.detailPrimaryAction?.addEventListener("click", focusDetailOptions);
         elements.detailMobilePrimaryButton?.addEventListener("click", focusDetailOptions);
+        elements.detailOptionGrid?.addEventListener("click", (event) => {
+            const optionButton = event.target.closest("[data-detail-option]");
+            if (optionButton) {
+                selectDetailOption(optionButton.dataset.detailOption);
+            }
+        });
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {
@@ -756,13 +783,6 @@
                 showToast("옵션을 재고 높은 순으로 정렬했습니다.", "선택 여유가 있는 옵션부터 확인할 수 있습니다.");
             }
         });
-        elements.detailOptionSortPriceButton?.addEventListener("click", () => {
-            optionSortState.mode = "PRICE_HIGH";
-            if (currentProduct) {
-                renderOptions(currentProduct);
-                showToast("옵션을 추가금 높은 순으로 정렬했습니다.", "옵션별 가격 차이를 빠르게 확인할 수 있습니다.");
-            }
-        });
         elements.detailOptionStableOnlyButton?.addEventListener("click", () => {
             optionSortState.stableOnly = !optionSortState.stableOnly;
             optionSortState.lowStockOnly = false;
@@ -777,7 +797,7 @@
             }
             const available = (currentProduct.options || []).filter((option) => Number(option.stock || 0) > 0);
             const text = available.length
-                ? available.map((option, index) => `${index + 1}. ${option.name} · ${option.stock}개 · 추가금 ${formatPrice(option.additionalPrice)}`).join("\n")
+                ? available.map((option, index) => `${index + 1}. ${option.name} · 재고 ${option.stock}개`).join("\n")
                 : "구매 가능한 옵션이 없습니다.";
             await copyText(text, "구매 가능 옵션을 복사했습니다.");
         });

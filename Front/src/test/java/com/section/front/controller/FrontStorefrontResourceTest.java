@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712")
+                .contains("/css/storefront.css?v=20260712.2")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712");
+                .contains("/js/view/app.js?v=20260712.2");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712")
+                .contains("/css/storefront.css?v=20260712.2")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712");
+                .contains("/js/view/detail.js?v=20260712.2");
     }
 
     @Test
@@ -48,6 +48,18 @@ class FrontStorefrontResourceTest {
                 .contains("--store-text-meta: 13px")
                 .contains("--store-leading-display: 1.2")
                 .contains("--store-leading-body: 1.4");
+    }
+
+    @Test
+    void catalogKeepsProductFirstCardContract() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("catalog-card__visual-link")
+                .contains("catalog-card__wish")
+                .contains("data-bookmark-product-id")
+                .contains("catalog-card__button")
+                .contains("aria-label=\"${product.name} 빠른 보기\"");
     }
 
     private String readResource(String path) throws IOException {

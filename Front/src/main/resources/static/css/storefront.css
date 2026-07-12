@@ -377,6 +377,7 @@ main#top {
 .spotlight-card,
 .catalog-card,
 .detail-related-card {
+    position: relative;
     min-width: 0;
     padding: 0 0 16px;
     border: 0;
@@ -400,6 +401,62 @@ main#top {
     border: 0;
     border-radius: var(--store-radius-control);
     background: var(--store-surface);
+}
+
+.catalog-card__visual-link {
+    display: block;
+    color: inherit;
+}
+
+.catalog-card__visual-link:hover .catalog-card__visual {
+    background: #efefef;
+}
+
+.catalog-card__select,
+.catalog-card__wish {
+    position: absolute;
+    z-index: 2;
+    top: 10px;
+    display: grid;
+    place-items: center;
+    min-width: 34px;
+    height: 34px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .92);
+    color: var(--store-ink);
+    box-shadow: none;
+    cursor: pointer;
+}
+
+.catalog-card__select {
+    left: 10px;
+    font-size: var(--store-text-meta);
+}
+
+.catalog-card__select.is-active {
+    background: var(--store-ink);
+    color: #fff;
+}
+
+.catalog-card__wish {
+    right: 10px;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.catalog-card__wish.is-active {
+    color: #f15746;
+}
+
+.catalog-card__header {
+    display: block;
+    margin-top: 12px;
+}
+
+.catalog-card__title a {
+    color: var(--store-ink);
 }
 
 .spotlight-card__title,
@@ -427,8 +484,8 @@ main#top {
 .spotlight-card__pill,
 .catalog-card__signal,
 .product-drawer__pill {
-    min-height: 26px;
-    padding: 0 9px;
+    min-height: 30px;
+    padding: 0 12px;
     border: 0;
     border-radius: 999px;
     background: var(--store-chip);
@@ -437,8 +494,24 @@ main#top {
 
 .catalog-card__footer,
 .spotlight-card__footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
     align-items: flex-start;
     border: 0;
+}
+
+.catalog-card__action {
+    display: block;
+}
+
+.catalog-card__button {
+    min-width: 34px;
+    width: 34px;
+    padding: 0;
+    border: 0;
+    background: var(--store-chip);
+    letter-spacing: .06em;
 }
 
 .catalog-card__action,
@@ -512,7 +585,7 @@ main#top {
 .toolbar-field input,
 .toolbar-field select {
     width: 100%;
-    min-height: 42px;
+    min-height: 48px;
     border: 0;
     border-bottom: 1px solid var(--store-line);
     border-radius: 0;

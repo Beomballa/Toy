@@ -1635,9 +1635,7 @@
         const details = catalogPaginationDetails(allList);
         paginationState.page = Math.min(Math.max(1, paginationState.page), details.totalPages);
         const list = currentCatalogPageProducts(allList);
-        const comparedIds = new Set(readCompareProducts().map((product) => Number(product.id)));
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
-        const hiddenIds = new Set(readHiddenProducts().map((product) => Number(product.id)));
         renderCatalogSummary(allList);
         renderCatalogSelection();
         renderCatalogPagination(allList);
@@ -1669,66 +1667,32 @@
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
-                ${productVisualMarkup(product, "catalog-card__visual")}
+                <button class="catalog-card__wish ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}" aria-pressed="${bookmarkedIds.has(Number(product.id))}" aria-label="${bookmarkedIds.has(Number(product.id)) ? "관심 상품 해제" : "관심 상품 추가"}">
+                    <span aria-hidden="true">${bookmarkedIds.has(Number(product.id)) ? "♥" : "♡"}</span>
+                </button>
+                <a class="catalog-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
+                    ${productVisualMarkup(product, "catalog-card__visual")}
+                </a>
                 <div class="catalog-card__header">
                     <div>
                         <span class="catalog-card__label">${product.brand}</span>
-                        <h3 class="catalog-card__title">${product.name}</h3>
+                        <h3 class="catalog-card__title"><a href="${detailPageUrl(product.id)}">${product.name}</a></h3>
                         <div class="catalog-card__meta">
-                            <span>${product.headline || product.name}</span>
-                            <span>${product.category}</span>
-                            <span>${featuredRankLabel(product)}</span>
+                            <span>${product.headline || product.category}</span>
                         </div>
                     </div>
-                    <span class="catalog-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
                 </div>
-                <div class="catalog-card__signal-row">
-                    <span class="catalog-card__signal">${relativeDropLabel(product.createdDate)}</span>
-                    <span class="catalog-card__signal">${moodLabel(product)}</span>
-                    <span class="catalog-card__signal">${featuredRankLabel(product)}</span>
-                </div>
-                <p class="catalog-card__copy">${product.description}</p>
                 <div class="catalog-card__footer">
                     <div>
                         <div class="catalog-card__price">${product.priceLabel || formatPrice(product.price)}</div>
-                        <div class="catalog-card__meta">${relativeDropLabel(product.createdDate)} · ${stockPressureDetail(product.stock)}</div>
+                        <div class="catalog-card__meta">${product.stockStatus || stockLabel(product.stock)} · ${relativeDropLabel(product.createdDate)}</div>
                     </div>
                     <div class="catalog-card__action">
-                        <div class="catalog-card__meta">${moodLabel(product)}</div>
-                        <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
-                        <div class="catalog-card__focus-grid">
-                            <button class="catalog-focus-button" type="button" data-card-focus="BRAND" data-product-id="${product.id}">브랜드 보기</button>
-                            <button class="catalog-focus-button" type="button" data-card-focus="CATEGORY" data-product-id="${product.id}">카테고리 보기</button>
-                            <button class="catalog-focus-button" type="button" data-card-focus="LOW_STOCK" data-product-id="${product.id}">긴장 재고</button>
-                            <button class="catalog-focus-button" type="button" data-card-focus="FEATURED" data-product-id="${product.id}">Featured 흐름</button>
-                            <button class="catalog-focus-button" type="button" data-card-focus="PREMIUM" data-product-id="${product.id}">고가 상품</button>
-                        </div>
-                        <div class="catalog-card__action-group">
-                            <button class="catalog-bookmark-button ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}">
-                                ${bookmarkedIds.has(Number(product.id)) ? "찜 해제" : "찜하기"}
-                            </button>
-                            <button class="catalog-compare-button ${comparedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-compare-product-id="${product.id}">
-                                ${comparedIds.has(Number(product.id)) ? "비교 해제" : "비교 담기"}
-                            </button>
-                        </div>
-                        <div class="catalog-card__quick-row">
-                            <button class="catalog-ghost-button" type="button" data-hide-product-id="${product.id}">
-                                ${hiddenIds.has(Number(product.id)) ? "숨김 해제" : "숨기기"}
-                            </button>
-                            <button class="catalog-ghost-button" type="button" data-copy-product-id="${product.id}">
-                                카드 복사
-                            </button>
-                            <button class="catalog-ghost-button" type="button" data-share-product-id="${product.id}">
-                                링크 복사
-                            </button>
-                        </div>
-                        <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
+                        <button class="catalog-card__button" type="button" data-product-id="${product.id}" aria-label="${product.name} 빠른 보기">•••</button>
                     </div>
                 </div>
             </article>
         `).join("");
-
-        bindHideButtons();
     }
 
     function catalogPaginationDetails(list = filteredProducts()) {
@@ -3387,16 +3351,6 @@
             }
             button.dataset.previewBound = "true";
             button.addEventListener("click", () => openDrawer(Number(button.dataset.productId)));
-        });
-    }
-
-    function bindHideButtons() {
-        elements.catalogGrid?.querySelectorAll("[data-hide-product-id]").forEach((button) => {
-            button.addEventListener("click", async () => {
-                const productId = Number(button.dataset.hideProductId);
-                toggleHiddenProduct(productId);
-                await refreshCatalog();
-            });
         });
     }
 

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.8")
+                .contains("/css/storefront.css?v=20260712.9")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.8");
+                .contains("/js/view/app.js?v=20260712.9");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.8")
+                .contains("/css/storefront.css?v=20260712.9")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.8");
+                .contains("/js/view/detail.js?v=20260712.9");
     }
 
     @Test
@@ -161,6 +161,24 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".hero-carousel-dots")
                 .contains("[aria-current=\"true\"]");
+    }
+
+    @Test
+    void merchandisingSectionsShareProductRailContract() throws IOException {
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(script)
+                .contains("productRailCard(product, kicker, \"signal-feed-card\")")
+                .contains("productRailCard(product, featuredRankLabel(product), \"spotlight-card\")")
+                .contains("bindRailBookmarkButtons")
+                .contains("rail-product-card__wish")
+                .contains("rail-product-card__preview")
+                .contains("return list.slice(0, 4)");
+        assertThat(css)
+                .contains(".signal-feed")
+                .contains(".rail-product-card")
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))");
     }
 
     private String readResource(String path) throws IOException {

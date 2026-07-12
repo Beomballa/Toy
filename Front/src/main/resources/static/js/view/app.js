@@ -1642,12 +1642,12 @@
     function featuredProducts() {
         const list = products.filter((product) => product.featured);
         if (boardState.featuredSort === "PRICE_LOW") {
-            return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 3);
+            return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
         }
         if (boardState.featuredSort === "STOCK_ASC") {
-            return list.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0)).slice(0, 3);
+            return list.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0)).slice(0, 4);
         }
-        return list.slice(0, 3);
+        return list.slice(0, 4);
     }
 
     function renderLatestDrops() {
@@ -1668,6 +1668,7 @@
 
         elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, relativeDropLabel(product.createdDate))).join("");
         bindProductButtons(elements.latestDropGrid);
+        bindRailBookmarkButtons(elements.latestDropGrid);
     }
 
     function renderLowStockHighlights() {
@@ -1688,23 +1689,11 @@
 
         elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, stockPressureLabel(product.stock))).join("");
         bindProductButtons(elements.lowStockGrid);
+        bindRailBookmarkButtons(elements.lowStockGrid);
     }
 
     function signalFeedCard(product, kicker) {
-        return `
-            <article class="signal-feed-card">
-                ${productVisualMarkup(product, "signal-feed-card__visual")}
-                <div class="signal-feed-card__body">
-                    <span class="signal-feed-card__kicker">${kicker}</span>
-                    <strong>${product.headline || product.name}</strong>
-                    <p>${compactProductContext(product)} · ${stockPressureDetail(product.stock)}</p>
-                    <div class="signal-feed-card__actions">
-                        <a href="${detailPageUrl(product.id)}">상세 보기</a>
-                        <button type="button" data-product-id="${product.id}">빠른 보기</button>
-                    </div>
-                </div>
-            </article>
-        `;
+        return productRailCard(product, kicker, "signal-feed-card");
     }
 
     function renderFeatured() {
@@ -1712,36 +1701,42 @@
             return;
         }
         const curatedProducts = featuredProducts();
-        elements.featuredGrid.innerHTML = curatedProducts.map((product, index) => `
-            <article class="spotlight-card ${index === 0 ? "spotlight-card--accent" : ""}">
-                ${productVisualMarkup(product, "spotlight-card__visual")}
-                <div>
-                    <div class="spotlight-card__top">
-                        <span class="spotlight-card__label">${product.brand}</span>
-                        <span class="spotlight-card__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
-                    </div>
-                    <h3 class="spotlight-card__title">${product.headline || product.name}</h3>
-                    <div class="spotlight-card__meta">
-                        <span>${product.name}</span>
-                        <span>${product.category}</span>
-                        <span>${featuredRankLabel(product)}</span>
-                    </div>
-                </div>
-                <div class="spotlight-card__footer">
-                    <div>
-                        <div class="spotlight-card__price">${product.priceLabel || formatPrice(product.price)}</div>
-                        <div class="catalog-card__meta">${stockPressureDetail(product.stock)}</div>
-                    </div>
-                    <div class="catalog-card__action">
-                        <a class="catalog-card__link" href="${detailPageUrl(product.id)}">페이지 보기</a>
-                        <button class="catalog-card__button" type="button" data-product-id="${product.id}">빠른 보기</button>
-                    </div>
-                </div>
-            </article>
-        `).join("");
+        elements.featuredGrid.innerHTML = curatedProducts
+            .map((product) => productRailCard(product, featuredRankLabel(product), "spotlight-card"))
+            .join("");
 
         bindProductButtons(elements.featuredGrid);
+        bindRailBookmarkButtons(elements.featuredGrid);
         syncCurationButtons();
+    }
+
+    function productRailCard(product, kicker, className) {
+        const bookmarked = isBookmarkedProduct(product.id);
+        const visualClass = className === "spotlight-card" ? "spotlight-card__visual" : "signal-feed-card__visual";
+        return `
+            <article class="${className} rail-product-card">
+                <button class="rail-product-card__wish ${bookmarked ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}" aria-pressed="${bookmarked}" aria-label="${bookmarked ? "관심 상품 해제" : "관심 상품 추가"}">
+                    <span aria-hidden="true">${bookmarked ? "♥" : "♡"}</span>
+                </button>
+                <a class="rail-product-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
+                    ${productVisualMarkup(product, visualClass)}
+                </a>
+                <div class="rail-product-card__body">
+                    <span class="rail-product-card__brand">${product.brand}</span>
+                    <span class="rail-product-card__kicker">${kicker}</span>
+                    <h3><a href="${detailPageUrl(product.id)}">${product.name}</a></h3>
+                    <strong>${product.priceLabel || formatPrice(product.price)}</strong>
+                    <span class="rail-product-card__meta">${product.stockStatus || stockLabel(product.stock)} · ${product.category}</span>
+                </div>
+                <button class="rail-product-card__preview" type="button" data-product-id="${product.id}" aria-label="${product.name} 빠른 보기">•••</button>
+            </article>
+        `;
+    }
+
+    function bindRailBookmarkButtons(container) {
+        container.querySelectorAll("[data-bookmark-product-id]").forEach((button) => {
+            button.addEventListener("click", () => toggleBookmarkProduct(Number(button.dataset.bookmarkProductId)));
+        });
     }
 
     function renderSignals() {
@@ -3040,6 +3035,8 @@
         }
         renderBookmarkBoard();
         renderFlowBoard();
+        renderSignalStrip();
+        renderFeatured();
         renderCatalog();
     }
 

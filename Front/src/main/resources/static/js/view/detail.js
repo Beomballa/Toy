@@ -35,6 +35,10 @@
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
         detailPrimaryAction: document.getElementById("detailPrimaryAction"),
+        detailMobileBookmarkButton: document.getElementById("detailMobileBookmarkButton"),
+        detailMobileCompareButton: document.getElementById("detailMobileCompareButton"),
+        detailMobilePrimaryButton: document.getElementById("detailMobilePrimaryButton"),
+        detailMobilePrice: document.getElementById("detailMobilePrice"),
         detailShareButton: document.getElementById("detailShareButton"),
         detailCopySummaryButton: document.getElementById("detailCopySummaryButton"),
         detailBookmarkButton: document.getElementById("detailBookmarkButton"),
@@ -523,7 +527,8 @@
                 priceLabel: product.priceLabel,
                 stock: product.stock,
                 stockStatus: product.stockStatus,
-                featured: Boolean(product.featured)
+                featured: Boolean(product.featured),
+                thumbnailUrl: product.thumbnailUrl
             };
             writeBookmarkProducts([summary].concat(current).slice(0, 6));
             showToast("관심 상품에 담았습니다.", `${product.headline || product.name}을 나중에 다시 볼 수 있습니다.`);
@@ -548,7 +553,8 @@
                 price: product.price,
                 priceLabel: product.priceLabel,
                 stock: product.stock,
-                stockStatus: product.stockStatus
+                stockStatus: product.stockStatus,
+                thumbnailUrl: product.thumbnailUrl
             };
             writeCompareProducts([summary].concat(current).slice(0, 3));
             showToast("비교 보드에 담았습니다.", `${product.headline || product.name}을 비교 목록에 추가했습니다.`);
@@ -564,12 +570,33 @@
             const bookmarked = isBookmarkedProduct(currentProduct.id);
             elements.detailBookmarkButton.textContent = bookmarked ? "관심 상품 해제" : "관심 상품 담기";
             elements.detailBookmarkButton.classList.toggle("is-active", bookmarked);
+            elements.detailMobileBookmarkButton?.classList.toggle("is-active", bookmarked);
+            elements.detailMobileBookmarkButton?.setAttribute("aria-pressed", String(bookmarked));
+            const mobileIcon = elements.detailMobileBookmarkButton?.querySelector("span");
+            if (mobileIcon) {
+                mobileIcon.textContent = bookmarked ? "♥" : "♡";
+            }
         }
         if (elements.detailCompareButton) {
             const compared = isComparedProduct(currentProduct.id);
             elements.detailCompareButton.textContent = compared ? "비교 보드 해제" : "비교 보드 담기";
             elements.detailCompareButton.classList.toggle("is-active", compared);
+            elements.detailMobileCompareButton?.classList.toggle("is-active", compared);
+            elements.detailMobileCompareButton?.setAttribute("aria-pressed", String(compared));
         }
+        if (elements.detailMobilePrice) {
+            elements.detailMobilePrice.textContent = currentProduct.priceLabel || formatPrice(currentProduct.price);
+        }
+    }
+
+    function focusDetailOptions() {
+        document.getElementById("detailOptions")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        elements.detailPrimaryAction?.classList.add("is-active");
+        elements.detailMobilePrimaryButton?.classList.add("is-active");
+        window.setTimeout(() => {
+            elements.detailPrimaryAction?.classList.remove("is-active");
+            elements.detailMobilePrimaryButton?.classList.remove("is-active");
+        }, 700);
     }
 
     function initSectionNavigation() {
@@ -639,11 +666,8 @@
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
-        elements.detailPrimaryAction?.addEventListener("click", () => {
-            document.getElementById("detailOptions")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            elements.detailPrimaryAction.classList.add("is-active");
-            window.setTimeout(() => elements.detailPrimaryAction?.classList.remove("is-active"), 700);
-        });
+        elements.detailPrimaryAction?.addEventListener("click", focusDetailOptions);
+        elements.detailMobilePrimaryButton?.addEventListener("click", focusDetailOptions);
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {
@@ -674,7 +698,17 @@
                 toggleBookmarkProduct(currentProduct);
             }
         });
+        elements.detailMobileBookmarkButton?.addEventListener("click", () => {
+            if (currentProduct) {
+                toggleBookmarkProduct(currentProduct);
+            }
+        });
         elements.detailCompareButton?.addEventListener("click", () => {
+            if (currentProduct) {
+                toggleCompareProduct(currentProduct);
+            }
+        });
+        elements.detailMobileCompareButton?.addEventListener("click", () => {
             if (currentProduct) {
                 toggleCompareProduct(currentProduct);
             }

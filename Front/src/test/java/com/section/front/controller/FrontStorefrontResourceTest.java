@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.5")
+                .contains("/css/storefront.css?v=20260712.6")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.5");
+                .contains("/js/view/app.js?v=20260712.6");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.5")
+                .contains("/css/storefront.css?v=20260712.6")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.5");
+                .contains("/js/view/detail.js?v=20260712.6");
     }
 
     @Test
@@ -100,6 +100,29 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".mobile-store-nav")
                 .contains("grid-template-columns: repeat(5, minmax(0, 1fr))");
+    }
+
+    @Test
+    void detailMobileActionsShareDesktopStateContract() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("class=\"detail-body\"")
+                .contains("id=\"detailMobileActions\"")
+                .contains("id=\"detailMobileBookmarkButton\"")
+                .contains("id=\"detailMobileCompareButton\"")
+                .contains("id=\"detailMobilePrimaryButton\"");
+        assertThat(script)
+                .contains("focusDetailOptions")
+                .contains("detailMobileBookmarkButton")
+                .contains("detailMobileCompareButton")
+                .contains("thumbnailUrl: product.thumbnailUrl");
+        assertThat(css)
+                .contains(".detail-mobile-actions")
+                .contains("grid-template-columns: 58px 58px minmax(0, 1fr)")
+                .contains("body.detail-body");
     }
 
     private String readResource(String path) throws IOException {

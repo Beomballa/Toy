@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260713.1">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260713.1">
+    <link rel="stylesheet" href="/css/main.css?v=20260713.5">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260713.5">
 </head>
 <body>
 <div class="page-shell">
@@ -258,19 +258,24 @@
                     <strong id="recentViewedTitle">최근 본 상품을 정리하는 중입니다.</strong>
                     <p id="recentViewedText">상세에서 이동한 상품 흐름을 유지합니다.</p>
                 </div>
-                <div class="catalog-summary__actions">
+                <div class="saved-board-actions">
                     <button class="catalog-reset-button" type="button" id="sortRecentPriceButton">가격 낮은 순</button>
-                    <button class="catalog-reset-button" type="button" id="sortRecentStockButton">재고 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="addRecentToCompareButton">최근 상품 비교 담기</button>
-                    <button class="catalog-reset-button" type="button" id="addRecentToBookmarkButton">최근 상품 모두 찜</button>
-                    <button class="catalog-reset-button" type="button" id="clearRecentViewedButton">최근 본 상품 비우기</button>
-                    <button class="catalog-reset-button" type="button" id="copyRecentViewedSummaryButton">최근 흐름 복사</button>
-                    <button class="catalog-reset-button" type="button" id="focusRecentLowStockButton">최근 본 상품 중 긴장 재고 보기</button>
-                    <button class="catalog-reset-button" type="button" id="sortRecentNameButton">상품명 순</button>
-                    <button class="catalog-reset-button" type="button" id="filterRecentLowStockButton">보드 저재고만</button>
-                    <button class="catalog-reset-button" type="button" id="filterRecentBrandButton">주요 브랜드만</button>
-                    <button class="catalog-reset-button" type="button" id="resetRecentBoardFilterButton">보드 필터 해제</button>
-                    <button class="catalog-reset-button" type="button" id="openRecommendedRecentButton">최근 추천 열기</button>
+                    <details class="board-action-menu">
+                        <summary>정렬·관리</summary>
+                        <div class="board-action-menu__panel">
+                            <button class="catalog-reset-button" type="button" id="sortRecentStockButton">재고 낮은 순</button>
+                            <button class="catalog-reset-button" type="button" id="sortRecentNameButton">상품명 순</button>
+                            <button class="catalog-reset-button" type="button" id="filterRecentLowStockButton">보드 저재고만</button>
+                            <button class="catalog-reset-button" type="button" id="filterRecentBrandButton">주요 브랜드만</button>
+                            <button class="catalog-reset-button" type="button" id="resetRecentBoardFilterButton">보드 필터 해제</button>
+                            <button class="catalog-reset-button" type="button" id="focusRecentLowStockButton">긴장 재고 보기</button>
+                            <button class="catalog-reset-button" type="button" id="openRecommendedRecentButton">최근 추천 열기</button>
+                            <button class="catalog-reset-button" type="button" id="addRecentToBookmarkButton">최근 상품 모두 찜</button>
+                            <button class="catalog-reset-button" type="button" id="copyRecentViewedSummaryButton">최근 흐름 복사</button>
+                            <button class="catalog-reset-button board-action-menu__danger" type="button" id="clearRecentViewedButton">최근 본 상품 비우기</button>
+                        </div>
+                    </details>
                 </div>
             </div>
             <div class="detail-related-grid" id="recentViewedGrid"></div>
@@ -289,19 +294,24 @@
                     <strong id="compareBoardTitle">비교할 상품을 고르는 중입니다.</strong>
                     <p id="compareBoardText">카탈로그 카드에서 비교 담기 버튼을 눌러 최대 3개까지 비교할 수 있습니다.</p>
                 </div>
-                <div class="catalog-summary__actions">
-                    <button class="catalog-reset-button" type="button" id="applyCompareCategoryButton">같은 카테고리만 보기</button>
-                    <button class="catalog-reset-button" type="button" id="applyCompareLowStockButton">재고 낮은 순 보기</button>
-                    <button class="catalog-reset-button" type="button" id="sortComparePriceButton">비교 가격순</button>
-                    <button class="catalog-reset-button" type="button" id="sortCompareStockButton">비교 재고순</button>
-                    <button class="catalog-reset-button" type="button" id="copyCompareSummaryButton">비교 요약 복사</button>
-                    <button class="catalog-reset-button" type="button" id="addCompareToBookmarkButton">비교 상품 모두 찜</button>
-                    <button class="catalog-reset-button" type="button" id="openCheapestCompareButton">최저가 빠른 보기</button>
+                <div class="saved-board-actions">
                     <button class="catalog-reset-button" type="button" id="sortComparePriceLowButton">가격 낮은 순</button>
-                    <button class="catalog-reset-button" type="button" id="sortCompareNameButton">상품명 순</button>
-                    <button class="catalog-reset-button" type="button" id="copyCompareLinksButton">비교 링크 복사</button>
-                    <button class="catalog-reset-button" type="button" id="openRecommendedCompareButton">균형 추천 열기</button>
-                    <button class="catalog-reset-button" type="button" id="clearCompareButton">비교 초기화</button>
+                    <button class="catalog-reset-button" type="button" id="addCompareToBookmarkButton">비교 상품 모두 찜</button>
+                    <details class="board-action-menu">
+                        <summary>비교 관리</summary>
+                        <div class="board-action-menu__panel">
+                            <button class="catalog-reset-button" type="button" id="applyCompareCategoryButton">같은 카테고리만 보기</button>
+                            <button class="catalog-reset-button" type="button" id="applyCompareLowStockButton">재고 낮은 순 보기</button>
+                            <button class="catalog-reset-button" type="button" id="sortComparePriceButton">가격 높은 순</button>
+                            <button class="catalog-reset-button" type="button" id="sortCompareStockButton">비교 재고순</button>
+                            <button class="catalog-reset-button" type="button" id="sortCompareNameButton">상품명 순</button>
+                            <button class="catalog-reset-button" type="button" id="openCheapestCompareButton">최저가 빠른 보기</button>
+                            <button class="catalog-reset-button" type="button" id="openRecommendedCompareButton">균형 추천 열기</button>
+                            <button class="catalog-reset-button" type="button" id="copyCompareSummaryButton">비교 요약 복사</button>
+                            <button class="catalog-reset-button" type="button" id="copyCompareLinksButton">비교 링크 복사</button>
+                            <button class="catalog-reset-button board-action-menu__danger" type="button" id="clearCompareButton">비교 초기화</button>
+                        </div>
+                    </details>
                 </div>
             </div>
             <div class="detail-related-grid" id="compareBoardGrid"></div>
@@ -320,22 +330,27 @@
                     <strong id="bookmarkBoardTitle">관심 상품을 모으는 중입니다.</strong>
                     <p id="bookmarkBoardText">카탈로그 카드에서 찜하기를 눌러 관심 상품 보드를 채울 수 있습니다.</p>
                 </div>
-                <div class="catalog-summary__actions">
-                    <button class="catalog-reset-button" type="button" id="applyBookmarkFeaturedButton">Featured만 보기</button>
-                    <button class="catalog-reset-button" type="button" id="applyBookmarkLowStockButton">긴장 재고만 보기</button>
+                <div class="saved-board-actions">
                     <button class="catalog-reset-button" type="button" id="sortBookmarkRecentButton">최근 담은 순</button>
-                    <button class="catalog-reset-button" type="button" id="sortBookmarkFeaturedButton">Featured 우선</button>
-                    <button class="catalog-reset-button" type="button" id="sortBookmarkPriceButton">가격 낮은 순</button>
-                    <button class="catalog-reset-button" type="button" id="sortBookmarkStockButton">재고 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="addBookmarkToCompareButton">관심 상품 비교 담기</button>
-                    <button class="catalog-reset-button" type="button" id="copyBookmarkLinksButton">관심 링크 복사</button>
-                    <button class="catalog-reset-button" type="button" id="copyBookmarkSummaryButton">관심 보드 복사</button>
-                    <button class="catalog-reset-button" type="button" id="sortBookmarkNameButton">상품명 순</button>
-                    <button class="catalog-reset-button" type="button" id="filterBookmarkLowStockButton">보드 저재고만</button>
-                    <button class="catalog-reset-button" type="button" id="filterBookmarkFeaturedButton">보드 Featured만</button>
-                    <button class="catalog-reset-button" type="button" id="resetBookmarkBoardFilterButton">보드 필터 해제</button>
-                    <button class="catalog-reset-button" type="button" id="openRecommendedBookmarkButton">관심 추천 열기</button>
-                    <button class="catalog-reset-button" type="button" id="clearBookmarkButton">찜 초기화</button>
+                    <details class="board-action-menu">
+                        <summary>관심 관리</summary>
+                        <div class="board-action-menu__panel">
+                            <button class="catalog-reset-button" type="button" id="applyBookmarkFeaturedButton">Featured만 보기</button>
+                            <button class="catalog-reset-button" type="button" id="applyBookmarkLowStockButton">긴장 재고만 보기</button>
+                            <button class="catalog-reset-button" type="button" id="sortBookmarkFeaturedButton">Featured 우선</button>
+                            <button class="catalog-reset-button" type="button" id="sortBookmarkPriceButton">가격 낮은 순</button>
+                            <button class="catalog-reset-button" type="button" id="sortBookmarkStockButton">재고 낮은 순</button>
+                            <button class="catalog-reset-button" type="button" id="sortBookmarkNameButton">상품명 순</button>
+                            <button class="catalog-reset-button" type="button" id="filterBookmarkLowStockButton">보드 저재고만</button>
+                            <button class="catalog-reset-button" type="button" id="filterBookmarkFeaturedButton">보드 Featured만</button>
+                            <button class="catalog-reset-button" type="button" id="resetBookmarkBoardFilterButton">보드 필터 해제</button>
+                            <button class="catalog-reset-button" type="button" id="openRecommendedBookmarkButton">관심 추천 열기</button>
+                            <button class="catalog-reset-button" type="button" id="copyBookmarkLinksButton">관심 링크 복사</button>
+                            <button class="catalog-reset-button" type="button" id="copyBookmarkSummaryButton">관심 보드 복사</button>
+                            <button class="catalog-reset-button board-action-menu__danger" type="button" id="clearBookmarkButton">관심 상품 비우기</button>
+                        </div>
+                    </details>
                 </div>
             </div>
             <div class="detail-related-grid" id="bookmarkBoardGrid"></div>
@@ -609,6 +624,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260713.1"></script>
+<script src="/js/view/app.js?v=20260713.5"></script>
 </body>
 </html>

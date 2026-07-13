@@ -2686,7 +2686,7 @@
         setText(elements.recentViewedText, "방금 본 흐름을 끊지 않고 상세와 카탈로그를 오갈 수 있습니다.");
         const recommendedId = recommendedRecentProduct(recentProducts)?.id;
         elements.recentViewedGrid.innerHTML = recentProducts.length ? recentProducts.map((product) => `
-            <article class="detail-related-card compare-card">
+            <article class="detail-related-card compare-card saved-product-card">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
@@ -2697,12 +2697,17 @@
                     <span>최근 확인</span>
                     ${Number(product.id) === Number(recommendedId) ? "<span>다시 볼 상품</span>" : ""}
                 </div>
-                <div class="compare-card__actions">
+                <div class="compare-card__actions saved-product-card__actions">
                     <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
                     <button class="catalog-reset-button" type="button" data-open-recent-id="${product.id}">빠른 보기</button>
-                    <button class="catalog-reset-button" type="button" data-compare-recent-id="${product.id}">비교 담기</button>
-                    <button class="catalog-reset-button" type="button" data-bookmark-recent-id="${product.id}">찜하기</button>
-                    <button class="catalog-reset-button" type="button" data-copy-recent-id="${product.id}">요약 복사</button>
+                    <details class="saved-product-card__menu">
+                        <summary aria-label="상품 추가 작업">•••</summary>
+                        <div>
+                            <button class="catalog-reset-button" type="button" data-compare-recent-id="${product.id}">비교 담기</button>
+                            <button class="catalog-reset-button" type="button" data-bookmark-recent-id="${product.id}">관심 상품 추가</button>
+                            <button class="catalog-reset-button" type="button" data-copy-recent-id="${product.id}">요약 복사</button>
+                        </div>
+                    </details>
                 </div>
             </article>
         `).join("") : `
@@ -2797,7 +2802,7 @@
         const highestStockId = comparedProducts.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0]?.id;
         const recommendedId = recommendedCompareProduct(comparedProducts)?.id;
         elements.compareBoardGrid.innerHTML = comparedProducts.map((product) => `
-            <article class="detail-related-card compare-card">
+            <article class="detail-related-card compare-card saved-product-card">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
@@ -2810,13 +2815,18 @@
                     ${Number(product.id) === Number(highestStockId) ? "<span>최다 재고</span>" : ""}
                     ${Number(product.id) === Number(recommendedId) ? "<span>균형 추천</span>" : ""}
                 </div>
-                <div class="compare-card__actions">
+                <div class="compare-card__actions saved-product-card__actions">
                     <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
                     <button class="catalog-reset-button" type="button" data-open-compare-id="${product.id}">빠른 보기</button>
-                    <button class="catalog-reset-button" type="button" data-bookmark-compare-id="${product.id}">찜하기</button>
-                    <button class="catalog-reset-button" type="button" data-copy-compare-id="${product.id}">요약 복사</button>
-                    <button class="catalog-reset-button" type="button" data-focus-compare-brand="${product.id}">브랜드 집중</button>
-                    <button class="catalog-reset-button" type="button" data-remove-compare-id="${product.id}">제거</button>
+                    <details class="saved-product-card__menu">
+                        <summary aria-label="상품 추가 작업">•••</summary>
+                        <div>
+                            <button class="catalog-reset-button" type="button" data-bookmark-compare-id="${product.id}">관심 상품 추가</button>
+                            <button class="catalog-reset-button" type="button" data-copy-compare-id="${product.id}">요약 복사</button>
+                            <button class="catalog-reset-button" type="button" data-focus-compare-brand="${product.id}">브랜드 상품 보기</button>
+                            <button class="catalog-reset-button saved-product-card__danger" type="button" data-remove-compare-id="${product.id}">비교에서 제거</button>
+                        </div>
+                    </details>
                 </div>
             </article>
         `).join("");
@@ -2876,7 +2886,7 @@
         setText(elements.bookmarkBoardText, buildBookmarkSummary(bookmarkedProducts));
         const recommendedId = recommendedBookmarkProduct(bookmarkedProducts)?.id;
         elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.length ? bookmarkedProducts.map((product) => `
-            <article class="detail-related-card compare-card">
+            <article class="detail-related-card compare-card saved-product-card">
                 ${productVisualMarkup(product, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${product.brand || "-"}</span>
                 <strong>${product.headline || product.name || "-"}</strong>
@@ -2887,13 +2897,18 @@
                     <span>${product.featured ? "Featured" : "Watchlist"}</span>
                     ${Number(product.id) === Number(recommendedId) ? "<span>우선 확인</span>" : ""}
                 </div>
-                <div class="compare-card__actions">
+                <div class="compare-card__actions saved-product-card__actions">
                     <a class="catalog-card__link" href="${detailPageUrl(product.id)}">상세 보기</a>
                     <button class="catalog-reset-button" type="button" data-open-bookmark-id="${product.id}">빠른 보기</button>
-                    <button class="catalog-reset-button" type="button" data-compare-bookmark-id="${product.id}">비교 담기</button>
-                    <button class="catalog-reset-button" type="button" data-copy-bookmark-id="${product.id}">요약 복사</button>
-                    <button class="catalog-reset-button" type="button" data-focus-bookmark-brand="${product.id}">브랜드 집중</button>
-                    <button class="catalog-reset-button" type="button" data-remove-bookmark-id="${product.id}">제거</button>
+                    <details class="saved-product-card__menu">
+                        <summary aria-label="상품 추가 작업">•••</summary>
+                        <div>
+                            <button class="catalog-reset-button" type="button" data-compare-bookmark-id="${product.id}">비교 담기</button>
+                            <button class="catalog-reset-button" type="button" data-copy-bookmark-id="${product.id}">요약 복사</button>
+                            <button class="catalog-reset-button" type="button" data-focus-bookmark-brand="${product.id}">브랜드 상품 보기</button>
+                            <button class="catalog-reset-button saved-product-card__danger" type="button" data-remove-bookmark-id="${product.id}">관심에서 제거</button>
+                        </div>
+                    </details>
                 </div>
             </article>
         `).join("") : `

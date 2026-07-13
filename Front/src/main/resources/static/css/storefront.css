@@ -1067,6 +1067,94 @@ main#top {
     font-size: var(--store-text-meta);
 }
 
+.shopping-tools .catalog-display-panel,
+.shopping-tools .catalog-selection {
+    padding: 18px 0;
+    border: 0;
+    border-bottom: 1px solid var(--store-line);
+    border-radius: 0;
+    background: #fff;
+}
+
+.catalog-display-panel__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.catalog-layout-switch {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(48px, 1fr));
+    overflow: hidden;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+}
+
+.catalog-layout-switch button {
+    min-height: 34px;
+    padding: 0 10px;
+    border: 0;
+    border-right: 1px solid var(--store-line);
+    border-radius: 0;
+    background: #fff;
+    color: var(--store-muted);
+    cursor: pointer;
+}
+
+.catalog-layout-switch button:last-child {
+    border-right: 0;
+}
+
+.catalog-layout-switch button.is-active {
+    background: var(--store-ink);
+    color: #fff;
+}
+
+.catalog-display-menu .board-action-menu__panel,
+.catalog-selection-menu .board-action-menu__panel {
+    width: 180px;
+}
+
+.catalog-display-menu .board-action-menu__panel button,
+.catalog-selection-menu .board-action-menu__panel button {
+    width: 100%;
+    justify-content: flex-start;
+    border: 0;
+    background: #fff;
+}
+
+.catalog-selection__summary > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.catalog-selection__summary > span strong {
+    display: grid;
+    min-width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--store-chip);
+    font-size: 11px;
+}
+
+.catalog-selection__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.catalog-selection__actions > button:disabled,
+.catalog-selection-menu button:disabled {
+    color: #bbb;
+    cursor: not-allowed;
+    opacity: .55;
+}
+
 .catalog-pagination {
     margin-top: 32px;
     padding: 20px 0;
@@ -1880,6 +1968,22 @@ main#top {
 
     .shopping-tools .catalog-memory-block:last-child {
         border-bottom: 0;
+    }
+
+    .shopping-tools .catalog-display-panel,
+    .shopping-tools .catalog-selection {
+        grid-template-columns: 1fr;
+        align-items: flex-start;
+    }
+
+    .catalog-display-panel__actions,
+    .catalog-selection__actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .catalog-layout-switch {
+        width: 100%;
     }
 
     .product-drawer__panel {

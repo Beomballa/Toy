@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260713.8">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260713.8">
+    <link rel="stylesheet" href="/css/main.css?v=20260713.9">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260713.9">
 </head>
 <body>
 <div class="page-shell">
@@ -564,21 +564,28 @@
                     <strong id="catalogDisplayStatus">표준 보기 · 전체 정보 표시</strong>
                 </div>
                 <div class="catalog-display-panel__actions">
-                    <button type="button" id="catalogLayoutShopButton">4열 쇼핑</button>
-                    <button type="button" id="catalogLayoutStandardButton">3열 표준</button>
-                    <button type="button" id="catalogLayoutComfortButton">2열 여유</button>
-                    <button type="button" id="catalogLayoutListButton">리스트</button>
-                    <button type="button" id="toggleCatalogDescriptionButton">설명 숨기기</button>
-                    <button type="button" id="toggleCatalogSignalsButton">시그널 숨기기</button>
-                    <button type="button" id="toggleCatalogActionsButton">빠른 액션 숨기기</button>
-                    <button type="button" id="toggleReducedMotionButton">모션 최소화</button>
-                    <button type="button" id="resetCatalogDisplayButton">화면 설정 초기화</button>
+                    <div class="catalog-layout-switch" role="group" aria-label="상품 목록 레이아웃">
+                        <button type="button" id="catalogLayoutShopButton" aria-pressed="false">4열</button>
+                        <button type="button" id="catalogLayoutStandardButton" aria-pressed="false">3열</button>
+                        <button type="button" id="catalogLayoutComfortButton" aria-pressed="false">2열</button>
+                        <button type="button" id="catalogLayoutListButton" aria-pressed="false">목록</button>
+                    </div>
+                    <details class="board-action-menu catalog-display-menu">
+                        <summary>표시 옵션</summary>
+                        <div class="board-action-menu__panel">
+                            <button type="button" id="toggleCatalogDescriptionButton" aria-pressed="false">설명 숨기기</button>
+                            <button type="button" id="toggleCatalogSignalsButton" aria-pressed="false">시그널 숨기기</button>
+                            <button type="button" id="toggleCatalogActionsButton" aria-pressed="false">빠른 액션 숨기기</button>
+                            <button type="button" id="toggleReducedMotionButton" aria-pressed="false">모션 최소화</button>
+                            <button class="board-action-menu__danger" type="button" id="resetCatalogDisplayButton">화면 설정 초기화</button>
+                        </div>
+                    </details>
                 </div>
             </section>
 
             <div class="catalog-selection" id="catalogSelection">
                 <div class="catalog-selection__summary">
-                    <span>Selection workspace</span>
+                    <span>선택 상품 <strong id="catalogSelectionCount" aria-live="polite">0</strong></span>
                     <strong id="catalogSelectionTitle">선택한 상품이 없습니다.</strong>
                     <p id="catalogSelectionText">카드에서 선택 버튼을 눌러 일괄 작업을 시작할 수 있습니다.</p>
                 </div>
@@ -587,11 +594,16 @@
                     <button type="button" id="clearSelectedProductsButton">선택 해제</button>
                     <button type="button" id="compareSelectedProductsButton">선택 상품 비교</button>
                     <button type="button" id="bookmarkSelectedProductsButton">선택 상품 찜</button>
-                    <button type="button" id="hideSelectedProductsButton">선택 상품 숨김</button>
-                    <button type="button" id="copySelectedSummaryButton">선택 요약 복사</button>
-                    <button type="button" id="copySelectedLinksButton">선택 링크 복사</button>
-                    <button type="button" id="openUrgentSelectedButton">최저 재고 열기</button>
-                    <button type="button" id="focusSelectedBrandButton">대표 브랜드 집중</button>
+                    <details class="board-action-menu catalog-selection-menu">
+                        <summary>선택 관리</summary>
+                        <div class="board-action-menu__panel">
+                            <button type="button" id="hideSelectedProductsButton">선택 상품 숨김</button>
+                            <button type="button" id="copySelectedSummaryButton">선택 요약 복사</button>
+                            <button type="button" id="copySelectedLinksButton">선택 링크 복사</button>
+                            <button type="button" id="openUrgentSelectedButton">최저 재고 열기</button>
+                            <button type="button" id="focusSelectedBrandButton">대표 브랜드 집중</button>
+                        </div>
+                    </details>
                 </div>
             </div>
             </details>
@@ -668,6 +680,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260713.8"></script>
+<script src="/js/view/app.js?v=20260713.9"></script>
 </body>
 </html>

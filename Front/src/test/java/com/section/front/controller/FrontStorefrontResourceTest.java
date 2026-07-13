@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.8")
+                .contains("/css/storefront.css?v=20260713.9")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260713.8");
+                .contains("/js/view/app.js?v=20260713.9");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.8")
+                .contains("/css/storefront.css?v=20260713.9")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260713.8");
+                .contains("/js/view/detail.js?v=20260713.9");
     }
 
     @Test
@@ -310,6 +310,27 @@ class FrontStorefrontResourceTest {
                 .contains(".shopping-tools .catalog-memory-strip")
                 .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
                 .contains(".catalog-memory-head__title > span");
+    }
+
+    @Test
+    void displayAndSelectionToolsKeepCompactAccessibleContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("class=\"catalog-layout-switch\" role=\"group\"")
+                .contains("class=\"board-action-menu catalog-display-menu\"")
+                .contains("id=\"catalogSelectionCount\" aria-live=\"polite\"")
+                .contains("class=\"board-action-menu catalog-selection-menu\"");
+        assertThat(script)
+                .contains("setText(elements.catalogSelectionCount, String(selected.length))")
+                .contains("button.disabled = selected.length === 0")
+                .contains("setAttribute(\"aria-pressed\", String(isPressed))");
+        assertThat(css)
+                .contains(".catalog-layout-switch")
+                .contains("grid-template-columns: repeat(4, minmax(48px, 1fr))")
+                .contains(".catalog-selection__actions > button:disabled");
     }
 
     private String readResource(String path) throws IOException {

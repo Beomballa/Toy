@@ -141,6 +141,7 @@
         catalogSelection: document.getElementById("catalogSelection"),
         catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
         catalogSelectionText: document.getElementById("catalogSelectionText"),
+        catalogSelectionCount: document.getElementById("catalogSelectionCount"),
         selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
         clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
         compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
@@ -1909,6 +1910,22 @@
         }
         const selected = selectedProducts();
         elements.catalogSelection.classList.toggle("has-selection", Boolean(selected.length));
+        setText(elements.catalogSelectionCount, String(selected.length));
+        elements.selectVisibleProductsButton.disabled = currentCatalogPageProducts().length === 0;
+        [
+            elements.clearSelectedProductsButton,
+            elements.compareSelectedProductsButton,
+            elements.bookmarkSelectedProductsButton,
+            elements.hideSelectedProductsButton,
+            elements.copySelectedSummaryButton,
+            elements.copySelectedLinksButton,
+            elements.openUrgentSelectedButton,
+            elements.focusSelectedBrandButton
+        ].forEach((button) => {
+            if (button) {
+                button.disabled = selected.length === 0;
+            }
+        });
         if (!selected.length) {
             setText(elements.catalogSelectionTitle, "선택한 상품이 없습니다.");
             setText(elements.catalogSelectionText, "카드에서 선택하거나 현재 상품 전체 선택을 눌러 일괄 작업을 시작할 수 있습니다.");
@@ -3388,6 +3405,16 @@
         elements.toggleCatalogSignalsButton?.classList.toggle("is-active", uiState.hideSignals);
         elements.toggleCatalogActionsButton?.classList.toggle("is-active", uiState.hideActions);
         elements.toggleReducedMotionButton?.classList.toggle("is-active", uiState.reducedMotion);
+        [
+            [elements.catalogLayoutShopButton, uiState.layout === "SHOP"],
+            [elements.catalogLayoutStandardButton, uiState.layout === "STANDARD"],
+            [elements.catalogLayoutComfortButton, uiState.layout === "COMFORT"],
+            [elements.catalogLayoutListButton, uiState.layout === "LIST"],
+            [elements.toggleCatalogDescriptionButton, uiState.hideDescriptions],
+            [elements.toggleCatalogSignalsButton, uiState.hideSignals],
+            [elements.toggleCatalogActionsButton, uiState.hideActions],
+            [elements.toggleReducedMotionButton, uiState.reducedMotion]
+        ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
         const layoutLabels = { SHOP: "4열 쇼핑", STANDARD: "3열 표준", COMFORT: "2열 여유", LIST: "리스트" };
         const hiddenCount = [uiState.hideDescriptions, uiState.hideSignals, uiState.hideActions].filter(Boolean).length;
         setText(elements.catalogDisplayStatus, `${layoutLabels[uiState.layout]} · ${hiddenCount ? `${hiddenCount}개 정보 숨김` : "전체 정보 표시"}${uiState.reducedMotion ? " · 모션 최소화" : ""}`);

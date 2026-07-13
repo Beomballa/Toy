@@ -177,6 +177,9 @@
         savedViewList: document.getElementById("savedViewList"),
         searchHistoryList: document.getElementById("searchHistoryList"),
         hiddenProductList: document.getElementById("hiddenProductList"),
+        savedViewCount: document.getElementById("savedViewCount"),
+        searchHistoryCount: document.getElementById("searchHistoryCount"),
+        hiddenProductCount: document.getElementById("hiddenProductCount"),
         brandSpotlightGrid: document.getElementById("brandSpotlightGrid"),
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
@@ -2258,8 +2261,9 @@
             return;
         }
         const savedViews = readSavedViews();
+        setText(elements.savedViewCount, String(savedViews.length));
         if (!savedViews.length) {
-            elements.savedViewList.innerHTML = `<span class="catalog-tag">저장된 탐색이 없습니다.</span>`;
+            elements.savedViewList.innerHTML = `<span class="catalog-memory-empty">저장된 탐색이 없습니다.</span>`;
             return;
         }
         const visibleViews = savedViews.map((item, originalIndex) => ({ item, originalIndex }));
@@ -2309,8 +2313,9 @@
             return;
         }
         const history = readSearchHistory();
+        setText(elements.searchHistoryCount, String(history.length));
         if (!history.length) {
-            elements.searchHistoryList.innerHTML = `<span class="catalog-tag">최근 검색이 없습니다.</span>`;
+            elements.searchHistoryList.innerHTML = `<span class="catalog-memory-empty">최근 검색이 없습니다.</span>`;
             return;
         }
         const visibleHistory = memoryState.searchAlphabetical ? history.slice().sort((left, right) => left.localeCompare(right, "ko")) : history;
@@ -2450,8 +2455,9 @@
             return;
         }
         const hiddenProducts = readHiddenProducts();
+        setText(elements.hiddenProductCount, String(hiddenProducts.length));
         if (!hiddenProducts.length) {
-            elements.hiddenProductList.innerHTML = `<span class="catalog-tag">숨긴 상품이 없습니다.</span>`;
+            elements.hiddenProductList.innerHTML = `<span class="catalog-memory-empty">숨긴 상품이 없습니다.</span>`;
             syncViewButtons();
             return;
         }

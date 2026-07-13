@@ -988,6 +988,85 @@ main#top {
     gap: 6px;
 }
 
+.shopping-tools .catalog-memory-strip {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0;
+    border-top: 1px solid var(--store-line);
+    border-bottom: 1px solid var(--store-line);
+}
+
+.shopping-tools .catalog-memory-block {
+    min-width: 0;
+    padding: 18px;
+    border: 0;
+    border-right: 1px solid var(--store-line);
+    border-radius: 0;
+    background: #fff;
+}
+
+.shopping-tools .catalog-memory-block:last-child {
+    border-right: 0;
+}
+
+.catalog-memory-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.catalog-memory-head__title {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 7px;
+}
+
+.catalog-memory-head__title > span {
+    display: grid;
+    min-width: 20px;
+    height: 20px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--store-chip);
+    color: var(--store-muted);
+    font-size: 11px;
+}
+
+.catalog-memory-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+}
+
+.catalog-memory-menu .board-action-menu__panel {
+    width: 170px;
+}
+
+.catalog-memory-list {
+    display: flex;
+    min-height: 42px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
+}
+
+.catalog-memory-item {
+    min-width: 0;
+    border: 0;
+    border-radius: var(--store-radius-control);
+    background: var(--store-soft);
+    box-shadow: none;
+}
+
+.catalog-memory-empty {
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+}
+
 .catalog-pagination {
     margin-top: 32px;
     padding: 20px 0;
@@ -1788,6 +1867,19 @@ main#top {
 
     .catalog-pagination__controls {
         justify-content: space-between;
+    }
+
+    .shopping-tools .catalog-memory-strip {
+        grid-template-columns: 1fr;
+    }
+
+    .shopping-tools .catalog-memory-block {
+        border-right: 0;
+        border-bottom: 1px solid var(--store-line);
+    }
+
+    .shopping-tools .catalog-memory-block:last-child {
+        border-bottom: 0;
     }
 
     .product-drawer__panel {

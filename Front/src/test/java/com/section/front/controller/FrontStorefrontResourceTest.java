@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.7")
+                .contains("/css/storefront.css?v=20260713.8")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260713.7");
+                .contains("/js/view/app.js?v=20260713.8");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.7")
+                .contains("/css/storefront.css?v=20260713.8")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260713.7");
+                .contains("/js/view/detail.js?v=20260713.8");
     }
 
     @Test
@@ -288,6 +288,28 @@ class FrontStorefrontResourceTest {
                 .contains(".catalog-summary > .catalog-tags")
                 .contains(".catalog-pagination__menu > div")
                 .contains(".catalog-pagination__controls > button");
+    }
+
+    @Test
+    void shoppingMemoryKeepsCountsAndCollapsedManagementContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"savedViewCount\" aria-live=\"polite\"")
+                .contains("id=\"searchHistoryCount\" aria-live=\"polite\"")
+                .contains("id=\"hiddenProductCount\" aria-live=\"polite\"")
+                .contains("class=\"board-action-menu catalog-memory-menu\"");
+        assertThat(script)
+                .contains("setText(elements.savedViewCount, String(savedViews.length))")
+                .contains("setText(elements.searchHistoryCount, String(history.length))")
+                .contains("setText(elements.hiddenProductCount, String(hiddenProducts.length))")
+                .contains("catalog-memory-empty");
+        assertThat(css)
+                .contains(".shopping-tools .catalog-memory-strip")
+                .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
+                .contains(".catalog-memory-head__title > span");
     }
 
     private String readResource(String path) throws IOException {

@@ -1419,53 +1419,48 @@
         const cards = [
             {
                 action: "RECENT",
-                eyebrow: "Recent",
+                label: "최근 본 상품",
                 count: recentProducts.length,
                 headline: recentProducts[0]?.headline || recentProducts[0]?.name || "상세에서 본 상품이 아직 없습니다.",
-                description: recentProducts.length
-                    ? "방금 보던 상품부터 다시 열어보고 연관 흐름으로 이어갈 수 있습니다."
-                    : "상세 페이지를 확인하면 최근 본 상품이 이곳에 쌓입니다.",
-                meta: recentProducts.length ? `${recentProducts[0]?.brand || "-"} · ${recentProducts[0]?.priceLabel || formatPrice(recentProducts[0]?.price || 0)}` : "다음 탐색 대기"
+                meta: recentProducts.length ? `${recentProducts[0]?.brand || "-"} · 최근 확인` : "탐색 대기",
+                active: recentProducts.length > 0
             },
             {
                 action: "COMPARE",
-                eyebrow: "Compare",
+                label: "비교 상품",
                 count: comparedProducts.length,
                 headline: comparedProducts.length ? buildCompareSummary(comparedProducts) : "비교 보드가 비어 있습니다.",
-                description: comparedProducts.length
-                    ? "가격과 재고 차이를 홈에서 확인한 뒤 바로 비교 보드로 이동할 수 있습니다."
-                    : "카탈로그에서 비교 담기를 누르면 최대 3개까지 유지합니다.",
-                meta: comparedProducts.length ? `${dominantCategory(comparedProducts) || "복합 비교"} · 최대 3개` : "비교 상품 없음"
+                meta: comparedProducts.length ? `${dominantCategory(comparedProducts) || "복합 비교"} · 최대 3개` : "상품을 추가해보세요",
+                active: comparedProducts.length > 0
             },
             {
                 action: "BOOKMARK",
-                eyebrow: "Bookmark",
+                label: "관심 상품",
                 count: bookmarkedProducts.length,
                 headline: bookmarkedProducts.length ? buildBookmarkSummary(bookmarkedProducts) : "관심 상품이 아직 없습니다.",
-                description: bookmarkedProducts.length
-                    ? "나중에 다시 볼 상품을 모아두고 상세나 비교 보드로 바로 연결할 수 있습니다."
-                    : "카탈로그나 상세에서 찜하기를 누르면 이 보드에 쌓입니다.",
-                meta: bookmarkedProducts.length ? `${bookmarkedProducts.filter((product) => product.featured).length}개 Featured 포함` : "관심 상품 없음"
+                meta: bookmarkedProducts.length ? `${bookmarkedProducts.filter((product) => product.featured).length}개 추천 상품 포함` : "상품을 저장해보세요",
+                active: bookmarkedProducts.length > 0
             },
             {
                 action: "HIDDEN",
-                eyebrow: "Hidden",
+                label: "숨긴 상품",
                 count: hiddenProducts.length,
-                headline: hiddenProducts.length ? `${hiddenProducts[0]?.headline || hiddenProducts[0]?.name} 외 ${hiddenProducts.length}개 숨김 상태` : "숨긴 상품이 없습니다.",
-                description: hiddenProducts.length
-                    ? "기본 카탈로그에서 제외한 상품을 다시 보여주거나 바로 복구할 수 있습니다."
-                    : "관심이 덜한 상품을 숨기면 메인 카탈로그 밀도를 더 정리할 수 있습니다.",
-                meta: hiddenProducts.length ? "숨긴 상품 보기로 즉시 복귀 가능" : "숨김 없음"
+                headline: hiddenProducts[0]?.headline || hiddenProducts[0]?.name || "숨긴 상품이 없습니다.",
+                meta: hiddenProducts.length ? "목록에서 다시 확인 가능" : "정리된 상태",
+                active: hiddenProducts.length > 0
             }
         ];
 
         elements.flowBoardGrid.innerHTML = cards.map((card) => `
-            <button class="flow-board__card" type="button" data-flow-action="${card.action}">
-                <span class="flow-board__eyebrow">${card.eyebrow}</span>
-                <strong class="flow-board__count">${card.count}</strong>
+            <button class="flow-board__card ${card.active ? "is-active" : ""}" type="button" data-flow-action="${card.action}" aria-label="${card.label} ${card.count}개 보기">
+                <span class="flow-board__topline">
+                    <span class="flow-board__label">${card.label}</span>
+                    <span class="flow-board__status" aria-hidden="true"></span>
+                </span>
+                <span class="flow-board__count"><strong>${card.count}</strong>개</span>
                 <span class="flow-board__headline">${card.headline}</span>
-                <p>${card.description}</p>
                 <span class="flow-board__meta">${card.meta}</span>
+                <span class="flow-board__link">바로가기 <span aria-hidden="true">→</span></span>
             </button>
         `).join("");
 

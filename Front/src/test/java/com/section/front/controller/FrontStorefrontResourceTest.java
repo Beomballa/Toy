@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.10")
+                .contains("/css/storefront.css?v=20260713.1")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260712.10");
+                .contains("/js/view/app.js?v=20260713.1");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260712.10")
+                .contains("/css/storefront.css?v=20260713.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260712.10");
+                .contains("/js/view/detail.js?v=20260713.1");
     }
 
     @Test
@@ -199,6 +199,28 @@ class FrontStorefrontResourceTest {
                 .contains("grid-template-columns: repeat(6, minmax(0, 1fr))")
                 .contains(".brand-rank-card__visual")
                 .contains(".category-shortcut-card__visual");
+    }
+
+    @Test
+    void personalFlowKeepsCompactShoppingActivityContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("<h2>쇼핑 활동</h2>")
+                .contains("class=\"board-action-menu\"")
+                .contains("aria-live=\"polite\"")
+                .contains("aria-label=\"쇼핑 활동 바로가기\"");
+        assertThat(script)
+                .contains("flow-board__topline")
+                .contains("flow-board__status")
+                .contains("aria-label=\"${card.label} ${card.count}개 보기\"")
+                .doesNotContain("<p>${card.description}</p>");
+        assertThat(css)
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
+                .contains(".flow-board__card.is-active .flow-board__status")
+                .contains("grid-template-columns: repeat(4, 178px)");
     }
 
     private String readResource(String path) throws IOException {

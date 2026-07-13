@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260712.10">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260712.10">
+    <link rel="stylesheet" href="/css/main.css?v=20260713.1">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260713.1">
 </head>
 <body>
 <div class="page-shell">
@@ -145,27 +145,31 @@
 
         <section class="flow-board" id="flowBoard">
             <div class="section-heading">
-                <p class="eyebrow">Personal Flow</p>
                 <div>
-                    <h2>개인 보드 요약</h2>
-                    <p>최근 본 상품, 비교 보드, 관심 상품, 숨김 상태를 한 번에 정리하고 바로 다음 탐색으로 이어갑니다.</p>
+                    <h2>쇼핑 활동</h2>
+                    <p>저장한 상품과 최근 탐색을 한곳에서 이어보세요.</p>
                 </div>
             </div>
             <div class="flow-board__summary">
                 <div class="catalog-summary__headline">
                     <strong id="flowBoardTitle">개인 탐색 흐름을 정리하는 중입니다.</strong>
-                    <p id="flowBoardText">홈에서 바로 이어갈 수 있는 보드 상태를 계산하고 있습니다.</p>
+                    <p id="flowBoardText" aria-live="polite">홈에서 바로 이어갈 수 있는 보드 상태를 계산하고 있습니다.</p>
                 </div>
-                <div class="catalog-summary__actions">
-                    <button class="catalog-reset-button" type="button" id="copyFlowBoardSummaryButton">개인 보드 복사</button>
+                <div class="flow-board__actions">
                     <button class="catalog-reset-button" type="button" id="openRecentFlowButton">최근 본 상품 열기</button>
-                    <button class="catalog-reset-button" type="button" id="openCompareFlowButton">비교 보드 이동</button>
                     <button class="catalog-reset-button" type="button" id="openBookmarkFlowButton">관심 보드 이동</button>
-                    <button class="catalog-reset-button" type="button" id="applyFlowLowStockButton">긴장 재고 집중</button>
-                    <button class="catalog-reset-button" type="button" id="restoreHiddenFlowButton">숨김 전체 복구</button>
+                    <details class="board-action-menu">
+                        <summary>추가 관리</summary>
+                        <div class="board-action-menu__panel">
+                            <button class="catalog-reset-button" type="button" id="openCompareFlowButton">비교 보드 이동</button>
+                            <button class="catalog-reset-button" type="button" id="applyFlowLowStockButton">긴장 재고 집중</button>
+                            <button class="catalog-reset-button" type="button" id="restoreHiddenFlowButton">숨김 전체 복구</button>
+                            <button class="catalog-reset-button" type="button" id="copyFlowBoardSummaryButton">개인 보드 복사</button>
+                        </div>
+                    </details>
                 </div>
             </div>
-            <div class="flow-board__grid" id="flowBoardGrid"></div>
+            <div class="flow-board__grid" id="flowBoardGrid" aria-label="쇼핑 활동 바로가기"></div>
         </section>
 
         <section class="discovery-strip" id="discoveryStrip">
@@ -605,6 +609,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260712.10"></script>
+<script src="/js/view/app.js?v=20260713.1"></script>
 </body>
 </html>

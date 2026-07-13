@@ -1708,6 +1708,116 @@ main#top {
     background: var(--store-surface);
 }
 
+.detail-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.detail-actions > .detail-primary-action {
+    width: 100%;
+    min-height: 52px;
+    border: 0;
+    border-radius: var(--store-radius-control);
+    background: var(--store-ink);
+    color: #fff;
+    font-size: var(--store-text-body);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.detail-secondary-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+    gap: 8px;
+}
+
+.detail-secondary-actions > button,
+.detail-action-menu > summary {
+    min-height: 40px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    color: var(--store-ink);
+    cursor: pointer;
+}
+
+.detail-secondary-actions > button.is-active {
+    border-color: var(--store-ink);
+    background: var(--store-ink);
+    color: #fff;
+}
+
+.detail-action-menu > summary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 14px;
+    font-size: var(--store-text-meta);
+    list-style: none;
+}
+
+.detail-action-menu > summary::-webkit-details-marker {
+    display: none;
+}
+
+.detail-action-menu .board-action-menu__panel {
+    width: 170px;
+}
+
+.detail-action-menu .board-action-menu__panel a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.detail-price-card {
+    padding: 18px 0;
+    border-top: 1px solid var(--store-line);
+    border-bottom: 1px solid var(--store-line);
+    border-radius: 0;
+    background: #fff;
+    color: var(--store-ink);
+    box-shadow: none;
+}
+
+.detail-price-card p,
+.detail-price-card span {
+    color: var(--store-muted);
+}
+
+.detail-price-card strong {
+    margin: 6px 0 4px;
+    font-size: var(--store-text-search);
+}
+
+.detail-signal-list {
+    display: grid;
+    gap: 0;
+    margin-top: 16px;
+}
+
+.detail-signal-list .signal-card {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0;
+    border: 0;
+    border-bottom: 1px solid var(--store-line);
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+}
+
+.detail-signal-list .signal-card strong,
+.detail-signal-list .signal-card span {
+    font-size: var(--store-text-meta);
+}
+
+.detail-signal-list .signal-card span {
+    color: var(--store-muted);
+}
+
 .detail-option-grid,
 .detail-overview-grid {
     gap: 12px;

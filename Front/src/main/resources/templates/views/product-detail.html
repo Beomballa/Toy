@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260713.9">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260713.9">
+    <link rel="stylesheet" href="/css/main.css?v=20260713.10">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260713.10">
 </head>
 <body class="detail-body">
 <div class="page-shell page-shell--detail">
@@ -53,18 +53,25 @@
                 <h1 id="detailTitle">상품 상세를 불러오는 중입니다.</h1>
                 <p class="detail-description" id="detailDescription">선택한 상품의 카테고리, 재고, 옵션, 연관 상품을 정리하고 있습니다.</p>
                 <div class="detail-actions">
-                    <button class="detail-primary-action" type="button" id="detailPrimaryAction">구매 옵션 확인</button>
-                    <a class="hero-primary" href="/front#catalog" id="detailCatalogLink">카탈로그 보기</a>
-                    <button class="hero-secondary" type="button" id="detailFocusRelated">비교 상품 보기</button>
-                    <button class="hero-secondary" type="button" id="detailShareButton">현재 상품 공유</button>
-                    <button class="hero-secondary" type="button" id="detailCopySummaryButton">요약 복사</button>
-                    <button class="hero-secondary" type="button" id="detailBookmarkButton">관심 상품 담기</button>
-                    <button class="hero-secondary" type="button" id="detailCompareButton">비교 보드 담기</button>
+                    <button class="detail-primary-action" type="button" id="detailPrimaryAction" aria-controls="detailOptions">구매 옵션 확인</button>
+                    <div class="detail-secondary-actions">
+                        <button class="hero-secondary" type="button" id="detailBookmarkButton" aria-pressed="false">관심</button>
+                        <button class="hero-secondary" type="button" id="detailCompareButton" aria-pressed="false">비교</button>
+                        <details class="board-action-menu detail-action-menu">
+                            <summary>더보기</summary>
+                            <div class="board-action-menu__panel">
+                                <a class="catalog-reset-button" href="/front#catalog" id="detailCatalogLink">카탈로그 보기</a>
+                                <button class="catalog-reset-button" type="button" id="detailFocusRelated">연관 상품 보기</button>
+                                <button class="catalog-reset-button" type="button" id="detailShareButton">현재 상품 공유</button>
+                                <button class="catalog-reset-button" type="button" id="detailCopySummaryButton">상품 요약 복사</button>
+                            </div>
+                        </details>
+                    </div>
                 </div>
             </div>
             <aside class="detail-hero__side">
                 <div class="detail-price-card">
-                    <p>Launch price</p>
+                    <p>발매가</p>
                     <strong id="detailPrice">-</strong>
                     <span id="detailStockText">총 재고를 계산 중입니다.</span>
                 </div>
@@ -179,6 +186,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260713.9"></script>
+<script src="/js/view/detail.js?v=20260713.10"></script>
 </body>
 </html>

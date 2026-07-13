@@ -591,6 +591,7 @@
             const bookmarked = isBookmarkedProduct(currentProduct.id);
             elements.detailBookmarkButton.textContent = bookmarked ? "관심 상품 해제" : "관심 상품 담기";
             elements.detailBookmarkButton.classList.toggle("is-active", bookmarked);
+            elements.detailBookmarkButton.setAttribute("aria-pressed", String(bookmarked));
             elements.detailMobileBookmarkButton?.classList.toggle("is-active", bookmarked);
             elements.detailMobileBookmarkButton?.setAttribute("aria-pressed", String(bookmarked));
             const mobileIcon = elements.detailMobileBookmarkButton?.querySelector("span");
@@ -602,6 +603,7 @@
             const compared = isComparedProduct(currentProduct.id);
             elements.detailCompareButton.textContent = compared ? "비교 보드 해제" : "비교 보드 담기";
             elements.detailCompareButton.classList.toggle("is-active", compared);
+            elements.detailCompareButton.setAttribute("aria-pressed", String(compared));
             elements.detailMobileCompareButton?.classList.toggle("is-active", compared);
             elements.detailMobileCompareButton?.setAttribute("aria-pressed", String(compared));
         }

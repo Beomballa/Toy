@@ -840,6 +840,103 @@ main#top {
     margin-bottom: 8px;
 }
 
+.catalog-toolbar__primary {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.toolbar-field--sort select {
+    min-width: 120px;
+}
+
+.catalog-filter-panel {
+    position: relative;
+}
+
+.catalog-filter-panel > summary {
+    display: inline-flex;
+    min-height: 30px;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    border-radius: 999px;
+    background: var(--store-chip);
+    font-size: var(--store-text-meta);
+    cursor: pointer;
+    list-style: none;
+}
+
+.catalog-filter-panel > summary::-webkit-details-marker {
+    display: none;
+}
+
+.catalog-filter-panel > summary strong {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    place-items: center;
+    border-radius: 50%;
+    background: #fff;
+    font-size: 11px;
+}
+
+.catalog-filter-panel.has-active-filter > summary {
+    background: var(--store-ink);
+    color: #fff;
+}
+
+.catalog-filter-panel.has-active-filter > summary strong {
+    color: var(--store-ink);
+}
+
+.catalog-filter-panel__body {
+    position: absolute;
+    z-index: 12;
+    top: calc(100% + 8px);
+    right: 0;
+    display: grid;
+    width: min(520px, calc(100vw - 28px));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, .12);
+}
+
+.catalog-filter-panel__body .toolbar-field label {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    margin-bottom: 6px;
+    overflow: visible;
+    clip: auto;
+    color: var(--store-muted);
+    white-space: normal;
+}
+
+.catalog-filter-panel__body .toolbar-field select {
+    width: 100%;
+    min-height: 38px;
+    border-radius: var(--store-radius-control);
+}
+
+.catalog-filter-panel__reset {
+    min-height: 38px;
+    grid-column: 1 / -1;
+    border: 0;
+    border-top: 1px solid var(--store-line);
+    background: #fff;
+    color: var(--store-muted);
+    cursor: pointer;
+}
+
 .toolbar-field--search input {
     width: 100%;
     min-height: 48px;
@@ -1576,6 +1673,14 @@ main#top {
         flex-basis: 100%;
         min-width: 100%;
         padding-right: 0;
+    }
+
+    .catalog-toolbar__primary {
+        justify-content: space-between;
+    }
+
+    .catalog-filter-panel__body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .product-drawer__panel {

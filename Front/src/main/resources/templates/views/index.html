@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260713.5">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260713.5">
+    <link rel="stylesheet" href="/css/main.css?v=20260713.6">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260713.6">
 </head>
 <body>
 <div class="page-shell">
@@ -436,48 +436,8 @@
                         <div class="catalog-search-assist__list" id="searchSuggestionList"></div>
                     </div>
                 </div>
-                <div class="toolbar-field">
-                    <label for="brandFilter">브랜드</label>
-                    <select id="brandFilter"></select>
-                </div>
-                <div class="toolbar-field">
-                    <label for="categoryFilter">카테고리</label>
-                    <select id="categoryFilter"></select>
-                </div>
-                <div class="toolbar-field">
-                    <label for="stockFilter">재고 상태</label>
-                    <select id="stockFilter">
-                        <option value="ALL">전체</option>
-                        <option value="LOW">품절 임박</option>
-                        <option value="STABLE">재고 안정</option>
-                    </select>
-                </div>
-                <div class="toolbar-field">
-                    <label for="featuredOnlyFilter">대표 노출</label>
-                    <select id="featuredOnlyFilter">
-                        <option value="ALL">전체</option>
-                        <option value="FEATURED">Featured만</option>
-                    </select>
-                </div>
-                <div class="toolbar-field">
-                    <label for="priceBandFilter">가격대</label>
-                    <select id="priceBandFilter">
-                        <option value="ALL">전체</option>
-                        <option value="UNDER_200">20만원 미만</option>
-                        <option value="BETWEEN_200_300">20만원-30만원</option>
-                        <option value="OVER_300">30만원 초과</option>
-                    </select>
-                </div>
-                <div class="toolbar-field">
-                    <label for="lowStockThresholdFilter">긴장 기준</label>
-                    <select id="lowStockThresholdFilter">
-                        <option value="10">10개 미만</option>
-                        <option value="20" selected>20개 미만</option>
-                        <option value="30">30개 미만</option>
-                        <option value="50">50개 미만</option>
-                    </select>
-                </div>
-                <div class="toolbar-field">
+                <div class="catalog-toolbar__primary">
+                    <div class="toolbar-field toolbar-field--sort">
                     <label for="sortFilter">정렬</label>
                     <select id="sortFilter">
                         <option value="LATEST">최근 등록순</option>
@@ -488,6 +448,57 @@
                         <option value="STOCK_DESC">재고 높은 순</option>
                         <option value="FEATURED">대표 노출순</option>
                     </select>
+                    </div>
+                    <details class="catalog-filter-panel" id="catalogFilterPanel">
+                        <summary>
+                            <span>필터</span>
+                            <strong id="catalogFilterCount" aria-live="polite">0</strong>
+                        </summary>
+                        <div class="catalog-filter-panel__body">
+                            <div class="toolbar-field">
+                                <label for="brandFilter">브랜드</label>
+                                <select id="brandFilter"></select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="categoryFilter">카테고리</label>
+                                <select id="categoryFilter"></select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="stockFilter">재고 상태</label>
+                                <select id="stockFilter">
+                                    <option value="ALL">전체 재고</option>
+                                    <option value="LOW">품절 임박</option>
+                                    <option value="STABLE">재고 안정</option>
+                                </select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="featuredOnlyFilter">대표 노출</label>
+                                <select id="featuredOnlyFilter">
+                                    <option value="ALL">전체 노출</option>
+                                    <option value="FEATURED">Featured만</option>
+                                </select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="priceBandFilter">가격대</label>
+                                <select id="priceBandFilter">
+                                    <option value="ALL">전체 가격</option>
+                                    <option value="UNDER_200">20만원 미만</option>
+                                    <option value="BETWEEN_200_300">20만원-30만원</option>
+                                    <option value="OVER_300">30만원 초과</option>
+                                </select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="lowStockThresholdFilter">긴장 기준</label>
+                                <select id="lowStockThresholdFilter">
+                                    <option value="10">재고 10개 미만</option>
+                                    <option value="20" selected>재고 20개 미만</option>
+                                    <option value="30">재고 30개 미만</option>
+                                    <option value="50">재고 50개 미만</option>
+                                </select>
+                            </div>
+                            <button class="catalog-filter-panel__reset" type="button" id="resetFiltersButton">필터 전체 초기화</button>
+                        </div>
+                    </details>
                 </div>
             </div>
 
@@ -512,7 +523,6 @@
                     <button class="catalog-reset-button" type="button" id="toggleCompactViewButton">컴팩트 보기</button>
                     <button class="catalog-reset-button" type="button" id="toggleTodayOnlyButton">오늘 등록만 보기</button>
                     <button class="catalog-reset-button" type="button" id="clearSearchButton">검색 비우기</button>
-                    <button class="catalog-reset-button" type="button" id="resetFiltersButton">조건 초기화</button>
                     <div class="catalog-tags" id="catalogTags"></div>
                 </div>
             </div>
@@ -624,6 +634,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260713.5"></script>
+<script src="/js/view/app.js?v=20260713.6"></script>
 </body>
 </html>

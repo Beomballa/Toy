@@ -110,6 +110,8 @@
         priceBandFilter: document.getElementById("priceBandFilter"),
         lowStockThresholdFilter: document.getElementById("lowStockThresholdFilter"),
         sortFilter: document.getElementById("sortFilter"),
+        catalogFilterPanel: document.getElementById("catalogFilterPanel"),
+        catalogFilterCount: document.getElementById("catalogFilterCount"),
         searchInput: document.getElementById("searchInput"),
         clearInlineSearchButton: document.getElementById("clearInlineSearchButton"),
         searchAssist: document.getElementById("searchAssist"),
@@ -2158,6 +2160,16 @@
         activeStates.forEach((isActive, control) => {
             control?.closest(".toolbar-field")?.classList.toggle("has-value", isActive);
         });
+        const activeFilterCount = [
+            state.brand !== DEFAULT_STATE.brand,
+            state.category !== DEFAULT_STATE.category,
+            state.stock !== DEFAULT_STATE.stock,
+            state.featuredOnly !== DEFAULT_STATE.featuredOnly,
+            state.priceBand !== DEFAULT_STATE.priceBand,
+            state.stock !== DEFAULT_STATE.stock && state.lowStockThreshold !== DEFAULT_STATE.lowStockThreshold
+        ].filter(Boolean).length;
+        setText(elements.catalogFilterCount, String(activeFilterCount));
+        elements.catalogFilterPanel?.classList.toggle("has-active-filter", activeFilterCount > 0);
     }
 
     function removeFilter(key) {

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.5")
+                .contains("/css/storefront.css?v=20260713.6")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260713.5");
+                .contains("/js/view/app.js?v=20260713.6");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.5")
+                .contains("/css/storefront.css?v=20260713.6")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260713.5");
+                .contains("/js/view/detail.js?v=20260713.6");
     }
 
     @Test
@@ -249,6 +249,27 @@ class FrontStorefrontResourceTest {
                 .contains("contain: inline-size")
                 .contains("overflow-x: clip")
                 .contains("overflow: hidden");
+    }
+
+    @Test
+    void catalogKeepsCollapsedFilterPanelAndActiveCountContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"catalogFilterPanel\"")
+                .contains("id=\"catalogFilterCount\" aria-live=\"polite\"")
+                .contains("class=\"catalog-filter-panel__body\"")
+                .contains("id=\"resetFiltersButton\"");
+        assertThat(script)
+                .contains("const activeFilterCount")
+                .contains("catalogFilterPanel?.classList.toggle(\"has-active-filter\"")
+                .contains("setText(elements.catalogFilterCount, String(activeFilterCount))");
+        assertThat(css)
+                .contains(".catalog-filter-panel__body")
+                .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
     }
 
     private String readResource(String path) throws IOException {

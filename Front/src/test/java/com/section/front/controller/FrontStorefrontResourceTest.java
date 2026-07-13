@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.10")
+                .contains("/css/storefront.css?v=20260713.11")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260713.10");
+                .contains("/js/view/app.js?v=20260713.11");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.10")
+                .contains("/css/storefront.css?v=20260713.11")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260713.10");
+                .contains("/js/view/detail.js?v=20260713.11");
     }
 
     @Test
@@ -352,6 +352,28 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-secondary-actions")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr)) auto")
                 .contains(".detail-signal-list .signal-card");
+    }
+
+    @Test
+    void detailCollectionsKeepCountsCollapsedControlsAndProductCards() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailOptionCount\" aria-live=\"polite\"")
+                .contains("id=\"detailRelatedCount\" aria-live=\"polite\"")
+                .contains("class=\"board-action-menu detail-section-menu\"");
+        assertThat(script)
+                .contains("detailOptionCount.textContent = String(options.length)")
+                .contains("detailRelatedCount.textContent = String(related.length)")
+                .contains("detail-related-card saved-product-card")
+                .contains("aria-label=\"연관 상품 추가 작업\"")
+                .contains("setAttribute(\"aria-pressed\", String(isPressed))");
+        assertThat(css)
+                .contains(".detail-section-count")
+                .contains("#detailRelatedGrid .saved-product-card__actions")
+                .contains("#detailRecentGrid .saved-product-card");
     }
 
     private String readResource(String path) throws IOException {

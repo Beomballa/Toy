@@ -31,7 +31,9 @@
         detailSignalList: document.getElementById("detailSignalList"),
         detailOverviewGrid: document.getElementById("detailOverviewGrid"),
         detailOptionGrid: document.getElementById("detailOptionGrid"),
+        detailOptionCount: document.getElementById("detailOptionCount"),
         detailRelatedGrid: document.getElementById("detailRelatedGrid"),
+        detailRelatedCount: document.getElementById("detailRelatedCount"),
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
@@ -216,6 +218,9 @@
         }
         syncOptionSortButtons();
         const options = sortedOptions(product);
+        if (elements.detailOptionCount) {
+            elements.detailOptionCount.textContent = String(options.length);
+        }
         if (selectedOptionName && !options.some((option) => option.name === selectedOptionName)) {
             selectedOptionName = "";
             syncSelectedOptionActions({});
@@ -268,6 +273,9 @@
             return;
         }
         const related = sortedRelatedProducts(product);
+        if (elements.detailRelatedCount) {
+            elements.detailRelatedCount.textContent = String(related.length);
+        }
         if (!related.length) {
             elements.detailRelatedGrid.innerHTML = `
                 <article class="catalog-empty">
@@ -278,7 +286,7 @@
             return;
         }
         elements.detailRelatedGrid.innerHTML = related.map((item) => `
-            <article class="detail-related-card">
+            <article class="detail-related-card saved-product-card">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
@@ -288,11 +296,16 @@
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                 </div>
-                <div class="detail-related-card__actions">
+                <div class="detail-related-card__actions saved-product-card__actions">
                     <a href="${buildProductUrl(item.id)}">상세 보기</a>
-                    <button class="${isComparedProduct(item.id) ? "is-active" : ""}" type="button" data-related-compare-id="${item.id}">${isComparedProduct(item.id) ? "비교 해제" : "비교 담기"}</button>
-                    <button class="${isBookmarkedProduct(item.id) ? "is-active" : ""}" type="button" data-related-bookmark-id="${item.id}">${isBookmarkedProduct(item.id) ? "찜 해제" : "찜하기"}</button>
-                    <button type="button" data-related-copy-id="${item.id}">요약 복사</button>
+                    <details class="saved-product-card__menu">
+                        <summary aria-label="연관 상품 추가 작업">•••</summary>
+                        <div>
+                            <button class="${isComparedProduct(item.id) ? "is-active" : ""}" type="button" data-related-compare-id="${item.id}">${isComparedProduct(item.id) ? "비교 해제" : "비교 담기"}</button>
+                            <button class="${isBookmarkedProduct(item.id) ? "is-active" : ""}" type="button" data-related-bookmark-id="${item.id}">${isBookmarkedProduct(item.id) ? "관심 해제" : "관심 상품 추가"}</button>
+                            <button type="button" data-related-copy-id="${item.id}">요약 복사</button>
+                        </div>
+                    </details>
                 </div>
             </article>
         `).join("");
@@ -358,7 +371,7 @@
         }
         elements.detailRecentSection.hidden = false;
         elements.detailRecentGrid.innerHTML = recentProducts.map((item) => `
-            <a class="detail-related-card" href="${buildProductUrl(item.id)}">
+            <a class="detail-related-card saved-product-card" href="${buildProductUrl(item.id)}">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand || "-"}</span>
                 <strong>${item.headline || item.name || "-"}</strong>
@@ -399,6 +412,13 @@
         elements.detailOptionLowStockOnlyButton?.classList.toggle("is-active", optionSortState.lowStockOnly);
         elements.detailOptionSortStockHighButton?.classList.toggle("is-active", optionSortState.mode === "STOCK_DESC");
         elements.detailOptionStableOnlyButton?.classList.toggle("is-active", optionSortState.stableOnly);
+        [
+            [elements.detailOptionSortStockButton, optionSortState.mode === "STOCK_ASC"],
+            [elements.detailOptionSortNameButton, optionSortState.mode === "NAME_ASC"],
+            [elements.detailOptionSortStockHighButton, optionSortState.mode === "STOCK_DESC"],
+            [elements.detailOptionLowStockOnlyButton, optionSortState.lowStockOnly],
+            [elements.detailOptionStableOnlyButton, optionSortState.stableOnly]
+        ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
     }
 
     function sortedRelatedProducts(product) {
@@ -427,6 +447,13 @@
         elements.detailRelatedLowStockOnlyButton?.classList.toggle("is-active", relatedSortState.lowStockOnly);
         elements.detailRelatedSortPriceLowButton?.classList.toggle("is-active", relatedSortState.mode === "PRICE_LOW");
         elements.detailRelatedSameBrandButton?.classList.toggle("is-active", relatedSortState.sameBrandOnly);
+        [
+            [elements.detailRelatedSortStockButton, relatedSortState.mode === "STOCK_ASC"],
+            [elements.detailRelatedSortPriceButton, relatedSortState.mode === "PRICE_HIGH"],
+            [elements.detailRelatedSortPriceLowButton, relatedSortState.mode === "PRICE_LOW"],
+            [elements.detailRelatedLowStockOnlyButton, relatedSortState.lowStockOnly],
+            [elements.detailRelatedSameBrandButton, relatedSortState.sameBrandOnly]
+        ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
     }
 
     function bindRelatedCardActions(related) {

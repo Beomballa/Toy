@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.11")
+                .contains("/css/storefront.css?v=20260714.1")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260713.11");
+                .contains("/js/view/app.js?v=20260714.1");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260713.11")
+                .contains("/css/storefront.css?v=20260714.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260713.11");
+                .contains("/js/view/detail.js?v=20260714.1");
     }
 
     @Test
@@ -374,6 +374,21 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-section-count")
                 .contains("#detailRelatedGrid .saved-product-card__actions")
                 .contains("#detailRecentGrid .saved-product-card");
+    }
+
+    @Test
+    void mainPageKeepsReferenceHeroBeforeCategoryAndUnifiedTypography() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html.indexOf("<section class=\"hero\""))
+                .isLessThan(html.indexOf("<nav class=\"home-category-rail\""));
+        assertThat(css)
+                .contains("main#top > .hero")
+                .contains("main#top > .home-category-rail")
+                .contains("font-size: 40px")
+                .contains("grid-template-columns: repeat(8, 100px)")
+                .contains("font-family: \"Pretendard Variable\"");
     }
 
     private String readResource(String path) throws IOException {

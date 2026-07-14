@@ -2281,3 +2281,93 @@ main#top {
         transition-duration: .01ms !important;
     }
 }
+
+/* Final storefront baseline: keep visual and DOM flow aligned with the reference storefront. */
+body,
+button,
+input,
+select,
+textarea,
+h1,
+h2,
+h3,
+.hero h1,
+.detail-hero h1,
+.section-heading h2,
+.catalog-summary__headline strong {
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+
+body {
+    letter-spacing: -.01em;
+}
+
+main#top {
+    display: flex;
+    flex-direction: column;
+}
+
+main#top > .hero {
+    order: 1;
+}
+
+main#top > .home-category-rail {
+    order: 2;
+}
+
+.topbar-nav a {
+    font-size: 20px;
+    line-height: 24px;
+}
+
+.topbar-subnav a {
+    font-size: 14px;
+}
+
+.hero {
+    min-height: 470px;
+    margin: 0 0 56px;
+    border-radius: 0;
+}
+
+.hero::after {
+    display: none;
+}
+
+.hero h1 {
+    font-size: 40px;
+    letter-spacing: -.035em;
+}
+
+.home-category-rail {
+    grid-template-columns: repeat(8, 100px);
+    justify-content: space-between;
+    gap: 0;
+    margin-bottom: 64px;
+}
+
+.home-category-rail button span {
+    border-radius: var(--store-radius-control);
+}
+
+@media (max-width: 768px) {
+    .topbar-nav a {
+        font-size: var(--store-text-body);
+    }
+
+    .hero {
+        min-height: 390px;
+        margin-top: 12px;
+        padding: 28px 22px;
+    }
+
+    .hero h1 {
+        font-size: 32px;
+    }
+
+    .home-category-rail {
+        grid-template-columns: repeat(8, 76px);
+        justify-content: start;
+        gap: 12px;
+    }
+}

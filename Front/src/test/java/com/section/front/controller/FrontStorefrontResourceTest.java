@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260714.1")
+                .contains("/css/storefront.css?v=20260714.2")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260714.1");
+                .contains("/js/view/app.js?v=20260714.2");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260714.1")
+                .contains("/css/storefront.css?v=20260714.2")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260714.1");
+                .contains("/js/view/detail.js?v=20260714.2");
     }
 
     @Test
@@ -389,6 +389,23 @@ class FrontStorefrontResourceTest {
                 .contains("font-size: 40px")
                 .contains("grid-template-columns: repeat(8, 100px)")
                 .contains("font-family: \"Pretendard Variable\"");
+    }
+
+    @Test
+    void mainPageKeepsStructuredServiceFooterAndSectionHierarchy() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("<footer class=\"site-footer\" aria-label=\"서비스 정보\">")
+                .contains("class=\"site-footer__support\"")
+                .contains("class=\"site-footer__policy\"")
+                .contains("실제 거래를 제공하지 않습니다");
+        assertThat(css)
+                .contains(".section-heading h2")
+                .contains("font-size: 18px")
+                .contains(".site-footer__bottom")
+                .contains("grid-column: 1 / -1");
     }
 
     private String readResource(String path) throws IOException {

@@ -2439,6 +2439,36 @@ main#top > .home-category-rail {
     color: var(--store-muted);
 }
 
+.page-shell--detail .detail-product-visual {
+    position: relative;
+    top: auto;
+    aspect-ratio: 1;
+    min-height: 0;
+    border-radius: 0;
+}
+
+.page-shell--detail .detail-commerce-panel {
+    padding-top: 4px;
+}
+
+.page-shell--detail .detail-hero h1 {
+    margin: 14px 0 8px;
+    font-size: 20px;
+    line-height: 1.4;
+    letter-spacing: -.02em;
+}
+
+.page-shell--detail .detail-description {
+    margin: 0;
+    color: var(--store-muted);
+    font-size: 14px;
+}
+
+.page-shell--detail .detail-price-card strong {
+    font-size: 20px;
+    letter-spacing: -.02em;
+}
+
 @media (max-width: 768px) {
     .topbar-nav a {
         font-size: var(--store-text-body);
@@ -2479,5 +2509,9 @@ main#top > .home-category-rail {
     .site-footer__company {
         justify-self: start;
         text-align: left;
+    }
+
+    .page-shell--detail .detail-product-visual {
+        aspect-ratio: 1;
     }
 }

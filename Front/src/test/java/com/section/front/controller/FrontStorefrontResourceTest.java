@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.17")
+                .contains("/css/storefront.css?v=20260715.18")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.17");
+                .contains("/js/view/app.js?v=20260715.18");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.17")
+                .contains("/css/storefront.css?v=20260715.18")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.17");
+                .contains("/js/view/detail.js?v=20260715.18");
     }
 
     @Test
@@ -753,6 +753,26 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains("content: attr(data-keyboard-hint)")
                 .contains(":focus-visible::after");
+    }
+
+    @Test
+    void catalogKeepsCurrentPageBulkSelectionAndCsvContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"selectLowStockPageButton\"")
+                .contains("id=\"selectFeaturedPageButton\"")
+                .contains("id=\"invertPageSelectionButton\"")
+                .contains("id=\"copyCurrentPageSummaryButton\"")
+                .contains("id=\"exportCurrentPageCsvButton\"");
+        assertThat(script)
+                .contains("function selectCurrentPageProducts(predicate, label)")
+                .contains("function invertCurrentPageSelection()")
+                .contains("catalogSummaryClipboardText(currentCatalogPageProducts())")
+                .contains("function exportCurrentPageCsv()")
+                .contains("function csvCell(value)")
+                .contains("function downloadTextFile(fileName, content, type)");
     }
 
     private String readResource(String path) throws IOException {

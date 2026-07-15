@@ -160,6 +160,11 @@
         copySelectedLinksButton: document.getElementById("copySelectedLinksButton"),
         openUrgentSelectedButton: document.getElementById("openUrgentSelectedButton"),
         focusSelectedBrandButton: document.getElementById("focusSelectedBrandButton"),
+        selectLowStockPageButton: document.getElementById("selectLowStockPageButton"),
+        selectFeaturedPageButton: document.getElementById("selectFeaturedPageButton"),
+        invertPageSelectionButton: document.getElementById("invertPageSelectionButton"),
+        copyCurrentPageSummaryButton: document.getElementById("copyCurrentPageSummaryButton"),
+        exportCurrentPageCsvButton: document.getElementById("exportCurrentPageCsvButton"),
         catalogInsightGrid: document.getElementById("catalogInsightGrid"),
         catalogPresetStrip: document.getElementById("catalogPresetStrip"),
         catalogTags: document.getElementById("catalogTags"),
@@ -1159,6 +1164,21 @@
             renderCatalog();
             showToast("현재 상품을 모두 선택했습니다.", `${selectedProductIds.size}개 상품을 일괄 작업할 수 있습니다.`);
         });
+        elements.selectLowStockPageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Number(product.stock || 0) < lowStockThresholdValue(), "저재고");
+        });
+        elements.selectFeaturedPageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Boolean(product.featured), "Featured");
+        });
+        elements.invertPageSelectionButton?.addEventListener("click", invertCurrentPageSelection);
+        elements.copyCurrentPageSummaryButton?.addEventListener("click", async () => {
+            await copyTextWithFeedback(
+                catalogSummaryClipboardText(currentCatalogPageProducts()),
+                "현재 페이지 요약을 복사했습니다.",
+                "표시 중인 상품의 가격과 재고를 바로 전달할 수 있습니다."
+            );
+        });
+        elements.exportCurrentPageCsvButton?.addEventListener("click", exportCurrentPageCsv);
         elements.catalogPageSize?.addEventListener("change", () => {
             paginationState.size = elements.catalogPageSize.value;
             paginationState.page = 1;
@@ -2031,6 +2051,58 @@
         renderCatalog();
     }
 
+    function selectCurrentPageProducts(predicate, label) {
+        const matchingProducts = currentCatalogPageProducts().filter(predicate);
+        selectedProductIds.clear();
+        matchingProducts.forEach((product) => selectedProductIds.add(Number(product.id)));
+        renderCatalog();
+        showToast(`${label} 상품 ${matchingProducts.length}개를 선택했습니다.`, "현재 페이지 조건으로 선택 목록을 다시 구성했습니다.");
+    }
+
+    function invertCurrentPageSelection() {
+        currentCatalogPageProducts().forEach((product) => {
+            const productId = Number(product.id);
+            if (selectedProductIds.has(productId)) {
+                selectedProductIds.delete(productId);
+            } else {
+                selectedProductIds.add(productId);
+            }
+        });
+        renderCatalog();
+        showToast("현재 페이지 선택을 반전했습니다.", `${selectedProductIds.size}개 상품이 선택되어 있습니다.`);
+    }
+
+    function exportCurrentPageCsv() {
+        const rows = currentCatalogPageProducts();
+        const header = ["ID", "브랜드", "상품명", "모델", "가격", "재고", "재고상태"];
+        const csv = [header].concat(rows.map((product) => [
+            product.id,
+            product.brand,
+            product.name,
+            product.model,
+            Number(product.price || 0),
+            Number(product.stock || 0),
+            product.stockStatus || stockLabel(product.stock)
+        ])).map((row) => row.map(csvCell).join(",")).join("\n");
+        downloadTextFile(`grade-stock-page-${paginationState.page}.csv`, `\uFEFF${csv}`, "text/csv;charset=utf-8");
+        showToast("현재 페이지 CSV를 생성했습니다.", `${rows.length}개 상품을 스프레드시트에서 확인할 수 있습니다.`);
+    }
+
+    function csvCell(value) {
+        return `"${String(value ?? "").replaceAll("\"", "\"\"")}"`;
+    }
+
+    function downloadTextFile(fileName, content, type) {
+        const url = URL.createObjectURL(new Blob([content], { type }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+    }
+
     function hiddenProductSummary(product) {
         return {
             id: product.id,
@@ -2045,9 +2117,22 @@
             return;
         }
         const selected = selectedProducts();
+        const pageProducts = currentCatalogPageProducts();
         elements.catalogSelection.classList.toggle("has-selection", Boolean(selected.length));
         setText(elements.catalogSelectionCount, String(selected.length));
-        elements.selectVisibleProductsButton.disabled = currentCatalogPageProducts().length === 0;
+        elements.selectVisibleProductsButton.disabled = pageProducts.length === 0;
+        if (elements.selectLowStockPageButton) {
+            elements.selectLowStockPageButton.disabled = !pageProducts.some((product) => Number(product.stock || 0) < lowStockThresholdValue());
+        }
+        if (elements.selectFeaturedPageButton) {
+            elements.selectFeaturedPageButton.disabled = !pageProducts.some((product) => Boolean(product.featured));
+        }
+        [elements.invertPageSelectionButton, elements.copyCurrentPageSummaryButton, elements.exportCurrentPageCsvButton]
+            .forEach((button) => {
+                if (button) {
+                    button.disabled = pageProducts.length === 0;
+                }
+            });
         [
             elements.clearSelectedProductsButton,
             elements.compareSelectedProductsButton,

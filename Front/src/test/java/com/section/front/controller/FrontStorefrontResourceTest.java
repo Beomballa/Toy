@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.11")
+                .contains("/css/storefront.css?v=20260715.12")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.11");
+                .contains("/js/view/app.js?v=20260715.12");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.11")
+                .contains("/css/storefront.css?v=20260715.12")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.11");
+                .contains("/js/view/detail.js?v=20260715.12");
     }
 
     @Test
@@ -640,6 +640,24 @@ class FrontStorefrontResourceTest {
                 .contains("async function shareSelectedOption()")
                 .contains("detailOptionStockRateBar.style.width");
         assertThat(css).contains(".detail-option-stock-rate");
+    }
+
+    @Test
+    void detailKeepsRecentRemovalCrossTabBreadcrumbAndRelatedSummaryContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailCopyBreadcrumbButton\"")
+                .contains("id=\"detailRelatedAveragePrice\"")
+                .contains("id=\"detailCompareAllRelatedButton\"");
+        assertThat(script)
+                .contains("data-remove-detail-recent-id")
+                .contains("function removeRecentProduct(productIdValue)")
+                .contains("window.addEventListener(\"storage\", syncDetailStateFromStorage)")
+                .contains("async function copyDetailBreadcrumb()")
+                .contains("function addAllRelatedToCompare()")
+                .contains("비교 보드는 최대 3개 상품을 유지합니다.");
     }
 
     private String readResource(String path) throws IOException {

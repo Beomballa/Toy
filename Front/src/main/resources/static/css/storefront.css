@@ -2586,6 +2586,29 @@ main#top > .home-category-rail {
     white-space: nowrap;
 }
 
+.detail-breadcrumb button {
+    flex: none;
+    min-height: 28px;
+    margin-left: auto;
+    padding: 0 10px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    color: var(--store-muted);
+    font-size: 12px;
+}
+
+.detail-related-average {
+    margin-top: 6px !important;
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+}
+
+.detail-related-average strong {
+    margin-left: 4px;
+    color: var(--store-ink);
+}
+
 .detail-zoom-button {
     position: absolute;
     z-index: 3;

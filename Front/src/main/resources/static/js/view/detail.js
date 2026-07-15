@@ -71,6 +71,7 @@
         detailStatus: document.getElementById("detailStatus"),
         detailBreadcrumbCategory: document.getElementById("detailBreadcrumbCategory"),
         detailBreadcrumbProduct: document.getElementById("detailBreadcrumbProduct"),
+        detailCopyBreadcrumbButton: document.getElementById("detailCopyBreadcrumbButton"),
         detailOptionSelection: document.getElementById("detailOptionSelection"),
         detailOptionSelectionText: document.getElementById("detailOptionSelectionText"),
         detailClearOptionButton: document.getElementById("detailClearOptionButton"),
@@ -89,7 +90,9 @@
         detailOptionStockRateBar: document.getElementById("detailOptionStockRateBar"),
         detailRecommendOptionButton: document.getElementById("detailRecommendOptionButton"),
         detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
-        detailNextRelatedButton: document.getElementById("detailNextRelatedButton")
+        detailNextRelatedButton: document.getElementById("detailNextRelatedButton"),
+        detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
+        detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton")
     };
 
     function formatPrice(price) {
@@ -397,6 +400,13 @@
         if (elements.detailRelatedCount) {
             elements.detailRelatedCount.textContent = String(related.length);
         }
+        setElementText(
+            elements.detailRelatedAveragePrice,
+            related.length ? formatPrice(Math.round(related.reduce((sum, item) => sum + Number(item.price || 0), 0) / related.length)) : "-"
+        );
+        if (elements.detailCompareAllRelatedButton) {
+            elements.detailCompareAllRelatedButton.disabled = !related.length;
+        }
         if (!related.length) {
             elements.detailRelatedGrid.innerHTML = `
                 <article class="catalog-empty">
@@ -546,7 +556,7 @@
         }
         elements.detailRecentSection.hidden = false;
         elements.detailRecentGrid.innerHTML = recentProducts.map((item) => `
-            <a class="detail-related-card saved-product-card" href="${buildProductUrl(item.id)}">
+            <article class="detail-related-card saved-product-card">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand || "-"}</span>
                 <strong>${item.headline || item.name || "-"}</strong>
@@ -557,8 +567,83 @@
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                     <span>다시 보기</span>
                 </div>
-            </a>
+                <div class="saved-product-card__actions">
+                    <a href="${buildProductUrl(item.id)}">상세 보기</a>
+                    <button class="saved-product-card__danger" type="button" data-remove-detail-recent-id="${item.id}">삭제</button>
+                </div>
+            </article>
         `).join("");
+    }
+
+    function removeRecentProduct(productIdValue) {
+        const next = readRecentProducts().filter((item) => Number(item.id) !== Number(productIdValue));
+        window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+        renderRecentProducts(productId);
+        showToast("최근 본 상품에서 삭제했습니다.", "선택한 상품만 최근 흐름에서 제외했습니다.");
+    }
+
+    async function copyDetailBreadcrumb() {
+        if (!currentProduct) {
+            return;
+        }
+        await copyText(`홈 / ${currentProduct.category || "상품"} / ${currentProduct.name}`, "상품 경로를 복사했습니다.");
+    }
+
+    function addAllRelatedToCompare() {
+        if (!currentProduct) {
+            return;
+        }
+        const current = readCompareProducts();
+        const merged = current.slice();
+        sortedRelatedProducts(currentProduct).forEach((item) => {
+            if (!merged.some((saved) => Number(saved.id) === Number(item.id))) {
+                merged.push(productStorageSummary(item));
+            }
+        });
+        const next = merged.slice(0, 3);
+        const addedCount = Math.max(0, next.length - current.length);
+        writeCompareProducts(next);
+        syncActionButtons();
+        renderRelated(currentProduct);
+        showToast(
+            addedCount ? `연관 상품 ${addedCount}개를 비교에 담았습니다.` : "추가할 비교 상품이 없습니다.",
+            "비교 보드는 최대 3개 상품을 유지합니다."
+        );
+    }
+
+    function productStorageSummary(product) {
+        return {
+            id: product.id,
+            brand: product.brand,
+            name: product.name,
+            headline: product.headline,
+            model: product.model,
+            category: product.category,
+            price: product.price,
+            priceLabel: product.priceLabel,
+            stock: product.stock,
+            stockStatus: product.stockStatus,
+            thumbnailUrl: product.thumbnailUrl
+        };
+    }
+
+    function syncDetailStateFromStorage(event) {
+        if (!currentProduct) {
+            return;
+        }
+        if ([BOOKMARK_PRODUCTS_KEY, COMPARE_PRODUCTS_KEY].includes(event.key)) {
+            syncActionButtons();
+            renderRelated(currentProduct);
+        }
+        if (event.key === RECENT_VIEWED_KEY) {
+            renderRecentProducts(productId);
+        }
+        if (event.key === SELECTED_OPTION_KEY) {
+            restoreRememberedOption(currentProduct);
+            renderOptions(currentProduct);
+            const selected = currentProduct.options?.find((option) => option.name === selectedOptionName);
+            syncSelectedOptionActions(selected || {});
+        }
     }
 
     function sortedOptions(product) {
@@ -930,6 +1015,7 @@
         document.addEventListener("error", handleProductImageError, true);
         initSectionNavigation();
         window.addEventListener("scroll", syncDetailScrollProgress, { passive: true });
+        window.addEventListener("storage", syncDetailStateFromStorage);
         syncDetailScrollProgress();
         elements.detailZoomButton?.addEventListener("click", openDetailImageModal);
         elements.detailImageModalCloseButton?.addEventListener("click", closeDetailImageModal);
@@ -960,6 +1046,7 @@
         elements.detailShareSelectedOptionButton?.addEventListener("click", shareSelectedOption);
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+        elements.detailCopyBreadcrumbButton?.addEventListener("click", copyDetailBreadcrumb);
         elements.detailRecommendOptionButton?.addEventListener("click", () => {
             if (!currentProduct) {
                 return;
@@ -976,6 +1063,13 @@
         });
         elements.detailPreviousRelatedButton?.addEventListener("click", () => openRelatedByDirection(-1));
         elements.detailNextRelatedButton?.addEventListener("click", () => openRelatedByDirection(1));
+        elements.detailCompareAllRelatedButton?.addEventListener("click", addAllRelatedToCompare);
+        elements.detailRecentGrid?.addEventListener("click", (event) => {
+            const removeButton = event.target.closest("[data-remove-detail-recent-id]");
+            if (removeButton) {
+                removeRecentProduct(removeButton.dataset.removeDetailRecentId);
+            }
+        });
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });

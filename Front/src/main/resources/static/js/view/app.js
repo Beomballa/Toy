@@ -10,6 +10,8 @@
     const VIEW_MODE_KEY = "front-catalog-view-mode";
     const DISPLAY_PREFERENCES_KEY = "front-catalog-display-preferences";
     const PAGE_SIZE_KEY = "front-catalog-page-size";
+    const CATALOG_CACHE_KEY = "front-catalog-session-cache";
+    const SCROLL_POSITION_KEY = "front-catalog-scroll-position";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -337,6 +339,7 @@
         initHeroCarousel();
         syncScrollState();
         syncNetworkStatus();
+        restoreCatalogScrollPosition();
     }
 
     async function loadProducts() {
@@ -369,9 +372,19 @@
             metrics = payload?.metrics || metrics;
             brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
             categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
+            writeCatalogSessionCache(payload);
         } catch (error) {
             if (error?.name === "AbortError" || requestSequence !== catalogRequestSequence) {
                 return false;
+            }
+            const cachedPayload = readCatalogSessionCache();
+            if (cachedPayload) {
+                products = cachedPayload.products.slice();
+                metrics = cachedPayload.metrics || metrics;
+                brandFacets = cachedPayload.brandFacets.slice();
+                categoryFacets = cachedPayload.categoryFacets.slice();
+                announceStorefrontStatus("네트워크 오류로 최근 세션 카탈로그를 표시합니다.");
+                return true;
             }
             catalogLoadError = error instanceof Error ? error.message : "상품 데이터를 불러오지 못했습니다.";
             products = [];
@@ -1243,6 +1256,8 @@
             }
         });
         elements.catalogGrid?.addEventListener("keydown", handleCatalogCardNavigation);
+        elements.catalogGrid?.addEventListener("pointerover", warmCatalogProductDetail);
+        elements.catalogGrid?.addEventListener("focusin", warmCatalogProductDetail);
         window.addEventListener("popstate", async () => {
             hydrateStateFromUrl();
             syncControls();
@@ -1254,6 +1269,7 @@
         });
         elements.resetPersonalDataButton?.addEventListener("click", resetPersonalData);
         window.addEventListener("storage", syncPersonalStateFromStorage);
+        window.addEventListener("pagehide", persistCatalogScrollPosition);
         window.addEventListener("online", handleNetworkReconnect);
         window.addEventListener("offline", handleNetworkOffline);
         document.addEventListener("visibilitychange", handleVisibilityChange);
@@ -1436,7 +1452,7 @@
     }
 
     function startHeroCarousel() {
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || document.hidden) {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.navigator.connection?.saveData || document.hidden) {
             return;
         }
         stopHeroCarousel();
@@ -1893,7 +1909,7 @@
                     <span aria-hidden="true">${bookmarkedIds.has(Number(product.id)) ? "♥" : "♡"}</span>
                 </button>
                 <a class="catalog-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
-                    ${productVisualMarkup(product, "catalog-card__visual", { eager: index < 4 })}
+                    ${productVisualMarkup(product, "catalog-card__visual", { eager: index < 4 && !window.navigator.connection?.saveData })}
                 </a>
                 <div class="catalog-card__header">
                     <div>
@@ -3810,6 +3826,53 @@
         event.preventDefault();
         cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
         cards[nextIndex]?.focus();
+    }
+
+    function warmCatalogProductDetail(event) {
+        const card = event.target.closest?.(".catalog-card[role=\"listitem\"]");
+        const productId = Number(card?.querySelector("[data-product-id]")?.dataset.productId);
+        if (productId > 0 && !window.navigator.connection?.saveData) {
+            loadProductDetail(productId).catch(() => {});
+        }
+    }
+
+    function writeCatalogSessionCache(payload) {
+        try {
+            window.sessionStorage.setItem(CATALOG_CACHE_KEY, JSON.stringify(payload));
+        } catch (error) {
+            // 저장 공간이 제한된 환경에서도 최신 응답 렌더링은 계속한다.
+        }
+    }
+
+    function readCatalogSessionCache() {
+        try {
+            const payload = JSON.parse(window.sessionStorage.getItem(CATALOG_CACHE_KEY) || "null");
+            if (!Array.isArray(payload?.products) || !Array.isArray(payload?.brandFacets) || !Array.isArray(payload?.categoryFacets)) {
+                return null;
+            }
+            return payload;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function persistCatalogScrollPosition() {
+        try {
+            window.sessionStorage.setItem(SCROLL_POSITION_KEY, String(Math.max(0, Math.round(window.scrollY))));
+        } catch (error) {
+            // 세션 저장이 차단된 브라우저에서는 기본 스크롤 동작을 유지한다.
+        }
+    }
+
+    function restoreCatalogScrollPosition() {
+        try {
+            const savedPosition = Number(window.sessionStorage.getItem(SCROLL_POSITION_KEY));
+            if (savedPosition > 0) {
+                window.requestAnimationFrame(() => window.scrollTo({ top: savedPosition, behavior: "instant" }));
+            }
+        } catch (error) {
+            // 복원 실패는 화면 초기화에 영향을 주지 않는다.
+        }
     }
 
     function handleProductImageError(event) {

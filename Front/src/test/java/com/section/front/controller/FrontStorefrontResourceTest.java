@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.8")
+                .contains("/css/storefront.css?v=20260715.9")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.8");
+                .contains("/js/view/app.js?v=20260715.9");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.8")
+                .contains("/css/storefront.css?v=20260715.9")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.8");
+                .contains("/js/view/detail.js?v=20260715.9");
     }
 
     @Test
@@ -590,6 +590,20 @@ class FrontStorefrontResourceTest {
         assertThat(detailScript)
                 .contains("navigator.share")
                 .contains("상품 요약과 상세 URL을 전달했습니다.");
+    }
+
+    @Test
+    void catalogKeepsSessionRecoveryDataSaverPrefetchAndScrollContracts() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("CATALOG_CACHE_KEY")
+                .contains("function readCatalogSessionCache()")
+                .contains("네트워크 오류로 최근 세션 카탈로그를 표시합니다.")
+                .contains("window.navigator.connection?.saveData")
+                .contains("function warmCatalogProductDetail(event)")
+                .contains("window.addEventListener(\"pagehide\", persistCatalogScrollPosition)")
+                .contains("function restoreCatalogScrollPosition()");
     }
 
     private String readResource(String path) throws IOException {

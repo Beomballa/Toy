@@ -278,6 +278,10 @@
         topbarSubnav: document.getElementById("topbarSubnav"),
         mobileStoreNav: document.getElementById("mobileStoreNav"),
         mobileSavedCount: document.getElementById("mobileSavedCount"),
+        utilityRecentCount: document.getElementById("utilityRecentCount"),
+        utilityBookmarkCount: document.getElementById("utilityBookmarkCount"),
+        utilityCompareCount: document.getElementById("utilityCompareCount"),
+        resetPersonalDataButton: document.getElementById("resetPersonalDataButton"),
         homeCategoryRail: document.getElementById("homeCategoryRail"),
         heroPreviousButton: document.getElementById("heroPreviousButton"),
         heroNextButton: document.getElementById("heroNextButton"),
@@ -1196,6 +1200,8 @@
         elements.scrollTopButton?.addEventListener("click", () => {
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
+        elements.resetPersonalDataButton?.addEventListener("click", resetPersonalData);
+        window.addEventListener("storage", syncPersonalStateFromStorage);
     }
 
     function openHeaderSearch() {
@@ -2744,6 +2750,7 @@
     }
 
     function renderRecentViewed() {
+        syncPersonalCounts();
         if (!elements.recentViewedSection || !elements.recentViewedGrid) {
             return;
         }
@@ -2859,6 +2866,7 @@
     }
 
     function renderCompareBoard() {
+        syncPersonalCounts();
         if (!elements.compareBoardSection || !elements.compareBoardGrid) {
             return;
         }
@@ -2943,6 +2951,7 @@
     }
 
     function renderBookmarkBoard() {
+        syncPersonalCounts();
         if (!elements.bookmarkBoardSection || !elements.bookmarkBoardGrid) {
             return;
         }
@@ -3149,6 +3158,58 @@
         } catch (error) {
             return [];
         }
+    }
+
+    function syncPersonalCounts() {
+        setText(elements.utilityRecentCount, String(readRecentProducts().length));
+        setText(elements.utilityBookmarkCount, String(readBookmarkProducts().length));
+        setText(elements.utilityCompareCount, String(readCompareProducts().length));
+    }
+
+    async function resetPersonalData() {
+        if (!window.confirm("관심, 비교, 최근 본 상품과 저장한 탐색 데이터를 모두 초기화할까요?")) {
+            return;
+        }
+        [
+            BOOKMARK_PRODUCTS_KEY,
+            COMPARE_PRODUCTS_KEY,
+            RECENT_VIEWED_KEY,
+            SAVED_VIEWS_KEY,
+            SEARCH_HISTORY_KEY,
+            LAST_CATALOG_STATE_KEY,
+            LAST_DRAWER_PRODUCT_KEY,
+            HIDDEN_PRODUCTS_KEY
+        ].forEach((key) => window.localStorage.removeItem(key));
+        selectedProductIds.clear();
+        resetState();
+        syncControls();
+        await refreshCatalog();
+        announceStorefrontStatus("개인 탐색 데이터를 초기화했습니다.");
+        showToast("개인 탐색 데이터를 초기화했습니다.", "화면 설정은 유지하고 저장·비교·최근 기록만 정리했습니다.");
+    }
+
+    function syncPersonalStateFromStorage(event) {
+        const personalKeys = new Set([
+            BOOKMARK_PRODUCTS_KEY,
+            COMPARE_PRODUCTS_KEY,
+            RECENT_VIEWED_KEY,
+            SAVED_VIEWS_KEY,
+            SEARCH_HISTORY_KEY,
+            HIDDEN_PRODUCTS_KEY
+        ]);
+        if (event.key && !personalKeys.has(event.key)) {
+            return;
+        }
+        renderRecentViewed();
+        renderCompareBoard();
+        renderBookmarkBoard();
+        renderSavedViews();
+        renderSearchHistory();
+        renderHiddenProducts();
+        renderFlowBoard();
+        renderCatalog();
+        syncPersonalCounts();
+        announceStorefrontStatus("다른 탭에서 변경된 개인 탐색 상태를 반영했습니다.");
     }
 
     function writeBookmarkProducts(bookmarkedProducts) {

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.7")
+                .contains("/css/storefront.css?v=20260715.8")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.7");
+                .contains("/js/view/app.js?v=20260715.8");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.7")
+                .contains("/css/storefront.css?v=20260715.8")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.7");
+                .contains("/js/view/detail.js?v=20260715.8");
     }
 
     @Test
@@ -567,6 +567,29 @@ class FrontStorefrontResourceTest {
                 .contains("function relatedPriceDeltaLabel")
                 .contains("function openRelatedByDirection")
                 .contains("sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))");
+    }
+
+    @Test
+    void storefrontKeepsNativeShareShortcutHelpAndDismissibleStatusContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String mainScript = readResource("static/js/view/app.js");
+        String detailScript = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"networkDismissButton\"")
+                .contains("id=\"keyboardHelpButton\"")
+                .contains("id=\"shortcutHelpModal\" role=\"dialog\"")
+                .contains("id=\"shortcutHelpCloseButton\"");
+        assertThat(mainScript)
+                .contains("navigator.share")
+                .contains("function openShortcutHelp()")
+                .contains("function closeShortcutHelp()")
+                .contains("shortcutHelpReturnFocus?.focus?.()")
+                .contains("networkStatusDismissed = true")
+                .contains("event.key === \"?\"");
+        assertThat(detailScript)
+                .contains("navigator.share")
+                .contains("상품 요약과 상세 URL을 전달했습니다.");
     }
 
     private String readResource(String path) throws IOException {

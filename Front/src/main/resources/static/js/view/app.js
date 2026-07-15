@@ -52,6 +52,8 @@
     let catalogLoadError = "";
     let catalogRequestController = null;
     let catalogRequestSequence = 0;
+    let shortcutHelpReturnFocus = null;
+    let networkStatusDismissed = false;
     const detailCache = new Map();
     let toastTimerSeed = 0;
     const boardState = {
@@ -296,7 +298,11 @@
         storefrontStatus: document.getElementById("storefrontStatus"),
         networkStatus: document.getElementById("networkStatus"),
         networkStatusText: document.getElementById("networkStatusText"),
-        networkRetryButton: document.getElementById("networkRetryButton")
+        networkRetryButton: document.getElementById("networkRetryButton"),
+        networkDismissButton: document.getElementById("networkDismissButton"),
+        keyboardHelpButton: document.getElementById("keyboardHelpButton"),
+        shortcutHelpModal: document.getElementById("shortcutHelpModal"),
+        shortcutHelpCloseButton: document.getElementById("shortcutHelpCloseButton")
     };
 
     async function init() {
@@ -498,13 +504,20 @@
             if (event.key === "Escape") {
                 closeHeaderSearch();
                 closeMobileMenu();
+                closeShortcutHelp();
+            }
+            const target = event.target;
+            const tagName = target?.tagName;
+            const isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable;
+            if (event.key === "?" && !isEditable) {
+                event.preventDefault();
+                openShortcutHelp();
+                return;
             }
             if (event.key !== "/" || document.activeElement === elements.searchInput) {
                 return;
             }
-            const target = event.target;
-            const tagName = target?.tagName;
-            if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable) {
+            if (isEditable) {
                 return;
             }
             event.preventDefault();
@@ -647,11 +660,19 @@
         elements.shareCatalogButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {
+                if (navigator.share) {
+                    await navigator.share({ title: "Grade Stock 상품 탐색", text: buildSummaryText(filteredProducts().length), url: shareUrl });
+                    showToast("탐색 조건을 공유했습니다.", "현재 상품 조건과 URL을 전달했습니다.");
+                    return;
+                }
                 if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(shareUrl);
                 }
                 showToast("탐색 URL을 복사했습니다.", "현재 조건을 그대로 공유할 수 있습니다.");
             } catch (error) {
+                if (error?.name === "AbortError") {
+                    return;
+                }
                 window.prompt("현재 조건 URL을 복사하세요.", shareUrl);
             }
         });
@@ -1234,9 +1255,22 @@
         elements.resetPersonalDataButton?.addEventListener("click", resetPersonalData);
         window.addEventListener("storage", syncPersonalStateFromStorage);
         window.addEventListener("online", handleNetworkReconnect);
-        window.addEventListener("offline", syncNetworkStatus);
+        window.addEventListener("offline", handleNetworkOffline);
         document.addEventListener("visibilitychange", handleVisibilityChange);
         elements.networkRetryButton?.addEventListener("click", handleNetworkReconnect);
+        elements.networkDismissButton?.addEventListener("click", () => {
+            networkStatusDismissed = true;
+            if (elements.networkStatus) {
+                elements.networkStatus.hidden = true;
+            }
+        });
+        elements.keyboardHelpButton?.addEventListener("click", openShortcutHelp);
+        elements.shortcutHelpCloseButton?.addEventListener("click", closeShortcutHelp);
+        elements.shortcutHelpModal?.addEventListener("click", (event) => {
+            if (event.target === elements.shortcutHelpModal) {
+                closeShortcutHelp();
+            }
+        });
     }
 
     function openHeaderSearch() {
@@ -2162,12 +2196,13 @@
     function syncNetworkStatus() {
         const isOffline = !window.navigator.onLine;
         if (elements.networkStatus) {
-            elements.networkStatus.hidden = !isOffline && !catalogLoadError;
+            elements.networkStatus.hidden = networkStatusDismissed || (!isOffline && !catalogLoadError);
         }
         setText(elements.networkStatusText, isOffline ? "오프라인 상태입니다. 저장된 화면은 계속 볼 수 있습니다." : catalogLoadError || "연결이 복구되었습니다.");
     }
 
     async function handleNetworkReconnect() {
+        networkStatusDismissed = false;
         syncNetworkStatus();
         if (!window.navigator.onLine) {
             announceStorefrontStatus("아직 네트워크에 연결되지 않았습니다.");
@@ -2177,6 +2212,33 @@
             await refreshCatalog();
         }
         syncNetworkStatus();
+    }
+
+    function handleNetworkOffline() {
+        networkStatusDismissed = false;
+        syncNetworkStatus();
+    }
+
+    function openShortcutHelp() {
+        if (!elements.shortcutHelpModal) {
+            return;
+        }
+        shortcutHelpReturnFocus = document.activeElement;
+        elements.shortcutHelpModal.classList.add("is-open");
+        elements.shortcutHelpModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("has-open-modal");
+        elements.shortcutHelpModal.querySelector(".shortcut-help-modal__panel")?.focus();
+    }
+
+    function closeShortcutHelp() {
+        if (!elements.shortcutHelpModal?.classList.contains("is-open")) {
+            return;
+        }
+        elements.shortcutHelpModal.classList.remove("is-open");
+        elements.shortcutHelpModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("has-open-modal");
+        shortcutHelpReturnFocus?.focus?.();
+        shortcutHelpReturnFocus = null;
     }
 
     function handleVisibilityChange() {

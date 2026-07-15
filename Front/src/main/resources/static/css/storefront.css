@@ -2737,6 +2737,92 @@ main#top > .home-category-rail {
     outline-offset: 4px;
 }
 
+.utility-help-button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+}
+
+#networkDismissButton {
+    width: 30px;
+    padding: 0;
+    border-color: transparent;
+    font-size: 18px;
+}
+
+.shortcut-help-modal {
+    position: fixed;
+    z-index: 180;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, .46);
+}
+
+.shortcut-help-modal.is-open {
+    display: grid;
+}
+
+.shortcut-help-modal__panel {
+    width: min(460px, 100%);
+    padding: 24px;
+    border-radius: var(--store-radius-card);
+    background: #fff;
+}
+
+.shortcut-help-modal__head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.shortcut-help-modal__head > div {
+    display: grid;
+    gap: 4px;
+}
+
+.shortcut-help-modal__head span {
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+}
+
+.shortcut-help-modal__head button {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--store-chip);
+    font-size: 20px;
+}
+
+.shortcut-help-list {
+    display: grid;
+    gap: 0;
+    margin: 0;
+}
+
+.shortcut-help-list > div {
+    display: grid;
+    grid-template-columns: 110px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--store-line);
+}
+
+.shortcut-help-list dt {
+    font-weight: 700;
+}
+
+.shortcut-help-list dd {
+    margin: 0;
+    color: var(--store-muted);
+}
+
 .product-visual--empty::after {
     position: absolute;
     right: 12px;

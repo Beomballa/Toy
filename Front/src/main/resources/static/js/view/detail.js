@@ -920,11 +920,23 @@
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {
+                if (navigator.share) {
+                    await navigator.share({
+                        title: currentProduct?.name || "Grade Stock 상품",
+                        text: currentProduct ? summaryText(currentProduct) : "상품 상세",
+                        url: shareUrl
+                    });
+                    showToast("상품을 공유했습니다.", "상품 요약과 상세 URL을 전달했습니다.");
+                    return;
+                }
                 if (navigator.clipboard?.writeText) {
                     await navigator.clipboard.writeText(shareUrl);
                 }
                 showToast("상품 URL을 복사했습니다.", "같은 탐색 조건까지 함께 공유됩니다.");
             } catch (error) {
+                if (error?.name === "AbortError") {
+                    return;
+                }
                 window.prompt("현재 상품 URL을 복사하세요.", shareUrl);
             }
         });

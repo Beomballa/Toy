@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.7">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.7">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.8">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.8">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -15,6 +15,7 @@
 <div class="network-status" id="networkStatus" role="status" aria-live="polite" hidden>
     <span id="networkStatusText">오프라인 상태입니다.</span>
     <button type="button" id="networkRetryButton">다시 연결</button>
+    <button type="button" id="networkDismissButton" aria-label="네트워크 상태 알림 닫기">×</button>
 </div>
 <div class="page-shell">
     <div class="utility-bar">
@@ -24,6 +25,7 @@
             <a href="#bookmarkBoardSection">관심 <span class="utility-count" id="utilityBookmarkCount">0</span></a>
             <a href="#compareBoardSection">비교 <span class="utility-count" id="utilityCompareCount">0</span></a>
             <a href="#catalog">로그인</a>
+            <button class="utility-help-button" type="button" id="keyboardHelpButton" aria-haspopup="dialog">단축키</button>
         </div>
         <div class="utility-bar__meta">
             <span>Front Edition</span>
@@ -700,8 +702,24 @@
     </div>
 </aside>
 
+<aside class="shortcut-help-modal" id="shortcutHelpModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="shortcutHelpTitle">
+    <div class="shortcut-help-modal__panel" tabindex="-1">
+        <div class="shortcut-help-modal__head">
+            <div><span>Keyboard</span><strong id="shortcutHelpTitle">빠른 탐색 단축키</strong></div>
+            <button type="button" id="shortcutHelpCloseButton" aria-label="단축키 도움말 닫기">×</button>
+        </div>
+        <dl class="shortcut-help-list">
+            <div><dt>/</dt><dd>상품 검색으로 이동</dd></div>
+            <div><dt>?</dt><dd>단축키 도움말 열기</dd></div>
+            <div><dt>Alt + ← / →</dt><dd>상품 페이지 이동</dd></div>
+            <div><dt>방향키</dt><dd>포커스된 상품 카드 이동</dd></div>
+            <div><dt>Esc</dt><dd>열린 패널과 모달 닫기</dd></div>
+        </dl>
+    </div>
+</aside>
+
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260715.7"></script>
+<script src="/js/view/app.js?v=20260715.8"></script>
 </body>
 </html>

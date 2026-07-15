@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.4")
+                .contains("/css/storefront.css?v=20260715.5")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.4");
+                .contains("/js/view/app.js?v=20260715.5");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.4")
+                .contains("/css/storefront.css?v=20260715.5")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.4");
+                .contains("/js/view/detail.js?v=20260715.5");
     }
 
     @Test
@@ -510,6 +510,23 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-image-modal.is-open")
                 .contains(".detail-option-selection")
                 .contains(".detail-top-button");
+    }
+
+    @Test
+    void catalogKeepsNetworkConcurrencyAndVisibilityContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"networkStatus\" role=\"status\"")
+                .contains("id=\"networkRetryButton\"");
+        assertThat(script)
+                .contains("new AbortController()")
+                .contains("catalogRequestSequence")
+                .contains("error?.name === \"AbortError\"")
+                .contains("window.addEventListener(\"online\", handleNetworkReconnect)")
+                .contains("document.addEventListener(\"visibilitychange\", handleVisibilityChange)")
+                .contains("stopHeroCarousel()", "startHeroCarousel()");
     }
 
     private String readResource(String path) throws IOException {

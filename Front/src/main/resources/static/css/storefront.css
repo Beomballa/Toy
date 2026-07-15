@@ -87,6 +87,36 @@ body.has-open-modal {
     transition: transform .12s linear;
 }
 
+.network-status {
+    position: fixed;
+    z-index: 140;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    max-width: min(420px, calc(100vw - 40px));
+    padding: 12px 14px;
+    border: 1px solid #333;
+    border-radius: var(--store-radius-control);
+    background: #222;
+    color: #fff;
+    font-size: var(--store-text-meta);
+}
+
+.network-status[hidden] {
+    display: none;
+}
+
+.network-status button {
+    min-height: 30px;
+    padding: 0 10px;
+    border: 1px solid #fff;
+    border-radius: 6px;
+    background: transparent;
+    color: #fff;
+}
+
 .page-shell,
 .page-shell--detail {
     overflow-x: clip;

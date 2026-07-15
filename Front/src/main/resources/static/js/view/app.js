@@ -50,6 +50,8 @@
     let activeSearchSuggestionIndex = -1;
     let searchDebounceTimer = null;
     let catalogLoadError = "";
+    let catalogRequestController = null;
+    let catalogRequestSequence = 0;
     const detailCache = new Map();
     let toastTimerSeed = 0;
     const boardState = {
@@ -290,12 +292,18 @@
         resetFiltersButton: document.getElementById("resetFiltersButton"),
         scrollTopButton: document.getElementById("scrollTopButton"),
         scrollProgress: document.getElementById("storefrontScrollProgress"),
-        storefrontStatus: document.getElementById("storefrontStatus")
+        storefrontStatus: document.getElementById("storefrontStatus"),
+        networkStatus: document.getElementById("networkStatus"),
+        networkStatusText: document.getElementById("networkStatusText"),
+        networkRetryButton: document.getElementById("networkRetryButton")
     };
 
     async function init() {
         hydrateStateFromUrl();
-        await loadProducts();
+        const shouldRender = await loadProducts();
+        if (!shouldRender) {
+            return;
+        }
         populateFilters();
         syncControls();
         bindEvents();
@@ -321,9 +329,13 @@
         renderHeroSlide();
         initHeroCarousel();
         syncScrollState();
+        syncNetworkStatus();
     }
 
     async function loadProducts() {
+        const requestSequence = ++catalogRequestSequence;
+        catalogRequestController?.abort();
+        catalogRequestController = new AbortController();
         catalogLoadError = "";
         try {
             const response = await fetch(`/api/front/catalog/bootstrap?${new URLSearchParams({
@@ -335,11 +347,14 @@
                 lowStockThreshold: state.lowStockThreshold,
                 featuredOnly: state.featuredOnly === "FEATURED",
                 priceBand: state.priceBand
-            })}`);
+            })}`, { signal: catalogRequestController.signal });
             if (!response.ok) {
                 throw new Error("상품 데이터를 불러오지 못했습니다.");
             }
             const payload = await response.json();
+            if (requestSequence !== catalogRequestSequence) {
+                return false;
+            }
             products = Array.isArray(payload?.products) ? payload.products.slice() : [];
             if (!searchIndexProducts.length || !state.search) {
                 searchIndexProducts = products.slice();
@@ -348,6 +363,9 @@
             brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
             categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
         } catch (error) {
+            if (error?.name === "AbortError" || requestSequence !== catalogRequestSequence) {
+                return false;
+            }
             catalogLoadError = error instanceof Error ? error.message : "상품 데이터를 불러오지 못했습니다.";
             products = [];
             metrics = {
@@ -369,11 +387,16 @@
                     </div>
                 `;
             }
+        } finally {
+            if (requestSequence === catalogRequestSequence) {
+                catalogRequestController = null;
+            }
         }
         if (elements.lowStockThresholdFilter) {
             elements.lowStockThresholdFilter.value = state.lowStockThreshold;
         }
         syncPresetButtons();
+        return true;
     }
 
     function populateFilters() {
@@ -1202,6 +1225,10 @@
         });
         elements.resetPersonalDataButton?.addEventListener("click", resetPersonalData);
         window.addEventListener("storage", syncPersonalStateFromStorage);
+        window.addEventListener("online", handleNetworkReconnect);
+        window.addEventListener("offline", syncNetworkStatus);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        elements.networkRetryButton?.addEventListener("click", handleNetworkReconnect);
     }
 
     function openHeaderSearch() {
@@ -2098,7 +2125,10 @@
         syncUrlState();
         persistLastCatalogState();
         persistSearchHistory();
-        await loadProducts();
+        const shouldRender = await loadProducts();
+        if (!shouldRender) {
+            return;
+        }
         populateFilters();
         renderHeroMetrics();
         renderFlowBoard();
@@ -2118,6 +2148,35 @@
         syncViewButtons();
         elements.catalogGrid?.setAttribute("aria-busy", "false");
         announceStorefrontStatus(catalogLoadError || `${filteredProducts().length}개 상품을 표시했습니다.`);
+        syncNetworkStatus();
+    }
+
+    function syncNetworkStatus() {
+        const isOffline = !window.navigator.onLine;
+        if (elements.networkStatus) {
+            elements.networkStatus.hidden = !isOffline && !catalogLoadError;
+        }
+        setText(elements.networkStatusText, isOffline ? "오프라인 상태입니다. 저장된 화면은 계속 볼 수 있습니다." : catalogLoadError || "연결이 복구되었습니다.");
+    }
+
+    async function handleNetworkReconnect() {
+        syncNetworkStatus();
+        if (!window.navigator.onLine) {
+            announceStorefrontStatus("아직 네트워크에 연결되지 않았습니다.");
+            return;
+        }
+        if (catalogLoadError) {
+            await refreshCatalog();
+        }
+        syncNetworkStatus();
+    }
+
+    function handleVisibilityChange() {
+        if (document.hidden) {
+            stopHeroCarousel();
+            return;
+        }
+        startHeroCarousel();
     }
 
     function hydrateStateFromUrl() {

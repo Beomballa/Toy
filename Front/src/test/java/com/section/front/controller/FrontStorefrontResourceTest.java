@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.14")
+                .contains("/css/storefront.css?v=20260715.15")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.14");
+                .contains("/js/view/app.js?v=20260715.15");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.14")
+                .contains("/css/storefront.css?v=20260715.15")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.14");
+                .contains("/js/view/detail.js?v=20260715.15");
     }
 
     @Test
@@ -694,6 +694,25 @@ class FrontStorefrontResourceTest {
                 .contains("function syncCatalogDocumentTitle(resultCount)")
                 .contains("function copyFocusedCatalogProductLink(productId)")
                 .contains("elements.searchInput.blur()");
+    }
+
+    @Test
+    void detailOptionsKeepDeepLinkStockFilterAndShortcutContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailOptions\" aria-keyshortcuts=\"O\"")
+                .contains("id=\"detailOptionAvailableOnlyButton\"")
+                .contains("id=\"detailTotalOptionStock\"");
+        assertThat(script)
+                .contains("new URLSearchParams(window.location.search).get(\"option\")")
+                .contains("function syncSelectedOptionUrl()")
+                .contains("url.searchParams.set(\"option\", selectedOptionName)")
+                .contains("detailTotalOptionStock")
+                .contains("optionSortState.availableOnly")
+                .contains("function openDetailOptionsFromKeyboard()")
+                .contains("params.delete(\"option\")");
     }
 
     private String readResource(String path) throws IOException {

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.13")
+                .contains("/css/storefront.css?v=20260715.14")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.13");
+                .contains("/js/view/app.js?v=20260715.14");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.13")
+                .contains("/css/storefront.css?v=20260715.14")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.13");
+                .contains("/js/view/detail.js?v=20260715.14");
     }
 
     @Test
@@ -665,17 +665,35 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
         String script = readResource("static/js/view/app.js");
 
-        assertThat(html).contains("<dt>B / C / S / Q</dt>");
+        assertThat(html).contains("<dt>B / C / S / Q / L</dt>");
         assertThat(script)
                 .contains("data-catalog-product-id")
-                .contains("aria-keyshortcuts=\"Enter B C S Q\"")
-                .contains("[\"b\", \"c\", \"s\", \"q\"]")
+                .contains("aria-keyshortcuts=\"Enter B C S Q L\"")
+                .contains("[\"b\", \"c\", \"s\", \"q\", \"l\"]")
                 .contains("toggleBookmarkProduct(productId)")
                 .contains("toggleCompareProduct(productId)")
                 .contains("toggleSelectedProduct(productId)")
                 .contains("openDrawer(productId)")
                 .contains("function restoreCatalogCardFocus(productId)")
                 .contains("function focusCatalogCardAfterRender()");
+    }
+
+    @Test
+    void catalogKeepsSearchSessionTitleAndLinkShortcutContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("<dt>Ctrl / ⌘ + K</dt>")
+                .contains("B / C / S / Q / L");
+        assertThat(script)
+                .contains("FILTER_PANEL_OPEN_KEY")
+                .contains("restoreCatalogFilterPanelState()")
+                .contains("addEventListener(\"toggle\", persistCatalogFilterPanelState)")
+                .contains("event.ctrlKey || event.metaKey")
+                .contains("function syncCatalogDocumentTitle(resultCount)")
+                .contains("function copyFocusedCatalogProductLink(productId)")
+                .contains("elements.searchInput.blur()");
     }
 
     private String readResource(String path) throws IOException {

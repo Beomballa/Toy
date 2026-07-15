@@ -12,6 +12,7 @@
     const PAGE_SIZE_KEY = "front-catalog-page-size";
     const CATALOG_CACHE_KEY = "front-catalog-session-cache";
     const SCROLL_POSITION_KEY = "front-catalog-scroll-position";
+    const FILTER_PANEL_OPEN_KEY = "front-catalog-filter-panel-open";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -316,6 +317,7 @@
         populateFilters();
         syncControls();
         bindEvents();
+        restoreCatalogFilterPanelState();
         initSectionNavigation();
         initMobileStoreNavigation();
         renderHeroMetrics();
@@ -491,7 +493,15 @@
                 return;
             }
             if (event.key === "Escape") {
-                closeSearchAssist();
+                event.preventDefault();
+                event.stopPropagation();
+                if (elements.searchInput.value) {
+                    applySearchSuggestion({ query: "" });
+                    elements.searchInput.focus();
+                } else {
+                    closeSearchAssist();
+                    elements.searchInput.blur();
+                }
             }
         });
         elements.clearInlineSearchButton?.addEventListener("click", () => {
@@ -523,6 +533,13 @@
             const target = event.target;
             const tagName = target?.tagName;
             const isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable;
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+                event.preventDefault();
+                elements.searchInput?.focus();
+                elements.searchInput?.select?.();
+                announceStorefrontStatus("상품 검색으로 이동했습니다.");
+                return;
+            }
             if (event.key === "?" && !isEditable) {
                 event.preventDefault();
                 openShortcutHelp();
@@ -1262,6 +1279,7 @@
             }
         });
         elements.catalogGrid?.addEventListener("keydown", handleCatalogCardNavigation);
+        elements.catalogFilterPanel?.addEventListener("toggle", persistCatalogFilterPanelState);
         elements.catalogGrid?.addEventListener("pointerover", warmCatalogProductDetail);
         elements.catalogGrid?.addEventListener("focusin", warmCatalogProductDetail);
         window.addEventListener("popstate", async () => {
@@ -1868,6 +1886,7 @@
         paginationState.page = Math.min(Math.max(1, paginationState.page), details.totalPages);
         const list = currentCatalogPageProducts(allList);
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
+        syncCatalogDocumentTitle(allList.length);
         renderCatalogSummary(allList);
         renderCatalogSelection();
         renderCatalogPagination(allList);
@@ -1907,7 +1926,7 @@
 
         applyCatalogDisplayClasses();
         elements.catalogGrid.innerHTML = list.map((product, index) => `
-            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" aria-keyshortcuts="Enter B C S Q" tabindex="${index === 0 ? "0" : "-1"}">
+            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
@@ -3823,7 +3842,7 @@
         }
         const productId = Number(card.dataset.catalogProductId);
         const shortcutKey = event.key.toLowerCase();
-        if (["b", "c", "s", "q"].includes(shortcutKey) && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        if (["b", "c", "s", "q", "l"].includes(shortcutKey) && !event.altKey && !event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             if (shortcutKey === "b") {
                 toggleBookmarkProduct(productId);
@@ -3834,8 +3853,10 @@
             } else if (shortcutKey === "s") {
                 toggleSelectedProduct(productId);
                 restoreCatalogCardFocus(productId);
-            } else {
+            } else if (shortcutKey === "q") {
                 openDrawer(productId);
+            } else {
+                copyFocusedCatalogProductLink(productId);
             }
             return;
         }
@@ -3908,6 +3929,39 @@
         elements.catalogFilterPanel.open = false;
         elements.catalogFilterPanel.querySelector("summary")?.focus();
         announceStorefrontStatus("상품 필터를 닫았습니다.");
+    }
+
+    function persistCatalogFilterPanelState() {
+        try {
+            window.sessionStorage.setItem(FILTER_PANEL_OPEN_KEY, String(Boolean(elements.catalogFilterPanel?.open)));
+        } catch (error) {
+            // 세션 저장이 제한된 환경에서는 기본 접힘 상태를 유지한다.
+        }
+    }
+
+    function restoreCatalogFilterPanelState() {
+        try {
+            if (elements.catalogFilterPanel) {
+                elements.catalogFilterPanel.open = window.sessionStorage.getItem(FILTER_PANEL_OPEN_KEY) === "true";
+            }
+        } catch (error) {
+            // 저장 상태 복원 실패는 필터 기능 자체에 영향을 주지 않는다.
+        }
+    }
+
+    function syncCatalogDocumentTitle(resultCount) {
+        const context = state.search ? `“${state.search}” 검색` : state.brand !== "ALL" ? state.brand : "상품 탐색";
+        document.title = `${context} ${resultCount}개 | Grade Stock`;
+    }
+
+    async function copyFocusedCatalogProductLink(productId) {
+        const product = products.find((item) => Number(item.id) === Number(productId));
+        if (!product) {
+            return;
+        }
+        const url = new URL(detailPageUrl(productId), window.location.origin).href;
+        await copyTextWithFeedback(url, "상품 링크를 복사했습니다.", `${product.headline || product.name} 상세 주소를 전달할 수 있습니다.`);
+        restoreCatalogCardFocus(productId);
     }
 
     function warmCatalogProductDetail(event) {

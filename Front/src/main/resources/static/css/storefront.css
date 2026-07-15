@@ -1234,6 +1234,19 @@ main#top {
     font-size: 11px;
 }
 
+.catalog-selection__metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    color: var(--store-muted);
+    font-size: var(--store-text-meta);
+}
+
+.catalog-selection__metrics strong {
+    margin-left: 4px;
+    color: var(--store-ink);
+}
+
 .catalog-selection__actions {
     display: flex;
     align-items: center;

@@ -13,6 +13,7 @@
     const CATALOG_CACHE_KEY = "front-catalog-session-cache";
     const SCROLL_POSITION_KEY = "front-catalog-scroll-position";
     const FILTER_PANEL_OPEN_KEY = "front-catalog-filter-panel-open";
+    const SELECTED_PRODUCTS_SESSION_KEY = "front-selected-product-ids";
     const DEFAULT_STATE = {
         search: "",
         brand: "ALL",
@@ -151,6 +152,8 @@
         catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
         catalogSelectionText: document.getElementById("catalogSelectionText"),
         catalogSelectionCount: document.getElementById("catalogSelectionCount"),
+        catalogSelectionTotalPrice: document.getElementById("catalogSelectionTotalPrice"),
+        catalogSelectionTotalStock: document.getElementById("catalogSelectionTotalStock"),
         selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
         clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
         compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
@@ -165,6 +168,7 @@
         invertPageSelectionButton: document.getElementById("invertPageSelectionButton"),
         copyCurrentPageSummaryButton: document.getElementById("copyCurrentPageSummaryButton"),
         exportCurrentPageCsvButton: document.getElementById("exportCurrentPageCsvButton"),
+        exportSelectedProductsCsvButton: document.getElementById("exportSelectedProductsCsvButton"),
         catalogInsightGrid: document.getElementById("catalogInsightGrid"),
         catalogPresetStrip: document.getElementById("catalogPresetStrip"),
         catalogTags: document.getElementById("catalogTags"),
@@ -321,6 +325,7 @@
         }
         populateFilters();
         syncControls();
+        restoreSelectedProductIds();
         bindEvents();
         restoreCatalogFilterPanelState();
         initSectionNavigation();
@@ -1179,6 +1184,9 @@
             );
         });
         elements.exportCurrentPageCsvButton?.addEventListener("click", exportCurrentPageCsv);
+        elements.exportSelectedProductsCsvButton?.addEventListener("click", () => {
+            exportProductsCsv(selectedProducts(), "grade-stock-selected-products.csv");
+        });
         elements.catalogPageSize?.addEventListener("change", () => {
             paginationState.size = elements.catalogPageSize.value;
             paginationState.page = 1;
@@ -2073,7 +2081,10 @@
     }
 
     function exportCurrentPageCsv() {
-        const rows = currentCatalogPageProducts();
+        exportProductsCsv(currentCatalogPageProducts(), `grade-stock-page-${paginationState.page}.csv`);
+    }
+
+    function exportProductsCsv(rows, fileName) {
         const header = ["ID", "브랜드", "상품명", "모델", "가격", "재고", "재고상태"];
         const csv = [header].concat(rows.map((product) => [
             product.id,
@@ -2084,8 +2095,8 @@
             Number(product.stock || 0),
             product.stockStatus || stockLabel(product.stock)
         ])).map((row) => row.map(csvCell).join(",")).join("\n");
-        downloadTextFile(`grade-stock-page-${paginationState.page}.csv`, `\uFEFF${csv}`, "text/csv;charset=utf-8");
-        showToast("현재 페이지 CSV를 생성했습니다.", `${rows.length}개 상품을 스프레드시트에서 확인할 수 있습니다.`);
+        downloadTextFile(fileName, `\uFEFF${csv}`, "text/csv;charset=utf-8");
+        showToast("상품 CSV를 생성했습니다.", `${rows.length}개 상품을 스프레드시트에서 확인할 수 있습니다.`);
     }
 
     function csvCell(value) {
@@ -2120,6 +2131,9 @@
         const pageProducts = currentCatalogPageProducts();
         elements.catalogSelection.classList.toggle("has-selection", Boolean(selected.length));
         setText(elements.catalogSelectionCount, String(selected.length));
+        setText(elements.catalogSelectionTotalPrice, formatPrice(selected.reduce((sum, product) => sum + Number(product.price || 0), 0)));
+        setText(elements.catalogSelectionTotalStock, `${selected.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
+        persistSelectedProductIds();
         elements.selectVisibleProductsButton.disabled = pageProducts.length === 0;
         if (elements.selectLowStockPageButton) {
             elements.selectLowStockPageButton.disabled = !pageProducts.some((product) => Number(product.stock || 0) < lowStockThresholdValue());
@@ -2141,7 +2155,8 @@
             elements.copySelectedSummaryButton,
             elements.copySelectedLinksButton,
             elements.openUrgentSelectedButton,
-            elements.focusSelectedBrandButton
+            elements.focusSelectedBrandButton,
+            elements.exportSelectedProductsCsvButton
         ].forEach((button) => {
             if (button) {
                 button.disabled = selected.length === 0;
@@ -2156,6 +2171,29 @@
         const lowStockCount = selected.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
         setText(elements.catalogSelectionTitle, `${selected.length}개 상품을 선택했습니다.`);
         setText(elements.catalogSelectionText, `합계 ${formatPrice(totalPrice)} · 긴장 재고 ${lowStockCount}개 · 대표 브랜드 ${dominantBrand(selected) || "-"}`);
+    }
+
+    function persistSelectedProductIds() {
+        try {
+            window.sessionStorage.setItem(SELECTED_PRODUCTS_SESSION_KEY, JSON.stringify(Array.from(selectedProductIds)));
+        } catch (error) {
+            // 세션 저장이 제한된 환경에서도 현재 선택 작업은 유지한다.
+        }
+    }
+
+    function restoreSelectedProductIds() {
+        try {
+            const savedIds = JSON.parse(window.sessionStorage.getItem(SELECTED_PRODUCTS_SESSION_KEY) || "[]");
+            const validIds = new Set(products.map((product) => Number(product.id)));
+            (Array.isArray(savedIds) ? savedIds : []).forEach((id) => {
+                const productId = Number(id);
+                if (validIds.has(productId)) {
+                    selectedProductIds.add(productId);
+                }
+            });
+        } catch (error) {
+            selectedProductIds.clear();
+        }
     }
 
     function renderCatalogSummary(list) {

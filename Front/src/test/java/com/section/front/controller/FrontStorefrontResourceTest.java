@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.20")
+                .contains("/css/storefront.css?v=20260715.21")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.20");
+                .contains("/js/view/app.js?v=20260715.21");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.20")
+                .contains("/css/storefront.css?v=20260715.21")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.20");
+                .contains("/js/view/detail.js?v=20260715.21");
     }
 
     @Test
@@ -817,6 +817,26 @@ class FrontStorefrontResourceTest {
                 .contains("openRelatedByMetric(\"PRICE_LOW\")")
                 .contains("openRelatedByMetric(\"STOCK_HIGH\")");
         assertThat(css).contains("#detailRelatedGrid [role=\"listitem\"]:focus-visible");
+    }
+
+    @Test
+    void catalogSelectionKeepsSessionTotalsAndSelectedCsvContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"catalogSelectionTotalPrice\"")
+                .contains("id=\"catalogSelectionTotalStock\"")
+                .contains("id=\"exportSelectedProductsCsvButton\"");
+        assertThat(script)
+                .contains("SELECTED_PRODUCTS_SESSION_KEY")
+                .contains("function persistSelectedProductIds()")
+                .contains("function restoreSelectedProductIds()")
+                .contains("setText(elements.catalogSelectionTotalPrice")
+                .contains("setText(elements.catalogSelectionTotalStock")
+                .contains("exportProductsCsv(selectedProducts()");
+        assertThat(css).contains(".catalog-selection__metrics");
     }
 
     private String readResource(String path) throws IOException {

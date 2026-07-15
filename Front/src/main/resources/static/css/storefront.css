@@ -2788,6 +2788,26 @@ main#top > .home-category-rail {
     outline-offset: 4px;
 }
 
+.catalog-card[role="listitem"]::after {
+    content: attr(data-keyboard-hint);
+    position: absolute;
+    z-index: 5;
+    top: 42px;
+    left: 8px;
+    display: none;
+    max-width: calc(100% - 16px);
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, .88);
+    color: #fff;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.catalog-card[role="listitem"]:focus-visible::after {
+    display: block;
+}
+
 .utility-help-button {
     padding: 0;
     border: 0;

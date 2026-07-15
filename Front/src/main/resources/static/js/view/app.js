@@ -1885,6 +1885,7 @@
         const details = catalogPaginationDetails(allList);
         paginationState.page = Math.min(Math.max(1, paginationState.page), details.totalPages);
         const list = currentCatalogPageProducts(allList);
+        const positionOffset = (paginationState.page - 1) * details.effectiveSize;
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
         syncCatalogDocumentTitle(allList.length);
         renderCatalogSummary(allList);
@@ -1926,11 +1927,11 @@
 
         applyCatalogDisplayClasses();
         elements.catalogGrid.innerHTML = list.map((product, index) => `
-            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
-                <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
+            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" data-keyboard-hint="B 관심 · C 비교 · S 선택 · Q 미리보기 · L 링크" aria-label="${escapeAttribute(`${product.name}, ${product.priceLabel || formatPrice(product.price)}, ${product.stockStatus || stockLabel(product.stock)}`)}" aria-posinset="${positionOffset + index + 1}" aria-setsize="${allList.length}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
+                <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}" aria-label="${escapeAttribute(product.name)} ${selectedProductIds.has(Number(product.id)) ? "선택 해제" : "선택"}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
-                <button class="catalog-card__wish ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}" aria-pressed="${bookmarkedIds.has(Number(product.id))}" aria-label="${bookmarkedIds.has(Number(product.id)) ? "관심 상품 해제" : "관심 상품 추가"}">
+                <button class="catalog-card__wish ${bookmarkedIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}" aria-pressed="${bookmarkedIds.has(Number(product.id))}" aria-label="${escapeAttribute(product.name)} ${bookmarkedIds.has(Number(product.id)) ? "관심 상품 해제" : "관심 상품 추가"}">
                     <span aria-hidden="true">${bookmarkedIds.has(Number(product.id)) ? "♥" : "♡"}</span>
                 </button>
                 <a class="catalog-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
@@ -3888,7 +3889,8 @@
         event.preventDefault();
         cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
         cards[nextIndex]?.focus();
-        announceStorefrontStatus(`${nextIndex + 1} / ${cards.length}번째 상품 카드입니다.`);
+        const focusedProduct = products.find((product) => Number(product.id) === Number(cards[nextIndex]?.dataset.catalogProductId));
+        announceStorefrontStatus(`${nextIndex + 1} / ${cards.length}번째 ${focusedProduct?.name || "상품"} 카드입니다.`);
     }
 
     function restoreCatalogCardFocus(productId) {

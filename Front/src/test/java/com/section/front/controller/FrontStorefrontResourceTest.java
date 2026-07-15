@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.16")
+                .contains("/css/storefront.css?v=20260715.17")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.16");
+                .contains("/js/view/app.js?v=20260715.17");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.16")
+                .contains("/css/storefront.css?v=20260715.17")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.16");
+                .contains("/js/view/detail.js?v=20260715.17");
     }
 
     @Test
@@ -619,7 +619,8 @@ class FrontStorefrontResourceTest {
                 .contains("event.key === \"PageUp\" || event.key === \"PageDown\"")
                 .contains("function openCatalogFilterPanel()")
                 .contains("function closeCatalogFilterPanel()")
-                .contains("번째 상품 카드입니다.");
+                .contains("focusedProduct?.name || \"상품\"")
+                .contains("카드입니다.");
     }
 
     @Test
@@ -735,6 +736,23 @@ class FrontStorefrontResourceTest {
                 .contains("async function copyRecentProductLinks()")
                 .contains("setElementText(elements.detailRecentCount");
         assertThat(css).contains(".detail-related-average");
+    }
+
+    @Test
+    void catalogCardsKeepAccessiblePositionLabelAndShortcutHintContracts() throws IOException {
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(script)
+                .contains("aria-posinset=\"${positionOffset + index + 1}\"")
+                .contains("aria-setsize=\"${allList.length}\"")
+                .contains("data-keyboard-hint")
+                .contains("${escapeAttribute(product.name)} ${selectedProductIds")
+                .contains("${escapeAttribute(product.name)} ${bookmarkedIds")
+                .contains("focusedProduct?.name");
+        assertThat(css)
+                .contains("content: attr(data-keyboard-hint)")
+                .contains(":focus-visible::after");
     }
 
     private String readResource(String path) throws IOException {

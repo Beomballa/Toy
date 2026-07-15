@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.21")
+                .contains("/css/storefront.css?v=20260715.22")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.21");
+                .contains("/js/view/app.js?v=20260715.22");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.21")
+                .contains("/css/storefront.css?v=20260715.22")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.21");
+                .contains("/js/view/detail.js?v=20260715.22");
     }
 
     @Test
@@ -837,6 +837,24 @@ class FrontStorefrontResourceTest {
                 .contains("setText(elements.catalogSelectionTotalStock")
                 .contains("exportProductsCsv(selectedProducts()");
         assertThat(css).contains(".catalog-selection__metrics");
+    }
+
+    @Test
+    void productDrawerKeepsScopedKeyboardNavigationAndActionsContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("aria-keyshortcuts=\"ArrowLeft ArrowRight B C L\"")
+                .contains("드로어 ← / → · B / C / L");
+        assertThat(script)
+                .contains("activeDrawerProductId")
+                .contains("previousDrawerProductId")
+                .contains("nextDrawerProductId")
+                .contains("function handleDrawerKeyboardShortcut(event)")
+                .contains("toggleBookmarkProduct(activeDrawerProductId)")
+                .contains("toggleCompareProduct(activeDrawerProductId)")
+                .contains("copyTextWithFeedback(url, \"상품 링크를 복사했습니다.\"");
     }
 
     private String readResource(String path) throws IOException {

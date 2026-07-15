@@ -110,6 +110,9 @@
     let heroCarouselTimer = null;
     let heroPointerStartX = null;
     let drawerReturnFocus = null;
+    let activeDrawerProductId = 0;
+    let previousDrawerProductId = 0;
+    let nextDrawerProductId = 0;
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -616,6 +619,9 @@
             }
             if (event.key === "Tab" && elements.productDrawer?.classList.contains("is-open")) {
                 keepFocusInsideDrawer(event);
+            }
+            if (handleDrawerKeyboardShortcut(event)) {
+                return;
             }
             if (event.altKey && event.key === "ArrowLeft") {
                 event.preventDefault();
@@ -4254,6 +4260,9 @@
         const currentIndex = list.findIndex((item) => Number(item.id) === Number(productId));
         const previousProduct = currentIndex > 0 ? list[currentIndex - 1] : null;
         const nextProduct = currentIndex >= 0 && currentIndex < list.length - 1 ? list[currentIndex + 1] : null;
+        activeDrawerProductId = Number(productId);
+        previousDrawerProductId = Number(previousProduct?.id || 0);
+        nextDrawerProductId = Number(nextProduct?.id || 0);
         elements.productDrawer.classList.add("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "false");
         document.body.classList.add("has-open-modal");
@@ -4505,6 +4514,46 @@
         document.body.classList.remove("has-open-modal");
         drawerReturnFocus?.focus?.();
         drawerReturnFocus = null;
+        activeDrawerProductId = 0;
+        previousDrawerProductId = 0;
+        nextDrawerProductId = 0;
+    }
+
+    function handleDrawerKeyboardShortcut(event) {
+        if (!elements.productDrawer?.classList.contains("is-open")) {
+            return false;
+        }
+        const isEditable = ["INPUT", "TEXTAREA", "SELECT"].includes(event.target?.tagName) || event.target?.isContentEditable;
+        if (isEditable || event.altKey || event.ctrlKey || event.metaKey) {
+            return false;
+        }
+        const shortcutKey = event.key.toLowerCase();
+        if (event.key === "ArrowLeft" && previousDrawerProductId) {
+            event.preventDefault();
+            openDrawer(previousDrawerProductId);
+            return true;
+        }
+        if (event.key === "ArrowRight" && nextDrawerProductId) {
+            event.preventDefault();
+            openDrawer(nextDrawerProductId);
+            return true;
+        }
+        if (!["b", "c", "l"].includes(shortcutKey) || !activeDrawerProductId) {
+            return false;
+        }
+        event.preventDefault();
+        if (shortcutKey === "b") {
+            toggleBookmarkProduct(activeDrawerProductId);
+            openDrawer(activeDrawerProductId);
+        } else if (shortcutKey === "c") {
+            toggleCompareProduct(activeDrawerProductId);
+            openDrawer(activeDrawerProductId);
+        } else {
+            const product = products.find((item) => Number(item.id) === activeDrawerProductId);
+            const url = new URL(detailPageUrl(activeDrawerProductId), window.location.origin).href;
+            copyTextWithFeedback(url, "상품 링크를 복사했습니다.", `${product?.headline || product?.name || "현재 상품"} 상세 주소입니다.`);
+        }
+        return true;
     }
 
     function keepFocusInsideDrawer(event) {

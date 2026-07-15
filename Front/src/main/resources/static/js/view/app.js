@@ -1907,7 +1907,7 @@
 
         applyCatalogDisplayClasses();
         elements.catalogGrid.innerHTML = list.map((product, index) => `
-            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" tabindex="${index === 0 ? "0" : "-1"}">
+            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" aria-keyshortcuts="Enter B C S Q" tabindex="${index === 0 ? "0" : "-1"}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
@@ -1968,6 +1968,7 @@
         renderCatalog();
         announceStorefrontStatus(`${paginationState.page} 페이지로 이동했습니다.`);
         document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        focusCatalogCardAfterRender();
     }
 
     function renderCatalogPagination(list) {
@@ -3820,6 +3821,24 @@
         if (!card || event.target !== card) {
             return;
         }
+        const productId = Number(card.dataset.catalogProductId);
+        const shortcutKey = event.key.toLowerCase();
+        if (["b", "c", "s", "q"].includes(shortcutKey) && !event.altKey && !event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            if (shortcutKey === "b") {
+                toggleBookmarkProduct(productId);
+                restoreCatalogCardFocus(productId);
+            } else if (shortcutKey === "c") {
+                toggleCompareProduct(productId);
+                restoreCatalogCardFocus(productId);
+            } else if (shortcutKey === "s") {
+                toggleSelectedProduct(productId);
+                restoreCatalogCardFocus(productId);
+            } else {
+                openDrawer(productId);
+            }
+            return;
+        }
         if (event.key === "Enter") {
             const link = card.querySelector(".catalog-card__visual-link");
             if (link) {
@@ -3849,6 +3868,28 @@
         cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
         cards[nextIndex]?.focus();
         announceStorefrontStatus(`${nextIndex + 1} / ${cards.length}번째 상품 카드입니다.`);
+    }
+
+    function restoreCatalogCardFocus(productId) {
+        window.requestAnimationFrame(() => {
+            const card = elements.catalogGrid?.querySelector(`[data-catalog-product-id="${productId}"]`);
+            if (!card) {
+                return;
+            }
+            elements.catalogGrid.querySelectorAll(".catalog-card[role=\"listitem\"]")
+                .forEach((item) => item.tabIndex = item === card ? 0 : -1);
+            card.focus();
+        });
+    }
+
+    function focusCatalogCardAfterRender() {
+        window.requestAnimationFrame(() => {
+            const firstCard = elements.catalogGrid?.querySelector(".catalog-card[role=\"listitem\"]");
+            if (firstCard) {
+                firstCard.tabIndex = 0;
+                firstCard.focus({ preventScroll: true });
+            }
+        });
     }
 
     function openCatalogFilterPanel() {

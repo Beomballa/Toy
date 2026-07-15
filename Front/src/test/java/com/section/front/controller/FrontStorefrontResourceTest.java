@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.23")
+                .contains("/css/storefront.css?v=20260715.24")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.23");
+                .contains("/js/view/app.js?v=20260715.24");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.23")
+                .contains("/css/storefront.css?v=20260715.24")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.23");
+                .contains("/js/view/detail.js?v=20260715.24");
     }
 
     @Test
@@ -878,6 +878,26 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".detail-purchase-metrics")
                 .contains(".detail-purchase-actions");
+    }
+
+    @Test
+    void relatedProductsKeepCategoryAvailabilityStockSpreadAndResetContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedSameCategoryButton\"")
+                .contains("id=\"detailRelatedAvailableOnlyButton\"")
+                .contains("id=\"detailRelatedPriceSpread\"")
+                .contains("id=\"detailRelatedTotalStock\"")
+                .contains("id=\"detailResetRelatedFiltersButton\"");
+        assertThat(script)
+                .contains("sameCategoryOnly: false")
+                .contains("availableOnly: false")
+                .contains("item.category === product.category")
+                .contains("setElementText(elements.detailRelatedPriceSpread")
+                .contains("setElementText(elements.detailRelatedTotalStock")
+                .contains("Object.assign(relatedSortState");
     }
 
     private String readResource(String path) throws IOException {

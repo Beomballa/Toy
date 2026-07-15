@@ -16,7 +16,9 @@
     const relatedSortState = {
         mode: "DEFAULT",
         lowStockOnly: false,
-        sameBrandOnly: false
+        sameBrandOnly: false,
+        sameCategoryOnly: false,
+        availableOnly: false
     };
     let currentProduct = null;
     let selectedOptionName = "";
@@ -68,6 +70,9 @@
         detailCopyPriceComparisonButton: document.getElementById("detailCopyPriceComparisonButton"),
         detailRelatedSortPriceLowButton: document.getElementById("detailRelatedSortPriceLowButton"),
         detailRelatedSameBrandButton: document.getElementById("detailRelatedSameBrandButton"),
+        detailRelatedSameCategoryButton: document.getElementById("detailRelatedSameCategoryButton"),
+        detailRelatedAvailableOnlyButton: document.getElementById("detailRelatedAvailableOnlyButton"),
+        detailResetRelatedFiltersButton: document.getElementById("detailResetRelatedFiltersButton"),
         detailRandomRelatedButton: document.getElementById("detailRandomRelatedButton"),
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
         copyDetailRecentSummaryButton: document.getElementById("copyDetailRecentSummaryButton"),
@@ -114,6 +119,8 @@
         detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
         detailRelatedMinPrice: document.getElementById("detailRelatedMinPrice"),
         detailRelatedMaxPrice: document.getElementById("detailRelatedMaxPrice"),
+        detailRelatedPriceSpread: document.getElementById("detailRelatedPriceSpread"),
+        detailRelatedTotalStock: document.getElementById("detailRelatedTotalStock"),
         detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton"),
         detailCheapestRelatedButton: document.getElementById("detailCheapestRelatedButton"),
         detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton")
@@ -504,6 +511,8 @@
         const relatedPrices = related.map((item) => Number(item.price || 0));
         setElementText(elements.detailRelatedMinPrice, relatedPrices.length ? formatPrice(Math.min(...relatedPrices)) : "-");
         setElementText(elements.detailRelatedMaxPrice, relatedPrices.length ? formatPrice(Math.max(...relatedPrices)) : "-");
+        setElementText(elements.detailRelatedPriceSpread, relatedPrices.length ? formatPrice(Math.max(...relatedPrices) - Math.min(...relatedPrices)) : "-");
+        setElementText(elements.detailRelatedTotalStock, `${related.reduce((sum, item) => sum + Number(item.stock || 0), 0)}개`);
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
@@ -902,10 +911,16 @@
     function sortedRelatedProducts(product) {
         const related = Array.isArray(product?.relatedProducts) ? product.relatedProducts.slice() : [];
         const visibleRelated = related.filter((item) => {
+            if (relatedSortState.availableOnly && Number(item.stock || 0) <= 0) {
+                return false;
+            }
             if (relatedSortState.lowStockOnly && Number(item.stock || 0) >= lowStockThreshold()) {
                 return false;
             }
-            return !relatedSortState.sameBrandOnly || item.brand === product.brand;
+            if (relatedSortState.sameBrandOnly && item.brand !== product.brand) {
+                return false;
+            }
+            return !relatedSortState.sameCategoryOnly || item.category === product.category;
         });
         if (relatedSortState.mode === "STOCK_ASC") {
             return visibleRelated.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
@@ -925,13 +940,25 @@
         elements.detailRelatedLowStockOnlyButton?.classList.toggle("is-active", relatedSortState.lowStockOnly);
         elements.detailRelatedSortPriceLowButton?.classList.toggle("is-active", relatedSortState.mode === "PRICE_LOW");
         elements.detailRelatedSameBrandButton?.classList.toggle("is-active", relatedSortState.sameBrandOnly);
+        elements.detailRelatedSameCategoryButton?.classList.toggle("is-active", relatedSortState.sameCategoryOnly);
+        elements.detailRelatedAvailableOnlyButton?.classList.toggle("is-active", relatedSortState.availableOnly);
         [
             [elements.detailRelatedSortStockButton, relatedSortState.mode === "STOCK_ASC"],
             [elements.detailRelatedSortPriceButton, relatedSortState.mode === "PRICE_HIGH"],
             [elements.detailRelatedSortPriceLowButton, relatedSortState.mode === "PRICE_LOW"],
             [elements.detailRelatedLowStockOnlyButton, relatedSortState.lowStockOnly],
-            [elements.detailRelatedSameBrandButton, relatedSortState.sameBrandOnly]
+            [elements.detailRelatedSameBrandButton, relatedSortState.sameBrandOnly],
+            [elements.detailRelatedSameCategoryButton, relatedSortState.sameCategoryOnly],
+            [elements.detailRelatedAvailableOnlyButton, relatedSortState.availableOnly]
         ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
+        const hasFilter = relatedSortState.mode !== "DEFAULT"
+            || relatedSortState.lowStockOnly
+            || relatedSortState.sameBrandOnly
+            || relatedSortState.sameCategoryOnly
+            || relatedSortState.availableOnly;
+        if (elements.detailResetRelatedFiltersButton) {
+            elements.detailResetRelatedFiltersButton.disabled = !hasFilter;
+        }
     }
 
     function bindRelatedCardActions(related) {
@@ -1492,6 +1519,33 @@
             if (currentProduct) {
                 renderRelated(currentProduct);
                 showToast(relatedSortState.sameBrandOnly ? "같은 브랜드 연관 상품만 표시합니다." : "전체 브랜드로 복구했습니다.", "브랜드 내부 대안을 빠르게 비교할 수 있습니다.");
+            }
+        });
+        elements.detailRelatedSameCategoryButton?.addEventListener("click", () => {
+            relatedSortState.sameCategoryOnly = !relatedSortState.sameCategoryOnly;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+                showToast(relatedSortState.sameCategoryOnly ? "같은 카테고리 연관 상품만 표시합니다." : "전체 카테고리로 복구했습니다.", "동일 상품군 안에서 대안을 비교할 수 있습니다.");
+            }
+        });
+        elements.detailRelatedAvailableOnlyButton?.addEventListener("click", () => {
+            relatedSortState.availableOnly = !relatedSortState.availableOnly;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+                showToast(relatedSortState.availableOnly ? "구매 가능한 연관 상품만 표시합니다." : "품절 상품도 다시 표시합니다.", "재고가 있는 비교 후보를 우선 확인할 수 있습니다.");
+            }
+        });
+        elements.detailResetRelatedFiltersButton?.addEventListener("click", () => {
+            Object.assign(relatedSortState, {
+                mode: "DEFAULT",
+                lowStockOnly: false,
+                sameBrandOnly: false,
+                sameCategoryOnly: false,
+                availableOnly: false
+            });
+            if (currentProduct) {
+                renderRelated(currentProduct);
+                showToast("연관 상품 조건을 초기화했습니다.", "기본 추천 순서와 전체 상품을 표시합니다.");
             }
         });
         elements.detailRandomRelatedButton?.addEventListener("click", () => {

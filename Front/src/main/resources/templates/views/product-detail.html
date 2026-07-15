@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.23">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.24">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.24">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -196,6 +196,8 @@
                         <span>최저가 <strong id="detailRelatedMinPrice">-</strong></span>
                         <span>평균가 <strong id="detailRelatedAveragePrice">-</strong></span>
                         <span>최고가 <strong id="detailRelatedMaxPrice">-</strong></span>
+                        <span>가격 차이 <strong id="detailRelatedPriceSpread">-</strong></span>
+                        <span>총재고 <strong id="detailRelatedTotalStock">0개</strong></span>
                     </p>
                 </div>
                 <div class="detail-section-actions">
@@ -203,6 +205,8 @@
                     <button class="catalog-reset-button" type="button" id="detailNextRelatedButton">다음 추천</button>
                     <button class="catalog-reset-button" type="button" id="detailRelatedSortStockButton">재고 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="detailRelatedSameBrandButton">같은 브랜드만</button>
+                    <button class="catalog-reset-button" type="button" id="detailRelatedSameCategoryButton">같은 카테고리만</button>
+                    <button class="catalog-reset-button" type="button" id="detailRelatedAvailableOnlyButton">구매 가능만</button>
                     <button class="catalog-reset-button" type="button" id="detailCompareAllRelatedButton">전체 비교 담기</button>
                     <button class="catalog-reset-button" type="button" id="detailCheapestRelatedButton">최저가 보기</button>
                     <button class="catalog-reset-button" type="button" id="detailHighestStockRelatedButton">최고 재고 보기</button>
@@ -215,6 +219,7 @@
                             <button class="catalog-reset-button" type="button" id="detailRandomRelatedButton">랜덤 상품 보기</button>
                             <button class="catalog-reset-button" type="button" id="detailCopyRelatedSummaryButton">연관 상품 요약 복사</button>
                             <button class="catalog-reset-button" type="button" id="detailCopyPriceComparisonButton">가격 비교 복사</button>
+                            <button class="catalog-reset-button" type="button" id="detailResetRelatedFiltersButton">연관 조건 초기화</button>
                         </div>
                     </details>
                 </div>
@@ -270,6 +275,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.23"></script>
+<script src="/js/view/detail.js?v=20260715.24"></script>
 </body>
 </html>

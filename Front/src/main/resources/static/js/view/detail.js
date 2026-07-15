@@ -74,6 +74,8 @@
         detailOptionSelection: document.getElementById("detailOptionSelection"),
         detailOptionSelectionText: document.getElementById("detailOptionSelectionText"),
         detailClearOptionButton: document.getElementById("detailClearOptionButton"),
+        detailCopySelectedOptionButton: document.getElementById("detailCopySelectedOptionButton"),
+        detailShareSelectedOptionButton: document.getElementById("detailShareSelectedOptionButton"),
         detailZoomButton: document.getElementById("detailZoomButton"),
         detailImageModal: document.getElementById("detailImageModal"),
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
@@ -83,6 +85,8 @@
         detailAvailableOptionCount: document.getElementById("detailAvailableOptionCount"),
         detailLowOptionCount: document.getElementById("detailLowOptionCount"),
         detailSoldOutOptionCount: document.getElementById("detailSoldOutOptionCount"),
+        detailOptionStockRateText: document.getElementById("detailOptionStockRateText"),
+        detailOptionStockRateBar: document.getElementById("detailOptionStockRateBar"),
         detailRecommendOptionButton: document.getElementById("detailRecommendOptionButton"),
         detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
         detailNextRelatedButton: document.getElementById("detailNextRelatedButton")
@@ -257,9 +261,15 @@
         syncOptionSortButtons();
         const options = sortedOptions(product);
         const allOptions = Array.isArray(product.options) ? product.options : [];
-        setElementText(elements.detailAvailableOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) > 0).length));
+        const availableOptions = allOptions.filter((option) => Number(option.stock || 0) > 0);
+        const availableRate = allOptions.length ? Math.round((availableOptions.length / allOptions.length) * 100) : 0;
+        setElementText(elements.detailAvailableOptionCount, String(availableOptions.length));
         setElementText(elements.detailLowOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) > 0 && Number(option.stock || 0) < lowStockThreshold()).length));
         setElementText(elements.detailSoldOutOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) <= 0).length));
+        setElementText(elements.detailOptionStockRateText, `${availableRate}%`);
+        if (elements.detailOptionStockRateBar) {
+            elements.detailOptionStockRateBar.style.width = `${availableRate}%`;
+        }
         if (elements.detailRecommendOptionButton) {
             elements.detailRecommendOptionButton.disabled = !allOptions.some((option) => Number(option.stock || 0) > 0);
         }
@@ -279,8 +289,9 @@
             `;
             return;
         }
+        const firstAvailableName = options.find((option) => Number(option.stock || 0) > 0)?.name;
         elements.detailOptionGrid.innerHTML = options.map((option) => `
-            <button class="detail-option-card ${selectedOptionName === option.name ? "is-selected" : ""}" type="button" data-detail-option="${escapeAttribute(option.name)}" aria-pressed="${selectedOptionName === option.name}" ${Number(option.stock || 0) <= 0 ? "disabled" : ""}>
+            <button class="detail-option-card ${selectedOptionName === option.name ? "is-selected" : ""}" type="button" role="radio" data-detail-option="${escapeAttribute(option.name)}" aria-checked="${selectedOptionName === option.name}" tabindex="${selectedOptionName === option.name || (!selectedOptionName && firstAvailableName === option.name) ? "0" : "-1"}" ${Number(option.stock || 0) <= 0 ? "disabled" : ""}>
                 <span>${option.name}</span>
                 <strong>${option.stock}개</strong>
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
@@ -297,6 +308,58 @@
         rememberSelectedOption(productId, selectedOptionName);
         renderOptions(currentProduct);
         syncSelectedOptionActions(option);
+    }
+
+    function handleDetailOptionNavigation(event) {
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+            return;
+        }
+        const buttons = Array.from(elements.detailOptionGrid.querySelectorAll("[data-detail-option]:not(:disabled)"));
+        const currentIndex = buttons.indexOf(event.target.closest("[data-detail-option]"));
+        if (currentIndex < 0 || !buttons.length) {
+            return;
+        }
+        const nextIndex = event.key === "Home"
+            ? 0
+            : event.key === "End"
+                ? buttons.length - 1
+                : (currentIndex + (["ArrowRight", "ArrowDown"].includes(event.key) ? 1 : -1) + buttons.length) % buttons.length;
+        event.preventDefault();
+        const nextButton = buttons[nextIndex];
+        nextButton.focus();
+        if (nextButton.dataset.detailOption !== selectedOptionName) {
+            selectDetailOption(nextButton.dataset.detailOption);
+            Array.from(elements.detailOptionGrid.querySelectorAll("[data-detail-option]"))
+                .find((button) => button.dataset.detailOption === nextButton.dataset.detailOption)?.focus();
+        }
+    }
+
+    function selectedOptionSummary() {
+        const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
+        if (!currentProduct || !option) {
+            return "";
+        }
+        return `${currentProduct.name} · ${option.name} · 재고 ${option.stock}개 · ${currentProduct.priceLabel || formatPrice(currentProduct.price)}`;
+    }
+
+    async function shareSelectedOption() {
+        const text = selectedOptionSummary();
+        if (!text) {
+            return;
+        }
+        const url = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: `${currentProduct.name} ${selectedOptionName}`, text, url });
+                showToast("선택 옵션을 공유했습니다.", `${selectedOptionName} 옵션 정보를 전달했습니다.`);
+                return;
+            }
+            await copyText(`${text}\n${url}`, "선택 옵션과 URL을 복사했습니다.");
+        } catch (error) {
+            if (error?.name !== "AbortError") {
+                window.prompt("선택 옵션을 복사하세요.", `${text}\n${url}`);
+            }
+        }
     }
 
     function syncSelectedOptionActions(option) {
@@ -888,6 +951,13 @@
                 syncSelectedOptionActions({});
             }
         });
+        elements.detailCopySelectedOptionButton?.addEventListener("click", async () => {
+            const text = selectedOptionSummary();
+            if (text) {
+                await copyText(text, "선택 옵션을 복사했습니다.");
+            }
+        });
+        elements.detailShareSelectedOptionButton?.addEventListener("click", shareSelectedOption);
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         elements.detailRecommendOptionButton?.addEventListener("click", () => {
@@ -917,6 +987,7 @@
                 selectDetailOption(optionButton.dataset.detailOption);
             }
         });
+        elements.detailOptionGrid?.addEventListener("keydown", handleDetailOptionNavigation);
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {

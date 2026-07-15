@@ -2619,7 +2619,7 @@ main#top > .home-category-rail {
 
 .detail-option-selection {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-columns: auto minmax(0, 1fr) repeat(3, auto);
     gap: 12px;
     align-items: center;
     margin-top: 14px;
@@ -2663,6 +2663,31 @@ main#top > .home-category-rail {
 
 .detail-option-overview span strong {
     color: var(--store-ink);
+}
+
+.detail-option-stock-rate {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 118px;
+    font-size: var(--store-text-meta);
+}
+
+.detail-option-stock-rate > span {
+    width: 72px;
+    min-height: 5px;
+    padding: 0;
+    overflow: hidden;
+    background: var(--store-line);
+}
+
+.detail-option-stock-rate i {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--store-ink);
+    transition: width 180ms ease;
 }
 
 .detail-option-overview button {
@@ -2889,6 +2914,10 @@ main#top > .home-category-rail {
     }
 
     .detail-option-selection span {
+        grid-column: 1 / -1;
+    }
+
+    .detail-option-selection strong {
         grid-column: 1 / -1;
     }
 

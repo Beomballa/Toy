@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.10")
+                .contains("/css/storefront.css?v=20260715.11")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.10");
+                .contains("/js/view/app.js?v=20260715.11");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.10")
+                .contains("/css/storefront.css?v=20260715.11")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.10");
+                .contains("/js/view/detail.js?v=20260715.11");
     }
 
     @Test
@@ -134,7 +134,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-detail-option")
                 .contains("selectDetailOption")
                 .contains("syncSelectedOptionActions")
-                .contains("aria-pressed=\"${selectedOptionName === option.name}\"")
+                .contains("aria-checked=\"${selectedOptionName === option.name}\"")
                 .doesNotContain("추가금 ${formatPrice(option.additionalPrice)}");
         assertThat(css)
                 .contains(".detail-option-card.is-selected")
@@ -620,6 +620,26 @@ class FrontStorefrontResourceTest {
                 .contains("function openCatalogFilterPanel()")
                 .contains("function closeCatalogFilterPanel()")
                 .contains("번째 상품 카드입니다.");
+    }
+
+    @Test
+    void detailOptionsKeepRadioNavigationShareAndAvailabilityContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("role=\"radiogroup\" aria-label=\"구매 옵션\"")
+                .contains("id=\"detailCopySelectedOptionButton\"")
+                .contains("id=\"detailShareSelectedOptionButton\"")
+                .contains("id=\"detailOptionStockRateBar\"");
+        assertThat(script)
+                .contains("role=\"radio\"")
+                .contains("function handleDetailOptionNavigation(event)")
+                .contains("function selectedOptionSummary()")
+                .contains("async function shareSelectedOption()")
+                .contains("detailOptionStockRateBar.style.width");
+        assertThat(css).contains(".detail-option-stock-rate");
     }
 
     private String readResource(String path) throws IOException {

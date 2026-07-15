@@ -65,6 +65,7 @@
         detailRelatedSortPriceButton: document.getElementById("detailRelatedSortPriceButton"),
         detailRelatedLowStockOnlyButton: document.getElementById("detailRelatedLowStockOnlyButton"),
         detailCopyRelatedSummaryButton: document.getElementById("detailCopyRelatedSummaryButton"),
+        detailCopyPriceComparisonButton: document.getElementById("detailCopyPriceComparisonButton"),
         detailRelatedSortPriceLowButton: document.getElementById("detailRelatedSortPriceLowButton"),
         detailRelatedSameBrandButton: document.getElementById("detailRelatedSameBrandButton"),
         detailRandomRelatedButton: document.getElementById("detailRandomRelatedButton"),
@@ -109,7 +110,9 @@
         detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
         detailRelatedMinPrice: document.getElementById("detailRelatedMinPrice"),
         detailRelatedMaxPrice: document.getElementById("detailRelatedMaxPrice"),
-        detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton")
+        detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton"),
+        detailCheapestRelatedButton: document.getElementById("detailCheapestRelatedButton"),
+        detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton")
     };
 
     function formatPrice(price) {
@@ -492,6 +495,12 @@
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
+        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailCopyPriceComparisonButton]
+            .forEach((button) => {
+                if (button) {
+                    button.disabled = !related.length;
+                }
+            });
         if (!related.length) {
             elements.detailRelatedGrid.innerHTML = `
                 <article class="catalog-empty">
@@ -501,8 +510,8 @@
             `;
             return;
         }
-        elements.detailRelatedGrid.innerHTML = related.map((item) => `
-            <article class="detail-related-card saved-product-card">
+        elements.detailRelatedGrid.innerHTML = related.map((item, index) => `
+            <article class="detail-related-card saved-product-card" role="listitem" data-related-product-id="${item.id}" tabindex="${index === 0 ? "0" : "-1"}" aria-label="${escapeAttribute(`${item.name}, ${item.priceLabel || formatPrice(item.price)}, 재고 ${item.stock}개`)}">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
@@ -546,6 +555,64 @@
             return "현재 상품과 동일가";
         }
         return `현재 상품보다 ${formatPrice(Math.abs(delta))} ${delta > 0 ? "높음" : "낮음"}`;
+    }
+
+    function handleRelatedCardNavigation(event) {
+        const card = event.target.closest("#detailRelatedGrid [role=\"listitem\"]");
+        if (!card || event.target !== card) {
+            return;
+        }
+        if (event.key === "Enter") {
+            const link = card.querySelector("a[href]");
+            if (link) {
+                event.preventDefault();
+                window.location.href = link.href;
+            }
+            return;
+        }
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+            return;
+        }
+        const cards = Array.from(elements.detailRelatedGrid.querySelectorAll("[role=\"listitem\"]"));
+        const currentIndex = cards.indexOf(card);
+        const columnCount = Math.max(1, window.getComputedStyle(elements.detailRelatedGrid).gridTemplateColumns.split(" ").length);
+        const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columnCount, ArrowDown: columnCount };
+        const nextIndex = event.key === "Home"
+            ? 0
+            : event.key === "End"
+                ? cards.length - 1
+                : Math.min(cards.length - 1, Math.max(0, currentIndex + offsets[event.key]));
+        event.preventDefault();
+        cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
+        cards[nextIndex]?.focus();
+        const item = sortedRelatedProducts(currentProduct).find((product) => Number(product.id) === Number(cards[nextIndex]?.dataset.relatedProductId));
+        setElementText(elements.detailStatus, `${nextIndex + 1} / ${cards.length}번째 ${item?.name || "연관 상품"}입니다.`);
+    }
+
+    async function copyRelatedPriceComparison() {
+        const related = sortedRelatedProducts(currentProduct);
+        if (!currentProduct || !related.length) {
+            return;
+        }
+        const cheapest = related.slice().sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0];
+        const highest = related.slice().sort((left, right) => Number(right.price || 0) - Number(left.price || 0))[0];
+        const text = [
+            `현재 상품 ${currentProduct.name} · ${currentProduct.priceLabel || formatPrice(currentProduct.price)}`,
+            `연관 최저가 ${cheapest.name} · ${cheapest.priceLabel || formatPrice(cheapest.price)} · ${relatedPriceDeltaLabel(cheapest.price, currentProduct.price)}`,
+            `연관 최고가 ${highest.name} · ${highest.priceLabel || formatPrice(highest.price)} · ${relatedPriceDeltaLabel(highest.price, currentProduct.price)}`
+        ].join("\n");
+        await copyText(text, "연관 가격 비교를 복사했습니다.");
+    }
+
+    function openRelatedByMetric(metric) {
+        const related = sortedRelatedProducts(currentProduct);
+        if (!related.length) {
+            return;
+        }
+        const target = related.slice().sort(metric === "PRICE_LOW"
+            ? (left, right) => Number(left.price || 0) - Number(right.price || 0)
+            : (left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
+        window.location.href = buildProductUrl(target.id);
     }
 
     function readRememberedOptions() {
@@ -1227,6 +1294,9 @@
         elements.detailPreviousRecentButton?.addEventListener("click", () => openRecentProductByDirection(-1));
         elements.detailNextRecentButton?.addEventListener("click", () => openRecentProductByDirection(1));
         elements.detailCompareAllRelatedButton?.addEventListener("click", addAllRelatedToCompare);
+        elements.detailCheapestRelatedButton?.addEventListener("click", () => openRelatedByMetric("PRICE_LOW"));
+        elements.detailHighestStockRelatedButton?.addEventListener("click", () => openRelatedByMetric("STOCK_HIGH"));
+        elements.detailCopyPriceComparisonButton?.addEventListener("click", copyRelatedPriceComparison);
         elements.detailRecentGrid?.addEventListener("click", (event) => {
             const removeButton = event.target.closest("[data-remove-detail-recent-id]");
             if (removeButton) {
@@ -1245,6 +1315,7 @@
             }
         });
         elements.detailOptionGrid?.addEventListener("keydown", handleDetailOptionNavigation);
+        elements.detailRelatedGrid?.addEventListener("keydown", handleRelatedCardNavigation);
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {

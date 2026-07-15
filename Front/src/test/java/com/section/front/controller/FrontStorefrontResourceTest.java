@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.19")
+                .contains("/css/storefront.css?v=20260715.20")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.19");
+                .contains("/js/view/app.js?v=20260715.20");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.19")
+                .contains("/css/storefront.css?v=20260715.20")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.19");
+                .contains("/js/view/detail.js?v=20260715.20");
     }
 
     @Test
@@ -796,6 +796,27 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".detail-purchase-estimate")
                 .contains(".detail-quantity-control");
+    }
+
+    @Test
+    void relatedProductsKeepSemanticKeyboardAndMetricNavigationContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedGrid\" role=\"list\"")
+                .contains("id=\"detailCheapestRelatedButton\"")
+                .contains("id=\"detailHighestStockRelatedButton\"")
+                .contains("id=\"detailCopyPriceComparisonButton\"");
+        assertThat(script)
+                .contains("role=\"listitem\" data-related-product-id")
+                .contains("function handleRelatedCardNavigation(event)")
+                .contains("async function copyRelatedPriceComparison()")
+                .contains("function openRelatedByMetric(metric)")
+                .contains("openRelatedByMetric(\"PRICE_LOW\")")
+                .contains("openRelatedByMetric(\"STOCK_HIGH\")");
+        assertThat(css).contains("#detailRelatedGrid [role=\"listitem\"]:focus-visible");
     }
 
     private String readResource(String path) throws IOException {

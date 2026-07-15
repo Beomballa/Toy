@@ -2845,6 +2845,11 @@ main#top > .home-category-rail {
     outline-offset: 4px;
 }
 
+#detailRelatedGrid [role="listitem"]:focus-visible {
+    outline: 2px solid var(--store-ink);
+    outline-offset: 4px;
+}
+
 .catalog-card[role="listitem"]::after {
     content: attr(data-keyboard-hint);
     position: absolute;

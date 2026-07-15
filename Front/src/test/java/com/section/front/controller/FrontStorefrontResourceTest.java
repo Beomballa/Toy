@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260714.3")
+                .contains("/css/storefront.css?v=20260715.1")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260714.3");
+                .contains("/js/view/app.js?v=20260715.1");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260714.3")
+                .contains("/css/storefront.css?v=20260715.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260714.3");
+                .contains("/js/view/detail.js?v=20260715.1");
     }
 
     @Test
@@ -419,6 +419,30 @@ class FrontStorefrontResourceTest {
                 .contains(".page-shell--detail .detail-hero h1")
                 .contains("font-size: 20px")
                 .contains(".page-shell--detail .detail-price-card strong");
+    }
+
+    @Test
+    void storefrontPagesKeepKeyboardNavigationAndReadingProgressContracts() throws IOException {
+        String mainHtml = readResource("templates/views/index.html");
+        String detailHtml = readResource("templates/views/product-detail.html");
+        String mainScript = readResource("static/js/view/app.js");
+        String detailScript = readResource("static/js/view/detail.js");
+
+        assertThat(mainHtml)
+                .contains("class=\"skip-link\" href=\"#top\"")
+                .contains("id=\"top\" tabindex=\"-1\"")
+                .contains("id=\"storefrontScrollProgress\"")
+                .contains("id=\"storefrontStatus\" role=\"status\"");
+        assertThat(detailHtml)
+                .contains("class=\"skip-link\" href=\"#detailPage\"")
+                .contains("id=\"detailPage\" tabindex=\"-1\"")
+                .contains("id=\"detailScrollProgress\"");
+        assertThat(mainScript)
+                .contains("function syncScrollState()")
+                .contains("aria-current", "storefrontStatus");
+        assertThat(detailScript)
+                .contains("function syncDetailScrollProgress()")
+                .contains("aria-current", "detailStatus");
     }
 
     private String readResource(String path) throws IOException {

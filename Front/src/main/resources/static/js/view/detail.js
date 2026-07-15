@@ -64,7 +64,9 @@
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
         copyDetailRecentSummaryButton: document.getElementById("copyDetailRecentSummaryButton"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
-        detailCatalogLink: document.getElementById("detailCatalogLink")
+        detailCatalogLink: document.getElementById("detailCatalogLink"),
+        detailScrollProgress: document.getElementById("detailScrollProgress"),
+        detailStatus: document.getElementById("detailStatus")
     };
 
     function formatPrice(price) {
@@ -668,13 +670,31 @@
                 return;
             }
             sections.forEach(({ link, section }) => {
-                link.classList.toggle("is-active", section === visible.target);
+                const isActive = section === visible.target;
+                link.classList.toggle("is-active", isActive);
+                if (isActive) {
+                    link.setAttribute("aria-current", "location");
+                } else {
+                    link.removeAttribute("aria-current");
+                }
             });
+            const activeLink = sections.find(({ section }) => section === visible.target)?.link;
+            if (elements.detailStatus) {
+                elements.detailStatus.textContent = activeLink ? `${activeLink.textContent.trim()} 영역을 보고 있습니다.` : "";
+            }
         }, {
             rootMargin: "-25% 0px -55% 0px",
             threshold: [0.2, 0.45, 0.7]
         });
         sections.forEach(({ section }) => observer.observe(section));
+    }
+
+    function syncDetailScrollProgress() {
+        const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollableHeight > 0 ? Math.min(100, Math.max(0, (window.scrollY / scrollableHeight) * 100)) : 0;
+        if (elements.detailScrollProgress) {
+            elements.detailScrollProgress.style.transform = `scaleX(${progress / 100})`;
+        }
     }
 
     function showToast(title, body, isWarning = false) {
@@ -713,6 +733,8 @@
         syncCatalogLinks();
         document.addEventListener("error", handleProductImageError, true);
         initSectionNavigation();
+        window.addEventListener("scroll", syncDetailScrollProgress, { passive: true });
+        syncDetailScrollProgress();
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });

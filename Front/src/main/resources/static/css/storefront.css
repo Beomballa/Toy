@@ -37,6 +37,56 @@ body.has-open-modal {
     overflow: hidden;
 }
 
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.skip-link {
+    position: fixed;
+    z-index: 200;
+    top: 12px;
+    left: 12px;
+    padding: 10px 14px;
+    border-radius: var(--store-radius-control);
+    background: var(--store-ink);
+    color: #fff;
+    font-size: var(--store-text-meta);
+    font-weight: 700;
+    transform: translateY(-160%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+.storefront-scroll-progress {
+    position: fixed;
+    z-index: 150;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 2px;
+    pointer-events: none;
+}
+
+.storefront-scroll-progress span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--store-ink);
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform .12s linear;
+}
+
 .page-shell,
 .page-shell--detail {
     overflow-x: clip;

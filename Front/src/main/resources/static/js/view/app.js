@@ -283,7 +283,9 @@
         heroSlideStatus: document.getElementById("heroSlideStatus"),
         heroDots: document.getElementById("heroDots"),
         resetFiltersButton: document.getElementById("resetFiltersButton"),
-        scrollTopButton: document.getElementById("scrollTopButton")
+        scrollTopButton: document.getElementById("scrollTopButton"),
+        scrollProgress: document.getElementById("storefrontScrollProgress"),
+        storefrontStatus: document.getElementById("storefrontStatus")
     };
 
     async function init() {
@@ -313,7 +315,7 @@
         syncViewButtons();
         renderHeroSlide();
         initHeroCarousel();
-        toggleScrollTopVisibility();
+        syncScrollState();
     }
 
     async function loadProducts() {
@@ -1187,7 +1189,7 @@
             syncControls();
             await refreshCatalog();
         });
-        window.addEventListener("scroll", toggleScrollTopVisibility, { passive: true });
+        window.addEventListener("scroll", syncScrollState, { passive: true });
         elements.scrollTopButton?.addEventListener("click", () => {
             window.scrollTo({ top: 0, behavior: "smooth" });
         });
@@ -3424,6 +3426,15 @@
         elements.scrollTopButton?.classList.toggle("is-visible", window.scrollY > 480);
     }
 
+    function syncScrollState() {
+        toggleScrollTopVisibility();
+        const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = scrollableHeight > 0 ? Math.min(100, Math.max(0, (window.scrollY / scrollableHeight) * 100)) : 0;
+        if (elements.scrollProgress) {
+            elements.scrollProgress.style.transform = `scaleX(${progress / 100})`;
+        }
+    }
+
     async function copyTextWithFeedback(text, title, body) {
         try {
             if (navigator.clipboard?.writeText) {
@@ -3518,8 +3529,16 @@
                 return;
             }
             sections.forEach(({ link, section }) => {
-                link.classList.toggle("is-active", section === visible.target);
+                const isActive = section === visible.target;
+                link.classList.toggle("is-active", isActive);
+                if (isActive) {
+                    link.setAttribute("aria-current", "location");
+                } else {
+                    link.removeAttribute("aria-current");
+                }
             });
+            const activeLink = sections.find(({ section }) => section === visible.target)?.link;
+            setText(elements.storefrontStatus, activeLink ? `${activeLink.textContent.trim()} 영역을 보고 있습니다.` : "");
         }, {
             rootMargin: "-25% 0px -55% 0px",
             threshold: [0.2, 0.45, 0.7]

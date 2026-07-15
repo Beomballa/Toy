@@ -49,6 +49,7 @@
     let activeSearchSuggestions = [];
     let activeSearchSuggestionIndex = -1;
     let searchDebounceTimer = null;
+    let catalogLoadError = "";
     const detailCache = new Map();
     let toastTimerSeed = 0;
     const boardState = {
@@ -319,6 +320,7 @@
     }
 
     async function loadProducts() {
+        catalogLoadError = "";
         try {
             const response = await fetch(`/api/front/catalog/bootstrap?${new URLSearchParams({
                 keyword: state.search,
@@ -342,6 +344,7 @@
             brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
             categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
         } catch (error) {
+            catalogLoadError = error instanceof Error ? error.message : "상품 데이터를 불러오지 못했습니다.";
             products = [];
             metrics = {
                 totalCount: 0,
@@ -1778,6 +1781,18 @@
 
         applyCatalogDisplayClasses();
 
+        if (catalogLoadError) {
+            elements.catalogGrid.innerHTML = `
+                <div class="catalog-empty" role="alert">
+                    <strong>${escapeMarkup(catalogLoadError)}</strong>
+                    <p>네트워크 상태를 확인한 뒤 다시 시도해주세요.</p>
+                    <button class="catalog-reset-button" type="button" data-empty-action="RETRY">카탈로그 다시 불러오기</button>
+                </div>
+            `;
+            bindEmptyStateButtons();
+            return;
+        }
+
         if (!list.length) {
             elements.catalogGrid.innerHTML = `
                 <div class="catalog-empty">
@@ -1854,6 +1869,7 @@
         paginationState.page = clampedPage;
         paginationState.extra = 0;
         renderCatalog();
+        announceStorefrontStatus(`${paginationState.page} 페이지로 이동했습니다.`);
         document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
@@ -2071,6 +2087,8 @@
     async function refreshCatalog() {
         paginationState.page = 1;
         paginationState.extra = 0;
+        elements.catalogGrid?.setAttribute("aria-busy", "true");
+        announceStorefrontStatus("상품 목록을 갱신하고 있습니다.");
         syncUrlState();
         persistLastCatalogState();
         persistSearchHistory();
@@ -2092,6 +2110,8 @@
         renderSignals();
         renderCatalog();
         syncViewButtons();
+        elements.catalogGrid?.setAttribute("aria-busy", "false");
+        announceStorefrontStatus(catalogLoadError || `${filteredProducts().length}개 상품을 표시했습니다.`);
     }
 
     function hydrateStateFromUrl() {
@@ -2192,6 +2212,10 @@
         ].filter(Boolean).length;
         setText(elements.catalogFilterCount, String(activeFilterCount));
         elements.catalogFilterPanel?.classList.toggle("has-active-filter", activeFilterCount > 0);
+        elements.catalogFilterPanel?.querySelector("summary")?.setAttribute(
+            "aria-label",
+            activeFilterCount ? `필터 ${activeFilterCount}개 적용됨` : "필터 열기"
+        );
     }
 
     function removeFilter(key) {
@@ -2402,13 +2426,14 @@
             : "일치하는 추천이 없습니다. Enter로 직접 검색할 수 있습니다.");
         elements.searchSuggestionList.innerHTML = activeSearchSuggestions.length
             ? activeSearchSuggestions.map((item, index) => `
-                <button class="catalog-search-suggestion ${index === activeSearchSuggestionIndex ? "is-active" : ""}" type="button" data-search-suggestion-index="${index}" aria-selected="${index === activeSearchSuggestionIndex}">
+                <button class="catalog-search-suggestion ${index === activeSearchSuggestionIndex ? "is-active" : ""}" id="searchSuggestion-${index}" role="option" type="button" data-search-suggestion-index="${index}" aria-selected="${index === activeSearchSuggestionIndex}">
                     <span>${escapeMarkup(item.type)}</span>
                     <strong>${escapeMarkup(item.label)}</strong>
                     <small>${escapeMarkup(item.description)}</small>
                 </button>
             `).join("")
             : `<div class="catalog-search-assist__empty">직접 검색하려면 Enter를 눌러주세요.</div>`;
+        syncSearchActiveDescendant();
     }
 
     function uniqueSearchIndexValues(key) {
@@ -2426,6 +2451,16 @@
             button.classList.toggle("is-active", isActive);
             button.setAttribute("aria-selected", String(isActive));
         });
+        syncSearchActiveDescendant();
+    }
+
+    function syncSearchActiveDescendant() {
+        const activeId = activeSearchSuggestionIndex >= 0 ? `searchSuggestion-${activeSearchSuggestionIndex}` : "";
+        if (activeId) {
+            elements.searchInput?.setAttribute("aria-activedescendant", activeId);
+        } else {
+            elements.searchInput?.removeAttribute("aria-activedescendant");
+        }
     }
 
     async function applySearchSuggestion(suggestion) {
@@ -2457,6 +2492,7 @@
             elements.searchAssist.hidden = true;
         }
         elements.searchInput?.setAttribute("aria-expanded", "false");
+        elements.searchInput?.removeAttribute("aria-activedescendant");
         activeSearchSuggestionIndex = -1;
     }
 
@@ -3332,11 +3368,17 @@
     function bindEmptyStateButtons() {
         elements.catalogGrid?.querySelectorAll("[data-empty-action]").forEach((button) => {
             button.addEventListener("click", async () => {
-                applyPreset(button.dataset.emptyAction);
+                if (button.dataset.emptyAction !== "RETRY") {
+                    applyPreset(button.dataset.emptyAction);
+                }
                 syncControls();
                 await refreshCatalog();
             });
         });
+    }
+
+    function announceStorefrontStatus(message) {
+        setText(elements.storefrontStatus, message);
     }
 
     function bindInsightButtons() {

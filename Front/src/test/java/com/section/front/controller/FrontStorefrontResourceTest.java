@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.1")
+                .contains("/css/storefront.css?v=20260715.2")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.1");
+                .contains("/js/view/app.js?v=20260715.2");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.1")
+                .contains("/css/storefront.css?v=20260715.2")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.1");
+                .contains("/js/view/detail.js?v=20260715.2");
     }
 
     @Test
@@ -443,6 +443,26 @@ class FrontStorefrontResourceTest {
         assertThat(detailScript)
                 .contains("function syncDetailScrollProgress()")
                 .contains("aria-current", "detailStatus");
+    }
+
+    @Test
+    void catalogKeepsAccessibleSearchLoadingAndRecoveryContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("role=\"combobox\"")
+                .contains("id=\"searchSuggestionList\" role=\"listbox\"")
+                .contains("id=\"catalogGrid\" aria-busy=\"false\"")
+                .contains("id=\"catalogPageProgress\" role=\"status\"");
+        assertThat(script)
+                .contains("role=\"option\"")
+                .contains("function syncSearchActiveDescendant()")
+                .contains("catalogLoadError")
+                .contains("data-empty-action=\"RETRY\"")
+                .contains("필터 ${activeFilterCount}개 적용됨")
+                .contains("setAttribute(\"aria-busy\", \"true\")")
+                .contains("function announceStorefrontStatus(message)");
     }
 
     private String readResource(String path) throws IOException {

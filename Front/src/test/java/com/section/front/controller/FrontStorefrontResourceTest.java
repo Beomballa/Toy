@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.18")
+                .contains("/css/storefront.css?v=20260715.19")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.18");
+                .contains("/js/view/app.js?v=20260715.19");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.18")
+                .contains("/css/storefront.css?v=20260715.19")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.18");
+                .contains("/js/view/detail.js?v=20260715.19");
     }
 
     @Test
@@ -773,6 +773,29 @@ class FrontStorefrontResourceTest {
                 .contains("function exportCurrentPageCsv()")
                 .contains("function csvCell(value)")
                 .contains("function downloadTextFile(fileName, content, type)");
+    }
+
+    @Test
+    void detailKeepsQuantityStockBoundEstimateAndSummaryContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailQuantityDecreaseButton\"")
+                .contains("id=\"detailQuantityInput\"")
+                .contains("id=\"detailQuantityIncreaseButton\"")
+                .contains("id=\"detailEstimatedTotal\"")
+                .contains("id=\"detailCopyOrderSummaryButton\"");
+        assertThat(script)
+                .contains("DETAIL_QUANTITY_KEY")
+                .contains("function setSelectedQuantity(nextQuantity, announce = true)")
+                .contains("Math.min(maxQuantity")
+                .contains("function syncPurchaseEstimate(option)")
+                .contains("async function copyOrderSummary()");
+        assertThat(css)
+                .contains(".detail-purchase-estimate")
+                .contains(".detail-quantity-control");
     }
 
     private String readResource(String path) throws IOException {

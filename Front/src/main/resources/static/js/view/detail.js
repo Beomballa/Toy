@@ -5,6 +5,7 @@
     const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const SELECTED_OPTION_KEY = "front-detail-selected-options";
+    const DETAIL_QUANTITY_KEY = "front-detail-option-quantities";
     const RECENT_VIEWED_LIMIT = 6;
     const optionSortState = {
         mode: "STOCK_ASC",
@@ -19,6 +20,7 @@
     };
     let currentProduct = null;
     let selectedOptionName = "";
+    let selectedQuantity = 1;
     let toastTimerSeed = 0;
     let detailModalReturnFocus = null;
 
@@ -83,6 +85,12 @@
         detailClearOptionButton: document.getElementById("detailClearOptionButton"),
         detailCopySelectedOptionButton: document.getElementById("detailCopySelectedOptionButton"),
         detailShareSelectedOptionButton: document.getElementById("detailShareSelectedOptionButton"),
+        detailPurchaseEstimate: document.getElementById("detailPurchaseEstimate"),
+        detailQuantityDecreaseButton: document.getElementById("detailQuantityDecreaseButton"),
+        detailQuantityIncreaseButton: document.getElementById("detailQuantityIncreaseButton"),
+        detailQuantityInput: document.getElementById("detailQuantityInput"),
+        detailEstimatedTotal: document.getElementById("detailEstimatedTotal"),
+        detailCopyOrderSummaryButton: document.getElementById("detailCopyOrderSummaryButton"),
         detailZoomButton: document.getElementById("detailZoomButton"),
         detailImageModal: document.getElementById("detailImageModal"),
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
@@ -320,6 +328,7 @@
         selectedOptionName = selectedOptionName === optionName ? "" : optionName;
         rememberSelectedOption(productId, selectedOptionName);
         syncSelectedOptionUrl();
+        selectedQuantity = selectedOptionName ? readSelectedQuantity() : 1;
         renderOptions(currentProduct);
         syncSelectedOptionActions(option);
     }
@@ -354,6 +363,67 @@
             return "";
         }
         return `${currentProduct.name} · ${option.name} · 재고 ${option.stock}개 · ${currentProduct.priceLabel || formatPrice(currentProduct.price)}`;
+    }
+
+    function readSelectedQuantity() {
+        try {
+            const quantities = JSON.parse(window.localStorage.getItem(DETAIL_QUANTITY_KEY) || "{}");
+            return Math.max(1, Number(quantities?.[`${productId}:${selectedOptionName}`]) || 1);
+        } catch (error) {
+            return 1;
+        }
+    }
+
+    function setSelectedQuantity(nextQuantity, announce = true) {
+        const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
+        if (!option) {
+            return;
+        }
+        const maxQuantity = Math.max(1, Number(option.stock || 0));
+        selectedQuantity = Math.min(maxQuantity, Math.max(1, Math.trunc(Number(nextQuantity) || 1)));
+        try {
+            const quantities = JSON.parse(window.localStorage.getItem(DETAIL_QUANTITY_KEY) || "{}");
+            quantities[`${productId}:${selectedOptionName}`] = selectedQuantity;
+            window.localStorage.setItem(DETAIL_QUANTITY_KEY, JSON.stringify(quantities));
+        } catch (error) {
+            // 저장 공간이 제한된 환경에서도 현재 화면의 수량 계산은 유지한다.
+        }
+        syncPurchaseEstimate(option);
+        if (announce) {
+            setElementText(elements.detailStatus, `수량 ${selectedQuantity}개, 예상 상품 금액 ${formatPrice(Number(currentProduct.price || 0) * selectedQuantity)}`);
+        }
+    }
+
+    function syncPurchaseEstimate(option) {
+        const selected = Boolean(selectedOptionName && option?.name);
+        if (elements.detailPurchaseEstimate) {
+            elements.detailPurchaseEstimate.hidden = !selected;
+        }
+        if (!selected) {
+            return;
+        }
+        const maxQuantity = Math.max(1, Number(option.stock || 0));
+        selectedQuantity = Math.min(maxQuantity, Math.max(1, selectedQuantity));
+        if (elements.detailQuantityInput) {
+            elements.detailQuantityInput.max = String(maxQuantity);
+            elements.detailQuantityInput.value = String(selectedQuantity);
+        }
+        if (elements.detailQuantityDecreaseButton) {
+            elements.detailQuantityDecreaseButton.disabled = selectedQuantity <= 1;
+        }
+        if (elements.detailQuantityIncreaseButton) {
+            elements.detailQuantityIncreaseButton.disabled = selectedQuantity >= maxQuantity;
+        }
+        setElementText(elements.detailEstimatedTotal, formatPrice(Number(currentProduct.price || 0) * selectedQuantity));
+    }
+
+    async function copyOrderSummary() {
+        const optionSummary = selectedOptionSummary();
+        if (!optionSummary) {
+            return;
+        }
+        const total = formatPrice(Number(currentProduct.price || 0) * selectedQuantity);
+        await copyText(`${optionSummary}\n수량 ${selectedQuantity}개 · 예상 상품 금액 ${total}`, "주문 요약을 복사했습니다.");
     }
 
     async function shareSelectedOption() {
@@ -395,6 +465,7 @@
         if (selected) {
             showToast("옵션을 선택했습니다.", `${selectedOptionName} · 재고 ${option.stock}개`);
         }
+        syncPurchaseEstimate(option);
     }
 
     function renderRelated(product) {
@@ -502,6 +573,7 @@
         selectedOptionName = (product.options || []).some((option) => option.name === rememberedName && Number(option.stock || 0) > 0)
             ? rememberedName
             : "";
+        selectedQuantity = selectedOptionName ? readSelectedQuantity() : 1;
     }
 
     function syncSelectedOptionUrl() {
@@ -700,6 +772,11 @@
             renderOptions(currentProduct);
             const selected = currentProduct.options?.find((option) => option.name === selectedOptionName);
             syncSelectedOptionActions(selected || {});
+        }
+        if (event.key === DETAIL_QUANTITY_KEY && selectedOptionName) {
+            selectedQuantity = readSelectedQuantity();
+            const selected = currentProduct.options?.find((option) => option.name === selectedOptionName);
+            syncPurchaseEstimate(selected || {});
         }
     }
 
@@ -1107,6 +1184,7 @@
         });
         elements.detailClearOptionButton?.addEventListener("click", () => {
             selectedOptionName = "";
+            selectedQuantity = 1;
             rememberSelectedOption(productId, "");
             syncSelectedOptionUrl();
             if (currentProduct) {
@@ -1121,6 +1199,10 @@
             }
         });
         elements.detailShareSelectedOptionButton?.addEventListener("click", shareSelectedOption);
+        elements.detailQuantityDecreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity - 1));
+        elements.detailQuantityIncreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity + 1));
+        elements.detailQuantityInput?.addEventListener("change", () => setSelectedQuantity(elements.detailQuantityInput.value));
+        elements.detailCopyOrderSummaryButton?.addEventListener("click", copyOrderSummary);
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         elements.detailCopyBreadcrumbButton?.addEventListener("click", copyDetailBreadcrumb);
@@ -1133,6 +1215,7 @@
                 .sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
             if (recommended) {
                 selectedOptionName = recommended.name;
+                selectedQuantity = readSelectedQuantity();
                 rememberSelectedOption(productId, selectedOptionName);
                 syncSelectedOptionUrl();
                 renderOptions(currentProduct);

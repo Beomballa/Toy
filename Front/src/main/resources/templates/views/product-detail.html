@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.18">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.18">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.19">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.19">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -166,6 +166,16 @@
                 <button type="button" id="detailShareSelectedOptionButton">공유</button>
                 <button type="button" id="detailClearOptionButton">선택 해제</button>
             </div>
+            <div class="detail-purchase-estimate" id="detailPurchaseEstimate" hidden>
+                <label for="detailQuantityInput">수량</label>
+                <div class="detail-quantity-control">
+                    <button type="button" id="detailQuantityDecreaseButton" aria-label="수량 줄이기">−</button>
+                    <input id="detailQuantityInput" type="number" min="1" value="1" inputmode="numeric">
+                    <button type="button" id="detailQuantityIncreaseButton" aria-label="수량 늘리기">＋</button>
+                </div>
+                <span>예상 상품 금액 <strong id="detailEstimatedTotal">-</strong></span>
+                <button type="button" id="detailCopyOrderSummaryButton">주문 요약 복사</button>
+            </div>
         </section>
 
         <section class="detail-section" id="detailRelated">
@@ -249,6 +259,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.18"></script>
+<script src="/js/view/detail.js?v=20260715.19"></script>
 </body>
 </html>

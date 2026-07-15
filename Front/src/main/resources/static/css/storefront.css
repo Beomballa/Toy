@@ -2692,6 +2692,21 @@ main#top > .home-category-rail {
     bottom: 24px;
 }
 
+.catalog-card[role="listitem"]:focus-visible {
+    outline: 2px solid var(--store-ink);
+    outline-offset: 4px;
+}
+
+.product-visual--empty::after {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    color: var(--store-muted);
+    content: "NO IMAGE";
+    font-size: 10px;
+    letter-spacing: .08em;
+}
+
 @media (max-width: 768px) {
     .topbar-nav a {
         font-size: var(--store-text-body);

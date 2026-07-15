@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.5")
+                .contains("/css/storefront.css?v=20260715.6")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.5");
+                .contains("/js/view/app.js?v=20260715.6");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.5")
+                .contains("/css/storefront.css?v=20260715.6")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.5");
+                .contains("/js/view/detail.js?v=20260715.6");
     }
 
     @Test
@@ -453,7 +453,8 @@ class FrontStorefrontResourceTest {
         assertThat(html)
                 .contains("role=\"combobox\"")
                 .contains("id=\"searchSuggestionList\" role=\"listbox\"")
-                .contains("id=\"catalogGrid\" aria-busy=\"false\"")
+                .contains("id=\"catalogGrid\"")
+                .contains("aria-busy=\"false\"")
                 .contains("id=\"catalogPageProgress\" role=\"status\"");
         assertThat(script)
                 .contains("role=\"option\"")
@@ -527,6 +528,24 @@ class FrontStorefrontResourceTest {
                 .contains("window.addEventListener(\"online\", handleNetworkReconnect)")
                 .contains("document.addEventListener(\"visibilitychange\", handleVisibilityChange)")
                 .contains("stopHeroCarousel()", "startHeroCarousel()");
+    }
+
+    @Test
+    void catalogKeepsSemanticCardsImagePriorityAndKeyboardContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"catalogGrid\" role=\"list\"")
+                .contains("id=\"copyCurrentPageLinksButton\"");
+        assertThat(script)
+                .contains("role=\"listitem\"")
+                .contains("fetchpriority=\"high\"")
+                .contains("product-visual--empty")
+                .contains("이미지 없음")
+                .contains("function handleCatalogCardNavigation(event)")
+                .contains("currentCatalogPageProducts().map")
+                .contains("elements.catalogGrid?.addEventListener(\"keydown\", handleCatalogCardNavigation)");
     }
 
     private String readResource(String path) throws IOException {

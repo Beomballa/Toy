@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.5">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.5">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.6">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.6">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -617,7 +617,7 @@
             </div>
             </details>
 
-            <div class="catalog-grid" id="catalogGrid" aria-busy="false" aria-live="polite"></div>
+            <div class="catalog-grid" id="catalogGrid" role="list" aria-label="상품 목록" aria-busy="false" aria-live="polite"></div>
             <nav class="catalog-pagination" id="catalogPagination" aria-label="상품 페이지 이동">
                 <div class="catalog-pagination__progress">
                     <strong id="catalogPageProgress" role="status" aria-live="polite">상품 페이지를 계산 중입니다.</strong>
@@ -640,6 +640,7 @@
                             <button type="button" id="catalogFirstPageButton">첫 페이지</button>
                             <button type="button" id="catalogLastPageButton">마지막 페이지</button>
                             <button type="button" id="catalogLoadMoreButton">상품 더 보기</button>
+                            <button type="button" id="copyCurrentPageLinksButton">현재 페이지 링크 복사</button>
                         </div>
                     </details>
                 </div>
@@ -701,6 +702,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260715.5"></script>
+<script src="/js/view/app.js?v=20260715.6"></script>
 </body>
 </html>

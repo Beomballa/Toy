@@ -141,6 +141,7 @@
         catalogNextPageButton: document.getElementById("catalogNextPageButton"),
         catalogLastPageButton: document.getElementById("catalogLastPageButton"),
         catalogLoadMoreButton: document.getElementById("catalogLoadMoreButton"),
+        copyCurrentPageLinksButton: document.getElementById("copyCurrentPageLinksButton"),
         catalogSelection: document.getElementById("catalogSelection"),
         catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
         catalogSelectionText: document.getElementById("catalogSelectionText"),
@@ -1122,6 +1123,12 @@
             renderCatalog();
             showToast("상품을 더 불러왔습니다.", `현재 페이지에 최대 ${catalogPaginationDetails().effectiveSize}개 상품을 표시합니다.`);
         });
+        elements.copyCurrentPageLinksButton?.addEventListener("click", async () => {
+            const links = currentCatalogPageProducts().map((product) =>
+                `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`
+            );
+            await copyTextWithFeedback(links.join("\n") || "현재 페이지에 상품이 없습니다.", "현재 페이지 링크를 복사했습니다.", `${links.length}개 상품 상세 링크를 전달할 수 있습니다.`);
+        });
         elements.clearSelectedProductsButton?.addEventListener("click", () => {
             selectedProductIds.clear();
             renderCatalog();
@@ -1214,6 +1221,7 @@
                 applyCatalogCardFocus(Number(focusButton.dataset.productId), focusButton.dataset.cardFocus);
             }
         });
+        elements.catalogGrid?.addEventListener("keydown", handleCatalogCardNavigation);
         window.addEventListener("popstate", async () => {
             hydrateStateFromUrl();
             syncControls();
@@ -1842,8 +1850,8 @@
         }
 
         applyCatalogDisplayClasses();
-        elements.catalogGrid.innerHTML = list.map((product) => `
-            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}">
+        elements.catalogGrid.innerHTML = list.map((product, index) => `
+            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" tabindex="${index === 0 ? "0" : "-1"}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
@@ -1851,7 +1859,7 @@
                     <span aria-hidden="true">${bookmarkedIds.has(Number(product.id)) ? "♥" : "♡"}</span>
                 </button>
                 <a class="catalog-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
-                    ${productVisualMarkup(product, "catalog-card__visual")}
+                    ${productVisualMarkup(product, "catalog-card__visual", { eager: index < 4 })}
                 </a>
                 <div class="catalog-card__header">
                     <div>
@@ -3708,11 +3716,12 @@
         sections.forEach(({ section }) => observer.observe(section));
     }
 
-    function productVisualMarkup(product, className) {
+    function productVisualMarkup(product, className, options = {}) {
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        const visualLabel = `${product.name || product.headline || "상품"} ${thumbnail ? "이미지" : "이미지 없음"}`;
         return `
-            <div class="${className}${thumbnail ? " product-visual--has-image" : ""}">
-                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(product.name || product.headline || "상품 이미지")}" loading="lazy" data-product-image>` : ""}
+            <div class="${className}${thumbnail ? " product-visual--has-image" : " product-visual--empty"}" ${thumbnail ? "" : `role="img" aria-label="${escapeAttribute(visualLabel)}"`}>
+                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(visualLabel)}" loading="${options.eager ? "eager" : "lazy"}" ${options.eager ? 'fetchpriority="high"' : ""} data-product-image>` : ""}
                 <span class="${className}-badge">${brandInitials(product.brand)}</span>
                 <div class="${className}-copy">
                     <strong>${product.category || "Curated"}</strong>
@@ -3720,6 +3729,25 @@
                 </div>
             </div>
         `;
+    }
+
+    function handleCatalogCardNavigation(event) {
+        const card = event.target.closest(".catalog-card[role=\"listitem\"]");
+        if (!card || event.target !== card || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+            return;
+        }
+        const cards = Array.from(elements.catalogGrid.querySelectorAll(".catalog-card[role=\"listitem\"]"));
+        const currentIndex = cards.indexOf(card);
+        const columnCount = Math.max(1, window.getComputedStyle(elements.catalogGrid).gridTemplateColumns.split(" ").length);
+        const offsets = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columnCount, ArrowDown: columnCount };
+        const nextIndex = event.key === "Home"
+            ? 0
+            : event.key === "End"
+                ? cards.length - 1
+                : Math.min(cards.length - 1, Math.max(0, currentIndex + offsets[event.key]));
+        event.preventDefault();
+        cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
+        cards[nextIndex]?.focus();
     }
 
     function handleProductImageError(event) {

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.3")
+                .contains("/css/storefront.css?v=20260715.4")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.3");
+                .contains("/js/view/app.js?v=20260715.4");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.3")
+                .contains("/css/storefront.css?v=20260715.4")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.3");
+                .contains("/js/view/detail.js?v=20260715.4");
     }
 
     @Test
@@ -484,6 +484,32 @@ class FrontStorefrontResourceTest {
                 .contains("LAST_DRAWER_PRODUCT_KEY")
                 .doesNotContain("DISPLAY_PREFERENCES_KEY,\n            PAGE_SIZE_KEY");
         assertThat(css).contains(".utility-count");
+    }
+
+    @Test
+    void detailPageKeepsBreadcrumbOptionZoomRetryAndTopContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("class=\"detail-breadcrumb\"")
+                .contains("id=\"detailOptionSelection\"")
+                .contains("id=\"detailZoomButton\"")
+                .contains("id=\"detailImageModal\" role=\"dialog\"")
+                .contains("id=\"detailRetryButton\"")
+                .contains("id=\"detailScrollTopButton\"");
+        assertThat(script)
+                .contains("function openDetailImageModal()")
+                .contains("function closeDetailImageModal()")
+                .contains("detailOptionSelection.hidden = !selected")
+                .contains("detailRetryButton.hidden = false")
+                .contains("window.scrollTo({ top: 0, behavior: \"smooth\" })")
+                .contains("detailBreadcrumbCategory.href");
+        assertThat(css)
+                .contains(".detail-image-modal.is-open")
+                .contains(".detail-option-selection")
+                .contains(".detail-top-button");
     }
 
     private String readResource(String path) throws IOException {

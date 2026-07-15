@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.3">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.3">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.4">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.4">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -42,10 +42,16 @@
     </header>
 
     <main class="detail-page" id="detailPage" tabindex="-1" th:attr="data-product-id=${productId}">
+        <nav class="detail-breadcrumb" aria-label="상품 경로">
+            <a href="/front">홈</a><span aria-hidden="true">/</span>
+            <a href="/front#catalog" id="detailBreadcrumbCategory">상품</a><span aria-hidden="true">/</span>
+            <strong id="detailBreadcrumbProduct" aria-current="page">상세</strong>
+        </nav>
         <section class="detail-hero" id="detailHero">
             <div class="detail-product-visual" id="detailProductVisual" aria-label="상품 비주얼">
                 <span id="detailVisualBrand">GS</span>
                 <strong id="detailVisualModel">Product</strong>
+                <button class="detail-zoom-button" type="button" id="detailZoomButton" hidden>이미지 확대</button>
             </div>
             <div class="detail-commerce-panel">
             <div class="detail-hero__main">
@@ -55,6 +61,7 @@
                 </div>
                 <h1 id="detailTitle">상품 상세를 불러오는 중입니다.</h1>
                 <p class="detail-description" id="detailDescription">선택한 상품의 카테고리, 재고, 옵션, 연관 상품을 정리하고 있습니다.</p>
+                <button class="detail-retry-button" type="button" id="detailRetryButton" hidden>상품 정보 다시 불러오기</button>
                 <div class="detail-actions">
                     <button class="detail-primary-action" type="button" id="detailPrimaryAction" aria-controls="detailOptions">구매 옵션 확인</button>
                     <div class="detail-secondary-actions">
@@ -139,6 +146,11 @@
                     <strong>옵션을 불러오는 중입니다.</strong>
                 </article>
             </div>
+            <div class="detail-option-selection" id="detailOptionSelection" role="status" aria-live="polite" hidden>
+                <span>선택 옵션</span>
+                <strong id="detailOptionSelectionText"></strong>
+                <button type="button" id="detailClearOptionButton">선택 해제</button>
+            </div>
         </section>
 
         <section class="detail-section" id="detailRelated">
@@ -188,17 +200,29 @@
     </main>
 </div>
 
+<aside class="detail-image-modal" id="detailImageModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="detailImageModalTitle">
+    <div class="detail-image-modal__panel" tabindex="-1">
+        <div class="detail-image-modal__head">
+            <strong id="detailImageModalTitle">상품 이미지</strong>
+            <button type="button" id="detailImageModalCloseButton" aria-label="이미지 확대 닫기">×</button>
+        </div>
+        <img id="detailImageModalImage" src="" alt="">
+    </div>
+</aside>
+
 <nav class="detail-mobile-actions" id="detailMobileActions" aria-label="모바일 상품 액션">
     <button type="button" id="detailMobileBookmarkButton" aria-pressed="false"><span aria-hidden="true">♡</span><strong>관심</strong></button>
     <button type="button" id="detailMobileCompareButton" aria-pressed="false"><span aria-hidden="true">＋</span><strong>비교</strong></button>
     <button class="detail-mobile-actions__primary" type="button" id="detailMobilePrimaryButton"><span id="detailMobilePrice">가격 확인</span><strong>옵션 확인</strong></button>
 </nav>
 
+<button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
+
 <script th:inline="javascript">
     window.frontProductDetailBootstrap = {
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.3"></script>
+<script src="/js/view/detail.js?v=20260715.4"></script>
 </body>
 </html>

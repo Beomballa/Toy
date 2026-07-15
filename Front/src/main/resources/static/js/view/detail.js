@@ -18,6 +18,7 @@
     let currentProduct = null;
     let selectedOptionName = "";
     let toastTimerSeed = 0;
+    let detailModalReturnFocus = null;
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -66,7 +67,18 @@
         backToCatalogLink: document.getElementById("backToCatalogLink"),
         detailCatalogLink: document.getElementById("detailCatalogLink"),
         detailScrollProgress: document.getElementById("detailScrollProgress"),
-        detailStatus: document.getElementById("detailStatus")
+        detailStatus: document.getElementById("detailStatus"),
+        detailBreadcrumbCategory: document.getElementById("detailBreadcrumbCategory"),
+        detailBreadcrumbProduct: document.getElementById("detailBreadcrumbProduct"),
+        detailOptionSelection: document.getElementById("detailOptionSelection"),
+        detailOptionSelectionText: document.getElementById("detailOptionSelectionText"),
+        detailClearOptionButton: document.getElementById("detailClearOptionButton"),
+        detailZoomButton: document.getElementById("detailZoomButton"),
+        detailImageModal: document.getElementById("detailImageModal"),
+        detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
+        detailImageModalImage: document.getElementById("detailImageModalImage"),
+        detailRetryButton: document.getElementById("detailRetryButton"),
+        detailScrollTopButton: document.getElementById("detailScrollTopButton")
     };
 
     function formatPrice(price) {
@@ -128,6 +140,9 @@
         }
         event.target.closest(".product-visual--has-image")?.classList.add("is-image-error");
         event.target.remove();
+        if (elements.detailZoomButton) {
+            elements.detailZoomButton.hidden = true;
+        }
     }
 
     function escapeAttribute(value) {
@@ -155,6 +170,13 @@
         if (elements.detailVisualModel) {
             elements.detailVisualModel.textContent = product.model || product.name || "Product";
         }
+        if (elements.detailBreadcrumbCategory) {
+            elements.detailBreadcrumbCategory.textContent = product.category || "상품";
+            elements.detailBreadcrumbCategory.href = `/front?category=${encodeURIComponent(product.category || "")}`;
+        }
+        if (elements.detailBreadcrumbProduct) {
+            elements.detailBreadcrumbProduct.textContent = product.name || product.headline || "상세";
+        }
         renderDetailThumbnail(product);
     }
 
@@ -165,6 +187,9 @@
         elements.detailProductVisual.querySelector("[data-product-image]")?.remove();
         elements.detailProductVisual.classList.remove("product-visual--has-image", "is-image-error");
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        if (elements.detailZoomButton) {
+            elements.detailZoomButton.hidden = !thumbnail;
+        }
         if (!thumbnail) {
             return;
         }
@@ -175,6 +200,10 @@
         image.dataset.productImage = "";
         elements.detailProductVisual.classList.add("product-visual--has-image");
         elements.detailProductVisual.prepend(image);
+        if (elements.detailImageModalImage) {
+            elements.detailImageModalImage.src = thumbnail;
+            elements.detailImageModalImage.alt = `${product.name || "상품"} 확대 이미지`;
+        }
     }
 
     function renderSignals(product) {
@@ -265,6 +294,12 @@
             mobileLabel.textContent = selected ? `${selectedOptionName} 선택됨` : "옵션 확인";
         }
         elements.detailMobilePrimaryButton?.classList.toggle("has-option", selected);
+        if (elements.detailOptionSelection) {
+            elements.detailOptionSelection.hidden = !selected;
+        }
+        if (elements.detailOptionSelectionText) {
+            elements.detailOptionSelectionText.textContent = selected ? `${selectedOptionName} · 재고 ${option.stock}개` : "";
+        }
         if (selected) {
             showToast("옵션을 선택했습니다.", `${selectedOptionName} · 재고 ${option.stock}개`);
         }
@@ -695,6 +730,29 @@
         if (elements.detailScrollProgress) {
             elements.detailScrollProgress.style.transform = `scaleX(${progress / 100})`;
         }
+        elements.detailScrollTopButton?.classList.toggle("is-visible", window.scrollY > 480);
+    }
+
+    function openDetailImageModal() {
+        if (!elements.detailImageModal || !elements.detailImageModalImage?.src) {
+            return;
+        }
+        detailModalReturnFocus = document.activeElement;
+        elements.detailImageModal.classList.add("is-open");
+        elements.detailImageModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("has-open-modal");
+        elements.detailImageModal.querySelector(".detail-image-modal__panel")?.focus();
+    }
+
+    function closeDetailImageModal() {
+        if (!elements.detailImageModal?.classList.contains("is-open")) {
+            return;
+        }
+        elements.detailImageModal.classList.remove("is-open");
+        elements.detailImageModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("has-open-modal");
+        detailModalReturnFocus?.focus?.();
+        detailModalReturnFocus = null;
     }
 
     function showToast(title, body, isWarning = false) {
@@ -735,6 +793,27 @@
         initSectionNavigation();
         window.addEventListener("scroll", syncDetailScrollProgress, { passive: true });
         syncDetailScrollProgress();
+        elements.detailZoomButton?.addEventListener("click", openDetailImageModal);
+        elements.detailImageModalCloseButton?.addEventListener("click", closeDetailImageModal);
+        elements.detailImageModal?.addEventListener("click", (event) => {
+            if (event.target === elements.detailImageModal) {
+                closeDetailImageModal();
+            }
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeDetailImageModal();
+            }
+        });
+        elements.detailClearOptionButton?.addEventListener("click", () => {
+            selectedOptionName = "";
+            if (currentProduct) {
+                renderOptions(currentProduct);
+                syncSelectedOptionActions({});
+            }
+        });
+        elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
+        elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
@@ -939,6 +1018,9 @@
             }
             const product = await response.json();
             currentProduct = product;
+            if (elements.detailRetryButton) {
+                elements.detailRetryButton.hidden = true;
+            }
             document.title = `${product.name} | Grade Stock`;
             if (elements.detailTitle) {
                 elements.detailTitle.textContent = product.headline || product.name;
@@ -966,6 +1048,9 @@
             }
             if (elements.detailDescription) {
                 elements.detailDescription.textContent = "잠시 후 다시 시도해주세요.";
+            }
+            if (elements.detailRetryButton) {
+                elements.detailRetryButton.hidden = false;
             }
         }
     }

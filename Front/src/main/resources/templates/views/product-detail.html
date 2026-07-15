@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.6">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.6">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.7">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.7">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -141,6 +141,12 @@
                     </details>
                 </div>
             </div>
+            <div class="detail-option-overview" id="detailOptionOverview" aria-label="옵션 재고 요약">
+                <span>구매 가능 <strong id="detailAvailableOptionCount">0</strong></span>
+                <span>긴장 재고 <strong id="detailLowOptionCount">0</strong></span>
+                <span>품절 <strong id="detailSoldOutOptionCount">0</strong></span>
+                <button type="button" id="detailRecommendOptionButton">추천 옵션 선택</button>
+            </div>
             <div class="detail-option-grid" id="detailOptionGrid">
                 <article class="detail-option-card">
                     <strong>옵션을 불러오는 중입니다.</strong>
@@ -161,6 +167,8 @@
                     <p>같이 비교해볼 만한 상품을 바로 이동 가능한 카드로 제공합니다.</p>
                 </div>
                 <div class="detail-section-actions">
+                    <button class="catalog-reset-button" type="button" id="detailPreviousRelatedButton">이전 추천</button>
+                    <button class="catalog-reset-button" type="button" id="detailNextRelatedButton">다음 추천</button>
                     <button class="catalog-reset-button" type="button" id="detailRelatedSortStockButton">재고 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="detailRelatedSameBrandButton">같은 브랜드만</button>
                     <details class="board-action-menu detail-section-menu">
@@ -223,6 +231,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.6"></script>
+<script src="/js/view/detail.js?v=20260715.7"></script>
 </body>
 </html>

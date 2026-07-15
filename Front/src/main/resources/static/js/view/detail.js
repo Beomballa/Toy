@@ -4,6 +4,7 @@
     const BOOKMARK_PRODUCTS_KEY = "front-bookmark-products";
     const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
+    const SELECTED_OPTION_KEY = "front-detail-selected-options";
     const RECENT_VIEWED_LIMIT = 6;
     const optionSortState = {
         mode: "STOCK_ASC",
@@ -78,7 +79,13 @@
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
         detailImageModalImage: document.getElementById("detailImageModalImage"),
         detailRetryButton: document.getElementById("detailRetryButton"),
-        detailScrollTopButton: document.getElementById("detailScrollTopButton")
+        detailScrollTopButton: document.getElementById("detailScrollTopButton"),
+        detailAvailableOptionCount: document.getElementById("detailAvailableOptionCount"),
+        detailLowOptionCount: document.getElementById("detailLowOptionCount"),
+        detailSoldOutOptionCount: document.getElementById("detailSoldOutOptionCount"),
+        detailRecommendOptionButton: document.getElementById("detailRecommendOptionButton"),
+        detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
+        detailNextRelatedButton: document.getElementById("detailNextRelatedButton")
     };
 
     function formatPrice(price) {
@@ -249,6 +256,13 @@
         }
         syncOptionSortButtons();
         const options = sortedOptions(product);
+        const allOptions = Array.isArray(product.options) ? product.options : [];
+        setElementText(elements.detailAvailableOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) > 0).length));
+        setElementText(elements.detailLowOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) > 0 && Number(option.stock || 0) < lowStockThreshold()).length));
+        setElementText(elements.detailSoldOutOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) <= 0).length));
+        if (elements.detailRecommendOptionButton) {
+            elements.detailRecommendOptionButton.disabled = !allOptions.some((option) => Number(option.stock || 0) > 0);
+        }
         if (elements.detailOptionCount) {
             elements.detailOptionCount.textContent = String(options.length);
         }
@@ -280,6 +294,7 @@
             return;
         }
         selectedOptionName = selectedOptionName === optionName ? "" : optionName;
+        rememberSelectedOption(productId, selectedOptionName);
         renderOptions(currentProduct);
         syncSelectedOptionActions(option);
     }
@@ -310,6 +325,12 @@
             return;
         }
         const related = sortedRelatedProducts(product);
+        if (elements.detailPreviousRelatedButton) {
+            elements.detailPreviousRelatedButton.disabled = !related.length;
+        }
+        if (elements.detailNextRelatedButton) {
+            elements.detailNextRelatedButton.disabled = !related.length;
+        }
         if (elements.detailRelatedCount) {
             elements.detailRelatedCount.textContent = String(related.length);
         }
@@ -331,6 +352,7 @@
                 <div class="detail-related-card__meta">
                     <span>모델 ${item.model}</span>
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
+                    <span>${relatedPriceDeltaLabel(item.price, product.price)}</span>
                     <span class="${stockClassName(item.stock)}">${item.stockStatus || stockLabel(item.stock)}</span>
                 </div>
                 <div class="detail-related-card__actions saved-product-card__actions">
@@ -357,6 +379,59 @@
         }
         if (elements.detailCatalogLink) {
             elements.detailCatalogLink.href = `${catalogUrl}#catalog`;
+        }
+    }
+
+    function relatedPriceDeltaLabel(relatedPrice, basePrice) {
+        const delta = Number(relatedPrice || 0) - Number(basePrice || 0);
+        if (!delta) {
+            return "현재 상품과 동일가";
+        }
+        return `현재 상품보다 ${formatPrice(Math.abs(delta))} ${delta > 0 ? "높음" : "낮음"}`;
+    }
+
+    function readRememberedOptions() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(SELECTED_OPTION_KEY) || "{}");
+            return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function rememberSelectedOption(currentProductId, optionName) {
+        const remembered = readRememberedOptions();
+        if (optionName) {
+            remembered[currentProductId] = optionName;
+        } else {
+            delete remembered[currentProductId];
+        }
+        window.localStorage.setItem(SELECTED_OPTION_KEY, JSON.stringify(remembered));
+    }
+
+    function restoreRememberedOption(product) {
+        const rememberedName = readRememberedOptions()[product.id];
+        selectedOptionName = (product.options || []).some((option) => option.name === rememberedName && Number(option.stock || 0) > 0)
+            ? rememberedName
+            : "";
+    }
+
+    function openRelatedByDirection(direction) {
+        if (!currentProduct) {
+            return;
+        }
+        const related = sortedRelatedProducts(currentProduct);
+        if (!related.length) {
+            showToast("이동할 연관 상품이 없습니다.", "연관 상품 조건을 넓혀 다시 확인해주세요.", true);
+            return;
+        }
+        const target = direction < 0 ? related[related.length - 1] : related[0];
+        window.location.href = buildProductUrl(target.id);
+    }
+
+    function setElementText(element, text) {
+        if (element) {
+            element.textContent = text;
         }
     }
 
@@ -807,6 +882,7 @@
         });
         elements.detailClearOptionButton?.addEventListener("click", () => {
             selectedOptionName = "";
+            rememberSelectedOption(productId, "");
             if (currentProduct) {
                 renderOptions(currentProduct);
                 syncSelectedOptionActions({});
@@ -814,6 +890,22 @@
         });
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+        elements.detailRecommendOptionButton?.addEventListener("click", () => {
+            if (!currentProduct) {
+                return;
+            }
+            const recommended = (currentProduct.options || [])
+                .filter((option) => Number(option.stock || 0) > 0)
+                .sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
+            if (recommended) {
+                selectedOptionName = recommended.name;
+                rememberSelectedOption(productId, selectedOptionName);
+                renderOptions(currentProduct);
+                syncSelectedOptionActions(recommended);
+            }
+        });
+        elements.detailPreviousRelatedButton?.addEventListener("click", () => openRelatedByDirection(-1));
+        elements.detailNextRelatedButton?.addEventListener("click", () => openRelatedByDirection(1));
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
@@ -1018,6 +1110,7 @@
             }
             const product = await response.json();
             currentProduct = product;
+            restoreRememberedOption(product);
             if (elements.detailRetryButton) {
                 elements.detailRetryButton.hidden = true;
             }
@@ -1039,6 +1132,8 @@
             renderSignals(product);
             renderOverview(product);
             renderOptions(product);
+            const restoredOption = (product.options || []).find((option) => option.name === selectedOptionName);
+            syncSelectedOptionActions(restoredOption || {});
             renderRelated(product);
             renderRecentProducts(product.id);
             syncActionButtons();

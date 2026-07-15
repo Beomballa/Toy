@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.6")
+                .contains("/css/storefront.css?v=20260715.7")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.6");
+                .contains("/js/view/app.js?v=20260715.7");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.6")
+                .contains("/css/storefront.css?v=20260715.7")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.6");
+                .contains("/js/view/detail.js?v=20260715.7");
     }
 
     @Test
@@ -546,6 +546,27 @@ class FrontStorefrontResourceTest {
                 .contains("function handleCatalogCardNavigation(event)")
                 .contains("currentCatalogPageProducts().map")
                 .contains("elements.catalogGrid?.addEventListener(\"keydown\", handleCatalogCardNavigation)");
+    }
+
+    @Test
+    void detailKeepsOptionSummaryMemoryAndRelatedNavigationContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailAvailableOptionCount\"")
+                .contains("id=\"detailLowOptionCount\"")
+                .contains("id=\"detailSoldOutOptionCount\"")
+                .contains("id=\"detailRecommendOptionButton\"")
+                .contains("id=\"detailPreviousRelatedButton\"")
+                .contains("id=\"detailNextRelatedButton\"");
+        assertThat(script)
+                .contains("SELECTED_OPTION_KEY")
+                .contains("function rememberSelectedOption")
+                .contains("function restoreRememberedOption")
+                .contains("function relatedPriceDeltaLabel")
+                .contains("function openRelatedByDirection")
+                .contains("sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))");
     }
 
     private String readResource(String path) throws IOException {

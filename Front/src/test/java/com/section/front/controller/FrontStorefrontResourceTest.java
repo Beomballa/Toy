@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.9")
+                .contains("/css/storefront.css?v=20260715.10")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.9");
+                .contains("/js/view/app.js?v=20260715.10");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.9")
+                .contains("/css/storefront.css?v=20260715.10")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.9");
+                .contains("/js/view/detail.js?v=20260715.10");
     }
 
     @Test
@@ -604,6 +604,22 @@ class FrontStorefrontResourceTest {
                 .contains("function warmCatalogProductDetail(event)")
                 .contains("window.addEventListener(\"pagehide\", persistCatalogScrollPosition)")
                 .contains("function restoreCatalogScrollPosition()");
+    }
+
+    @Test
+    void catalogKeepsExpandedKeyboardNavigationContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("<dt>F</dt><dd>상품 필터 열기</dd>")
+                .contains("<dt>Page ↑ / ↓</dt>");
+        assertThat(script)
+                .contains("event.key === \"Enter\"")
+                .contains("event.key === \"PageUp\" || event.key === \"PageDown\"")
+                .contains("function openCatalogFilterPanel()")
+                .contains("function closeCatalogFilterPanel()")
+                .contains("번째 상품 카드입니다.");
     }
 
     private String readResource(String path) throws IOException {

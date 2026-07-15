@@ -518,6 +518,7 @@
                 closeHeaderSearch();
                 closeMobileMenu();
                 closeShortcutHelp();
+                closeCatalogFilterPanel();
             }
             const target = event.target;
             const tagName = target?.tagName;
@@ -525,6 +526,11 @@
             if (event.key === "?" && !isEditable) {
                 event.preventDefault();
                 openShortcutHelp();
+                return;
+            }
+            if (event.key.toLowerCase() === "f" && !isEditable) {
+                event.preventDefault();
+                openCatalogFilterPanel();
                 return;
             }
             if (event.key !== "/" || document.activeElement === elements.searchInput) {
@@ -3811,7 +3817,23 @@
 
     function handleCatalogCardNavigation(event) {
         const card = event.target.closest(".catalog-card[role=\"listitem\"]");
-        if (!card || event.target !== card || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
+        if (!card || event.target !== card) {
+            return;
+        }
+        if (event.key === "Enter") {
+            const link = card.querySelector(".catalog-card__visual-link");
+            if (link) {
+                event.preventDefault();
+                window.location.href = link.href;
+            }
+            return;
+        }
+        if (event.key === "PageUp" || event.key === "PageDown") {
+            event.preventDefault();
+            moveCatalogPage(paginationState.page + (event.key === "PageDown" ? 1 : -1));
+            return;
+        }
+        if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) {
             return;
         }
         const cards = Array.from(elements.catalogGrid.querySelectorAll(".catalog-card[role=\"listitem\"]"));
@@ -3826,6 +3848,25 @@
         event.preventDefault();
         cards.forEach((item, index) => item.tabIndex = index === nextIndex ? 0 : -1);
         cards[nextIndex]?.focus();
+        announceStorefrontStatus(`${nextIndex + 1} / ${cards.length}번째 상품 카드입니다.`);
+    }
+
+    function openCatalogFilterPanel() {
+        if (!elements.catalogFilterPanel) {
+            return;
+        }
+        elements.catalogFilterPanel.open = true;
+        elements.catalogFilterPanel.querySelector("select")?.focus();
+        announceStorefrontStatus("상품 필터를 열었습니다.");
+    }
+
+    function closeCatalogFilterPanel() {
+        if (!elements.catalogFilterPanel?.open) {
+            return;
+        }
+        elements.catalogFilterPanel.open = false;
+        elements.catalogFilterPanel.querySelector("summary")?.focus();
+        announceStorefrontStatus("상품 필터를 닫았습니다.");
     }
 
     function warmCatalogProductDetail(event) {

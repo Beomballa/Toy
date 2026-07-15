@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.15">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.15">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.16">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.16">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -174,7 +174,11 @@
                 <div>
                     <h2>연관 상품 <span class="detail-section-count" id="detailRelatedCount" aria-live="polite">0</span></h2>
                     <p>같이 비교해볼 만한 상품을 바로 이동 가능한 카드로 제공합니다.</p>
-                    <p class="detail-related-average">연관 평균가 <strong id="detailRelatedAveragePrice">-</strong></p>
+                    <p class="detail-related-average">
+                        <span>최저가 <strong id="detailRelatedMinPrice">-</strong></span>
+                        <span>평균가 <strong id="detailRelatedAveragePrice">-</strong></span>
+                        <span>최고가 <strong id="detailRelatedMaxPrice">-</strong></span>
+                    </p>
                 </div>
                 <div class="detail-section-actions">
                     <button class="catalog-reset-button" type="button" id="detailPreviousRelatedButton">이전 추천</button>
@@ -206,12 +210,15 @@
             <div class="section-heading">
                 <p class="eyebrow">Recent</p>
                 <div>
-                    <h2>최근 본 상품</h2>
+                    <h2>최근 본 상품 <span class="detail-section-count" id="detailRecentCount" aria-live="polite">0</span></h2>
                     <p>방금 살펴본 상품 흐름을 끊지 않고 바로 다시 비교할 수 있도록 정리했습니다.</p>
                 </div>
                 <div class="detail-section-actions">
+                    <button class="catalog-reset-button" type="button" id="detailPreviousRecentButton">이전 최근 상품</button>
+                    <button class="catalog-reset-button" type="button" id="detailNextRecentButton">다음 최근 상품</button>
                     <button class="catalog-reset-button" type="button" id="clearDetailRecentButton">최근 본 상품 비우기</button>
                     <button class="catalog-reset-button" type="button" id="copyDetailRecentSummaryButton">최근 흐름 복사</button>
+                    <button class="catalog-reset-button" type="button" id="copyDetailRecentLinksButton">최근 링크 복사</button>
                 </div>
             </div>
             <div class="detail-related-grid" id="detailRecentGrid"></div>
@@ -242,6 +249,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.15"></script>
+<script src="/js/view/detail.js?v=20260715.16"></script>
 </body>
 </html>

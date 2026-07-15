@@ -39,6 +39,7 @@
         detailRelatedCount: document.getElementById("detailRelatedCount"),
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
+        detailRecentCount: document.getElementById("detailRecentCount"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
         detailPrimaryAction: document.getElementById("detailPrimaryAction"),
         detailMobileBookmarkButton: document.getElementById("detailMobileBookmarkButton"),
@@ -67,6 +68,9 @@
         detailRandomRelatedButton: document.getElementById("detailRandomRelatedButton"),
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
         copyDetailRecentSummaryButton: document.getElementById("copyDetailRecentSummaryButton"),
+        copyDetailRecentLinksButton: document.getElementById("copyDetailRecentLinksButton"),
+        detailPreviousRecentButton: document.getElementById("detailPreviousRecentButton"),
+        detailNextRecentButton: document.getElementById("detailNextRecentButton"),
         backToCatalogLink: document.getElementById("backToCatalogLink"),
         detailCatalogLink: document.getElementById("detailCatalogLink"),
         detailScrollProgress: document.getElementById("detailScrollProgress"),
@@ -95,6 +99,8 @@
         detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
         detailNextRelatedButton: document.getElementById("detailNextRelatedButton"),
         detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
+        detailRelatedMinPrice: document.getElementById("detailRelatedMinPrice"),
+        detailRelatedMaxPrice: document.getElementById("detailRelatedMaxPrice"),
         detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton")
     };
 
@@ -409,6 +415,9 @@
             elements.detailRelatedAveragePrice,
             related.length ? formatPrice(Math.round(related.reduce((sum, item) => sum + Number(item.price || 0), 0) / related.length)) : "-"
         );
+        const relatedPrices = related.map((item) => Number(item.price || 0));
+        setElementText(elements.detailRelatedMinPrice, relatedPrices.length ? formatPrice(Math.min(...relatedPrices)) : "-");
+        setElementText(elements.detailRelatedMaxPrice, relatedPrices.length ? formatPrice(Math.max(...relatedPrices)) : "-");
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
@@ -573,6 +582,13 @@
             return;
         }
         const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(currentProductId)).slice(0, 3);
+        setElementText(elements.detailRecentCount, String(recentProducts.length));
+        if (elements.detailPreviousRecentButton) {
+            elements.detailPreviousRecentButton.disabled = !recentProducts.length;
+        }
+        if (elements.detailNextRecentButton) {
+            elements.detailNextRecentButton.disabled = !recentProducts.length;
+        }
         if (!recentProducts.length) {
             elements.detailRecentSection.hidden = true;
             return;
@@ -603,6 +619,24 @@
         window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
         renderRecentProducts(productId);
         showToast("최근 본 상품에서 삭제했습니다.", "선택한 상품만 최근 흐름에서 제외했습니다.");
+    }
+
+    function openRecentProductByDirection(direction) {
+        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+        if (!recentProducts.length) {
+            showToast("이동할 최근 상품이 없습니다.", "다른 상품을 확인하면 최근 흐름이 생성됩니다.", true);
+            return;
+        }
+        const target = direction < 0 ? recentProducts[recentProducts.length - 1] : recentProducts[0];
+        window.location.href = buildProductUrl(target.id);
+    }
+
+    async function copyRecentProductLinks() {
+        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+        const text = recentProducts.length
+            ? recentProducts.map((item) => new URL(buildProductUrl(item.id), window.location.origin).href).join("\n")
+            : "최근 본 상품이 없습니다.";
+        await copyText(text, "최근 상품 링크를 복사했습니다.");
     }
 
     async function copyDetailBreadcrumb() {
@@ -1107,6 +1141,8 @@
         });
         elements.detailPreviousRelatedButton?.addEventListener("click", () => openRelatedByDirection(-1));
         elements.detailNextRelatedButton?.addEventListener("click", () => openRelatedByDirection(1));
+        elements.detailPreviousRecentButton?.addEventListener("click", () => openRecentProductByDirection(-1));
+        elements.detailNextRecentButton?.addEventListener("click", () => openRecentProductByDirection(1));
         elements.detailCompareAllRelatedButton?.addEventListener("click", addAllRelatedToCompare);
         elements.detailRecentGrid?.addEventListener("click", (event) => {
             const removeButton = event.target.closest("[data-remove-detail-recent-id]");
@@ -1335,6 +1371,7 @@
                 window.prompt("최근 흐름을 복사하세요.", text);
             }
         });
+        elements.copyDetailRecentLinksButton?.addEventListener("click", copyRecentProductLinks);
         try {
             const response = await fetch(`/api/front/products/${productId}`);
             if (!response.ok) {

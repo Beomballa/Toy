@@ -2599,6 +2599,9 @@ main#top > .home-category-rail {
 }
 
 .detail-related-average {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
     margin-top: 6px !important;
     color: var(--store-muted);
     font-size: var(--store-text-meta);

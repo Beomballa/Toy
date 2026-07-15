@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.15")
+                .contains("/css/storefront.css?v=20260715.16")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.15");
+                .contains("/js/view/app.js?v=20260715.16");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.15")
+                .contains("/css/storefront.css?v=20260715.16")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.15");
+                .contains("/js/view/detail.js?v=20260715.16");
     }
 
     @Test
@@ -713,6 +713,28 @@ class FrontStorefrontResourceTest {
                 .contains("optionSortState.availableOnly")
                 .contains("function openDetailOptionsFromKeyboard()")
                 .contains("params.delete(\"option\")");
+    }
+
+    @Test
+    void detailKeepsRelatedPriceRangeAndRecentNavigationContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedMinPrice\"")
+                .contains("id=\"detailRelatedMaxPrice\"")
+                .contains("id=\"detailRecentCount\"")
+                .contains("id=\"detailPreviousRecentButton\"")
+                .contains("id=\"detailNextRecentButton\"")
+                .contains("id=\"copyDetailRecentLinksButton\"");
+        assertThat(script)
+                .contains("Math.min(...relatedPrices)")
+                .contains("Math.max(...relatedPrices)")
+                .contains("function openRecentProductByDirection(direction)")
+                .contains("async function copyRecentProductLinks()")
+                .contains("setElementText(elements.detailRecentCount");
+        assertThat(css).contains(".detail-related-average");
     }
 
     private String readResource(String path) throws IOException {

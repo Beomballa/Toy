@@ -2707,7 +2707,7 @@ main#top > .home-category-rail {
 
 .detail-quantity-control button,
 .detail-quantity-control input,
-.detail-purchase-estimate > button {
+.detail-purchase-actions button {
     min-height: 34px;
     border: 0;
     background: #fff;
@@ -2720,17 +2720,25 @@ main#top > .home-category-rail {
     text-align: center;
 }
 
-.detail-purchase-estimate > span {
-    justify-self: end;
+.detail-purchase-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 14px;
     color: var(--store-muted);
 }
 
-.detail-purchase-estimate > span strong {
+.detail-purchase-metrics strong {
     margin-left: 6px;
     color: var(--store-ink);
 }
 
-.detail-purchase-estimate > button {
+.detail-purchase-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.detail-purchase-actions button {
     padding: 0 12px;
     border: 1px solid var(--store-ink);
     border-radius: var(--store-radius-control);
@@ -3046,9 +3054,14 @@ main#top > .home-category-rail {
         grid-template-columns: 1fr auto;
     }
 
-    .detail-purchase-estimate > span {
+    .detail-purchase-metrics {
         grid-column: 1 / -1;
-        justify-self: start;
+        justify-content: flex-start;
+    }
+
+    .detail-purchase-actions {
+        grid-column: 1 / -1;
+        flex-wrap: wrap;
     }
 
     .detail-option-overview button {

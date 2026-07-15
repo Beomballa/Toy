@@ -91,6 +91,10 @@
         detailQuantityIncreaseButton: document.getElementById("detailQuantityIncreaseButton"),
         detailQuantityInput: document.getElementById("detailQuantityInput"),
         detailEstimatedTotal: document.getElementById("detailEstimatedTotal"),
+        detailUnitPrice: document.getElementById("detailUnitPrice"),
+        detailRemainingStock: document.getElementById("detailRemainingStock"),
+        detailQuantityMaxButton: document.getElementById("detailQuantityMaxButton"),
+        detailQuantityResetButton: document.getElementById("detailQuantityResetButton"),
         detailCopyOrderSummaryButton: document.getElementById("detailCopyOrderSummaryButton"),
         detailZoomButton: document.getElementById("detailZoomButton"),
         detailImageModal: document.getElementById("detailImageModal"),
@@ -418,6 +422,14 @@
             elements.detailQuantityIncreaseButton.disabled = selectedQuantity >= maxQuantity;
         }
         setElementText(elements.detailEstimatedTotal, formatPrice(Number(currentProduct.price || 0) * selectedQuantity));
+        setElementText(elements.detailUnitPrice, currentProduct.priceLabel || formatPrice(currentProduct.price));
+        setElementText(elements.detailRemainingStock, `${Math.max(0, maxQuantity - selectedQuantity)}개`);
+        if (elements.detailQuantityMaxButton) {
+            elements.detailQuantityMaxButton.disabled = selectedQuantity >= maxQuantity;
+        }
+        if (elements.detailQuantityResetButton) {
+            elements.detailQuantityResetButton.disabled = selectedQuantity <= 1;
+        }
     }
 
     async function copyOrderSummary() {
@@ -1248,6 +1260,10 @@
                 event.preventDefault();
                 openDetailOptionsFromKeyboard();
             }
+            if (selectedOptionName && !isEditable && !event.ctrlKey && !event.metaKey && !event.altKey && ["-", "+", "="].includes(event.key)) {
+                event.preventDefault();
+                setSelectedQuantity(selectedQuantity + (event.key === "-" ? -1 : 1));
+            }
         });
         elements.detailClearOptionButton?.addEventListener("click", () => {
             selectedOptionName = "";
@@ -1269,6 +1285,11 @@
         elements.detailQuantityDecreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity - 1));
         elements.detailQuantityIncreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity + 1));
         elements.detailQuantityInput?.addEventListener("change", () => setSelectedQuantity(elements.detailQuantityInput.value));
+        elements.detailQuantityMaxButton?.addEventListener("click", () => {
+            const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
+            setSelectedQuantity(option?.stock || 1);
+        });
+        elements.detailQuantityResetButton?.addEventListener("click", () => setSelectedQuantity(1));
         elements.detailCopyOrderSummaryButton?.addEventListener("click", copyOrderSummary);
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));

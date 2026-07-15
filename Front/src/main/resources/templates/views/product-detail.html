@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.22">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.22">
+    <link rel="stylesheet" href="/css/main.css?v=20260715.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260715.23">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -166,15 +166,23 @@
                 <button type="button" id="detailShareSelectedOptionButton">공유</button>
                 <button type="button" id="detailClearOptionButton">선택 해제</button>
             </div>
-            <div class="detail-purchase-estimate" id="detailPurchaseEstimate" hidden>
+            <div class="detail-purchase-estimate" id="detailPurchaseEstimate" aria-keyshortcuts="- +" hidden>
                 <label for="detailQuantityInput">수량</label>
                 <div class="detail-quantity-control">
                     <button type="button" id="detailQuantityDecreaseButton" aria-label="수량 줄이기">−</button>
                     <input id="detailQuantityInput" type="number" min="1" value="1" inputmode="numeric">
                     <button type="button" id="detailQuantityIncreaseButton" aria-label="수량 늘리기">＋</button>
                 </div>
-                <span>예상 상품 금액 <strong id="detailEstimatedTotal">-</strong></span>
-                <button type="button" id="detailCopyOrderSummaryButton">주문 요약 복사</button>
+                <div class="detail-purchase-metrics">
+                    <span>단가 <strong id="detailUnitPrice">-</strong></span>
+                    <span>예상 상품 금액 <strong id="detailEstimatedTotal">-</strong></span>
+                    <span>선택 후 잔여 <strong id="detailRemainingStock">-</strong></span>
+                </div>
+                <div class="detail-purchase-actions">
+                    <button type="button" id="detailQuantityMaxButton">최대</button>
+                    <button type="button" id="detailQuantityResetButton">초기화</button>
+                    <button type="button" id="detailCopyOrderSummaryButton">주문 요약 복사</button>
+                </div>
             </div>
         </section>
 
@@ -262,6 +270,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260715.22"></script>
+<script src="/js/view/detail.js?v=20260715.23"></script>
 </body>
 </html>

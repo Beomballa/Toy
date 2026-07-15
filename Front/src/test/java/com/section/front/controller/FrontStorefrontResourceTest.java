@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.22")
+                .contains("/css/storefront.css?v=20260715.23")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.22");
+                .contains("/js/view/app.js?v=20260715.23");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.22")
+                .contains("/css/storefront.css?v=20260715.23")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.22");
+                .contains("/js/view/detail.js?v=20260715.23");
     }
 
     @Test
@@ -855,6 +855,29 @@ class FrontStorefrontResourceTest {
                 .contains("toggleBookmarkProduct(activeDrawerProductId)")
                 .contains("toggleCompareProduct(activeDrawerProductId)")
                 .contains("copyTextWithFeedback(url, \"상품 링크를 복사했습니다.\"");
+    }
+
+    @Test
+    void detailQuantityKeepsUnitRemainingMaxResetAndKeyboardContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("aria-keyshortcuts=\"- +\"")
+                .contains("id=\"detailUnitPrice\"")
+                .contains("id=\"detailRemainingStock\"")
+                .contains("id=\"detailQuantityMaxButton\"")
+                .contains("id=\"detailQuantityResetButton\"");
+        assertThat(script)
+                .contains("setElementText(elements.detailUnitPrice")
+                .contains("setElementText(elements.detailRemainingStock")
+                .contains("setSelectedQuantity(option?.stock || 1)")
+                .contains("setSelectedQuantity(1)")
+                .contains("[\"-\", \"+\", \"=\"].includes(event.key)");
+        assertThat(css)
+                .contains(".detail-purchase-metrics")
+                .contains(".detail-purchase-actions");
     }
 
     private String readResource(String path) throws IOException {

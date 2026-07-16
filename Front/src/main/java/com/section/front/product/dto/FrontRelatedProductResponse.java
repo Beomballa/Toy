@@ -3,6 +3,7 @@ package com.section.front.product.dto;
 public record FrontRelatedProductResponse(
         long id,
         String brand,
+        String category,
         String name,
         String reason,
         String model,

@@ -116,7 +116,7 @@ class FrontProductRestControllerTest {
                         "품절 임박",
                         "289,000원",
                         List.of(new FrontProductOptionResponse("260", 4)),
-                        List.of(new FrontRelatedProductResponse(103L, "ASICS", "Gel-Kayano 14 Oyster", "같은 카테고리", "1201A019-200", 179000, 12, "품절 임박", "179,000원", "/images/product/gel-kayano.png")),
+                        List.of(new FrontRelatedProductResponse(103L, "ASICS", "러닝화", "Gel-Kayano 14 Oyster", "같은 카테고리", "1201A019-200", 179000, 12, "품절 임박", "179,000원", "/images/product/gel-kayano.png")),
                         "/images/product/m990gl6.png"
                 )
         ));
@@ -129,6 +129,7 @@ class FrontProductRestControllerTest {
                 .andExpect(jsonPath("$.priceLabel").value("289,000원"))
                 .andExpect(jsonPath("$.thumbnailUrl").value("/images/product/m990gl6.png"))
                 .andExpect(jsonPath("$.relatedProducts[0].thumbnailUrl").value("/images/product/gel-kayano.png"))
+                .andExpect(jsonPath("$.relatedProducts[0].category").value("러닝화"))
                 .andExpect(jsonPath("$.relatedProducts[0].reason").value("같은 카테고리"))
                 .andExpect(jsonPath("$.relatedProducts[0].id").value(103L));
     }

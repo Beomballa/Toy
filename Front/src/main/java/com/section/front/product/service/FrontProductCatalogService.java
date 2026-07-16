@@ -229,6 +229,7 @@ public class FrontProductCatalogService {
         relatedProducts.add(new FrontRelatedProductResponse(
                 product.id(),
                 product.brand(),
+                product.category(),
                 product.name(),
                 reason,
                 product.model(),

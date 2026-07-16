@@ -175,6 +175,7 @@ class FrontProductCatalogServiceTest {
         assertEquals(3, detail.get().relatedProducts().size());
         assertEquals("브랜드·카테고리 일치", detail.get().relatedProducts().getFirst().reason());
         assertEquals(107L, detail.get().relatedProducts().getFirst().id());
+        assertEquals("러닝화", detail.get().relatedProducts().getFirst().category());
         assertEquals("같은 카테고리", detail.get().relatedProducts().get(1).reason());
         assertEquals("179,000원", detail.get().relatedProducts().get(1).priceLabel());
     }

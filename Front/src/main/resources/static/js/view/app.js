@@ -177,6 +177,11 @@
         catalogTags: document.getElementById("catalogTags"),
         catalogCountText: document.getElementById("catalogCountText"),
         catalogSummaryText: document.getElementById("catalogSummaryText"),
+        catalogAveragePrice: document.getElementById("catalogAveragePrice"),
+        catalogPriceRange: document.getElementById("catalogPriceRange"),
+        catalogTotalStock: document.getElementById("catalogTotalStock"),
+        catalogBrandCount: document.getElementById("catalogBrandCount"),
+        catalogLowStockCount: document.getElementById("catalogLowStockCount"),
         shareCatalogButton: document.getElementById("shareCatalogButton"),
         copyCatalogSummaryButton: document.getElementById("copyCatalogSummaryButton"),
         jumpFirstProductButton: document.getElementById("jumpFirstProductButton"),
@@ -2205,6 +2210,18 @@
     function renderCatalogSummary(list) {
         setText(elements.catalogCountText, `${list.length}개 상품이 현재 조건에 맞습니다.`);
         setText(elements.catalogSummaryText, buildSummaryText(list.length));
+        const prices = list.map((product) => Number(product.price || 0));
+        const averagePrice = prices.length
+            ? Math.round(prices.reduce((sum, price) => sum + price, 0) / prices.length)
+            : 0;
+        const priceRange = prices.length
+            ? `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`
+            : "0원";
+        setText(elements.catalogAveragePrice, formatPrice(averagePrice));
+        setText(elements.catalogPriceRange, priceRange);
+        setText(elements.catalogTotalStock, `${list.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
+        setText(elements.catalogBrandCount, `${new Set(list.map((product) => product.brand).filter(Boolean)).size}개`);
+        setText(elements.catalogLowStockCount, `${list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
         if (!elements.catalogTags) {
             return;
         }

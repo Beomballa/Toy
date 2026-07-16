@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260715.24">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260715.24">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.01">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.01">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -550,6 +550,13 @@
                     <strong id="catalogCountText" role="status" aria-live="polite">상품을 계산 중입니다.</strong>
                     <p id="catalogSummaryText">현재 탐색 조건을 정리하고 있습니다.</p>
                 </div>
+                <dl class="catalog-live-metrics" aria-label="현재 상품 결과 요약">
+                    <div><dt>평균가</dt><dd id="catalogAveragePrice">0원</dd></div>
+                    <div><dt>가격 범위</dt><dd id="catalogPriceRange">0원</dd></div>
+                    <div><dt>총재고</dt><dd id="catalogTotalStock">0개</dd></div>
+                    <div><dt>브랜드</dt><dd id="catalogBrandCount">0개</dd></div>
+                    <div><dt>긴장 재고</dt><dd id="catalogLowStockCount">0개</dd></div>
+                </dl>
                 <div class="catalog-result-actions">
                     <button class="catalog-reset-button" type="button" id="shareCatalogButton">현재 조건 공유</button>
                     <button class="catalog-reset-button" type="button" id="randomProductButton">랜덤 상품 보기</button>
@@ -735,6 +742,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260715.24"></script>
+<script src="/js/view/app.js?v=20260716.01"></script>
 </body>
 </html>

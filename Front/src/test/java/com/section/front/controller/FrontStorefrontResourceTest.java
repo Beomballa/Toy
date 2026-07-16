@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.24")
+                .contains("/css/storefront.css?v=20260716.01")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260715.24");
+                .contains("/js/view/app.js?v=20260716.01");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260715.24")
+                .contains("/css/storefront.css?v=20260716.01")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260715.24");
+                .contains("/js/view/detail.js?v=20260716.01");
     }
 
     @Test
@@ -898,6 +898,25 @@ class FrontStorefrontResourceTest {
                 .contains("setElementText(elements.detailRelatedPriceSpread")
                 .contains("setElementText(elements.detailRelatedTotalStock")
                 .contains("Object.assign(relatedSortState");
+    }
+
+    @Test
+    void catalogSummaryKeepsLivePriceStockBrandAndRiskMetrics() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"catalogAveragePrice\"")
+                .contains("id=\"catalogPriceRange\"")
+                .contains("id=\"catalogTotalStock\"")
+                .contains("id=\"catalogBrandCount\"")
+                .contains("id=\"catalogLowStockCount\"");
+        assertThat(script)
+                .contains("const averagePrice = prices.length")
+                .contains("new Set(list.map((product) => product.brand)")
+                .contains("setText(elements.catalogLowStockCount");
+        assertThat(css).contains(".catalog-live-metrics");
     }
 
     private String readResource(String path) throws IOException {

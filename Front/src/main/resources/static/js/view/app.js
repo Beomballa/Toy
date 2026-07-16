@@ -36,6 +36,9 @@
         hideDescriptions: Boolean(savedDisplayPreferences.hideDescriptions),
         hideSignals: Boolean(savedDisplayPreferences.hideSignals),
         hideActions: Boolean(savedDisplayPreferences.hideActions),
+        hideMetrics: Boolean(savedDisplayPreferences.hideMetrics),
+        hideDistribution: Boolean(savedDisplayPreferences.hideDistribution),
+        hideDecision: Boolean(savedDisplayPreferences.hideDecision),
         reducedMotion: Boolean(savedDisplayPreferences.reducedMotion)
     };
     let products = [];
@@ -138,6 +141,11 @@
         toggleCatalogDescriptionButton: document.getElementById("toggleCatalogDescriptionButton"),
         toggleCatalogSignalsButton: document.getElementById("toggleCatalogSignalsButton"),
         toggleCatalogActionsButton: document.getElementById("toggleCatalogActionsButton"),
+        toggleCatalogMetricsButton: document.getElementById("toggleCatalogMetricsButton"),
+        toggleCatalogDistributionButton: document.getElementById("toggleCatalogDistributionButton"),
+        toggleCatalogDecisionButton: document.getElementById("toggleCatalogDecisionButton"),
+        compactCatalogAnalyticsButton: document.getElementById("compactCatalogAnalyticsButton"),
+        resetCatalogAnalyticsButton: document.getElementById("resetCatalogAnalyticsButton"),
         toggleReducedMotionButton: document.getElementById("toggleReducedMotionButton"),
         resetCatalogDisplayButton: document.getElementById("resetCatalogDisplayButton"),
         catalogPagination: document.getElementById("catalogPagination"),
@@ -197,6 +205,9 @@
         catalogTotalStock: document.getElementById("catalogTotalStock"),
         catalogBrandCount: document.getElementById("catalogBrandCount"),
         catalogLowStockCount: document.getElementById("catalogLowStockCount"),
+        catalogLiveMetrics: document.getElementById("catalogLiveMetrics"),
+        catalogDistribution: document.getElementById("catalogDistribution"),
+        catalogDecisionRail: document.getElementById("catalogDecisionRail"),
         catalogUnderPriceRate: document.getElementById("catalogUnderPriceRate"),
         catalogMiddlePriceRate: document.getElementById("catalogMiddlePriceRate"),
         catalogHighPriceRate: document.getElementById("catalogHighPriceRate"),
@@ -974,6 +985,23 @@
         elements.toggleCatalogDescriptionButton?.addEventListener("click", () => toggleCatalogPreference("hideDescriptions", "상품 설명 표시를 변경했습니다."));
         elements.toggleCatalogSignalsButton?.addEventListener("click", () => toggleCatalogPreference("hideSignals", "상품 시그널 표시를 변경했습니다."));
         elements.toggleCatalogActionsButton?.addEventListener("click", () => toggleCatalogPreference("hideActions", "빠른 액션 표시를 변경했습니다."));
+        elements.toggleCatalogMetricsButton?.addEventListener("click", () => toggleCatalogPreference("hideMetrics", "실시간 지표 표시를 변경했습니다."));
+        elements.toggleCatalogDistributionButton?.addEventListener("click", () => toggleCatalogPreference("hideDistribution", "분포 그래프 표시를 변경했습니다."));
+        elements.toggleCatalogDecisionButton?.addEventListener("click", () => toggleCatalogPreference("hideDecision", "판단 바로가기 표시를 변경했습니다."));
+        elements.compactCatalogAnalyticsButton?.addEventListener("click", () => {
+            Object.assign(uiState, { hideMetrics: true, hideDistribution: true, hideDecision: true });
+            persistDisplayPreferences();
+            renderCatalog();
+            syncViewButtons();
+            showToast("분석 영역을 간소화했습니다.", "상품 목록과 핵심 결과에 집중할 수 있습니다.");
+        });
+        elements.resetCatalogAnalyticsButton?.addEventListener("click", () => {
+            Object.assign(uiState, { hideMetrics: false, hideDistribution: false, hideDecision: false });
+            persistDisplayPreferences();
+            renderCatalog();
+            syncViewButtons();
+            showToast("분석 영역을 복구했습니다.", "지표와 분포, 판단 바로가기를 모두 표시합니다.");
+        });
         elements.toggleReducedMotionButton?.addEventListener("click", () => toggleCatalogPreference("reducedMotion", "모션 설정을 변경했습니다."));
         elements.resetCatalogDisplayButton?.addEventListener("click", () => {
             Object.assign(uiState, {
@@ -981,6 +1009,9 @@
                 hideDescriptions: false,
                 hideSignals: false,
                 hideActions: false,
+                hideMetrics: false,
+                hideDistribution: false,
+                hideDecision: false,
                 reducedMotion: false,
                 viewMode: "DEFAULT"
             });
@@ -2748,6 +2779,9 @@
             hideDescriptions: uiState.hideDescriptions,
             hideSignals: uiState.hideSignals,
             hideActions: uiState.hideActions,
+            hideMetrics: uiState.hideMetrics,
+            hideDistribution: uiState.hideDistribution,
+            hideDecision: uiState.hideDecision,
             reducedMotion: uiState.reducedMotion
         }));
         window.localStorage.setItem(VIEW_MODE_KEY, uiState.layout === "COMFORT" ? "COMPACT" : "DEFAULT");
@@ -2780,6 +2814,9 @@
         elements.catalogGrid.classList.toggle("is-description-hidden", uiState.hideDescriptions);
         elements.catalogGrid.classList.toggle("is-signal-hidden", uiState.hideSignals);
         elements.catalogGrid.classList.toggle("is-action-hidden", uiState.hideActions);
+        elements.catalogLiveMetrics?.toggleAttribute("hidden", uiState.hideMetrics);
+        elements.catalogDistribution?.toggleAttribute("hidden", uiState.hideDistribution);
+        elements.catalogDecisionRail?.toggleAttribute("hidden", uiState.hideDecision);
         document.body.classList.toggle("is-reduced-motion", uiState.reducedMotion);
     }
 
@@ -3999,6 +4036,12 @@
         elements.toggleCatalogDescriptionButton?.classList.toggle("is-active", uiState.hideDescriptions);
         elements.toggleCatalogSignalsButton?.classList.toggle("is-active", uiState.hideSignals);
         elements.toggleCatalogActionsButton?.classList.toggle("is-active", uiState.hideActions);
+        elements.toggleCatalogMetricsButton?.classList.toggle("is-active", uiState.hideMetrics);
+        elements.toggleCatalogDistributionButton?.classList.toggle("is-active", uiState.hideDistribution);
+        elements.toggleCatalogDecisionButton?.classList.toggle("is-active", uiState.hideDecision);
+        const analyticsCompact = uiState.hideMetrics && uiState.hideDistribution && uiState.hideDecision;
+        elements.compactCatalogAnalyticsButton?.classList.toggle("is-active", analyticsCompact);
+        elements.resetCatalogAnalyticsButton?.toggleAttribute("disabled", !uiState.hideMetrics && !uiState.hideDistribution && !uiState.hideDecision);
         elements.toggleReducedMotionButton?.classList.toggle("is-active", uiState.reducedMotion);
         [
             [elements.catalogLayoutShopButton, uiState.layout === "SHOP"],
@@ -4008,10 +4051,14 @@
             [elements.toggleCatalogDescriptionButton, uiState.hideDescriptions],
             [elements.toggleCatalogSignalsButton, uiState.hideSignals],
             [elements.toggleCatalogActionsButton, uiState.hideActions],
+            [elements.toggleCatalogMetricsButton, uiState.hideMetrics],
+            [elements.toggleCatalogDistributionButton, uiState.hideDistribution],
+            [elements.toggleCatalogDecisionButton, uiState.hideDecision],
+            [elements.compactCatalogAnalyticsButton, analyticsCompact],
             [elements.toggleReducedMotionButton, uiState.reducedMotion]
         ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
         const layoutLabels = { SHOP: "4열 쇼핑", STANDARD: "3열 표준", COMFORT: "2열 여유", LIST: "리스트" };
-        const hiddenCount = [uiState.hideDescriptions, uiState.hideSignals, uiState.hideActions].filter(Boolean).length;
+        const hiddenCount = [uiState.hideDescriptions, uiState.hideSignals, uiState.hideActions, uiState.hideMetrics, uiState.hideDistribution, uiState.hideDecision].filter(Boolean).length;
         setText(elements.catalogDisplayStatus, `${layoutLabels[uiState.layout]} · ${hiddenCount ? `${hiddenCount}개 정보 숨김` : "전체 정보 표시"}${uiState.reducedMotion ? " · 모션 최소화" : ""}`);
     }
 

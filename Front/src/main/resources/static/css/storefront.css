@@ -1109,6 +1109,10 @@ main#top {
     border-top: 1px solid var(--store-line);
 }
 
+.catalog-summary > [hidden] {
+    display: none;
+}
+
 .catalog-distribution > div {
     display: grid;
     gap: 6px;

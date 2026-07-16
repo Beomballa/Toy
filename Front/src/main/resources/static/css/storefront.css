@@ -3009,6 +3009,67 @@ main#top > .home-category-rail {
     text-decoration: underline;
 }
 
+.detail-option-history {
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-card);
+    background: #fff;
+}
+
+.detail-option-history > div:first-child,
+.detail-option-history__actions,
+.detail-option-history__list {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.detail-option-history > div:first-child {
+    justify-content: space-between;
+}
+
+.detail-option-history__list {
+    overflow-x: auto;
+}
+
+.detail-option-history button {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    color: var(--store-ink);
+    font-size: 11px;
+}
+
+.detail-option-history__list button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.detail-option-history__list button[aria-pressed="true"] {
+    border-color: var(--store-ink);
+    background: var(--store-ink);
+    color: #fff;
+}
+
+@media (max-width: 720px) {
+    .detail-option-history > div:first-child {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .detail-option-history__actions {
+        overflow-x: auto;
+        width: 100%;
+    }
+}
+
 .detail-purchase-estimate {
     display: grid;
     grid-template-columns: auto auto minmax(0, 1fr) auto;

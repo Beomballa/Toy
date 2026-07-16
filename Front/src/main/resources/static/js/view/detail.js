@@ -23,6 +23,7 @@
     let currentProduct = null;
     let selectedOptionName = "";
     let selectedQuantity = 1;
+    const optionSelectionHistory = [];
     let toastTimerSeed = 0;
     let detailModalReturnFocus = null;
 
@@ -88,6 +89,13 @@
         detailCopyBreadcrumbButton: document.getElementById("detailCopyBreadcrumbButton"),
         detailOptionSelection: document.getElementById("detailOptionSelection"),
         detailOptionSelectionText: document.getElementById("detailOptionSelectionText"),
+        detailOptionHistory: document.getElementById("detailOptionHistory"),
+        detailOptionHistoryCount: document.getElementById("detailOptionHistoryCount"),
+        detailOptionHistoryList: document.getElementById("detailOptionHistoryList"),
+        detailPreviousOptionButton: document.getElementById("detailPreviousOptionButton"),
+        detailNextOptionButton: document.getElementById("detailNextOptionButton"),
+        detailCopyOptionHistoryButton: document.getElementById("detailCopyOptionHistoryButton"),
+        detailClearOptionHistoryButton: document.getElementById("detailClearOptionHistoryButton"),
         detailClearOptionButton: document.getElementById("detailClearOptionButton"),
         detailCopySelectedOptionButton: document.getElementById("detailCopySelectedOptionButton"),
         detailShareSelectedOptionButton: document.getElementById("detailShareSelectedOptionButton"),
@@ -384,6 +392,7 @@
         if (elements.detailOptionCount) {
             elements.detailOptionCount.textContent = String(options.length);
         }
+        renderOptionHistory();
         if (selectedOptionName && !options.some((option) => option.name === selectedOptionName)) {
             selectedOptionName = "";
             syncSelectedOptionActions({});
@@ -421,11 +430,66 @@
             return;
         }
         selectedOptionName = selectedOptionName === optionName ? "" : optionName;
+        if (selectedOptionName) {
+            recordOptionSelection(option);
+        }
         rememberSelectedOption(productId, selectedOptionName);
         syncSelectedOptionUrl();
         selectedQuantity = selectedOptionName ? readSelectedQuantity() : 1;
         renderOptions(currentProduct);
         syncSelectedOptionActions(option);
+    }
+
+    function availableDetailOptions() {
+        return (currentProduct?.options || []).filter((option) => Number(option.stock || 0) > 0);
+    }
+
+    function moveDetailOption(direction) {
+        const available = availableDetailOptions();
+        if (!available.length) {
+            return;
+        }
+        const currentIndex = available.findIndex((option) => option.name === selectedOptionName);
+        const nextIndex = currentIndex < 0
+            ? (direction > 0 ? 0 : available.length - 1)
+            : (currentIndex + direction + available.length) % available.length;
+        selectDetailOption(available[nextIndex].name);
+    }
+
+    function recordOptionSelection(option) {
+        const previousIndex = optionSelectionHistory.findIndex((item) => item.name === option.name);
+        if (previousIndex >= 0) {
+            optionSelectionHistory.splice(previousIndex, 1);
+        }
+        optionSelectionHistory.push({ name: option.name, stock: Number(option.stock || 0) });
+        if (optionSelectionHistory.length > 5) {
+            optionSelectionHistory.shift();
+        }
+        renderOptionHistory();
+    }
+
+    function renderOptionHistory() {
+        const available = availableDetailOptions();
+        setElementText(elements.detailOptionHistoryCount, String(optionSelectionHistory.length));
+        [elements.detailPreviousOptionButton, elements.detailNextOptionButton]
+            .forEach((button) => button?.toggleAttribute("disabled", available.length === 0));
+        elements.detailCopyOptionHistoryButton?.toggleAttribute("disabled", optionSelectionHistory.length === 0);
+        elements.detailClearOptionHistoryButton?.toggleAttribute("disabled", optionSelectionHistory.length === 0);
+        if (!elements.detailOptionHistoryList) {
+            return;
+        }
+        elements.detailOptionHistoryList.innerHTML = optionSelectionHistory.length
+            ? optionSelectionHistory.slice().reverse().map((item) => `
+                <button type="button" data-option-history-name="${escapeAttribute(item.name)}" aria-pressed="${selectedOptionName === item.name}">
+                    <strong>${escapeAttribute(item.name)}</strong><span>${item.stock}개</span>
+                </button>
+            `).join("")
+            : "<span>선택한 옵션이 여기에 표시됩니다.</span>";
+    }
+
+    async function copyOptionHistory() {
+        const lines = optionSelectionHistory.slice().reverse().map((item, index) => `${index + 1}. ${item.name} · 재고 ${item.stock}개`);
+        await copyText([`${currentProduct?.name || "상품"} 옵션 탐색`, ...lines].join("\n"), "옵션 탐색 이력을 복사했습니다.");
     }
 
     function handleDetailOptionNavigation(event) {
@@ -1546,6 +1610,20 @@
             }
         });
         elements.detailOptionGrid?.addEventListener("keydown", handleDetailOptionNavigation);
+        elements.detailPreviousOptionButton?.addEventListener("click", () => moveDetailOption(-1));
+        elements.detailNextOptionButton?.addEventListener("click", () => moveDetailOption(1));
+        elements.detailCopyOptionHistoryButton?.addEventListener("click", copyOptionHistory);
+        elements.detailClearOptionHistoryButton?.addEventListener("click", () => {
+            optionSelectionHistory.length = 0;
+            renderOptionHistory();
+            showToast("옵션 탐색 이력을 비웠습니다.", "현재 선택 옵션은 유지합니다.");
+        });
+        elements.detailOptionHistoryList?.addEventListener("click", (event) => {
+            const historyButton = event.target.closest("[data-option-history-name]");
+            if (historyButton && historyButton.dataset.optionHistoryName !== selectedOptionName) {
+                selectDetailOption(historyButton.dataset.optionHistoryName);
+            }
+        });
         elements.detailRelatedGrid?.addEventListener("keydown", handleRelatedCardNavigation);
         elements.detailShareButton?.addEventListener("click", async () => {
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;

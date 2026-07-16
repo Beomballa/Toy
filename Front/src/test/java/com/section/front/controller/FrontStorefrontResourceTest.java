@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.14")
+                .contains("/css/storefront.css?v=20260716.15")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.14")
+                .contains("/css/storefront.css?v=20260716.15")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.12");
+                .contains("/js/view/detail.js?v=20260716.15");
     }
 
     @Test
@@ -1123,6 +1123,27 @@ class FrontStorefrontResourceTest {
                 .contains("function redoCatalogSelection()")
                 .contains("selectionHistory.length > 20");
         assertThat(css).contains(".catalog-selection__history");
+    }
+
+    @Test
+    void detailOptionsKeepNavigationRecentHistoryCopyAndClearControls() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailPreviousOptionButton\"")
+                .contains("id=\"detailNextOptionButton\"")
+                .contains("id=\"detailOptionHistoryList\"")
+                .contains("id=\"detailCopyOptionHistoryButton\"")
+                .contains("id=\"detailClearOptionHistoryButton\"");
+        assertThat(script)
+                .contains("const optionSelectionHistory = []")
+                .contains("function moveDetailOption(direction)")
+                .contains("function recordOptionSelection(option)")
+                .contains("optionSelectionHistory.length > 5")
+                .contains("async function copyOptionHistory()");
+        assertThat(css).contains(".detail-option-history");
     }
 
     @Test

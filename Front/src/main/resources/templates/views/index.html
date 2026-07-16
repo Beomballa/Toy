@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.01">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.01">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.02">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.02">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -609,6 +609,10 @@
                     <div class="catalog-selection__metrics" aria-label="선택 상품 합계">
                         <span>총액 <strong id="catalogSelectionTotalPrice">0원</strong></span>
                         <span>총재고 <strong id="catalogSelectionTotalStock">0개</strong></span>
+                        <span>평균가 <strong id="catalogSelectionAveragePrice">0원</strong></span>
+                        <span>브랜드 <strong id="catalogSelectionBrandCount">0개</strong></span>
+                        <span>긴장 재고 <strong id="catalogSelectionLowStockCount">0개</strong></span>
+                        <span>품절 <strong id="catalogSelectionSoldOutCount">0개</strong></span>
                     </div>
                 </div>
                 <div class="catalog-selection__actions">
@@ -627,6 +631,7 @@
                             <button type="button" id="selectLowStockPageButton">현재 저재고 선택</button>
                             <button type="button" id="selectFeaturedPageButton">현재 Featured 선택</button>
                             <button type="button" id="invertPageSelectionButton">현재 선택 반전</button>
+                            <button type="button" id="removeSoldOutSelectionButton">품절 선택 제외</button>
                             <button type="button" id="copyCurrentPageSummaryButton">현재 페이지 요약 복사</button>
                             <button type="button" id="exportCurrentPageCsvButton">현재 페이지 CSV</button>
                             <button type="button" id="exportSelectedProductsCsvButton">선택 상품 CSV</button>
@@ -742,6 +747,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260716.01"></script>
+<script src="/js/view/app.js?v=20260716.02"></script>
 </body>
 </html>

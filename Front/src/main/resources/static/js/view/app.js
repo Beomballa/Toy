@@ -157,6 +157,10 @@
         catalogSelectionCount: document.getElementById("catalogSelectionCount"),
         catalogSelectionTotalPrice: document.getElementById("catalogSelectionTotalPrice"),
         catalogSelectionTotalStock: document.getElementById("catalogSelectionTotalStock"),
+        catalogSelectionAveragePrice: document.getElementById("catalogSelectionAveragePrice"),
+        catalogSelectionBrandCount: document.getElementById("catalogSelectionBrandCount"),
+        catalogSelectionLowStockCount: document.getElementById("catalogSelectionLowStockCount"),
+        catalogSelectionSoldOutCount: document.getElementById("catalogSelectionSoldOutCount"),
         selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
         clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
         compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
@@ -169,6 +173,7 @@
         selectLowStockPageButton: document.getElementById("selectLowStockPageButton"),
         selectFeaturedPageButton: document.getElementById("selectFeaturedPageButton"),
         invertPageSelectionButton: document.getElementById("invertPageSelectionButton"),
+        removeSoldOutSelectionButton: document.getElementById("removeSoldOutSelectionButton"),
         copyCurrentPageSummaryButton: document.getElementById("copyCurrentPageSummaryButton"),
         exportCurrentPageCsvButton: document.getElementById("exportCurrentPageCsvButton"),
         exportSelectedProductsCsvButton: document.getElementById("exportSelectedProductsCsvButton"),
@@ -1187,6 +1192,14 @@
             selectCurrentPageProducts((product) => Boolean(product.featured), "Featured");
         });
         elements.invertPageSelectionButton?.addEventListener("click", invertCurrentPageSelection);
+        elements.removeSoldOutSelectionButton?.addEventListener("click", () => {
+            const soldOutIds = selectedProducts()
+                .filter((product) => Number(product.stock || 0) <= 0)
+                .map((product) => Number(product.id));
+            soldOutIds.forEach((productId) => selectedProductIds.delete(productId));
+            renderCatalog();
+            showToast("품절 선택을 제외했습니다.", `${soldOutIds.length}개 품절 상품을 선택 목록에서 정리했습니다.`);
+        });
         elements.copyCurrentPageSummaryButton?.addEventListener("click", async () => {
             await copyTextWithFeedback(
                 catalogSummaryClipboardText(currentCatalogPageProducts()),
@@ -2144,6 +2157,13 @@
         setText(elements.catalogSelectionCount, String(selected.length));
         setText(elements.catalogSelectionTotalPrice, formatPrice(selected.reduce((sum, product) => sum + Number(product.price || 0), 0)));
         setText(elements.catalogSelectionTotalStock, `${selected.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
+        const selectedTotalPrice = selected.reduce((sum, product) => sum + Number(product.price || 0), 0);
+        const selectedLowStock = selected.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
+        const selectedSoldOut = selected.filter((product) => Number(product.stock || 0) <= 0).length;
+        setText(elements.catalogSelectionAveragePrice, formatPrice(selected.length ? Math.round(selectedTotalPrice / selected.length) : 0));
+        setText(elements.catalogSelectionBrandCount, `${new Set(selected.map((product) => product.brand).filter(Boolean)).size}개`);
+        setText(elements.catalogSelectionLowStockCount, `${selectedLowStock}개`);
+        setText(elements.catalogSelectionSoldOutCount, `${selectedSoldOut}개`);
         persistSelectedProductIds();
         elements.selectVisibleProductsButton.disabled = pageProducts.length === 0;
         if (elements.selectLowStockPageButton) {
@@ -2173,6 +2193,9 @@
                 button.disabled = selected.length === 0;
             }
         });
+        if (elements.removeSoldOutSelectionButton) {
+            elements.removeSoldOutSelectionButton.disabled = selectedSoldOut === 0;
+        }
         if (!selected.length) {
             setText(elements.catalogSelectionTitle, "선택한 상품이 없습니다.");
             setText(elements.catalogSelectionText, "카드에서 선택하거나 현재 상품 전체 선택을 눌러 일괄 작업을 시작할 수 있습니다.");

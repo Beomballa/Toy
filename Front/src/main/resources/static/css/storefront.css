@@ -1293,9 +1293,17 @@ main#top {
 .catalog-selection__metrics {
     display: flex;
     flex-wrap: wrap;
+    flex-wrap: wrap;
     gap: 6px 14px;
     color: var(--store-muted);
     font-size: var(--store-text-meta);
+}
+
+.catalog-selection__metrics span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 92px;
 }
 
 .catalog-selection__metrics strong {

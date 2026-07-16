@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.01")
+                .contains("/css/storefront.css?v=20260716.02")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.01");
+                .contains("/js/view/app.js?v=20260716.02");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.01")
+                .contains("/css/storefront.css?v=20260716.02")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.01");
+                .contains("/js/view/detail.js?v=20260716.02");
     }
 
     @Test
@@ -917,6 +917,23 @@ class FrontStorefrontResourceTest {
                 .contains("new Set(list.map((product) => product.brand)")
                 .contains("setText(elements.catalogLowStockCount");
         assertThat(css).contains(".catalog-live-metrics");
+    }
+
+    @Test
+    void catalogSelectionKeepsAverageBrandRiskSoldOutAndCleanupContracts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"catalogSelectionAveragePrice\"")
+                .contains("id=\"catalogSelectionBrandCount\"")
+                .contains("id=\"catalogSelectionLowStockCount\"")
+                .contains("id=\"catalogSelectionSoldOutCount\"")
+                .contains("id=\"removeSoldOutSelectionButton\"");
+        assertThat(script)
+                .contains("const selectedSoldOut = selected.filter")
+                .contains("setText(elements.catalogSelectionAveragePrice")
+                .contains("soldOutIds.forEach((productId) => selectedProductIds.delete(productId))");
     }
 
     private String readResource(String path) throws IOException {

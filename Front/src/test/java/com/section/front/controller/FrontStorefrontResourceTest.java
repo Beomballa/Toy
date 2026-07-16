@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.02")
+                .contains("/css/storefront.css?v=20260716.03")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.02");
+                .contains("/js/view/app.js?v=20260716.03");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.02")
+                .contains("/css/storefront.css?v=20260716.03")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.02");
+                .contains("/js/view/detail.js?v=20260716.03");
     }
 
     @Test
@@ -934,6 +934,25 @@ class FrontStorefrontResourceTest {
                 .contains("const selectedSoldOut = selected.filter")
                 .contains("setText(elements.catalogSelectionAveragePrice")
                 .contains("soldOutIds.forEach((productId) => selectedProductIds.delete(productId))");
+    }
+
+    @Test
+    void detailPurchaseKeepsQuantityPresetsStockUsageAndWarningContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailQuantityPresetTwoButton\"")
+                .contains("id=\"detailQuantityPresetThreeButton\"")
+                .contains("id=\"detailQuantityPresetFiveButton\"")
+                .contains("id=\"detailStockUsageRate\"")
+                .contains("id=\"detailQuantityNotice\"");
+        assertThat(script)
+                .contains("const stockUsageRate = Math.min(100")
+                .contains("stockUsageRate >= 50")
+                .contains("setSelectedQuantity(5)");
+        assertThat(css).contains(".detail-stock-usage");
     }
 
     private String readResource(String path) throws IOException {

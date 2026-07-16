@@ -95,9 +95,15 @@
         detailQuantityDecreaseButton: document.getElementById("detailQuantityDecreaseButton"),
         detailQuantityIncreaseButton: document.getElementById("detailQuantityIncreaseButton"),
         detailQuantityInput: document.getElementById("detailQuantityInput"),
+        detailQuantityPresetTwoButton: document.getElementById("detailQuantityPresetTwoButton"),
+        detailQuantityPresetThreeButton: document.getElementById("detailQuantityPresetThreeButton"),
+        detailQuantityPresetFiveButton: document.getElementById("detailQuantityPresetFiveButton"),
         detailEstimatedTotal: document.getElementById("detailEstimatedTotal"),
         detailUnitPrice: document.getElementById("detailUnitPrice"),
         detailRemainingStock: document.getElementById("detailRemainingStock"),
+        detailStockUsageRate: document.getElementById("detailStockUsageRate"),
+        detailStockUsageBar: document.getElementById("detailStockUsageBar"),
+        detailQuantityNotice: document.getElementById("detailQuantityNotice"),
         detailQuantityMaxButton: document.getElementById("detailQuantityMaxButton"),
         detailQuantityResetButton: document.getElementById("detailQuantityResetButton"),
         detailCopyOrderSummaryButton: document.getElementById("detailCopyOrderSummaryButton"),
@@ -431,6 +437,28 @@
         setElementText(elements.detailEstimatedTotal, formatPrice(Number(currentProduct.price || 0) * selectedQuantity));
         setElementText(elements.detailUnitPrice, currentProduct.priceLabel || formatPrice(currentProduct.price));
         setElementText(elements.detailRemainingStock, `${Math.max(0, maxQuantity - selectedQuantity)}개`);
+        const stockUsageRate = Math.min(100, Math.round((selectedQuantity / maxQuantity) * 100));
+        setElementText(elements.detailStockUsageRate, `${stockUsageRate}%`);
+        if (elements.detailStockUsageBar) {
+            elements.detailStockUsageBar.style.width = `${stockUsageRate}%`;
+        }
+        setElementText(
+            elements.detailQuantityNotice,
+            stockUsageRate >= 50
+                ? `현재 옵션 재고의 ${stockUsageRate}%를 선택했습니다. 수량을 다시 확인해주세요.`
+                : `선택 후 ${Math.max(0, maxQuantity - selectedQuantity)}개가 남습니다.`
+        );
+        [
+            [elements.detailQuantityPresetTwoButton, 2],
+            [elements.detailQuantityPresetThreeButton, 3],
+            [elements.detailQuantityPresetFiveButton, 5]
+        ].forEach(([button, quantity]) => {
+            if (button) {
+                button.disabled = maxQuantity < quantity;
+                button.classList.toggle("is-active", selectedQuantity === quantity);
+                button.setAttribute("aria-pressed", String(selectedQuantity === quantity));
+            }
+        });
         if (elements.detailQuantityMaxButton) {
             elements.detailQuantityMaxButton.disabled = selectedQuantity >= maxQuantity;
         }
@@ -1312,6 +1340,9 @@
         elements.detailQuantityDecreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity - 1));
         elements.detailQuantityIncreaseButton?.addEventListener("click", () => setSelectedQuantity(selectedQuantity + 1));
         elements.detailQuantityInput?.addEventListener("change", () => setSelectedQuantity(elements.detailQuantityInput.value));
+        elements.detailQuantityPresetTwoButton?.addEventListener("click", () => setSelectedQuantity(2));
+        elements.detailQuantityPresetThreeButton?.addEventListener("click", () => setSelectedQuantity(3));
+        elements.detailQuantityPresetFiveButton?.addEventListener("click", () => setSelectedQuantity(5));
         elements.detailQuantityMaxButton?.addEventListener("click", () => {
             const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
             setSelectedQuantity(option?.stock || 1);

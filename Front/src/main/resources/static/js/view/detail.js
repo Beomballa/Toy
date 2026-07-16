@@ -151,6 +151,16 @@
         detailRelatedAvailableRate: document.getElementById("detailRelatedAvailableRate"),
         detailRelatedSameBrandCount: document.getElementById("detailRelatedSameBrandCount"),
         detailCopyValueAnalysisButton: document.getElementById("detailCopyValueAnalysisButton"),
+        detailRelatedCheaperRate: document.getElementById("detailRelatedCheaperRate"),
+        detailRelatedStockAdvantageRate: document.getElementById("detailRelatedStockAdvantageRate"),
+        detailRelatedSameBrandRate: document.getElementById("detailRelatedSameBrandRate"),
+        detailRelatedSameCategoryRate: document.getElementById("detailRelatedSameCategoryRate"),
+        detailRelatedAverageSavingRate: document.getElementById("detailRelatedAverageSavingRate"),
+        detailRelatedCheaperBar: document.getElementById("detailRelatedCheaperBar"),
+        detailRelatedStockAdvantageBar: document.getElementById("detailRelatedStockAdvantageBar"),
+        detailRelatedSameBrandBar: document.getElementById("detailRelatedSameBrandBar"),
+        detailRelatedSameCategoryBar: document.getElementById("detailRelatedSameCategoryBar"),
+        detailRelatedAverageSavingBar: document.getElementById("detailRelatedAverageSavingBar"),
         detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton"),
         detailCheapestRelatedButton: document.getElementById("detailCheapestRelatedButton"),
         detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton"),
@@ -618,6 +628,27 @@
         setElementText(elements.detailRelatedMaxStockGain, `${maxStockGain}개`);
         setElementText(elements.detailRelatedAvailableRate, `${availableRate}%`);
         setElementText(elements.detailRelatedSameBrandCount, `${related.filter((item) => item.brand === product.brand).length}개`);
+        const cheaperProducts = related.filter((item) => Number(item.price || 0) < Number(product.price || 0));
+        const averageSavingRate = cheaperProducts.length && Number(product.price || 0)
+            ? Math.round((cheaperProducts.reduce((sum, item) => sum + (Number(product.price || 0) - Number(item.price || 0)), 0) / cheaperProducts.length / Number(product.price || 0)) * 100)
+            : 0;
+        const relatedDistribution = [
+            [elements.detailRelatedCheaperRate, elements.detailRelatedCheaperBar, cheaperProducts.length],
+            [elements.detailRelatedStockAdvantageRate, elements.detailRelatedStockAdvantageBar, related.filter((item) => Number(item.stock || 0) > Number(product.stock || 0)).length],
+            [elements.detailRelatedSameBrandRate, elements.detailRelatedSameBrandBar, related.filter((item) => item.brand === product.brand).length],
+            [elements.detailRelatedSameCategoryRate, elements.detailRelatedSameCategoryBar, related.filter((item) => item.category === product.category).length]
+        ];
+        relatedDistribution.forEach(([label, bar, count]) => {
+            const rate = related.length ? Math.round((count / related.length) * 100) : 0;
+            setElementText(label, `${rate}%`);
+            if (bar) {
+                bar.style.width = `${rate}%`;
+            }
+        });
+        setElementText(elements.detailRelatedAverageSavingRate, `${averageSavingRate}%`);
+        if (elements.detailRelatedAverageSavingBar) {
+            elements.detailRelatedAverageSavingBar.style.width = `${Math.min(100, averageSavingRate)}%`;
+        }
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }

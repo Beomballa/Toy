@@ -3094,6 +3094,52 @@ main#top > .home-category-rail {
     font-weight: 700;
 }
 
+.detail-option-distribution {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    margin: -4px 0 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-soft);
+}
+
+.detail-option-distribution > div {
+    display: grid;
+    gap: 6px;
+}
+
+.detail-option-distribution span {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.detail-option-distribution i {
+    overflow: hidden;
+    height: 5px;
+    border-radius: 999px;
+    background: #fff;
+}
+
+.detail-option-distribution b {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--store-ink);
+}
+
+@media (max-width: 640px) {
+    .detail-option-distribution {
+        grid-template-columns: 1fr;
+        gap: 9px;
+    }
+}
+
 .detail-option-stock-rate {
     display: inline-flex;
     gap: 8px;

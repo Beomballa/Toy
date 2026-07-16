@@ -125,6 +125,16 @@
         detailOptionStockRateBar: document.getElementById("detailOptionStockRateBar"),
         detailRecommendOptionButton: document.getElementById("detailRecommendOptionButton"),
         detailCopyOptionMatrixButton: document.getElementById("detailCopyOptionMatrixButton"),
+        detailOptionSoldOutRate: document.getElementById("detailOptionSoldOutRate"),
+        detailOptionCriticalRate: document.getElementById("detailOptionCriticalRate"),
+        detailOptionLowRate: document.getElementById("detailOptionLowRate"),
+        detailOptionStableRate: document.getElementById("detailOptionStableRate"),
+        detailOptionConcentrationRate: document.getElementById("detailOptionConcentrationRate"),
+        detailOptionSoldOutBar: document.getElementById("detailOptionSoldOutBar"),
+        detailOptionCriticalBar: document.getElementById("detailOptionCriticalBar"),
+        detailOptionLowBar: document.getElementById("detailOptionLowBar"),
+        detailOptionStableBar: document.getElementById("detailOptionStableBar"),
+        detailOptionConcentrationBar: document.getElementById("detailOptionConcentrationBar"),
         detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
         detailNextRelatedButton: document.getElementById("detailNextRelatedButton"),
         detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
@@ -336,6 +346,21 @@
         setElementText(elements.detailMaxOptionStock, String(optionStocks[optionStocks.length - 1] || 0));
         setElementText(elements.detailMedianOptionStock, String(medianStock));
         setElementText(elements.detailSelectedOptionRank, selectedRank ? `${selectedRank} / ${allOptions.length}` : "-");
+        const totalOptionStock = optionStocks.reduce((sum, stock) => sum + stock, 0);
+        const optionDistribution = [
+            [elements.detailOptionSoldOutRate, elements.detailOptionSoldOutBar, allOptions.filter((option) => Number(option.stock || 0) <= 0).length, allOptions.length],
+            [elements.detailOptionCriticalRate, elements.detailOptionCriticalBar, allOptions.filter((option) => Number(option.stock || 0) > 0 && Number(option.stock || 0) <= 5).length, allOptions.length],
+            [elements.detailOptionLowRate, elements.detailOptionLowBar, allOptions.filter((option) => Number(option.stock || 0) > 5 && Number(option.stock || 0) < lowStockThreshold()).length, allOptions.length],
+            [elements.detailOptionStableRate, elements.detailOptionStableBar, allOptions.filter((option) => Number(option.stock || 0) >= lowStockThreshold()).length, allOptions.length],
+            [elements.detailOptionConcentrationRate, elements.detailOptionConcentrationBar, optionStocks[optionStocks.length - 1] || 0, totalOptionStock]
+        ];
+        optionDistribution.forEach(([label, bar, value, total]) => {
+            const rate = total ? Math.round((value / total) * 100) : 0;
+            setElementText(label, `${rate}%`);
+            if (bar) {
+                bar.style.width = `${rate}%`;
+            }
+        });
         setElementText(elements.detailOptionStockRateText, `${availableRate}%`);
         if (elements.detailOptionStockRateBar) {
             elements.detailOptionStockRateBar.style.width = `${availableRate}%`;

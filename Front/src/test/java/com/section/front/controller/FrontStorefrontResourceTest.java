@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.10")
+                .contains("/css/storefront.css?v=20260716.11")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.10");
+                .contains("/js/view/app.js?v=20260716.11");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.10")
+                .contains("/css/storefront.css?v=20260716.11")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.10");
+                .contains("/js/view/detail.js?v=20260716.11");
     }
 
     @Test
@@ -1082,6 +1082,25 @@ class FrontStorefrontResourceTest {
                 .contains("setText(elements.catalogSelectionCoverage")
                 .contains("dominantCategory(selected) || \"-\"");
         assertThat(css).contains(".catalog-selection__coverage");
+    }
+
+    @Test
+    void detailOptionsKeepFiveStockBandAndConcentrationDistributionBars() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailOptionSoldOutRate\"")
+                .contains("id=\"detailOptionCriticalRate\"")
+                .contains("id=\"detailOptionLowRate\"")
+                .contains("id=\"detailOptionStableRate\"")
+                .contains("id=\"detailOptionConcentrationRate\"");
+        assertThat(script)
+                .contains("const optionDistribution = [")
+                .contains("const totalOptionStock = optionStocks.reduce")
+                .contains("optionDistribution.forEach");
+        assertThat(css).contains(".detail-option-distribution");
     }
 
     private String readResource(String path) throws IOException {

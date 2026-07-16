@@ -84,6 +84,8 @@
         hiddenAlphabetical: false
     };
     const selectedProductIds = new Set();
+    const selectionHistory = [];
+    const selectionFuture = [];
     const paginationState = {
         page: 1,
         size: window.localStorage.getItem(PAGE_SIZE_KEY) || "12",
@@ -174,6 +176,11 @@
         catalogSelectionStockShare: document.getElementById("catalogSelectionStockShare"),
         catalogSelectionAvailableCount: document.getElementById("catalogSelectionAvailableCount"),
         catalogSelectionDominantCategory: document.getElementById("catalogSelectionDominantCategory"),
+        catalogSelectionHistoryCount: document.getElementById("catalogSelectionHistoryCount"),
+        catalogSelectionHistoryText: document.getElementById("catalogSelectionHistoryText"),
+        undoCatalogSelectionButton: document.getElementById("undoCatalogSelectionButton"),
+        redoCatalogSelectionButton: document.getElementById("redoCatalogSelectionButton"),
+        clearCatalogSelectionHistoryButton: document.getElementById("clearCatalogSelectionHistoryButton"),
         selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
         clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
         compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
@@ -1257,6 +1264,7 @@
             showToast("우선 확인 상품을 열었습니다.", `${recommended.headline || recommended.name}을 먼저 확인합니다.`);
         });
         elements.selectVisibleProductsButton?.addEventListener("click", () => {
+            recordSelectionSnapshot("현재 상품 전체 선택");
             currentCatalogPageProducts().forEach((product) => selectedProductIds.add(Number(product.id)));
             renderCatalog();
             showToast("현재 상품을 모두 선택했습니다.", `${selectedProductIds.size}개 상품을 일괄 작업할 수 있습니다.`);
@@ -1272,6 +1280,7 @@
             const soldOutIds = selectedProducts()
                 .filter((product) => Number(product.stock || 0) <= 0)
                 .map((product) => Number(product.id));
+            recordSelectionSnapshot("품절 선택 제외");
             soldOutIds.forEach((productId) => selectedProductIds.delete(productId));
             renderCatalog();
             showToast("품절 선택을 제외했습니다.", `${soldOutIds.length}개 품절 상품을 선택 목록에서 정리했습니다.`);
@@ -1322,9 +1331,18 @@
             await copyTextWithFeedback(links.join("\n") || "현재 페이지에 상품이 없습니다.", "현재 페이지 링크를 복사했습니다.", `${links.length}개 상품 상세 링크를 전달할 수 있습니다.`);
         });
         elements.clearSelectedProductsButton?.addEventListener("click", () => {
+            recordSelectionSnapshot("전체 선택 해제");
             selectedProductIds.clear();
             renderCatalog();
             showToast("상품 선택을 해제했습니다.", "카탈로그를 기본 상태로 복구했습니다.");
+        });
+        elements.undoCatalogSelectionButton?.addEventListener("click", undoCatalogSelection);
+        elements.redoCatalogSelectionButton?.addEventListener("click", redoCatalogSelection);
+        elements.clearCatalogSelectionHistoryButton?.addEventListener("click", () => {
+            selectionHistory.length = 0;
+            selectionFuture.length = 0;
+            renderCatalogSelection();
+            showToast("선택 이력을 비웠습니다.", "현재 선택 상태는 그대로 유지합니다.");
         });
         elements.compareSelectedProductsButton?.addEventListener("click", () => {
             addProductsToBoard(selectedProducts(), "COMPARE");
@@ -2158,6 +2176,7 @@
     }
 
     function toggleSelectedProduct(productId) {
+        recordSelectionSnapshot("상품 개별 선택 변경");
         if (selectedProductIds.has(productId)) {
             selectedProductIds.delete(productId);
         } else {
@@ -2168,6 +2187,7 @@
 
     function selectCurrentPageProducts(predicate, label) {
         const matchingProducts = currentCatalogPageProducts().filter(predicate);
+        recordSelectionSnapshot(`${label} 상품 선택`);
         selectedProductIds.clear();
         matchingProducts.forEach((product) => selectedProductIds.add(Number(product.id)));
         renderCatalog();
@@ -2175,6 +2195,7 @@
     }
 
     function invertCurrentPageSelection() {
+        recordSelectionSnapshot("현재 페이지 선택 반전");
         currentCatalogPageProducts().forEach((product) => {
             const productId = Number(product.id);
             if (selectedProductIds.has(productId)) {
@@ -2256,6 +2277,7 @@
         setText(elements.catalogSelectionStockShare, `${filteredTotalStock ? Math.round((selectedTotalStock / filteredTotalStock) * 100) : 0}%`);
         setText(elements.catalogSelectionAvailableCount, `${selected.length - selectedSoldOut}개`);
         setText(elements.catalogSelectionDominantCategory, dominantCategory(selected) || "-");
+        renderSelectionHistory();
         persistSelectedProductIds();
         elements.selectVisibleProductsButton.disabled = pageProducts.length === 0;
         if (elements.selectLowStockPageButton) {
@@ -2318,9 +2340,53 @@
         const ranked = currentCatalogPageProducts().slice().sort(metric === "PRICE_LOW"
             ? (left, right) => Number(left.price || 0) - Number(right.price || 0)
             : (left, right) => Number(right.stock || 0) - Number(left.stock || 0));
+        recordSelectionSnapshot(metric === "PRICE_LOW" ? "최저가 상품 선택" : "최고재고 상품 선택");
         ranked.slice(0, limit).forEach((product) => selectedProductIds.add(Number(product.id)));
         renderCatalog();
         showToast("우선순위 상품을 선택했습니다.", `${Math.min(limit, ranked.length)}개 상품을 선택 목록에 반영했습니다.`);
+    }
+
+    function recordSelectionSnapshot(label) {
+        selectionHistory.push({ ids: Array.from(selectedProductIds), label });
+        if (selectionHistory.length > 20) {
+            selectionHistory.shift();
+        }
+        selectionFuture.length = 0;
+    }
+
+    function restoreSelectionSnapshot(snapshot) {
+        selectedProductIds.clear();
+        snapshot.ids.forEach((id) => selectedProductIds.add(Number(id)));
+        renderCatalog();
+    }
+
+    function undoCatalogSelection() {
+        const snapshot = selectionHistory.pop();
+        if (!snapshot) {
+            return;
+        }
+        selectionFuture.push({ ids: Array.from(selectedProductIds), label: snapshot.label });
+        restoreSelectionSnapshot(snapshot);
+        showToast("선택 변경을 취소했습니다.", `${snapshot.label} 이전 상태로 돌아갔습니다.`);
+    }
+
+    function redoCatalogSelection() {
+        const snapshot = selectionFuture.pop();
+        if (!snapshot) {
+            return;
+        }
+        selectionHistory.push({ ids: Array.from(selectedProductIds), label: snapshot.label });
+        restoreSelectionSnapshot(snapshot);
+        showToast("선택 변경을 다시 실행했습니다.", snapshot.label);
+    }
+
+    function renderSelectionHistory() {
+        const latest = selectionHistory[selectionHistory.length - 1];
+        setText(elements.catalogSelectionHistoryCount, `${selectionHistory.length}단계`);
+        setText(elements.catalogSelectionHistoryText, latest ? `최근 작업: ${latest.label}` : "아직 변경 이력이 없습니다.");
+        elements.undoCatalogSelectionButton?.toggleAttribute("disabled", selectionHistory.length === 0);
+        elements.redoCatalogSelectionButton?.toggleAttribute("disabled", selectionFuture.length === 0);
+        elements.clearCatalogSelectionHistoryButton?.toggleAttribute("disabled", selectionHistory.length === 0 && selectionFuture.length === 0);
     }
 
     function openSelectedProductByMetric(metric) {

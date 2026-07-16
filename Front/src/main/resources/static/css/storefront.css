@@ -1442,7 +1442,46 @@ main#top {
     font-size: 11px;
 }
 
+.catalog-selection__history {
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--store-line);
+    color: var(--store-muted);
+    font-size: 11px;
+}
+
+.catalog-selection__history p {
+    overflow: hidden;
+    margin: 0;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.catalog-selection__history div {
+    display: flex;
+    gap: 6px;
+}
+
+.catalog-selection__history button {
+    min-height: 30px;
+    padding: 0 9px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    color: var(--store-ink);
+    font-size: 11px;
+}
+
 @media (max-width: 720px) {
+    .catalog-selection__history {
+        grid-template-columns: 1fr;
+    }
+
     .catalog-selection__coverage {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }

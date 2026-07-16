@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.13")
+                .contains("/css/storefront.css?v=20260716.14")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.13");
+                .contains("/js/view/app.js?v=20260716.14");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.13")
+                .contains("/css/storefront.css?v=20260716.14")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1102,6 +1102,27 @@ class FrontStorefrontResourceTest {
                 .contains("setText(elements.catalogSelectionCoverage")
                 .contains("dominantCategory(selected) || \"-\"");
         assertThat(css).contains(".catalog-selection__coverage");
+    }
+
+    @Test
+    void catalogSelectionKeepsUndoRedoHistoryAndClearControls() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"catalogSelectionHistoryCount\"")
+                .contains("id=\"catalogSelectionHistoryText\"")
+                .contains("id=\"undoCatalogSelectionButton\"")
+                .contains("id=\"redoCatalogSelectionButton\"")
+                .contains("id=\"clearCatalogSelectionHistoryButton\"");
+        assertThat(script)
+                .contains("const selectionHistory = []")
+                .contains("function recordSelectionSnapshot(label)")
+                .contains("function undoCatalogSelection()")
+                .contains("function redoCatalogSelection()")
+                .contains("selectionHistory.length > 20");
+        assertThat(css).contains(".catalog-selection__history");
     }
 
     @Test

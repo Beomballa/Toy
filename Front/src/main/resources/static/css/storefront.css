@@ -1100,6 +1100,44 @@ main#top {
     border-top: 1px solid var(--store-line);
 }
 
+.catalog-distribution {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    padding: 12px 0;
+    border-top: 1px solid var(--store-line);
+}
+
+.catalog-distribution > div {
+    display: grid;
+    gap: 6px;
+}
+
+.catalog-distribution span {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.catalog-distribution i {
+    overflow: hidden;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--store-chip);
+}
+
+.catalog-distribution b {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--store-ink);
+    transition: width .2s ease;
+}
+
 .catalog-decision-rail button {
     display: grid;
     gap: 4px;
@@ -1176,6 +1214,11 @@ main#top {
 
     .catalog-decision-rail button:last-child {
         grid-column: 1 / -1;
+    }
+
+    .catalog-distribution {
+        grid-template-columns: 1fr;
+        gap: 9px;
     }
 }
 

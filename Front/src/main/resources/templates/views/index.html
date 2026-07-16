@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.08">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.08">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.09">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.09">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -557,6 +557,13 @@
                     <div><dt>브랜드</dt><dd id="catalogBrandCount">0개</dd></div>
                     <div><dt>긴장 재고</dt><dd id="catalogLowStockCount">0개</dd></div>
                 </dl>
+                <div class="catalog-distribution" aria-label="현재 상품 분포">
+                    <div><span>20만원 미만 <strong id="catalogUnderPriceRate">0%</strong></span><i><b id="catalogUnderPriceBar"></b></i></div>
+                    <div><span>20~30만원 <strong id="catalogMiddlePriceRate">0%</strong></span><i><b id="catalogMiddlePriceBar"></b></i></div>
+                    <div><span>30만원 초과 <strong id="catalogHighPriceRate">0%</strong></span><i><b id="catalogHighPriceBar"></b></i></div>
+                    <div><span>긴장 재고 <strong id="catalogLowStockRate">0%</strong></span><i><b id="catalogLowStockBar"></b></i></div>
+                    <div><span>Featured <strong id="catalogFeaturedRate">0%</strong></span><i><b id="catalogFeaturedBar"></b></i></div>
+                </div>
                 <div class="catalog-decision-rail" aria-label="상품 판단 바로가기">
                     <button type="button" id="openCheapestCatalogButton"><span>최저가</span><strong id="catalogCheapestLabel">-</strong></button>
                     <button type="button" id="openHighestStockCatalogButton"><span>최고 재고</span><strong id="catalogHighestStockLabel">-</strong></button>
@@ -761,6 +768,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260716.08"></script>
+<script src="/js/view/app.js?v=20260716.09"></script>
 </body>
 </html>

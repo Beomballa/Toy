@@ -192,6 +192,16 @@
         catalogTotalStock: document.getElementById("catalogTotalStock"),
         catalogBrandCount: document.getElementById("catalogBrandCount"),
         catalogLowStockCount: document.getElementById("catalogLowStockCount"),
+        catalogUnderPriceRate: document.getElementById("catalogUnderPriceRate"),
+        catalogMiddlePriceRate: document.getElementById("catalogMiddlePriceRate"),
+        catalogHighPriceRate: document.getElementById("catalogHighPriceRate"),
+        catalogLowStockRate: document.getElementById("catalogLowStockRate"),
+        catalogFeaturedRate: document.getElementById("catalogFeaturedRate"),
+        catalogUnderPriceBar: document.getElementById("catalogUnderPriceBar"),
+        catalogMiddlePriceBar: document.getElementById("catalogMiddlePriceBar"),
+        catalogHighPriceBar: document.getElementById("catalogHighPriceBar"),
+        catalogLowStockBar: document.getElementById("catalogLowStockBar"),
+        catalogFeaturedBar: document.getElementById("catalogFeaturedBar"),
         catalogCheapestLabel: document.getElementById("catalogCheapestLabel"),
         catalogHighestStockLabel: document.getElementById("catalogHighestStockLabel"),
         catalogUrgentLabel: document.getElementById("catalogUrgentLabel"),
@@ -2313,6 +2323,20 @@
         setText(elements.catalogTotalStock, `${list.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
         setText(elements.catalogBrandCount, `${new Set(list.map((product) => product.brand).filter(Boolean)).size}개`);
         setText(elements.catalogLowStockCount, `${list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
+        const distributionItems = [
+            [elements.catalogUnderPriceRate, elements.catalogUnderPriceBar, list.filter((product) => Number(product.price || 0) < 200000).length],
+            [elements.catalogMiddlePriceRate, elements.catalogMiddlePriceBar, list.filter((product) => Number(product.price || 0) >= 200000 && Number(product.price || 0) <= 300000).length],
+            [elements.catalogHighPriceRate, elements.catalogHighPriceBar, list.filter((product) => Number(product.price || 0) > 300000).length],
+            [elements.catalogLowStockRate, elements.catalogLowStockBar, list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length],
+            [elements.catalogFeaturedRate, elements.catalogFeaturedBar, list.filter((product) => Boolean(product.featured)).length]
+        ];
+        distributionItems.forEach(([label, bar, count]) => {
+            const rate = list.length ? Math.round((count / list.length) * 100) : 0;
+            setText(label, `${rate}%`);
+            if (bar) {
+                bar.style.width = `${rate}%`;
+            }
+        });
         const cheapest = catalogDecisionProduct(list, "PRICE_LOW");
         const highestStock = catalogDecisionProduct(list, "STOCK_HIGH");
         const urgent = catalogDecisionProduct(list, "STOCK_LOW");

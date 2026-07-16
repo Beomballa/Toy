@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.08")
+                .contains("/css/storefront.css?v=20260716.09")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.08");
+                .contains("/js/view/app.js?v=20260716.09");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.08")
+                .contains("/css/storefront.css?v=20260716.09")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.08");
+                .contains("/js/view/detail.js?v=20260716.09");
     }
 
     @Test
@@ -1044,6 +1044,25 @@ class FrontStorefrontResourceTest {
                 .contains("const maxSaving = related.reduce")
                 .contains("const maxStockGain = related.reduce")
                 .contains("async function copyRelatedValueAnalysis()");
+    }
+
+    @Test
+    void catalogSummaryKeepsFivePriceStockAndFeaturedDistributionBars() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"catalogUnderPriceRate\"")
+                .contains("id=\"catalogMiddlePriceRate\"")
+                .contains("id=\"catalogHighPriceRate\"")
+                .contains("id=\"catalogLowStockRate\"")
+                .contains("id=\"catalogFeaturedRate\"");
+        assertThat(script)
+                .contains("const distributionItems = [")
+                .contains("Math.round((count / list.length) * 100)")
+                .contains("bar.style.width = `${rate}%`");
+        assertThat(css).contains(".catalog-distribution");
     }
 
     private String readResource(String path) throws IOException {

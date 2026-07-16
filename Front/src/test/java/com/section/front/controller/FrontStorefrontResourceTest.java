@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.05")
+                .contains("/css/storefront.css?v=20260716.06")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.05");
+                .contains("/js/view/app.js?v=20260716.06");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.05")
+                .contains("/css/storefront.css?v=20260716.06")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.05");
+                .contains("/js/view/detail.js?v=20260716.06");
     }
 
     @Test
@@ -991,6 +991,25 @@ class FrontStorefrontResourceTest {
                 .contains("function catalogDecisionSummary(list)")
                 .contains("openCatalogDecisionProduct(\"STOCK_LOW\")");
         assertThat(css).contains(".catalog-decision-rail");
+    }
+
+    @Test
+    void catalogSelectionKeepsRankedPageAndSelectedProductActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"selectCheapestPageButton\"")
+                .contains("id=\"selectHighestStockPageButton\"")
+                .contains("id=\"selectSoldOutPageButton\"")
+                .contains("id=\"openCheapestSelectedButton\"")
+                .contains("id=\"openHighestStockSelectedButton\"");
+        assertThat(script)
+                .contains("function selectRankedPageProducts(metric, limit)")
+                .contains("function openSelectedProductByMetric(metric)")
+                .contains("selectCurrentPageProducts((product) => Number(product.stock || 0) <= 0");
+        assertThat(css).contains(".catalog-selection__priority");
     }
 
     private String readResource(String path) throws IOException {

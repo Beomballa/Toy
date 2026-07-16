@@ -174,6 +174,11 @@
         selectFeaturedPageButton: document.getElementById("selectFeaturedPageButton"),
         invertPageSelectionButton: document.getElementById("invertPageSelectionButton"),
         removeSoldOutSelectionButton: document.getElementById("removeSoldOutSelectionButton"),
+        selectCheapestPageButton: document.getElementById("selectCheapestPageButton"),
+        selectHighestStockPageButton: document.getElementById("selectHighestStockPageButton"),
+        selectSoldOutPageButton: document.getElementById("selectSoldOutPageButton"),
+        openCheapestSelectedButton: document.getElementById("openCheapestSelectedButton"),
+        openHighestStockSelectedButton: document.getElementById("openHighestStockSelectedButton"),
         copyCurrentPageSummaryButton: document.getElementById("copyCurrentPageSummaryButton"),
         exportCurrentPageCsvButton: document.getElementById("exportCurrentPageCsvButton"),
         exportSelectedProductsCsvButton: document.getElementById("exportSelectedProductsCsvButton"),
@@ -1225,6 +1230,13 @@
             renderCatalog();
             showToast("품절 선택을 제외했습니다.", `${soldOutIds.length}개 품절 상품을 선택 목록에서 정리했습니다.`);
         });
+        elements.selectCheapestPageButton?.addEventListener("click", () => selectRankedPageProducts("PRICE_LOW", 3));
+        elements.selectHighestStockPageButton?.addEventListener("click", () => selectRankedPageProducts("STOCK_HIGH", 3));
+        elements.selectSoldOutPageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Number(product.stock || 0) <= 0, "품절");
+        });
+        elements.openCheapestSelectedButton?.addEventListener("click", () => openSelectedProductByMetric("PRICE_LOW"));
+        elements.openHighestStockSelectedButton?.addEventListener("click", () => openSelectedProductByMetric("STOCK_HIGH"));
         elements.copyCurrentPageSummaryButton?.addEventListener("click", async () => {
             await copyTextWithFeedback(
                 catalogSummaryClipboardText(currentCatalogPageProducts()),
@@ -2221,6 +2233,21 @@
         if (elements.removeSoldOutSelectionButton) {
             elements.removeSoldOutSelectionButton.disabled = selectedSoldOut === 0;
         }
+        [elements.selectCheapestPageButton, elements.selectHighestStockPageButton]
+            .forEach((button) => {
+                if (button) {
+                    button.disabled = pageProducts.length === 0;
+                }
+            });
+        if (elements.selectSoldOutPageButton) {
+            elements.selectSoldOutPageButton.disabled = !pageProducts.some((product) => Number(product.stock || 0) <= 0);
+        }
+        [elements.openCheapestSelectedButton, elements.openHighestStockSelectedButton]
+            .forEach((button) => {
+                if (button) {
+                    button.disabled = selected.length === 0;
+                }
+            });
         if (!selected.length) {
             setText(elements.catalogSelectionTitle, "선택한 상품이 없습니다.");
             setText(elements.catalogSelectionText, "카드에서 선택하거나 현재 상품 전체 선택을 눌러 일괄 작업을 시작할 수 있습니다.");
@@ -2230,6 +2257,22 @@
         const lowStockCount = selected.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
         setText(elements.catalogSelectionTitle, `${selected.length}개 상품을 선택했습니다.`);
         setText(elements.catalogSelectionText, `합계 ${formatPrice(totalPrice)} · 긴장 재고 ${lowStockCount}개 · 대표 브랜드 ${dominantBrand(selected) || "-"}`);
+    }
+
+    function selectRankedPageProducts(metric, limit) {
+        const ranked = currentCatalogPageProducts().slice().sort(metric === "PRICE_LOW"
+            ? (left, right) => Number(left.price || 0) - Number(right.price || 0)
+            : (left, right) => Number(right.stock || 0) - Number(left.stock || 0));
+        ranked.slice(0, limit).forEach((product) => selectedProductIds.add(Number(product.id)));
+        renderCatalog();
+        showToast("우선순위 상품을 선택했습니다.", `${Math.min(limit, ranked.length)}개 상품을 선택 목록에 반영했습니다.`);
+    }
+
+    function openSelectedProductByMetric(metric) {
+        const product = catalogDecisionProduct(selectedProducts(), metric);
+        if (product) {
+            openDrawer(product.id);
+        }
     }
 
     function persistSelectedProductIds() {

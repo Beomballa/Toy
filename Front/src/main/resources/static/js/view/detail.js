@@ -117,9 +117,14 @@
         detailLowOptionCount: document.getElementById("detailLowOptionCount"),
         detailSoldOutOptionCount: document.getElementById("detailSoldOutOptionCount"),
         detailTotalOptionStock: document.getElementById("detailTotalOptionStock"),
+        detailMinOptionStock: document.getElementById("detailMinOptionStock"),
+        detailMaxOptionStock: document.getElementById("detailMaxOptionStock"),
+        detailMedianOptionStock: document.getElementById("detailMedianOptionStock"),
+        detailSelectedOptionRank: document.getElementById("detailSelectedOptionRank"),
         detailOptionStockRateText: document.getElementById("detailOptionStockRateText"),
         detailOptionStockRateBar: document.getElementById("detailOptionStockRateBar"),
         detailRecommendOptionButton: document.getElementById("detailRecommendOptionButton"),
+        detailCopyOptionMatrixButton: document.getElementById("detailCopyOptionMatrixButton"),
         detailPreviousRelatedButton: document.getElementById("detailPreviousRelatedButton"),
         detailNextRelatedButton: document.getElementById("detailNextRelatedButton"),
         detailRelatedAveragePrice: document.getElementById("detailRelatedAveragePrice"),
@@ -312,12 +317,29 @@
         setElementText(elements.detailLowOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) > 0 && Number(option.stock || 0) < lowStockThreshold()).length));
         setElementText(elements.detailSoldOutOptionCount, String(allOptions.filter((option) => Number(option.stock || 0) <= 0).length));
         setElementText(elements.detailTotalOptionStock, String(allOptions.reduce((sum, option) => sum + Number(option.stock || 0), 0)));
+        const optionStocks = allOptions.map((option) => Number(option.stock || 0)).sort((left, right) => left - right);
+        const medianStock = optionStocks.length
+            ? optionStocks.length % 2
+                ? optionStocks[Math.floor(optionStocks.length / 2)]
+                : Math.round((optionStocks[(optionStocks.length / 2) - 1] + optionStocks[optionStocks.length / 2]) / 2)
+            : 0;
+        const rankedOptions = allOptions.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0));
+        const selectedRank = selectedOptionName
+            ? rankedOptions.findIndex((option) => option.name === selectedOptionName) + 1
+            : 0;
+        setElementText(elements.detailMinOptionStock, String(optionStocks[0] || 0));
+        setElementText(elements.detailMaxOptionStock, String(optionStocks[optionStocks.length - 1] || 0));
+        setElementText(elements.detailMedianOptionStock, String(medianStock));
+        setElementText(elements.detailSelectedOptionRank, selectedRank ? `${selectedRank} / ${allOptions.length}` : "-");
         setElementText(elements.detailOptionStockRateText, `${availableRate}%`);
         if (elements.detailOptionStockRateBar) {
             elements.detailOptionStockRateBar.style.width = `${availableRate}%`;
         }
         if (elements.detailRecommendOptionButton) {
             elements.detailRecommendOptionButton.disabled = !allOptions.some((option) => Number(option.stock || 0) > 0);
+        }
+        if (elements.detailCopyOptionMatrixButton) {
+            elements.detailCopyOptionMatrixButton.disabled = allOptions.length === 0;
         }
         if (elements.detailOptionCount) {
             elements.detailOptionCount.textContent = String(options.length);
@@ -343,6 +365,14 @@
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
             </button>
         `).join("");
+    }
+
+    async function copyOptionStockMatrix() {
+        const options = currentProduct?.options || [];
+        const text = options.length
+            ? [`${currentProduct.name} 옵션 재고`, ...options.map((option, index) => `${index + 1}. ${option.name} · ${option.stock}개 · ${stockLabel(option.stock)}`)].join("\n")
+            : "등록된 옵션 재고가 없습니다.";
+        await copyText(text, "옵션 재고 행렬을 복사했습니다.");
     }
 
     function selectDetailOption(optionName) {
@@ -1381,6 +1411,7 @@
         });
         elements.detailQuantityResetButton?.addEventListener("click", () => setSelectedQuantity(1));
         elements.detailCopyOrderSummaryButton?.addEventListener("click", copyOrderSummary);
+        elements.detailCopyOptionMatrixButton?.addEventListener("click", copyOptionStockMatrix);
         elements.detailRetryButton?.addEventListener("click", () => window.location.reload());
         elements.detailScrollTopButton?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
         elements.detailCopyBreadcrumbButton?.addEventListener("click", copyDetailBreadcrumb);

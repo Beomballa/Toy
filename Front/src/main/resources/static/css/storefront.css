@@ -3002,6 +3002,17 @@ main#top > .home-category-rail {
     color: var(--store-ink);
 }
 
+.detail-option-overview > button {
+    min-height: 32px;
+    padding: 0 11px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: #fff;
+    color: var(--store-ink);
+    font-size: 11px;
+    font-weight: 700;
+}
+
 .detail-option-stock-rate {
     display: inline-flex;
     gap: 8px;

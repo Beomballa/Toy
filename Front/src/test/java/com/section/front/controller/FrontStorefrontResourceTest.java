@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.15")
+                .contains("/css/storefront.css?v=20260716.16")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.15")
+                .contains("/css/storefront.css?v=20260716.16")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.15");
+                .contains("/js/view/detail.js?v=20260716.16");
     }
 
     @Test
@@ -1144,6 +1144,22 @@ class FrontStorefrontResourceTest {
                 .contains("optionSelectionHistory.length > 5")
                 .contains("async function copyOptionHistory()");
         assertThat(css).contains(".detail-option-history");
+    }
+
+    @Test
+    void relatedCardsKeepCategoryPriceStockValueAndPositionComparison() throws IOException {
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(script)
+                .contains("item.category || \"카테고리 미정\"")
+                .contains("relatedPriceDeltaRateLabel(item.price, product.price)")
+                .contains("relatedStockDeltaLabel(item.stock, product.stock)")
+                .contains("relatedValueScore(item, product, related)")
+                .contains("${index + 1} / ${related.length}")
+                .contains("const priceScore = basePrice")
+                .contains("(priceScore * 0.6) + (stockScore * 0.4)");
+        assertThat(css).contains(".detail-related-card__comparison");
     }
 
     @Test

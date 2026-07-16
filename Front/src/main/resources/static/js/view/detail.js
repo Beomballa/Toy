@@ -737,6 +737,13 @@
                 <span class="detail-related-card__brand">${item.brand}</span>
                 <strong>${item.name}</strong>
                 <p>${item.reason} · ${stockPressureDetail(item.stock)}</p>
+                <div class="detail-related-card__comparison" aria-label="현재 상품 비교 정보">
+                    <span>${item.category || "카테고리 미정"}</span>
+                    <span>${relatedPriceDeltaRateLabel(item.price, product.price)}</span>
+                    <span>${relatedStockDeltaLabel(item.stock, product.stock)}</span>
+                    <strong>가치 ${relatedValueScore(item, product, related)}점</strong>
+                    <em>${index + 1} / ${related.length}</em>
+                </div>
                 <div class="detail-related-card__meta">
                     <span>모델 ${item.model}</span>
                     <span>${item.priceLabel || formatPrice(item.price)}</span>
@@ -776,6 +783,31 @@
             return "현재 상품과 동일가";
         }
         return `현재 상품보다 ${formatPrice(Math.abs(delta))} ${delta > 0 ? "높음" : "낮음"}`;
+    }
+
+    function relatedPriceDeltaRateLabel(relatedPrice, basePrice) {
+        const base = Number(basePrice || 0);
+        const delta = Number(relatedPrice || 0) - base;
+        if (!base || !delta) {
+            return "가격차 0%";
+        }
+        return `가격차 ${delta > 0 ? "+" : ""}${Math.round((delta / base) * 100)}%`;
+    }
+
+    function relatedStockDeltaLabel(relatedStock, baseStock) {
+        const delta = Number(relatedStock || 0) - Number(baseStock || 0);
+        return `재고 ${delta > 0 ? "+" : ""}${delta}개`;
+    }
+
+    function relatedValueScore(item, baseProduct, related) {
+        const basePrice = Number(baseProduct.price || 0);
+        const price = Number(item.price || 0);
+        const maxStock = Math.max(1, ...related.map((relatedItem) => Number(relatedItem.stock || 0)));
+        const priceScore = basePrice
+            ? Math.max(0, Math.min(100, 50 + (((basePrice - price) / basePrice) * 50)))
+            : 50;
+        const stockScore = Math.max(0, Number(item.stock || 0)) / maxStock * 100;
+        return Math.round((priceScore * 0.6) + (stockScore * 0.4));
     }
 
     function handleRelatedCardNavigation(event) {

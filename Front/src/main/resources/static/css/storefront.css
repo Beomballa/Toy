@@ -1844,6 +1844,38 @@ main#top {
     -webkit-line-clamp: 1;
 }
 
+.detail-related-card__comparison {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
+}
+
+.detail-related-card__comparison span,
+.detail-related-card__comparison strong,
+.detail-related-card__comparison em {
+    overflow: hidden;
+    min-width: 0;
+    padding: 6px 8px;
+    background: #fff;
+    color: var(--store-muted);
+    font-size: 10px;
+    font-style: normal;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.detail-related-card__comparison strong {
+    color: var(--store-ink);
+}
+
+.detail-related-card__comparison em {
+    text-align: right;
+}
+
 .saved-product-card .detail-related-card__meta {
     display: flex;
     min-height: 24px;

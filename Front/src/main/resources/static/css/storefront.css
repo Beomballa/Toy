@@ -2676,17 +2676,49 @@ main#top > .home-category-rail {
 }
 
 .detail-related-average {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px 14px;
-    margin-top: 6px !important;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(90px, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin: 12px 0 0 !important;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
     color: var(--store-muted);
     font-size: var(--store-text-meta);
 }
 
-.detail-related-average strong {
-    margin-left: 4px;
+.detail-related-average div {
+    padding: 9px 10px;
+    background: #fff;
+}
+
+.detail-related-average dt {
+    margin-bottom: 4px;
+    font-size: 10px;
+}
+
+.detail-related-average dd {
+    margin: 0;
     color: var(--store-ink);
+    font-weight: 700;
+}
+
+.detail-related-filter-status {
+    margin: 8px 0 0 !important;
+    color: var(--store-muted);
+    font-size: 11px;
+}
+
+.detail-related-filter-status strong {
+    margin-left: 6px;
+    color: var(--store-ink);
+}
+
+@media (max-width: 640px) {
+    .detail-related-average {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 .detail-zoom-button {

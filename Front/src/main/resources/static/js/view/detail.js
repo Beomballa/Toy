@@ -127,9 +127,14 @@
         detailRelatedMaxPrice: document.getElementById("detailRelatedMaxPrice"),
         detailRelatedPriceSpread: document.getElementById("detailRelatedPriceSpread"),
         detailRelatedTotalStock: document.getElementById("detailRelatedTotalStock"),
+        detailRelatedCheaperCount: document.getElementById("detailRelatedCheaperCount"),
+        detailRelatedHigherStockCount: document.getElementById("detailRelatedHigherStockCount"),
+        detailRelatedSoldOutCount: document.getElementById("detailRelatedSoldOutCount"),
+        detailRelatedFilterStatus: document.getElementById("detailRelatedFilterStatus"),
         detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton"),
         detailCheapestRelatedButton: document.getElementById("detailCheapestRelatedButton"),
-        detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton")
+        detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton"),
+        detailBalancedRelatedButton: document.getElementById("detailBalancedRelatedButton")
     };
 
     function formatPrice(price) {
@@ -541,10 +546,13 @@
         setElementText(elements.detailRelatedMaxPrice, relatedPrices.length ? formatPrice(Math.max(...relatedPrices)) : "-");
         setElementText(elements.detailRelatedPriceSpread, relatedPrices.length ? formatPrice(Math.max(...relatedPrices) - Math.min(...relatedPrices)) : "-");
         setElementText(elements.detailRelatedTotalStock, `${related.reduce((sum, item) => sum + Number(item.stock || 0), 0)}개`);
+        setElementText(elements.detailRelatedCheaperCount, `${related.filter((item) => Number(item.price || 0) < Number(product.price || 0)).length}개`);
+        setElementText(elements.detailRelatedHigherStockCount, `${related.filter((item) => Number(item.stock || 0) > Number(product.stock || 0)).length}개`);
+        setElementText(elements.detailRelatedSoldOutCount, `${related.filter((item) => Number(item.stock || 0) <= 0).length}개`);
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
-        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailCopyPriceComparisonButton]
+        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailBalancedRelatedButton, elements.detailCopyPriceComparisonButton]
             .forEach((button) => {
                 if (button) {
                     button.disabled = !related.length;
@@ -661,6 +669,20 @@
         const target = related.slice().sort(metric === "PRICE_LOW"
             ? (left, right) => Number(left.price || 0) - Number(right.price || 0)
             : (left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
+        window.location.href = buildProductUrl(target.id);
+    }
+
+    function openBalancedRelatedProduct() {
+        const available = sortedRelatedProducts(currentProduct).filter((item) => Number(item.stock || 0) > 0);
+        if (!available.length) {
+            showToast("균형 추천 상품이 없습니다.", "구매 가능한 연관 상품 조건을 확인해주세요.", true);
+            return;
+        }
+        const target = available.slice().sort((left, right) => {
+            const leftScore = Number(left.price || 0) / Math.max(1, Number(left.stock || 0));
+            const rightScore = Number(right.price || 0) / Math.max(1, Number(right.stock || 0));
+            return leftScore - rightScore;
+        })[0];
         window.location.href = buildProductUrl(target.id);
     }
 
@@ -987,6 +1009,16 @@
         if (elements.detailResetRelatedFiltersButton) {
             elements.detailResetRelatedFiltersButton.disabled = !hasFilter;
         }
+        const activeLabels = [
+            relatedSortState.mode === "STOCK_ASC" ? "재고 낮은 순" : "",
+            relatedSortState.mode === "PRICE_HIGH" ? "가격 높은 순" : "",
+            relatedSortState.mode === "PRICE_LOW" ? "가격 낮은 순" : "",
+            relatedSortState.lowStockOnly ? "긴장 재고" : "",
+            relatedSortState.sameBrandOnly ? "같은 브랜드" : "",
+            relatedSortState.sameCategoryOnly ? "같은 카테고리" : "",
+            relatedSortState.availableOnly ? "구매 가능" : ""
+        ].filter(Boolean);
+        setElementText(elements.detailRelatedFilterStatus, activeLabels.join(" · ") || "기본 추천");
     }
 
     function bindRelatedCardActions(related) {
@@ -1375,6 +1407,7 @@
         elements.detailCompareAllRelatedButton?.addEventListener("click", addAllRelatedToCompare);
         elements.detailCheapestRelatedButton?.addEventListener("click", () => openRelatedByMetric("PRICE_LOW"));
         elements.detailHighestStockRelatedButton?.addEventListener("click", () => openRelatedByMetric("STOCK_HIGH"));
+        elements.detailBalancedRelatedButton?.addEventListener("click", openBalancedRelatedProduct);
         elements.detailCopyPriceComparisonButton?.addEventListener("click", copyRelatedPriceComparison);
         elements.detailRecentGrid?.addEventListener("click", (event) => {
             const removeButton = event.target.closest("[data-remove-detail-recent-id]");

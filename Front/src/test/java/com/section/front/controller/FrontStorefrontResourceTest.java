@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.03")
+                .contains("/css/storefront.css?v=20260716.04")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.03");
+                .contains("/js/view/app.js?v=20260716.04");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.03")
+                .contains("/css/storefront.css?v=20260716.04")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.03");
+                .contains("/js/view/detail.js?v=20260716.04");
     }
 
     @Test
@@ -953,6 +953,25 @@ class FrontStorefrontResourceTest {
                 .contains("stockUsageRate >= 50")
                 .contains("setSelectedQuantity(5)");
         assertThat(css).contains(".detail-stock-usage");
+    }
+
+    @Test
+    void relatedComparisonKeepsRelativeMetricsFilterStatusAndBalancedRecommendation() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedCheaperCount\"")
+                .contains("id=\"detailRelatedHigherStockCount\"")
+                .contains("id=\"detailRelatedSoldOutCount\"")
+                .contains("id=\"detailRelatedFilterStatus\"")
+                .contains("id=\"detailBalancedRelatedButton\"");
+        assertThat(script)
+                .contains("function openBalancedRelatedProduct()")
+                .contains("Number(left.price || 0) / Math.max(1, Number(left.stock || 0))")
+                .contains("activeLabels.join(\" · \") || \"기본 추천\"");
+        assertThat(css).contains(".detail-related-filter-status");
     }
 
     private String readResource(String path) throws IOException {

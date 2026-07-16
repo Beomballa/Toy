@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.07">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.07">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.08">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.08">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -216,6 +216,10 @@
                         <div><dt>더 저렴함</dt><dd id="detailRelatedCheaperCount">0개</dd></div>
                         <div><dt>재고 우위</dt><dd id="detailRelatedHigherStockCount">0개</dd></div>
                         <div><dt>품절</dt><dd id="detailRelatedSoldOutCount">0개</dd></div>
+                        <div><dt>최대 절감</dt><dd id="detailRelatedMaxSaving">0원</dd></div>
+                        <div><dt>재고 증가</dt><dd id="detailRelatedMaxStockGain">0개</dd></div>
+                        <div><dt>구매 가능률</dt><dd id="detailRelatedAvailableRate">0%</dd></div>
+                        <div><dt>동일 브랜드</dt><dd id="detailRelatedSameBrandCount">0개</dd></div>
                     </dl>
                     <p class="detail-related-filter-status">현재 조건 <strong id="detailRelatedFilterStatus">기본 추천</strong></p>
                 </div>
@@ -239,6 +243,7 @@
                             <button class="catalog-reset-button" type="button" id="detailRandomRelatedButton">랜덤 상품 보기</button>
                             <button class="catalog-reset-button" type="button" id="detailCopyRelatedSummaryButton">연관 상품 요약 복사</button>
                             <button class="catalog-reset-button" type="button" id="detailCopyPriceComparisonButton">가격 비교 복사</button>
+                            <button class="catalog-reset-button" type="button" id="detailCopyValueAnalysisButton">가치 분석 복사</button>
                             <button class="catalog-reset-button" type="button" id="detailResetRelatedFiltersButton">연관 조건 초기화</button>
                         </div>
                     </details>
@@ -295,6 +300,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260716.07"></script>
+<script src="/js/view/detail.js?v=20260716.08"></script>
 </body>
 </html>

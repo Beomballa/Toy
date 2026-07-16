@@ -136,6 +136,11 @@
         detailRelatedHigherStockCount: document.getElementById("detailRelatedHigherStockCount"),
         detailRelatedSoldOutCount: document.getElementById("detailRelatedSoldOutCount"),
         detailRelatedFilterStatus: document.getElementById("detailRelatedFilterStatus"),
+        detailRelatedMaxSaving: document.getElementById("detailRelatedMaxSaving"),
+        detailRelatedMaxStockGain: document.getElementById("detailRelatedMaxStockGain"),
+        detailRelatedAvailableRate: document.getElementById("detailRelatedAvailableRate"),
+        detailRelatedSameBrandCount: document.getElementById("detailRelatedSameBrandCount"),
+        detailCopyValueAnalysisButton: document.getElementById("detailCopyValueAnalysisButton"),
         detailCompareAllRelatedButton: document.getElementById("detailCompareAllRelatedButton"),
         detailCheapestRelatedButton: document.getElementById("detailCheapestRelatedButton"),
         detailHighestStockRelatedButton: document.getElementById("detailHighestStockRelatedButton"),
@@ -579,10 +584,19 @@
         setElementText(elements.detailRelatedCheaperCount, `${related.filter((item) => Number(item.price || 0) < Number(product.price || 0)).length}개`);
         setElementText(elements.detailRelatedHigherStockCount, `${related.filter((item) => Number(item.stock || 0) > Number(product.stock || 0)).length}개`);
         setElementText(elements.detailRelatedSoldOutCount, `${related.filter((item) => Number(item.stock || 0) <= 0).length}개`);
+        const maxSaving = related.reduce((max, item) => Math.max(max, Number(product.price || 0) - Number(item.price || 0)), 0);
+        const maxStockGain = related.reduce((max, item) => Math.max(max, Number(item.stock || 0) - Number(product.stock || 0)), 0);
+        const availableRate = related.length
+            ? Math.round((related.filter((item) => Number(item.stock || 0) > 0).length / related.length) * 100)
+            : 0;
+        setElementText(elements.detailRelatedMaxSaving, formatPrice(maxSaving));
+        setElementText(elements.detailRelatedMaxStockGain, `${maxStockGain}개`);
+        setElementText(elements.detailRelatedAvailableRate, `${availableRate}%`);
+        setElementText(elements.detailRelatedSameBrandCount, `${related.filter((item) => item.brand === product.brand).length}개`);
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
-        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailBalancedRelatedButton, elements.detailCopyPriceComparisonButton]
+        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailBalancedRelatedButton, elements.detailCopyPriceComparisonButton, elements.detailCopyValueAnalysisButton]
             .forEach((button) => {
                 if (button) {
                     button.disabled = !related.length;
@@ -689,6 +703,23 @@
             `연관 최고가 ${highest.name} · ${highest.priceLabel || formatPrice(highest.price)} · ${relatedPriceDeltaLabel(highest.price, currentProduct.price)}`
         ].join("\n");
         await copyText(text, "연관 가격 비교를 복사했습니다.");
+    }
+
+    async function copyRelatedValueAnalysis() {
+        const related = sortedRelatedProducts(currentProduct);
+        if (!currentProduct || !related.length) {
+            return;
+        }
+        const maxSaving = related.reduce((max, item) => Math.max(max, Number(currentProduct.price || 0) - Number(item.price || 0)), 0);
+        const maxStockGain = related.reduce((max, item) => Math.max(max, Number(item.stock || 0) - Number(currentProduct.stock || 0)), 0);
+        const availableRate = Math.round((related.filter((item) => Number(item.stock || 0) > 0).length / related.length) * 100);
+        const text = [
+            `${currentProduct.name} 연관 가치 분석`,
+            `비교 상품 ${related.length}개 · 구매 가능률 ${availableRate}%`,
+            `최대 절감 ${formatPrice(maxSaving)} · 최대 재고 증가 ${maxStockGain}개`,
+            `동일 브랜드 ${related.filter((item) => item.brand === currentProduct.brand).length}개`
+        ].join("\n");
+        await copyText(text, "연관 상품 가치 분석을 복사했습니다.");
     }
 
     function openRelatedByMetric(metric) {
@@ -1440,6 +1471,7 @@
         elements.detailHighestStockRelatedButton?.addEventListener("click", () => openRelatedByMetric("STOCK_HIGH"));
         elements.detailBalancedRelatedButton?.addEventListener("click", openBalancedRelatedProduct);
         elements.detailCopyPriceComparisonButton?.addEventListener("click", copyRelatedPriceComparison);
+        elements.detailCopyValueAnalysisButton?.addEventListener("click", copyRelatedValueAnalysis);
         elements.detailRecentGrid?.addEventListener("click", (event) => {
             const removeButton = event.target.closest("[data-remove-detail-recent-id]");
             if (removeButton) {

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.07")
+                .contains("/css/storefront.css?v=20260716.08")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.07");
+                .contains("/js/view/app.js?v=20260716.08");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.07")
+                .contains("/css/storefront.css?v=20260716.08")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.07");
+                .contains("/js/view/detail.js?v=20260716.08");
     }
 
     @Test
@@ -1027,6 +1027,23 @@ class FrontStorefrontResourceTest {
                 .contains("const medianStock = optionStocks.length")
                 .contains("const selectedRank = selectedOptionName")
                 .contains("async function copyOptionStockMatrix()");
+    }
+
+    @Test
+    void relatedProductsKeepSavingStockGainAvailabilityBrandAndCopyContracts() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedMaxSaving\"")
+                .contains("id=\"detailRelatedMaxStockGain\"")
+                .contains("id=\"detailRelatedAvailableRate\"")
+                .contains("id=\"detailRelatedSameBrandCount\"")
+                .contains("id=\"detailCopyValueAnalysisButton\"");
+        assertThat(script)
+                .contains("const maxSaving = related.reduce")
+                .contains("const maxStockGain = related.reduce")
+                .contains("async function copyRelatedValueAnalysis()");
     }
 
     private String readResource(String path) throws IOException {

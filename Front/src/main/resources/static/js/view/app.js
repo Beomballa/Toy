@@ -161,6 +161,11 @@
         catalogSelectionBrandCount: document.getElementById("catalogSelectionBrandCount"),
         catalogSelectionLowStockCount: document.getElementById("catalogSelectionLowStockCount"),
         catalogSelectionSoldOutCount: document.getElementById("catalogSelectionSoldOutCount"),
+        catalogSelectionCoverage: document.getElementById("catalogSelectionCoverage"),
+        catalogSelectionPriceShare: document.getElementById("catalogSelectionPriceShare"),
+        catalogSelectionStockShare: document.getElementById("catalogSelectionStockShare"),
+        catalogSelectionAvailableCount: document.getElementById("catalogSelectionAvailableCount"),
+        catalogSelectionDominantCategory: document.getElementById("catalogSelectionDominantCategory"),
         selectVisibleProductsButton: document.getElementById("selectVisibleProductsButton"),
         clearSelectedProductsButton: document.getElementById("clearSelectedProductsButton"),
         compareSelectedProductsButton: document.getElementById("compareSelectedProductsButton"),
@@ -2207,10 +2212,19 @@
         const selectedTotalPrice = selected.reduce((sum, product) => sum + Number(product.price || 0), 0);
         const selectedLowStock = selected.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length;
         const selectedSoldOut = selected.filter((product) => Number(product.stock || 0) <= 0).length;
+        const filtered = filteredProducts();
+        const filteredTotalPrice = filtered.reduce((sum, product) => sum + Number(product.price || 0), 0);
+        const filteredTotalStock = filtered.reduce((sum, product) => sum + Number(product.stock || 0), 0);
+        const selectedTotalStock = selected.reduce((sum, product) => sum + Number(product.stock || 0), 0);
         setText(elements.catalogSelectionAveragePrice, formatPrice(selected.length ? Math.round(selectedTotalPrice / selected.length) : 0));
         setText(elements.catalogSelectionBrandCount, `${new Set(selected.map((product) => product.brand).filter(Boolean)).size}개`);
         setText(elements.catalogSelectionLowStockCount, `${selectedLowStock}개`);
         setText(elements.catalogSelectionSoldOutCount, `${selectedSoldOut}개`);
+        setText(elements.catalogSelectionCoverage, `${filtered.length ? Math.round((selected.length / filtered.length) * 100) : 0}%`);
+        setText(elements.catalogSelectionPriceShare, `${filteredTotalPrice ? Math.round((selectedTotalPrice / filteredTotalPrice) * 100) : 0}%`);
+        setText(elements.catalogSelectionStockShare, `${filteredTotalStock ? Math.round((selectedTotalStock / filteredTotalStock) * 100) : 0}%`);
+        setText(elements.catalogSelectionAvailableCount, `${selected.length - selectedSoldOut}개`);
+        setText(elements.catalogSelectionDominantCategory, dominantCategory(selected) || "-");
         persistSelectedProductIds();
         elements.selectVisibleProductsButton.disabled = pageProducts.length === 0;
         if (elements.selectLowStockPageButton) {

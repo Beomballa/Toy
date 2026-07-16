@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.09">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.09">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.10">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.10">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -628,6 +628,13 @@
                         <span>긴장 재고 <strong id="catalogSelectionLowStockCount">0개</strong></span>
                         <span>품절 <strong id="catalogSelectionSoldOutCount">0개</strong></span>
                     </div>
+                    <div class="catalog-selection__coverage" aria-label="선택 상품 구성 가이드">
+                        <span>결과 커버리지 <strong id="catalogSelectionCoverage">0%</strong></span>
+                        <span>금액 비중 <strong id="catalogSelectionPriceShare">0%</strong></span>
+                        <span>재고 비중 <strong id="catalogSelectionStockShare">0%</strong></span>
+                        <span>구매 가능 <strong id="catalogSelectionAvailableCount">0개</strong></span>
+                        <span>대표 카테고리 <strong id="catalogSelectionDominantCategory">-</strong></span>
+                    </div>
                     <div class="catalog-selection__priority" aria-label="선택 우선순위 작업">
                         <button type="button" id="selectCheapestPageButton">현재 최저가 3개</button>
                         <button type="button" id="selectHighestStockPageButton">현재 최고재고 3개</button>
@@ -768,6 +775,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260716.09"></script>
+<script src="/js/view/app.js?v=20260716.10"></script>
 </body>
 </html>

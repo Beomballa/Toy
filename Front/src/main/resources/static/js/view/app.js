@@ -187,6 +187,15 @@
         catalogTotalStock: document.getElementById("catalogTotalStock"),
         catalogBrandCount: document.getElementById("catalogBrandCount"),
         catalogLowStockCount: document.getElementById("catalogLowStockCount"),
+        catalogCheapestLabel: document.getElementById("catalogCheapestLabel"),
+        catalogHighestStockLabel: document.getElementById("catalogHighestStockLabel"),
+        catalogUrgentLabel: document.getElementById("catalogUrgentLabel"),
+        catalogDominantBrandLabel: document.getElementById("catalogDominantBrandLabel"),
+        openCheapestCatalogButton: document.getElementById("openCheapestCatalogButton"),
+        openHighestStockCatalogButton: document.getElementById("openHighestStockCatalogButton"),
+        openUrgentCatalogButton: document.getElementById("openUrgentCatalogButton"),
+        focusDominantCatalogBrandButton: document.getElementById("focusDominantCatalogBrandButton"),
+        copyCatalogDecisionButton: document.getElementById("copyCatalogDecisionButton"),
         shareCatalogButton: document.getElementById("shareCatalogButton"),
         copyCatalogSummaryButton: document.getElementById("copyCatalogSummaryButton"),
         jumpFirstProductButton: document.getElementById("jumpFirstProductButton"),
@@ -741,6 +750,22 @@
         elements.copyCatalogSummaryButton?.addEventListener("click", async () => {
             const text = catalogSummaryClipboardText(filteredProducts());
             await copyTextWithFeedback(text, "탐색 요약을 복사했습니다.", "현재 보이는 상품 상태를 문서나 메신저로 옮길 수 있습니다.");
+        });
+        elements.openCheapestCatalogButton?.addEventListener("click", () => openCatalogDecisionProduct("PRICE_LOW"));
+        elements.openHighestStockCatalogButton?.addEventListener("click", () => openCatalogDecisionProduct("STOCK_HIGH"));
+        elements.openUrgentCatalogButton?.addEventListener("click", () => openCatalogDecisionProduct("STOCK_LOW"));
+        elements.focusDominantCatalogBrandButton?.addEventListener("click", async () => {
+            const brand = dominantBrand(filteredProducts());
+            if (!brand) {
+                return;
+            }
+            state.brand = brand;
+            syncControls();
+            await refreshCatalog();
+            showToast("대표 브랜드를 적용했습니다.", `${brand} 상품만 집중해서 확인합니다.`);
+        });
+        elements.copyCatalogDecisionButton?.addEventListener("click", async () => {
+            await copyTextWithFeedback(catalogDecisionSummary(filteredProducts()), "상품 판단 요약을 복사했습니다.", "가격과 재고 우선순위를 함께 전달할 수 있습니다.");
         });
         elements.copyFlowBoardSummaryButton?.addEventListener("click", async () => {
             await copyTextWithFeedback(buildFlowBoardSummaryText(), "개인 보드 요약을 복사했습니다.", "최근 흐름과 저장 상태를 한 번에 전달할 수 있습니다.");
@@ -2245,6 +2270,19 @@
         setText(elements.catalogTotalStock, `${list.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
         setText(elements.catalogBrandCount, `${new Set(list.map((product) => product.brand).filter(Boolean)).size}개`);
         setText(elements.catalogLowStockCount, `${list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
+        const cheapest = catalogDecisionProduct(list, "PRICE_LOW");
+        const highestStock = catalogDecisionProduct(list, "STOCK_HIGH");
+        const urgent = catalogDecisionProduct(list, "STOCK_LOW");
+        setText(elements.catalogCheapestLabel, cheapest ? `${cheapest.brand} · ${formatPrice(cheapest.price)}` : "-");
+        setText(elements.catalogHighestStockLabel, highestStock ? `${highestStock.brand} · ${highestStock.stock}개` : "-");
+        setText(elements.catalogUrgentLabel, urgent ? `${urgent.brand} · ${urgent.stock}개` : "-");
+        setText(elements.catalogDominantBrandLabel, dominantBrand(list) || "-");
+        [elements.openCheapestCatalogButton, elements.openHighestStockCatalogButton, elements.openUrgentCatalogButton, elements.focusDominantCatalogBrandButton, elements.copyCatalogDecisionButton]
+            .forEach((button) => {
+                if (button) {
+                    button.disabled = list.length === 0;
+                }
+            });
         if (!elements.catalogTags) {
             return;
         }
@@ -2307,6 +2345,36 @@
                 </button>
             `
             : `<span class="catalog-tag">${tag.label}</span>`).join("");
+    }
+
+    function catalogDecisionProduct(list, metric) {
+        const next = list.slice();
+        if (metric === "PRICE_LOW") {
+            return next.sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0];
+        }
+        return next.sort((left, right) => metric === "STOCK_HIGH"
+            ? Number(right.stock || 0) - Number(left.stock || 0)
+            : Number(left.stock || 0) - Number(right.stock || 0))[0];
+    }
+
+    function openCatalogDecisionProduct(metric) {
+        const product = catalogDecisionProduct(filteredProducts(), metric);
+        if (product) {
+            openDrawer(product.id);
+        }
+    }
+
+    function catalogDecisionSummary(list) {
+        const cheapest = catalogDecisionProduct(list, "PRICE_LOW");
+        const highestStock = catalogDecisionProduct(list, "STOCK_HIGH");
+        const urgent = catalogDecisionProduct(list, "STOCK_LOW");
+        return [
+            `카탈로그 판단 요약 · ${list.length}개`,
+            `최저가 ${cheapest?.headline || cheapest?.name || "-"} · ${cheapest ? formatPrice(cheapest.price) : "-"}`,
+            `최고 재고 ${highestStock?.headline || highestStock?.name || "-"} · ${highestStock?.stock || 0}개`,
+            `긴급 확인 ${urgent?.headline || urgent?.name || "-"} · ${urgent?.stock || 0}개`,
+            `대표 브랜드 ${dominantBrand(list) || "-"}`
+        ].join("\n");
     }
 
     function renderCatalogInsights() {

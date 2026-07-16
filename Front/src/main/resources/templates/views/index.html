@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.04">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.04">
+    <link rel="stylesheet" href="/css/main.css?v=20260716.05">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260716.05">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -557,6 +557,13 @@
                     <div><dt>브랜드</dt><dd id="catalogBrandCount">0개</dd></div>
                     <div><dt>긴장 재고</dt><dd id="catalogLowStockCount">0개</dd></div>
                 </dl>
+                <div class="catalog-decision-rail" aria-label="상품 판단 바로가기">
+                    <button type="button" id="openCheapestCatalogButton"><span>최저가</span><strong id="catalogCheapestLabel">-</strong></button>
+                    <button type="button" id="openHighestStockCatalogButton"><span>최고 재고</span><strong id="catalogHighestStockLabel">-</strong></button>
+                    <button type="button" id="openUrgentCatalogButton"><span>긴급 확인</span><strong id="catalogUrgentLabel">-</strong></button>
+                    <button type="button" id="focusDominantCatalogBrandButton"><span>대표 브랜드</span><strong id="catalogDominantBrandLabel">-</strong></button>
+                    <button type="button" id="copyCatalogDecisionButton"><span>현재 판단</span><strong>요약 복사</strong></button>
+                </div>
                 <div class="catalog-result-actions">
                     <button class="catalog-reset-button" type="button" id="shareCatalogButton">현재 조건 공유</button>
                     <button class="catalog-reset-button" type="button" id="randomProductButton">랜덤 상품 보기</button>
@@ -747,6 +754,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260716.04"></script>
+<script src="/js/view/app.js?v=20260716.05"></script>
 </body>
 </html>

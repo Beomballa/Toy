@@ -76,6 +76,9 @@
     };
     const drawerState = {
         optionLowStockOnly: false,
+        optionAvailableOnly: false,
+        optionStableOnly: false,
+        optionSort: "DEFAULT",
         relatedSort: "DEFAULT",
         relatedSameBrandOnly: false,
         relatedAvailableOnly: false,
@@ -4830,6 +4833,15 @@
                     <button class="catalog-reset-button ${drawerState.optionLowStockOnly ? "is-active" : ""}" type="button" data-drawer-option-low-stock-toggle="${product.id}">
                         ${drawerState.optionLowStockOnly ? "전체 옵션 보기" : "긴장 옵션만 보기"}
                     </button>
+                    <button class="catalog-reset-button ${drawerState.optionAvailableOnly ? "is-active" : ""}" type="button" data-drawer-option-available-toggle="${product.id}">
+                        ${drawerState.optionAvailableOnly ? "품절 포함 보기" : "구매 가능만"}
+                    </button>
+                    <button class="catalog-reset-button ${drawerState.optionStableOnly ? "is-active" : ""}" type="button" data-drawer-option-stable-toggle="${product.id}">
+                        ${drawerState.optionStableOnly ? "전체 재고 보기" : "안정 재고만"}
+                    </button>
+                    <button class="catalog-reset-button ${drawerState.optionSort === "STOCK_ASC" ? "is-active" : ""}" type="button" data-drawer-option-sort="STOCK_ASC">재고 낮은 순</button>
+                    <button class="catalog-reset-button ${drawerState.optionSort === "STOCK_DESC" ? "is-active" : ""}" type="button" data-drawer-option-sort="STOCK_DESC">재고 높은 순</button>
+                    <button class="catalog-reset-button" type="button" data-drawer-option-recommend-id="${product.id}">추천 옵션 상세</button>
                     <button class="catalog-reset-button" type="button" data-drawer-copy-options-id="${product.id}">
                         옵션 요약 복사
                     </button>
@@ -4846,8 +4858,8 @@
                     `).join("") : `
                         <div class="product-drawer__option">
                             <div>
-                                <strong>${drawerState.optionLowStockOnly ? "긴장 구간 옵션이 없습니다." : "등록된 옵션이 없습니다."}</strong>
-                                <span>${drawerState.optionLowStockOnly ? "현재 기준으로는 저재고 옵션이 보이지 않습니다." : "세부 옵션 정보가 아직 준비되지 않았습니다."}</span>
+                                <strong>${drawerState.optionLowStockOnly || drawerState.optionAvailableOnly || drawerState.optionStableOnly ? "조건에 맞는 옵션이 없습니다." : "등록된 옵션이 없습니다."}</strong>
+                                <span>${drawerState.optionLowStockOnly || drawerState.optionAvailableOnly || drawerState.optionStableOnly ? "옵션 필터를 해제해 전체 재고를 확인해주세요." : "세부 옵션 정보가 아직 준비되지 않았습니다."}</span>
                             </div>
                             <strong>-</strong>
                         </div>
@@ -4922,7 +4934,39 @@
             });
             elements.drawerBody.querySelector("[data-drawer-option-low-stock-toggle]")?.addEventListener("click", () => {
                 drawerState.optionLowStockOnly = !drawerState.optionLowStockOnly;
+                drawerState.optionAvailableOnly = false;
+                drawerState.optionStableOnly = false;
                 openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-option-available-toggle]")?.addEventListener("click", () => {
+                drawerState.optionAvailableOnly = !drawerState.optionAvailableOnly;
+                drawerState.optionLowStockOnly = false;
+                drawerState.optionStableOnly = false;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-option-stable-toggle]")?.addEventListener("click", () => {
+                drawerState.optionStableOnly = !drawerState.optionStableOnly;
+                drawerState.optionLowStockOnly = false;
+                drawerState.optionAvailableOnly = false;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelectorAll("[data-drawer-option-sort]").forEach((button) => {
+                button.addEventListener("click", () => {
+                    const nextSort = button.dataset.drawerOptionSort;
+                    drawerState.optionSort = drawerState.optionSort === nextSort ? "DEFAULT" : nextSort;
+                    openDrawer(product.id);
+                });
+            });
+            elements.drawerBody.querySelector("[data-drawer-option-recommend-id]")?.addEventListener("click", () => {
+                const recommended = filteredOptions.filter((option) => Number(option.stock || 0) > 0)
+                    .sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
+                if (!recommended) {
+                    showToast("추천할 옵션이 없습니다.", "옵션 필터를 넓혀 구매 가능한 재고를 확인해주세요.", true);
+                    return;
+                }
+                const detailUrl = new URL(detailPageUrl(product.id), window.location.origin);
+                detailUrl.searchParams.set("option", recommended.name);
+                window.location.href = `${detailUrl.pathname}${detailUrl.search}`;
             });
             elements.drawerBody.querySelector("[data-drawer-copy-options-id]")?.addEventListener("click", async () => {
                 const text = drawerOptionSummaryText(product, filteredOptions);
@@ -5171,9 +5215,21 @@
     }
 
     function filteredDrawerOptions(product) {
-        const options = Array.isArray(product.options) ? product.options.slice() : [];
+        let options = Array.isArray(product.options) ? product.options.slice() : [];
         if (drawerState.optionLowStockOnly) {
-            return options.filter((option) => Number(option.stock || 0) < lowStockThresholdValue());
+            options = options.filter((option) => Number(option.stock || 0) < lowStockThresholdValue());
+        }
+        if (drawerState.optionAvailableOnly) {
+            options = options.filter((option) => Number(option.stock || 0) > 0);
+        }
+        if (drawerState.optionStableOnly) {
+            options = options.filter((option) => Number(option.stock || 0) >= lowStockThresholdValue());
+        }
+        if (drawerState.optionSort === "STOCK_ASC") {
+            options.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+        }
+        if (drawerState.optionSort === "STOCK_DESC") {
+            options.sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0));
         }
         return options;
     }

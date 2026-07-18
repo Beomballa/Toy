@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.26");
+                .contains("/js/view/app.js?v=20260718.28");
     }
 
     @Test
@@ -1365,6 +1365,22 @@ class FrontStorefrontResourceTest {
                 .contains("detailRecentState.sort === \"PRICE_LOW\"")
                 .contains("detailRecentState.availableOnly")
                 .contains("function addDetailRecentToBoard(target)");
+    }
+
+    @Test
+    void productDrawerKeepsFiveOptionFilterSortAndRecommendationActions() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("optionAvailableOnly: false")
+                .contains("optionStableOnly: false")
+                .contains("optionSort: \"DEFAULT\"")
+                .contains("data-drawer-option-available-toggle")
+                .contains("data-drawer-option-stable-toggle")
+                .contains("data-drawer-option-sort=\"STOCK_ASC\"")
+                .contains("data-drawer-option-sort=\"STOCK_DESC\"")
+                .contains("data-drawer-option-recommend-id")
+                .contains("detailUrl.searchParams.set(\"option\", recommended.name)");
     }
 
     @Test

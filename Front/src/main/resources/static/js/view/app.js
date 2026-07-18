@@ -327,6 +327,11 @@
         bookmarkBoardGrid: document.getElementById("bookmarkBoardGrid"),
         bookmarkBoardTitle: document.getElementById("bookmarkBoardTitle"),
         bookmarkBoardText: document.getElementById("bookmarkBoardText"),
+        bookmarkAveragePrice: document.getElementById("bookmarkAveragePrice"),
+        bookmarkTotalStock: document.getElementById("bookmarkTotalStock"),
+        bookmarkLowStockCount: document.getElementById("bookmarkLowStockCount"),
+        bookmarkFeaturedCount: document.getElementById("bookmarkFeaturedCount"),
+        bookmarkDominantCategory: document.getElementById("bookmarkDominantCategory"),
         applyBookmarkFeaturedButton: document.getElementById("applyBookmarkFeaturedButton"),
         applyBookmarkLowStockButton: document.getElementById("applyBookmarkLowStockButton"),
         sortBookmarkRecentButton: document.getElementById("sortBookmarkRecentButton"),
@@ -3630,6 +3635,12 @@
         syncBoardButtons();
         setText(elements.bookmarkBoardTitle, `${bookmarkedProducts.length} / ${allBookmarkedProducts.length}개 관심 상품을 표시합니다.`);
         setText(elements.bookmarkBoardText, buildBookmarkSummary(bookmarkedProducts));
+        const bookmarkTotalPrice = bookmarkedProducts.reduce((sum, product) => sum + Number(product.price || 0), 0);
+        setText(elements.bookmarkAveragePrice, formatPrice(bookmarkedProducts.length ? Math.round(bookmarkTotalPrice / bookmarkedProducts.length) : 0));
+        setText(elements.bookmarkTotalStock, `${bookmarkedProducts.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
+        setText(elements.bookmarkLowStockCount, `${bookmarkedProducts.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
+        setText(elements.bookmarkFeaturedCount, `${bookmarkedProducts.filter((product) => Boolean(product.featured)).length}개`);
+        setText(elements.bookmarkDominantCategory, dominantCategory(bookmarkedProducts) || "-");
         const recommendedId = recommendedBookmarkProduct(bookmarkedProducts)?.id;
         elements.bookmarkBoardGrid.innerHTML = bookmarkedProducts.length ? bookmarkedProducts.map((product) => `
             <article class="detail-related-card compare-card saved-product-card">

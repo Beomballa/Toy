@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260718.20">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260718.20">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.21">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260718.21">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -353,6 +353,13 @@
                     <strong id="bookmarkBoardTitle">관심 상품을 모으는 중입니다.</strong>
                     <p id="bookmarkBoardText">카탈로그 카드에서 찜하기를 눌러 관심 상품 보드를 채울 수 있습니다.</p>
                 </div>
+                <dl class="saved-board-metrics" aria-label="관심 상품 판단 지표">
+                    <div><dt>평균가</dt><dd id="bookmarkAveragePrice">0원</dd></div>
+                    <div><dt>총재고</dt><dd id="bookmarkTotalStock">0개</dd></div>
+                    <div><dt>긴장 재고</dt><dd id="bookmarkLowStockCount">0개</dd></div>
+                    <div><dt>Featured</dt><dd id="bookmarkFeaturedCount">0개</dd></div>
+                    <div><dt>대표 카테고리</dt><dd id="bookmarkDominantCategory">-</dd></div>
+                </dl>
                 <div class="saved-board-actions">
                     <button class="catalog-reset-button" type="button" id="sortBookmarkRecentButton">최근 담은 순</button>
                     <button class="catalog-reset-button" type="button" id="addBookmarkToCompareButton">관심 상품 비교 담기</button>
@@ -808,6 +815,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260718.20"></script>
+<script src="/js/view/app.js?v=20260718.21"></script>
 </body>
 </html>

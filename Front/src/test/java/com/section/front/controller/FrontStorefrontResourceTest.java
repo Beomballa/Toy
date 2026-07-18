@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.20")
+                .contains("/css/storefront.css?v=20260718.21")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.20");
+                .contains("/js/view/app.js?v=20260718.21");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.20")
+                .contains("/css/storefront.css?v=20260718.21")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1240,6 +1240,24 @@ class FrontStorefrontResourceTest {
                 .contains("boardState.recentSort = \"OLDEST\"")
                 .contains("boardState.recentExpanded ? sortedProducts : sortedProducts.slice(0, 3)")
                 .contains("async () => {\n            const links = readRecentProducts()");
+    }
+
+    @Test
+    void bookmarkBoardKeepsFiveFilteredDecisionMetrics() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"bookmarkAveragePrice\"")
+                .contains("id=\"bookmarkTotalStock\"")
+                .contains("id=\"bookmarkLowStockCount\"")
+                .contains("id=\"bookmarkFeaturedCount\"")
+                .contains("id=\"bookmarkDominantCategory\"");
+        assertThat(script)
+                .contains("const bookmarkTotalPrice = bookmarkedProducts.reduce")
+                .contains("setText(elements.bookmarkAveragePrice")
+                .contains("setText(elements.bookmarkLowStockCount")
+                .contains("dominantCategory(bookmarkedProducts) || \"-\"");
     }
 
     @Test

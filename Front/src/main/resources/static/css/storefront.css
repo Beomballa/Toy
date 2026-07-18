@@ -1784,6 +1784,50 @@ main#top {
     gap: 8px;
 }
 
+.saved-board-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-column: 1 / -1;
+    gap: 1px;
+    overflow: hidden;
+    margin: 0;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
+}
+
+.saved-board-metrics div {
+    display: grid;
+    gap: 4px;
+    padding: 9px 10px;
+    background: #fff;
+}
+
+.saved-board-metrics dt {
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.saved-board-metrics dd {
+    overflow: hidden;
+    margin: 0;
+    color: var(--store-ink);
+    font-size: 12px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .saved-board-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .saved-board-metrics div:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
 .board-action-menu__danger,
 .saved-product-card__danger {
     color: var(--store-danger) !important;

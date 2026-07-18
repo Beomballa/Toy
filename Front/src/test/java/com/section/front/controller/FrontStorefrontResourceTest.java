@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.16")
+                .contains("/css/storefront.css?v=20260718.17")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260716.14");
+                .contains("/js/view/app.js?v=20260718.17");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260716.16")
+                .contains("/css/storefront.css?v=20260718.17")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1160,6 +1160,26 @@ class FrontStorefrontResourceTest {
                 .contains("const priceScore = basePrice")
                 .contains("(priceScore * 0.6) + (stockScore * 0.4)");
         assertThat(css).contains(".detail-related-card__comparison");
+    }
+
+    @Test
+    void compareBoardKeepsFiveDecisionMetrics() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"compareAveragePrice\"")
+                .contains("id=\"comparePriceGap\"")
+                .contains("id=\"compareTotalStock\"")
+                .contains("id=\"compareStockGap\"")
+                .contains("id=\"compareCategoryCount\"");
+        assertThat(script)
+                .contains("const comparePrices = comparedProducts.map")
+                .contains("setText(elements.compareAveragePrice")
+                .contains("setText(elements.compareStockGap")
+                .contains("new Set(comparedProducts.map((product) => product.category)");
+        assertThat(css).contains(".saved-board-metrics");
     }
 
     @Test

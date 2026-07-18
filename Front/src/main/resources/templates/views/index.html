@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260716.16">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260716.16">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.17">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260718.17">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -305,6 +305,13 @@
                     <strong id="compareBoardTitle">비교할 상품을 고르는 중입니다.</strong>
                     <p id="compareBoardText">카탈로그 카드에서 비교 담기 버튼을 눌러 최대 3개까지 비교할 수 있습니다.</p>
                 </div>
+                <dl class="saved-board-metrics" aria-label="비교 상품 의사결정 지표">
+                    <div><dt>평균가</dt><dd id="compareAveragePrice">0원</dd></div>
+                    <div><dt>가격 차이</dt><dd id="comparePriceGap">0원</dd></div>
+                    <div><dt>총재고</dt><dd id="compareTotalStock">0개</dd></div>
+                    <div><dt>재고 차이</dt><dd id="compareStockGap">0개</dd></div>
+                    <div><dt>카테고리</dt><dd id="compareCategoryCount">0개</dd></div>
+                </dl>
                 <div class="saved-board-actions">
                     <button class="catalog-reset-button" type="button" id="sortComparePriceLowButton">가격 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="addCompareToBookmarkButton">비교 상품 모두 찜</button>
@@ -789,6 +796,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260716.14"></script>
+<script src="/js/view/app.js?v=20260718.17"></script>
 </body>
 </html>

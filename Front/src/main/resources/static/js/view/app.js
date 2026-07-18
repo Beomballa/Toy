@@ -294,6 +294,11 @@
         compareBoardGrid: document.getElementById("compareBoardGrid"),
         compareBoardTitle: document.getElementById("compareBoardTitle"),
         compareBoardText: document.getElementById("compareBoardText"),
+        compareAveragePrice: document.getElementById("compareAveragePrice"),
+        comparePriceGap: document.getElementById("comparePriceGap"),
+        compareTotalStock: document.getElementById("compareTotalStock"),
+        compareStockGap: document.getElementById("compareStockGap"),
+        compareCategoryCount: document.getElementById("compareCategoryCount"),
         applyCompareCategoryButton: document.getElementById("applyCompareCategoryButton"),
         applyCompareLowStockButton: document.getElementById("applyCompareLowStockButton"),
         sortComparePriceButton: document.getElementById("sortComparePriceButton"),
@@ -3472,6 +3477,13 @@
         syncBoardButtons();
         setText(elements.compareBoardTitle, `${comparedProducts.length}개 상품을 비교 중입니다.`);
         setText(elements.compareBoardText, buildCompareSummary(comparedProducts));
+        const comparePrices = comparedProducts.map((product) => Number(product.price || 0));
+        const compareStocks = comparedProducts.map((product) => Number(product.stock || 0));
+        setText(elements.compareAveragePrice, formatPrice(Math.round(comparePrices.reduce((sum, price) => sum + price, 0) / comparedProducts.length)));
+        setText(elements.comparePriceGap, formatPrice(Math.max(...comparePrices) - Math.min(...comparePrices)));
+        setText(elements.compareTotalStock, `${compareStocks.reduce((sum, stock) => sum + stock, 0)}개`);
+        setText(elements.compareStockGap, `${Math.max(...compareStocks) - Math.min(...compareStocks)}개`);
+        setText(elements.compareCategoryCount, `${new Set(comparedProducts.map((product) => product.category).filter(Boolean)).size}개`);
         const cheapestId = comparedProducts.slice().sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0]?.id;
         const highestStockId = comparedProducts.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0]?.id;
         const recommendedId = recommendedCompareProduct(comparedProducts)?.id;

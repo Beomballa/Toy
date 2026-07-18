@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.24");
+                .contains("/js/view/app.js?v=20260718.25");
     }
 
     @Test
@@ -1312,6 +1312,25 @@ class FrontStorefrontResourceTest {
                 .contains("data-drawer-related-highest-stock-id")
                 .contains("data-drawer-related-compare-all")
                 .contains("addProductsToBoard(filteredRelatedProducts, \"COMPARE\")");
+    }
+
+    @Test
+    void bookmarkBoardKeepsAvailabilitySoldOutCategoryOldestAndCsvActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"filterBookmarkAvailableButton\"")
+                .contains("id=\"filterBookmarkSoldOutButton\"")
+                .contains("id=\"filterBookmarkCategoryButton\"")
+                .contains("id=\"sortBookmarkOldestButton\"")
+                .contains("id=\"exportBookmarkCsvButton\"");
+        assertThat(script)
+                .contains("boardState.bookmarkFilter = \"AVAILABLE\"")
+                .contains("boardState.bookmarkFilter = \"SOLD_OUT\"")
+                .contains("boardState.bookmarkFilter = \"DOMINANT_CATEGORY\"")
+                .contains("boardState.bookmarkSort = \"OLDEST\"")
+                .contains("grade-stock-bookmarks.csv");
     }
 
     @Test

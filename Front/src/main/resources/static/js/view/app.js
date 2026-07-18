@@ -351,6 +351,11 @@
         sortBookmarkNameButton: document.getElementById("sortBookmarkNameButton"),
         filterBookmarkLowStockButton: document.getElementById("filterBookmarkLowStockButton"),
         filterBookmarkFeaturedButton: document.getElementById("filterBookmarkFeaturedButton"),
+        filterBookmarkAvailableButton: document.getElementById("filterBookmarkAvailableButton"),
+        filterBookmarkSoldOutButton: document.getElementById("filterBookmarkSoldOutButton"),
+        filterBookmarkCategoryButton: document.getElementById("filterBookmarkCategoryButton"),
+        sortBookmarkOldestButton: document.getElementById("sortBookmarkOldestButton"),
+        exportBookmarkCsvButton: document.getElementById("exportBookmarkCsvButton"),
         resetBookmarkBoardFilterButton: document.getElementById("resetBookmarkBoardFilterButton"),
         openRecommendedBookmarkButton: document.getElementById("openRecommendedBookmarkButton"),
         clearBookmarkButton: document.getElementById("clearBookmarkButton"),
@@ -1306,6 +1311,29 @@
             boardState.bookmarkFilter = "ALL";
             renderBookmarkBoard();
             showToast("관심 보드 필터를 해제했습니다.", "저장한 관심 상품을 모두 표시합니다.");
+        });
+        elements.filterBookmarkAvailableButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "AVAILABLE";
+            renderBookmarkBoard();
+            showToast("구매 가능한 관심 상품만 표시합니다.", "현재 재고가 있는 후보로 보드를 좁혔습니다.");
+        });
+        elements.filterBookmarkSoldOutButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "SOLD_OUT";
+            renderBookmarkBoard();
+            showToast("품절 관심 상품만 표시합니다.", "대체 상품 탐색이 필요한 후보를 모았습니다.");
+        });
+        elements.filterBookmarkCategoryButton?.addEventListener("click", () => {
+            boardState.bookmarkFilter = "DOMINANT_CATEGORY";
+            renderBookmarkBoard();
+            showToast("대표 카테고리 관심 상품만 표시합니다.", "가장 많이 저장한 카테고리 흐름을 남겼습니다.");
+        });
+        elements.sortBookmarkOldestButton?.addEventListener("click", () => {
+            boardState.bookmarkSort = "OLDEST";
+            renderBookmarkBoard();
+            showToast("오래 담은 관심 상품부터 정렬했습니다.", "이전에 저장한 후보를 먼저 재검토할 수 있습니다.");
+        });
+        elements.exportBookmarkCsvButton?.addEventListener("click", () => {
+            exportProductsCsv(sortedBookmarkProducts(readBookmarkProducts()), "grade-stock-bookmarks.csv");
         });
         elements.openRecommendedBookmarkButton?.addEventListener("click", () => {
             const recommended = recommendedBookmarkProduct(sortedBookmarkProducts(readBookmarkProducts()));
@@ -4041,12 +4069,22 @@
     }
 
     function sortedBookmarkProducts(items) {
+        const category = dominantCategory(items);
         const next = items.filter((item) => {
             if (boardState.bookmarkFilter === "LOW_STOCK") {
                 return Number(item.stock || 0) < lowStockThresholdValue();
             }
             if (boardState.bookmarkFilter === "FEATURED") {
                 return Boolean(item.featured);
+            }
+            if (boardState.bookmarkFilter === "AVAILABLE") {
+                return Number(item.stock || 0) > 0;
+            }
+            if (boardState.bookmarkFilter === "SOLD_OUT") {
+                return Number(item.stock || 0) <= 0;
+            }
+            if (boardState.bookmarkFilter === "DOMINANT_CATEGORY") {
+                return item.category === category;
             }
             return true;
         });
@@ -4061,6 +4099,9 @@
         }
         if (boardState.bookmarkSort === "NAME_ASC") {
             return next.sort((left, right) => String(left.name || left.headline || "").localeCompare(String(right.name || right.headline || ""), "ko"));
+        }
+        if (boardState.bookmarkSort === "OLDEST") {
+            return next.reverse();
         }
         return next;
     }
@@ -4185,6 +4226,10 @@
         elements.sortBookmarkNameButton?.classList.toggle("is-active", boardState.bookmarkSort === "NAME_ASC");
         elements.filterBookmarkLowStockButton?.classList.toggle("is-active", boardState.bookmarkFilter === "LOW_STOCK");
         elements.filterBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkFilter === "FEATURED");
+        elements.filterBookmarkAvailableButton?.classList.toggle("is-active", boardState.bookmarkFilter === "AVAILABLE");
+        elements.filterBookmarkSoldOutButton?.classList.toggle("is-active", boardState.bookmarkFilter === "SOLD_OUT");
+        elements.filterBookmarkCategoryButton?.classList.toggle("is-active", boardState.bookmarkFilter === "DOMINANT_CATEGORY");
+        elements.sortBookmarkOldestButton?.classList.toggle("is-active", boardState.bookmarkSort === "OLDEST");
     }
 
     function syncCurationButtons() {

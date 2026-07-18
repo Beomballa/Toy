@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.29");
+                .contains("/js/view/app.js?v=20260718.30");
     }
 
     @Test
@@ -1400,6 +1400,25 @@ class FrontStorefrontResourceTest {
                 .contains("metric === \"STOCK_LOW\"")
                 .contains("boardState.compareSort = \"OLDEST\"")
                 .contains("grade-stock-compare-products.csv");
+    }
+
+    @Test
+    void catalogSelectionKeepsAvailableStablePremiumBrandAndCleanupActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"selectAvailablePageButton\"")
+                .contains("id=\"selectStablePageButton\"")
+                .contains("id=\"selectPremiumPageButton\"")
+                .contains("id=\"selectDominantBrandPageButton\"")
+                .contains("id=\"removeLowStockSelectionButton\"");
+        assertThat(script)
+                .contains("Number(product.stock || 0) > 0, \"구매 가능\"")
+                .contains("Number(product.stock || 0) >= lowStockThresholdValue(), \"안정 재고\"")
+                .contains("Number(product.price || 0) > 300000, \"30만원 초과\"")
+                .contains("dominantBrand(currentCatalogPageProducts())")
+                .contains("recordSelectionSnapshot(\"긴장 재고 선택 제외\")");
     }
 
     @Test

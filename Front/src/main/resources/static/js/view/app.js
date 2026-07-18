@@ -203,6 +203,11 @@
         focusSelectedBrandButton: document.getElementById("focusSelectedBrandButton"),
         selectLowStockPageButton: document.getElementById("selectLowStockPageButton"),
         selectFeaturedPageButton: document.getElementById("selectFeaturedPageButton"),
+        selectAvailablePageButton: document.getElementById("selectAvailablePageButton"),
+        selectStablePageButton: document.getElementById("selectStablePageButton"),
+        selectPremiumPageButton: document.getElementById("selectPremiumPageButton"),
+        selectDominantBrandPageButton: document.getElementById("selectDominantBrandPageButton"),
+        removeLowStockSelectionButton: document.getElementById("removeLowStockSelectionButton"),
         invertPageSelectionButton: document.getElementById("invertPageSelectionButton"),
         removeSoldOutSelectionButton: document.getElementById("removeSoldOutSelectionButton"),
         selectCheapestPageButton: document.getElementById("selectCheapestPageButton"),
@@ -1375,6 +1380,26 @@
         elements.selectFeaturedPageButton?.addEventListener("click", () => {
             selectCurrentPageProducts((product) => Boolean(product.featured), "Featured");
         });
+        elements.selectAvailablePageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Number(product.stock || 0) > 0, "구매 가능");
+        });
+        elements.selectStablePageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Number(product.stock || 0) >= lowStockThresholdValue(), "안정 재고");
+        });
+        elements.selectPremiumPageButton?.addEventListener("click", () => {
+            selectCurrentPageProducts((product) => Number(product.price || 0) > 300000, "30만원 초과");
+        });
+        elements.selectDominantBrandPageButton?.addEventListener("click", () => {
+            const brand = dominantBrand(currentCatalogPageProducts());
+            selectCurrentPageProducts((product) => product.brand === brand, "대표 브랜드");
+        });
+        elements.removeLowStockSelectionButton?.addEventListener("click", () => {
+            recordSelectionSnapshot("긴장 재고 선택 제외");
+            selectedProducts().filter((product) => Number(product.stock || 0) < lowStockThresholdValue())
+                .forEach((product) => selectedProductIds.delete(Number(product.id)));
+            renderCatalog();
+            showToast("긴장 재고 선택을 제외했습니다.", "안정 재고 선택만 남겼습니다.");
+        });
         elements.invertPageSelectionButton?.addEventListener("click", invertCurrentPageSelection);
         elements.removeSoldOutSelectionButton?.addEventListener("click", () => {
             const soldOutIds = selectedProducts()
@@ -2398,6 +2423,18 @@
         if (elements.selectFeaturedPageButton) {
             elements.selectFeaturedPageButton.disabled = !pageProducts.some((product) => Boolean(product.featured));
         }
+        if (elements.selectAvailablePageButton) {
+            elements.selectAvailablePageButton.disabled = !pageProducts.some((product) => Number(product.stock || 0) > 0);
+        }
+        if (elements.selectStablePageButton) {
+            elements.selectStablePageButton.disabled = !pageProducts.some((product) => Number(product.stock || 0) >= lowStockThresholdValue());
+        }
+        if (elements.selectPremiumPageButton) {
+            elements.selectPremiumPageButton.disabled = !pageProducts.some((product) => Number(product.price || 0) > 300000);
+        }
+        if (elements.selectDominantBrandPageButton) {
+            elements.selectDominantBrandPageButton.disabled = pageProducts.length === 0;
+        }
         [elements.invertPageSelectionButton, elements.copyCurrentPageSummaryButton, elements.exportCurrentPageCsvButton]
             .forEach((button) => {
                 if (button) {
@@ -2421,6 +2458,9 @@
         });
         if (elements.removeSoldOutSelectionButton) {
             elements.removeSoldOutSelectionButton.disabled = selectedSoldOut === 0;
+        }
+        if (elements.removeLowStockSelectionButton) {
+            elements.removeLowStockSelectionButton.disabled = selectedLowStock === 0;
         }
         [elements.selectCheapestPageButton, elements.selectHighestStockPageButton]
             .forEach((button) => {

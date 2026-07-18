@@ -328,6 +328,11 @@
         copyCompareSummaryButton: document.getElementById("copyCompareSummaryButton"),
         addCompareToBookmarkButton: document.getElementById("addCompareToBookmarkButton"),
         openCheapestCompareButton: document.getElementById("openCheapestCompareButton"),
+        openHighestStockCompareButton: document.getElementById("openHighestStockCompareButton"),
+        openLowestStockCompareButton: document.getElementById("openLowestStockCompareButton"),
+        openHighestPriceCompareButton: document.getElementById("openHighestPriceCompareButton"),
+        sortCompareOldestButton: document.getElementById("sortCompareOldestButton"),
+        exportCompareCsvButton: document.getElementById("exportCompareCsvButton"),
         sortComparePriceLowButton: document.getElementById("sortComparePriceLowButton"),
         sortCompareNameButton: document.getElementById("sortCompareNameButton"),
         copyCompareLinksButton: document.getElementById("copyCompareLinksButton"),
@@ -1216,6 +1221,17 @@
             }
             openDrawer(cheapest.id);
             showToast("최저가 비교 상품을 열었습니다.", `${cheapest.headline || cheapest.name}을 바로 확인합니다.`);
+        });
+        elements.openHighestStockCompareButton?.addEventListener("click", () => openCompareProductByMetric("STOCK_HIGH"));
+        elements.openLowestStockCompareButton?.addEventListener("click", () => openCompareProductByMetric("STOCK_LOW"));
+        elements.openHighestPriceCompareButton?.addEventListener("click", () => openCompareProductByMetric("PRICE_HIGH"));
+        elements.sortCompareOldestButton?.addEventListener("click", () => {
+            boardState.compareSort = "OLDEST";
+            renderCompareBoard();
+            showToast("오래 담은 비교 상품부터 정렬했습니다.", "초기 비교 후보를 먼저 다시 확인할 수 있습니다.");
+        });
+        elements.exportCompareCsvButton?.addEventListener("click", () => {
+            exportProductsCsv(sortedCompareProducts(readCompareProducts()), "grade-stock-compare-products.csv");
         });
         elements.sortComparePriceLowButton?.addEventListener("click", () => {
             boardState.compareSort = "PRICE_LOW";
@@ -2489,6 +2505,22 @@
         const product = catalogDecisionProduct(selectedProducts(), metric);
         if (product) {
             openDrawer(product.id);
+        }
+    }
+
+    function openCompareProductByMetric(metric) {
+        const comparedProducts = readCompareProducts();
+        const target = comparedProducts.slice().sort((left, right) => {
+            if (metric === "STOCK_HIGH") {
+                return Number(right.stock || 0) - Number(left.stock || 0);
+            }
+            if (metric === "STOCK_LOW") {
+                return Number(left.stock || 0) - Number(right.stock || 0);
+            }
+            return Number(right.price || 0) - Number(left.price || 0);
+        })[0];
+        if (target) {
+            openDrawer(target.id);
         }
     }
 
@@ -4025,6 +4057,9 @@
         if (boardState.compareSort === "NAME_ASC") {
             return next.sort((left, right) => String(left.name || left.headline || "").localeCompare(String(right.name || right.headline || ""), "ko"));
         }
+        if (boardState.compareSort === "OLDEST") {
+            return next.reverse();
+        }
         return next;
     }
 
@@ -4247,6 +4282,7 @@
         elements.sortCompareStockButton?.classList.toggle("is-active", boardState.compareSort === "STOCK_ASC");
         elements.sortComparePriceLowButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_LOW");
         elements.sortCompareNameButton?.classList.toggle("is-active", boardState.compareSort === "NAME_ASC");
+        elements.sortCompareOldestButton?.classList.toggle("is-active", boardState.compareSort === "OLDEST");
         elements.sortBookmarkRecentButton?.classList.toggle("is-active", boardState.bookmarkSort === "RECENT");
         elements.sortBookmarkFeaturedButton?.classList.toggle("is-active", boardState.bookmarkSort === "FEATURED");
         elements.sortBookmarkPriceButton?.classList.toggle("is-active", boardState.bookmarkSort === "PRICE_LOW");

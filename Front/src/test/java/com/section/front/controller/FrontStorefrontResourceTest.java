@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.28");
+                .contains("/js/view/app.js?v=20260718.29");
     }
 
     @Test
@@ -1381,6 +1381,25 @@ class FrontStorefrontResourceTest {
                 .contains("data-drawer-option-sort=\"STOCK_DESC\"")
                 .contains("data-drawer-option-recommend-id")
                 .contains("detailUrl.searchParams.set(\"option\", recommended.name)");
+    }
+
+    @Test
+    void compareBoardKeepsStockPriceOldestAndCsvManagementActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"openHighestStockCompareButton\"")
+                .contains("id=\"openLowestStockCompareButton\"")
+                .contains("id=\"openHighestPriceCompareButton\"")
+                .contains("id=\"sortCompareOldestButton\"")
+                .contains("id=\"exportCompareCsvButton\"");
+        assertThat(script)
+                .contains("function openCompareProductByMetric(metric)")
+                .contains("metric === \"STOCK_HIGH\"")
+                .contains("metric === \"STOCK_LOW\"")
+                .contains("boardState.compareSort = \"OLDEST\"")
+                .contains("grade-stock-compare-products.csv");
     }
 
     @Test

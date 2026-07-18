@@ -109,6 +109,11 @@
         detailEstimatedTotal: document.getElementById("detailEstimatedTotal"),
         detailUnitPrice: document.getElementById("detailUnitPrice"),
         detailRemainingStock: document.getElementById("detailRemainingStock"),
+        detailOptionRemainingRate: document.getElementById("detailOptionRemainingRate"),
+        detailProductStockUsageRate: document.getElementById("detailProductStockUsageRate"),
+        detailSafeQuantity: document.getElementById("detailSafeQuantity"),
+        detailPurchaseUrgency: document.getElementById("detailPurchaseUrgency"),
+        detailQuantityStatus: document.getElementById("detailQuantityStatus"),
         detailStockUsageRate: document.getElementById("detailStockUsageRate"),
         detailStockUsageBar: document.getElementById("detailStockUsageBar"),
         detailQuantityNotice: document.getElementById("detailQuantityNotice"),
@@ -577,6 +582,15 @@
         setElementText(elements.detailUnitPrice, currentProduct.priceLabel || formatPrice(currentProduct.price));
         setElementText(elements.detailRemainingStock, `${Math.max(0, maxQuantity - selectedQuantity)}개`);
         const stockUsageRate = Math.min(100, Math.round((selectedQuantity / maxQuantity) * 100));
+        const remainingRate = Math.max(0, 100 - stockUsageRate);
+        const productStockUsageRate = Math.min(100, Math.round((selectedQuantity / Math.max(1, Number(currentProduct.stock || 0))) * 100));
+        const safeQuantity = Math.max(1, Math.floor(maxQuantity * 0.2));
+        const purchaseUrgency = maxQuantity <= 5 ? "즉시 확인" : maxQuantity < lowStockThreshold() ? "재고 긴장" : "재고 안정";
+        setElementText(elements.detailOptionRemainingRate, `${remainingRate}%`);
+        setElementText(elements.detailProductStockUsageRate, `${productStockUsageRate}%`);
+        setElementText(elements.detailSafeQuantity, `${safeQuantity}개`);
+        setElementText(elements.detailPurchaseUrgency, purchaseUrgency);
+        setElementText(elements.detailQuantityStatus, selectedQuantity > safeQuantity ? "대량 선택" : "권장 범위");
         setElementText(elements.detailStockUsageRate, `${stockUsageRate}%`);
         if (elements.detailStockUsageBar) {
             elements.detailStockUsageBar.style.width = `${stockUsageRate}%`;

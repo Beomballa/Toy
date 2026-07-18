@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.18")
+                .contains("/css/storefront.css?v=20260718.19")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.18")
+                .contains("/css/storefront.css?v=20260718.19")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260716.16");
+                .contains("/js/view/detail.js?v=20260718.19");
     }
 
     @Test
@@ -1200,6 +1200,26 @@ class FrontStorefrontResourceTest {
                 .contains("key !== \"search\" && value !== DEFAULT_STATE[key]")
                 .contains("setText(elements.catalogSearchAvailableMatch");
         assertThat(css).contains(".catalog-search-quality");
+    }
+
+    @Test
+    void detailPurchaseEstimateKeepsFiveQuantityDecisionGuides() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailOptionRemainingRate\"")
+                .contains("id=\"detailProductStockUsageRate\"")
+                .contains("id=\"detailSafeQuantity\"")
+                .contains("id=\"detailPurchaseUrgency\"")
+                .contains("id=\"detailQuantityStatus\"");
+        assertThat(script)
+                .contains("const remainingRate = Math.max(0, 100 - stockUsageRate)")
+                .contains("const productStockUsageRate = Math.min(100")
+                .contains("const safeQuantity = Math.max(1, Math.floor(maxQuantity * 0.2))")
+                .contains("selectedQuantity > safeQuantity ? \"대량 선택\" : \"권장 범위\"");
+        assertThat(css).contains(".detail-purchase-guide");
     }
 
     @Test

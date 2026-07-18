@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.30");
+                .contains("/js/view/app.js?v=20260718.32");
     }
 
     @Test
@@ -1438,6 +1438,25 @@ class FrontStorefrontResourceTest {
                 .contains("soldOutOnly: false")
                 .contains("function addAllRelatedToBookmark()")
                 .contains("async function copyRelatedProductLinks()");
+    }
+
+    @Test
+    void searchHistoryKeepsEdgeApplyRemoveAndTextExportActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"applyLatestSearchButton\"")
+                .contains("id=\"applyOldestSearchButton\"")
+                .contains("id=\"removeLatestSearchButton\"")
+                .contains("id=\"removeOldestSearchButton\"")
+                .contains("id=\"exportSearchHistoryButton\"");
+        assertThat(script)
+                .contains("async function applySearchHistoryEdge(position)")
+                .contains("function removeSearchHistoryEdge(position)")
+                .contains("position === \"LATEST\" ? history[0]")
+                .contains("grade-stock-search-history.txt")
+                .contains("history.length === 0");
     }
 
     @Test

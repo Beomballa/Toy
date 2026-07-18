@@ -268,6 +268,11 @@
         clearSearchHistoryButton: document.getElementById("clearSearchHistoryButton"),
         sortSearchHistoryButton: document.getElementById("sortSearchHistoryButton"),
         copySearchHistoryButton: document.getElementById("copySearchHistoryButton"),
+        applyLatestSearchButton: document.getElementById("applyLatestSearchButton"),
+        applyOldestSearchButton: document.getElementById("applyOldestSearchButton"),
+        removeLatestSearchButton: document.getElementById("removeLatestSearchButton"),
+        removeOldestSearchButton: document.getElementById("removeOldestSearchButton"),
+        exportSearchHistoryButton: document.getElementById("exportSearchHistoryButton"),
         reopenLastDrawerButton: document.getElementById("reopenLastDrawerButton"),
         clearHiddenProductsButton: document.getElementById("clearHiddenProductsButton"),
         toggleHiddenViewButton: document.getElementById("toggleHiddenViewButton"),
@@ -956,6 +961,15 @@
         elements.copySearchHistoryButton?.addEventListener("click", async () => {
             const history = readSearchHistory();
             await copyTextWithFeedback(history.join("\n") || "최근 검색이 없습니다.", "검색 기록을 복사했습니다.", "최근 탐색 키워드를 한 번에 공유할 수 있습니다.");
+        });
+        elements.applyLatestSearchButton?.addEventListener("click", () => applySearchHistoryEdge("LATEST"));
+        elements.applyOldestSearchButton?.addEventListener("click", () => applySearchHistoryEdge("OLDEST"));
+        elements.removeLatestSearchButton?.addEventListener("click", () => removeSearchHistoryEdge("LATEST"));
+        elements.removeOldestSearchButton?.addEventListener("click", () => removeSearchHistoryEdge("OLDEST"));
+        elements.exportSearchHistoryButton?.addEventListener("click", () => {
+            const history = readSearchHistory();
+            downloadTextFile("grade-stock-search-history.txt", history.join("\n"), "text/plain;charset=utf-8");
+            showToast("검색 기록 파일을 생성했습니다.", `${history.length}개 검색어를 저장했습니다.`);
         });
         elements.reopenLastDrawerButton?.addEventListener("click", () => {
             const lastDrawerProductId = Number(window.localStorage.getItem(LAST_DRAWER_PRODUCT_KEY) || 0);
@@ -3142,6 +3156,8 @@
         }
         const history = readSearchHistory();
         setText(elements.searchHistoryCount, String(history.length));
+        [elements.applyLatestSearchButton, elements.applyOldestSearchButton, elements.removeLatestSearchButton, elements.removeOldestSearchButton, elements.exportSearchHistoryButton]
+            .forEach((button) => button?.toggleAttribute("disabled", history.length === 0));
         if (!history.length) {
             elements.searchHistoryList.innerHTML = `<span class="catalog-memory-empty">최근 검색이 없습니다.</span>`;
             return;
@@ -3169,6 +3185,29 @@
                 showToast("검색 기록을 삭제했습니다.", "선택한 키워드만 목록에서 제거했습니다.");
             });
         });
+    }
+
+    async function applySearchHistoryEdge(position) {
+        const history = readSearchHistory();
+        const keyword = position === "LATEST" ? history[0] : history[history.length - 1];
+        if (!keyword) {
+            return;
+        }
+        state.search = keyword;
+        syncControls();
+        await refreshCatalog();
+        showToast(position === "LATEST" ? "최신 검색어를 적용했습니다." : "최초 검색어를 적용했습니다.", `${keyword} 기준으로 다시 탐색합니다.`);
+    }
+
+    function removeSearchHistoryEdge(position) {
+        const history = readSearchHistory();
+        if (!history.length) {
+            return;
+        }
+        const next = position === "LATEST" ? history.slice(1) : history.slice(0, -1);
+        window.localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(next));
+        renderSearchHistory();
+        showToast(position === "LATEST" ? "최신 검색 기록을 삭제했습니다." : "최초 검색 기록을 삭제했습니다.", `${next.length}개 검색어가 남았습니다.`);
     }
 
     function renderSearchAssist(keyword = "") {

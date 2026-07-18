@@ -18,7 +18,10 @@
         lowStockOnly: false,
         sameBrandOnly: false,
         sameCategoryOnly: false,
-        availableOnly: false
+        availableOnly: false,
+        cheaperOnly: false,
+        stockAdvantageOnly: false,
+        soldOutOnly: false
     };
     const detailRecentState = {
         sort: "RECENT",
@@ -87,6 +90,11 @@
         detailRelatedSameBrandButton: document.getElementById("detailRelatedSameBrandButton"),
         detailRelatedSameCategoryButton: document.getElementById("detailRelatedSameCategoryButton"),
         detailRelatedAvailableOnlyButton: document.getElementById("detailRelatedAvailableOnlyButton"),
+        detailRelatedCheaperOnlyButton: document.getElementById("detailRelatedCheaperOnlyButton"),
+        detailRelatedStockAdvantageOnlyButton: document.getElementById("detailRelatedStockAdvantageOnlyButton"),
+        detailRelatedSoldOutOnlyButton: document.getElementById("detailRelatedSoldOutOnlyButton"),
+        detailBookmarkAllRelatedButton: document.getElementById("detailBookmarkAllRelatedButton"),
+        detailCopyRelatedLinksButton: document.getElementById("detailCopyRelatedLinksButton"),
         detailResetRelatedFiltersButton: document.getElementById("detailResetRelatedFiltersButton"),
         detailRandomRelatedButton: document.getElementById("detailRandomRelatedButton"),
         clearDetailRecentButton: document.getElementById("clearDetailRecentButton"),
@@ -744,7 +752,7 @@
         if (elements.detailCompareAllRelatedButton) {
             elements.detailCompareAllRelatedButton.disabled = !related.length;
         }
-        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailBalancedRelatedButton, elements.detailCopyPriceComparisonButton, elements.detailCopyValueAnalysisButton]
+        [elements.detailCheapestRelatedButton, elements.detailHighestStockRelatedButton, elements.detailBalancedRelatedButton, elements.detailCopyPriceComparisonButton, elements.detailCopyValueAnalysisButton, elements.detailBookmarkAllRelatedButton, elements.detailCopyRelatedLinksButton]
             .forEach((button) => {
                 if (button) {
                     button.disabled = !related.length;
@@ -1161,6 +1169,26 @@
         );
     }
 
+    function addAllRelatedToBookmark() {
+        if (!currentProduct) {
+            return;
+        }
+        const current = readBookmarkProducts();
+        const merged = sortedRelatedProducts(currentProduct).map(productStorageSummary).concat(current)
+            .filter((item, index, items) => items.findIndex((candidate) => Number(candidate.id) === Number(item.id)) === index)
+            .slice(0, 6);
+        writeBookmarkProducts(merged);
+        syncActionButtons();
+        renderRelated(currentProduct);
+        showToast("연관 상품을 관심 보드에 담았습니다.", `${merged.length}개 관심 상품을 유지합니다.`);
+    }
+
+    async function copyRelatedProductLinks() {
+        const related = currentProduct ? sortedRelatedProducts(currentProduct) : [];
+        const links = related.map((item) => new URL(buildProductUrl(item.id), window.location.origin).href);
+        await copyText(links.join("\n") || "표시 가능한 연관 상품이 없습니다.", "연관 상품 링크를 복사했습니다.");
+    }
+
     function productStorageSummary(product) {
         return {
             id: product.id,
@@ -1253,7 +1281,16 @@
             if (relatedSortState.sameBrandOnly && item.brand !== product.brand) {
                 return false;
             }
-            return !relatedSortState.sameCategoryOnly || item.category === product.category;
+            if (relatedSortState.sameCategoryOnly && item.category !== product.category) {
+                return false;
+            }
+            if (relatedSortState.cheaperOnly && Number(item.price || 0) >= Number(product.price || 0)) {
+                return false;
+            }
+            if (relatedSortState.stockAdvantageOnly && Number(item.stock || 0) <= Number(product.stock || 0)) {
+                return false;
+            }
+            return !relatedSortState.soldOutOnly || Number(item.stock || 0) <= 0;
         });
         if (relatedSortState.mode === "STOCK_ASC") {
             return visibleRelated.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
@@ -1275,6 +1312,9 @@
         elements.detailRelatedSameBrandButton?.classList.toggle("is-active", relatedSortState.sameBrandOnly);
         elements.detailRelatedSameCategoryButton?.classList.toggle("is-active", relatedSortState.sameCategoryOnly);
         elements.detailRelatedAvailableOnlyButton?.classList.toggle("is-active", relatedSortState.availableOnly);
+        elements.detailRelatedCheaperOnlyButton?.classList.toggle("is-active", relatedSortState.cheaperOnly);
+        elements.detailRelatedStockAdvantageOnlyButton?.classList.toggle("is-active", relatedSortState.stockAdvantageOnly);
+        elements.detailRelatedSoldOutOnlyButton?.classList.toggle("is-active", relatedSortState.soldOutOnly);
         [
             [elements.detailRelatedSortStockButton, relatedSortState.mode === "STOCK_ASC"],
             [elements.detailRelatedSortPriceButton, relatedSortState.mode === "PRICE_HIGH"],
@@ -1282,13 +1322,19 @@
             [elements.detailRelatedLowStockOnlyButton, relatedSortState.lowStockOnly],
             [elements.detailRelatedSameBrandButton, relatedSortState.sameBrandOnly],
             [elements.detailRelatedSameCategoryButton, relatedSortState.sameCategoryOnly],
-            [elements.detailRelatedAvailableOnlyButton, relatedSortState.availableOnly]
+            [elements.detailRelatedAvailableOnlyButton, relatedSortState.availableOnly],
+            [elements.detailRelatedCheaperOnlyButton, relatedSortState.cheaperOnly],
+            [elements.detailRelatedStockAdvantageOnlyButton, relatedSortState.stockAdvantageOnly],
+            [elements.detailRelatedSoldOutOnlyButton, relatedSortState.soldOutOnly]
         ].forEach(([button, isPressed]) => button?.setAttribute("aria-pressed", String(isPressed)));
         const hasFilter = relatedSortState.mode !== "DEFAULT"
             || relatedSortState.lowStockOnly
             || relatedSortState.sameBrandOnly
             || relatedSortState.sameCategoryOnly
-            || relatedSortState.availableOnly;
+            || relatedSortState.availableOnly
+            || relatedSortState.cheaperOnly
+            || relatedSortState.stockAdvantageOnly
+            || relatedSortState.soldOutOnly;
         if (elements.detailResetRelatedFiltersButton) {
             elements.detailResetRelatedFiltersButton.disabled = !hasFilter;
         }
@@ -1299,7 +1345,10 @@
             relatedSortState.lowStockOnly ? "긴장 재고" : "",
             relatedSortState.sameBrandOnly ? "같은 브랜드" : "",
             relatedSortState.sameCategoryOnly ? "같은 카테고리" : "",
-            relatedSortState.availableOnly ? "구매 가능" : ""
+            relatedSortState.availableOnly ? "구매 가능" : "",
+            relatedSortState.cheaperOnly ? "현재보다 저렴함" : "",
+            relatedSortState.stockAdvantageOnly ? "재고 우위" : "",
+            relatedSortState.soldOutOnly ? "품절" : ""
         ].filter(Boolean);
         setElementText(elements.detailRelatedFilterStatus, activeLabels.join(" · ") || "기본 추천");
     }
@@ -1893,18 +1942,43 @@
         });
         elements.detailRelatedAvailableOnlyButton?.addEventListener("click", () => {
             relatedSortState.availableOnly = !relatedSortState.availableOnly;
+            relatedSortState.soldOutOnly = false;
             if (currentProduct) {
                 renderRelated(currentProduct);
                 showToast(relatedSortState.availableOnly ? "구매 가능한 연관 상품만 표시합니다." : "품절 상품도 다시 표시합니다.", "재고가 있는 비교 후보를 우선 확인할 수 있습니다.");
             }
         });
+        elements.detailRelatedCheaperOnlyButton?.addEventListener("click", () => {
+            relatedSortState.cheaperOnly = !relatedSortState.cheaperOnly;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+            }
+        });
+        elements.detailRelatedStockAdvantageOnlyButton?.addEventListener("click", () => {
+            relatedSortState.stockAdvantageOnly = !relatedSortState.stockAdvantageOnly;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+            }
+        });
+        elements.detailRelatedSoldOutOnlyButton?.addEventListener("click", () => {
+            relatedSortState.soldOutOnly = !relatedSortState.soldOutOnly;
+            relatedSortState.availableOnly = false;
+            if (currentProduct) {
+                renderRelated(currentProduct);
+            }
+        });
+        elements.detailBookmarkAllRelatedButton?.addEventListener("click", addAllRelatedToBookmark);
+        elements.detailCopyRelatedLinksButton?.addEventListener("click", copyRelatedProductLinks);
         elements.detailResetRelatedFiltersButton?.addEventListener("click", () => {
             Object.assign(relatedSortState, {
                 mode: "DEFAULT",
                 lowStockOnly: false,
                 sameBrandOnly: false,
                 sameCategoryOnly: false,
-                availableOnly: false
+                availableOnly: false,
+                cheaperOnly: false,
+                stockAdvantageOnly: false,
+                soldOutOnly: false
             });
             if (currentProduct) {
                 renderRelated(currentProduct);

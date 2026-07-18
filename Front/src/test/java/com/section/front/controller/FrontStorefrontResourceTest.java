@@ -34,7 +34,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260718.27");
+                .contains("/js/view/detail.js?v=20260718.31");
     }
 
     @Test
@@ -1419,6 +1419,25 @@ class FrontStorefrontResourceTest {
                 .contains("Number(product.price || 0) > 300000, \"30만원 초과\"")
                 .contains("dominantBrand(currentCatalogPageProducts())")
                 .contains("recordSelectionSnapshot(\"긴장 재고 선택 제외\")");
+    }
+
+    @Test
+    void detailRelatedKeepsCheaperStockSoldOutBookmarkAndLinkActions() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailRelatedCheaperOnlyButton\"")
+                .contains("id=\"detailRelatedStockAdvantageOnlyButton\"")
+                .contains("id=\"detailRelatedSoldOutOnlyButton\"")
+                .contains("id=\"detailBookmarkAllRelatedButton\"")
+                .contains("id=\"detailCopyRelatedLinksButton\"");
+        assertThat(script)
+                .contains("cheaperOnly: false")
+                .contains("stockAdvantageOnly: false")
+                .contains("soldOutOnly: false")
+                .contains("function addAllRelatedToBookmark()")
+                .contains("async function copyRelatedProductLinks()");
     }
 
     @Test

@@ -34,7 +34,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260718.23");
+                .contains("/js/view/detail.js?v=20260718.27");
     }
 
     @Test
@@ -1346,6 +1346,25 @@ class FrontStorefrontResourceTest {
                 .contains("function relaxEmptyCatalogState(action)")
                 .contains("state[key] = DEFAULT_STATE[key]")
                 .contains("paginationState.page = 1");
+    }
+
+    @Test
+    void detailRecentFlowKeepsPriceStockAvailableCompareAndBookmarkActions() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+
+        assertThat(html)
+                .contains("id=\"detailRecentSortPriceButton\"")
+                .contains("id=\"detailRecentSortStockButton\"")
+                .contains("id=\"detailRecentAvailableOnlyButton\"")
+                .contains("id=\"detailRecentCompareAllButton\"")
+                .contains("id=\"detailRecentBookmarkAllButton\"");
+        assertThat(script)
+                .contains("const detailRecentState = {")
+                .contains("function visibleDetailRecentProducts(currentProductId)")
+                .contains("detailRecentState.sort === \"PRICE_LOW\"")
+                .contains("detailRecentState.availableOnly")
+                .contains("function addDetailRecentToBoard(target)");
     }
 
     @Test

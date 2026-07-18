@@ -20,6 +20,10 @@
         sameCategoryOnly: false,
         availableOnly: false
     };
+    const detailRecentState = {
+        sort: "RECENT",
+        availableOnly: false
+    };
     let currentProduct = null;
     let selectedOptionName = "";
     let selectedQuantity = 1;
@@ -50,6 +54,11 @@
         detailRecentTotalStock: document.getElementById("detailRecentTotalStock"),
         detailRecentLowStockCount: document.getElementById("detailRecentLowStockCount"),
         detailRecentBrandCount: document.getElementById("detailRecentBrandCount"),
+        detailRecentSortPriceButton: document.getElementById("detailRecentSortPriceButton"),
+        detailRecentSortStockButton: document.getElementById("detailRecentSortStockButton"),
+        detailRecentAvailableOnlyButton: document.getElementById("detailRecentAvailableOnlyButton"),
+        detailRecentCompareAllButton: document.getElementById("detailRecentCompareAllButton"),
+        detailRecentBookmarkAllButton: document.getElementById("detailRecentBookmarkAllButton"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
         detailPrimaryAction: document.getElementById("detailPrimaryAction"),
         detailMobileBookmarkButton: document.getElementById("detailMobileBookmarkButton"),
@@ -1023,7 +1032,7 @@
         if (!elements.detailRecentSection || !elements.detailRecentGrid) {
             return;
         }
-        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(currentProductId)).slice(0, 3);
+        const recentProducts = visibleDetailRecentProducts(currentProductId);
         setElementText(elements.detailRecentCount, String(recentProducts.length));
         const recentPrices = recentProducts.map((item) => Number(item.price || 0));
         setElementText(elements.detailRecentAveragePrice, formatPrice(recentPrices.length ? Math.round(recentPrices.reduce((sum, price) => sum + price, 0) / recentPrices.length) : 0));
@@ -1031,6 +1040,12 @@
         setElementText(elements.detailRecentTotalStock, `${recentProducts.reduce((sum, item) => sum + Number(item.stock || 0), 0)}개`);
         setElementText(elements.detailRecentLowStockCount, `${recentProducts.filter((item) => Number(item.stock || 0) < lowStockThreshold()).length}개`);
         setElementText(elements.detailRecentBrandCount, `${new Set(recentProducts.map((item) => item.brand).filter(Boolean)).size}개`);
+        elements.detailRecentSortPriceButton?.classList.toggle("is-active", detailRecentState.sort === "PRICE_LOW");
+        elements.detailRecentSortStockButton?.classList.toggle("is-active", detailRecentState.sort === "STOCK_ASC");
+        elements.detailRecentAvailableOnlyButton?.classList.toggle("is-active", detailRecentState.availableOnly);
+        elements.detailRecentAvailableOnlyButton?.setAttribute("aria-pressed", String(detailRecentState.availableOnly));
+        [elements.detailRecentCompareAllButton, elements.detailRecentBookmarkAllButton]
+            .forEach((button) => button?.toggleAttribute("disabled", recentProducts.length === 0));
         if (elements.detailPreviousRecentButton) {
             elements.detailPreviousRecentButton.disabled = !recentProducts.length;
         }
@@ -1062,6 +1077,36 @@
         `).join("");
     }
 
+    function visibleDetailRecentProducts(currentProductId) {
+        let recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(currentProductId));
+        if (detailRecentState.availableOnly) {
+            recentProducts = recentProducts.filter((item) => Number(item.stock || 0) > 0);
+        }
+        if (detailRecentState.sort === "PRICE_LOW") {
+            recentProducts.sort((left, right) => Number(left.price || 0) - Number(right.price || 0));
+        }
+        if (detailRecentState.sort === "STOCK_ASC") {
+            recentProducts.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));
+        }
+        return recentProducts.slice(0, 3);
+    }
+
+    function addDetailRecentToBoard(target) {
+        const recentProducts = visibleDetailRecentProducts(productId);
+        const current = target === "COMPARE" ? readCompareProducts() : readBookmarkProducts();
+        const limit = target === "COMPARE" ? 3 : 6;
+        const merged = recentProducts.concat(current).filter((item, index, items) =>
+            items.findIndex((candidate) => Number(candidate.id) === Number(item.id)) === index
+        ).slice(0, limit);
+        if (target === "COMPARE") {
+            writeCompareProducts(merged);
+        } else {
+            writeBookmarkProducts(merged);
+        }
+        syncActionButtons();
+        showToast(target === "COMPARE" ? "최근 상품을 비교 보드에 담았습니다." : "최근 상품을 관심 보드에 담았습니다.", `${merged.length}개 상품을 유지합니다.`);
+    }
+
     function removeRecentProduct(productIdValue) {
         const next = readRecentProducts().filter((item) => Number(item.id) !== Number(productIdValue));
         window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
@@ -1070,7 +1115,7 @@
     }
 
     function openRecentProductByDirection(direction) {
-        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+        const recentProducts = visibleDetailRecentProducts(productId);
         if (!recentProducts.length) {
             showToast("이동할 최근 상품이 없습니다.", "다른 상품을 확인하면 최근 흐름이 생성됩니다.", true);
             return;
@@ -1080,7 +1125,7 @@
     }
 
     async function copyRecentProductLinks() {
-        const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+        const recentProducts = visibleDetailRecentProducts(productId);
         const text = recentProducts.length
             ? recentProducts.map((item) => new URL(buildProductUrl(item.id), window.location.origin).href).join("\n")
             : "최근 본 상품이 없습니다.";
@@ -1904,8 +1949,22 @@
             renderRecentProducts(productId);
             showToast("최근 본 상품을 비웠습니다.", "상세 최근 흐름 보드가 초기화되었습니다.");
         });
+        elements.detailRecentSortPriceButton?.addEventListener("click", () => {
+            detailRecentState.sort = detailRecentState.sort === "PRICE_LOW" ? "RECENT" : "PRICE_LOW";
+            renderRecentProducts(productId);
+        });
+        elements.detailRecentSortStockButton?.addEventListener("click", () => {
+            detailRecentState.sort = detailRecentState.sort === "STOCK_ASC" ? "RECENT" : "STOCK_ASC";
+            renderRecentProducts(productId);
+        });
+        elements.detailRecentAvailableOnlyButton?.addEventListener("click", () => {
+            detailRecentState.availableOnly = !detailRecentState.availableOnly;
+            renderRecentProducts(productId);
+        });
+        elements.detailRecentCompareAllButton?.addEventListener("click", () => addDetailRecentToBoard("COMPARE"));
+        elements.detailRecentBookmarkAllButton?.addEventListener("click", () => addDetailRecentToBoard("BOOKMARK"));
         elements.copyDetailRecentSummaryButton?.addEventListener("click", async () => {
-            const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(productId)).slice(0, 3);
+            const recentProducts = visibleDetailRecentProducts(productId);
             const text = recentProducts.length
                 ? recentProducts.map((item, index) => `${index + 1}. ${item.headline || item.name} · ${item.model || "-"} · ${item.priceLabel || formatPrice(item.price)}`).join("\n")
                 : "최근 본 상품이 없습니다.";

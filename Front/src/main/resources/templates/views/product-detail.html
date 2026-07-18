@@ -300,6 +300,11 @@
                     <p>방금 살펴본 상품 흐름을 끊지 않고 바로 다시 비교할 수 있도록 정리했습니다.</p>
                 </div>
                 <div class="detail-section-actions">
+                    <button class="catalog-reset-button" type="button" id="detailRecentSortPriceButton">가격 낮은 순</button>
+                    <button class="catalog-reset-button" type="button" id="detailRecentSortStockButton">재고 낮은 순</button>
+                    <button class="catalog-reset-button" type="button" id="detailRecentAvailableOnlyButton" aria-pressed="false">구매 가능만</button>
+                    <button class="catalog-reset-button" type="button" id="detailRecentCompareAllButton">최근 상품 비교 담기</button>
+                    <button class="catalog-reset-button" type="button" id="detailRecentBookmarkAllButton">최근 상품 관심 담기</button>
                     <button class="catalog-reset-button" type="button" id="detailPreviousRecentButton">이전 최근 상품</button>
                     <button class="catalog-reset-button" type="button" id="detailNextRecentButton">다음 최근 상품</button>
                     <button class="catalog-reset-button" type="button" id="clearDetailRecentButton">최근 본 상품 비우기</button>
@@ -342,6 +347,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260718.23"></script>
+<script src="/js/view/detail.js?v=20260718.27"></script>
 </body>
 </html>

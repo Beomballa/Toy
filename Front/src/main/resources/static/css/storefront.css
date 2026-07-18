@@ -3177,6 +3177,49 @@ main#top > .home-category-rail {
     background: #fff;
 }
 
+.detail-recent-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    overflow: hidden;
+    margin: 0 0 16px;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
+}
+
+.detail-recent-metrics div {
+    display: grid;
+    gap: 4px;
+    padding: 9px 10px;
+    background: #fff;
+}
+
+.detail-recent-metrics dt {
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.detail-recent-metrics dd {
+    overflow: hidden;
+    margin: 0;
+    color: var(--store-ink);
+    font-size: 12px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .detail-recent-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .detail-recent-metrics div:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
 .detail-option-history > div:first-child,
 .detail-option-history__actions,
 .detail-option-history__list {

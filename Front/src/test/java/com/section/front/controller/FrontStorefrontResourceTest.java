@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.22")
+                .contains("/css/storefront.css?v=20260718.23")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.22")
+                .contains("/css/storefront.css?v=20260718.23")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260718.19");
+                .contains("/js/view/detail.js?v=20260718.23");
     }
 
     @Test
@@ -1277,6 +1277,26 @@ class FrontStorefrontResourceTest {
                 .contains("setText(elements.catalogPageAveragePrice")
                 .contains("selectedProductIds.has(Number(product.id))");
         assertThat(css).contains(".catalog-page-metrics");
+    }
+
+    @Test
+    void detailRecentFlowKeepsFiveDecisionMetrics() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"detailRecentAveragePrice\"")
+                .contains("id=\"detailRecentPriceRange\"")
+                .contains("id=\"detailRecentTotalStock\"")
+                .contains("id=\"detailRecentLowStockCount\"")
+                .contains("id=\"detailRecentBrandCount\"");
+        assertThat(script)
+                .contains("const recentPrices = recentProducts.map")
+                .contains("setElementText(elements.detailRecentAveragePrice")
+                .contains("setElementText(elements.detailRecentPriceRange")
+                .contains("new Set(recentProducts.map((item) => item.brand)");
+        assertThat(css).contains(".detail-recent-metrics");
     }
 
     @Test

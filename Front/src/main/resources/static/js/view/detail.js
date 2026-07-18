@@ -45,6 +45,11 @@
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailRecentCount: document.getElementById("detailRecentCount"),
+        detailRecentAveragePrice: document.getElementById("detailRecentAveragePrice"),
+        detailRecentPriceRange: document.getElementById("detailRecentPriceRange"),
+        detailRecentTotalStock: document.getElementById("detailRecentTotalStock"),
+        detailRecentLowStockCount: document.getElementById("detailRecentLowStockCount"),
+        detailRecentBrandCount: document.getElementById("detailRecentBrandCount"),
         detailFocusRelated: document.getElementById("detailFocusRelated"),
         detailPrimaryAction: document.getElementById("detailPrimaryAction"),
         detailMobileBookmarkButton: document.getElementById("detailMobileBookmarkButton"),
@@ -1020,6 +1025,12 @@
         }
         const recentProducts = readRecentProducts().filter((item) => Number(item.id) !== Number(currentProductId)).slice(0, 3);
         setElementText(elements.detailRecentCount, String(recentProducts.length));
+        const recentPrices = recentProducts.map((item) => Number(item.price || 0));
+        setElementText(elements.detailRecentAveragePrice, formatPrice(recentPrices.length ? Math.round(recentPrices.reduce((sum, price) => sum + price, 0) / recentPrices.length) : 0));
+        setElementText(elements.detailRecentPriceRange, recentPrices.length ? `${formatPrice(Math.min(...recentPrices))} - ${formatPrice(Math.max(...recentPrices))}` : "0원");
+        setElementText(elements.detailRecentTotalStock, `${recentProducts.reduce((sum, item) => sum + Number(item.stock || 0), 0)}개`);
+        setElementText(elements.detailRecentLowStockCount, `${recentProducts.filter((item) => Number(item.stock || 0) < lowStockThreshold()).length}개`);
+        setElementText(elements.detailRecentBrandCount, `${new Set(recentProducts.map((item) => item.brand).filter(Boolean)).size}개`);
         if (elements.detailPreviousRecentButton) {
             elements.detailPreviousRecentButton.disabled = !recentProducts.length;
         }

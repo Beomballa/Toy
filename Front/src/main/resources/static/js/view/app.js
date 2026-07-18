@@ -2152,6 +2152,11 @@
                     <div class="catalog-summary__actions">
                         <button class="catalog-reset-button" type="button" data-empty-action="RESET">조건 초기화</button>
                         <button class="catalog-reset-button" type="button" data-empty-action="LOW_STOCK">긴장 재고만 보기</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="CLEAR_SEARCH" ${state.search ? "" : "disabled"}>검색어 해제</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="CLEAR_BRAND" ${state.brand !== "ALL" ? "" : "disabled"}>브랜드 해제</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="CLEAR_CATEGORY" ${state.category !== "ALL" ? "" : "disabled"}>카테고리 해제</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="CLEAR_PRICE" ${state.priceBand !== "ALL" ? "" : "disabled"}>가격대 해제</button>
+                        <button class="catalog-reset-button" type="button" data-empty-action="CLEAR_STOCK" ${state.stock !== "ALL" ? "" : "disabled"}>재고 조건 해제</button>
                     </div>
                 </div>
             `;
@@ -4168,13 +4173,33 @@
     function bindEmptyStateButtons() {
         elements.catalogGrid?.querySelectorAll("[data-empty-action]").forEach((button) => {
             button.addEventListener("click", async () => {
-                if (button.dataset.emptyAction !== "RETRY") {
-                    applyPreset(button.dataset.emptyAction);
+                const action = button.dataset.emptyAction;
+                if (action.startsWith("CLEAR_")) {
+                    relaxEmptyCatalogState(action);
+                } else if (action !== "RETRY") {
+                    applyPreset(action);
                 }
                 syncControls();
                 await refreshCatalog();
             });
         });
+    }
+
+    function relaxEmptyCatalogState(action) {
+        const stateKeys = {
+            CLEAR_SEARCH: "search",
+            CLEAR_BRAND: "brand",
+            CLEAR_CATEGORY: "category",
+            CLEAR_PRICE: "priceBand",
+            CLEAR_STOCK: "stock"
+        };
+        const key = stateKeys[action];
+        if (!key) {
+            return;
+        }
+        state[key] = DEFAULT_STATE[key];
+        paginationState.page = 1;
+        showToast("탐색 조건 하나를 해제했습니다.", "나머지 조건은 유지한 채 상품 결과를 다시 확인합니다.");
     }
 
     function announceStorefrontStatus(message) {

@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.25");
+                .contains("/js/view/app.js?v=20260718.26");
     }
 
     @Test
@@ -1331,6 +1331,21 @@ class FrontStorefrontResourceTest {
                 .contains("boardState.bookmarkFilter = \"DOMINANT_CATEGORY\"")
                 .contains("boardState.bookmarkSort = \"OLDEST\"")
                 .contains("grade-stock-bookmarks.csv");
+    }
+
+    @Test
+    void emptyCatalogKeepsFiveIndependentFilterRecoveryActions() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("data-empty-action=\"CLEAR_SEARCH\"")
+                .contains("data-empty-action=\"CLEAR_BRAND\"")
+                .contains("data-empty-action=\"CLEAR_CATEGORY\"")
+                .contains("data-empty-action=\"CLEAR_PRICE\"")
+                .contains("data-empty-action=\"CLEAR_STOCK\"")
+                .contains("function relaxEmptyCatalogState(action)")
+                .contains("state[key] = DEFAULT_STATE[key]")
+                .contains("paginationState.page = 1");
     }
 
     @Test

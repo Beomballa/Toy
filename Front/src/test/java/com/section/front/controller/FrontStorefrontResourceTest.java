@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.22");
+                .contains("/js/view/app.js?v=20260718.24");
     }
 
     @Test
@@ -1297,6 +1297,21 @@ class FrontStorefrontResourceTest {
                 .contains("setElementText(elements.detailRecentPriceRange")
                 .contains("new Set(recentProducts.map((item) => item.brand)");
         assertThat(css).contains(".detail-recent-metrics");
+    }
+
+    @Test
+    void productDrawerKeepsFiveRelatedProductDecisionActions() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("relatedAvailableOnly: false")
+                .contains("relatedSameCategoryOnly: false")
+                .contains("data-drawer-related-available-toggle")
+                .contains("data-drawer-related-category-toggle")
+                .contains("data-drawer-related-cheapest-id")
+                .contains("data-drawer-related-highest-stock-id")
+                .contains("data-drawer-related-compare-all")
+                .contains("addProductsToBoard(filteredRelatedProducts, \"COMPARE\")");
     }
 
     @Test

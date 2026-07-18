@@ -77,7 +77,9 @@
     const drawerState = {
         optionLowStockOnly: false,
         relatedSort: "DEFAULT",
-        relatedSameBrandOnly: false
+        relatedSameBrandOnly: false,
+        relatedAvailableOnly: false,
+        relatedSameCategoryOnly: false
     };
     const memoryState = {
         savedReversed: false,
@@ -4794,6 +4796,15 @@
                     <button class="catalog-reset-button ${drawerState.relatedSameBrandOnly ? "is-active" : ""}" type="button" data-drawer-related-brand-toggle="${product.id}">
                         ${drawerState.relatedSameBrandOnly ? "전체 브랜드 보기" : "같은 브랜드만"}
                     </button>
+                    <button class="catalog-reset-button ${drawerState.relatedAvailableOnly ? "is-active" : ""}" type="button" data-drawer-related-available-toggle="${product.id}">
+                        ${drawerState.relatedAvailableOnly ? "품절 포함 보기" : "구매 가능만"}
+                    </button>
+                    <button class="catalog-reset-button ${drawerState.relatedSameCategoryOnly ? "is-active" : ""}" type="button" data-drawer-related-category-toggle="${product.id}">
+                        ${drawerState.relatedSameCategoryOnly ? "전체 카테고리 보기" : "같은 카테고리만"}
+                    </button>
+                    <button class="catalog-reset-button" type="button" data-drawer-related-cheapest-id="${product.id}">최저가 열기</button>
+                    <button class="catalog-reset-button" type="button" data-drawer-related-highest-stock-id="${product.id}">최고재고 열기</button>
+                    <button class="catalog-reset-button" type="button" data-drawer-related-compare-all="${product.id}">연관 비교 담기</button>
                     <button class="catalog-reset-button" type="button" data-drawer-related-random-id="${product.id}">
                         랜덤 연관 보기
                     </button>
@@ -4857,6 +4868,29 @@
             elements.drawerBody.querySelector("[data-drawer-related-brand-toggle]")?.addEventListener("click", () => {
                 drawerState.relatedSameBrandOnly = !drawerState.relatedSameBrandOnly;
                 openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-available-toggle]")?.addEventListener("click", () => {
+                drawerState.relatedAvailableOnly = !drawerState.relatedAvailableOnly;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-category-toggle]")?.addEventListener("click", () => {
+                drawerState.relatedSameCategoryOnly = !drawerState.relatedSameCategoryOnly;
+                openDrawer(product.id);
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-cheapest-id]")?.addEventListener("click", () => {
+                const cheapest = filteredRelatedProducts.slice().sort((left, right) => Number(left.price || 0) - Number(right.price || 0))[0];
+                if (cheapest) {
+                    openDrawer(Number(cheapest.id));
+                }
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-highest-stock-id]")?.addEventListener("click", () => {
+                const highestStock = filteredRelatedProducts.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0))[0];
+                if (highestStock) {
+                    openDrawer(Number(highestStock.id));
+                }
+            });
+            elements.drawerBody.querySelector("[data-drawer-related-compare-all]")?.addEventListener("click", () => {
+                addProductsToBoard(filteredRelatedProducts, "COMPARE");
             });
             elements.drawerBody.querySelector("[data-drawer-related-random-id]")?.addEventListener("click", () => {
                 if (!filteredRelatedProducts.length) {
@@ -5078,6 +5112,12 @@
         let relatedProducts = Array.isArray(product.relatedProducts) ? product.relatedProducts.slice() : [];
         if (drawerState.relatedSameBrandOnly) {
             relatedProducts = relatedProducts.filter((related) => related.brand === product.brand);
+        }
+        if (drawerState.relatedAvailableOnly) {
+            relatedProducts = relatedProducts.filter((related) => Number(related.stock || 0) > 0);
+        }
+        if (drawerState.relatedSameCategoryOnly) {
+            relatedProducts = relatedProducts.filter((related) => related.category === product.category);
         }
         if (drawerState.relatedSort === "STOCK_ASC") {
             relatedProducts.sort((left, right) => Number(left.stock || 0) - Number(right.stock || 0));

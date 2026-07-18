@@ -162,6 +162,11 @@
         catalogLastPageButton: document.getElementById("catalogLastPageButton"),
         catalogLoadMoreButton: document.getElementById("catalogLoadMoreButton"),
         copyCurrentPageLinksButton: document.getElementById("copyCurrentPageLinksButton"),
+        catalogPageAveragePrice: document.getElementById("catalogPageAveragePrice"),
+        catalogPageTotalStock: document.getElementById("catalogPageTotalStock"),
+        catalogPageLowStockCount: document.getElementById("catalogPageLowStockCount"),
+        catalogPageFeaturedCount: document.getElementById("catalogPageFeaturedCount"),
+        catalogPageSelectedCount: document.getElementById("catalogPageSelectedCount"),
         catalogSelection: document.getElementById("catalogSelection"),
         catalogSelectionTitle: document.getElementById("catalogSelectionTitle"),
         catalogSelectionText: document.getElementById("catalogSelectionText"),
@@ -2199,6 +2204,13 @@
         const end = Math.min(details.total, paginationState.page * details.effectiveSize);
         setText(elements.catalogPageProgress, `${paginationState.page} / ${details.totalPages} 페이지`);
         setText(elements.catalogPageRange, `${start}-${end} / 총 ${details.total}개`);
+        const pageProducts = currentCatalogPageProducts(list);
+        const pageTotalPrice = pageProducts.reduce((sum, product) => sum + Number(product.price || 0), 0);
+        setText(elements.catalogPageAveragePrice, formatPrice(pageProducts.length ? Math.round(pageTotalPrice / pageProducts.length) : 0));
+        setText(elements.catalogPageTotalStock, `${pageProducts.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
+        setText(elements.catalogPageLowStockCount, `${pageProducts.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
+        setText(elements.catalogPageFeaturedCount, `${pageProducts.filter((product) => Boolean(product.featured)).length}개`);
+        setText(elements.catalogPageSelectedCount, `${pageProducts.filter((product) => selectedProductIds.has(Number(product.id))).length}개`);
         if (elements.catalogPageSize) {
             elements.catalogPageSize.value = paginationState.size;
         }

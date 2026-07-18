@@ -1582,6 +1582,48 @@ main#top {
     gap: 6px;
 }
 
+.catalog-page-metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    order: 3;
+    width: 100%;
+    gap: 1px;
+    overflow: hidden;
+    margin: 14px 0 0;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
+}
+
+.catalog-page-metrics div {
+    display: grid;
+    gap: 4px;
+    padding: 8px 10px;
+    background: #fff;
+}
+
+.catalog-page-metrics dt {
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.catalog-page-metrics dd {
+    margin: 0;
+    color: var(--store-ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 720px) {
+    .catalog-page-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .catalog-page-metrics div:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
 .catalog-pagination__controls > button {
     min-width: 58px;
 }

@@ -225,6 +225,12 @@
         catalogHighPriceBar: document.getElementById("catalogHighPriceBar"),
         catalogLowStockBar: document.getElementById("catalogLowStockBar"),
         catalogFeaturedBar: document.getElementById("catalogFeaturedBar"),
+        catalogSearchQuality: document.getElementById("catalogSearchQuality"),
+        catalogSearchNameMatch: document.getElementById("catalogSearchNameMatch"),
+        catalogSearchBrandMatch: document.getElementById("catalogSearchBrandMatch"),
+        catalogSearchModelMatch: document.getElementById("catalogSearchModelMatch"),
+        catalogSearchAvailableMatch: document.getElementById("catalogSearchAvailableMatch"),
+        catalogSearchFilterCount: document.getElementById("catalogSearchFilterCount"),
         catalogCheapestLabel: document.getElementById("catalogCheapestLabel"),
         catalogHighestStockLabel: document.getElementById("catalogHighestStockLabel"),
         catalogUrgentLabel: document.getElementById("catalogUrgentLabel"),
@@ -2427,6 +2433,7 @@
     function renderCatalogSummary(list) {
         setText(elements.catalogCountText, `${list.length}개 상품이 현재 조건에 맞습니다.`);
         setText(elements.catalogSummaryText, buildSummaryText(list.length));
+        renderCatalogSearchQuality(list);
         const prices = list.map((product) => Number(product.price || 0));
         const averagePrice = prices.length
             ? Math.round(prices.reduce((sum, price) => sum + price, 0) / prices.length)
@@ -2528,6 +2535,23 @@
                 </button>
             `
             : `<span class="catalog-tag">${tag.label}</span>`).join("");
+    }
+
+    function renderCatalogSearchQuality(list) {
+        const keyword = String(state.search || "").trim().toLocaleLowerCase("ko");
+        elements.catalogSearchQuality?.toggleAttribute("hidden", !keyword);
+        if (!keyword) {
+            return;
+        }
+        const includesKeyword = (value) => String(value || "").toLocaleLowerCase("ko").includes(keyword);
+        const additionalFilterCount = Object.entries(state)
+            .filter(([key, value]) => key !== "search" && value !== DEFAULT_STATE[key])
+            .length;
+        setText(elements.catalogSearchNameMatch, `${list.filter((product) => includesKeyword(product.name) || includesKeyword(product.headline)).length}개`);
+        setText(elements.catalogSearchBrandMatch, `${list.filter((product) => includesKeyword(product.brand)).length}개`);
+        setText(elements.catalogSearchModelMatch, `${list.filter((product) => includesKeyword(product.model)).length}개`);
+        setText(elements.catalogSearchAvailableMatch, `${list.filter((product) => Number(product.stock || 0) > 0).length}개`);
+        setText(elements.catalogSearchFilterCount, `${additionalFilterCount}개`);
     }
 
     function catalogDecisionProduct(list, metric) {

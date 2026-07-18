@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260718.17">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260718.17">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.18">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260718.18">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -571,6 +571,13 @@
                     <div><span>긴장 재고 <strong id="catalogLowStockRate">0%</strong></span><i><b id="catalogLowStockBar"></b></i></div>
                     <div><span>Featured <strong id="catalogFeaturedRate">0%</strong></span><i><b id="catalogFeaturedBar"></b></i></div>
                 </div>
+                <dl class="catalog-search-quality" id="catalogSearchQuality" aria-label="검색 결과 품질 가이드" hidden>
+                    <div><dt>상품명 일치</dt><dd id="catalogSearchNameMatch">0개</dd></div>
+                    <div><dt>브랜드 일치</dt><dd id="catalogSearchBrandMatch">0개</dd></div>
+                    <div><dt>모델 일치</dt><dd id="catalogSearchModelMatch">0개</dd></div>
+                    <div><dt>구매 가능</dt><dd id="catalogSearchAvailableMatch">0개</dd></div>
+                    <div><dt>추가 필터</dt><dd id="catalogSearchFilterCount">0개</dd></div>
+                </dl>
                 <div class="catalog-decision-rail" id="catalogDecisionRail" aria-label="상품 판단 바로가기">
                     <button type="button" id="openCheapestCatalogButton"><span>최저가</span><strong id="catalogCheapestLabel">-</strong></button>
                     <button type="button" id="openHighestStockCatalogButton"><span>최고 재고</span><strong id="catalogHighestStockLabel">-</strong></button>
@@ -796,6 +803,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260718.17"></script>
+<script src="/js/view/app.js?v=20260718.18"></script>
 </body>
 </html>

@@ -1113,6 +1113,46 @@ main#top {
     display: none;
 }
 
+.catalog-search-quality {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--store-line);
+    border-radius: var(--store-radius-control);
+    background: var(--store-line);
+}
+
+.catalog-search-quality div {
+    display: grid;
+    gap: 4px;
+    padding: 9px 10px;
+    background: #fff;
+}
+
+.catalog-search-quality dt {
+    color: var(--store-muted);
+    font-size: 10px;
+}
+
+.catalog-search-quality dd {
+    margin: 0;
+    color: var(--store-ink);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 720px) {
+    .catalog-search-quality {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .catalog-search-quality div:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
 .catalog-distribution > div {
     display: grid;
     gap: 6px;

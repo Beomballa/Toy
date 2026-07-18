@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.19")
+                .contains("/css/storefront.css?v=20260718.20")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.18");
+                .contains("/js/view/app.js?v=20260718.20");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.19")
+                .contains("/css/storefront.css?v=20260718.20")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1220,6 +1220,26 @@ class FrontStorefrontResourceTest {
                 .contains("const safeQuantity = Math.max(1, Math.floor(maxQuantity * 0.2))")
                 .contains("selectedQuantity > safeQuantity ? \"대량 선택\" : \"권장 범위\"");
         assertThat(css).contains(".detail-purchase-guide");
+    }
+
+    @Test
+    void recentBoardKeepsAvailabilitySoldOutOldestExpandAndLinkControls() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"filterRecentAvailableButton\"")
+                .contains("id=\"filterRecentSoldOutButton\"")
+                .contains("id=\"sortRecentOldestButton\"")
+                .contains("id=\"toggleRecentExpandedButton\"")
+                .contains("id=\"copyRecentViewedLinksButton\"");
+        assertThat(script)
+                .contains("recentExpanded: false")
+                .contains("boardState.recentFilter = \"AVAILABLE\"")
+                .contains("boardState.recentFilter = \"SOLD_OUT\"")
+                .contains("boardState.recentSort = \"OLDEST\"")
+                .contains("boardState.recentExpanded ? sortedProducts : sortedProducts.slice(0, 3)")
+                .contains("async () => {\n            const links = readRecentProducts()");
     }
 
     @Test

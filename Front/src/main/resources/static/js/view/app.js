@@ -66,6 +66,7 @@
     const boardState = {
         recentSort: "RECENT",
         recentFilter: "ALL",
+        recentExpanded: false,
         compareSort: "DEFAULT",
         bookmarkSort: "RECENT",
         bookmarkFilter: "ALL",
@@ -294,6 +295,11 @@
         sortRecentNameButton: document.getElementById("sortRecentNameButton"),
         filterRecentLowStockButton: document.getElementById("filterRecentLowStockButton"),
         filterRecentBrandButton: document.getElementById("filterRecentBrandButton"),
+        filterRecentAvailableButton: document.getElementById("filterRecentAvailableButton"),
+        filterRecentSoldOutButton: document.getElementById("filterRecentSoldOutButton"),
+        sortRecentOldestButton: document.getElementById("sortRecentOldestButton"),
+        toggleRecentExpandedButton: document.getElementById("toggleRecentExpandedButton"),
+        copyRecentViewedLinksButton: document.getElementById("copyRecentViewedLinksButton"),
         resetRecentBoardFilterButton: document.getElementById("resetRecentBoardFilterButton"),
         openRecommendedRecentButton: document.getElementById("openRecommendedRecentButton"),
         compareBoardSection: document.getElementById("compareBoardSection"),
@@ -1092,6 +1098,30 @@
             boardState.recentFilter = "DOMINANT_BRAND";
             renderRecentViewed();
             showToast("최근 보드에서 주요 브랜드만 표시합니다.", "가장 많이 확인한 브랜드 흐름만 남겼습니다.");
+        });
+        elements.filterRecentAvailableButton?.addEventListener("click", () => {
+            boardState.recentFilter = "AVAILABLE";
+            renderRecentViewed();
+            showToast("최근 보드에서 구매 가능 상품만 표시합니다.", "현재 재고가 있는 상품 흐름만 남겼습니다.");
+        });
+        elements.filterRecentSoldOutButton?.addEventListener("click", () => {
+            boardState.recentFilter = "SOLD_OUT";
+            renderRecentViewed();
+            showToast("최근 보드에서 품절 상품만 표시합니다.", "대체 상품 탐색이 필요한 항목을 모았습니다.");
+        });
+        elements.sortRecentOldestButton?.addEventListener("click", () => {
+            boardState.recentSort = "OLDEST";
+            renderRecentViewed();
+            showToast("오래 확인한 상품부터 정렬했습니다.", "놓치기 쉬운 이전 탐색 항목을 먼저 표시합니다.");
+        });
+        elements.toggleRecentExpandedButton?.addEventListener("click", () => {
+            boardState.recentExpanded = !boardState.recentExpanded;
+            renderRecentViewed();
+            showToast(boardState.recentExpanded ? "최근 보드를 모두 펼쳤습니다." : "최근 보드를 3개로 줄였습니다.", "현재 보드 안에서 표시 개수만 변경합니다.");
+        });
+        elements.copyRecentViewedLinksButton?.addEventListener("click", async () => {
+            const links = readRecentProducts().map((product) => `${product.headline || product.name}: ${window.location.origin}${detailPageUrl(product.id)}`);
+            await copyTextWithFeedback(links.join("\n") || "최근 본 상품이 없습니다.", "최근 상품 링크를 복사했습니다.", `${links.length}개 상세 링크를 전달할 수 있습니다.`);
         });
         elements.resetRecentBoardFilterButton?.addEventListener("click", () => {
             boardState.recentFilter = "ALL";
@@ -3377,7 +3407,8 @@
             return;
         }
         const allRecentProducts = readRecentProducts();
-        const recentProducts = sortedRecentProducts(allRecentProducts).slice(0, 3);
+        const sortedProducts = sortedRecentProducts(allRecentProducts);
+        const recentProducts = boardState.recentExpanded ? sortedProducts : sortedProducts.slice(0, 3);
         if (!allRecentProducts.length) {
             elements.recentViewedSection.hidden = true;
             return;
@@ -3386,6 +3417,10 @@
         syncBoardButtons();
         setText(elements.recentViewedTitle, `${recentProducts.length} / ${allRecentProducts.length}개 최근 본 상품을 표시합니다.`);
         setText(elements.recentViewedText, "방금 본 흐름을 끊지 않고 상세와 카탈로그를 오갈 수 있습니다.");
+        if (elements.toggleRecentExpandedButton) {
+            elements.toggleRecentExpandedButton.textContent = boardState.recentExpanded ? "3개만 보기" : "전체 펼치기";
+            elements.toggleRecentExpandedButton.disabled = allRecentProducts.length <= 3;
+        }
         const recommendedId = recommendedRecentProduct(recentProducts)?.id;
         elements.recentViewedGrid.innerHTML = recentProducts.length ? recentProducts.map((product) => `
             <article class="detail-related-card compare-card saved-product-card">
@@ -3941,6 +3976,12 @@
             if (boardState.recentFilter === "DOMINANT_BRAND") {
                 return item.brand === dominant;
             }
+            if (boardState.recentFilter === "AVAILABLE") {
+                return Number(item.stock || 0) > 0;
+            }
+            if (boardState.recentFilter === "SOLD_OUT") {
+                return Number(item.stock || 0) <= 0;
+            }
             return true;
         });
         if (boardState.recentSort === "PRICE_LOW") {
@@ -3951,6 +3992,9 @@
         }
         if (boardState.recentSort === "NAME_ASC") {
             return next.sort((left, right) => String(left.name || left.headline || "").localeCompare(String(right.name || right.headline || ""), "ko"));
+        }
+        if (boardState.recentSort === "OLDEST") {
+            return next.reverse();
         }
         return next;
     }
@@ -4101,6 +4145,10 @@
         elements.sortRecentNameButton?.classList.toggle("is-active", boardState.recentSort === "NAME_ASC");
         elements.filterRecentLowStockButton?.classList.toggle("is-active", boardState.recentFilter === "LOW_STOCK");
         elements.filterRecentBrandButton?.classList.toggle("is-active", boardState.recentFilter === "DOMINANT_BRAND");
+        elements.filterRecentAvailableButton?.classList.toggle("is-active", boardState.recentFilter === "AVAILABLE");
+        elements.filterRecentSoldOutButton?.classList.toggle("is-active", boardState.recentFilter === "SOLD_OUT");
+        elements.sortRecentOldestButton?.classList.toggle("is-active", boardState.recentSort === "OLDEST");
+        elements.toggleRecentExpandedButton?.classList.toggle("is-active", boardState.recentExpanded);
         elements.sortComparePriceButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_HIGH");
         elements.sortCompareStockButton?.classList.toggle("is-active", boardState.compareSort === "STOCK_ASC");
         elements.sortComparePriceLowButton?.classList.toggle("is-active", boardState.compareSort === "PRICE_LOW");

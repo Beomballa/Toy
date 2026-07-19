@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.29")
+                .contains("/css/storefront.css?v=20260719.30")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.29")
+                .contains("/css/storefront.css?v=20260719.30")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -396,6 +396,30 @@ class FrontStorefrontResourceTest {
                 .contains("flex: 0 0 auto")
                 .contains(".board-action-menu:not([open]) > .board-action-menu__panel")
                 .contains("display: none");
+    }
+
+    @Test
+    void recentDetailKeepsThreePrimaryActionsAndGroupedManagementMenu() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String css = readResource("static/css/storefront.css");
+        int recentSection = html.indexOf("id=\"detailRecentSection\"");
+        String actions = html.substring(
+                html.indexOf("<div class=\"detail-section-actions\">", recentSection),
+                html.indexOf("<details class=\"board-action-menu detail-section-menu detail-recent-menu\">", recentSection));
+
+        assertThat(actions)
+                .contains("detailRecentSortPriceButton")
+                .contains("detailRecentSortStockButton")
+                .contains("detailRecentAvailableOnlyButton")
+                .doesNotContain("detailRecentCompareAllButton")
+                .doesNotContain("clearDetailRecentButton");
+        assertThat(html)
+                .contains("<summary>비교·이동·내보내기</summary>")
+                .contains("catalog-reset-button board-action-menu__danger")
+                .contains("id=\"copyDetailRecentLinksButton\"");
+        assertThat(css)
+                .contains(".detail-section .detail-section-menu .board-action-menu__panel")
+                .contains(".detail-recent-menu .board-action-menu__danger");
     }
 
     @Test

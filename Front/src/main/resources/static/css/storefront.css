@@ -2785,6 +2785,15 @@ main#top {
     }
 }
 
+/* Keep dense detail controls available without letting them dominate the section. */
+#detailRelated .detail-section-menu .board-action-menu__panel {
+    width: min(220px, calc(100vw - 32px));
+    max-height: min(520px, calc(100vh - 160px));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+}
+
 /* Keep collapsed catalog utilities inside the mobile content boundary. */
 @media (max-width: 720px) {
     .catalog,

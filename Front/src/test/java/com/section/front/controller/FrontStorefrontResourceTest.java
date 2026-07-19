@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.27")
+                .contains("/css/storefront.css?v=20260719.28")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.27")
+                .contains("/css/storefront.css?v=20260719.28")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -359,6 +359,27 @@ class FrontStorefrontResourceTest {
                 .contains("contain: layout style")
                 .contains("object-fit: cover")
                 .contains("scroll-snap-type: none");
+    }
+
+    @Test
+    void relatedDetailKeepsFivePrimaryActionsAndScrollableManagementMenu() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String css = readResource("static/css/storefront.css");
+        String actions = html.substring(
+                html.indexOf("<div class=\"detail-section-actions\">", html.indexOf("id=\"detailRelated\"")),
+                html.indexOf("<details class=\"board-action-menu detail-section-menu\">", html.indexOf("id=\"detailRelated\"")));
+
+        assertThat(actions).containsOnlyOnce("detailPreviousRelatedButton")
+                .containsOnlyOnce("detailNextRelatedButton")
+                .containsOnlyOnce("detailRelatedSameBrandButton")
+                .containsOnlyOnce("detailRelatedSameCategoryButton")
+                .containsOnlyOnce("detailRelatedAvailableOnlyButton")
+                .doesNotContain("detailRelatedCheaperOnlyButton");
+        assertThat(html).contains("<summary>필터·정렬·관리</summary>");
+        assertThat(css)
+                .contains("max-height: min(520px, calc(100vh - 160px))")
+                .contains("overflow-y: auto")
+                .contains("scrollbar-gutter: stable");
     }
 
     @Test

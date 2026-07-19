@@ -2794,6 +2794,40 @@ main#top {
     scrollbar-gutter: stable;
 }
 
+.detail-section > .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+}
+
+.detail-section > .section-heading > div:not(.detail-section-actions) {
+    min-width: 0;
+}
+
+.detail-section > .section-heading > .detail-section-actions {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+}
+
+.detail-section > .section-heading > .detail-section-actions::-webkit-scrollbar {
+    display: none;
+}
+
+.detail-section > .section-heading > .detail-section-actions > * {
+    flex: 0 0 auto;
+}
+
+.board-action-menu:not([open]) > .board-action-menu__panel {
+    display: none;
+}
+
 /* Keep collapsed catalog utilities inside the mobile content boundary. */
 @media (max-width: 720px) {
     .catalog,

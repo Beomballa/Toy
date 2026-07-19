@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.28")
+                .contains("/css/storefront.css?v=20260719.29")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.28")
+                .contains("/css/storefront.css?v=20260719.29")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -380,6 +380,22 @@ class FrontStorefrontResourceTest {
                 .contains("max-height: min(520px, calc(100vh - 160px))")
                 .contains("overflow-y: auto")
                 .contains("scrollbar-gutter: stable");
+    }
+
+    @Test
+    void detailSectionHeadingsKeepFullWidthSingleRowActions() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains(".detail-section > .section-heading")
+                .contains("grid-template-columns: minmax(0, 1fr)")
+                .contains(".detail-section > .section-heading > div:not(.detail-section-actions)")
+                .contains(".detail-section > .section-heading > .detail-section-actions")
+                .contains("display: flex")
+                .contains("overscroll-behavior-inline: contain")
+                .contains("flex: 0 0 auto")
+                .contains(".board-action-menu:not([open]) > .board-action-menu__panel")
+                .contains("display: none");
     }
 
     @Test

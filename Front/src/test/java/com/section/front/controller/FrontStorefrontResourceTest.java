@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260718.32");
+                .contains("/js/view/app.js?v=20260719.33");
     }
 
     @Test
@@ -1457,6 +1457,21 @@ class FrontStorefrontResourceTest {
                 .contains("position === \"LATEST\" ? history[0]")
                 .contains("grade-stock-search-history.txt")
                 .contains("history.length === 0");
+    }
+
+    @Test
+    void actionMenusKeepExclusiveOutsideActionEscapeAndFocusBehavior() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("function initActionMenuBehavior()")
+                .contains("details.board-action-menu")
+                .contains("otherMenu !== menu && otherMenu.open")
+                .contains("const openMenuSelector = menuSelector.split")
+                .contains("document.querySelectorAll(openMenuSelector)")
+                .contains("if (event.key !== \"Escape\")")
+                .contains("summary?.setAttribute(\"aria-expanded\", String(menu.open))")
+                .contains("summary?.isConnected && summary.focus()");
     }
 
     @Test

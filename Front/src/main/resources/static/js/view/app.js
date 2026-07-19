@@ -439,6 +439,7 @@
         syncControls();
         restoreSelectedProductIds();
         bindEvents();
+        initActionMenuBehavior();
         restoreCatalogFilterPanelState();
         initSectionNavigation();
         initMobileStoreNavigation();
@@ -464,6 +465,53 @@
         syncScrollState();
         syncNetworkStatus();
         restoreCatalogScrollPosition();
+    }
+
+    function initActionMenuBehavior() {
+        const menuSelector = "details.board-action-menu, details.catalog-pagination__menu, details.saved-product-card__menu";
+        const openMenuSelector = menuSelector.split(", ").map((selector) => `${selector}[open]`).join(", ");
+        document.addEventListener("toggle", (event) => {
+            const menu = event.target.closest?.(menuSelector);
+            if (!menu) {
+                return;
+            }
+            const summary = menu.querySelector(":scope > summary");
+            summary?.setAttribute("aria-expanded", String(menu.open));
+            if (!menu.open) {
+                return;
+            }
+            document.querySelectorAll(menuSelector).forEach((otherMenu) => {
+                if (otherMenu !== menu && otherMenu.open) {
+                    otherMenu.open = false;
+                    otherMenu.querySelector(":scope > summary")?.setAttribute("aria-expanded", "false");
+                }
+            });
+        }, true);
+        document.addEventListener("click", (event) => {
+            const actionMenu = event.target.closest?.(menuSelector);
+            if (!actionMenu) {
+                document.querySelectorAll(openMenuSelector).forEach((menu) => menu.open = false);
+                return;
+            }
+            const summary = actionMenu.querySelector(":scope > summary");
+            if (!event.target.closest("button, a") || event.target.closest("summary") === summary) {
+                return;
+            }
+            actionMenu.open = false;
+            window.requestAnimationFrame(() => summary?.isConnected && summary.focus());
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key !== "Escape") {
+                return;
+            }
+            const openMenus = Array.from(document.querySelectorAll(openMenuSelector));
+            const menu = openMenus[openMenus.length - 1];
+            if (!menu) {
+                return;
+            }
+            menu.open = false;
+            menu.querySelector(":scope > summary")?.focus();
+        });
     }
 
     async function loadProducts() {

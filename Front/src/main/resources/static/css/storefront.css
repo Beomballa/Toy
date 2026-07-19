@@ -2820,6 +2820,41 @@ main#top {
         width: min(170px, calc(100vw - 40px));
         max-width: calc(100vw - 40px);
     }
+
+    .catalog-preset-strip,
+    .section-action-bar,
+    .catalog-summary__actions,
+    .catalog-display-panel__actions,
+    .catalog-selection__actions {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scroll-padding-inline: 2px;
+        scroll-snap-type: inline proximity;
+        touch-action: pan-x;
+        scrollbar-width: none;
+    }
+
+    .catalog-preset-strip::-webkit-scrollbar,
+    .section-action-bar::-webkit-scrollbar,
+    .catalog-summary__actions::-webkit-scrollbar,
+    .catalog-display-panel__actions::-webkit-scrollbar,
+    .catalog-selection__actions::-webkit-scrollbar {
+        display: none;
+    }
+
+    .catalog-preset-strip > *,
+    .section-action-bar > *,
+    .catalog-summary__actions > *,
+    .catalog-display-panel__actions > *,
+    .catalog-selection__actions > * {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+    }
 }
 
 @media (max-width: 430px) {

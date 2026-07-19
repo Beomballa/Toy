@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.24")
+                .contains("/css/storefront.css?v=20260719.25")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.24")
+                .contains("/css/storefront.css?v=20260719.25")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -322,6 +322,18 @@ class FrontStorefrontResourceTest {
                 .contains("max-width: min(48vw, 176px)")
                 .contains("overscroll-behavior-inline: contain")
                 .contains("width: min(170px, calc(100vw - 40px))");
+    }
+
+    @Test
+    void mobileCatalogActionsShareHorizontalNavigationContract() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains(".catalog-preset-strip,\n    .section-action-bar")
+                .contains(".catalog-display-panel__actions,\n    .catalog-selection__actions")
+                .contains("scroll-snap-type: inline proximity")
+                .contains("touch-action: pan-x")
+                .contains("scroll-snap-align: start");
     }
 
     @Test

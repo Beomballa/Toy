@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.25")
+                .contains("/css/storefront.css?v=20260719.26")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.25")
+                .contains("/css/storefront.css?v=20260719.26")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -334,6 +334,18 @@ class FrontStorefrontResourceTest {
                 .contains("scroll-snap-type: inline proximity")
                 .contains("touch-action: pan-x")
                 .contains("scroll-snap-align: start");
+    }
+
+    @Test
+    void mobileCatalogMetricsShareTwoColumnContract() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains(".catalog-insight-grid,\n    .catalog-live-metrics")
+                .contains(".catalog-selection__metrics,\n    .catalog-selection__coverage")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains(".catalog-page-metrics > :last-child:nth-child(odd)")
+                .contains("text-overflow: ellipsis");
     }
 
     @Test

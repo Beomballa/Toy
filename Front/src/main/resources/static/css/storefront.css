@@ -2855,6 +2855,48 @@ main#top {
         flex: 0 0 auto;
         scroll-snap-align: start;
     }
+
+    .catalog-insight-grid,
+    .catalog-live-metrics,
+    .catalog-selection__metrics,
+    .catalog-selection__coverage,
+    .catalog-page-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .catalog-insight-grid > *,
+    .catalog-live-metrics > *,
+    .catalog-selection__metrics > *,
+    .catalog-selection__coverage > *,
+    .catalog-page-metrics > * {
+        min-width: 0;
+    }
+
+    .catalog-selection__metrics span {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+        padding: 8px 0;
+    }
+
+    .catalog-selection__metrics strong,
+    .catalog-selection__coverage strong,
+    .catalog-page-metrics dd {
+        overflow: hidden;
+        margin-left: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .catalog-insight-grid > :last-child:nth-child(odd),
+    .catalog-live-metrics > :last-child:nth-child(odd),
+    .catalog-selection__metrics > :last-child:nth-child(odd),
+    .catalog-selection__coverage > :last-child:nth-child(odd),
+    .catalog-page-metrics > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
 }
 
 @media (max-width: 430px) {

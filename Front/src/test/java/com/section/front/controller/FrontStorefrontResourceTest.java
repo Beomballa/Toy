@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.26")
+                .contains("/css/storefront.css?v=20260719.27")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.26")
+                .contains("/css/storefront.css?v=20260719.27")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -346,6 +346,19 @@ class FrontStorefrontResourceTest {
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
                 .contains(".catalog-page-metrics > :last-child:nth-child(odd)")
                 .contains("text-overflow: ellipsis");
+    }
+
+    @Test
+    void storefrontDefersOffscreenSectionsAndRespectsReducedMotion() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains("@supports (content-visibility: auto)")
+                .contains("content-visibility: auto")
+                .contains("contain-intrinsic-block-size: auto 640px")
+                .contains("contain: layout style")
+                .contains("object-fit: cover")
+                .contains("scroll-snap-type: none");
     }
 
     @Test

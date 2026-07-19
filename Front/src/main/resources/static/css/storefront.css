@@ -2909,6 +2909,52 @@ main#top {
 
 }
 
+/* Defer off-screen shopping sections without changing their measured scroll space. */
+@supports (content-visibility: auto) {
+    main#top > .discovery-strip,
+    main#top > .signal-strip,
+    main#top > .catalog,
+    main#top > .flow-board,
+    main#top > #recentViewedSection,
+    main#top > #compareBoardSection,
+    main#top > #bookmarkBoardSection {
+        content-visibility: auto;
+        contain-intrinsic-block-size: auto 640px;
+    }
+}
+
+.catalog-card,
+.spotlight-card,
+.signal-feed-card,
+.detail-related-card,
+.saved-product-card {
+    contain: layout style;
+}
+
+.catalog-card__visual img,
+.spotlight-card__visual img,
+.signal-feed-card__visual img,
+.detail-related-card__visual img,
+.saved-product-card__visual img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    .catalog-preset-strip,
+    .section-action-bar,
+    .catalog-summary__actions,
+    .catalog-display-panel__actions,
+    .catalog-selection__actions {
+        scroll-snap-type: none;
+    }
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

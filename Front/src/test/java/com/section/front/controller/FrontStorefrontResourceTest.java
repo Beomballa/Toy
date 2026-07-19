@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.23")
+                .contains("/css/storefront.css?v=20260719.24")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260718.23")
+                .contains("/css/storefront.css?v=20260719.24")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -310,6 +310,18 @@ class FrontStorefrontResourceTest {
                 .contains(".shopping-tools .catalog-memory-strip")
                 .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
                 .contains(".catalog-memory-head__title > span");
+    }
+
+    @Test
+    void mobileShoppingMemoryStaysInsideCatalogBoundary() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains(".catalog {\n        overflow-x: clip;")
+                .contains("grid-template-columns: minmax(0, 1fr) auto")
+                .contains("max-width: min(48vw, 176px)")
+                .contains("overscroll-behavior-inline: contain")
+                .contains("width: min(170px, calc(100vw - 40px))");
     }
 
     @Test

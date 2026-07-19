@@ -2785,6 +2785,43 @@ main#top {
     }
 }
 
+/* Keep collapsed catalog utilities inside the mobile content boundary. */
+@media (max-width: 720px) {
+    .catalog,
+    .shopping-tools,
+    .shopping-tools .catalog-memory-strip,
+    .shopping-tools .catalog-memory-block {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .catalog {
+        overflow-x: clip;
+    }
+
+    .catalog-memory-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .catalog-memory-actions {
+        max-width: min(48vw, 176px);
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: none;
+    }
+
+    .catalog-memory-actions::-webkit-scrollbar {
+        display: none;
+    }
+
+    .catalog-memory-menu .board-action-menu__panel {
+        right: 0;
+        width: min(170px, calc(100vw - 40px));
+        max-width: calc(100vw - 40px);
+    }
+}
+
 @media (max-width: 430px) {
     .spotlight-grid,
     .catalog-grid,

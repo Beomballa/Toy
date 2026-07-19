@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260719.33");
+                .contains("/js/view/app.js?v=20260719.34");
     }
 
     @Test
@@ -1472,6 +1472,25 @@ class FrontStorefrontResourceTest {
                 .contains("if (event.key !== \"Escape\")")
                 .contains("summary?.setAttribute(\"aria-expanded\", String(menu.open))")
                 .contains("summary?.isConnected && summary.focus()");
+    }
+
+    @Test
+    void savedViewsKeepEdgeApplyRemoveAndJsonBackupActions() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("id=\"applyLatestSavedViewButton\"")
+                .contains("id=\"applyOldestSavedViewButton\"")
+                .contains("id=\"removeLatestSavedViewButton\"")
+                .contains("id=\"removeOldestSavedViewButton\"")
+                .contains("id=\"exportSavedViewsButton\"");
+        assertThat(script)
+                .contains("async function applySavedViewEdge(position)")
+                .contains("function removeSavedViewEdge(position)")
+                .contains("position === \"LATEST\" ? savedViews[0]")
+                .contains("grade-stock-saved-views.json")
+                .contains("JSON.stringify(savedViews, null, 2)");
     }
 
     @Test

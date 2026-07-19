@@ -263,6 +263,11 @@
         clearSearchButton: document.getElementById("clearSearchButton"),
         saveCurrentViewButton: document.getElementById("saveCurrentViewButton"),
         restoreLastStateButton: document.getElementById("restoreLastStateButton"),
+        applyLatestSavedViewButton: document.getElementById("applyLatestSavedViewButton"),
+        applyOldestSavedViewButton: document.getElementById("applyOldestSavedViewButton"),
+        removeLatestSavedViewButton: document.getElementById("removeLatestSavedViewButton"),
+        removeOldestSavedViewButton: document.getElementById("removeOldestSavedViewButton"),
+        exportSavedViewsButton: document.getElementById("exportSavedViewsButton"),
         reverseSavedViewsButton: document.getElementById("reverseSavedViewsButton"),
         copySavedViewsButton: document.getElementById("copySavedViewsButton"),
         clearSearchHistoryButton: document.getElementById("clearSearchHistoryButton"),
@@ -994,6 +999,15 @@
             syncControls();
             await refreshCatalog();
             showToast("마지막 탐색 조건을 복구했습니다.", "직전에 보던 카탈로그 흐름으로 돌아왔습니다.");
+        });
+        elements.applyLatestSavedViewButton?.addEventListener("click", () => applySavedViewEdge("LATEST"));
+        elements.applyOldestSavedViewButton?.addEventListener("click", () => applySavedViewEdge("OLDEST"));
+        elements.removeLatestSavedViewButton?.addEventListener("click", () => removeSavedViewEdge("LATEST"));
+        elements.removeOldestSavedViewButton?.addEventListener("click", () => removeSavedViewEdge("OLDEST"));
+        elements.exportSavedViewsButton?.addEventListener("click", () => {
+            const savedViews = readSavedViews();
+            downloadTextFile("grade-stock-saved-views.json", JSON.stringify(savedViews, null, 2), "application/json;charset=utf-8");
+            showToast("저장 탐색 백업을 생성했습니다.", `${savedViews.length}개 탐색 조건을 JSON으로 저장했습니다.`);
         });
         elements.clearSearchHistoryButton?.addEventListener("click", () => {
             window.localStorage.removeItem(SEARCH_HISTORY_KEY);
@@ -3152,6 +3166,8 @@
         }
         const savedViews = readSavedViews();
         setText(elements.savedViewCount, String(savedViews.length));
+        [elements.applyLatestSavedViewButton, elements.applyOldestSavedViewButton, elements.removeLatestSavedViewButton, elements.removeOldestSavedViewButton, elements.exportSavedViewsButton]
+            .forEach((button) => button?.toggleAttribute("disabled", savedViews.length === 0));
         if (!savedViews.length) {
             elements.savedViewList.innerHTML = `<span class="catalog-memory-empty">저장된 탐색이 없습니다.</span>`;
             return;
@@ -3196,6 +3212,29 @@
                 await copyTextWithFeedback(catalogUrlForSnapshot(selected.snapshot), "저장 탐색 링크를 복사했습니다.", `${selected.summary} 조건을 그대로 공유할 수 있습니다.`);
             });
         });
+    }
+
+    async function applySavedViewEdge(position) {
+        const savedViews = readSavedViews();
+        const selected = position === "LATEST" ? savedViews[0] : savedViews[savedViews.length - 1];
+        if (!selected?.snapshot) {
+            return;
+        }
+        Object.assign(state, DEFAULT_STATE, selected.snapshot);
+        syncControls();
+        await refreshCatalog();
+        showToast(position === "LATEST" ? "최신 저장 조건을 적용했습니다." : "최초 저장 조건을 적용했습니다.", selected.summary);
+    }
+
+    function removeSavedViewEdge(position) {
+        const savedViews = readSavedViews();
+        if (!savedViews.length) {
+            return;
+        }
+        const next = position === "LATEST" ? savedViews.slice(1) : savedViews.slice(0, -1);
+        window.localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(next));
+        renderSavedViews();
+        showToast(position === "LATEST" ? "최신 저장 탐색을 삭제했습니다." : "최초 저장 탐색을 삭제했습니다.", `${next.length}개 조건이 남았습니다.`);
     }
 
     function renderSearchHistory() {

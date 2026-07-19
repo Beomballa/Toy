@@ -710,6 +710,9 @@
             const target = event.target;
             const tagName = target?.tagName;
             const isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable;
+            if (!isEditable && handleSectionKeyboardShortcut(event)) {
+                return;
+            }
             if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
                 event.preventDefault();
                 elements.searchInput?.focus();
@@ -1667,6 +1670,31 @@
                 closeShortcutHelp();
             }
         });
+    }
+
+    function handleSectionKeyboardShortcut(event) {
+        if (!event.altKey || !/^Digit[1-5]$/.test(event.code)) {
+            return false;
+        }
+        const shortcutTargets = {
+            Digit1: ["top", "홈"],
+            Digit2: ["featured", "추천 상품"],
+            Digit3: ["catalog", "상품 카탈로그"],
+            Digit4: ["bookmarkBoardSection", "관심 상품 보드"],
+            Digit5: ["compareBoardSection", "비교 상품 보드"]
+        };
+        const [targetId, label] = shortcutTargets[event.code];
+        const section = document.getElementById(targetId);
+        event.preventDefault();
+        if (!section || section.hidden) {
+            showToast(`${label}가 비어 있습니다.`, "상품을 먼저 저장하거나 비교 보드에 추가해주세요.", true);
+            return true;
+        }
+        section.setAttribute("tabindex", "-1");
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.requestAnimationFrame(() => section.focus({ preventScroll: true }));
+        announceStorefrontStatus(`${label}로 이동했습니다.`);
+        return true;
     }
 
     function openHeaderSearch() {

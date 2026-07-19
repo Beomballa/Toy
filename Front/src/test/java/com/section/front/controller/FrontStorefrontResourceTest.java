@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260719.35");
+                .contains("/js/view/app.js?v=20260719.36");
     }
 
     @Test
@@ -1505,6 +1505,22 @@ class FrontStorefrontResourceTest {
                 .contains("function currentMobileNavigationAction()")
                 .contains("!event.target.closest('[data-mobile-nav=\"SEARCH\"]')")
                 .contains("announceStorefrontStatus(\"모바일 상품 검색을 열었습니다.\")");
+    }
+
+    @Test
+    void keyboardNavigationKeepsFiveAccessibleSectionShortcuts() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html).contains("Alt + 1 / 2 / 3 / 4 / 5");
+        assertThat(script)
+                .contains("function handleSectionKeyboardShortcut(event)")
+                .contains("Digit1: [\"top\", \"홈\"]")
+                .contains("Digit2: [\"featured\", \"추천 상품\"]")
+                .contains("Digit3: [\"catalog\", \"상품 카탈로그\"]")
+                .contains("Digit4: [\"bookmarkBoardSection\", \"관심 상품 보드\"]")
+                .contains("Digit5: [\"compareBoardSection\", \"비교 상품 보드\"]")
+                .contains("section.focus({ preventScroll: true })");
     }
 
     @Test

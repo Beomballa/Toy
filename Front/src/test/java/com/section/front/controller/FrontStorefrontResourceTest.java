@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.30")
+                .contains("/css/storefront.css?v=20260719.31")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.30")
+                .contains("/css/storefront.css?v=20260719.31")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -420,6 +420,20 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".detail-section .detail-section-menu .board-action-menu__panel")
                 .contains(".detail-recent-menu .board-action-menu__danger");
+    }
+
+    @Test
+    void mobileDetailKeepsFullWidthActionsAndTwoColumnOptionGuides() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains(".page-shell--detail .detail-section")
+                .contains("padding: 20px 0")
+                .contains(".detail-section > .section-heading > .detail-section-actions > button")
+                .contains("min-width: max-content")
+                .contains(".detail-option-overview > .detail-option-stock-rate")
+                .contains(".detail-option-distribution > :last-child:nth-child(odd)")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
     }
 
     @Test

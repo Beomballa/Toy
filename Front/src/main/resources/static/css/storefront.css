@@ -4050,3 +4050,45 @@ main#top > .home-category-rail {
         bottom: 88px;
     }
 }
+
+/* Preserve usable information width in the mobile product workspace. */
+@media (max-width: 768px) {
+    .page-shell--detail .detail-section {
+        padding: 20px 0;
+    }
+
+    .detail-section > .section-heading > .detail-section-actions > button {
+        width: auto;
+        min-width: max-content;
+    }
+
+    .detail-option-overview {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    .detail-option-overview > span {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-width: 0;
+    }
+
+    .detail-option-overview > .detail-option-stock-rate {
+        grid-column: 1 / -1;
+    }
+
+    .detail-option-overview > button {
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+    }
+
+    .detail-option-distribution {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .detail-option-distribution > :last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
+}

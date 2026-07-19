@@ -694,7 +694,9 @@
             if (!event.target.closest(".toolbar-field--search")) {
                 closeSearchAssist();
             }
-            if (!event.target.closest(".header-search-panel") && !event.target.closest("#openDrawerFromTop")) {
+            if (!event.target.closest(".header-search-panel")
+                && !event.target.closest("#openDrawerFromTop")
+                && !event.target.closest('[data-mobile-nav="SEARCH"]')) {
                 closeHeaderSearch();
             }
         });
@@ -1685,6 +1687,9 @@
         }
         elements.headerSearchPanel.hidden = true;
         elements.openDrawerFromTop?.setAttribute("aria-expanded", "false");
+        if (elements.mobileStoreNav?.querySelector('[data-mobile-nav="SEARCH"].is-active')) {
+            syncMobileStoreNavigation(currentMobileNavigationAction());
+        }
     }
 
     async function applyHeaderSearch() {
@@ -1724,10 +1729,16 @@
         }
         const action = button.dataset.mobileNav;
         if (action === "SEARCH") {
-            syncMobileStoreNavigation("SEARCH");
-            openHeaderSearch();
+            if (elements.headerSearchPanel?.hidden === false) {
+                closeHeaderSearch();
+            } else {
+                syncMobileStoreNavigation("SEARCH");
+                openHeaderSearch();
+                announceStorefrontStatus("모바일 상품 검색을 열었습니다.");
+            }
             return;
         }
+        closeHeaderSearch();
         if (action === "SAVED") {
             const bookmarked = readBookmarkProducts();
             if (!bookmarked.length) {
@@ -1739,11 +1750,13 @@
             syncMobileStoreNavigation("SAVED");
             renderBookmarkBoard();
             document.getElementById("bookmarkBoardSection")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            announceStorefrontStatus("관심 상품 보드로 이동했습니다.");
             return;
         }
         syncMobileStoreNavigation(action);
         const targetId = action === "HOME" ? "top" : action === "FEATURED" ? "featured" : "catalog";
         document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        announceStorefrontStatus(`${button.querySelector("strong")?.textContent || "선택한 영역"}으로 이동했습니다.`);
     }
 
     function initMobileStoreNavigation() {
@@ -1761,6 +1774,9 @@
             ["SAVED", document.getElementById("bookmarkBoardSection")]
         ].filter(([, section]) => section);
         const observer = new IntersectionObserver((entries) => {
+            if (elements.headerSearchPanel?.hidden === false) {
+                return;
+            }
             const visible = entries
                 .filter((entry) => entry.isIntersecting)
                 .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
@@ -1775,10 +1791,32 @@
     function syncMobileStoreNavigation(activeAction) {
         if (activeAction) {
             elements.mobileStoreNav?.querySelectorAll("[data-mobile-nav]").forEach((button) => {
-                button.classList.toggle("is-active", button.dataset.mobileNav === activeAction);
+                const active = button.dataset.mobileNav === activeAction;
+                button.classList.toggle("is-active", active);
+                if (active) {
+                    button.setAttribute("aria-current", "page");
+                } else {
+                    button.removeAttribute("aria-current");
+                }
             });
         }
-        setText(elements.mobileSavedCount, String(readBookmarkProducts().length));
+        const savedCount = readBookmarkProducts().length;
+        setText(elements.mobileSavedCount, String(savedCount));
+        elements.mobileStoreNav?.querySelector('[data-mobile-nav="SAVED"]')
+            ?.setAttribute("aria-label", `관심 상품으로 이동, ${savedCount}개 저장됨`);
+    }
+
+    function currentMobileNavigationAction() {
+        const sections = [
+            ["HOME", document.getElementById("top")],
+            ["FEATURED", document.getElementById("featured")],
+            ["SHOP", document.getElementById("catalog")],
+            ["SAVED", document.getElementById("bookmarkBoardSection")]
+        ].filter(([, section]) => section && !section.hidden);
+        const viewportAnchor = window.innerHeight * 0.3;
+        return sections.sort((left, right) =>
+            Math.abs(left[1].getBoundingClientRect().top - viewportAnchor) - Math.abs(right[1].getBoundingClientRect().top - viewportAnchor)
+        )[0]?.[0] || "HOME";
     }
 
     function moveHeroSlide(direction, restart = false) {

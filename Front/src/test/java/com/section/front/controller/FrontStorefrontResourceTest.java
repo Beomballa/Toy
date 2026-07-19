@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260719.34");
+                .contains("/js/view/app.js?v=20260719.35");
     }
 
     @Test
@@ -1491,6 +1491,20 @@ class FrontStorefrontResourceTest {
                 .contains("position === \"LATEST\" ? savedViews[0]")
                 .contains("grade-stock-saved-views.json")
                 .contains("JSON.stringify(savedViews, null, 2)");
+    }
+
+    @Test
+    void mobileNavigationKeepsSearchToggleObserverLockCurrentAndCountStatus() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("elements.headerSearchPanel?.hidden === false")
+                .contains("syncMobileStoreNavigation(currentMobileNavigationAction())")
+                .contains("button.setAttribute(\"aria-current\", \"page\")")
+                .contains("관심 상품으로 이동, ${savedCount}개 저장됨")
+                .contains("function currentMobileNavigationAction()")
+                .contains("!event.target.closest('[data-mobile-nav=\"SEARCH\"]')")
+                .contains("announceStorefrontStatus(\"모바일 상품 검색을 열었습니다.\")");
     }
 
     @Test

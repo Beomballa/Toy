@@ -3885,6 +3885,8 @@ main#top > .home-category-rail {
     place-items: center;
     padding: 24px;
     background: rgba(0, 0, 0, .46);
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .shortcut-help-modal.is-open {
@@ -3896,6 +3898,8 @@ main#top > .home-category-rail {
     padding: 24px;
     border-radius: var(--store-radius-card);
     background: #fff;
+    overscroll-behavior: contain;
+    touch-action: auto;
 }
 
 .shortcut-help-modal__head {

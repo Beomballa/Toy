@@ -708,6 +708,9 @@
                 closeShortcutHelp();
                 closeCatalogFilterPanel();
             }
+            if (event.key === "Tab" && elements.shortcutHelpModal?.classList.contains("is-open")) {
+                keepFocusInsideShortcutHelp(event);
+            }
             const target = event.target;
             const tagName = target?.tagName;
             const isEditable = tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT" || target?.isContentEditable;
@@ -3013,8 +3016,9 @@
         shortcutHelpReturnFocus = document.activeElement;
         elements.shortcutHelpModal.classList.add("is-open");
         elements.shortcutHelpModal.setAttribute("aria-hidden", "false");
+        setShortcutHelpBackgroundInert(true);
         document.body.classList.add("has-open-modal");
-        elements.shortcutHelpModal.querySelector(".shortcut-help-modal__panel")?.focus();
+        elements.shortcutHelpCloseButton?.focus();
     }
 
     function closeShortcutHelp() {
@@ -3023,9 +3027,40 @@
         }
         elements.shortcutHelpModal.classList.remove("is-open");
         elements.shortcutHelpModal.setAttribute("aria-hidden", "true");
+        setShortcutHelpBackgroundInert(false);
         document.body.classList.remove("has-open-modal");
-        shortcutHelpReturnFocus?.focus?.();
+        if (shortcutHelpReturnFocus?.isConnected) {
+            shortcutHelpReturnFocus.focus();
+        }
         shortcutHelpReturnFocus = null;
+    }
+
+    function setShortcutHelpBackgroundInert(isInert) {
+        [document.querySelector(".page-shell"), elements.mobileStoreNav, elements.scrollTopButton]
+            .filter(Boolean)
+            .forEach((element) => {
+                element.inert = isInert;
+            });
+    }
+
+    function keepFocusInsideShortcutHelp(event) {
+        const focusable = Array.from(elements.shortcutHelpModal.querySelectorAll(
+            'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter((element) => element.getClientRects().length);
+        if (!focusable.length) {
+            event.preventDefault();
+            elements.shortcutHelpModal.querySelector(".shortcut-help-modal__panel")?.focus();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 
     function handleVisibilityChange() {

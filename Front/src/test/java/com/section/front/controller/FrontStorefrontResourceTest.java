@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.33")
+                .contains("/css/storefront.css?v=20260720.34")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.37");
+                .contains("/js/view/app.js?v=20260720.38");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.33")
+                .contains("/css/storefront.css?v=20260720.34")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -491,6 +491,27 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void shortcutHelpKeepsFocusIsolationDescriptionAndScrollContainment() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("aria-describedby=\"shortcutHelpHint\"")
+                .contains("id=\"shortcutHelpHint\"");
+        assertThat(script)
+                .contains("setShortcutHelpBackgroundInert(true)")
+                .contains("keepFocusInsideShortcutHelp")
+                .contains("shortcutHelpReturnFocus?.isConnected")
+                .contains("elements.shortcutHelpCloseButton?.focus()");
+        assertThat(css)
+                .contains(".shortcut-help-modal")
+                .contains("overscroll-behavior: contain")
+                .contains("touch-action: none")
+                .contains("touch-action: auto");
+    }
+
+    @Test
     void displayAndSelectionToolsKeepCompactAccessibleContract() throws IOException {
         String html = readResource("templates/views/index.html");
         String script = readResource("static/js/view/app.js");
@@ -762,7 +783,7 @@ class FrontStorefrontResourceTest {
                 .contains("navigator.share")
                 .contains("function openShortcutHelp()")
                 .contains("function closeShortcutHelp()")
-                .contains("shortcutHelpReturnFocus?.focus?.()")
+                .contains("shortcutHelpReturnFocus?.isConnected")
                 .contains("networkStatusDismissed = true")
                 .contains("event.key === \"?\"");
         assertThat(detailScript)

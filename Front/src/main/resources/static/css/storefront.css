@@ -3785,6 +3785,8 @@ main#top > .home-category-rail {
     place-items: center;
     padding: 24px;
     background: rgba(0, 0, 0, .62);
+    overscroll-behavior: contain;
+    touch-action: none;
 }
 
 .detail-image-modal.is-open {
@@ -3797,6 +3799,8 @@ main#top > .home-category-rail {
     padding: 18px;
     overflow: auto;
     background: #fff;
+    overscroll-behavior: contain;
+    touch-action: auto;
 }
 
 .detail-image-modal__head {

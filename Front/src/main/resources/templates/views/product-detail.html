@@ -6,7 +6,7 @@
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260719.31">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260720.32">
 </head>
 <body class="detail-body">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -334,13 +334,14 @@
     </main>
 </div>
 
-<aside class="detail-image-modal" id="detailImageModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="detailImageModalTitle">
+<aside class="detail-image-modal" id="detailImageModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="detailImageModalTitle" aria-describedby="detailImageModalHint">
     <div class="detail-image-modal__panel" tabindex="-1">
         <div class="detail-image-modal__head">
             <strong id="detailImageModalTitle">상품 이미지</strong>
             <button type="button" id="detailImageModalCloseButton" aria-label="이미지 확대 닫기">×</button>
         </div>
         <img id="detailImageModalImage" src="" alt="">
+        <p class="sr-only" id="detailImageModalHint">탭 키로 닫기 버튼을 이동하고 Esc 키로 이미지 확대를 닫을 수 있습니다.</p>
     </div>
 </aside>
 
@@ -357,6 +358,6 @@
         productId: Number(/*[[${productId}]]*/ 0)
     };
 </script>
-<script src="/js/view/detail.js?v=20260718.31"></script>
+<script src="/js/view/detail.js?v=20260720.32"></script>
 </body>
 </html>

@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.31")
+                .contains("/css/storefront.css?v=20260720.32")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260719.31")
+                .contains("/css/storefront.css?v=20260720.32")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260718.31");
+                .contains("/js/view/detail.js?v=20260720.32");
     }
 
     @Test
@@ -452,6 +452,28 @@ class FrontStorefrontResourceTest {
                 .contains("setDrawerBackgroundInert(true)")
                 .contains("element.inert = isInert")
                 .contains("drawerReturnFocus?.isConnected");
+    }
+
+    @Test
+    void detailImageModalKeepsFocusIsolationAndScrollContainment() throws IOException {
+        String html = readResource("templates/views/product-detail.html");
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("aria-describedby=\"detailImageModalHint\"")
+                .contains("id=\"detailImageModalHint\"");
+        assertThat(script)
+                .contains("setDetailModalBackgroundInert(true)")
+                .contains("detailMobileActions: document.getElementById(\"detailMobileActions\")")
+                .contains("element.inert = isInert")
+                .contains("keepFocusInsideDetailImageModal")
+                .contains("detailModalReturnFocus?.isConnected")
+                .contains("elements.detailImageModalCloseButton?.focus()");
+        assertThat(css)
+                .contains("overscroll-behavior: contain")
+                .contains("touch-action: none")
+                .contains("touch-action: auto");
     }
 
     @Test

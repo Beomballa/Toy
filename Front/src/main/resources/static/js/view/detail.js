@@ -146,6 +146,7 @@
         detailImageModal: document.getElementById("detailImageModal"),
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
         detailImageModalImage: document.getElementById("detailImageModalImage"),
+        detailMobileActions: document.getElementById("detailMobileActions"),
         detailRetryButton: document.getElementById("detailRetryButton"),
         detailScrollTopButton: document.getElementById("detailScrollTopButton"),
         detailAvailableOptionCount: document.getElementById("detailAvailableOptionCount"),
@@ -1608,8 +1609,9 @@
         detailModalReturnFocus = document.activeElement;
         elements.detailImageModal.classList.add("is-open");
         elements.detailImageModal.setAttribute("aria-hidden", "false");
+        setDetailModalBackgroundInert(true);
         document.body.classList.add("has-open-modal");
-        elements.detailImageModal.querySelector(".detail-image-modal__panel")?.focus();
+        elements.detailImageModalCloseButton?.focus();
     }
 
     function closeDetailImageModal() {
@@ -1618,9 +1620,40 @@
         }
         elements.detailImageModal.classList.remove("is-open");
         elements.detailImageModal.setAttribute("aria-hidden", "true");
+        setDetailModalBackgroundInert(false);
         document.body.classList.remove("has-open-modal");
-        detailModalReturnFocus?.focus?.();
+        if (detailModalReturnFocus?.isConnected) {
+            detailModalReturnFocus.focus();
+        }
         detailModalReturnFocus = null;
+    }
+
+    function setDetailModalBackgroundInert(isInert) {
+        [document.querySelector(".page-shell--detail"), elements.detailMobileActions, elements.detailScrollTopButton]
+            .filter(Boolean)
+            .forEach((element) => {
+                element.inert = isInert;
+            });
+    }
+
+    function keepFocusInsideDetailImageModal(event) {
+        const focusable = Array.from(elements.detailImageModal.querySelectorAll(
+            'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )).filter((element) => element.getClientRects().length);
+        if (!focusable.length) {
+            event.preventDefault();
+            elements.detailImageModal.querySelector(".detail-image-modal__panel")?.focus();
+            return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 
     function showToast(title, body, isWarning = false) {
@@ -1672,6 +1705,9 @@
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeDetailImageModal();
+            }
+            if (event.key === "Tab" && elements.detailImageModal?.classList.contains("is-open")) {
+                keepFocusInsideDetailImageModal(event);
             }
             const target = event.target;
             const isEditable = ["INPUT", "TEXTAREA", "SELECT"].includes(target?.tagName) || target?.isContentEditable;

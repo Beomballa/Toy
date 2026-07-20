@@ -2253,6 +2253,24 @@
     overflow: hidden;
 }
 
+.sidebar-admin {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 16px 22px;
+    padding: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+}
+
+.sidebar-admin div { min-width: 0; }
+.sidebar-admin strong, .sidebar-admin span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-admin strong { color: #fff; font-size: 13px; }
+.sidebar-admin span { margin-top: 3px; color: rgba(255, 255, 255, 0.55); font-size: 10px; }
+.sidebar-logout { padding: 6px; color: rgba(255, 255, 255, 0.68); border: 0; background: transparent; cursor: pointer; }
+.sidebar-logout:hover { color: #fff; }
+
 .notion-title {
     border: none;
     font-size: 2.5rem;

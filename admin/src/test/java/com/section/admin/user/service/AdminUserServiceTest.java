@@ -1,5 +1,6 @@
 package com.section.admin.user.service;
 
+import com.section.admin.auth.support.AdminPasswordEncoder;
 import com.section.admin.user.req.AdminUserListRequest;
 import com.section.admin.user.req.AdminUserSaveRequest;
 import com.section.admin.user.res.AdminUserListResponse;
@@ -41,6 +42,9 @@ class AdminUserServiceTest {
 
     @Mock
     private AdminUserRepository adminUserRepository;
+
+    @Mock
+    private AdminPasswordEncoder passwordEncoder;
 
     @InjectMocks
     private AdminUserService adminUserService;
@@ -111,6 +115,8 @@ class AdminUserServiceTest {
     @Test
     @DisplayName("관리자 저장은 입력값을 정규화해 신규 계정을 만든다")
     void saveAdminNormalizesFieldsWhenCreating() {
+        when(passwordEncoder.encode("pass1234")).thenReturn("{pbkdf2}encoded-password");
+
         adminUserService.saveAdmin(new AdminUserSaveRequest(
                 null,
                 " master ",
@@ -123,10 +129,21 @@ class AdminUserServiceTest {
         ArgumentCaptor<AdminUser> captor = ArgumentCaptor.forClass(AdminUser.class);
         verify(adminUserRepository).save(captor.capture());
         assertEquals("master", captor.getValue().getLoginId());
-        assertEquals("pass1234", captor.getValue().getPassword());
+        assertEquals("{pbkdf2}encoded-password", captor.getValue().getPassword());
         assertEquals("운영 총괄", captor.getValue().getName());
         assertEquals("ROLE_SUPER", captor.getValue().getRole());
         assertEquals("ACTIVE", captor.getValue().getStatus());
+    }
+
+    @Test
+    @DisplayName("관리자 비밀번호는 최소 8자 이상이어야 한다")
+    void saveAdminRejectsShortPassword() {
+        BusinessException exception = assertThrows(BusinessException.class, () -> adminUserService.saveAdmin(
+                new AdminUserSaveRequest(null, "master", "short", "운영 총괄", "ROLE_SUPER", "ACTIVE")
+        ));
+
+        assertEquals(ErrorCode.INVALID_INPUT_VALUE, exception.getErrorCode());
+        verify(adminUserRepository, never()).save(any(AdminUser.class));
     }
 
     @Test

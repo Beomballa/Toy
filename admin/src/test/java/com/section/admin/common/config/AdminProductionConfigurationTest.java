@@ -21,6 +21,9 @@ class AdminProductionConfigurationTest {
                 .contains("password: ${DB_PASSWORD}")
                 .contains("show-sql: false")
                 .contains("shutdown: graceful")
+                .contains("http-only: true")
+                .contains("secure: true")
+                .contains("same-site: strict")
                 .contains("include-stacktrace: never");
     }
 }

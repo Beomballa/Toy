@@ -9,6 +9,8 @@ import java.util.Optional;
 public interface AdminUserRepository extends JpaRepository<AdminUser, Long>, CustomAdminUserRepository {
     Optional<AdminUser> findByLoginId(String loginId);
 
+    Optional<AdminUser> findByLoginIdIgnoreCase(String loginId);
+
     boolean existsByLoginIdIgnoreCase(String loginId);
 
     List<AdminUser> findAllByStatusOrderByNameAsc(String status);

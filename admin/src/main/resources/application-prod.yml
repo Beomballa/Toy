@@ -1,6 +1,13 @@
 server:
   shutdown: graceful
   forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: ${ADMIN_SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: true
+        same-site: strict
   error:
     include-message: never
     include-stacktrace: never

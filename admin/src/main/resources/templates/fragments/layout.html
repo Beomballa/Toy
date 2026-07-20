@@ -8,6 +8,16 @@
         <div class="sidebar-brand-text">Grade Stock</div>
     </div>
 
+    <div class="sidebar-admin" th:if="${session.ADMIN_NO != null}">
+        <div>
+            <strong th:text="${session.ADMIN_NAME}">관리자</strong>
+            <span th:text="${session.ADMIN_ROLE == 'ROLE_SUPER' ? '최고 관리자' : '관리자'}">관리자</span>
+        </div>
+        <form action="/admin/logout" method="post">
+            <button type="submit" class="sidebar-logout" aria-label="로그아웃"><i class="fas fa-arrow-right-from-bracket"></i></button>
+        </form>
+    </div>
+
     <div class="nav-section">
         <div class="nav-section-title">Main Menu</div>
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('dashboard') ? 'active' : ''}" href="/admin/dashboard">

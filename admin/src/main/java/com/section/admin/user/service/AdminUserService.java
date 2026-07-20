@@ -1,5 +1,6 @@
 package com.section.admin.user.service;
 
+import com.section.admin.auth.support.AdminPasswordEncoder;
 import com.section.admin.user.req.AdminUserListRequest;
 import com.section.admin.user.req.AdminUserSaveRequest;
 import com.section.admin.user.res.AdminUserListResponse;
@@ -30,6 +31,7 @@ public class AdminUserService {
     private static final String STATUS_SUSPENDED = "SUSPENDED";
 
     private final AdminUserRepository adminUserRepository;
+    private final AdminPasswordEncoder passwordEncoder;
 
     public AdminUserListResponse getAdminList(AdminUserListRequest req, Integer page, Integer size) {
         AdminUserListQuery query = req.toQuery();
@@ -74,7 +76,7 @@ public class AdminUserService {
 
             AdminUser adminUser = AdminUser.builder()
                     .loginId(normalizedLoginId)
-                    .password(normalizedPassword)
+                    .password(passwordEncoder.encode(normalizedPassword))
                     .name(normalizedName)
                     .role(normalizedRole)
                     .status(normalizedStatus)
@@ -92,7 +94,7 @@ public class AdminUserService {
 
         String normalizedPassword = normalizePassword(req.password());
         if (normalizedPassword != null) {
-            adminUser.changePassword(normalizedPassword);
+            adminUser.changePassword(passwordEncoder.encode(normalizedPassword));
         }
     }
 
@@ -151,7 +153,13 @@ public class AdminUserService {
             return null;
         }
         String normalized = value.trim();
-        return normalized.isBlank() ? null : normalized;
+        if (normalized.isBlank()) {
+            return null;
+        }
+        if (normalized.length() < 8 || normalized.length() > 100) {
+            throw new BusinessException("비밀번호는 8자 이상 100자 이하로 입력해 주세요.", ErrorCode.INVALID_INPUT_VALUE);
+        }
+        return normalized;
     }
 
     private String normalizeRole(String value) {

@@ -13,7 +13,6 @@ import java.io.IOException;
 @Component
 public class AdminAuditRequestFilter extends OncePerRequestFilter {
 
-    private static final String HEADER_NAME = "X-Admin-No";
     private static final String SESSION_ATTRIBUTE_NAME = "ADMIN_NO";
 
     @Override
@@ -32,15 +31,6 @@ public class AdminAuditRequestFilter extends OncePerRequestFilter {
     }
 
     private java.util.Optional<Long> resolveAdminNo(HttpServletRequest request) {
-        String headerValue = request.getHeader(HEADER_NAME);
-        if (headerValue != null && !headerValue.isBlank()) {
-            try {
-                return java.util.Optional.of(Long.parseLong(headerValue.trim()));
-            } catch (NumberFormatException ignored) {
-                return java.util.Optional.empty();
-            }
-        }
-
         Object sessionValue = request.getSession(false) != null
                 ? request.getSession(false).getAttribute(SESSION_ATTRIBUTE_NAME)
                 : null;

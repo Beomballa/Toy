@@ -21,15 +21,15 @@ class AdminAuditRequestFilterTest {
     }
 
     @Test
-    @DisplayName("감사 필터는 헤더의 관리자 번호를 요청 컨텍스트에 주입한다")
-    void filterReadsAdminNoFromHeader() throws Exception {
+    @DisplayName("감사 필터는 외부 헤더의 관리자 번호를 신뢰하지 않는다")
+    void filterIgnoresAdminNoFromHeader() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("X-Admin-No", "7");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         filter.doFilter(request, response, (req, res) ->
                 {
-                    assertEquals(7L, AdminRequestContext.getCurrentAdminNo().orElseThrow());
+                    assertFalse(AdminRequestContext.getCurrentAdminNo().isPresent());
                     assertEquals(request.getRemoteAddr(), AdminRequestContext.getCurrentIpAddress().orElseThrow());
                 }
         );

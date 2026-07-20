@@ -579,6 +579,14 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void storefrontProvidesLocalProductFallbackAsset() {
+        ClassPathResource resource = new ClassPathResource("static/images/product-placeholder.svg");
+
+        assertThat(resource.exists()).isTrue();
+        assertThat(resource.getFilename()).isEqualTo("product-placeholder.svg");
+    }
+
+    @Test
     void displayAndSelectionToolsKeepCompactAccessibleContract() throws IOException {
         String html = readResource("templates/views/index.html");
         String script = readResource("static/js/view/app.js");

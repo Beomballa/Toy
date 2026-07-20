@@ -97,6 +97,9 @@ class FrontLocalCatalogSeederTest {
 
         assertThat(products).hasSize(100);
         assertThat(displays).hasSize(100);
+        assertThat(products.subList(98, 100))
+                .allSatisfy(product -> assertThat(product.getThumbnailUrl())
+                        .isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL));
         verify(productRepository, times(2)).save(any(Product.class));
         verify(productOptionRepository, times(2)).saveAll(any());
         verify(frontProductDisplayRepository, times(2)).save(any(FrontProductDisplay.class));

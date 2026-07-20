@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional
 public class FrontLocalCatalogSeeder implements ApplicationRunner {
+
+    static final String DEFAULT_PRODUCT_THUMBNAIL_URL = "/images/product-placeholder.svg";
     private static final int TARGET_ACTIVE_PRODUCT_COUNT = 100;
     private static final int TARGET_FEATURED_COUNT = 12;
     private static final int OPTIONS_PER_PRODUCT = 3;
@@ -246,7 +248,7 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
                 .modelNum(model)
                 .releasePrice(price)
                 .releaseDt(releaseDate)
-                .thumbnailUrl("/images/product/" + model.toLowerCase() + ".png")
+                .thumbnailUrl(DEFAULT_PRODUCT_THUMBNAIL_URL)
                 .status(ProductStatus.ACTIVE.name())
                 .build());
 

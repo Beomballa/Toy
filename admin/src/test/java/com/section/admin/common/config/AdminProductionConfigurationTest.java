@@ -24,6 +24,8 @@ class AdminProductionConfigurationTest {
                 .contains("http-only: true")
                 .contains("secure: true")
                 .contains("same-site: strict")
+                .contains("max-login-failures: ${ADMIN_MAX_LOGIN_FAILURES:5}")
+                .contains("login-lock-duration: ${ADMIN_LOGIN_LOCK_DURATION:15m}")
                 .contains("include-stacktrace: never");
     }
 }

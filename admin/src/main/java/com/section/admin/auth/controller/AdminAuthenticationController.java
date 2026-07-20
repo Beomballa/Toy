@@ -2,6 +2,7 @@ package com.section.admin.auth.controller;
 
 import com.section.admin.auth.service.AdminAuthenticationService;
 import com.section.admin.auth.service.AdminAuthenticationService.AuthenticatedAdmin;
+import com.section.admin.auth.support.AdminLoginAttemptGuard;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class AdminAuthenticationController {
     public static final String ADMIN_ROLE = "ADMIN_ROLE";
 
     private final AdminAuthenticationService authenticationService;
+    private final AdminLoginAttemptGuard loginAttemptGuard;
 
     @GetMapping("/")
     public String root() {
@@ -42,8 +44,16 @@ public class AdminAuthenticationController {
             HttpServletRequest request,
             Model model
     ) {
+        String remoteAddress = request.getRemoteAddr();
+        if (loginAttemptGuard.isBlocked(remoteAddress, loginId)) {
+            model.addAttribute("loginError", "로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.");
+            model.addAttribute("loginId", loginId == null ? "" : loginId.trim());
+            return "views/login";
+        }
+
         Optional<AuthenticatedAdmin> authenticated = authenticationService.authenticate(loginId, password);
         if (authenticated.isEmpty()) {
+            loginAttemptGuard.recordFailure(remoteAddress, loginId);
             model.addAttribute("loginError", "아이디 또는 비밀번호를 확인해 주세요.");
             model.addAttribute("loginId", loginId == null ? "" : loginId.trim());
             return "views/login";
@@ -52,6 +62,7 @@ public class AdminAuthenticationController {
         HttpSession session = request.getSession(true);
         request.changeSessionId();
         AuthenticatedAdmin admin = authenticated.get();
+        loginAttemptGuard.clear(remoteAddress, loginId);
         session.setAttribute(ADMIN_NO, admin.adminNo());
         session.setAttribute(ADMIN_NAME, admin.name());
         session.setAttribute(ADMIN_ROLE, admin.role());

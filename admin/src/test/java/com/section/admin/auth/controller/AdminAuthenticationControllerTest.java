@@ -2,6 +2,7 @@ package com.section.admin.auth.controller;
 
 import com.section.admin.auth.service.AdminAuthenticationService;
 import com.section.admin.auth.service.AdminAuthenticationService.AuthenticatedAdmin;
+import com.section.admin.auth.support.AdminLoginAttemptGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,17 +14,21 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class AdminAuthenticationControllerTest {
 
     private AdminAuthenticationService authenticationService;
+    private AdminLoginAttemptGuard loginAttemptGuard;
     private AdminAuthenticationController controller;
 
     @BeforeEach
     void setUp() {
         authenticationService = mock(AdminAuthenticationService.class);
-        controller = new AdminAuthenticationController(authenticationService);
+        loginAttemptGuard = mock(AdminLoginAttemptGuard.class);
+        controller = new AdminAuthenticationController(authenticationService, loginAttemptGuard);
     }
 
     @Test
@@ -40,6 +45,7 @@ class AdminAuthenticationControllerTest {
         assertEquals(1L, request.getSession().getAttribute(AdminAuthenticationController.ADMIN_NO));
         assertEquals("운영 총괄", request.getSession().getAttribute(AdminAuthenticationController.ADMIN_NAME));
         assertEquals(30 * 60, request.getSession().getMaxInactiveInterval());
+        verify(loginAttemptGuard).clear(request.getRemoteAddr(), "master");
     }
 
     @Test
@@ -54,5 +60,20 @@ class AdminAuthenticationControllerTest {
         assertEquals("views/login", view);
         assertEquals("아이디 또는 비밀번호를 확인해 주세요.", model.getAttribute("loginError"));
         assertNull(request.getSession(false));
+        verify(loginAttemptGuard).recordFailure(request.getRemoteAddr(), "unknown");
+    }
+
+    @Test
+    @DisplayName("잠긴 계정과 IP 조합은 인증 조회 전에 차단한다")
+    void blockedAttemptDoesNotAuthenticate() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        ConcurrentModel model = new ConcurrentModel();
+        when(loginAttemptGuard.isBlocked(request.getRemoteAddr(), "master")).thenReturn(true);
+
+        String view = controller.login("master", "admin1234", request, model);
+
+        assertEquals("views/login", view);
+        assertEquals("로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.", model.getAttribute("loginError"));
+        verifyNoInteractions(authenticationService);
     }
 }

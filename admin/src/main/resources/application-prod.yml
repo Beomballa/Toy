@@ -29,3 +29,8 @@ spring:
     open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
+
+admin:
+  auth:
+    max-login-failures: ${ADMIN_MAX_LOGIN_FAILURES:5}
+    login-lock-duration: ${ADMIN_LOGIN_LOCK_DURATION:15m}

@@ -647,7 +647,7 @@ class ProductRepositorySearchIntegrationTest {
                 .description("대표 노출")
                 .mood("Sharp tone")
                 .featuredYn("Y")
-                .featuredRank(1)
+                .featuredRank(991)
                 .build());
 
         Product hiddenFeaturedProduct = productRepository.save(Product.builder()
@@ -665,18 +665,18 @@ class ProductRepositorySearchIntegrationTest {
                 .description("숨김 전시")
                 .mood("Calm metal")
                 .featuredYn("Y")
-                .featuredRank(2)
+                .featuredRank(992)
                 .build());
 
         assertTrue(frontProductDisplayRepository.existsFeaturedRankConflict(
                 "Y",
-                1,
+                991,
                 hiddenFeaturedProduct.getId(),
                 ProductStatus.ACTIVE.name()
         ));
         assertTrue(!frontProductDisplayRepository.existsFeaturedRankConflict(
                 "Y",
-                2,
+                992,
                 activeFeaturedProduct.getId(),
                 ProductStatus.ACTIVE.name()
         ));

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,13 +41,16 @@ class OrderRepositorySearchIntegrationTest {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @Test
     @DisplayName("주문 목록 검색은 공백 단위 다중 키워드와 전화번호 숫자 검색을 함께 지원한다")
     void getOrderListSupportsTokenizedKeywordAndPhoneDigits() {
         Orders matchedOrder = Orders.createOrder("ORD-202605-001", "함장님", "010-1234-5678", 120000);
         matchedOrder.pay();
         orderRepository.save(matchedOrder);
-        matchedOrder.setCrtDtm(LocalDateTime.of(2026, 5, 20, 10, 0));
+        setOrderCreatedAt(matchedOrder, LocalDateTime.of(2026, 5, 20, 10, 0));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(matchedOrder.getId())
                 .productNo(1L)
@@ -58,7 +62,7 @@ class OrderRepositorySearchIntegrationTest {
         Orders otherOrder = Orders.createOrder("ORD-202605-002", "다른고객", "010-9999-8888", 90000);
         otherOrder.pay();
         orderRepository.save(otherOrder);
-        otherOrder.setCrtDtm(LocalDateTime.of(2026, 5, 20, 11, 0));
+        setOrderCreatedAt(otherOrder, LocalDateTime.of(2026, 5, 20, 11, 0));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(otherOrder.getId())
                 .productNo(2L)
@@ -90,7 +94,7 @@ class OrderRepositorySearchIntegrationTest {
         matchedOrder.startDelivery("CJ대한통운", "1234-5678-9000");
         matchedOrder.updateAdminMemo("문 앞에 놓아주세요");
         orderRepository.save(matchedOrder);
-        matchedOrder.setCrtDtm(LocalDateTime.now().minusDays(1));
+        setOrderCreatedAt(matchedOrder, LocalDateTime.now().minusDays(1));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(matchedOrder.getId())
                 .productNo(3L)
@@ -103,7 +107,7 @@ class OrderRepositorySearchIntegrationTest {
         otherOrder.pay();
         otherOrder.updateAdminMemo("일반 배송");
         orderRepository.save(otherOrder);
-        otherOrder.setCrtDtm(LocalDateTime.now().minusDays(1));
+        setOrderCreatedAt(otherOrder, LocalDateTime.now().minusDays(1));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(otherOrder.getId())
                 .productNo(4L)
@@ -135,12 +139,12 @@ class OrderRepositorySearchIntegrationTest {
         Orders morningOrder = Orders.createOrder("ORD-202605-101", "아침고객", "010-1111-2222", 12000);
         morningOrder.pay();
         orderRepository.save(morningOrder);
-        morningOrder.setCrtDtm(targetDate.atTime(9, 0));
+        setOrderCreatedAt(morningOrder, targetDate.atTime(9, 0));
 
         Orders eveningOrder = Orders.createOrder("ORD-202605-102", "저녁고객", "010-3333-4444", 18000);
         eveningOrder.pay();
         orderRepository.save(eveningOrder);
-        eveningOrder.setCrtDtm(targetDate.atTime(19, 30));
+        setOrderCreatedAt(eveningOrder, targetDate.atTime(19, 30));
 
         List<Map<String, Object>> result = orderRepository.getSalesLast7Days();
 
@@ -159,18 +163,18 @@ class OrderRepositorySearchIntegrationTest {
 
         Orders ordered = Orders.createOrder("ORD-202606-401", "미결제고객", "010-1000-1000", 10000);
         orderRepository.save(ordered);
-        ordered.setCrtDtm(LocalDateTime.now().withHour(10).withMinute(0));
+        setOrderCreatedAt(ordered, LocalDateTime.now().withHour(10).withMinute(0));
 
         Orders paid = Orders.createOrder("ORD-202606-402", "결제고객", "010-2000-2000", 20000);
         paid.pay();
         orderRepository.save(paid);
-        paid.setCrtDtm(LocalDateTime.now().withHour(11).withMinute(0));
+        setOrderCreatedAt(paid, LocalDateTime.now().withHour(11).withMinute(0));
 
         Orders shipped = Orders.createOrder("ORD-202606-403", "배송고객", "010-3000-3000", 30000);
         shipped.pay();
         shipped.startDelivery("CJ대한통운", "777788889999");
         orderRepository.save(shipped);
-        shipped.setCrtDtm(LocalDateTime.now().withHour(12).withMinute(0));
+        setOrderCreatedAt(shipped, LocalDateTime.now().withHour(12).withMinute(0));
 
         Map<String, Object> summary = orderRepository.getTodaySummary();
 
@@ -187,16 +191,14 @@ class OrderRepositorySearchIntegrationTest {
     @Test
     @DisplayName("브랜드 매출은 주문 총액이 아닌 브랜드별 주문상품 금액 합계로 계산한다")
     void getTopBrandsBySalesUsesOrderItemAmounts() {
-        productRepository.save(Product.builder()
-                .id(1001L)
+        Product brandAProduct = productRepository.save(Product.builder()
                 .brandNo(501L)
                 .categoryNo(1L)
                 .nameKo("브랜드A 상품")
                 .releasePrice(10000)
                 .status("ACTIVE")
                 .build());
-        productRepository.save(Product.builder()
-                .id(1002L)
+        Product brandBProduct = productRepository.save(Product.builder()
                 .brandNo(502L)
                 .categoryNo(1L)
                 .nameKo("브랜드B 상품")
@@ -207,18 +209,18 @@ class OrderRepositorySearchIntegrationTest {
         Orders order = Orders.createOrder("ORD-202605-201", "브랜드고객", "010-5555-6666", 17000);
         order.pay();
         orderRepository.save(order);
-        order.setCrtDtm(LocalDateTime.of(2026, 5, 21, 10, 0));
+        setOrderCreatedAt(order, LocalDateTime.of(2026, 5, 21, 10, 0));
 
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(order.getId())
-                .productNo(1001L)
+                .productNo(brandAProduct.getId())
                 .productName("브랜드A 상품")
                 .orderPrice(10000)
                 .count(1)
                 .build());
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(order.getId())
-                .productNo(1002L)
+                .productNo(brandBProduct.getId())
                 .productName("브랜드B 상품")
                 .orderPrice(3500)
                 .count(2)
@@ -245,7 +247,7 @@ class OrderRepositorySearchIntegrationTest {
         Orders paidOrder = Orders.createOrder("ORD-202606-501", "정상고객", "010-1111-0000", 10000);
         paidOrder.pay();
         orderRepository.save(paidOrder);
-        paidOrder.setCrtDtm(LocalDateTime.now().minusDays(1));
+        setOrderCreatedAt(paidOrder, LocalDateTime.now().minusDays(1));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(paidOrder.getId())
                 .productNo(10L)
@@ -258,7 +260,7 @@ class OrderRepositorySearchIntegrationTest {
         cancelledOrder.pay();
         cancelledOrder.cancel();
         orderRepository.save(cancelledOrder);
-        cancelledOrder.setCrtDtm(LocalDateTime.now().minusDays(1));
+        setOrderCreatedAt(cancelledOrder, LocalDateTime.now().minusDays(1));
         orderItemRepository.save(OrderItem.builder()
                 .orderNo(cancelledOrder.getId())
                 .productNo(10L)
@@ -282,5 +284,14 @@ class OrderRepositorySearchIntegrationTest {
                 .findFirst()
                 .map(item -> ((Number) item.get("amount")).longValue())
                 .orElse(0L);
+    }
+
+    private void setOrderCreatedAt(Orders order, LocalDateTime createdAt) {
+        orderRepository.flush();
+        jdbcTemplate.update(
+                "UPDATE orders SET crt_dtm = ? WHERE order_no = ?",
+                createdAt,
+                order.getId()
+        );
     }
 }

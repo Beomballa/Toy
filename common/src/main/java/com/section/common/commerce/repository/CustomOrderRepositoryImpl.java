@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.core.types.dsl.StringExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.OrderStatus;
@@ -191,16 +192,20 @@ public class CustomOrderRepositoryImpl implements CustomOrderRepository {
     @Override
     public List<Map<String, Object>> getSalesLast7Days() {
         LocalDateTime sevenDaysAgo = LocalDate.now().minusDays(6).atStartOfDay();
+        StringExpression salesDate = Expressions.stringTemplate(
+                "DATE_FORMAT({0}, '%Y-%m-%d')",
+                orders.crtDtm
+        );
 
         Map<String, Long> salesByDate = jpaQueryFactory
                 .select(
-                        Expressions.stringTemplate("DATE_FORMAT({0}, {1})", orders.crtDtm, Expressions.constant("%Y-%m-%d")),
+                        salesDate,
                         orders.totalAmount.sumLong()
                 )
                 .from(orders)
                 .where(orders.crtDtm.goe(sevenDaysAgo), orders.status.ne("CANCELLED"))
-                .groupBy(Expressions.stringTemplate("DATE({0})", orders.crtDtm))
-                .orderBy(Expressions.stringTemplate("DATE({0})", orders.crtDtm).asc())
+                .groupBy(salesDate)
+                .orderBy(salesDate.asc())
                 .fetch()
                 .stream()
                 .collect(

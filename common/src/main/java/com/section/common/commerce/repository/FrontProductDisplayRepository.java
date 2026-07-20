@@ -15,11 +15,14 @@ public interface FrontProductDisplayRepository extends JpaRepository<FrontProduc
     @Query("""
             SELECT COUNT(display) > 0
             FROM FrontProductDisplay display
-            JOIN Product product ON product.id = display.productNo
             WHERE display.featuredYn = :featuredYn
               AND display.featuredRank = :featuredRank
               AND display.productNo <> :productNo
-              AND product.status = :productStatus
+              AND display.productNo IN (
+                  SELECT product.id
+                  FROM Product product
+                  WHERE product.status = :productStatus
+              )
             """)
     boolean existsFeaturedRankConflict(
             @Param("featuredYn") String featuredYn,

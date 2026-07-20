@@ -74,7 +74,7 @@ class AdminOperationNoticeRepositorySearchIntegrationTest {
     @Test
     @DisplayName("운영 공지 목록은 종료 상태 필터로 종료 공지만 조회한다")
     void getNoticeListFiltersEndedStatus() {
-        LocalDateTime now = LocalDateTime.of(2026, 6, 13, 12, 0);
+        LocalDateTime now = LocalDateTime.now();
         adminOperationNoticeRepository.save(AdminOperationNotice.builder()
                 .title("[repo-ended] live")
                 .content("repo ended live")

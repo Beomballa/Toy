@@ -82,10 +82,10 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/tasks/workloads') ? 'active' : ''}" href="/admin/settings/tasks/workloads">
             <i class="fas fa-people-arrows"></i> 작업 워크로드
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('settings/logs') ? 'active' : ''}" href="/admin/settings/logs">
+        <a class="nav-link" th:if="${session.ADMIN_ROLE == 'ROLE_SUPER'}" th:classappend="${currentUri != null && currentUri.contains('settings/logs') ? 'active' : ''}" href="/admin/settings/logs">
             <i class="fas fa-history"></i> 활동 로그 확인
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.endsWith('/admin/settings') ? 'active' : ''}" href="/admin/settings"><i class="fas fa-cog"></i> 시스템 설정</a>
+        <a class="nav-link" th:if="${session.ADMIN_ROLE == 'ROLE_SUPER'}" th:classappend="${currentUri != null && currentUri.endsWith('/admin/settings') ? 'active' : ''}" href="/admin/settings"><i class="fas fa-cog"></i> 시스템 설정</a>
     </div>
 </nav>
 

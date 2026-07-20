@@ -80,4 +80,34 @@ class AdminAuthenticationInterceptorTest {
         assertFalse(interceptor.preHandle(request, response, new Object()));
         assertThrows(IllegalStateException.class, () -> session.getAttribute(AdminAuthenticationController.ADMIN_NO));
     }
+
+    @Test
+    @DisplayName("일반 관리자는 최고 관리자 전용 API에 접근할 수 없다")
+    void rejectsRegularAdminFromSuperAdminApi() throws Exception {
+        AdminUser admin = AdminUser.builder()
+                .adminNo(5L).loginId("ops").password("encoded")
+                .name("운영자").role("ROLE_ADMIN").status("ACTIVE").build();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/admin/users/list");
+        request.getSession().setAttribute(AdminAuthenticationController.ADMIN_NO, 5L);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(adminUserRepository.findById(5L)).thenReturn(Optional.of(admin));
+
+        assertFalse(interceptor.preHandle(request, response, new Object()));
+        assertEquals(403, response.getStatus());
+        assertTrue(response.getContentAsString().contains("A004"));
+    }
+
+    @Test
+    @DisplayName("최고 관리자는 계정 관리 API에 접근할 수 있다")
+    void allowsSuperAdminApi() throws Exception {
+        AdminUser admin = AdminUser.builder()
+                .adminNo(6L).loginId("master").password("encoded")
+                .name("최고 관리자").role("ROLE_SUPER").status("ACTIVE").build();
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/admin/users/list");
+        request.getSession().setAttribute(AdminAuthenticationController.ADMIN_NO, 6L);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        when(adminUserRepository.findById(6L)).thenReturn(Optional.of(admin));
+
+        assertTrue(interceptor.preHandle(request, response, new Object()));
+    }
 }

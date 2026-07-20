@@ -20,6 +20,7 @@ import java.util.Optional;
 public class AdminAuthenticationInterceptor implements HandlerInterceptor {
 
     private static final String ACTIVE = "ACTIVE";
+    private static final String ROLE_SUPER = "ROLE_SUPER";
 
     private final AdminUserRepository adminUserRepository;
 
@@ -39,6 +40,10 @@ public class AdminAuthenticationInterceptor implements HandlerInterceptor {
         }
 
         AdminUser admin = activeAdmin.get();
+        if (requiresSuperAdmin(request.getRequestURI()) && !ROLE_SUPER.equals(admin.getRole())) {
+            rejectForbidden(request, response);
+            return false;
+        }
         session.setAttribute(AdminAuthenticationController.ADMIN_NAME, admin.getName());
         session.setAttribute(AdminAuthenticationController.ADMIN_ROLE, admin.getRole());
         return true;
@@ -64,5 +69,24 @@ public class AdminAuthenticationInterceptor implements HandlerInterceptor {
             return;
         }
         response.sendRedirect("/admin/login");
+    }
+
+    private boolean requiresSuperAdmin(String requestUri) {
+        return requestUri.equals("/admin/settings")
+                || requestUri.startsWith("/admin/settings/logs")
+                || requestUri.startsWith("/api/admin/users")
+                || requestUri.startsWith("/api/admin/logs")
+                || requestUri.startsWith("/api/admin/settings/system");
+    }
+
+    private void rejectForbidden(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if (request.getRequestURI().startsWith("/api/admin/")) {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.getWriter().write("{\"code\":\"A004\",\"message\":\"최고 관리자 권한이 필요합니다.\",\"status\":403}");
+            return;
+        }
+        response.sendRedirect("/admin/forbidden");
     }
 }

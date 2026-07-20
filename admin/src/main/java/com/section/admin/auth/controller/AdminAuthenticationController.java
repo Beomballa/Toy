@@ -37,6 +37,11 @@ public class AdminAuthenticationController {
                 : "views/login";
     }
 
+    @GetMapping("/admin/forbidden")
+    public String forbidden() {
+        return "views/forbidden";
+    }
+
     @PostMapping("/admin/login")
     public String login(
             @RequestParam String loginId,

@@ -2189,17 +2189,36 @@ main#top {
 }
 
 .toast-stack {
-    z-index: 120;
+    z-index: 200;
     right: 24px;
     bottom: 24px;
 }
 
 .toast {
+    grid-template-columns: minmax(0, 1fr) auto;
     border: 1px solid var(--store-line);
     border-radius: var(--store-radius-control);
     background: #222;
     color: #fff;
     box-shadow: none;
+}
+
+.toast > strong,
+.toast > span {
+    grid-column: 1;
+}
+
+.toast > button {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .14);
+    color: inherit;
+    cursor: pointer;
 }
 
 .toast.is-warning {
@@ -4135,5 +4154,22 @@ main#top > .home-category-rail {
         overflow-y: auto;
         overscroll-behavior: contain;
         scrollbar-gutter: stable;
+    }
+
+    .toast-stack {
+        right: 12px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+    }
+
+    .detail-body .toast-stack {
+        bottom: calc(88px + env(safe-area-inset-bottom));
+    }
+
+    .network-status {
+        right: 12px;
+        bottom: calc(76px + env(safe-area-inset-bottom));
+        left: 12px;
+        max-width: none;
+        flex-wrap: wrap;
     }
 }

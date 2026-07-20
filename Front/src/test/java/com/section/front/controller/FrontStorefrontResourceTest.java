@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.35")
+                .contains("/css/storefront.css?v=20260720.36")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.40");
+                .contains("/js/view/app.js?v=20260720.41");
     }
 
     @Test
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.35")
+                .contains("/css/storefront.css?v=20260720.36")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260720.32");
+                .contains("/js/view/detail.js?v=20260720.33");
     }
 
     @Test
@@ -541,6 +541,27 @@ class FrontStorefrontResourceTest {
                 .contains("handleMobileMenuKeyboard")
                 .contains("[\"ArrowLeft\", \"ArrowRight\", \"Home\", \"End\"]")
                 .contains("window.innerWidth > 768");
+    }
+
+    @Test
+    void toastAndNetworkStatusKeepAccessibleBoundedMobileContract() throws IOException {
+        String mainScript = readResource("static/js/view/app.js");
+        String detailScript = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(mainScript)
+                .contains("toast.setAttribute(\"role\", isWarning ? \"alert\" : \"status\")")
+                .contains("while (stack.childElementCount >= 3)")
+                .contains("aria-label=\"${title} 알림 닫기\"")
+                .contains("stack.setAttribute(\"aria-label\", \"화면 알림\")");
+        assertThat(detailScript)
+                .contains("while (stack.childElementCount >= 3)")
+                .contains("toast.querySelector(\"button\")?.addEventListener");
+        assertThat(css)
+                .contains("z-index: 200")
+                .contains("bottom: calc(76px + env(safe-area-inset-bottom))")
+                .contains(".detail-body .toast-stack")
+                .contains(".network-status");
     }
 
     @Test

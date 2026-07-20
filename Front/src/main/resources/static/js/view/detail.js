@@ -1663,15 +1663,22 @@
         }
         const toast = document.createElement("article");
         toast.className = `toast${isWarning ? " is-warning" : ""}`;
-        toast.innerHTML = `<strong>${title}</strong><span>${body}</span>`;
+        toast.setAttribute("role", isWarning ? "alert" : "status");
+        toast.setAttribute("aria-live", isWarning ? "assertive" : "polite");
+        toast.innerHTML = `<strong>${title}</strong><span>${body}</span><button type="button" aria-label="${title} 알림 닫기">×</button>`;
         toast.dataset.toastId = String(++toastTimerSeed);
+        while (stack.childElementCount >= 3) {
+            stack.firstElementChild?.remove();
+        }
         stack.appendChild(toast);
-        window.setTimeout(() => {
+        const dismissToast = () => {
             toast.remove();
             if (!stack.childElementCount) {
                 stack.remove();
             }
-        }, 2600);
+        };
+        toast.querySelector("button")?.addEventListener("click", dismissToast);
+        window.setTimeout(dismissToast, 3600);
     }
 
     function ensureToastStack() {
@@ -1681,6 +1688,8 @@
         }
         stack = document.createElement("div");
         stack.className = "toast-stack";
+        stack.setAttribute("role", "region");
+        stack.setAttribute("aria-label", "화면 알림");
         document.body.appendChild(stack);
         return stack;
     }

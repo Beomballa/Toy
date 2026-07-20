@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.32")
+                .contains("/css/storefront.css?v=20260720.33")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.32")
+                .contains("/css/storefront.css?v=20260720.33")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -474,6 +474,20 @@ class FrontStorefrontResourceTest {
                 .contains("overscroll-behavior: contain")
                 .contains("touch-action: none")
                 .contains("touch-action: auto");
+    }
+
+    @Test
+    void mobileDetailActionsKeepSafeAreaTouchAndPriceContracts() throws IOException {
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(css)
+                .contains("padding-bottom: calc(88px + env(safe-area-inset-bottom))")
+                .contains("min-height: calc(72px + env(safe-area-inset-bottom))")
+                .contains("padding-bottom: calc(8px + env(safe-area-inset-bottom))")
+                .contains("min-height: 48px")
+                .contains(".detail-mobile-actions__primary > span")
+                .contains("text-overflow: ellipsis")
+                .contains("bottom: calc(88px + env(safe-area-inset-bottom))");
     }
 
     @Test

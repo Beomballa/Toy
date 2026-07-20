@@ -245,11 +245,12 @@
 
     function productVisualMarkup(product, className) {
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL;
         const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
-        const imageLabel = thumbnail ? (product.name || "상품 이미지") : `${product.name || "상품"} 대체 이미지`;
+        const imageLabel = usesFallback ? `${product.name || "상품"} 대체 이미지` : (product.name || "상품 이미지");
         return `
-            <div class="${className} product-visual--has-image${thumbnail ? "" : " is-image-fallback"}">
-                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(imageLabel)}" loading="lazy" decoding="async" data-product-image${thumbnail ? "" : " data-image-fallback=\"true\""}>
+            <div class="${className} product-visual--has-image${usesFallback ? " is-image-fallback" : ""}">
+                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(imageLabel)}" loading="lazy" decoding="async" data-product-image${usesFallback ? " data-image-fallback=\"true\"" : ""}>
                 <span class="${className}__badge">${brandInitials(product.brand)}</span>
                 <div class="${className}__copy">
                     <strong>${product.brand || "Grade Stock"}</strong>
@@ -333,6 +334,7 @@
         elements.detailProductVisual.querySelector("[data-product-image]")?.remove();
         elements.detailProductVisual.classList.remove("product-visual--has-image", "is-image-error", "is-image-fallback");
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL;
         const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
         clearDetailImageModalSource();
         elements.detailZoomButton.hidden = true;
@@ -340,11 +342,11 @@
         const image = document.createElement("img");
         image.className = "product-visual__image";
         image.src = imageSource;
-        image.alt = thumbnail ? (product.name || "상품 이미지") : `${product.name || "상품"} 대체 이미지`;
+        image.alt = usesFallback ? `${product.name || "상품"} 대체 이미지` : (product.name || "상품 이미지");
         image.decoding = "async";
         image.fetchPriority = "high";
         image.dataset.productImage = "";
-        if (!thumbnail) {
+        if (usesFallback) {
             image.dataset.imageFallback = "true";
             elements.detailProductVisual.classList.add("is-image-fallback");
         }

@@ -4824,11 +4824,12 @@
 
     function productVisualMarkup(product, className, options = {}) {
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL;
         const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
-        const visualLabel = `${product.name || product.headline || "상품"} ${thumbnail ? "이미지" : "대체 이미지"}`;
+        const visualLabel = `${product.name || product.headline || "상품"} ${usesFallback ? "대체 이미지" : "이미지"}`;
         return `
-            <div class="${className} product-visual--has-image${thumbnail ? "" : " is-image-fallback"}">
-                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(visualLabel)}" loading="${options.eager ? "eager" : "lazy"}" decoding="async" ${options.eager ? 'fetchpriority="high"' : ""} ${thumbnail ? "" : 'data-image-fallback="true"'} data-product-image>
+            <div class="${className} product-visual--has-image${usesFallback ? " is-image-fallback" : ""}">
+                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(visualLabel)}" loading="${options.eager ? "eager" : "lazy"}" decoding="async" ${options.eager ? 'fetchpriority="high"' : ""} ${usesFallback ? 'data-image-fallback="true"' : ""} data-product-image>
                 <span class="${className}-badge">${brandInitials(product.brand)}</span>
                 <div class="${className}-copy">
                     <strong>${product.category || "Curated"}</strong>

@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.43");
+                .contains("/js/view/app.js?v=20260720.44");
     }
 
     @Test
@@ -34,7 +34,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260720.34");
+                .contains("/js/view/detail.js?v=20260720.35");
     }
 
     @Test
@@ -1856,6 +1856,7 @@ class FrontStorefrontResourceTest {
 
         assertThat(script)
                 .contains("const PRODUCT_IMAGE_FALLBACK_URL = \"/images/product-placeholder.svg\"")
+                .contains("const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL")
                 .contains("const isDetailImage = visual === elements.detailProductVisual")
                 .contains("if (image.dataset.imageFallback === \"true\")")
                 .contains("function clearDetailImageModalSource()")

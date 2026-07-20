@@ -2814,6 +2814,175 @@ main#top {
     }
 }
 
+/* Keep rail controls and detail summaries on one predictable alignment system. */
+.signal-strip .product-rail-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 16px 24px;
+    margin-bottom: 18px;
+}
+
+.signal-strip .product-rail-header .section-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+}
+
+.signal-strip .product-rail-header .section-heading > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.signal-strip .product-rail-header .section-heading > p {
+    max-width: 54ch;
+    line-height: 1.5;
+}
+
+.signal-strip .product-rail-header .section-action-bar {
+    align-self: end;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+    min-width: max-content;
+}
+
+.signal-strip .product-rail-header .catalog-reset-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: max-content;
+    min-height: 34px;
+    padding: 0 13px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.page-shell--detail .topbar--detail {
+    display: grid;
+    grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+    align-items: center;
+    gap: 24px;
+    min-height: 64px;
+    margin-bottom: 24px;
+    padding: 0;
+}
+
+.page-shell--detail .topbar--detail .brand-mark {
+    justify-self: start;
+    min-width: 0;
+}
+
+.page-shell--detail .topbar--detail .topbar-nav {
+    justify-self: center;
+    min-width: 0;
+}
+
+.page-shell--detail .topbar--detail .topbar-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    width: max-content;
+    min-width: 116px;
+    min-height: 36px;
+    padding: 0 14px;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.page-shell--detail .detail-commerce-panel,
+.page-shell--detail .detail-hero__side,
+.page-shell--detail .detail-signal-list {
+    min-width: 0;
+}
+
+.page-shell--detail .detail-signal-list .signal-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(68px, auto) minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+    min-width: 0;
+    padding: 13px 0;
+    overflow: visible;
+}
+
+.page-shell--detail .detail-signal-list .signal-card::before {
+    display: none;
+}
+
+.page-shell--detail .detail-signal-list .signal-card strong,
+.page-shell--detail .detail-signal-list .signal-card span {
+    min-width: 0;
+    margin: 0;
+    line-height: 1.55;
+}
+
+.page-shell--detail .detail-signal-list .signal-card strong {
+    white-space: nowrap;
+}
+
+.page-shell--detail .detail-signal-list .signal-card span {
+    overflow-wrap: anywhere;
+    word-break: keep-all;
+}
+
+@media (max-width: 900px) {
+    .signal-strip .product-rail-header {
+        grid-template-columns: minmax(0, 1fr);
+        align-items: start;
+    }
+
+    .signal-strip .product-rail-header .section-action-bar {
+        width: 100%;
+        min-width: 0;
+        justify-content: flex-start;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .signal-strip .product-rail-header .section-action-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .page-shell--detail .topbar--detail {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px 20px;
+    }
+
+    .page-shell--detail .topbar--detail .topbar-nav {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        justify-self: start;
+        width: 100%;
+        overflow-x: auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .page-shell--detail .topbar--detail {
+        min-height: 60px;
+        margin-bottom: 16px;
+    }
+
+    .page-shell--detail .topbar--detail .topbar-action {
+        min-width: auto;
+        min-height: 34px;
+        padding-inline: 11px;
+    }
+
+    .page-shell--detail .detail-signal-list .signal-card {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+        padding: 12px 0;
+    }
+}
+
 /* Keep dense detail controls available without letting them dominate the section. */
 .detail-section .detail-section-menu .board-action-menu__panel {
     width: min(220px, calc(100vw - 32px));

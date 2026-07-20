@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.37")
+                .contains("/css/storefront.css?v=20260720.38")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.37")
+                .contains("/css/storefront.css?v=20260720.38")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1867,6 +1867,25 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".product-visual--has-image[aria-busy=\"true\"] .product-visual__image")
                 .contains(".product-visual--has-image.is-image-fallback .product-visual__image");
+    }
+
+    @Test
+    void productRailsAndDetailHeaderKeepStableAlignmentContracts() throws IOException {
+        String index = readResource("templates/views/index.html");
+        String detail = readResource("templates/views/product-detail.html");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(index)
+                .contains("<header class=\"product-rail-header\">")
+                .contains("aria-label=\"신규 드롭 관리\"")
+                .contains("aria-label=\"저재고 상품 관리\"");
+        assertThat(detail).contains("id=\"backToCatalogLink\"");
+        assertThat(css)
+                .contains(".signal-strip .product-rail-header")
+                .contains("grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr)")
+                .contains(".page-shell--detail .topbar--detail .topbar-action")
+                .contains("grid-template-columns: minmax(68px, auto) minmax(0, 1fr)")
+                .contains(".page-shell--detail .detail-signal-list .signal-card::before");
     }
 
     private String readResource(String path) throws IOException {

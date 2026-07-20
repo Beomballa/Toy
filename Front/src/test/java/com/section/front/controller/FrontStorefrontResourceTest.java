@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.36")
+                .contains("/css/storefront.css?v=20260720.37")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -30,11 +30,11 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.36")
+                .contains("/css/storefront.css?v=20260720.37")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260720.33");
+                .contains("/js/view/detail.js?v=20260720.34");
     }
 
     @Test
@@ -1847,6 +1847,25 @@ class FrontStorefrontResourceTest {
                 .contains("const relatedDistribution = [")
                 .contains("elements.detailRelatedAverageSavingBar.style.width");
         assertThat(css).contains(".detail-related-distribution");
+    }
+
+    @Test
+    void detailImagesKeepScopedFallbackLoadingAndZoomContracts() throws IOException {
+        String script = readResource("static/js/view/detail.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(script)
+                .contains("const PRODUCT_IMAGE_FALLBACK_URL = \"/images/product-placeholder.svg\"")
+                .contains("const isDetailImage = visual === elements.detailProductVisual")
+                .contains("if (image.dataset.imageFallback === \"true\")")
+                .contains("function clearDetailImageModalSource()")
+                .contains("elements.detailProductVisual.setAttribute(\"aria-busy\", \"true\")")
+                .contains("image.addEventListener(\"load\", () => {")
+                .contains("elements.detailZoomButton.hidden = false")
+                .contains("image.fetchPriority = \"high\"");
+        assertThat(css)
+                .contains(".product-visual--has-image[aria-busy=\"true\"] .product-visual__image")
+                .contains(".product-visual--has-image.is-image-fallback .product-visual__image");
     }
 
     private String readResource(String path) throws IOException {

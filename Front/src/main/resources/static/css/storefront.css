@@ -539,6 +539,16 @@ main#top {
     height: 100%;
     object-fit: contain;
     padding: 16px;
+    opacity: 1;
+    transition: opacity 180ms ease;
+}
+
+.product-visual--has-image[aria-busy="true"] .product-visual__image {
+    opacity: 0;
+}
+
+.product-visual--has-image.is-image-fallback .product-visual__image {
+    padding: clamp(22px, 12%, 52px);
 }
 
 .product-visual--has-image:not(.is-image-error) > :not(.product-visual__image) {

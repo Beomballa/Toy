@@ -6,6 +6,7 @@
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const SELECTED_OPTION_KEY = "front-detail-selected-options";
     const DETAIL_QUANTITY_KEY = "front-detail-option-quantities";
+    const PRODUCT_IMAGE_FALLBACK_URL = "/images/product-placeholder.svg";
     const RECENT_VIEWED_LIMIT = 6;
     const optionSortState = {
         mode: "STOCK_ASC",
@@ -244,9 +245,11 @@
 
     function productVisualMarkup(product, className) {
         const thumbnail = String(product.thumbnailUrl || "").trim();
+        const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
+        const imageLabel = thumbnail ? (product.name || "상품 이미지") : `${product.name || "상품"} 대체 이미지`;
         return `
-            <div class="${className}${thumbnail ? " product-visual--has-image" : ""}">
-                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(product.name || "상품 이미지")}" loading="lazy" data-product-image>` : ""}
+            <div class="${className} product-visual--has-image${thumbnail ? "" : " is-image-fallback"}">
+                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(imageLabel)}" loading="lazy" decoding="async" data-product-image${thumbnail ? "" : " data-image-fallback=\"true\""}>
                 <span class="${className}__badge">${brandInitials(product.brand)}</span>
                 <div class="${className}__copy">
                     <strong>${product.brand || "Grade Stock"}</strong>
@@ -260,11 +263,32 @@
         if (!event.target.matches?.("[data-product-image]")) {
             return;
         }
-        event.target.closest(".product-visual--has-image")?.classList.add("is-image-error");
-        event.target.remove();
-        if (elements.detailZoomButton) {
+        const image = event.target;
+        const visual = image.closest(".product-visual--has-image");
+        const isDetailImage = visual === elements.detailProductVisual;
+        if (image.dataset.imageFallback === "true") {
+            visual?.classList.add("is-image-error");
+            visual?.removeAttribute("aria-busy");
+            image.remove();
+            if (isDetailImage) {
+                clearDetailImageModalSource();
+                elements.detailZoomButton.hidden = true;
+            }
+            return;
+        }
+        image.dataset.imageFallback = "true";
+        image.src = PRODUCT_IMAGE_FALLBACK_URL;
+        image.alt = `${image.alt || "상품"} 대체 이미지`;
+        visual?.classList.add("is-image-fallback");
+        if (isDetailImage) {
+            clearDetailImageModalSource();
             elements.detailZoomButton.hidden = true;
         }
+    }
+
+    function clearDetailImageModalSource() {
+        elements.detailImageModalImage?.removeAttribute("src");
+        elements.detailImageModalImage?.removeAttribute("alt");
     }
 
     function escapeAttribute(value) {
@@ -307,25 +331,36 @@
             return;
         }
         elements.detailProductVisual.querySelector("[data-product-image]")?.remove();
-        elements.detailProductVisual.classList.remove("product-visual--has-image", "is-image-error");
+        elements.detailProductVisual.classList.remove("product-visual--has-image", "is-image-error", "is-image-fallback");
         const thumbnail = String(product.thumbnailUrl || "").trim();
-        if (elements.detailZoomButton) {
-            elements.detailZoomButton.hidden = !thumbnail;
-        }
-        if (!thumbnail) {
-            return;
-        }
+        const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
+        clearDetailImageModalSource();
+        elements.detailZoomButton.hidden = true;
+        elements.detailProductVisual.setAttribute("aria-busy", "true");
         const image = document.createElement("img");
         image.className = "product-visual__image";
-        image.src = thumbnail;
-        image.alt = product.name || "상품 이미지";
+        image.src = imageSource;
+        image.alt = thumbnail ? (product.name || "상품 이미지") : `${product.name || "상품"} 대체 이미지`;
+        image.decoding = "async";
+        image.fetchPriority = "high";
         image.dataset.productImage = "";
+        if (!thumbnail) {
+            image.dataset.imageFallback = "true";
+            elements.detailProductVisual.classList.add("is-image-fallback");
+        }
+        image.addEventListener("load", () => {
+            elements.detailProductVisual.removeAttribute("aria-busy");
+            if (image.dataset.imageFallback === "true") {
+                return;
+            }
+            elements.detailZoomButton.hidden = false;
+            if (elements.detailImageModalImage) {
+                elements.detailImageModalImage.src = image.currentSrc || image.src;
+                elements.detailImageModalImage.alt = `${product.name || "상품"} 확대 이미지`;
+            }
+        }, { once: true });
         elements.detailProductVisual.classList.add("product-visual--has-image");
         elements.detailProductVisual.prepend(image);
-        if (elements.detailImageModalImage) {
-            elements.detailImageModalImage.src = thumbnail;
-            elements.detailImageModalImage.alt = `${product.name || "상품"} 확대 이미지`;
-        }
     }
 
     function renderSignals(product) {

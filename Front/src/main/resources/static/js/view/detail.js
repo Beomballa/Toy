@@ -1,6 +1,5 @@
 (function () {
-    const bootstrap = window.frontProductDetailBootstrap || {};
-    const productId = Number(bootstrap.productId || 0);
+    const productId = Number(document.body.dataset.productId || 0);
     const BOOKMARK_PRODUCTS_KEY = "front-bookmark-products";
     const COMPARE_PRODUCTS_KEY = "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";

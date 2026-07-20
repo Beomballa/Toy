@@ -22,6 +22,7 @@ check_status() {
 
 check_status "front liveness" 200 "${FRONT_URL}/health/live"
 check_status "front readiness" 200 "${FRONT_URL}/health/ready"
+check_status "front storefront" 200 "${FRONT_URL}/"
 check_status "admin liveness" 200 "${ADMIN_URL}/health/live"
 check_status "admin readiness" 200 "${ADMIN_URL}/health/ready"
 check_status "admin login page" 200 "${ADMIN_URL}/admin/login"

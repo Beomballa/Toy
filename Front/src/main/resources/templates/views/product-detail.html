@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260720.38">
 </head>
-<body class="detail-body">
+<body class="detail-body" th:attr="data-product-id=${productId}">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
 <div class="storefront-scroll-progress" aria-hidden="true"><span id="detailScrollProgress"></span></div>
 <p class="sr-only" id="detailStatus" role="status" aria-live="polite"></p>
@@ -353,11 +353,6 @@
 
 <button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script th:inline="javascript">
-    window.frontProductDetailBootstrap = {
-        productId: Number(/*[[${productId}]]*/ 0)
-    };
-</script>
-<script src="/js/view/detail.js?v=20260720.35"></script>
+<script src="/js/view/detail.js?v=20260720.36"></script>
 </body>
 </html>

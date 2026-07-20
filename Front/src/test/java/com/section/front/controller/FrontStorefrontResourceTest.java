@@ -34,7 +34,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260720.35");
+                .contains("/js/view/detail.js?v=20260720.36");
     }
 
     @Test

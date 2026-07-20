@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.42");
+                .contains("/js/view/app.js?v=20260720.43");
     }
 
     @Test
@@ -587,6 +587,20 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void storefrontImagesKeepMissingAndBrokenSourceRecoveryContract() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("const PRODUCT_IMAGE_FALLBACK_URL = \"/images/product-placeholder.svg\"")
+                .contains("const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL")
+                .contains("decoding=\"async\"")
+                .contains("data-image-fallback=\"true\"")
+                .contains("event.target.dataset.imageFallback === \"true\"")
+                .contains("event.target.src = PRODUCT_IMAGE_FALLBACK_URL")
+                .contains("visual?.classList.add(\"is-image-fallback\")");
+    }
+
+    @Test
     void displayAndSelectionToolsKeepCompactAccessibleContract() throws IOException {
         String html = readResource("templates/views/index.html");
         String script = readResource("static/js/view/app.js");
@@ -815,8 +829,8 @@ class FrontStorefrontResourceTest {
         assertThat(script)
                 .contains("role=\"listitem\"")
                 .contains("fetchpriority=\"high\"")
-                .contains("product-visual--empty")
-                .contains("이미지 없음")
+                .contains("is-image-fallback")
+                .contains("대체 이미지")
                 .contains("function handleCatalogCardNavigation(event)")
                 .contains("currentCatalogPageProducts().map")
                 .contains("elements.catalogGrid?.addEventListener(\"keydown\", handleCatalogCardNavigation)");

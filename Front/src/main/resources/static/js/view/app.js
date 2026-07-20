@@ -13,6 +13,7 @@
     const CATALOG_CACHE_KEY = "front-catalog-session-cache";
     const SCROLL_POSITION_KEY = "front-catalog-scroll-position";
     const FILTER_PANEL_OPEN_KEY = "front-catalog-filter-panel-open";
+    const PRODUCT_IMAGE_FALLBACK_URL = "/images/product-placeholder.svg";
     const SELECTED_PRODUCTS_SESSION_KEY = "front-selected-product-ids";
     const DEFAULT_STATE = {
         search: "",
@@ -4823,10 +4824,11 @@
 
     function productVisualMarkup(product, className, options = {}) {
         const thumbnail = String(product.thumbnailUrl || "").trim();
-        const visualLabel = `${product.name || product.headline || "상품"} ${thumbnail ? "이미지" : "이미지 없음"}`;
+        const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
+        const visualLabel = `${product.name || product.headline || "상품"} ${thumbnail ? "이미지" : "대체 이미지"}`;
         return `
-            <div class="${className}${thumbnail ? " product-visual--has-image" : " product-visual--empty"}" ${thumbnail ? "" : `role="img" aria-label="${escapeAttribute(visualLabel)}"`}>
-                ${thumbnail ? `<img class="product-visual__image" src="${escapeAttribute(thumbnail)}" alt="${escapeAttribute(visualLabel)}" loading="${options.eager ? "eager" : "lazy"}" ${options.eager ? 'fetchpriority="high"' : ""} data-product-image>` : ""}
+            <div class="${className} product-visual--has-image${thumbnail ? "" : " is-image-fallback"}">
+                <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(visualLabel)}" loading="${options.eager ? "eager" : "lazy"}" decoding="async" ${options.eager ? 'fetchpriority="high"' : ""} ${thumbnail ? "" : 'data-image-fallback="true"'} data-product-image>
                 <span class="${className}-badge">${brandInitials(product.brand)}</span>
                 <div class="${className}-copy">
                     <strong>${product.category || "Curated"}</strong>
@@ -5017,8 +5019,16 @@
         if (!event.target.matches?.("[data-product-image]")) {
             return;
         }
-        event.target.closest(".product-visual--has-image")?.classList.add("is-image-error");
-        event.target.remove();
+        const visual = event.target.closest(".product-visual--has-image");
+        if (event.target.dataset.imageFallback === "true") {
+            visual?.classList.add("is-image-error");
+            event.target.remove();
+            return;
+        }
+        event.target.dataset.imageFallback = "true";
+        event.target.src = PRODUCT_IMAGE_FALLBACK_URL;
+        event.target.alt = `${event.target.alt || "상품"} 대체 이미지`;
+        visual?.classList.add("is-image-fallback");
     }
 
     function escapeAttribute(value) {

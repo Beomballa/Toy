@@ -4129,4 +4129,11 @@ main#top > .home-category-rail {
     .detail-top-button {
         bottom: calc(88px + env(safe-area-inset-bottom));
     }
+
+    .header-search-panel {
+        max-height: calc(100dvh - 96px - env(safe-area-inset-bottom));
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+    }
 }

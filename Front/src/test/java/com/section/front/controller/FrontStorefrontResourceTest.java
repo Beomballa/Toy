@@ -14,7 +14,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.34")
+                .contains("/css/storefront.css?v=20260720.35")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.38");
+                .contains("/js/view/app.js?v=20260720.39");
     }
 
     @Test
@@ -30,7 +30,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.34")
+                .contains("/css/storefront.css?v=20260720.35")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -509,6 +509,24 @@ class FrontStorefrontResourceTest {
                 .contains("overscroll-behavior: contain")
                 .contains("touch-action: none")
                 .contains("touch-action: auto");
+    }
+
+    @Test
+    void headerSearchKeepsSemanticSafeFocusAndMobileScrollContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html).contains("role=\"search\" aria-label=\"헤더 상품 검색\"");
+        assertThat(script)
+                .contains("let headerSearchReturnFocus = null")
+                .contains("function closeHeaderSearch(restoreFocus = false)")
+                .contains("headerSearchReturnFocus?.isConnected")
+                .contains("closeHeaderSearch(true)")
+                .contains("elements.headerSearchPanel.hidden");
+        assertThat(css)
+                .contains("max-height: calc(100dvh - 96px - env(safe-area-inset-bottom))")
+                .contains("scrollbar-gutter: stable");
     }
 
     @Test

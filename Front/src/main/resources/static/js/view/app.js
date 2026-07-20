@@ -60,6 +60,7 @@
     let catalogRequestController = null;
     let catalogRequestSequence = 0;
     let shortcutHelpReturnFocus = null;
+    let headerSearchReturnFocus = null;
     let networkStatusDismissed = false;
     const detailCache = new Map();
     let toastTimerSeed = 0;
@@ -703,7 +704,7 @@
         });
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
-                closeHeaderSearch();
+                closeHeaderSearch(true);
                 closeMobileMenu();
                 closeShortcutHelp();
                 closeCatalogFilterPanel();
@@ -812,7 +813,7 @@
             document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
         elements.openDrawerFromTop?.addEventListener("click", openHeaderSearch);
-        elements.closeHeaderSearchButton?.addEventListener("click", closeHeaderSearch);
+        elements.closeHeaderSearchButton?.addEventListener("click", () => closeHeaderSearch(true));
         elements.submitHeaderSearchButton?.addEventListener("click", applyHeaderSearch);
         elements.headerSearchInput?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
@@ -820,7 +821,7 @@
                 applyHeaderSearch();
             }
             if (event.key === "Escape") {
-                closeHeaderSearch();
+                closeHeaderSearch(true);
             }
         });
         elements.headerSearchPanel?.addEventListener("click", async (event) => {
@@ -1705,6 +1706,9 @@
         if (!elements.headerSearchPanel) {
             return;
         }
+        if (elements.headerSearchPanel.hidden) {
+            headerSearchReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }
         elements.headerSearchPanel.hidden = false;
         elements.openDrawerFromTop?.setAttribute("aria-expanded", "true");
         if (elements.headerSearchInput) {
@@ -1713,8 +1717,8 @@
         }
     }
 
-    function closeHeaderSearch() {
-        if (!elements.headerSearchPanel) {
+    function closeHeaderSearch(restoreFocus = false) {
+        if (!elements.headerSearchPanel || elements.headerSearchPanel.hidden) {
             return;
         }
         elements.headerSearchPanel.hidden = true;
@@ -1722,6 +1726,10 @@
         if (elements.mobileStoreNav?.querySelector('[data-mobile-nav="SEARCH"].is-active')) {
             syncMobileStoreNavigation(currentMobileNavigationAction());
         }
+        if (restoreFocus && headerSearchReturnFocus?.isConnected) {
+            headerSearchReturnFocus.focus();
+        }
+        headerSearchReturnFocus = null;
     }
 
     async function applyHeaderSearch() {

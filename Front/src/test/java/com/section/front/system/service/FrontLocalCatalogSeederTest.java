@@ -105,7 +105,31 @@ class FrontLocalCatalogSeederTest {
         verify(frontProductDisplayRepository, times(2)).save(any(FrontProductDisplay.class));
     }
 
+    @Test
+    void repairsOnlyMissingAndLegacyGeneratedThumbnailPaths() {
+        Product missingThumbnail = product(1L, "MISSING-001", null);
+        Product legacyThumbnail = product(2L, "LEGACY-002", "/images/product/legacy-002.png");
+        Product customThumbnail = product(3L, "CUSTOM-003", "https://cdn.example.com/custom-003.png");
+
+        assertThat(seeder.repairThumbnailIfNecessary(missingThumbnail)).isTrue();
+        assertThat(seeder.repairThumbnailIfNecessary(legacyThumbnail)).isTrue();
+        assertThat(seeder.repairThumbnailIfNecessary(customThumbnail)).isFalse();
+        assertThat(missingThumbnail.getThumbnailUrl()).isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
+        assertThat(legacyThumbnail.getThumbnailUrl()).isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
+        assertThat(customThumbnail.getThumbnailUrl()).isEqualTo("https://cdn.example.com/custom-003.png");
+    }
+
     private Product product(long id, String model, Brand brand, Category category) {
+        return product(id, model, null, brand, category);
+    }
+
+    private Product product(long id, String model, String thumbnailUrl) {
+        Brand brand = Brand.builder().brandNo(1L).nameKo("테스트 브랜드").build();
+        Category category = Category.builder().categoryNo(1L).name("스니커즈").build();
+        return product(id, model, thumbnailUrl, brand, category);
+    }
+
+    private Product product(long id, String model, String thumbnailUrl, Brand brand, Category category) {
         return Product.builder()
                 .id(id)
                 .brandNo(brand.getBrandNo())
@@ -113,6 +137,7 @@ class FrontLocalCatalogSeederTest {
                 .nameKo("기존 상품 " + id)
                 .modelNum(model)
                 .releasePrice(150000)
+                .thumbnailUrl(thumbnailUrl)
                 .status(ProductStatus.ACTIVE.name())
                 .build();
     }

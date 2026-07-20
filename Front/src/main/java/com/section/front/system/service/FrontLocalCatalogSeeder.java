@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         ensureFrontDisplayTable();
         seedCatalogBase();
+        repairLegacyProductThumbnails();
         seedCatalogToTarget();
         seedFrontProductDisplays();
         seedFrontDisplaysToTarget();
@@ -99,6 +101,41 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
         seedProduct(salomon, outdoor, "XT-6 Skyline", "L47739100", 248000, LocalDate.now().minusDays(4), List.of(option("260", 7), option("270", 12), option("280", 13)));
         seedProduct(adidas, football, "Predator Fold-Over Core", "IG5432", 329000, LocalDate.now().minusDays(5), List.of(option("255", 1), option("265", 3), option("275", 4)));
         seedProduct(hoka, running, "Mach X Voltage", "HM1123", 239000, LocalDate.now().minusDays(8), List.of(option("260", 14), option("270", 25), option("280", 26)));
+    }
+
+    private void repairLegacyProductThumbnails() {
+        List<Product> repairedProducts = productRepository.findAll().stream()
+                .filter(this::repairThumbnailIfNecessary)
+                .toList();
+        if (repairedProducts.isEmpty()) {
+            return;
+        }
+        productRepository.saveAll(repairedProducts);
+        log.info("Repaired {} local product thumbnail paths.", repairedProducts.size());
+    }
+
+    boolean repairThumbnailIfNecessary(Product product) {
+        String thumbnailUrl = product.getThumbnailUrl();
+        if (thumbnailUrl != null && !thumbnailUrl.isBlank() && !isLegacyGeneratedThumbnail(product, thumbnailUrl)) {
+            return false;
+        }
+        product.updateBasicInfo(
+                product.getNameKo(),
+                product.getModelNum(),
+                product.getReleasePrice(),
+                product.getReleaseDt(),
+                DEFAULT_PRODUCT_THUMBNAIL_URL
+        );
+        return true;
+    }
+
+    private boolean isLegacyGeneratedThumbnail(Product product, String thumbnailUrl) {
+        String model = product.getModelNum();
+        if (model == null || model.isBlank()) {
+            return false;
+        }
+        String legacyPath = "/images/product/%s.png".formatted(model.toLowerCase(Locale.ROOT));
+        return legacyPath.equals(thumbnailUrl);
     }
 
     private void seedFrontProductDisplays() {

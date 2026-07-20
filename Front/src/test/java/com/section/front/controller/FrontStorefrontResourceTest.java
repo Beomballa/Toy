@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.39");
+                .contains("/js/view/app.js?v=20260720.40");
     }
 
     @Test
@@ -527,6 +527,20 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains("max-height: calc(100dvh - 96px - env(safe-area-inset-bottom))")
                 .contains("scrollbar-gutter: stable");
+    }
+
+    @Test
+    void mobileMenuKeepsExplicitFocusLabelAndArrowNavigationContract() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("let mobileMenuReturnFocus = null")
+                .contains("function openMobileMenu()")
+                .contains("function closeMobileMenu(restoreFocus = false)")
+                .contains("setAttribute(\"aria-label\", \"메뉴 닫기\")")
+                .contains("handleMobileMenuKeyboard")
+                .contains("[\"ArrowLeft\", \"ArrowRight\", \"Home\", \"End\"]")
+                .contains("window.innerWidth > 768");
     }
 
     @Test

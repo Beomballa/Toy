@@ -61,6 +61,7 @@
     let catalogRequestSequence = 0;
     let shortcutHelpReturnFocus = null;
     let headerSearchReturnFocus = null;
+    let mobileMenuReturnFocus = null;
     let networkStatusDismissed = false;
     const detailCache = new Map();
     let toastTimerSeed = 0;
@@ -701,11 +702,14 @@
                 && !event.target.closest('[data-mobile-nav="SEARCH"]')) {
                 closeHeaderSearch();
             }
+            if (!event.target.closest("#topbarSubnav") && !event.target.closest("#mobileMenuButton")) {
+                closeMobileMenu();
+            }
         });
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeHeaderSearch(true);
-                closeMobileMenu();
+                closeMobileMenu(true);
                 closeShortcutHelp();
                 closeCatalogFilterPanel();
             }
@@ -834,6 +838,12 @@
         });
         elements.mobileMenuButton?.addEventListener("click", toggleMobileMenu);
         elements.topbarSubnav?.addEventListener("click", () => closeMobileMenu());
+        elements.topbarSubnav?.addEventListener("keydown", handleMobileMenuKeyboard);
+        window.addEventListener("resize", () => {
+            if (window.innerWidth > 768) {
+                closeMobileMenu();
+            }
+        });
         elements.homeCategoryRail?.addEventListener("click", async (event) => {
             const button = event.target.closest("button");
             if (!button) {
@@ -1751,15 +1761,54 @@
     }
 
     function toggleMobileMenu() {
-        const isOpen = elements.topbarSubnav?.classList.toggle("is-mobile-open") || false;
-        elements.mobileMenuButton?.classList.toggle("is-active", isOpen);
-        elements.mobileMenuButton?.setAttribute("aria-expanded", String(isOpen));
+        if (elements.topbarSubnav?.classList.contains("is-mobile-open")) {
+            closeMobileMenu(true);
+            return;
+        }
+        openMobileMenu();
     }
 
-    function closeMobileMenu() {
+    function openMobileMenu() {
+        if (!elements.topbarSubnav || elements.topbarSubnav.classList.contains("is-mobile-open")) {
+            return;
+        }
+        mobileMenuReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        elements.topbarSubnav.classList.add("is-mobile-open");
+        elements.mobileMenuButton?.classList.add("is-active");
+        elements.mobileMenuButton?.setAttribute("aria-expanded", "true");
+        elements.mobileMenuButton?.setAttribute("aria-label", "메뉴 닫기");
+        window.requestAnimationFrame(() => elements.topbarSubnav?.querySelector("a")?.focus());
+    }
+
+    function closeMobileMenu(restoreFocus = false) {
+        if (!elements.topbarSubnav?.classList.contains("is-mobile-open")) {
+            return;
+        }
         elements.topbarSubnav?.classList.remove("is-mobile-open");
         elements.mobileMenuButton?.classList.remove("is-active");
         elements.mobileMenuButton?.setAttribute("aria-expanded", "false");
+        elements.mobileMenuButton?.setAttribute("aria-label", "메뉴 열기");
+        if (restoreFocus && mobileMenuReturnFocus?.isConnected) {
+            mobileMenuReturnFocus.focus();
+        }
+        mobileMenuReturnFocus = null;
+    }
+
+    function handleMobileMenuKeyboard(event) {
+        if (!elements.topbarSubnav?.classList.contains("is-mobile-open")
+            || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+            return;
+        }
+        const links = Array.from(elements.topbarSubnav.querySelectorAll("a"));
+        if (!links.length) {
+            return;
+        }
+        event.preventDefault();
+        const currentIndex = Math.max(0, links.indexOf(document.activeElement));
+        const nextIndex = event.key === "Home" ? 0
+            : event.key === "End" ? links.length - 1
+                : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + links.length) % links.length;
+        links[nextIndex].focus();
     }
 
     function handleMobileStoreNavigation(event) {

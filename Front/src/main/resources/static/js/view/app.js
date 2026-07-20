@@ -1716,6 +1716,9 @@
         if (!elements.headerSearchPanel) {
             return;
         }
+        closeDrawer();
+        closeShortcutHelp();
+        closeMobileMenu();
         if (elements.headerSearchPanel.hidden) {
             headerSearchReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         }
@@ -1772,6 +1775,9 @@
         if (!elements.topbarSubnav || elements.topbarSubnav.classList.contains("is-mobile-open")) {
             return;
         }
+        closeDrawer();
+        closeShortcutHelp();
+        closeHeaderSearch();
         mobileMenuReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         elements.topbarSubnav.classList.add("is-mobile-open");
         elements.mobileMenuButton?.classList.add("is-active");
@@ -3070,11 +3076,14 @@
         if (!elements.shortcutHelpModal) {
             return;
         }
+        closeDrawer();
+        closeHeaderSearch();
+        closeMobileMenu();
         shortcutHelpReturnFocus = document.activeElement;
         elements.shortcutHelpModal.classList.add("is-open");
         elements.shortcutHelpModal.setAttribute("aria-hidden", "false");
         setShortcutHelpBackgroundInert(true);
-        document.body.classList.add("has-open-modal");
+        syncBodyLayerState();
         elements.shortcutHelpCloseButton?.focus();
     }
 
@@ -3085,7 +3094,7 @@
         elements.shortcutHelpModal.classList.remove("is-open");
         elements.shortcutHelpModal.setAttribute("aria-hidden", "true");
         setShortcutHelpBackgroundInert(false);
-        document.body.classList.remove("has-open-modal");
+        syncBodyLayerState();
         if (shortcutHelpReturnFocus?.isConnected) {
             shortcutHelpReturnFocus.focus();
         }
@@ -3118,6 +3127,14 @@
             event.preventDefault();
             first.focus();
         }
+    }
+
+    function syncBodyLayerState() {
+        const hasOpenModal = Boolean(
+            elements.productDrawer?.classList.contains("is-open")
+            || elements.shortcutHelpModal?.classList.contains("is-open")
+        );
+        document.body.classList.toggle("has-open-modal", hasOpenModal);
     }
 
     function handleVisibilityChange() {
@@ -5108,6 +5125,10 @@
             return;
         }
 
+        closeShortcutHelp();
+        closeHeaderSearch();
+        closeMobileMenu();
+
         const isNewDrawerSession = !elements.productDrawer.classList.contains("is-open");
         if (isNewDrawerSession) {
             drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -5125,7 +5146,7 @@
         elements.productDrawer.setAttribute("aria-hidden", "false");
         elements.productDrawer.setAttribute("aria-busy", "true");
         setDrawerBackgroundInert(true);
-        document.body.classList.add("has-open-modal");
+        syncBodyLayerState();
         elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
             <h3 id="drawerTitle">상품 상세를 불러오는 중입니다.</h3>
@@ -5457,7 +5478,7 @@
     }
 
     function closeDrawer() {
-        if (!elements.productDrawer) {
+        if (!elements.productDrawer?.classList.contains("is-open")) {
             return;
         }
         drawerRequestSequence += 1;
@@ -5465,7 +5486,7 @@
         elements.productDrawer.setAttribute("aria-hidden", "true");
         elements.productDrawer.setAttribute("aria-busy", "false");
         setDrawerBackgroundInert(false);
-        document.body.classList.remove("has-open-modal");
+        syncBodyLayerState();
         if (drawerReturnFocus?.isConnected) {
             drawerReturnFocus.focus();
         }

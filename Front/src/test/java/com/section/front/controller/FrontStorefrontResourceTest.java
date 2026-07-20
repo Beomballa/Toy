@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.41");
+                .contains("/js/view/app.js?v=20260720.42");
     }
 
     @Test
@@ -562,6 +562,20 @@ class FrontStorefrontResourceTest {
                 .contains("bottom: calc(76px + env(safe-area-inset-bottom))")
                 .contains(".detail-body .toast-stack")
                 .contains(".network-status");
+    }
+
+    @Test
+    void storefrontLayersKeepMutualExclusionAndSharedBodyState() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("function syncBodyLayerState()")
+                .contains("classList.toggle(\"has-open-modal\", hasOpenModal)")
+                .contains("elements.productDrawer?.classList.contains(\"is-open\")")
+                .contains("elements.shortcutHelpModal?.classList.contains(\"is-open\")")
+                .contains("closeDrawer();\n        closeShortcutHelp();\n        closeMobileMenu();")
+                .contains("closeShortcutHelp();\n        closeHeaderSearch();\n        closeMobileMenu();")
+                .contains("if (!elements.productDrawer?.classList.contains(\"is-open\"))");
     }
 
     @Test

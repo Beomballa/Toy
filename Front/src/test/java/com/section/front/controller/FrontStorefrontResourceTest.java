@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260719.36");
+                .contains("/js/view/app.js?v=20260720.37");
     }
 
     @Test
@@ -434,6 +434,24 @@ class FrontStorefrontResourceTest {
                 .contains(".detail-option-overview > .detail-option-stock-rate")
                 .contains(".detail-option-distribution > :last-child:nth-child(odd)")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    }
+
+    @Test
+    void productDrawerKeepsStableFocusBusyAndRequestLifecycle() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("aria-busy=\"false\"")
+                .contains("aria-describedby=\"drawerStatus\"")
+                .contains("id=\"drawerStatus\"");
+        assertThat(script)
+                .contains("const isNewDrawerSession")
+                .contains("const requestSequence = ++drawerRequestSequence")
+                .contains("requestSequence !== drawerRequestSequence")
+                .contains("setDrawerBackgroundInert(true)")
+                .contains("element.inert = isInert")
+                .contains("drawerReturnFocus?.isConnected");
     }
 
     @Test

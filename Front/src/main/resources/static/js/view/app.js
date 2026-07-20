@@ -124,6 +124,7 @@
     let activeDrawerProductId = 0;
     let previousDrawerProductId = 0;
     let nextDrawerProductId = 0;
+    let drawerRequestSequence = 0;
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -5006,7 +5007,11 @@
             return;
         }
 
-        drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        const isNewDrawerSession = !elements.productDrawer.classList.contains("is-open");
+        if (isNewDrawerSession) {
+            drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        }
+        const requestSequence = ++drawerRequestSequence;
         window.localStorage.setItem(LAST_DRAWER_PRODUCT_KEY, String(productId));
         const list = filteredProducts();
         const currentIndex = list.findIndex((item) => Number(item.id) === Number(productId));
@@ -5017,15 +5022,20 @@
         nextDrawerProductId = Number(nextProduct?.id || 0);
         elements.productDrawer.classList.add("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "false");
+        elements.productDrawer.setAttribute("aria-busy", "true");
+        setDrawerBackgroundInert(true);
         document.body.classList.add("has-open-modal");
         elements.drawerBody.innerHTML = `
             <p class="eyebrow">Detail</p>
             <h3 id="drawerTitle">상품 상세를 불러오는 중입니다.</h3>
-            <p class="product-drawer__description">선택한 상품 데이터를 확인하고 있습니다.</p>
+            <p class="product-drawer__description" id="drawerStatus">선택한 상품 데이터를 확인하고 있습니다.</p>
         `;
 
         try {
             const product = await loadProductDetail(productId);
+            if (requestSequence !== drawerRequestSequence || !elements.productDrawer.classList.contains("is-open")) {
+                return;
+            }
             const filteredOptions = filteredDrawerOptions(product);
             const filteredRelatedProducts = filteredDrawerRelatedProducts(product);
 
@@ -5043,7 +5053,7 @@
                 <span>${product.model}</span>
                 <span>${product.category}</span>
             </div>
-            <p class="product-drawer__description">${product.description}</p>
+            <p class="product-drawer__description" id="drawerStatus">${product.description}</p>
             <div class="product-drawer__group">
                 <div class="product-drawer__overview">
                     <div class="product-drawer__overview-card">
@@ -5307,14 +5317,29 @@
                 }
             });
             bindProductButtons(elements.drawerBody);
-            elements.productDrawer.querySelector(".product-drawer__panel")?.focus();
+            elements.productDrawer.setAttribute("aria-busy", "false");
+            if (isNewDrawerSession) {
+                elements.productDrawer.querySelector(".product-drawer__panel")?.focus();
+            }
         } catch (error) {
+            if (requestSequence !== drawerRequestSequence || !elements.productDrawer.classList.contains("is-open")) {
+                return;
+            }
             elements.drawerBody.innerHTML = `
                 <p class="eyebrow">Detail</p>
-                <h3>상품 상세를 불러오지 못했습니다.</h3>
-                <p class="product-drawer__description">잠시 후 다시 시도해주세요.</p>
+                <h3 id="drawerTitle">상품 상세를 불러오지 못했습니다.</h3>
+                <p class="product-drawer__description" id="drawerStatus">잠시 후 다시 시도해주세요.</p>
             `;
+            elements.productDrawer.setAttribute("aria-busy", "false");
         }
+    }
+
+    function setDrawerBackgroundInert(isInert) {
+        [document.querySelector(".page-shell"), elements.mobileStoreNav, elements.scrollTopButton]
+            .filter(Boolean)
+            .forEach((element) => {
+                element.inert = isInert;
+            });
     }
 
     async function loadProductDetail(productId) {
@@ -5334,10 +5359,15 @@
         if (!elements.productDrawer) {
             return;
         }
+        drawerRequestSequence += 1;
         elements.productDrawer.classList.remove("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "true");
+        elements.productDrawer.setAttribute("aria-busy", "false");
+        setDrawerBackgroundInert(false);
         document.body.classList.remove("has-open-modal");
-        drawerReturnFocus?.focus?.();
+        if (drawerReturnFocus?.isConnected) {
+            drawerReturnFocus.focus();
+        }
         drawerReturnFocus = null;
         activeDrawerProductId = 0;
         previousDrawerProductId = 0;

@@ -1,49 +1,132 @@
 # Grade Stock
 
-상품 탐색 프론트, 운영 관리자, 배치 애플리케이션으로 구성된 Spring Boot 멀티 모듈 프로젝트입니다.
+Grade Stock은 **상품 재고와 전시 정보를 중심으로 고객 탐색 화면과 관리자 운영 화면을 함께 구현한 커머스 플랫폼 프로젝트**입니다.
 
-## 구성
+고객은 상품, 브랜드, 카테고리, 가격, 재고 상태를 조합해 상품을 탐색하고 상세 옵션과 연관 상품을 비교할 수 있습니다. 관리자는 같은 데이터를 기준으로 상품 전시, 주문, 콘텐츠, 회원과 운영 작업을 관리합니다.
 
-| 모듈 | 역할 | 기본 포트 |
+현재 프론트는 실제 결제 서비스가 아닌 상품 탐색·재고 비교 데모 범위이며, 운영 기능과 배포 가능한 멀티 모듈 구조를 함께 검증하는 데 목적이 있습니다.
+
+## 주요 기능
+
+### 고객 화면
+
+- 브랜드·카테고리·가격대·재고 상태 기반 상품 검색과 정렬
+- 신규 드롭, 저재고 상품, 추천 상품과 인기 브랜드 노출
+- 상품 상세 정보, 사이즈별 재고와 연관 상품 비교
+- 관심 상품, 최근 본 상품, 비교 보드와 탐색 조건 저장
+- 데스크톱·모바일 반응형 UI와 키보드 탐색 지원
+
+### 관리자 화면
+
+- 운영 현황과 재고·주문 지표 대시보드
+- 상품, 브랜드, 카테고리와 프론트 전시 순위 관리
+- 주문 상태, 배송 정보, 메모와 변경 이력 관리
+- 배너, 콘텐츠, 회원, 운영 공지와 운영 작업 관리
+- 검색 조건 기반 CSV 내보내기와 활동 로그 조회
+- 관리자 세션 인증, PBKDF2 비밀번호 해시와 역할별 접근 통제
+
+### 운영 기반
+
+- 운영 프로파일의 필수 DB 설정과 graceful shutdown
+- 프로세스 생존 및 DB 준비 상태 헬스체크
+- 최초 최고 관리자 환경변수 기반 생성
+- 배치 활성화 여부와 실행 주기 환경변수 제어
+- 배포 후 프론트·관리자·배치 smoke test
+
+## 구조
+
+```text
+Toy/
+├── Front/               고객용 화면과 카탈로그 API
+├── admin/               관리자 화면과 운영 API
+├── batch/               예약 작업 실행 애플리케이션
+├── common/              공통 엔티티, Repository, QueryDSL 조회 구조
+├── db/                  기능별 DB 반영 스크립트
+├── docs/                운영 배포 문서
+└── scripts/             배포 후 점검 스크립트
+```
+
+| 모듈 | 책임 | 기본 포트 |
 | --- | --- | --- |
-| `Front` | 고객용 상품 탐색 및 상세 화면 | `8080` |
-| `admin` | 상품, 주문, 콘텐츠, 회원, 운영 설정 관리 | `9090` |
-| `batch` | 운영 배치 실행기 | `9091` |
-| `common` | 공통 엔티티, QueryDSL 저장소, 공통 서비스 | 라이브러리 |
+| `Front` | 고객용 상품 탐색, 상세 화면과 조회 API | `8080` |
+| `admin` | 상품·주문·콘텐츠·회원·운영 설정 관리 | `9090` |
+| `batch` | 명시적으로 활성화된 예약 작업 실행 | `9091` |
+| `common` | 공통 도메인과 QueryDSL 기반 조회 계층 | 실행 모듈 아님 |
 
-## 기술 스택
+각 실행 모듈은 `common`을 의존하지만 프론트와 관리자는 서로 직접 의존하지 않습니다. 동일한 상품·주문 도메인을 공유하면서 화면별 서비스와 응답 DTO는 각 모듈에서 분리합니다.
 
-- Java 21
-- Spring Boot 3.5.4
-- Spring Data JPA, OpenFeign QueryDSL 6.11
-- Thymeleaf, Vanilla JavaScript
-- MySQL
+```mermaid
+flowchart LR
+    User[고객] --> Front[Front :8080]
+    AdminUser[관리자] --> Admin[admin :9090]
+    Scheduler[스케줄러] --> Batch[batch :9091]
+    Front --> Common[common domain/query]
+    Admin --> Common
+    Batch --> Common
+    Common --> DB[(MySQL)]
+```
+
+## 기술 선택
+
+- **Java 21 / Spring Boot 3.5.4**: 실행 모듈과 공통 도메인을 멀티 모듈로 구성합니다.
+- **Spring Data JPA**: 엔티티 상태 변경과 트랜잭션 경계를 관리합니다.
+- **OpenFeign QueryDSL 6.11**: 다중 검색 조건, 집계, 정렬과 페이징 조회를 타입 안전하게 분리합니다.
+- **Thymeleaf / Vanilla JavaScript**: 별도 SPA 프레임워크 없이 서버 렌더링 화면과 비동기 API 흐름을 구성합니다.
+- **MySQL**: 상품, 옵션, 주문, 콘텐츠와 운영 이력을 저장합니다.
 
 ## 로컬 실행
 
-MySQL의 `new_toy` 데이터베이스를 준비한 뒤 환경에 맞게 접속 정보를 지정합니다.
+### 요구 사항
+
+- JDK 21
+- MySQL
+- `new_toy` 데이터베이스와 필요한 스키마
+
+### 환경 설정
 
 ```bash
 export DB_URL='jdbc:mysql://127.0.0.1:3306/new_toy?serverTimezone=Asia/Seoul&characterEncoding=UTF-8'
 export DB_USERNAME='root'
 export DB_PASSWORD='your-password'
-
-./gradlew :Front:bootRun
-./gradlew :admin:bootRun
 ```
 
-로컬 프로파일은 데이터가 없는 테이블에 화면 확인용 데이터를 생성합니다. 운영 프로파일에서는 로컬 시더가 동작하지 않습니다.
+### 애플리케이션 실행
 
-## 검증
+각 명령은 별도 터미널에서 실행합니다.
+
+```bash
+./gradlew :Front:bootRun
+./gradlew :admin:bootRun
+./gradlew :batch:bootRun
+```
+
+- 고객 화면: `http://localhost:8080`
+- 관리자 화면: `http://localhost:9090/admin/login`
+- 배치 헬스체크: `http://localhost:9091/health/live`
+
+로컬 프로파일은 비어 있는 테이블에 화면 확인용 데이터를 생성합니다. 운영 프로파일에서는 로컬 데이터 시더가 실행되지 않습니다.
+
+## 테스트와 패키징
 
 ```bash
 ./gradlew test bootJar
 ```
 
-배포 후 기본 포트로 세 애플리케이션을 실행했다면 다음 명령으로 헬스체크와 관리자 접근 통제를 확인할 수 있습니다.
+실행 가능한 JAR는 `Front`, `admin`, `batch`의 `build/libs` 아래 생성됩니다. `common`은 실행 JAR가 아니라 세 모듈에 포함되는 라이브러리입니다.
+
+배포된 세 애플리케이션의 헬스체크, 프론트 홈, 관리자 접근 통제를 한 번에 확인할 수 있습니다.
 
 ```bash
 ./scripts/smoke-test.sh
 ```
 
-운영 환경변수와 최초 관리자 생성, 실행 순서, 롤백 기준은 [배포 가이드](docs/DEPLOYMENT.md)를 확인합니다.
+운영 환경변수, 최초 관리자 생성, 실행 순서와 롤백 기준은 [운영 배포 가이드](docs/DEPLOYMENT.md)를 참고합니다.
+
+## 상태 확인 API
+
+| 경로 | 용도 |
+| --- | --- |
+| `/health/live` | 애플리케이션 프로세스 생존 확인 |
+| `/health/ready` | DB 연결을 포함한 요청 처리 준비 확인 |
+
+운영 load balancer는 `/health/ready`가 `200`인 인스턴스에만 트래픽을 전달해야 합니다.

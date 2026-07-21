@@ -8,6 +8,8 @@ import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
+import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -39,6 +41,7 @@ public class AdminContentRestController {
 
     private final DocumentService documentService;
     private final AdminOperationPolicyService adminOperationPolicyService;
+    private final AdminContentStatsService adminContentStatsService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -73,6 +76,11 @@ public class AdminContentRestController {
     ) {
         DocumentListQuery query = buildQuery(boardType, keyword, status, publicYn, pinnedOnly, productNo, productLinked, startDate, endDate);
         return ResponseEntity.ok(ContentSummaryResponse.from(documentService.getDocumentSummary(query)));
+    }
+
+    @GetMapping("/stats/daily")
+    public ResponseEntity<ContentDailyStatsResponse> getDailyStats() {
+        return ResponseEntity.ok(adminContentStatsService.getLatestStats());
     }
 
     @GetMapping("/export")

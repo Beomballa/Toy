@@ -2,6 +2,7 @@ const ContentList = {
     initialized: false,
     exportInFlight: false,
     actionInFlightIds: new Set(),
+    dailyStats: null,
     state: {
         page: 0,
         size: 9,
@@ -33,6 +34,7 @@ const ContentList = {
         CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
         this.bindEvents();
         this.applyOperationPolicy();
+        this.getDailyStats();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
@@ -77,6 +79,7 @@ const ContentList = {
                 this.pushState();
                 this.updateSidebarActive();
                 this.updatePageMeta();
+                this.renderDailyStats();
                 this.getList();
             });
         });
@@ -88,6 +91,7 @@ const ContentList = {
             this.setInitialTab();
             this.updateSidebarActive();
             this.updatePageMeta();
+            this.renderDailyStats();
             CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
             CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
             this.getList();
@@ -167,6 +171,48 @@ const ContentList = {
         if (createLabelEl) createLabelEl.textContent = meta.createLabel;
         if (badgeEl) badgeEl.textContent = badge;
         if (descEl) descEl.textContent = meta.description;
+    },
+
+    async getDailyStats() {
+        try {
+            const response = await fetch('/api/admin/content/stats/daily', {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error('문서 일일 통계를 불러오지 못했습니다.');
+            }
+            this.dailyStats = await response.json();
+            this.renderDailyStats();
+        } catch (error) {
+            this.dailyStats = null;
+            this.setText('contentDailyStatsStatus', '조회 실패');
+            console.error('문서 일일 통계 조회 실패:', error);
+        }
+    },
+
+    renderDailyStats() {
+        const items = Array.isArray(this.dailyStats?.items) ? this.dailyStats.items : [];
+        const total = items.find((item) => item.scope === 'TOTAL');
+        const board = items.find((item) => item.scope === this.state.boardType);
+        const hasSnapshot = Boolean(this.dailyStats?.snapshotDate && total);
+
+        this.setText('contentDailyStatsDate', hasSnapshot ? `${this.dailyStats.snapshotDate} 기준` : '집계 대기');
+        this.setText('contentDailyStatsBoard', board ? `${this.formatNumber(board.totalCount)}건` : '-');
+        this.setText('contentDailyStatsTotal', total ? `${this.formatNumber(total.totalCount)}건` : '-');
+        this.setText('contentDailyStatsViews', total ? `${this.formatNumber(total.totalViewCount)}회` : '-');
+        this.setText('contentDailyStatsStatus', hasSnapshot ? `완료 · ${this.dailyStats.aggregatedAt}` : '스냅샷 없음');
+    },
+
+    setText(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    },
+
+    formatNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toLocaleString('ko-KR') : '0';
     },
 
     async applyOperationPolicy(settings = null) {

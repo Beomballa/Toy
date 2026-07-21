@@ -3,6 +3,8 @@ package com.section.admin.content.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
+import com.section.admin.content.service.AdminContentStatsService;
+import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -51,12 +53,19 @@ class AdminContentRestControllerTest {
     @Mock
     private AdminOperationPolicyService adminOperationPolicyService;
 
+    @Mock
+    private AdminContentStatsService adminContentStatsService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminContentRestController(documentService, adminOperationPolicyService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminContentRestController(
+                        documentService,
+                        adminOperationPolicyService,
+                        adminContentStatsService
+                ))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();
@@ -184,6 +193,25 @@ class AdminContentRestControllerTest {
         assertEquals(Document.BoardType.STYLE, captor.getValue().boardType());
         assertEquals(true, captor.getValue().productLinked());
         assertEquals(101L, captor.getValue().productNo());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 일일 통계 API는 최근 배치 스냅샷을 반환한다")
+    void getDailyStatsReturnsLatestBatchSnapshot() throws Exception {
+        when(adminContentStatsService.getLatestStats()).thenReturn(new ContentDailyStatsResponse(
+                "2026-07-21",
+                "2026-07-21 14:30:00",
+                List.of(new ContentDailyStatsResponse.Item(
+                        "TOTAL", 8, 7, 1, 7, 1, 2, 4, 120
+                ))
+        ));
+
+        mockMvc.perform(get("/api/admin/content/stats/daily"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.snapshotDate").value("2026-07-21"))
+                .andExpect(jsonPath("$.items[0].scope").value("TOTAL"))
+                .andExpect(jsonPath("$.items[0].totalCount").value(8))
+                .andExpect(jsonPath("$.items[0].totalViewCount").value(120));
     }
 
     @Test

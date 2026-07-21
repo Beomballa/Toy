@@ -44,6 +44,34 @@
         <a class="content-board-tab" href="#" data-board-type="QNA">문의사항</a>
     </div>
 
+    <section class="admin-panel-card p-3 mb-3" aria-labelledby="contentDailyStatsTitle">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <div>
+                <div class="text-muted small">Daily Content Snapshot</div>
+                <h2 class="h6 mb-0" id="contentDailyStatsTitle">문서 일일 통계</h2>
+            </div>
+            <span class="badge text-bg-light" id="contentDailyStatsDate">집계 대기</span>
+        </div>
+        <div class="row g-3" aria-live="polite">
+            <div class="col-6 col-xl-3">
+                <div class="text-muted small">현재 게시판</div>
+                <strong id="contentDailyStatsBoard">-</strong>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="text-muted small">전체 문서</div>
+                <strong id="contentDailyStatsTotal">-</strong>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="text-muted small">전체 조회수</div>
+                <strong id="contentDailyStatsViews">-</strong>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="text-muted small">집계 상태</div>
+                <strong id="contentDailyStatsStatus">불러오는 중</strong>
+            </div>
+        </div>
+    </section>
+
     <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
             <section class="content-board-search-section content-board-search-section--primary">

@@ -4,7 +4,9 @@ server:
   servlet:
     session:
       timeout: ${ADMIN_SESSION_TIMEOUT:30m}
+      tracking-modes: cookie
       cookie:
+        name: GS_ADMIN_SESSION
         http-only: true
         secure: true
         same-site: strict

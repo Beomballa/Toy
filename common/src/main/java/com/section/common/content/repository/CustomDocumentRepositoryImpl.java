@@ -1,6 +1,8 @@
 package com.section.common.content.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -8,6 +10,7 @@ import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
+import com.section.common.content.dto.DocumentDailyStatsRow;
 import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -103,6 +106,42 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 linkedCount,
                 totalViewCount
         );
+    }
+
+    @Override
+    public List<DocumentDailyStatsRow> getDocumentDailyStats() {
+        NumberExpression<Long> publishedCount = countWhen(document.status.eq(Document.PublishStatus.PUBLISHED));
+        NumberExpression<Long> draftCount = countWhen(document.status.eq(Document.PublishStatus.DRAFT));
+        NumberExpression<Long> publicCount = countWhen(document.publicYn.eq(YN.Y));
+        NumberExpression<Long> privateCount = countWhen(document.publicYn.eq(YN.N));
+        NumberExpression<Long> pinnedCount = countWhen(document.pinnedYn.eq(YN.Y));
+        NumberExpression<Long> linkedCount = countWhen(document.productNo.isNotNull());
+
+        return queryFactory
+                .select(Projections.constructor(
+                        DocumentDailyStatsRow.class,
+                        document.boardType,
+                        document.count(),
+                        publishedCount,
+                        draftCount,
+                        publicCount,
+                        privateCount,
+                        pinnedCount,
+                        linkedCount,
+                        document.viewCnt.sumLong().coalesce(0L)
+                ))
+                .from(document)
+                .groupBy(document.boardType)
+                .orderBy(document.boardType.asc())
+                .fetch();
+    }
+
+    private NumberExpression<Long> countWhen(BooleanExpression predicate) {
+        return new CaseBuilder()
+                .when(predicate)
+                .then(1L)
+                .otherwise(0L)
+                .sumLong();
     }
 
     private BooleanExpression boardTypeEq(Document.BoardType boardType) {

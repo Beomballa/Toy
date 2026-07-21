@@ -29,6 +29,7 @@ class AdminProductionConfigurationTest {
                 .contains("tracking-modes: cookie")
                 .contains("name: GS_ADMIN_SESSION")
                 .contains("max-login-failures: ${ADMIN_MAX_LOGIN_FAILURES:5}")
+                .contains("max-ip-login-failures: ${ADMIN_MAX_IP_LOGIN_FAILURES:25}")
                 .contains("login-lock-duration: ${ADMIN_LOGIN_LOCK_DURATION:15m}")
                 .contains("login-id: ${ADMIN_BOOTSTRAP_LOGIN_ID:}")
                 .contains("password: ${ADMIN_BOOTSTRAP_PASSWORD:}")

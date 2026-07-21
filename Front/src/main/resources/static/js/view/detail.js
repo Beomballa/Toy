@@ -243,6 +243,7 @@
     }
 
     function productVisualMarkup(product, className) {
+        product = markupSafeObject(product);
         const thumbnail = String(product.thumbnailUrl || "").trim();
         const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL;
         const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;
@@ -300,10 +301,38 @@
             .replaceAll(">", "&gt;");
     }
 
+    function escapeMarkup(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#39;");
+    }
+
+    function markupSafeObject(value) {
+        if (!value || typeof value !== "object") {
+            return value;
+        }
+        return new Proxy(value, {
+            get(target, property) {
+                const result = target[property];
+                if (typeof result === "string") {
+                    return escapeMarkup(result);
+                }
+                if (Array.isArray(result)) {
+                    return result.map(markupSafeObject);
+                }
+                return result;
+            }
+        });
+    }
+
     function renderMeta(product) {
         if (!elements.detailMetaRow) {
             return;
         }
+        product = markupSafeObject(product);
         elements.detailMetaRow.innerHTML = `
             <span class="product-drawer__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
             <span class="product-drawer__pill is-stable-stock">${product.brand}</span>
@@ -376,7 +405,7 @@
         elements.detailSignalList.innerHTML = signals.map((message, index) => `
             <article class="signal-card">
                 <strong>Signal 0${index + 1}</strong>
-                <span>${message}</span>
+                <span>${escapeMarkup(message)}</span>
             </article>
         `).join("");
     }
@@ -396,7 +425,7 @@
         elements.detailOverviewGrid.innerHTML = items.map(([label, value]) => `
             <article class="detail-info-card">
                 <span>${label}</span>
-                <strong>${value || "-"}</strong>
+                <strong>${escapeMarkup(value || "-")}</strong>
             </article>
         `).join("");
     }
@@ -473,7 +502,7 @@
         const firstAvailableName = options.find((option) => Number(option.stock || 0) > 0)?.name;
         elements.detailOptionGrid.innerHTML = options.map((option) => `
             <button class="detail-option-card ${selectedOptionName === option.name ? "is-selected" : ""}" type="button" role="radio" data-detail-option="${escapeAttribute(option.name)}" aria-checked="${selectedOptionName === option.name}" tabindex="${selectedOptionName === option.name || (!selectedOptionName && firstAvailableName === option.name) ? "0" : "-1"}" ${Number(option.stock || 0) <= 0 ? "disabled" : ""}>
-                <span>${option.name}</span>
+                <span>${escapeMarkup(option.name)}</span>
                 <strong>${option.stock}개</strong>
                 <em class="${stockClassName(option.stock)}">${stockLabel(option.stock)}</em>
             </button>
@@ -804,7 +833,9 @@
             `;
             return;
         }
-        elements.detailRelatedGrid.innerHTML = related.map((item, index) => `
+        elements.detailRelatedGrid.innerHTML = related.map((item, index) => {
+            item = markupSafeObject(item);
+            return `
             <article class="detail-related-card saved-product-card" role="listitem" data-related-product-id="${item.id}" tabindex="${index === 0 ? "0" : "-1"}" aria-label="${escapeAttribute(`${item.name}, ${item.priceLabel || formatPrice(item.price)}, 재고 ${item.stock}개`)}">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand}</span>
@@ -835,7 +866,8 @@
                     </details>
                 </div>
             </article>
-        `).join("");
+        `;
+        }).join("");
         bindRelatedCardActions(related);
         syncRelatedButtons();
     }
@@ -1102,7 +1134,9 @@
             return;
         }
         elements.detailRecentSection.hidden = false;
-        elements.detailRecentGrid.innerHTML = recentProducts.map((item) => `
+        elements.detailRecentGrid.innerHTML = recentProducts.map((item) => {
+            item = markupSafeObject(item);
+            return `
             <article class="detail-related-card saved-product-card">
                 ${productVisualMarkup(item, "detail-related-card__visual")}
                 <span class="detail-related-card__brand">${item.brand || "-"}</span>
@@ -1119,7 +1153,8 @@
                     <button class="saved-product-card__danger" type="button" data-remove-detail-recent-id="${item.id}">삭제</button>
                 </div>
             </article>
-        `).join("");
+        `;
+        }).join("");
     }
 
     function visibleDetailRecentProducts(currentProductId) {
@@ -1701,7 +1736,15 @@
         toast.className = `toast${isWarning ? " is-warning" : ""}`;
         toast.setAttribute("role", isWarning ? "alert" : "status");
         toast.setAttribute("aria-live", isWarning ? "assertive" : "polite");
-        toast.innerHTML = `<strong>${title}</strong><span>${body}</span><button type="button" aria-label="${title} 알림 닫기">×</button>`;
+        const titleElement = document.createElement("strong");
+        titleElement.textContent = String(title || "");
+        const bodyElement = document.createElement("span");
+        bodyElement.textContent = String(body || "");
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.textContent = "×";
+        closeButton.setAttribute("aria-label", `${String(title || "알림")} 알림 닫기`);
+        toast.append(titleElement, bodyElement, closeButton);
         toast.dataset.toastId = String(++toastTimerSeed);
         while (stack.childElementCount >= 3) {
             stack.firstElementChild?.remove();

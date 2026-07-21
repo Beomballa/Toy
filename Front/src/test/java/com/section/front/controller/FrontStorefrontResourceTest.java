@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260720.44");
+                .contains("/js/view/app.js?v=20260721.45");
     }
 
     @Test
@@ -34,7 +34,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260720.36");
+                .contains("/js/view/detail.js?v=20260721.37");
     }
 
     @Test
@@ -552,7 +552,8 @@ class FrontStorefrontResourceTest {
         assertThat(mainScript)
                 .contains("toast.setAttribute(\"role\", isWarning ? \"alert\" : \"status\")")
                 .contains("while (stack.childElementCount >= 3)")
-                .contains("aria-label=\"${title} 알림 닫기\"")
+                .contains("closeButton.setAttribute(\"aria-label\"")
+                .contains("titleElement.textContent = String(title || \"\")")
                 .contains("stack.setAttribute(\"aria-label\", \"화면 알림\")");
         assertThat(detailScript)
                 .contains("while (stack.childElementCount >= 3)")
@@ -1886,6 +1887,23 @@ class FrontStorefrontResourceTest {
                 .contains(".page-shell--detail .topbar--detail .topbar-action")
                 .contains("grid-template-columns: minmax(68px, auto) minmax(0, 1fr)")
                 .contains(".page-shell--detail .detail-signal-list .signal-card::before");
+    }
+
+    @Test
+    void dynamicProductMarkupKeepsStoredXssProtectionContract() throws IOException {
+        String mainScript = readResource("static/js/view/app.js");
+        String detailScript = readResource("static/js/view/detail.js");
+
+        assertThat(mainScript)
+                .contains("function markupSafeObject(value)")
+                .contains("product = markupSafeObject(product)")
+                .contains("titleElement.textContent = String(title || \"\")")
+                .doesNotContain("toast.innerHTML = `<strong>${title}");
+        assertThat(detailScript)
+                .contains("function escapeMarkup(value)")
+                .contains("item = markupSafeObject(item)")
+                .contains("<span>${escapeMarkup(message)}</span>")
+                .doesNotContain("toast.innerHTML = `<strong>${title}");
     }
 
     private String readResource(String path) throws IOException {

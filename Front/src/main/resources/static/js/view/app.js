@@ -637,8 +637,8 @@
                 value,
                 label: value
             }));
-        select.innerHTML = [`<option value="ALL">${defaultLabel}</option>`]
-            .concat(options.map((option) => `<option value="${option.value}">${option.label}</option>`))
+        select.innerHTML = [`<option value="ALL">${escapeMarkup(defaultLabel)}</option>`]
+            .concat(options.map((option) => `<option value="${escapeAttribute(option.value)}">${escapeMarkup(option.label)}</option>`))
             .join("");
     }
 
@@ -2307,6 +2307,8 @@
     }
 
     function productRailCard(product, kicker, className) {
+        product = markupSafeObject(product);
+        kicker = escapeMarkup(kicker);
         const bookmarked = isBookmarkedProduct(product.id);
         const visualClass = className === "spotlight-card" ? "spotlight-card__visual" : "signal-feed-card__visual";
         return `
@@ -2419,7 +2421,9 @@
         }
 
         applyCatalogDisplayClasses();
-        elements.catalogGrid.innerHTML = list.map((product, index) => `
+        elements.catalogGrid.innerHTML = list.map((product, index) => {
+            product = markupSafeObject(product);
+            return `
             <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" data-keyboard-hint="B 관심 · C 비교 · S 선택 · Q 미리보기 · L 링크" aria-label="${escapeAttribute(`${product.name}, ${product.priceLabel || formatPrice(product.price)}, ${product.stockStatus || stockLabel(product.stock)}`)}" aria-posinset="${positionOffset + index + 1}" aria-setsize="${allList.length}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}" aria-label="${escapeAttribute(product.name)} ${selectedProductIds.has(Number(product.id)) ? "선택 해제" : "선택"}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
@@ -2449,7 +2453,8 @@
                     </div>
                 </div>
             </article>
-        `).join("");
+        `;
+        }).join("");
     }
 
     function catalogPaginationDetails(list = filteredProducts()) {
@@ -3593,6 +3598,24 @@
             .replaceAll("'", "&#39;");
     }
 
+    function markupSafeObject(value) {
+        if (!value || typeof value !== "object") {
+            return value;
+        }
+        return new Proxy(value, {
+            get(target, property) {
+                const result = target[property];
+                if (typeof result === "string") {
+                    return escapeMarkup(result);
+                }
+                if (Array.isArray(result)) {
+                    return result.map(markupSafeObject);
+                }
+                return result;
+            }
+        });
+    }
+
     function renderHiddenProducts() {
         if (!elements.hiddenProductList) {
             return;
@@ -4731,7 +4754,15 @@
         toast.className = `toast${isWarning ? " is-warning" : ""}`;
         toast.setAttribute("role", isWarning ? "alert" : "status");
         toast.setAttribute("aria-live", isWarning ? "assertive" : "polite");
-        toast.innerHTML = `<strong>${title}</strong><span>${body}</span><button type="button" aria-label="${title} 알림 닫기">×</button>`;
+        const titleElement = document.createElement("strong");
+        titleElement.textContent = String(title || "");
+        const bodyElement = document.createElement("span");
+        bodyElement.textContent = String(body || "");
+        const closeButton = document.createElement("button");
+        closeButton.type = "button";
+        closeButton.textContent = "×";
+        closeButton.setAttribute("aria-label", `${String(title || "알림")} 알림 닫기`);
+        toast.append(titleElement, bodyElement, closeButton);
         toast.dataset.toastId = String(++toastTimerSeed);
         while (stack.childElementCount >= 3) {
             stack.firstElementChild?.remove();
@@ -4823,6 +4854,7 @@
     }
 
     function productVisualMarkup(product, className, options = {}) {
+        product = markupSafeObject(product);
         const thumbnail = String(product.thumbnailUrl || "").trim();
         const usesFallback = !thumbnail || thumbnail === PRODUCT_IMAGE_FALLBACK_URL;
         const imageSource = thumbnail || PRODUCT_IMAGE_FALLBACK_URL;

@@ -28,6 +28,11 @@ class FrontSecurityHeadersFilterTest {
         assertFalse(csp.contains("'unsafe-inline'"));
         assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
         assertEquals("DENY", response.getHeader("X-Frame-Options"));
+        assertEquals("same-origin", response.getHeader("Cross-Origin-Opener-Policy"));
+        assertEquals("same-origin", response.getHeader("Cross-Origin-Resource-Policy"));
+        assertEquals("none", response.getHeader("X-Permitted-Cross-Domain-Policies"));
+        assertEquals("no-store, max-age=0", response.getHeader("Cache-Control"));
+        assertEquals("no-cache", response.getHeader("Pragma"));
         assertNull(response.getHeader("Strict-Transport-Security"));
     }
 
@@ -41,5 +46,17 @@ class FrontSecurityHeadersFilterTest {
         filter.doFilter(request, response, (req, res) -> { });
 
         assertEquals("max-age=31536000; includeSubDomains", response.getHeader("Strict-Transport-Security"));
+    }
+
+    @Test
+    @DisplayName("버전이 지정된 정적 리소스는 장기 캐시 설정을 유지한다")
+    void leavesStaticResourceCachePolicyUntouched() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/css/view/app.css");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (req, res) -> { });
+
+        assertNull(response.getHeader("Cache-Control"));
+        assertNull(response.getHeader("Pragma"));
     }
 }

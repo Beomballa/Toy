@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FrontCatalogRequestTest {
 
@@ -69,5 +70,29 @@ class FrontCatalogRequestTest {
         ).toQuery();
 
         assertEquals("NAME_ASC", query.sort());
+    }
+
+    @Test
+    @DisplayName("과도하게 긴 검색어는 DB 조회 전에 거부한다")
+    void toQueryRejectsLongKeyword() {
+        FrontCatalogRequest request = new FrontCatalogRequest(
+                "a".repeat(101), null, null, null, null, null, null, null
+        );
+
+        assertThrows(IllegalArgumentException.class, request::toQuery);
+    }
+
+    @Test
+    @DisplayName("과도하게 긴 브랜드와 카테고리 조건은 거부한다")
+    void toQueryRejectsLongFacet() {
+        FrontCatalogRequest brandRequest = new FrontCatalogRequest(
+                null, "b".repeat(81), null, null, null, null, null, null
+        );
+        FrontCatalogRequest categoryRequest = new FrontCatalogRequest(
+                null, null, "c".repeat(81), null, null, null, null, null
+        );
+
+        assertThrows(IllegalArgumentException.class, brandRequest::toQuery);
+        assertThrows(IllegalArgumentException.class, categoryRequest::toQuery);
     }
 }

@@ -29,7 +29,14 @@ public class FrontProductRestController {
 
     @GetMapping("/{productId}")
     public FrontProductDetailResponse getProduct(@PathVariable long productId) {
+        validateProductId(productId);
         return frontProductCatalogService.findProductDetail(productId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
+
+    private void validateProductId(long productId) {
+        if (productId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "상품 ID는 양수여야 합니다.");
+        }
     }
 }

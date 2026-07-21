@@ -36,9 +36,21 @@ public class FrontSecurityHeadersFilter extends OncePerRequestFilter {
         response.setHeader("X-Frame-Options", "DENY");
         response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
         response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
+        response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+        response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+        if (isDynamicResponse(request)) {
+            response.setHeader("Cache-Control", "no-store, max-age=0");
+            response.setHeader("Pragma", "no-cache");
+        }
         if (request.isSecure()) {
             response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean isDynamicResponse(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/") || path.equals("/front") || path.startsWith("/front/") || path.startsWith("/api/");
     }
 }

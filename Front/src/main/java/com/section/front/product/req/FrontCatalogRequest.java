@@ -13,11 +13,14 @@ public record FrontCatalogRequest(
         String priceBand
 ) {
 
+    private static final int MAX_KEYWORD_LENGTH = 100;
+    private static final int MAX_FACET_LENGTH = 80;
+
     public FrontCatalogQuery toQuery() {
         return new FrontCatalogQuery(
-                normalizeText(keyword),
-                normalizeText(brand),
-                normalizeText(category),
+                normalizeText(keyword, MAX_KEYWORD_LENGTH, "검색어"),
+                normalizeText(brand, MAX_FACET_LENGTH, "브랜드"),
+                normalizeText(category, MAX_FACET_LENGTH, "카테고리"),
                 normalizeStock(stock),
                 normalizeSort(sort),
                 normalizeLowStockThreshold(lowStockThreshold),
@@ -26,13 +29,16 @@ public record FrontCatalogRequest(
         );
     }
 
-    private String normalizeText(String value) {
+    private String normalizeText(String value, int maxLength, String fieldName) {
         if (value == null) {
             return null;
         }
         String normalized = value.trim();
         if (normalized.isBlank() || "ALL".equalsIgnoreCase(normalized)) {
             return null;
+        }
+        if (normalized.length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + "는 " + maxLength + "자 이하여야 합니다.");
         }
         return normalized;
     }

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.ui.ConcurrentModel;
 
 import java.util.Optional;
@@ -35,7 +36,7 @@ class AdminAuthenticationControllerTest {
     @DisplayName("로그인 성공 시 세션에 관리자 식별 정보를 저장한다")
     void loginStoresAuthenticatedAdminInSession() {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.getSession(true);
+        request.getSession(true).setMaxInactiveInterval(47 * 60);
         when(authenticationService.authenticate("master", "admin1234"))
                 .thenReturn(Optional.of(new AuthenticatedAdmin(1L, "운영 총괄", "ROLE_SUPER")));
 
@@ -44,7 +45,7 @@ class AdminAuthenticationControllerTest {
         assertEquals("redirect:/admin/dashboard", view);
         assertEquals(1L, request.getSession().getAttribute(AdminAuthenticationController.ADMIN_NO));
         assertEquals("운영 총괄", request.getSession().getAttribute(AdminAuthenticationController.ADMIN_NAME));
-        assertEquals(30 * 60, request.getSession().getMaxInactiveInterval());
+        assertEquals(47 * 60, request.getSession().getMaxInactiveInterval());
         verify(loginAttemptGuard).clear(request.getRemoteAddr(), "master");
     }
 
@@ -75,5 +76,19 @@ class AdminAuthenticationControllerTest {
         assertEquals("views/login", view);
         assertEquals("로그인 시도가 많습니다. 잠시 후 다시 시도해 주세요.", model.getAttribute("loginError"));
         verifyNoInteractions(authenticationService);
+    }
+
+    @Test
+    @DisplayName("로그아웃은 세션을 무효화하고 브라우저 저장 데이터 제거를 지시한다")
+    void logoutInvalidatesSessionAndClearsBrowserData() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.getSession(true).setAttribute(AdminAuthenticationController.ADMIN_NO, 1L);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        String view = controller.logout(request, response);
+
+        assertEquals("redirect:/admin/login", view);
+        assertNull(request.getSession(false));
+        assertEquals("\"cache\", \"cookies\", \"storage\"", response.getHeader("Clear-Site-Data"));
     }
 }

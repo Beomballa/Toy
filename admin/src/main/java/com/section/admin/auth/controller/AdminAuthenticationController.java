@@ -4,6 +4,7 @@ import com.section.admin.auth.service.AdminAuthenticationService;
 import com.section.admin.auth.service.AdminAuthenticationService.AuthenticatedAdmin;
 import com.section.admin.auth.support.AdminLoginAttemptGuard;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -71,16 +72,16 @@ public class AdminAuthenticationController {
         session.setAttribute(ADMIN_NO, admin.adminNo());
         session.setAttribute(ADMIN_NAME, admin.name());
         session.setAttribute(ADMIN_ROLE, admin.role());
-        session.setMaxInactiveInterval(30 * 60);
         return "redirect:/admin/dashboard";
     }
 
     @PostMapping("/admin/logout")
-    public String logout(HttpServletRequest request) {
+    public String logout(HttpServletRequest request, HttpServletResponse response) {
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
         }
+        response.setHeader("Clear-Site-Data", "\"cache\", \"cookies\", \"storage\"");
         return "redirect:/admin/login";
     }
 }

@@ -6,6 +6,17 @@ FRONT_URL="${FRONT_URL:-http://127.0.0.1:8080}"
 ADMIN_URL="${ADMIN_URL:-http://127.0.0.1:9090}"
 BATCH_URL="${BATCH_URL:-http://127.0.0.1:9091}"
 FRONT_DETAIL_PRODUCT_ID="${FRONT_DETAIL_PRODUCT_ID:-12}"
+ADMIN_SMOKE_LOGIN_ID="${ADMIN_SMOKE_LOGIN_ID:-}"
+ADMIN_SMOKE_PASSWORD="${ADMIN_SMOKE_PASSWORD:-}"
+ADMIN_COOKIE_JAR=""
+
+cleanup() {
+  if [[ -n "$ADMIN_COOKIE_JAR" ]]; then
+    rm -f "$ADMIN_COOKIE_JAR"
+  fi
+}
+
+trap cleanup EXIT
 
 check_status() {
   local name="$1"
@@ -71,6 +82,52 @@ check_header_present() {
   printf 'PASS %-28s header=%s\n' "$name" "$header_name"
 }
 
+check_admin_authenticated_flow() {
+  local login_status
+  local dashboard_status
+  local logout_response
+  local logout_status
+  local logout_headers
+
+  if [[ -z "$ADMIN_SMOKE_LOGIN_ID" || -z "$ADMIN_SMOKE_PASSWORD" ]]; then
+    printf 'SKIP %-28s reason=credentials-not-provided\n' "admin authenticated flow"
+    return
+  fi
+
+  ADMIN_COOKIE_JAR="$(mktemp)"
+  login_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --cookie-jar "$ADMIN_COOKIE_JAR" \
+    --header "Origin: ${ADMIN_URL}" \
+    --data-urlencode "loginId=${ADMIN_SMOKE_LOGIN_ID}" \
+    --data-urlencode "password=${ADMIN_SMOKE_PASSWORD}" \
+    "${ADMIN_URL}/admin/login")"
+  if [[ "$login_status" != "302" ]]; then
+    printf 'FAIL %-28s expected=302 actual=%s\n' "admin authenticated login" "$login_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin authenticated login" "$login_status"
+
+  dashboard_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" "${ADMIN_URL}/admin/dashboard")"
+  if [[ "$dashboard_status" != "200" ]]; then
+    printf 'FAIL %-28s expected=200 actual=%s\n' "admin authenticated page" "$dashboard_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin authenticated page" "$dashboard_status"
+
+  logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \
+    "${ADMIN_URL}/admin/logout" | tr -d '\r')"
+  logout_status="${logout_response##*$'\n'}"
+  logout_headers="${logout_response%$'\n'*}"
+  if [[ "$logout_status" != "302" ]] \
+    || ! printf '%s\n' "$logout_headers" | grep --ignore-case --fixed-strings --quiet 'Clear-Site-Data: "cache", "cookies", "storage"'; then
+    printf 'FAIL %-28s expected_status=302 clear_site_data=required\n' "admin authenticated logout" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s header=Clear-Site-Data\n' "admin authenticated logout" "$logout_status"
+}
+
 check_status "front liveness" 200 "${FRONT_URL}/health/live"
 check_status "front readiness" 200 "${FRONT_URL}/health/ready"
 check_status "front storefront" 200 "${FRONT_URL}/"
@@ -90,6 +147,7 @@ check_status "admin api access guard" 401 "${ADMIN_URL}/api/admin/dashboard/stat
 check_header_present "admin request tracing" "X-Request-Id" "${ADMIN_URL}/admin/login"
 check_header_contains "admin dynamic no-store" "Cache-Control" "no-store, max-age=0" "${ADMIN_URL}/admin/login"
 check_header_contains "admin context isolation" "Cross-Origin-Opener-Policy" "same-origin" "${ADMIN_URL}/admin/login"
+check_admin_authenticated_flow
 check_status "batch liveness" 200 "${BATCH_URL}/health/live"
 check_status "batch readiness" 200 "${BATCH_URL}/health/ready"
 check_header_present "batch request tracing" "X-Request-Id" "${BATCH_URL}/health/live"

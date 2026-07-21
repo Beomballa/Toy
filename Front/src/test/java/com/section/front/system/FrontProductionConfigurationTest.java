@@ -21,6 +21,10 @@ class FrontProductionConfigurationTest {
                 .contains("password: ${DB_PASSWORD}")
                 .contains("show-sql: false")
                 .contains("shutdown: graceful")
+                .contains("compression:")
+                .contains("min-response-size: ${SERVER_COMPRESSION_MIN_SIZE:1024}")
+                .contains("max-age: ${STATIC_CACHE_MAX_AGE:365d}")
+                .contains("cache-public: true")
                 .contains("include-stacktrace: never");
     }
 }

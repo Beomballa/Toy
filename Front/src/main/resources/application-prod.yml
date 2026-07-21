@@ -1,6 +1,10 @@
 server:
   shutdown: graceful
   forward-headers-strategy: framework
+  compression:
+    enabled: true
+    min-response-size: ${SERVER_COMPRESSION_MIN_SIZE:1024}
+    mime-types: text/html,text/css,application/javascript,application/json,image/svg+xml
   error:
     include-message: never
     include-stacktrace: never
@@ -22,3 +26,9 @@ spring:
     open-in-view: false
   lifecycle:
     timeout-per-shutdown-phase: ${SHUTDOWN_TIMEOUT:30s}
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: ${STATIC_CACHE_MAX_AGE:365d}
+          cache-public: true

@@ -21,6 +21,11 @@ class BatchProductionConfigurationTest {
                 .contains("password: ${DB_PASSWORD}")
                 .contains("show-sql: false")
                 .contains("shutdown: graceful")
+                .contains("check-template-location: false")
+                .contains("size: ${BATCH_SCHEDULING_POOL_SIZE:1}")
+                .contains("thread-name-prefix: batch-scheduler-")
+                .contains("await-termination: true")
+                .contains("await-termination-period: ${BATCH_SHUTDOWN_TIMEOUT:30s}")
                 .contains("enabled: ${BATCH_DOCUMENT_STATS_ENABLED:false}")
                 .contains("cron: ${BATCH_DOCUMENT_STATS_CRON:0 */10 * * * *}")
                 .contains("include-stacktrace: never");

@@ -5,6 +5,18 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
 
+  thymeleaf:
+    check-template-location: false
+
+  task:
+    scheduling:
+      pool:
+        size: ${BATCH_SCHEDULING_POOL_SIZE:1}
+      thread-name-prefix: batch-scheduler-
+      shutdown:
+        await-termination: true
+        await-termination-period: ${BATCH_SHUTDOWN_TIMEOUT:30s}
+
   datasource:
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:}

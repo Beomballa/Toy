@@ -3,7 +3,13 @@ package com.section.admin.system.schedule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.bind.Bindable;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.core.env.MapPropertySource;
+import org.springframework.core.env.StandardEnvironment;
 import org.springframework.scheduling.annotation.Scheduled;
+
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,5 +32,21 @@ class ScheduleConfigurationTest {
         Scheduled scheduled = Schedule.class.getMethod("documentStatsSchedule").getAnnotation(Scheduled.class);
 
         assertThat(scheduled.cron()).isEqualTo("${batch.document-stats.cron:0 */10 * * * *}");
+    }
+
+    @Test
+    @DisplayName("스케줄러 풀 크기는 운영 환경에 맞게 조정할 수 있다")
+    void schedulerPoolSizeIsConfigurable() {
+        StandardEnvironment environment = new StandardEnvironment();
+        environment.getPropertySources().addFirst(new MapPropertySource(
+                "test",
+                Map.of("spring.task.scheduling.pool.size", "4")
+        ));
+
+        Integer poolSize = Binder.get(environment)
+                .bind("spring.task.scheduling.pool.size", Bindable.of(Integer.class))
+                .orElseThrow(() -> new IllegalStateException("스케줄러 풀 크기 설정이 필요합니다."));
+
+        assertThat(poolSize).isEqualTo(4);
     }
 }

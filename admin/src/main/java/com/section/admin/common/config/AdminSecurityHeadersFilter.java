@@ -23,6 +23,9 @@ public class AdminSecurityHeadersFilter extends OncePerRequestFilter {
         response.setHeader("Referrer-Policy", "no-referrer");
         response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
         response.setHeader("Content-Security-Policy", "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
+        response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+        response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+        response.setHeader("X-Permitted-Cross-Domain-Policies", "none");
         if (request.getRequestURI().startsWith("/admin/") || request.getRequestURI().startsWith("/api/admin/")) {
             response.setHeader("Cache-Control", "no-store, max-age=0");
             response.setHeader("Pragma", "no-cache");

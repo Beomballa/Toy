@@ -41,7 +41,7 @@ public class AdminAuthenticationService {
             return Optional.empty();
         }
 
-        if (!passwordEncoder.isEncoded(admin.getPassword())) {
+        if (!passwordEncoder.isEncoded(admin.getPassword()) || passwordEncoder.needsRehash(admin.getPassword())) {
             admin.changePassword(passwordEncoder.encode(rawPassword));
         }
         admin.recordLogin(LocalDateTime.now());

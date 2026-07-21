@@ -16,8 +16,12 @@ public class AdminPasswordEncoder {
     private static final String PREFIX = "{pbkdf2}";
     private static final String ALGORITHM = "PBKDF2WithHmacSHA256";
     private static final int ITERATIONS = 120_000;
+    private static final int MIN_ITERATIONS = 100_000;
+    private static final int MAX_ITERATIONS = 600_000;
     private static final int SALT_BYTES = 16;
     private static final int KEY_BITS = 256;
+    private static final int HASH_BYTES = KEY_BITS / Byte.SIZE;
+    private static final int MAX_PASSWORD_LENGTH = 100;
 
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -34,31 +38,61 @@ public class AdminPasswordEncoder {
         if (rawPassword == null || encodedPassword == null) {
             return false;
         }
-        if (!isEncoded(encodedPassword)) {
+        if (!encodedPassword.startsWith(PREFIX)) {
             return MessageDigest.isEqual(
                     rawPassword.getBytes(StandardCharsets.UTF_8),
                     encodedPassword.getBytes(StandardCharsets.UTF_8)
             );
         }
 
-        try {
-            String[] parts = encodedPassword.substring(PREFIX.length()).split("\\$", 3);
-            int iterations = Integer.parseInt(parts[0]);
-            byte[] salt = Base64.getDecoder().decode(parts[1]);
-            byte[] expected = Base64.getDecoder().decode(parts[2]);
-            byte[] actual = derive(rawPassword.toCharArray(), salt, iterations);
-            return MessageDigest.isEqual(actual, expected);
-        } catch (IllegalArgumentException | ArrayIndexOutOfBoundsException e) {
+        EncodedPassword parsed = parse(encodedPassword);
+        if (parsed == null || rawPassword.length() > MAX_PASSWORD_LENGTH) {
+            consumeDummyMatch(truncatePassword(rawPassword));
             return false;
         }
+        byte[] actual = derive(rawPassword.toCharArray(), parsed.salt(), parsed.iterations());
+        return MessageDigest.isEqual(actual, parsed.hash());
     }
 
     public boolean isEncoded(String password) {
-        return password != null && password.startsWith(PREFIX);
+        return parse(password) != null;
+    }
+
+    public boolean needsRehash(String password) {
+        EncodedPassword parsed = parse(password);
+        return parsed != null && parsed.iterations() < ITERATIONS;
     }
 
     public void consumeDummyMatch(String rawPassword) {
         derive(rawPassword.toCharArray(), new byte[SALT_BYTES], ITERATIONS);
+    }
+
+    private EncodedPassword parse(String encodedPassword) {
+        if (encodedPassword == null || !encodedPassword.startsWith(PREFIX)) {
+            return null;
+        }
+        try {
+            String[] parts = encodedPassword.substring(PREFIX.length()).split("\\$", -1);
+            if (parts.length != 3) {
+                return null;
+            }
+            int iterations = Integer.parseInt(parts[0]);
+            if (iterations < MIN_ITERATIONS || iterations > MAX_ITERATIONS) {
+                return null;
+            }
+            byte[] salt = Base64.getDecoder().decode(parts[1]);
+            byte[] hash = Base64.getDecoder().decode(parts[2]);
+            if (salt.length != SALT_BYTES || hash.length != HASH_BYTES) {
+                return null;
+            }
+            return new EncodedPassword(iterations, salt, hash);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private String truncatePassword(String rawPassword) {
+        return rawPassword.substring(0, Math.min(rawPassword.length(), MAX_PASSWORD_LENGTH));
     }
 
     private byte[] derive(char[] password, byte[] salt, int iterations) {
@@ -70,5 +104,8 @@ public class AdminPasswordEncoder {
         } finally {
             spec.clearPassword();
         }
+    }
+
+    private record EncodedPassword(int iterations, byte[] salt, byte[] hash) {
     }
 }

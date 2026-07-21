@@ -75,10 +75,11 @@ export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 FRONT_URL=https://service.example.com \
 ADMIN_URL=https://admin.example.com \
 BATCH_URL=http://batch.internal:9091 \
+FRONT_DETAIL_PRODUCT_ID=12 \
 ./scripts/smoke-test.sh
 ```
 
-관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`도 함께 확인합니다. 이후 최고 관리자 계정으로 로그인해 대시보드, 상품 목록, 주문 목록, 시스템 설정을 한 번씩 조회합니다.
+`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`도 함께 확인합니다. 이후 최고 관리자 계정으로 로그인해 대시보드, 상품 목록, 주문 목록, 시스템 설정을 한 번씩 조회합니다.
 
 ## 7. 운영 및 롤백
 

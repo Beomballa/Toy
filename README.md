@@ -114,7 +114,7 @@ export DB_PASSWORD='your-password'
 
 실행 가능한 JAR는 `Front`, `admin`, `batch`의 `build/libs` 아래 생성됩니다. `common`은 실행 JAR가 아니라 세 모듈에 포함되는 라이브러리입니다.
 
-배포된 세 애플리케이션의 헬스체크, 프론트 홈, 관리자 접근 통제를 한 번에 확인할 수 있습니다.
+배포된 세 애플리케이션의 헬스체크, 프론트 홈·카탈로그·상품 상세, 관리자 접근 통제를 한 번에 확인할 수 있습니다. 상세 검증 상품은 `FRONT_DETAIL_PRODUCT_ID` 환경변수로 변경할 수 있습니다.
 
 ```bash
 ./scripts/smoke-test.sh

@@ -21,6 +21,8 @@ class FrontProductionConfigurationTest {
                 .contains("password: ${DB_PASSWORD}")
                 .contains("show-sql: false")
                 .contains("shutdown: graceful")
+                .contains("max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}")
+                .contains("level: \"%5p [requestId:%X{requestId:-}]\"")
                 .contains("compression:")
                 .contains("min-response-size: ${SERVER_COMPRESSION_MIN_SIZE:1024}")
                 .contains("max-age: ${STATIC_CACHE_MAX_AGE:365d}")

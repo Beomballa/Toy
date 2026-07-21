@@ -1,5 +1,6 @@
 server:
   shutdown: graceful
+  max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}
   forward-headers-strategy: framework
   error:
     include-message: never
@@ -37,3 +38,7 @@ batch:
   document-stats:
     enabled: ${BATCH_DOCUMENT_STATS_ENABLED:false}
     cron: ${BATCH_DOCUMENT_STATS_CRON:0 */10 * * * *}
+
+logging:
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"

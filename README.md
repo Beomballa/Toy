@@ -130,3 +130,4 @@ export DB_PASSWORD='your-password'
 | `/health/ready` | DB 연결을 포함한 요청 처리 준비 확인 |
 
 운영 load balancer는 `/health/ready`가 `200`인 인스턴스에만 트래픽을 전달해야 합니다.
+모든 애플리케이션 응답은 로그 상관관계를 확인할 수 있도록 `X-Request-Id` 헤더를 제공합니다.

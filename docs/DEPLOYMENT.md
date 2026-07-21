@@ -81,6 +81,8 @@ FRONT_DETAIL_PRODUCT_ID=12 \
 
 `FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`도 함께 확인합니다. 이후 최고 관리자 계정으로 로그인해 대시보드, 상품 목록, 주문 목록, 시스템 설정을 한 번씩 조회합니다.
 
+세 애플리케이션은 응답의 `X-Request-Id`를 공통 장애 추적 키로 사용합니다. 프록시가 안전한 요청 ID를 전달하면 그대로 유지하고, 없거나 형식이 잘못된 경우 애플리케이션이 새 ID를 생성합니다. 요청 헤더 한도는 기본 16KB이며 필요한 경우 `SERVER_MAX_HTTP_REQUEST_HEADER_SIZE`로 조정합니다.
+
 ## 7. 운영 및 롤백
 
 - load balancer는 `/health/ready`가 `200`인 인스턴스에만 트래픽을 전달합니다.

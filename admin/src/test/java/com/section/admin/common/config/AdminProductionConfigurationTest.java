@@ -21,6 +21,8 @@ class AdminProductionConfigurationTest {
                 .contains("password: ${DB_PASSWORD}")
                 .contains("show-sql: false")
                 .contains("shutdown: graceful")
+                .contains("max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}")
+                .contains("level: \"%5p [requestId:%X{requestId:-}]\"")
                 .contains("http-only: true")
                 .contains("secure: true")
                 .contains("same-site: strict")

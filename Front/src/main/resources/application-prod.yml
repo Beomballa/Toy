@@ -1,5 +1,6 @@
 server:
   shutdown: graceful
+  max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}
   forward-headers-strategy: framework
   compression:
     enabled: true
@@ -32,3 +33,7 @@ spring:
         cachecontrol:
           max-age: ${STATIC_CACHE_MAX_AGE:365d}
           cache-public: true
+
+logging:
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"

@@ -1,5 +1,6 @@
 server:
   shutdown: graceful
+  max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}
   forward-headers-strategy: framework
   servlet:
     session:
@@ -40,3 +41,7 @@ admin:
     login-id: ${ADMIN_BOOTSTRAP_LOGIN_ID:}
     password: ${ADMIN_BOOTSTRAP_PASSWORD:}
     name: ${ADMIN_BOOTSTRAP_NAME:Initial Administrator}
+
+logging:
+  pattern:
+    level: "%5p [requestId:%X{requestId:-}]"

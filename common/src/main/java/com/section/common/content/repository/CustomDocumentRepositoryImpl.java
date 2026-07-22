@@ -11,6 +11,7 @@ import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.dto.DocumentDailyStatsRow;
+import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -133,6 +134,30 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .from(document)
                 .groupBy(document.boardType)
                 .orderBy(document.boardType.asc())
+                .fetch();
+    }
+
+    @Override
+    public List<PublicDocumentRow> getPublicDocuments(Document.BoardType boardType, int limit) {
+        return queryFactory
+                .select(Projections.constructor(
+                        PublicDocumentRow.class,
+                        document.id,
+                        document.boardType,
+                        document.title,
+                        document.content,
+                        document.viewCnt,
+                        document.pinnedYn,
+                        document.crtDtm
+                ))
+                .from(document)
+                .where(
+                        document.boardType.eq(boardType),
+                        document.status.eq(Document.PublishStatus.PUBLISHED),
+                        document.publicYn.eq(YN.Y)
+                )
+                .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
+                .limit(Math.max(1, Math.min(limit, 8)))
                 .fetch();
     }
 

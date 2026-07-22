@@ -10,11 +10,36 @@ import org.springframework.core.io.ClassPathResource;
 class FrontStorefrontResourceTest {
 
     @Test
+    void publicContentHighlightsKeepIndependentAccessibleRenderingContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"contentHighlights\"")
+                .contains("id=\"noticeHighlightList\"")
+                .contains("id=\"styleHighlightList\"")
+                .contains("id=\"contentHighlightStatus\" aria-live=\"polite\"")
+                .contains("id=\"contentHighlightRetryButton\"");
+        assertThat(script)
+                .contains("void loadContentHighlights()")
+                .contains("/api/front/content/highlights?limit=4")
+                .contains("markupSafeObject(rawItem)")
+                .contains("renderContentHighlightState(\"ERROR\")")
+                .contains("contentHighlightRetryButton?.addEventListener");
+        assertThat(css)
+                .contains(".content-highlights__grid")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains(".content-highlight-list.is-error")
+                .contains(".content-highlight-retry[hidden]");
+    }
+
+    @Test
     void mainPageKeepsStorefrontStructureAndAccessibleDialogHooks() throws IOException {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.38")
+                .contains("/css/storefront.css?v=20260722.39")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -22,7 +47,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260721.45");
+                .contains("/js/view/app.js?v=20260722.46");
     }
 
     @Test
@@ -30,7 +55,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260720.38")
+                .contains("/css/storefront.css?v=20260722.39")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")

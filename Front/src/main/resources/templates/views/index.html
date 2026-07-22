@@ -6,7 +6,7 @@
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260720.38">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260722.39">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -204,6 +204,44 @@
                 </div>
                 <div class="discovery-shortcut-grid" id="categoryShortcutGrid"></div>
             </article>
+        </section>
+
+        <section class="content-highlights" id="contentHighlights" aria-labelledby="contentHighlightsTitle">
+            <div class="section-heading content-highlights__heading">
+                <div>
+                    <p class="eyebrow">Editorial</p>
+                    <h2 id="contentHighlightsTitle">새로운 소식과 스타일</h2>
+                </div>
+                <p>운영자가 공개한 공지와 스타일 콘텐츠를 가장 먼저 확인하세요.</p>
+            </div>
+            <p class="sr-only" id="contentHighlightStatus" aria-live="polite">콘텐츠를 불러오는 중입니다.</p>
+            <div class="content-highlights__grid">
+                <article class="content-highlight-board" aria-labelledby="noticeHighlightTitle">
+                    <header>
+                        <div>
+                            <span>NOTICE</span>
+                            <h3 id="noticeHighlightTitle">안내와 업데이트</h3>
+                        </div>
+                        <em>운영 공지</em>
+                    </header>
+                    <div class="content-highlight-list is-loading" id="noticeHighlightList" aria-busy="true">
+                        <div class="content-highlight-state">공지 콘텐츠를 불러오는 중입니다.</div>
+                    </div>
+                </article>
+                <article class="content-highlight-board content-highlight-board--style" aria-labelledby="styleHighlightTitle">
+                    <header>
+                        <div>
+                            <span>STYLE</span>
+                            <h3 id="styleHighlightTitle">취향을 위한 에디트</h3>
+                        </div>
+                        <em>스타일 큐레이션</em>
+                    </header>
+                    <div class="content-highlight-list is-loading" id="styleHighlightList" aria-busy="true">
+                        <div class="content-highlight-state">스타일 콘텐츠를 불러오는 중입니다.</div>
+                    </div>
+                </article>
+            </div>
+            <button class="content-highlight-retry" type="button" id="contentHighlightRetryButton" hidden>다시 불러오기</button>
         </section>
 
         <section class="signal-strip" id="signalStrip">
@@ -853,6 +891,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260721.45"></script>
+<script src="/js/view/app.js?v=20260722.46"></script>
 </body>
 </html>

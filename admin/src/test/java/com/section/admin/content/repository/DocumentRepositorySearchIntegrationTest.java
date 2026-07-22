@@ -5,6 +5,7 @@ import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
+import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -17,7 +18,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = AdminToyApplication.class)
 @ActiveProfiles("local")
@@ -29,6 +34,50 @@ class DocumentRepositorySearchIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Test
+    @DisplayName("프론트 공개 콘텐츠는 게시 완료된 공개 문서만 고정글 우선으로 조회한다")
+    void getPublicDocumentsExcludesDraftAndPrivateDocuments() {
+        Document publishedPublic = document("프론트 공개 공지", Document.PublishStatus.PUBLISHED, YN.Y, YN.Y);
+        Document publishedPublicNormal = document("프론트 일반 공지", Document.PublishStatus.PUBLISHED, YN.Y, YN.N);
+        Document publishedPrivate = document("프론트 비공개 공지", Document.PublishStatus.PUBLISHED, YN.N, YN.N);
+        Document draftPublic = document("프론트 임시 공지", Document.PublishStatus.DRAFT, YN.Y, YN.N);
+        documentRepository.saveAll(List.of(publishedPublic, publishedPublicNormal, publishedPrivate, draftPublic));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<PublicDocumentRow> result = documentRepository.getPublicDocuments(Document.BoardType.NOTICE, 8);
+
+        assertTrue(result.stream().anyMatch(row -> row.title().equals("프론트 공개 공지")));
+        assertFalse(result.stream().anyMatch(row -> row.title().equals("프론트 비공개 공지")));
+        assertFalse(result.stream().anyMatch(row -> row.title().equals("프론트 임시 공지")));
+        int pinnedIndex = indexOfTitle(result, "프론트 공개 공지");
+        int normalIndex = indexOfTitle(result, "프론트 일반 공지");
+        assertTrue(pinnedIndex >= 0 && normalIndex >= 0 && pinnedIndex < normalIndex);
+    }
+
+    private Document document(String title, Document.PublishStatus status, YN publicYn, YN pinnedYn) {
+        Document document = new Document();
+        document.applyEditorValues(
+                Document.BoardType.NOTICE,
+                status,
+                publicYn,
+                pinnedYn,
+                title,
+                title + " 본문",
+                null
+        );
+        return document;
+    }
+
+    private int indexOfTitle(List<PublicDocumentRow> rows, String title) {
+        for (int index = 0; index < rows.size(); index++) {
+            if (rows.get(index).title().equals(title)) {
+                return index;
+            }
+        }
+        return -1;
+    }
 
     @Test
     @DisplayName("콘텐츠 목록은 고정글 우선 정렬과 상태/공개 필터를 함께 적용한다")

@@ -60,6 +60,7 @@
     let catalogLoadError = "";
     let catalogRequestController = null;
     let catalogRequestSequence = 0;
+    let contentHighlightRequestSequence = 0;
     let shortcutHelpReturnFocus = null;
     let headerSearchReturnFocus = null;
     let mobileMenuReturnFocus = null;
@@ -397,6 +398,10 @@
         flowBoardTitle: document.getElementById("flowBoardTitle"),
         flowBoardText: document.getElementById("flowBoardText"),
         flowBoardGrid: document.getElementById("flowBoardGrid"),
+        noticeHighlightList: document.getElementById("noticeHighlightList"),
+        styleHighlightList: document.getElementById("styleHighlightList"),
+        contentHighlightStatus: document.getElementById("contentHighlightStatus"),
+        contentHighlightRetryButton: document.getElementById("contentHighlightRetryButton"),
         copyFlowBoardSummaryButton: document.getElementById("copyFlowBoardSummaryButton"),
         openRecentFlowButton: document.getElementById("openRecentFlowButton"),
         openCompareFlowButton: document.getElementById("openCompareFlowButton"),
@@ -474,6 +479,79 @@
         syncScrollState();
         syncNetworkStatus();
         restoreCatalogScrollPosition();
+        void loadContentHighlights();
+    }
+
+    async function loadContentHighlights() {
+        if (!elements.noticeHighlightList || !elements.styleHighlightList) {
+            return;
+        }
+        const requestSequence = ++contentHighlightRequestSequence;
+        renderContentHighlightState("LOADING");
+        try {
+            const response = await fetch("/api/front/content/highlights?limit=4");
+            if (!response.ok) {
+                throw new Error("콘텐츠를 불러오지 못했습니다.");
+            }
+            const payload = await response.json();
+            if (requestSequence !== contentHighlightRequestSequence) {
+                return;
+            }
+            renderContentHighlights(payload);
+        } catch (error) {
+            if (requestSequence !== contentHighlightRequestSequence) {
+                return;
+            }
+            renderContentHighlightState("ERROR");
+        }
+    }
+
+    function renderContentHighlights(payload) {
+        const notices = Array.isArray(payload?.notices) ? payload.notices : [];
+        const styles = Array.isArray(payload?.styles) ? payload.styles : [];
+        renderContentHighlightList(elements.noticeHighlightList, notices, "현재 공개된 공지가 없습니다.");
+        renderContentHighlightList(elements.styleHighlightList, styles, "현재 공개된 스타일 콘텐츠가 없습니다.");
+        elements.contentHighlightRetryButton.hidden = true;
+        setText(elements.contentHighlightStatus, `공지 ${notices.length}개와 스타일 ${styles.length}개를 불러왔습니다.`);
+    }
+
+    function renderContentHighlightList(target, items, emptyMessage) {
+        target.classList.remove("is-loading", "is-error");
+        target.setAttribute("aria-busy", "false");
+        if (!items.length) {
+            target.innerHTML = `<div class="content-highlight-state">${escapeMarkup(emptyMessage)}</div>`;
+            return;
+        }
+        target.innerHTML = items.map((rawItem, index) => {
+            const item = markupSafeObject(rawItem);
+            const sequence = String(index + 1).padStart(2, "0");
+            return `
+                <article class="content-highlight-item">
+                    <span class="content-highlight-item__number">${sequence}</span>
+                    <div class="content-highlight-item__body">
+                        <div class="content-highlight-item__meta">
+                            ${item.pinned ? '<strong>PINNED</strong>' : ""}
+                            <span>${item.createdDate || "최근 게시"}</span>
+                            <span>조회 ${Number(item.viewCount || 0).toLocaleString("ko-KR")}</span>
+                        </div>
+                        <h4>${item.title}</h4>
+                        <p>${item.summary || "내용을 확인해 주세요."}</p>
+                    </div>
+                </article>`;
+        }).join("");
+    }
+
+    function renderContentHighlightState(stateName) {
+        const isError = stateName === "ERROR";
+        const message = isError ? "콘텐츠를 불러오지 못했습니다." : "콘텐츠를 불러오는 중입니다.";
+        [elements.noticeHighlightList, elements.styleHighlightList].forEach((target) => {
+            target.classList.toggle("is-loading", !isError);
+            target.classList.toggle("is-error", isError);
+            target.setAttribute("aria-busy", String(!isError));
+            target.innerHTML = `<div class="content-highlight-state">${message}</div>`;
+        });
+        elements.contentHighlightRetryButton.hidden = !isError;
+        setText(elements.contentHighlightStatus, message);
     }
 
     function initActionMenuBehavior() {
@@ -648,6 +726,7 @@
 
     function bindEvents() {
         document.addEventListener("error", handleProductImageError, true);
+        elements.contentHighlightRetryButton?.addEventListener("click", loadContentHighlights);
         elements.searchInput?.addEventListener("input", (event) => {
             state.search = event.target.value.trim().toLowerCase();
             renderSearchAssist(state.search);

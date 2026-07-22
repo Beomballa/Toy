@@ -1,6 +1,7 @@
 package com.section.front.system.controller;
 
 import com.section.front.system.dto.FrontApiErrorResponse;
+import com.section.front.content.exception.FrontContentNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,12 @@ public class FrontGlobalExceptionHandler {
     public ResponseEntity<FrontApiErrorResponse> handleInvalidRequest(Exception exception) {
         log.debug("Invalid front API request: {}", exception.getMessage());
         return response(HttpStatus.BAD_REQUEST, "F001", "요청 조건이 올바르지 않습니다.");
+    }
+
+    @ExceptionHandler(FrontContentNotFoundException.class)
+    public ResponseEntity<FrontApiErrorResponse> handleContentNotFound(FrontContentNotFoundException exception) {
+        log.debug("Public content not found: {}", exception.getMessage());
+        return response(HttpStatus.NOT_FOUND, "F002", "콘텐츠를 찾을 수 없습니다.");
     }
 
     @ExceptionHandler(ResponseStatusException.class)

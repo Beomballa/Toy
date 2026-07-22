@@ -18,4 +18,10 @@ public class FrontViewController {
         model.addAttribute("productId", productId);
         return "views/product-detail";
     }
+
+    @GetMapping("/front/content/{documentId}")
+    public String contentDetail(@PathVariable long documentId, Model model) {
+        model.addAttribute("documentId", documentId);
+        return "views/content-detail";
+    }
 }

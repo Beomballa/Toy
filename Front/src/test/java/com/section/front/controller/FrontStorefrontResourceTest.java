@@ -39,7 +39,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.39")
+                .contains("/css/storefront.css?v=20260722.40")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -47,7 +47,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260722.46");
+                .contains("/js/view/app.js?v=20260722.47");
     }
 
     @Test
@@ -55,7 +55,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.39")
+                .contains("/css/storefront.css?v=20260722.40")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1929,6 +1929,38 @@ class FrontStorefrontResourceTest {
                 .contains("item = markupSafeObject(item)")
                 .contains("<span>${escapeMarkup(message)}</span>")
                 .doesNotContain("toast.innerHTML = `<strong>${title}");
+    }
+
+    @Test
+    void publicContentDetailKeepsReadableSafeAndRecoverableContract() throws IOException {
+        String html = readResource("templates/views/content-detail.html");
+        String script = readResource("static/js/view/content-detail.js");
+        String mainScript = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("data-document-id=${documentId}")
+                .contains("id=\"contentDetailArticle\"")
+                .contains("id=\"contentDetailError\"")
+                .contains("id=\"contentDetailRetryButton\"")
+                .contains("id=\"contentDetailRelatedGrid\"")
+                .contains("/js/view/content-detail.js?v=20260722.1")
+                .contains("/css/storefront.css?v=20260722.40");
+        assertThat(script)
+                .contains("fetch(`/api/front/content/${documentId}`)")
+                .contains("paragraph.textContent = content")
+                .contains("title.textContent = item.title")
+                .contains("navigator.share")
+                .contains("navigator.clipboard?.writeText")
+                .contains("elements.retryButton.addEventListener");
+        assertThat(mainScript)
+                .contains("href=\"/front/content/${Number(item.id)}\"")
+                .contains("aria-label=\"${item.title} 상세 보기\"");
+        assertThat(css)
+                .contains(".content-detail-article")
+                .contains("max-width: 760px")
+                .contains(".content-detail-related__grid")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
     }
 
     private String readResource(String path) throws IOException {

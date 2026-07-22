@@ -38,4 +38,13 @@ class FrontViewControllerTest {
                 .andExpect(view().name("views/product-detail"))
                 .andExpect(model().attribute("productId", 101L));
     }
+
+    @Test
+    @DisplayName("콘텐츠 상세 경로는 상세 뷰와 문서 번호를 반환한다")
+    void contentDetailReturnsDetailView() throws Exception {
+        mockMvc.perform(get("/front/content/101"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/content-detail"))
+                .andExpect(model().attribute("documentId", 101L));
+    }
 }

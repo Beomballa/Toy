@@ -1,5 +1,6 @@
 package com.section.front.controller;
 
+import com.section.front.content.dto.FrontContentDetailResponse;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
 import com.section.front.content.service.FrontContentService;
@@ -11,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,6 +54,39 @@ class FrontContentRestControllerTest {
         when(service.getHighlights(9)).thenThrow(new IllegalArgumentException("invalid limit"));
 
         mockMvc.perform(get("/api/front/content/highlights").param("limit", "9"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("프론트 콘텐츠 상세 API는 본문과 연관 콘텐츠를 반환한다")
+    void returnsContentDetail() throws Exception {
+        when(service.findDetail(1L)).thenReturn(Optional.of(new FrontContentDetailResponse(
+                1L, "NOTICE", "배송 공지", "배송 일정 안내", 10, true, "2026-07-22", List.of()
+        )));
+
+        mockMvc.perform(get("/api/front/content/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("배송 공지"))
+                .andExpect(jsonPath("$.content").value("배송 일정 안내"))
+                .andExpect(jsonPath("$.relatedContents").isArray());
+    }
+
+    @Test
+    @DisplayName("없는 공개 콘텐츠는 표준 404 오류를 반환한다")
+    void missingContentReturnsNotFound() throws Exception {
+        when(service.findDetail(999L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/front/content/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("F002"))
+                .andExpect(jsonPath("$.message").value("콘텐츠를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("0 이하 콘텐츠 번호는 표준 400 오류를 반환한다")
+    void nonPositiveContentIdReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/front/content/0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("F001"));
     }

@@ -54,6 +54,9 @@ class DocumentRepositorySearchIntegrationTest {
         int pinnedIndex = indexOfTitle(result, "프론트 공개 공지");
         int normalIndex = indexOfTitle(result, "프론트 일반 공지");
         assertTrue(pinnedIndex >= 0 && normalIndex >= 0 && pinnedIndex < normalIndex);
+        assertTrue(documentRepository.getPublicDocument(publishedPublic.getId()).isPresent());
+        assertTrue(documentRepository.getPublicDocument(publishedPrivate.getId()).isEmpty());
+        assertTrue(documentRepository.getPublicDocument(draftPublic.getId()).isEmpty());
     }
 
     private Document document(String title, Document.PublishStatus status, YN publicYn, YN pinnedYn) {

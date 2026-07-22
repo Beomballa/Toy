@@ -21,6 +21,7 @@ import org.springframework.data.support.PageableExecutionUtils;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static com.section.common.content.entity.QDocument.document;
 
@@ -159,6 +160,29 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
                 .limit(Math.max(1, Math.min(limit, 8)))
                 .fetch();
+    }
+
+    @Override
+    public Optional<PublicDocumentRow> getPublicDocument(long documentId) {
+        PublicDocumentRow row = queryFactory
+                .select(Projections.constructor(
+                        PublicDocumentRow.class,
+                        document.id,
+                        document.boardType,
+                        document.title,
+                        document.content,
+                        document.viewCnt,
+                        document.pinnedYn,
+                        document.crtDtm
+                ))
+                .from(document)
+                .where(
+                        document.id.eq(documentId),
+                        document.status.eq(Document.PublishStatus.PUBLISHED),
+                        document.publicYn.eq(YN.Y)
+                )
+                .fetchOne();
+        return Optional.ofNullable(row);
     }
 
     private NumberExpression<Long> countWhen(BooleanExpression predicate) {

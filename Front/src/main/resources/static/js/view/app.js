@@ -528,7 +528,7 @@
             return `
                 <article class="content-highlight-item">
                     <span class="content-highlight-item__number">${sequence}</span>
-                    <div class="content-highlight-item__body">
+                    <a class="content-highlight-item__body" href="/front/content/${Number(item.id)}" aria-label="${item.title} 상세 보기">
                         <div class="content-highlight-item__meta">
                             ${item.pinned ? '<strong>PINNED</strong>' : ""}
                             <span>${item.createdDate || "최근 게시"}</span>
@@ -536,7 +536,7 @@
                         </div>
                         <h4>${item.title}</h4>
                         <p>${item.summary || "내용을 확인해 주세요."}</p>
-                    </div>
+                    </a>
                 </article>`;
         }).join("");
     }

@@ -5,6 +5,7 @@ import com.section.front.content.exception.FrontContentNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,7 +16,12 @@ import org.springframework.web.server.ResponseStatusException;
 @RestControllerAdvice(basePackages = "com.section.front.controller")
 public class FrontGlobalExceptionHandler {
 
-    @ExceptionHandler({BindException.class, MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})
+    @ExceptionHandler({
+            BindException.class,
+            MethodArgumentTypeMismatchException.class,
+            HttpMessageNotReadableException.class,
+            IllegalArgumentException.class
+    })
     public ResponseEntity<FrontApiErrorResponse> handleInvalidRequest(Exception exception) {
         log.debug("Invalid front API request: {}", exception.getMessage());
         return response(HttpStatus.BAD_REQUEST, "F001", "요청 조건이 올바르지 않습니다.");

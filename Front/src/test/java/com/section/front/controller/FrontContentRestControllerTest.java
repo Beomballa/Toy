@@ -6,12 +6,15 @@ import com.section.front.content.req.FrontContentListRequest;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
 import com.section.front.content.service.FrontContentService;
+import com.section.front.content.service.FrontContentViewService;
+import com.section.front.content.dto.FrontContentViewResponse;
 import com.section.front.system.controller.FrontGlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,18 +23,21 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class FrontContentRestControllerTest {
 
     private FrontContentService service;
+    private FrontContentViewService viewService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         service = mock(FrontContentService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new FrontContentRestController(service))
+        viewService = mock(FrontContentViewService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(new FrontContentRestController(service, viewService))
                 .setControllerAdvice(new FrontGlobalExceptionHandler())
                 .build();
     }
@@ -116,6 +122,41 @@ class FrontContentRestControllerTest {
                 .thenThrow(new IllegalArgumentException("unsupported board"));
 
         mockMvc.perform(get("/api/front/content").param("boardType", "QNA"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 조회 기록 API는 중복 여부와 현재 조회수를 반환한다")
+    void recordsContentView() throws Exception {
+        String visitorKey = "123e4567-e89b-12d3-a456-426614174000";
+        when(viewService.record(1L, visitorKey)).thenReturn(new FrontContentViewResponse(true, 11));
+
+        mockMvc.perform(post("/api/front/content/1/views")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"visitorKey\":\"" + visitorKey + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counted").value(true))
+                .andExpect(jsonPath("$.viewCount").value(11));
+    }
+
+    @Test
+    @DisplayName("잘못된 방문자 키는 표준 400 오류를 반환한다")
+    void invalidVisitorKeyReturnsBadRequest() throws Exception {
+        when(viewService.record(1L, "short")).thenThrow(new IllegalArgumentException("invalid visitor"));
+
+        mockMvc.perform(post("/api/front/content/1/views")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"visitorKey\":\"short\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("조회 기록 요청 본문이 없으면 표준 400 오류를 반환한다")
+    void missingViewRequestBodyReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/front/content/1/views")
+                        .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("F001"));
     }

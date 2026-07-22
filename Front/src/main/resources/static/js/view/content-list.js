@@ -1,5 +1,6 @@
 (function () {
     const DEFAULT_STATE = { boardType: "ALL", keyword: "", page: 0, size: 8 };
+    const RECENT_CONTENT_KEY = "front-recent-content";
     const state = { ...DEFAULT_STATE };
     let requestController = null;
     let requestSequence = 0;
@@ -16,7 +17,10 @@
         pagination: document.getElementById("contentListPagination"),
         previousButton: document.getElementById("contentListPreviousButton"),
         nextButton: document.getElementById("contentListNextButton"),
-        pageText: document.getElementById("contentListPageText")
+        pageText: document.getElementById("contentListPageText"),
+        recentBoard: document.getElementById("contentRecentBoard"),
+        recentGrid: document.getElementById("contentRecentGrid"),
+        recentClearButton: document.getElementById("contentRecentClearButton")
     };
 
     function hydrateFromUrl() {
@@ -182,6 +186,55 @@
             hydrateFromUrl();
             void loadContents({ updateUrl: false });
         });
+        elements.recentClearButton.addEventListener("click", clearRecentContents);
+    }
+
+    function renderRecentContents() {
+        const items = readRecentContents();
+        elements.recentGrid.replaceChildren();
+        elements.recentBoard.hidden = items.length === 0;
+        items.forEach((item) => {
+            const link = document.createElement("a");
+            link.href = `/front/content/${Number(item.id)}`;
+            link.className = "content-recent-card";
+            const type = document.createElement("span");
+            type.textContent = item.boardType === "STYLE" ? "STYLE EDIT" : "NOTICE";
+            const title = document.createElement("strong");
+            title.textContent = item.title || "제목 없는 콘텐츠";
+            const date = document.createElement("em");
+            date.textContent = recentTimeLabel(item.viewedAt);
+            link.append(type, title, date);
+            elements.recentGrid.appendChild(link);
+        });
+    }
+
+    function readRecentContents() {
+        try {
+            const value = JSON.parse(window.localStorage.getItem(RECENT_CONTENT_KEY) || "[]");
+            return Array.isArray(value) ? value.slice(0, 6) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function clearRecentContents() {
+        try {
+            window.localStorage.removeItem(RECENT_CONTENT_KEY);
+        } catch (error) {
+            // Storage can be unavailable in private browsing mode.
+        }
+        renderRecentContents();
+        announce("최근 읽은 콘텐츠를 비웠습니다.");
+    }
+
+    function recentTimeLabel(value) {
+        const viewedAt = new Date(value);
+        if (Number.isNaN(viewedAt.getTime())) return "최근 읽음";
+        const minutes = Math.max(0, Math.floor((Date.now() - viewedAt.getTime()) / 60000));
+        if (minutes < 1) return "방금 읽음";
+        if (minutes < 60) return `${minutes}분 전`;
+        if (minutes < 1440) return `${Math.floor(minutes / 60)}시간 전`;
+        return `${Math.floor(minutes / 1440)}일 전`;
     }
 
     function changePage(direction) {
@@ -195,5 +248,6 @@
 
     hydrateFromUrl();
     bindEvents();
+    renderRecentContents();
     void loadContents({ updateUrl: false });
 })();

@@ -13,7 +13,10 @@
 
 ```bash
 mysql -h db-host -u grade_stock_app -p new_toy < db/document_daily_stats.sql
+mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
 ```
+
+`front_content_view_event`는 공개 콘텐츠 조회를 문서·방문자·날짜별로 중복 제거합니다. 애플리케이션 배포 전에 테이블을 생성해야 하며 기존 `document.view_count` 값에는 영향을 주지 않습니다.
 
 ## 2. 빌드
 

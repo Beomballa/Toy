@@ -1,5 +1,7 @@
 (function () {
     const documentId = Number(document.body.dataset.documentId || 0);
+    const CONTENT_VISITOR_KEY = "front-content-visitor-key";
+    const RECENT_CONTENT_KEY = "front-recent-content";
     let currentContent = null;
 
     const elements = {
@@ -55,7 +57,59 @@
         elements.error.hidden = true;
         document.title = `${content.title || "콘텐츠"} | Grade Stock`;
         renderRelated(Array.isArray(content.relatedContents) ? content.relatedContents : []);
+        rememberContent(content);
+        void recordContentView();
         announce("콘텐츠를 불러왔습니다.");
+    }
+
+    async function recordContentView() {
+        try {
+            const response = await fetch(`/api/front/content/${documentId}/views`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ visitorKey: resolveVisitorKey() })
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            currentContent.viewCount = Number(payload.viewCount || currentContent.viewCount || 0);
+            setText(elements.views, `조회 ${currentContent.viewCount.toLocaleString("ko-KR")}`);
+        } catch (error) {
+            // Reading remains available even when engagement recording is temporarily unavailable.
+        }
+    }
+
+    function resolveVisitorKey() {
+        try {
+            const saved = window.localStorage.getItem(CONTENT_VISITOR_KEY);
+            if (saved) return saved;
+            const generated = window.crypto?.randomUUID?.() || fallbackVisitorKey();
+            window.localStorage.setItem(CONTENT_VISITOR_KEY, generated);
+            return generated;
+        } catch (error) {
+            return fallbackVisitorKey();
+        }
+    }
+
+    function fallbackVisitorKey() {
+        return `visitor-${Date.now()}-${Math.random().toString(36).slice(2, 14)}`;
+    }
+
+    function rememberContent(content) {
+        try {
+            const saved = JSON.parse(window.localStorage.getItem(RECENT_CONTENT_KEY) || "[]");
+            const item = {
+                id: Number(content.id),
+                boardType: content.boardType,
+                title: content.title,
+                createdDate: content.createdDate,
+                viewedAt: new Date().toISOString()
+            };
+            const next = [item].concat(Array.isArray(saved) ? saved.filter((recent) => Number(recent.id) !== item.id) : [])
+                .slice(0, 6);
+            window.localStorage.setItem(RECENT_CONTENT_KEY, JSON.stringify(next));
+        } catch (error) {
+            // Private browsing can reject storage without affecting the content page.
+        }
     }
 
     function createBodyParagraph(content) {

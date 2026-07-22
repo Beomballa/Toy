@@ -39,7 +39,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.41")
+                .contains("/css/storefront.css?v=20260722.42")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -55,7 +55,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.41")
+                .contains("/css/storefront.css?v=20260722.42")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1944,14 +1944,18 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentDetailError\"")
                 .contains("id=\"contentDetailRetryButton\"")
                 .contains("id=\"contentDetailRelatedGrid\"")
-                .contains("/js/view/content-detail.js?v=20260722.1")
-                .contains("/css/storefront.css?v=20260722.41");
+                .contains("/js/view/content-detail.js?v=20260722.2")
+                .contains("/css/storefront.css?v=20260722.42");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`)")
                 .contains("paragraph.textContent = content")
                 .contains("title.textContent = item.title")
                 .contains("navigator.share")
                 .contains("navigator.clipboard?.writeText")
+                .contains("method: \"POST\"")
+                .contains("front-content-visitor-key")
+                .contains("window.crypto?.randomUUID?.()")
+                .contains("front-recent-content")
                 .contains("elements.retryButton.addEventListener");
         assertThat(mainScript)
                 .contains("href=\"/front/content/${Number(item.id)}\"")
@@ -1975,20 +1979,26 @@ class FrontStorefrontResourceTest {
                 .contains("data-content-board=\"STYLE\"")
                 .contains("id=\"contentListGrid\"")
                 .contains("id=\"contentListPagination\"")
-                .contains("/js/view/content-list.js?v=20260722.1")
-                .contains("/css/storefront.css?v=20260722.41");
+                .contains("id=\"contentRecentBoard\"")
+                .contains("id=\"contentRecentClearButton\"")
+                .contains("/js/view/content-list.js?v=20260722.2")
+                .contains("/css/storefront.css?v=20260722.42");
         assertThat(script)
                 .contains("fetch(`/api/front/content?${params}`")
                 .contains("window.history.replaceState")
                 .contains("window.addEventListener(\"popstate\"")
                 .contains("title.textContent = item.title")
                 .contains("summary.textContent = item.summary")
+                .contains("window.localStorage.getItem(RECENT_CONTENT_KEY)")
+                .contains("window.localStorage.removeItem(RECENT_CONTENT_KEY)")
                 .contains("검색 조건에 맞는 공개 콘텐츠가 없습니다.")
                 .contains("retry.addEventListener")
                 .doesNotContain("innerHTML");
         assertThat(css)
                 .contains(".content-list-grid")
                 .contains(".content-list-card")
+                .contains(".content-recent-board__grid")
+                .contains(".content-recent-card")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
                 .contains(".content-list-grid.is-error");
     }

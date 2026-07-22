@@ -85,6 +85,7 @@ check_header_present() {
 check_admin_authenticated_flow() {
   local login_status
   local dashboard_status
+  local content_stats_status
   local logout_response
   local logout_status
   local logout_headers
@@ -114,6 +115,14 @@ check_admin_authenticated_flow() {
     return 1
   fi
   printf 'PASS %-28s status=%s\n' "admin authenticated page" "$dashboard_status"
+
+  content_stats_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" "${ADMIN_URL}/api/admin/content/stats/daily")"
+  if [[ "$content_stats_status" != "200" ]]; then
+    printf 'FAIL %-28s expected=200 actual=%s\n' "admin content daily stats" "$content_stats_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content daily stats" "$content_stats_status"
 
   logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \

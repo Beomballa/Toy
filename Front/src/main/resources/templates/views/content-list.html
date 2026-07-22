@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>에디토리얼 | Grade Stock</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260722.41">
+</head>
+<body class="content-list-body">
+<a class="skip-link" href="#contentListMain">콘텐츠 목록 바로가기</a>
+<p class="sr-only" id="contentListLiveStatus" role="status" aria-live="polite">콘텐츠를 불러오는 중입니다.</p>
+
+<div class="page-shell page-shell--content-list">
+    <div class="utility-bar">
+        <div class="utility-bar__links">
+            <a href="/front">메인으로</a>
+            <a href="/front#catalog">상품 탐색</a>
+            <a href="/front#recentViewedSection">최근 본 상품</a>
+        </div>
+    </div>
+    <header class="topbar topbar--content-list">
+        <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
+            <span class="brand-mark__badge">GS</span>
+            <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Editorial</span></span>
+        </a>
+        <nav class="topbar-nav" aria-label="에디토리얼 탐색">
+            <a href="/front">HOME</a>
+            <a href="/front/content" aria-current="page">EDITORIAL</a>
+            <a href="/front#catalog">SHOP</a>
+        </nav>
+        <a class="topbar-action" href="/front">홈으로 복귀</a>
+    </header>
+
+    <main class="content-list-page" id="contentListMain">
+        <section class="content-list-hero">
+            <p class="eyebrow">Grade Stock Editorial</p>
+            <h1>새로운 소식과<br>취향을 위한 에디트</h1>
+            <p>운영 공지부터 상품을 바라보는 새로운 관점까지, 공개된 이야기를 한곳에서 살펴보세요.</p>
+        </section>
+
+        <section class="content-list-workspace" aria-labelledby="contentListHeading">
+            <div class="content-list-toolbar">
+                <div class="content-list-tabs" role="tablist" aria-label="콘텐츠 유형">
+                    <button type="button" role="tab" data-content-board="ALL" aria-selected="true">전체</button>
+                    <button type="button" role="tab" data-content-board="NOTICE" aria-selected="false">공지</button>
+                    <button type="button" role="tab" data-content-board="STYLE" aria-selected="false">스타일</button>
+                </div>
+                <form class="content-list-search" id="contentListSearchForm" role="search">
+                    <label class="sr-only" for="contentListKeyword">콘텐츠 검색</label>
+                    <input id="contentListKeyword" type="search" maxlength="100" placeholder="제목 또는 내용 검색" autocomplete="off">
+                    <button type="button" id="contentListClearButton" hidden>지우기</button>
+                    <button type="submit">검색</button>
+                </form>
+            </div>
+
+            <div class="content-list-heading">
+                <div>
+                    <span>EDITORIAL ARCHIVE</span>
+                    <h2 id="contentListHeading">전체 콘텐츠</h2>
+                </div>
+                <p id="contentListResultText">공개 콘텐츠를 정리하고 있습니다.</p>
+            </div>
+
+            <div class="content-list-grid is-loading" id="contentListGrid" aria-busy="true">
+                <div class="content-list-state">콘텐츠를 불러오는 중입니다.</div>
+            </div>
+
+            <div class="content-list-pagination" id="contentListPagination" hidden>
+                <button type="button" id="contentListPreviousButton">이전</button>
+                <span id="contentListPageText">1 / 1</span>
+                <button type="button" id="contentListNextButton">다음</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="content-detail-footer">
+        <strong>Grade Stock Editorial</strong>
+        <p>공개된 운영 소식과 스타일 콘텐츠만 제공합니다.</p>
+        <a href="/front">Grade Stock 홈</a>
+    </footer>
+</div>
+
+<script src="/js/view/content-list.js?v=20260722.1"></script>
+</body>
+</html>

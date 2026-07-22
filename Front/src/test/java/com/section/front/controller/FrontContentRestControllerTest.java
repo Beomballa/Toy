@@ -1,6 +1,8 @@
 package com.section.front.controller;
 
 import com.section.front.content.dto.FrontContentDetailResponse;
+import com.section.front.content.dto.FrontContentPageResponse;
+import com.section.front.content.req.FrontContentListRequest;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
 import com.section.front.content.service.FrontContentService;
@@ -16,6 +18,7 @@ import java.util.Optional;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -87,6 +90,32 @@ class FrontContentRestControllerTest {
     @DisplayName("0 이하 콘텐츠 번호는 표준 400 오류를 반환한다")
     void nonPositiveContentIdReturnsBadRequest() throws Exception {
         mockMvc.perform(get("/api/front/content/0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("프론트 콘텐츠 목록 API는 검색 결과와 페이징 메타를 반환한다")
+    void returnsContentPage() throws Exception {
+        when(service.search(any(FrontContentListRequest.class))).thenReturn(new FrontContentPageResponse(
+                List.of(new FrontContentItemResponse(1, "NOTICE", "배송 공지", "일정 안내", 10, true, "2026-07-22")),
+                0, 8, 1, 1, true, true
+        ));
+
+        mockMvc.perform(get("/api/front/content").param("boardType", "NOTICE").param("keyword", "배송"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].title").value("배송 공지"))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.first").value(true));
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 콘텐츠 게시판 유형은 표준 400 오류를 반환한다")
+    void rejectsUnsupportedContentBoard() throws Exception {
+        when(service.search(any(FrontContentListRequest.class)))
+                .thenThrow(new IllegalArgumentException("unsupported board"));
+
+        mockMvc.perform(get("/api/front/content").param("boardType", "QNA"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("F001"));
     }

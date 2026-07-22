@@ -47,4 +47,12 @@ class FrontViewControllerTest {
                 .andExpect(view().name("views/content-detail"))
                 .andExpect(model().attribute("documentId", 101L));
     }
+
+    @Test
+    @DisplayName("콘텐츠 목록 경로는 공개 콘텐츠 탐색 뷰를 반환한다")
+    void contentListReturnsListView() throws Exception {
+        mockMvc.perform(get("/front/content"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/content-list"));
+    }
 }

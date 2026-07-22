@@ -24,4 +24,9 @@ public class FrontViewController {
         model.addAttribute("documentId", documentId);
         return "views/content-detail";
     }
+
+    @GetMapping("/front/content")
+    public String contentList() {
+        return "views/content-list";
+    }
 }

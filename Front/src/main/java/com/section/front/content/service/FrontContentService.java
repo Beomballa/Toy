@@ -2,14 +2,20 @@ package com.section.front.content.service;
 
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.PublicDocumentRow;
+import com.section.common.content.dto.DocumentListItemDto;
+import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentDetailResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
+import com.section.front.content.dto.FrontContentPageResponse;
+import com.section.front.content.req.FrontContentListRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -52,6 +58,33 @@ public class FrontContentService {
                 ));
     }
 
+    public FrontContentPageResponse search(FrontContentListRequest request) {
+        Pageable pageable = request.pageable();
+        Page<DocumentListItemDto> result = documentRepository.getDocumentList(
+                new DocumentListQuery(
+                        request.normalizedBoardType(),
+                        request.normalizedKeyword(),
+                        Document.PublishStatus.PUBLISHED,
+                        YN.Y,
+                        false,
+                        null,
+                        null,
+                        null,
+                        null
+                ),
+                pageable
+        );
+        return new FrontContentPageResponse(
+                result.getContent().stream().map(this::toResponse).toList(),
+                result.getNumber(),
+                result.getSize(),
+                result.getTotalElements(),
+                result.getTotalPages(),
+                result.isFirst(),
+                result.isLast()
+        );
+    }
+
     private int normalizeLimit(Integer limit) {
         if (limit == null) {
             return DEFAULT_LIMIT;
@@ -75,6 +108,18 @@ public class FrontContentService {
                 Math.max(0, row.viewCount()),
                 row.pinnedYn() == YN.Y,
                 formatDate(row)
+        );
+    }
+
+    private FrontContentItemResponse toResponse(DocumentListItemDto row) {
+        return new FrontContentItemResponse(
+                row.getId(),
+                row.getBoardType(),
+                defaultText(row.getTitle(), "제목 없는 콘텐츠"),
+                summarize(row.getContentPreview()),
+                Math.max(0, row.getViewCnt()),
+                "Y".equals(row.getPinnedYn()),
+                row.getCrtDtm() == null ? null : row.getCrtDtm().toLocalDate().format(DATE_FORMATTER)
         );
     }
 

@@ -39,7 +39,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.40")
+                .contains("/css/storefront.css?v=20260722.41")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -55,7 +55,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.40")
+                .contains("/css/storefront.css?v=20260722.41")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -1945,7 +1945,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentDetailRetryButton\"")
                 .contains("id=\"contentDetailRelatedGrid\"")
                 .contains("/js/view/content-detail.js?v=20260722.1")
-                .contains("/css/storefront.css?v=20260722.40");
+                .contains("/css/storefront.css?v=20260722.41");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`)")
                 .contains("paragraph.textContent = content")
@@ -1961,6 +1961,36 @@ class FrontStorefrontResourceTest {
                 .contains("max-width: 760px")
                 .contains(".content-detail-related__grid")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    }
+
+    @Test
+    void publicContentArchiveKeepsSearchPagingAndSafeRenderingContract() throws IOException {
+        String html = readResource("templates/views/content-list.html");
+        String script = readResource("static/js/view/content-list.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("id=\"contentListSearchForm\"")
+                .contains("data-content-board=\"NOTICE\"")
+                .contains("data-content-board=\"STYLE\"")
+                .contains("id=\"contentListGrid\"")
+                .contains("id=\"contentListPagination\"")
+                .contains("/js/view/content-list.js?v=20260722.1")
+                .contains("/css/storefront.css?v=20260722.41");
+        assertThat(script)
+                .contains("fetch(`/api/front/content?${params}`")
+                .contains("window.history.replaceState")
+                .contains("window.addEventListener(\"popstate\"")
+                .contains("title.textContent = item.title")
+                .contains("summary.textContent = item.summary")
+                .contains("검색 조건에 맞는 공개 콘텐츠가 없습니다.")
+                .contains("retry.addEventListener")
+                .doesNotContain("innerHTML");
+        assertThat(css)
+                .contains(".content-list-grid")
+                .contains(".content-list-card")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains(".content-list-grid.is-error");
     }
 
     private String readResource(String path) throws IOException {

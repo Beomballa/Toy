@@ -2,13 +2,20 @@ package com.section.front.content.service;
 
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.PublicDocumentRow;
+import com.section.common.content.dto.DocumentListItemDto;
+import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentDetailResponse;
+import com.section.front.content.dto.FrontContentPageResponse;
+import com.section.front.content.req.FrontContentListRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -96,6 +103,36 @@ class FrontContentServiceTest {
         when(documentRepository.getPublicDocument(999L)).thenReturn(Optional.empty());
 
         assertThat(service.findDetail(999L)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("공개 콘텐츠 검색은 게시 완료·공개 조건을 강제하고 페이징 메타를 반환한다")
+    void searchesOnlyPublishedPublicContents() {
+        DocumentListItemDto item = new DocumentListItemDto();
+        item.setId(31L);
+        item.setBoardType("NOTICE");
+        item.setTitle("운영 공지");
+        item.setContentPreview("<p>중요한 안내</p>");
+        item.setViewCnt(20);
+        item.setPinnedYn("Y");
+        item.setCrtDtm(LocalDateTime.of(2026, 7, 22, 10, 0));
+        when(documentRepository.getDocumentList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 8), 9));
+
+        FrontContentPageResponse response = service.search(new FrontContentListRequest("NOTICE", " 운영 ", 0, 8));
+
+        ArgumentCaptor<DocumentListQuery> queryCaptor = ArgumentCaptor.forClass(DocumentListQuery.class);
+        verify(documentRepository).getDocumentList(queryCaptor.capture(), org.mockito.ArgumentMatchers.any());
+        assertThat(queryCaptor.getValue().boardType()).isEqualTo(Document.BoardType.NOTICE);
+        assertThat(queryCaptor.getValue().keyword()).isEqualTo("운영");
+        assertThat(queryCaptor.getValue().status()).isEqualTo(Document.PublishStatus.PUBLISHED);
+        assertThat(queryCaptor.getValue().publicYn()).isEqualTo(YN.Y);
+        assertThat(response.totalElements()).isEqualTo(9);
+        assertThat(response.totalPages()).isEqualTo(2);
+        assertThat(response.items()).singleElement().satisfies(content -> {
+            assertThat(content.summary()).isEqualTo("중요한 안내");
+            assertThat(content.pinned()).isTrue();
+        });
     }
 
     private PublicDocumentRow row(

@@ -1,8 +1,10 @@
 package com.section.admin.content.service;
 
+import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.content.dto.ContentViewDataQualityRow;
 import com.section.common.content.dto.ContentViewSummaryRow;
 import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.dto.ContentViewTrendRow;
@@ -66,6 +68,19 @@ public class AdminContentViewAnalyticsService {
                 toSummary(summary, previous),
                 fillMissingDates(startDate, rangeDays, trendRows),
                 topRows.stream().map(this::toTopContent).toList()
+        );
+    }
+
+    public ContentViewDataQualityResponse getDataQuality() {
+        ContentViewDataQualityRow row = viewEventRepository.getDataQuality();
+        return new ContentViewDataQualityResponse(
+                row.totalEventCount(),
+                row.validEventCount(),
+                row.orphanEventCount(),
+                row.oldestViewedDate() == null ? null : row.oldestViewedDate().toString(),
+                row.latestViewedDate() == null ? null : row.latestViewedDate().toString(),
+                row.orphanEventCount() == 0 ? "HEALTHY" : "CLEANUP_REQUIRED",
+                LocalDateTime.now(clock).format(DATE_TIME_FORMATTER)
         );
     }
 

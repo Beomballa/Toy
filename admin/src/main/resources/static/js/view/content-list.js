@@ -5,6 +5,7 @@ const ContentList = {
     actionInFlightIds: new Set(),
     dailyStats: null,
     viewAnalytics: null,
+    viewDataQuality: null,
     viewAnalyticsRequestId: 0,
     viewAnalyticsLoading: false,
     state: {
@@ -41,6 +42,7 @@ const ContentList = {
         this.applyOperationPolicy();
         this.getDailyStats();
         this.getViewAnalytics();
+        this.getViewDataQuality();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
@@ -111,7 +113,10 @@ const ContentList = {
         });
         document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
-        document.getElementById('btnRefreshViewAnalytics')?.addEventListener('click', () => this.getViewAnalytics());
+        document.getElementById('btnRefreshViewAnalytics')?.addEventListener('click', () => {
+            this.getViewAnalytics();
+            this.getViewDataQuality();
+        });
         document.getElementById('btnExportViewAnalytics')?.addEventListener('click', () => this.exportViewAnalytics());
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -260,6 +265,64 @@ const ContentList = {
                 this.syncViewAnalyticsPeriod();
             }
         }
+    },
+
+    async getViewDataQuality() {
+        this.renderViewDataQualityLoading();
+        try {
+            const response = await fetch('/api/admin/content/stats/views/quality', {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error('조회 이벤트 품질 정보를 불러오지 못했습니다.');
+            }
+            this.viewDataQuality = await response.json();
+            this.renderViewDataQuality();
+        } catch (error) {
+            this.viewDataQuality = null;
+            this.renderViewDataQualityError();
+            console.error('조회 이벤트 품질 조회 실패:', error);
+        }
+    },
+
+    renderViewDataQualityLoading() {
+        const status = document.getElementById('contentViewQualityStatus');
+        if (status) {
+            status.textContent = '점검 중';
+            status.className = 'content-view-quality__badge';
+        }
+        this.setText('contentViewQualityValid', '-');
+        this.setText('contentViewQualityOrphan', '-');
+        this.setText('contentViewQualityRange', '-');
+    },
+
+    renderViewDataQuality() {
+        const quality = this.viewDataQuality || {};
+        const healthy = quality.status === 'HEALTHY';
+        const status = document.getElementById('contentViewQualityStatus');
+        if (status) {
+            status.textContent = healthy ? '정상' : '정리 필요';
+            status.className = `content-view-quality__badge ${healthy ? 'is-healthy' : 'is-warning'}`;
+        }
+        this.setText('contentViewQualityValid', `${this.formatNumber(quality.validEventCount)}건`);
+        this.setText('contentViewQualityOrphan', `${this.formatNumber(quality.orphanEventCount)}건`);
+        this.setText(
+            'contentViewQualityRange',
+            quality.oldestViewedDate && quality.latestViewedDate
+                ? `${quality.oldestViewedDate} ~ ${quality.latestViewedDate}`
+                : '수집 데이터 없음'
+        );
+    },
+
+    renderViewDataQualityError() {
+        const status = document.getElementById('contentViewQualityStatus');
+        if (status) {
+            status.textContent = '조회 실패';
+            status.className = 'content-view-quality__badge is-error';
+        }
+        this.setText('contentViewQualityValid', '-');
+        this.setText('contentViewQualityOrphan', '-');
+        this.setText('contentViewQualityRange', '연결 확인 필요');
     },
 
     syncViewAnalyticsPeriod() {

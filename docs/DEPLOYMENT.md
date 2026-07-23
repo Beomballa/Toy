@@ -73,7 +73,7 @@ export BATCH_DOCUMENT_STATS_ENABLED=true
 export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 ```
 
-관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다. 같은 화면의 `프론트 조회 분석` 영역과 `/api/admin/content/stats/views?boardType=NOTICE&days=7`에서는 실제 조회 이벤트의 7·14·30일 추이, 순 방문자, 상위 콘텐츠를 확인합니다.
+관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다. 같은 화면의 `프론트 조회 분석` 영역과 `/api/admin/content/stats/views?boardType=NOTICE&days=7`에서는 실제 조회 이벤트의 7·14·30일 추이, 순 방문자, 상위 콘텐츠를 확인합니다. `/api/admin/content/stats/views/quality`는 전체·정상·고아 이벤트와 수집 기간을 제공하며 고아 이벤트가 있으면 화면에 `정리 필요`로 표시합니다.
 
 조회 이벤트가 장기간 누적되는 운영 환경에서는 보존 배치를 활성화합니다. 기본값은 비활성이며, 활성화 시 매일 03:30에 오늘을 포함한 최근 180일을 유지하고 그 이전 이벤트를 단일 bulk delete로 정리합니다.
 
@@ -83,7 +83,7 @@ export BATCH_CONTENT_VIEW_RETENTION_CRON='0 30 3 * * *'
 export BATCH_CONTENT_VIEW_RETENTION_DAYS=180
 ```
 
-`BATCH_CONTENT_VIEW_RETENTION_DAYS`는 실수로 최근 데이터를 대량 삭제하지 않도록 30일 이상 3650일 이하만 허용합니다. 삭제 성능은 `front_content_view_event.viewed_date` 인덱스를 사용하며, 배치 로그의 `retentionStartDate`, `deleted` 값으로 실행 결과를 확인합니다.
+`BATCH_CONTENT_VIEW_RETENTION_DAYS`는 실수로 최근 데이터를 대량 삭제하지 않도록 30일 이상 3650일 이하만 허용합니다. 삭제 성능은 `front_content_view_event.viewed_date` 인덱스를 사용합니다. 배치는 삭제된 문서를 참조하는 고아 이벤트를 먼저 정리한 뒤 기간 만료 데이터를 삭제하며, 로그의 `retentionStartDate`, `orphanDeleted`, `expiredDeleted`, `totalDeleted` 값으로 실행 결과를 확인합니다.
 
 ## 6. 배포 후 확인
 

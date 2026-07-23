@@ -1,7 +1,9 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
+import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.common.base.exception.BusinessException;
+import com.section.common.content.dto.ContentViewDataQualityRow;
 import com.section.common.content.dto.ContentViewSummaryRow;
 import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.dto.ContentViewTrendRow;
@@ -101,5 +103,39 @@ class AdminContentViewAnalyticsServiceTest {
     void rejectsUnsupportedRangeDays() {
         assertThatThrownBy(() -> service.getAnalytics(Document.BoardType.QNA, 10))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("조회 이벤트 품질은 고아 이벤트 유무에 따라 운영 상태를 구분한다")
+    void returnsDataQualityStatus() {
+        when(repository.getDataQuality()).thenReturn(new ContentViewDataQualityRow(
+                100,
+                97,
+                3,
+                LocalDate.of(2026, 1, 1),
+                LocalDate.of(2026, 7, 23)
+        ));
+
+        ContentViewDataQualityResponse response = service.getDataQuality();
+
+        assertThat(response.totalEventCount()).isEqualTo(100);
+        assertThat(response.validEventCount()).isEqualTo(97);
+        assertThat(response.orphanEventCount()).isEqualTo(3);
+        assertThat(response.status()).isEqualTo("CLEANUP_REQUIRED");
+        assertThat(response.oldestViewedDate()).isEqualTo("2026-01-01");
+        assertThat(response.latestViewedDate()).isEqualTo("2026-07-23");
+    }
+
+    @Test
+    @DisplayName("조회 이벤트가 없으면 정상 상태와 빈 수집 기간을 반환한다")
+    void returnsHealthyStatusWhenEventsAreEmpty() {
+        when(repository.getDataQuality())
+                .thenReturn(new ContentViewDataQualityRow(0, 0, 0, null, null));
+
+        ContentViewDataQualityResponse response = service.getDataQuality();
+
+        assertThat(response.status()).isEqualTo("HEALTHY");
+        assertThat(response.oldestViewedDate()).isNull();
+        assertThat(response.latestViewedDate()).isNull();
     }
 }

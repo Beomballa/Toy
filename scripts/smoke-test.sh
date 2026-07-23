@@ -89,6 +89,9 @@ check_admin_authenticated_flow() {
   local content_view_export_response
   local content_view_export_status
   local content_view_export_headers
+  local content_view_quality_response
+  local content_view_quality_status
+  local content_view_quality_body
   local logout_response
   local logout_status
   local logout_headers
@@ -140,6 +143,21 @@ check_admin_authenticated_flow() {
     return 1
   fi
   printf 'PASS %-28s status=%s\n' "admin content view stats" "$content_view_analytics_status"
+
+  content_view_quality_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/views/quality")"
+  content_view_quality_status="${content_view_quality_response##*$'\n'}"
+  content_view_quality_body="${content_view_quality_response%$'\n'*}"
+  if [[ "$content_view_quality_status" != "200" ]] \
+    || ! printf '%s\n' "$content_view_quality_body" | grep --fixed-strings --quiet '"validEventCount":' \
+    || ! printf '%s\n' "$content_view_quality_body" | grep --fixed-strings --quiet '"orphanEventCount":' \
+    || ! printf '%s\n' "$content_view_quality_body" | grep --fixed-strings --quiet '"status":'; then
+    printf 'FAIL %-28s expected=200 quality_fields=required actual=%s\n' \
+      "admin content view quality" "$content_view_quality_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content view quality" "$content_view_quality_status"
 
   content_view_export_response="$(curl --silent --show-error --dump-header - --output /dev/null \
     --write-out $'\n%{http_code}' --cookie "$ADMIN_COOKIE_JAR" \

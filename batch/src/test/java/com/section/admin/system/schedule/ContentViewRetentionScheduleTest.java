@@ -21,7 +21,7 @@ class ContentViewRetentionScheduleTest {
     void invokesRetentionServiceWithConfiguredDays() {
         ContentViewRetentionService service = mock(ContentViewRetentionService.class);
         when(service.purgeExpiredEvents(180))
-                .thenReturn(new RetentionResult(LocalDate.of(2026, 1, 25), 180, 20));
+                .thenReturn(new RetentionResult(LocalDate.of(2026, 1, 25), 180, 2, 18));
         ContentViewRetentionSchedule schedule = new ContentViewRetentionSchedule(service, 180);
 
         schedule.purgeContentViewEvents();

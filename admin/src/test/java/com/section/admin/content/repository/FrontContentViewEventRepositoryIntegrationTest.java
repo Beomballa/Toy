@@ -3,6 +3,7 @@ package com.section.admin.content.repository;
 import com.section.admin.AdminToyApplication;
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.ContentViewSummaryRow;
+import com.section.common.content.dto.ContentViewDataQualityRow;
 import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.dto.ContentViewTrendRow;
 import com.section.common.content.entity.Document;
@@ -124,6 +125,36 @@ class FrontContentViewEventRepositoryIntegrationTest {
             assertThat(item.viewCount()).isEqualTo(1);
             assertThat(item.uniqueVisitors()).isEqualTo(1);
         });
+    }
+
+    @Test
+    @DisplayName("조회 이벤트 품질 집계와 고아 정리는 같은 문서 존재 기준을 사용한다")
+    void measuresAndDeletesOrphanEvents() {
+        Document notice = document("품질 점검 공지", Document.BoardType.NOTICE);
+        documentRepository.save(notice);
+        entityManager.flush();
+        LocalDate viewedDate = LocalDate.of(2026, 7, 23);
+        insertEvent(notice.getId(), "quality-valid", viewedDate, 10);
+        insertEvent(Long.MAX_VALUE - 1, "quality-orphan", viewedDate, 11);
+        entityManager.flush();
+        entityManager.clear();
+
+        ContentViewDataQualityRow before = viewEventRepository.getDataQuality();
+        int deletedCount = viewEventRepository.deleteOrphanEvents();
+        Number remainingOrphans = (Number) entityManager.createNativeQuery("""
+                        select count(*)
+                        from front_content_view_event
+                        where document_no = :documentNo
+                        """)
+                .setParameter("documentNo", Long.MAX_VALUE - 1)
+                .getSingleResult();
+
+        assertThat(before.orphanEventCount()).isGreaterThanOrEqualTo(1);
+        assertThat(before.validEventCount()).isGreaterThanOrEqualTo(1);
+        assertThat(before.oldestViewedDate()).isNotNull();
+        assertThat(before.latestViewedDate()).isNotNull();
+        assertThat(deletedCount).isGreaterThanOrEqualTo(1);
+        assertThat(remainingOrphans.longValue()).isZero();
     }
 
     private Document document(String title, Document.BoardType boardType) {

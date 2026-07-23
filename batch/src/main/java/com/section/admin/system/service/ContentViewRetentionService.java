@@ -31,8 +31,14 @@ public class ContentViewRetentionService {
     public RetentionResult purgeExpiredEvents(int retentionDays) {
         validateRetentionDays(retentionDays);
         LocalDate retentionStartDate = LocalDate.now(clock).minusDays(retentionDays - 1L);
-        int deletedCount = viewEventRepository.deleteBefore(retentionStartDate);
-        return new RetentionResult(retentionStartDate, retentionDays, deletedCount);
+        int orphanDeletedCount = viewEventRepository.deleteOrphanEvents();
+        int expiredDeletedCount = viewEventRepository.deleteBefore(retentionStartDate);
+        return new RetentionResult(
+                retentionStartDate,
+                retentionDays,
+                orphanDeletedCount,
+                expiredDeletedCount
+        );
     }
 
     private void validateRetentionDays(int retentionDays) {
@@ -47,7 +53,11 @@ public class ContentViewRetentionService {
     public record RetentionResult(
             LocalDate retentionStartDate,
             int retentionDays,
-            int deletedCount
+            int orphanDeletedCount,
+            int expiredDeletedCount
     ) {
+        public int totalDeletedCount() {
+            return orphanDeletedCount + expiredDeletedCount;
+        }
     }
 }

@@ -28,10 +28,12 @@ public class ContentViewRetentionSchedule {
     public void purgeContentViewEvents() {
         RetentionResult result = retentionService.purgeExpiredEvents(retentionDays);
         log.info(
-                "Expired content view events purged: retentionStartDate={}, retentionDays={}, deleted={}",
+                "Content view events purged: retentionStartDate={}, retentionDays={}, orphanDeleted={}, expiredDeleted={}, totalDeleted={}",
                 result.retentionStartDate(),
                 result.retentionDays(),
-                result.deletedCount()
+                result.orphanDeletedCount(),
+                result.expiredDeletedCount(),
+                result.totalDeletedCount()
         );
     }
 }

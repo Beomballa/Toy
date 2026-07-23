@@ -4,6 +4,7 @@ import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.section.common.content.dto.ContentViewDataQualityRow;
 import com.section.common.content.dto.ContentViewSummaryRow;
 import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.dto.ContentViewTrendRow;
@@ -20,6 +21,22 @@ import static com.section.common.content.entity.QFrontContentViewEvent.frontCont
 public class CustomFrontContentViewEventRepositoryImpl implements CustomFrontContentViewEventRepository {
 
     private final JPAQueryFactory queryFactory;
+
+    @Override
+    public ContentViewDataQualityRow getDataQuality() {
+        ContentViewDataQualityRow row = queryFactory
+                .select(Projections.constructor(
+                        ContentViewDataQualityRow.class,
+                        frontContentViewEvent.count(),
+                        document.id.count(),
+                        frontContentViewEvent.viewedDate.min(),
+                        frontContentViewEvent.viewedDate.max()
+                ))
+                .from(frontContentViewEvent)
+                .leftJoin(document).on(document.id.eq(frontContentViewEvent.documentNo))
+                .fetchOne();
+        return row == null ? new ContentViewDataQualityRow(0, 0, 0, null, null) : row;
+    }
 
     @Override
     public ContentViewSummaryRow getViewSummary(

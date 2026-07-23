@@ -97,6 +97,24 @@
         <div class="content-view-analytics__status" id="contentViewAnalyticsStatus" role="status" aria-live="polite">
             조회 데이터를 불러오는 중입니다.
         </div>
+        <dl class="content-view-quality" aria-label="조회 이벤트 데이터 품질">
+            <div>
+                <dt>데이터 상태</dt>
+                <dd><span class="content-view-quality__badge" id="contentViewQualityStatus">점검 중</span></dd>
+            </div>
+            <div>
+                <dt>정상 이벤트</dt>
+                <dd id="contentViewQualityValid">-</dd>
+            </div>
+            <div>
+                <dt>고아 이벤트</dt>
+                <dd id="contentViewQualityOrphan">-</dd>
+            </div>
+            <div>
+                <dt>수집 기간</dt>
+                <dd id="contentViewQualityRange">-</dd>
+            </div>
+        </dl>
 
         <div class="content-view-analytics__metrics" aria-label="조회 핵심 지표">
             <article class="content-view-metric">

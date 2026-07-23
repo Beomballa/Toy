@@ -10,6 +10,7 @@ import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
+import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.support.ContentExportCsvWriter;
@@ -96,6 +97,11 @@ public class AdminContentRestController {
                 ? null
                 : parseBoardType(boardType);
         return ResponseEntity.ok(adminContentViewAnalyticsService.getAnalytics(normalizedBoardType, days));
+    }
+
+    @GetMapping("/stats/views/quality")
+    public ResponseEntity<ContentViewDataQualityResponse> getViewDataQuality() {
+        return ResponseEntity.ok(adminContentViewAnalyticsService.getDataQuality());
     }
 
     @GetMapping("/stats/views/export")

@@ -7,6 +7,7 @@ import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
+import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -249,6 +250,23 @@ class AdminContentRestControllerTest {
                 .andExpect(jsonPath("$.topContents[0].documentId").value(31L));
 
         verify(adminContentViewAnalyticsService).getAnalytics(Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("콘텐츠 조회 데이터 품질 API는 정상·고아 이벤트 현황을 반환한다")
+    void getViewDataQualityReturnsEventIntegritySnapshot() throws Exception {
+        when(adminContentViewAnalyticsService.getDataQuality())
+                .thenReturn(new ContentViewDataQualityResponse(
+                        100, 98, 2, "2026-01-01", "2026-07-23",
+                        "CLEANUP_REQUIRED", "2026-07-23 15:00:00"
+                ));
+
+        mockMvc.perform(get("/api/admin/content/stats/views/quality"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalEventCount").value(100))
+                .andExpect(jsonPath("$.validEventCount").value(98))
+                .andExpect(jsonPath("$.orphanEventCount").value(2))
+                .andExpect(jsonPath("$.status").value("CLEANUP_REQUIRED"));
     }
 
     @Test

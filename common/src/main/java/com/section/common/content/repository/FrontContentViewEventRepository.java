@@ -38,4 +38,15 @@ public interface FrontContentViewEventRepository extends
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from FrontContentViewEvent event where event.documentNo in :documentNos")
     int deleteByDocumentNoIn(@Param("documentNos") Collection<Long> documentNos);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(value = """
+            DELETE FROM front_content_view_event
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM CT_DOCUMENT
+                WHERE CT_DOCUMENT.NO = front_content_view_event.document_no
+            )
+            """, nativeQuery = true)
+    int deleteOrphanEvents();
 }

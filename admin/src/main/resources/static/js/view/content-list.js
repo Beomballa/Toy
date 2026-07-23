@@ -1,6 +1,7 @@
 const ContentList = {
     initialized: false,
     exportInFlight: false,
+    viewAnalyticsExportInFlight: false,
     actionInFlightIds: new Set(),
     dailyStats: null,
     viewAnalytics: null,
@@ -111,6 +112,7 @@ const ContentList = {
         document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
         document.getElementById('btnRefreshViewAnalytics')?.addEventListener('click', () => this.getViewAnalytics());
+        document.getElementById('btnExportViewAnalytics')?.addEventListener('click', () => this.exportViewAnalytics());
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
                 const rangeDays = Number(button.dataset.viewRange);
@@ -369,6 +371,30 @@ const ContentList = {
             target.innerHTML = '<li class="content-view-empty content-view-empty--error">조회 분석 연결을 확인해 주세요.</li>';
         }
         this.syncViewAnalyticsPeriod();
+    },
+
+    async exportViewAnalytics() {
+        if (this.viewAnalyticsExportInFlight) {
+            return;
+        }
+        const button = document.getElementById('btnExportViewAnalytics');
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.viewAnalyticsExportInFlight = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(
+                `/api/admin/content/stats/views/export?${params}`,
+                `content-view-analytics-${this.state.boardType}-${this.state.viewRangeDays}d.csv`
+            );
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.viewAnalyticsExportInFlight = false;
+            CommonJS.setButtonDisabled(button, false);
+        }
     },
 
     formatDecimal(value) {

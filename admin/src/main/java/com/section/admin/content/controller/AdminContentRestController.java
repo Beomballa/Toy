@@ -14,6 +14,7 @@ import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
+import com.section.admin.content.support.ContentViewAnalyticsCsvWriter;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
@@ -95,6 +96,25 @@ public class AdminContentRestController {
                 ? null
                 : parseBoardType(boardType);
         return ResponseEntity.ok(adminContentViewAnalyticsService.getAnalytics(normalizedBoardType, days));
+    }
+
+    @GetMapping("/stats/views/export")
+    public ResponseEntity<byte[]> exportViewAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        ContentViewAnalyticsResponse analytics =
+                adminContentViewAnalyticsService.getAnalytics(normalizedBoardType, days);
+        String boardLabel = normalizedBoardType == null ? "all" : normalizedBoardType.name().toLowerCase(Locale.ROOT);
+        String fileName = "content-view-analytics-" + boardLabel + "-" + days + "d-"
+                + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(ContentViewAnalyticsCsvWriter.write(analytics));
     }
 
     @GetMapping("/export")

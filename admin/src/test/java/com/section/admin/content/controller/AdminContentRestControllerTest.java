@@ -252,6 +252,29 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 조회 분석 CSV는 동일한 게시판·기간과 다운로드 헤더를 사용한다")
+    void exportViewAnalyticsReturnsCsvAttachment() throws Exception {
+        when(adminContentViewAnalyticsService.getAnalytics(Document.BoardType.NOTICE, 30))
+                .thenReturn(viewAnalyticsResponse("NOTICE", 30));
+
+        mockMvc.perform(get("/api/admin/content/stats/views/export")
+                        .param("boardType", " notice ")
+                        .param("days", "30"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        org.hamcrest.Matchers.containsString("content-view-analytics-notice-30d-")
+                ))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .bytes(com.section.admin.content.support.ContentViewAnalyticsCsvWriter.write(
+                                viewAnalyticsResponse("NOTICE", 30)
+                        )));
+
+        verify(adminContentViewAnalyticsService).getAnalytics(Document.BoardType.NOTICE, 30);
+    }
+
+    @Test
     @DisplayName("콘텐츠 조회 분석 API는 게시판이 비어 있으면 전체 분석을 요청한다")
     void getViewAnalyticsUsesAllBoardsWhenBoardTypeBlank() throws Exception {
         when(adminContentViewAnalyticsService.getAnalytics(null, 7))
@@ -527,5 +550,20 @@ class AdminContentRestControllerTest {
     private record BulkDeletePayload(
             List<Long> ids
     ) {
+    }
+
+    private ContentViewAnalyticsResponse viewAnalyticsResponse(String boardType, int rangeDays) {
+        return new ContentViewAnalyticsResponse(
+                boardType,
+                rangeDays,
+                "2026-06-24",
+                "2026-07-23",
+                "2026-07-23 12:00:00",
+                new ContentViewAnalyticsResponse.Summary(120, 72, 8, 15.0, 100, 20),
+                List.of(new ContentViewAnalyticsResponse.Trend("2026-07-23", 20, 12)),
+                List.of(new ContentViewAnalyticsResponse.TopContent(
+                        31L, boardType, "여름 스타일", 25, 18
+                ))
+        );
     }
 }

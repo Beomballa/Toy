@@ -9,7 +9,9 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-public interface FrontContentViewEventRepository extends JpaRepository<FrontContentViewEvent, Long> {
+public interface FrontContentViewEventRepository extends
+        JpaRepository<FrontContentViewEvent, Long>,
+        CustomFrontContentViewEventRepository {
 
     @Modifying
     @Query(value = """

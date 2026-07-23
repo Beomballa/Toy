@@ -3,6 +3,9 @@ const ContentList = {
     exportInFlight: false,
     actionInFlightIds: new Set(),
     dailyStats: null,
+    viewAnalytics: null,
+    viewAnalyticsRequestId: 0,
+    viewAnalyticsLoading: false,
     state: {
         page: 0,
         size: 9,
@@ -15,6 +18,7 @@ const ContentList = {
         pinnedOnly: false,
         productLinked: '',
         productNo: '',
+        viewRangeDays: 7,
         source: '',
         returnTo: '',
         selectedIds: new Set(),
@@ -35,6 +39,7 @@ const ContentList = {
         this.bindEvents();
         this.applyOperationPolicy();
         this.getDailyStats();
+        this.getViewAnalytics();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
     },
@@ -80,6 +85,7 @@ const ContentList = {
                 this.updateSidebarActive();
                 this.updatePageMeta();
                 this.renderDailyStats();
+                this.getViewAnalytics();
                 this.getList();
             });
         });
@@ -92,6 +98,7 @@ const ContentList = {
             this.updateSidebarActive();
             this.updatePageMeta();
             this.renderDailyStats();
+            this.getViewAnalytics();
             CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
             CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
             this.getList();
@@ -103,6 +110,18 @@ const ContentList = {
         });
         document.getElementById('btnExportContentCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('btnBulkDeleteContent')?.addEventListener('click', () => this.applyBulkDelete());
+        document.getElementById('btnRefreshViewAnalytics')?.addEventListener('click', () => this.getViewAnalytics());
+        document.querySelectorAll('[data-view-range]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const rangeDays = Number(button.dataset.viewRange);
+                if (![7, 14, 30].includes(rangeDays) || rangeDays === this.state.viewRangeDays) {
+                    return;
+                }
+                this.state.viewRangeDays = rangeDays;
+                this.syncViewAnalyticsPeriod();
+                this.getViewAnalytics();
+            });
+        });
 
         document.getElementById('contentSearchForm')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -201,6 +220,167 @@ const ContentList = {
         this.setText('contentDailyStatsTotal', total ? `${this.formatNumber(total.totalCount)}건` : '-');
         this.setText('contentDailyStatsViews', total ? `${this.formatNumber(total.totalViewCount)}회` : '-');
         this.setText('contentDailyStatsStatus', hasSnapshot ? `완료 · ${this.dailyStats.aggregatedAt}` : '스냅샷 없음');
+    },
+
+    async getViewAnalytics() {
+        const requestId = ++this.viewAnalyticsRequestId;
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        this.viewAnalyticsLoading = true;
+        this.syncViewAnalyticsPeriod();
+        this.renderViewAnalyticsLoading();
+
+        try {
+            const response = await fetch(`/api/admin/content/stats/views?${params}`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error('프론트 조회 분석을 불러오지 못했습니다.');
+            }
+            const analytics = await response.json();
+            if (requestId !== this.viewAnalyticsRequestId) {
+                return;
+            }
+            this.viewAnalytics = analytics;
+            this.renderViewAnalytics();
+        } catch (error) {
+            if (requestId !== this.viewAnalyticsRequestId) {
+                return;
+            }
+            this.viewAnalytics = null;
+            this.renderViewAnalyticsError();
+            console.error('프론트 조회 분석 실패:', error);
+        } finally {
+            if (requestId === this.viewAnalyticsRequestId) {
+                this.viewAnalyticsLoading = false;
+                this.syncViewAnalyticsPeriod();
+            }
+        }
+    },
+
+    syncViewAnalyticsPeriod() {
+        document.querySelectorAll('[data-view-range]').forEach((button) => {
+            const active = Number(button.dataset.viewRange) === this.state.viewRangeDays;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+            button.disabled = this.viewAnalyticsLoading && active;
+        });
+        this.setText('contentViewRangeLabel', `최근 ${this.state.viewRangeDays}일`);
+    },
+
+    renderViewAnalyticsLoading() {
+        this.setText('contentViewAnalyticsStatus', `${this.state.boardType} 게시판의 최근 ${this.state.viewRangeDays}일 조회를 집계하고 있습니다.`);
+        this.setText('contentViewTotalViews', '-');
+        this.setText('contentViewChangeRate', '직전 기간 비교 -');
+        this.setText('contentViewUniqueVisitors', '-');
+        this.setText('contentViewContentCount', '-');
+        this.setText('contentViewAverage', '-');
+        this.renderViewTrend([]);
+        this.renderViewTopContents([]);
+    },
+
+    renderViewAnalytics() {
+        const analytics = this.viewAnalytics;
+        const summary = analytics?.summary || {};
+        const trend = Array.isArray(analytics?.trend) ? analytics.trend : [];
+        const topContents = Array.isArray(analytics?.topContents) ? analytics.topContents : [];
+        const generatedAt = analytics?.generatedAt || '집계 시각 없음';
+
+        this.setText(
+            'contentViewAnalyticsStatus',
+            `${analytics?.startDate || '-'} ~ ${analytics?.endDate || '-'} · ${generatedAt} 갱신`
+        );
+        this.setText('contentViewTotalViews', `${this.formatNumber(summary.totalViews)}회`);
+        this.setText('contentViewUniqueVisitors', `${this.formatNumber(summary.uniqueVisitors)}명`);
+        this.setText('contentViewContentCount', `${this.formatNumber(summary.viewedContentCount)}건`);
+        this.setText('contentViewAverage', `${this.formatDecimal(summary.averageViewsPerContent)}회`);
+        this.renderViewChangeRate(summary.viewChangeRate, summary.previousViews);
+        this.renderViewTrend(trend);
+        this.renderViewTopContents(topContents);
+        this.syncViewAnalyticsPeriod();
+    },
+
+    renderViewChangeRate(rateValue, previousViews) {
+        const rate = Number(rateValue);
+        const safeRate = Number.isFinite(rate) ? rate : 0;
+        const prefix = safeRate > 0 ? '+' : '';
+        const element = document.getElementById('contentViewChangeRate');
+        if (!element) return;
+        element.textContent = `직전 ${this.formatNumber(previousViews)}회 대비 ${prefix}${safeRate}%`;
+        element.classList.toggle('is-positive', safeRate > 0);
+        element.classList.toggle('is-negative', safeRate < 0);
+    },
+
+    renderViewTrend(trend) {
+        const target = document.getElementById('contentViewTrend');
+        if (!target) return;
+        if (!trend.length) {
+            target.innerHTML = '<div class="content-view-empty">표시할 조회 추이가 없습니다.</div>';
+            return;
+        }
+
+        const maxValue = Math.max(1, ...trend.map((item) => Number(item.viewCount) || 0));
+        target.innerHTML = trend.map((item, index) => {
+            const views = Number(item.viewCount) || 0;
+            const visitors = Number(item.uniqueVisitors) || 0;
+            const viewHeight = Math.max(views > 0 ? 8 : 2, Math.round(views / maxValue * 100));
+            const visitorHeight = Math.max(visitors > 0 ? 6 : 2, Math.round(visitors / maxValue * 100));
+            const showLabel = trend.length <= 14 || index === 0 || index === trend.length - 1 || index % 5 === 0;
+            return `
+                <div class="content-view-chart__column" title="${ContentBoardConfig.escapeHtml(item.date)} · 조회 ${this.formatNumber(views)}회 · 방문자 ${this.formatNumber(visitors)}명">
+                    <div class="content-view-chart__value">${views ? this.formatNumber(views) : ''}</div>
+                    <div class="content-view-chart__bars">
+                        <span class="content-view-chart__bar content-view-chart__bar--views" style="height:${viewHeight}%"></span>
+                        <span class="content-view-chart__bar content-view-chart__bar--visitors" style="height:${visitorHeight}%"></span>
+                    </div>
+                    <span class="content-view-chart__date">${showLabel ? this.formatShortDate(item.date) : ''}</span>
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderViewTopContents(items) {
+        const target = document.getElementById('contentViewTopContents');
+        if (!target) return;
+        if (!items.length) {
+            target.innerHTML = '<li class="content-view-empty">선택한 기간에 조회된 콘텐츠가 없습니다.</li>';
+            return;
+        }
+        target.innerHTML = items.map((item, index) => `
+            <li class="content-view-ranking__item">
+                <span class="content-view-ranking__rank">${index + 1}</span>
+                <a href="/admin/content/get?id=${encodeURIComponent(item.documentId)}&boardType=${encodeURIComponent(item.boardType)}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}"
+                   class="content-view-ranking__content">
+                    <strong>${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</strong>
+                    <span>${ContentBoardConfig.escapeHtml(item.boardType)} · 방문자 ${this.formatNumber(item.uniqueVisitors)}명</span>
+                </a>
+                <strong class="content-view-ranking__views">${this.formatNumber(item.viewCount)}회</strong>
+            </li>
+        `).join('');
+    },
+
+    renderViewAnalyticsError() {
+        this.setText('contentViewAnalyticsStatus', '조회 분석을 불러오지 못했습니다. 새로고침으로 다시 시도해 주세요.');
+        this.renderViewTrend([]);
+        const target = document.getElementById('contentViewTopContents');
+        if (target) {
+            target.innerHTML = '<li class="content-view-empty content-view-empty--error">조회 분석 연결을 확인해 주세요.</li>';
+        }
+        this.syncViewAnalyticsPeriod();
+    },
+
+    formatDecimal(value) {
+        const number = Number(value);
+        return Number.isFinite(number)
+            ? number.toLocaleString('ko-KR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+            : '0.0';
+    },
+
+    formatShortDate(value) {
+        const parts = String(value || '').split('-');
+        return parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : '';
     },
 
     setText(id, value) {

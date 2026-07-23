@@ -9,7 +9,9 @@ import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.service.AdminContentStatsService;
+import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -42,6 +44,7 @@ public class AdminContentRestController {
     private final DocumentService documentService;
     private final AdminOperationPolicyService adminOperationPolicyService;
     private final AdminContentStatsService adminContentStatsService;
+    private final AdminContentViewAnalyticsService adminContentViewAnalyticsService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -81,6 +84,17 @@ public class AdminContentRestController {
     @GetMapping("/stats/daily")
     public ResponseEntity<ContentDailyStatsResponse> getDailyStats() {
         return ResponseEntity.ok(adminContentStatsService.getLatestStats());
+    }
+
+    @GetMapping("/stats/views")
+    public ResponseEntity<ContentViewAnalyticsResponse> getViewAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        return ResponseEntity.ok(adminContentViewAnalyticsService.getAnalytics(normalizedBoardType, days));
     }
 
     @GetMapping("/export")

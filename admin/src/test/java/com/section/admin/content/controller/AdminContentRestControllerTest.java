@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.content.service.AdminContentStatsService;
+import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.common.base.entity.type.YN;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
@@ -56,6 +58,9 @@ class AdminContentRestControllerTest {
     @Mock
     private AdminContentStatsService adminContentStatsService;
 
+    @Mock
+    private AdminContentViewAnalyticsService adminContentViewAnalyticsService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -64,7 +69,8 @@ class AdminContentRestControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(new AdminContentRestController(
                         documentService,
                         adminOperationPolicyService,
-                        adminContentStatsService
+                        adminContentStatsService,
+                        adminContentViewAnalyticsService
                 ))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
@@ -212,6 +218,74 @@ class AdminContentRestControllerTest {
                 .andExpect(jsonPath("$.items[0].scope").value("TOTAL"))
                 .andExpect(jsonPath("$.items[0].totalCount").value(8))
                 .andExpect(jsonPath("$.items[0].totalViewCount").value(120));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 조회 분석 API는 게시판과 기간을 정규화해 분석 결과를 반환한다")
+    void getViewAnalyticsReturnsBoardAnalytics() throws Exception {
+        when(adminContentViewAnalyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(new ContentViewAnalyticsResponse(
+                        "STYLE",
+                        14,
+                        "2026-07-10",
+                        "2026-07-23",
+                        "2026-07-23 12:00:00",
+                        new ContentViewAnalyticsResponse.Summary(120, 72, 8, 15.0, 100, 20),
+                        List.of(new ContentViewAnalyticsResponse.Trend("2026-07-23", 20, 12)),
+                        List.of(new ContentViewAnalyticsResponse.TopContent(
+                                31L, "STYLE", "여름 스타일", 25, 18
+                        ))
+                ));
+
+        mockMvc.perform(get("/api/admin/content/stats/views")
+                        .param("boardType", " style ")
+                        .param("days", "14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.boardType").value("STYLE"))
+                .andExpect(jsonPath("$.rangeDays").value(14))
+                .andExpect(jsonPath("$.summary.totalViews").value(120))
+                .andExpect(jsonPath("$.summary.viewChangeRate").value(20))
+                .andExpect(jsonPath("$.trend[0].uniqueVisitors").value(12))
+                .andExpect(jsonPath("$.topContents[0].documentId").value(31L));
+
+        verify(adminContentViewAnalyticsService).getAnalytics(Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("콘텐츠 조회 분석 API는 게시판이 비어 있으면 전체 분석을 요청한다")
+    void getViewAnalyticsUsesAllBoardsWhenBoardTypeBlank() throws Exception {
+        when(adminContentViewAnalyticsService.getAnalytics(null, 7))
+                .thenReturn(new ContentViewAnalyticsResponse(
+                        "ALL",
+                        7,
+                        "2026-07-17",
+                        "2026-07-23",
+                        "2026-07-23 12:00:00",
+                        new ContentViewAnalyticsResponse.Summary(0, 0, 0, 0, 0, 0),
+                        List.of(),
+                        List.of()
+                ));
+
+        mockMvc.perform(get("/api/admin/content/stats/views")
+                        .param("boardType", " ")
+                        .param("days", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.boardType").value("ALL"));
+
+        verify(adminContentViewAnalyticsService).getAnalytics(null, 7);
+    }
+
+    @Test
+    @DisplayName("콘텐츠 조회 분석 API는 지원하지 않는 기간의 오류 응답을 전달한다")
+    void getViewAnalyticsRejectsUnsupportedRange() throws Exception {
+        when(adminContentViewAnalyticsService.getAnalytics(Document.BoardType.NOTICE, 10))
+                .thenThrow(new BusinessException(ErrorCode.INVALID_INPUT_VALUE));
+
+        mockMvc.perform(get("/api/admin/content/stats/views")
+                        .param("boardType", "NOTICE")
+                        .param("days", "10"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("C001"));
     }
 
     @Test

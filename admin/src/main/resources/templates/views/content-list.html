@@ -72,6 +72,83 @@
         </div>
     </section>
 
+    <section class="content-view-analytics admin-panel-card" aria-labelledby="contentViewAnalyticsTitle">
+        <div class="content-view-analytics__header">
+            <div>
+                <div class="content-view-analytics__eyebrow">Live Content Insight</div>
+                <h2 id="contentViewAnalyticsTitle">프론트 조회 분석</h2>
+                <p>실제 방문자가 읽은 콘텐츠를 현재 게시판 기준으로 비교합니다.</p>
+            </div>
+            <div class="content-view-analytics__controls" aria-label="조회 분석 기간">
+                <div class="content-view-analytics__periods" role="group" aria-label="분석 기간 선택">
+                    <button type="button" class="content-view-analytics__period is-active" data-view-range="7">7일</button>
+                    <button type="button" class="content-view-analytics__period" data-view-range="14">14일</button>
+                    <button type="button" class="content-view-analytics__period" data-view-range="30">30일</button>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshViewAnalytics">
+                    <i class="fas fa-rotate-right me-1"></i>새로고침
+                </button>
+            </div>
+        </div>
+
+        <div class="content-view-analytics__status" id="contentViewAnalyticsStatus" role="status" aria-live="polite">
+            조회 데이터를 불러오는 중입니다.
+        </div>
+
+        <div class="content-view-analytics__metrics" aria-label="조회 핵심 지표">
+            <article class="content-view-metric">
+                <span>기간 조회</span>
+                <strong id="contentViewTotalViews">-</strong>
+                <small id="contentViewChangeRate">직전 기간 비교 -</small>
+            </article>
+            <article class="content-view-metric">
+                <span>순 방문자</span>
+                <strong id="contentViewUniqueVisitors">-</strong>
+                <small>방문자 식별키 기준</small>
+            </article>
+            <article class="content-view-metric">
+                <span>조회 콘텐츠</span>
+                <strong id="contentViewContentCount">-</strong>
+                <small>한 번 이상 읽힌 문서</small>
+            </article>
+            <article class="content-view-metric">
+                <span>콘텐츠당 평균</span>
+                <strong id="contentViewAverage">-</strong>
+                <small>조회 콘텐츠 기준</small>
+            </article>
+        </div>
+
+        <div class="content-view-analytics__body">
+            <article class="content-view-chart-panel">
+                <div class="content-view-panel-title">
+                    <div>
+                        <strong>일별 조회 흐름</strong>
+                        <span id="contentViewRangeLabel">최근 7일</span>
+                    </div>
+                    <div class="content-view-chart-legend">
+                        <span><i class="content-view-chart-legend__views"></i>조회</span>
+                        <span><i class="content-view-chart-legend__visitors"></i>방문자</span>
+                    </div>
+                </div>
+                <div class="content-view-chart" id="contentViewTrend" aria-label="일별 조회 추이">
+                    <div class="content-view-empty">추이 데이터를 준비하고 있습니다.</div>
+                </div>
+            </article>
+
+            <article class="content-view-ranking-panel">
+                <div class="content-view-panel-title">
+                    <div>
+                        <strong>상위 콘텐츠</strong>
+                        <span>조회수 기준 Top 5</span>
+                    </div>
+                </div>
+                <ol class="content-view-ranking" id="contentViewTopContents">
+                    <li class="content-view-empty">상위 콘텐츠를 불러오는 중입니다.</li>
+                </ol>
+            </article>
+        </div>
+    </section>
+
     <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
             <section class="content-board-search-section content-board-search-section--primary">
@@ -247,9 +324,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/common.js"></script>
 <script src="/js/view/content-shared.js"></script>
-<script src="/js/view/content-list.js"></script>
 <script th:inline="javascript">
     window.initialContentBoardType = /*[[${boardType}]]*/ 'NOTICE';
 </script>
+<script src="/js/view/content-list.js"></script>
 </body>
 </html>

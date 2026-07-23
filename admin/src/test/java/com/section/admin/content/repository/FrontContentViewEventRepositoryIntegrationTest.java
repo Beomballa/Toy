@@ -1,0 +1,106 @@
+package com.section.admin.content.repository;
+
+import com.section.admin.AdminToyApplication;
+import com.section.common.base.entity.type.YN;
+import com.section.common.content.dto.ContentViewSummaryRow;
+import com.section.common.content.dto.ContentViewTopRow;
+import com.section.common.content.dto.ContentViewTrendRow;
+import com.section.common.content.entity.Document;
+import com.section.common.content.repository.DocumentRepository;
+import com.section.common.content.repository.FrontContentViewEventRepository;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@SpringBootTest(classes = AdminToyApplication.class)
+@ActiveProfiles("local")
+@Transactional
+class FrontContentViewEventRepositoryIntegrationTest {
+
+    @Autowired
+    private FrontContentViewEventRepository viewEventRepository;
+
+    @Autowired
+    private DocumentRepository documentRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @Test
+    @DisplayName("조회 이벤트 집계는 게시판 필터와 순 방문자 중복 제거를 함께 적용한다")
+    void aggregatesViewEventsByBoardAndVisitor() {
+        Document notice = document("배송 공지", Document.BoardType.NOTICE);
+        Document style = document("여름 스타일", Document.BoardType.STYLE);
+        documentRepository.saveAll(List.of(notice, style));
+        entityManager.flush();
+
+        insertEvent(notice.getId(), "visitor-a", LocalDate.of(2026, 7, 22), 10);
+        insertEvent(notice.getId(), "visitor-b", LocalDate.of(2026, 7, 22), 11);
+        insertEvent(notice.getId(), "visitor-a", LocalDate.of(2026, 7, 23), 12);
+        insertEvent(style.getId(), "visitor-c", LocalDate.of(2026, 7, 23), 13);
+        entityManager.flush();
+        entityManager.clear();
+
+        ContentViewSummaryRow summary = viewEventRepository.getViewSummary(
+                LocalDate.of(2026, 7, 22),
+                LocalDate.of(2026, 7, 23),
+                Document.BoardType.NOTICE
+        );
+        List<ContentViewTrendRow> trend = viewEventRepository.getDailyViewTrend(
+                LocalDate.of(2026, 7, 22),
+                LocalDate.of(2026, 7, 23),
+                Document.BoardType.NOTICE
+        );
+        List<ContentViewTopRow> topContents = viewEventRepository.getTopViewedContents(
+                LocalDate.of(2026, 7, 22),
+                LocalDate.of(2026, 7, 23),
+                null,
+                5
+        );
+
+        assertThat(summary.totalViews()).isEqualTo(3);
+        assertThat(summary.uniqueVisitors()).isEqualTo(2);
+        assertThat(summary.viewedContentCount()).isEqualTo(1);
+        assertThat(trend).extracting(ContentViewTrendRow::viewCount).containsExactly(2L, 1L);
+        assertThat(topContents).hasSizeGreaterThanOrEqualTo(2);
+        assertThat(topContents.getFirst().documentId()).isEqualTo(notice.getId());
+        assertThat(topContents.getFirst().viewCount()).isEqualTo(3);
+    }
+
+    private Document document(String title, Document.BoardType boardType) {
+        Document document = new Document();
+        document.applyEditorValues(
+                boardType,
+                Document.PublishStatus.PUBLISHED,
+                YN.Y,
+                YN.N,
+                title,
+                title + " 본문",
+                null
+        );
+        return document;
+    }
+
+    private void insertEvent(long documentId, String visitorKey, LocalDate viewedDate, int hour) {
+        entityManager.createNativeQuery("""
+                        insert into front_content_view_event
+                            (document_no, visitor_key, viewed_date, viewed_dtm)
+                        values (:documentNo, :visitorKey, :viewedDate, :viewedDtm)
+                        """)
+                .setParameter("documentNo", documentId)
+                .setParameter("visitorKey", visitorKey)
+                .setParameter("viewedDate", viewedDate)
+                .setParameter("viewedDtm", LocalDateTime.of(viewedDate, java.time.LocalTime.of(hour, 0)))
+                .executeUpdate();
+    }
+}

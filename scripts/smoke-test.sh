@@ -86,6 +86,9 @@ check_admin_authenticated_flow() {
   local login_status
   local dashboard_status
   local content_stats_status
+  local content_view_export_response
+  local content_view_export_status
+  local content_view_export_headers
   local logout_response
   local logout_status
   local logout_headers
@@ -137,6 +140,20 @@ check_admin_authenticated_flow() {
     return 1
   fi
   printf 'PASS %-28s status=%s\n' "admin content view stats" "$content_view_analytics_status"
+
+  content_view_export_response="$(curl --silent --show-error --dump-header - --output /dev/null \
+    --write-out $'\n%{http_code}' --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/views/export?boardType=NOTICE&days=7" | tr -d '\r')"
+  content_view_export_status="${content_view_export_response##*$'\n'}"
+  content_view_export_headers="${content_view_export_response%$'\n'*}"
+  if [[ "$content_view_export_status" != "200" ]] \
+    || ! printf '%s\n' "$content_view_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Type: text/csv' \
+    || ! printf '%s\n' "$content_view_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Disposition: attachment; filename="content-view-analytics-'; then
+    printf 'FAIL %-28s expected=200 csv_headers=required actual=%s\n' \
+      "admin content view export" "$content_view_export_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content view export" "$content_view_export_status"
 
   logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \

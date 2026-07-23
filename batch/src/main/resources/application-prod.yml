@@ -38,6 +38,10 @@ batch:
   document-stats:
     enabled: ${BATCH_DOCUMENT_STATS_ENABLED:false}
     cron: ${BATCH_DOCUMENT_STATS_CRON:0 */10 * * * *}
+  content-view-retention:
+    enabled: ${BATCH_CONTENT_VIEW_RETENTION_ENABLED:false}
+    cron: ${BATCH_CONTENT_VIEW_RETENTION_CRON:0 30 3 * * *}
+    days: ${BATCH_CONTENT_VIEW_RETENTION_DAYS:180}
 
 logging:
   pattern:

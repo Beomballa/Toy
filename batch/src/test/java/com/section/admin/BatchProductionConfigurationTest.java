@@ -30,6 +30,9 @@ class BatchProductionConfigurationTest {
                 .contains("await-termination-period: ${BATCH_SHUTDOWN_TIMEOUT:30s}")
                 .contains("enabled: ${BATCH_DOCUMENT_STATS_ENABLED:false}")
                 .contains("cron: ${BATCH_DOCUMENT_STATS_CRON:0 */10 * * * *}")
+                .contains("enabled: ${BATCH_CONTENT_VIEW_RETENTION_ENABLED:false}")
+                .contains("cron: ${BATCH_CONTENT_VIEW_RETENTION_CRON:0 30 3 * * *}")
+                .contains("days: ${BATCH_CONTENT_VIEW_RETENTION_DAYS:180}")
                 .contains("include-stacktrace: never");
     }
 }

@@ -77,6 +77,31 @@ class FrontContentViewEventRepositoryIntegrationTest {
         assertThat(topContents.getFirst().viewCount()).isEqualTo(3);
     }
 
+    @Test
+    @DisplayName("조회 이벤트 보존 삭제는 기준일 이전 데이터만 일괄 제거한다")
+    void deletesOnlyEventsBeforeRetentionStartDate() {
+        Document notice = document("보존 정책 공지", Document.BoardType.NOTICE);
+        documentRepository.save(notice);
+        entityManager.flush();
+        insertEvent(notice.getId(), "expired-visitor", LocalDate.of(2026, 6, 23), 10);
+        insertEvent(notice.getId(), "boundary-visitor", LocalDate.of(2026, 6, 24), 11);
+        insertEvent(notice.getId(), "recent-visitor", LocalDate.of(2026, 7, 23), 12);
+        entityManager.flush();
+        entityManager.clear();
+
+        int deletedCount = viewEventRepository.deleteBefore(LocalDate.of(2026, 6, 24));
+
+        Number remaining = (Number) entityManager.createNativeQuery("""
+                        select count(*)
+                        from front_content_view_event
+                        where document_no = :documentNo
+                        """)
+                .setParameter("documentNo", notice.getId())
+                .getSingleResult();
+        assertThat(deletedCount).isEqualTo(1);
+        assertThat(remaining.longValue()).isEqualTo(2);
+    }
+
     private Document document(String title, Document.BoardType boardType) {
         Document document = new Document();
         document.applyEditorValues(

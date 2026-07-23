@@ -25,4 +25,8 @@ public interface FrontContentViewEventRepository extends
             @Param("viewedDate") LocalDate viewedDate,
             @Param("viewedDtm") LocalDateTime viewedDtm
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from FrontContentViewEvent event where event.viewedDate < :retentionStartDate")
+    int deleteBefore(@Param("retentionStartDate") LocalDate retentionStartDate);
 }

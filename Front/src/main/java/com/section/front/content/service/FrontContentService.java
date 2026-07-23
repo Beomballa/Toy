@@ -1,29 +1,32 @@
 package com.section.front.content.service;
 
 import com.section.common.base.entity.type.YN;
-import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.PopularPublicContentRow;
+import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentDetailResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
 import com.section.front.content.dto.FrontContentPageResponse;
+import com.section.front.content.dto.FrontPopularContentResponse;
 import com.section.front.content.req.FrontContentListRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class FrontContentService {
 
@@ -35,12 +38,31 @@ public class FrontContentService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     private final DocumentRepository documentRepository;
+    private final Clock clock;
+
+    @Autowired
+    public FrontContentService(DocumentRepository documentRepository) {
+        this(documentRepository, Clock.systemDefaultZone());
+    }
+
+    FrontContentService(DocumentRepository documentRepository, Clock clock) {
+        this.documentRepository = documentRepository;
+        this.clock = clock;
+    }
 
     public FrontContentHighlightsResponse getHighlights(Integer limit) {
         int normalizedLimit = normalizeLimit(limit);
+        LocalDate popularEndDate = LocalDate.now(clock);
+        LocalDate popularStartDate = popularEndDate.minusDays(6);
         return new FrontContentHighlightsResponse(
                 toResponses(documentRepository.getPublicDocuments(Document.BoardType.NOTICE, normalizedLimit)),
-                toResponses(documentRepository.getPublicDocuments(Document.BoardType.STYLE, normalizedLimit))
+                toResponses(documentRepository.getPublicDocuments(Document.BoardType.STYLE, normalizedLimit)),
+                documentRepository.getPopularPublicDocuments(popularStartDate, popularEndDate, normalizedLimit)
+                        .stream()
+                        .map(this::toPopularResponse)
+                        .toList(),
+                popularStartDate.toString(),
+                popularEndDate.toString()
         );
     }
 
@@ -120,6 +142,19 @@ public class FrontContentService {
                 Math.max(0, row.getViewCnt()),
                 "Y".equals(row.getPinnedYn()),
                 row.getCrtDtm() == null ? null : row.getCrtDtm().toLocalDate().format(DATE_FORMATTER)
+        );
+    }
+
+    private FrontPopularContentResponse toPopularResponse(PopularPublicContentRow row) {
+        return new FrontPopularContentResponse(
+                row.id(),
+                row.boardType().name(),
+                defaultText(row.title(), "제목 없는 콘텐츠"),
+                summarize(row.content()),
+                row.recentViewCount(),
+                row.uniqueVisitors(),
+                row.pinnedYn() == YN.Y,
+                row.createdAt() == null ? null : row.createdAt().toLocalDate().format(DATE_FORMATTER)
         );
     }
 

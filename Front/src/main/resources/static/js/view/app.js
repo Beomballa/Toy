@@ -398,6 +398,8 @@
         flowBoardTitle: document.getElementById("flowBoardTitle"),
         flowBoardText: document.getElementById("flowBoardText"),
         flowBoardGrid: document.getElementById("flowBoardGrid"),
+        popularHighlightList: document.getElementById("popularHighlightList"),
+        popularHighlightRange: document.getElementById("popularHighlightRange"),
         noticeHighlightList: document.getElementById("noticeHighlightList"),
         styleHighlightList: document.getElementById("styleHighlightList"),
         contentHighlightStatus: document.getElementById("contentHighlightStatus"),
@@ -483,7 +485,7 @@
     }
 
     async function loadContentHighlights() {
-        if (!elements.noticeHighlightList || !elements.styleHighlightList) {
+        if (!elements.popularHighlightList || !elements.noticeHighlightList || !elements.styleHighlightList) {
             return;
         }
         const requestSequence = ++contentHighlightRequestSequence;
@@ -509,10 +511,51 @@
     function renderContentHighlights(payload) {
         const notices = Array.isArray(payload?.notices) ? payload.notices : [];
         const styles = Array.isArray(payload?.styles) ? payload.styles : [];
+        const popular = Array.isArray(payload?.popular) ? payload.popular : [];
+        renderPopularContentHighlights(popular);
         renderContentHighlightList(elements.noticeHighlightList, notices, "현재 공개된 공지가 없습니다.");
         renderContentHighlightList(elements.styleHighlightList, styles, "현재 공개된 스타일 콘텐츠가 없습니다.");
+        const range = payload?.popularStartDate && payload?.popularEndDate
+            ? `${payload.popularStartDate} - ${payload.popularEndDate}`
+            : "최근 7일";
+        setText(elements.popularHighlightRange, range);
         elements.contentHighlightRetryButton.hidden = true;
-        setText(elements.contentHighlightStatus, `공지 ${notices.length}개와 스타일 ${styles.length}개를 불러왔습니다.`);
+        setText(
+            elements.contentHighlightStatus,
+            `인기 ${popular.length}개, 공지 ${notices.length}개, 스타일 ${styles.length}개를 불러왔습니다.`
+        );
+    }
+
+    function renderPopularContentHighlights(items) {
+        const target = elements.popularHighlightList;
+        target.classList.remove("is-loading", "is-error");
+        target.setAttribute("aria-busy", "false");
+        if (!items.length) {
+            target.innerHTML = '<div class="content-highlight-state">최근 7일 조회 데이터가 없습니다.</div>';
+            return;
+        }
+        target.innerHTML = items.map((rawItem, index) => {
+            const item = markupSafeObject(rawItem);
+            const documentId = Number(item.id);
+            const boardLabel = item.boardType === "NOTICE" ? "NOTICE" : "STYLE";
+            const viewCount = Number(item.recentViewCount || 0).toLocaleString("ko-KR");
+            const visitorCount = Number(item.uniqueVisitors || 0).toLocaleString("ko-KR");
+            return `
+                <article class="content-popular-item">
+                    <a href="/front/content/${documentId}" aria-label="${item.title} 상세 보기">
+                        <div class="content-popular-item__head">
+                            <strong>${String(index + 1).padStart(2, "0")}</strong>
+                            <span>${boardLabel}</span>
+                        </div>
+                        <h4>${item.title}</h4>
+                        <p>${item.summary || "내용을 확인해 주세요."}</p>
+                        <div class="content-popular-item__metrics">
+                            <span>최근 조회 <b>${viewCount}</b></span>
+                            <span>방문자 <b>${visitorCount}</b></span>
+                        </div>
+                    </a>
+                </article>`;
+        }).join("");
     }
 
     function renderContentHighlightList(target, items, emptyMessage) {
@@ -544,7 +587,7 @@
     function renderContentHighlightState(stateName) {
         const isError = stateName === "ERROR";
         const message = isError ? "콘텐츠를 불러오지 못했습니다." : "콘텐츠를 불러오는 중입니다.";
-        [elements.noticeHighlightList, elements.styleHighlightList].forEach((target) => {
+        [elements.popularHighlightList, elements.noticeHighlightList, elements.styleHighlightList].forEach((target) => {
             target.classList.toggle("is-loading", !isError);
             target.classList.toggle("is-error", isError);
             target.setAttribute("aria-busy", String(!isError));

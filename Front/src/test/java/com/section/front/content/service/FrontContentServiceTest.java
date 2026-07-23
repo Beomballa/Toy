@@ -1,9 +1,10 @@
 package com.section.front.content.service;
 
 import com.section.common.base.entity.type.YN;
-import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.PopularPublicContentRow;
+import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
@@ -17,7 +18,11 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,13 +34,18 @@ import static org.mockito.Mockito.when;
 
 class FrontContentServiceTest {
 
+    private static final LocalDate TODAY = LocalDate.of(2026, 7, 23);
+
     private DocumentRepository documentRepository;
     private FrontContentService service;
 
     @BeforeEach
     void setUp() {
         documentRepository = mock(DocumentRepository.class);
-        service = new FrontContentService(documentRepository);
+        service = new FrontContentService(
+                documentRepository,
+                Clock.fixed(Instant.parse("2026-07-23T03:00:00Z"), ZoneId.of("Asia/Seoul"))
+        );
     }
 
     @Test
@@ -59,11 +69,14 @@ class FrontContentServiceTest {
         assertThat(response.styles()).singleElement().satisfies(item ->
                 assertThat(item.title()).isEqualTo("여름 스타일")
         );
+        assertThat(response.popular()).isEmpty();
+        assertThat(response.popularStartDate()).isEqualTo("2026-07-17");
+        assertThat(response.popularEndDate()).isEqualTo("2026-07-23");
     }
 
     @Test
-    @DisplayName("콘텐츠 제한값은 QueryDSL 조회에 동일하게 전달한다")
-    void passesLimitToBothQueries() {
+    @DisplayName("콘텐츠 제한값과 최근 7일 기간은 QueryDSL 조회에 동일하게 전달한다")
+    void passesLimitAndDateRangeToQueries() {
         when(documentRepository.getPublicDocuments(Document.BoardType.NOTICE, 6)).thenReturn(List.of());
         when(documentRepository.getPublicDocuments(Document.BoardType.STYLE, 6)).thenReturn(List.of());
 
@@ -71,6 +84,35 @@ class FrontContentServiceTest {
 
         verify(documentRepository).getPublicDocuments(Document.BoardType.NOTICE, 6);
         verify(documentRepository).getPublicDocuments(Document.BoardType.STYLE, 6);
+        verify(documentRepository).getPopularPublicDocuments(TODAY.minusDays(6), TODAY, 6);
+    }
+
+    @Test
+    @DisplayName("최근 조회 이벤트 기반 인기 콘텐츠 지표를 안전한 요약 형태로 반환한다")
+    void returnsPopularContentsFromRecentViewEvents() {
+        when(documentRepository.getPopularPublicDocuments(TODAY.minusDays(6), TODAY, 4)).thenReturn(List.of(
+                new PopularPublicContentRow(
+                        21L,
+                        Document.BoardType.STYLE,
+                        "여름 레이어링",
+                        "<p>가볍게 <strong>겹쳐 입는</strong> 방법</p>",
+                        18,
+                        12,
+                        YN.Y,
+                        LocalDateTime.of(2026, 7, 21, 9, 0)
+                )
+        ));
+
+        FrontContentHighlightsResponse response = service.getHighlights(4);
+
+        assertThat(response.popular()).singleElement().satisfies(item -> {
+            assertThat(item.boardType()).isEqualTo("STYLE");
+            assertThat(item.summary()).isEqualTo("가볍게 겹쳐 입는 방법");
+            assertThat(item.recentViewCount()).isEqualTo(18);
+            assertThat(item.uniqueVisitors()).isEqualTo(12);
+            assertThat(item.pinned()).isTrue();
+            assertThat(item.createdDate()).isEqualTo("2026-07-21");
+        });
     }
 
     @Test

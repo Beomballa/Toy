@@ -1,16 +1,17 @@
 package com.section.common.content.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
-import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.base.entity.type.YN;
+import com.section.common.content.dto.DocumentDailyStatsRow;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
-import com.section.common.content.dto.DocumentDailyStatsRow;
+import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +19,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.support.PageableExecutionUtils;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static com.section.common.content.entity.QDocument.document;
+import static com.section.common.content.entity.QFrontContentViewEvent.frontContentViewEvent;
 
 @RequiredArgsConstructor
 public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
@@ -158,6 +161,49 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         document.publicYn.eq(YN.Y)
                 )
                 .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
+                .limit(Math.max(1, Math.min(limit, 8)))
+                .fetch();
+    }
+
+    @Override
+    public List<PopularPublicContentRow> getPopularPublicDocuments(
+            LocalDate startDate,
+            LocalDate endDate,
+            int limit
+    ) {
+        return queryFactory
+                .select(Projections.constructor(
+                        PopularPublicContentRow.class,
+                        document.id,
+                        document.boardType,
+                        document.title,
+                        document.content,
+                        frontContentViewEvent.count(),
+                        frontContentViewEvent.visitorKey.countDistinct(),
+                        document.pinnedYn,
+                        document.crtDtm
+                ))
+                .from(frontContentViewEvent)
+                .join(document).on(document.id.eq(frontContentViewEvent.documentNo))
+                .where(
+                        frontContentViewEvent.viewedDate.between(startDate, endDate),
+                        document.status.eq(Document.PublishStatus.PUBLISHED),
+                        document.publicYn.eq(YN.Y)
+                )
+                .groupBy(
+                        document.id,
+                        document.boardType,
+                        document.title,
+                        document.content,
+                        document.pinnedYn,
+                        document.crtDtm
+                )
+                .orderBy(
+                        frontContentViewEvent.count().desc(),
+                        frontContentViewEvent.visitorKey.countDistinct().desc(),
+                        document.crtDtm.desc(),
+                        document.id.desc()
+                )
                 .limit(Math.max(1, Math.min(limit, 8)))
                 .fetch();
     }

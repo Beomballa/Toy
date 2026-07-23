@@ -5,6 +5,7 @@ import com.section.front.content.dto.FrontContentPageResponse;
 import com.section.front.content.req.FrontContentListRequest;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
+import com.section.front.content.dto.FrontPopularContentResponse;
 import com.section.front.content.service.FrontContentService;
 import com.section.front.content.service.FrontContentViewService;
 import com.section.front.content.dto.FrontContentViewResponse;
@@ -47,14 +48,23 @@ class FrontContentRestControllerTest {
     void returnsContentHighlights() throws Exception {
         when(service.getHighlights(4)).thenReturn(new FrontContentHighlightsResponse(
                 List.of(new FrontContentItemResponse(1, "NOTICE", "배송 공지", "일정 안내", 10, true, "2026-07-22")),
-                List.of()
+                List.of(),
+                List.of(new FrontPopularContentResponse(
+                        2, "STYLE", "여름 스타일", "스타일 안내", 18, 12, false, "2026-07-21"
+                )),
+                "2026-07-17",
+                "2026-07-23"
         ));
 
         mockMvc.perform(get("/api/front/content/highlights").param("limit", "4"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.notices[0].title").value("배송 공지"))
                 .andExpect(jsonPath("$.notices[0].pinned").value(true))
-                .andExpect(jsonPath("$.styles").isArray());
+                .andExpect(jsonPath("$.styles").isArray())
+                .andExpect(jsonPath("$.popular[0].recentViewCount").value(18))
+                .andExpect(jsonPath("$.popular[0].uniqueVisitors").value(12))
+                .andExpect(jsonPath("$.popularStartDate").value("2026-07-17"))
+                .andExpect(jsonPath("$.popularEndDate").value("2026-07-23"));
     }
 
     @Test

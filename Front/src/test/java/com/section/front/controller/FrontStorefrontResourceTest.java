@@ -17,6 +17,8 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("id=\"contentHighlights\"")
+                .contains("id=\"popularHighlightList\"")
+                .contains("id=\"popularHighlightRange\"")
                 .contains("id=\"noticeHighlightList\"")
                 .contains("id=\"styleHighlightList\"")
                 .contains("id=\"contentHighlightStatus\" aria-live=\"polite\"")
@@ -24,13 +26,16 @@ class FrontStorefrontResourceTest {
         assertThat(script)
                 .contains("void loadContentHighlights()")
                 .contains("/api/front/content/highlights?limit=4")
+                .contains("renderPopularContentHighlights(popular)")
                 .contains("markupSafeObject(rawItem)")
                 .contains("renderContentHighlightState(\"ERROR\")")
                 .contains("contentHighlightRetryButton?.addEventListener");
         assertThat(css)
                 .contains(".content-highlights__grid")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
-                .contains(".content-highlight-list.is-error")
+                .contains(".content-highlight-board--popular")
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
+                .contains(".content-popular-list.is-error")
                 .contains(".content-highlight-retry[hidden]");
     }
 
@@ -39,7 +44,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.42")
+                .contains("/css/storefront.css?v=20260723.1")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -47,7 +52,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260722.47");
+                .contains("/js/view/app.js?v=20260723.1");
     }
 
     @Test

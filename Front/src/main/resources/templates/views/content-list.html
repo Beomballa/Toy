@@ -6,7 +6,7 @@
     <title>에디토리얼 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260722.42">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260723.2">
 </head>
 <body class="content-list-body">
 <a class="skip-link" href="#contentListMain">콘텐츠 목록 바로가기</a>
@@ -54,9 +54,9 @@
         <section class="content-list-workspace" aria-labelledby="contentListHeading">
             <div class="content-list-toolbar">
                 <div class="content-list-tabs" role="tablist" aria-label="콘텐츠 유형">
-                    <button type="button" role="tab" data-content-board="ALL" aria-selected="true">전체</button>
-                    <button type="button" role="tab" data-content-board="NOTICE" aria-selected="false">공지</button>
-                    <button type="button" role="tab" data-content-board="STYLE" aria-selected="false">스타일</button>
+                    <button type="button" role="tab" data-content-board="ALL" aria-selected="true" tabindex="0">전체</button>
+                    <button type="button" role="tab" data-content-board="NOTICE" aria-selected="false" tabindex="-1">공지</button>
+                    <button type="button" role="tab" data-content-board="STYLE" aria-selected="false" tabindex="-1">스타일</button>
                 </div>
                 <form class="content-list-search" id="contentListSearchForm" role="search">
                     <label class="sr-only" for="contentListKeyword">콘텐츠 검색</label>
@@ -64,6 +64,26 @@
                     <button type="button" id="contentListClearButton" hidden>지우기</button>
                     <button type="submit">검색</button>
                 </form>
+                <div class="content-list-settings" aria-label="콘텐츠 표시 설정">
+                    <label>
+                        <span>정렬</span>
+                        <select id="contentListSortSelect">
+                            <option value="LATEST">최신순</option>
+                            <option value="POPULAR">조회순</option>
+                            <option value="OLDEST">오래된순</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>표시</span>
+                        <select id="contentListSizeSelect">
+                            <option value="4">4개</option>
+                            <option value="8" selected>8개</option>
+                            <option value="12">12개</option>
+                            <option value="20">20개</option>
+                        </select>
+                    </label>
+                    <button type="button" id="contentListResetButton">초기화</button>
+                </div>
             </div>
 
             <div class="content-list-heading">
@@ -74,14 +94,27 @@
                 <p id="contentListResultText">공개 콘텐츠를 정리하고 있습니다.</p>
             </div>
 
+            <div class="content-list-insights" id="contentListInsights" aria-label="현재 페이지 콘텐츠 요약">
+                <div><span>페이지 조회</span><strong id="contentListPageViews">0</strong></div>
+                <div><span>고정 콘텐츠</span><strong id="contentListPagePinned">0</strong></div>
+                <div><span>공지</span><strong id="contentListPageNotices">0</strong></div>
+                <div><span>스타일</span><strong id="contentListPageStyles">0</strong></div>
+            </div>
+            <div class="content-list-applied" id="contentListAppliedFilters" aria-label="적용된 콘텐츠 탐색 조건"></div>
+
             <div class="content-list-grid is-loading" id="contentListGrid" aria-busy="true">
                 <div class="content-list-state">콘텐츠를 불러오는 중입니다.</div>
             </div>
 
             <div class="content-list-pagination" id="contentListPagination" hidden>
                 <button type="button" id="contentListPreviousButton">이전</button>
-                <span id="contentListPageText">1 / 1</span>
+                <label>
+                    <span class="sr-only">페이지 선택</span>
+                    <select id="contentListPageSelect" aria-label="페이지 선택"></select>
+                </label>
+                <span id="contentListPageText">1 / 1 페이지</span>
                 <button type="button" id="contentListNextButton">다음</button>
+                <em id="contentListRangeText">0개 표시</em>
             </div>
         </section>
     </main>
@@ -93,6 +126,6 @@
     </footer>
 </div>
 
-<script src="/js/view/content-list.js?v=20260722.2"></script>
+<script src="/js/view/content-list.js?v=20260723.1"></script>
 </body>
 </html>

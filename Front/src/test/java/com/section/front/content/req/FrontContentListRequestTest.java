@@ -1,5 +1,6 @@
 package com.section.front.content.req;
 
+import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.entity.Document;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,12 +13,14 @@ class FrontContentListRequestTest {
     @Test
     @DisplayName("콘텐츠 검색 조건은 공백과 대소문자를 정규화한다")
     void normalizesSearchConditions() {
-        FrontContentListRequest request = new FrontContentListRequest(" style ", "  여름 스타일  ", 2, 12);
+        FrontContentListRequest request =
+                new FrontContentListRequest(" style ", "  여름 스타일  ", 2, 12, " popular ");
 
         assertThat(request.normalizedBoardType()).isEqualTo(Document.BoardType.STYLE);
         assertThat(request.normalizedKeyword()).isEqualTo("여름 스타일");
         assertThat(request.pageable().getPageNumber()).isEqualTo(2);
         assertThat(request.pageable().getPageSize()).isEqualTo(12);
+        assertThat(request.normalizedSort()).isEqualTo(DocumentListSort.POPULAR);
     }
 
     @Test
@@ -29,6 +32,7 @@ class FrontContentListRequestTest {
         assertThat(request.normalizedKeyword()).isNull();
         assertThat(request.pageable().getPageNumber()).isZero();
         assertThat(request.pageable().getPageSize()).isEqualTo(8);
+        assertThat(request.normalizedSort()).isEqualTo(DocumentListSort.LATEST);
     }
 
     @Test
@@ -47,6 +51,8 @@ class FrontContentListRequestTest {
         assertThatThrownBy(() -> new FrontContentListRequest(null, null, -1, 8).pageable())
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> new FrontContentListRequest(null, null, 0, 21).pageable())
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new FrontContentListRequest(null, null, 0, 8, "RANDOM").normalizedSort())
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

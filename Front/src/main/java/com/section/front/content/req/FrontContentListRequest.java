@@ -1,5 +1,6 @@
 package com.section.front.content.req;
 
+import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.entity.Document;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -10,12 +11,17 @@ public record FrontContentListRequest(
         String boardType,
         String keyword,
         Integer page,
-        Integer size
+        Integer size,
+        String sort
 ) {
 
     private static final int DEFAULT_SIZE = 8;
     private static final int MAX_SIZE = 20;
     private static final int MAX_KEYWORD_LENGTH = 100;
+
+    public FrontContentListRequest(String boardType, String keyword, Integer page, Integer size) {
+        this(boardType, keyword, page, size, null);
+    }
 
     public Document.BoardType normalizedBoardType() {
         if (boardType == null || boardType.isBlank() || "ALL".equalsIgnoreCase(boardType.trim())) {
@@ -49,5 +55,16 @@ public record FrontContentListRequest(
             throw new IllegalArgumentException("페이지 크기는 1개 이상 20개 이하여야 합니다.");
         }
         return PageRequest.of(normalizedPage, normalizedSize);
+    }
+
+    public DocumentListSort normalizedSort() {
+        if (sort == null || sort.isBlank()) {
+            return DocumentListSort.LATEST;
+        }
+        try {
+            return DocumentListSort.valueOf(sort.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("콘텐츠 정렬 조건이 올바르지 않습니다.");
+        }
     }
 }

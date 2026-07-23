@@ -192,6 +192,8 @@ check_status "front storefront" 200 "${FRONT_URL}/"
 check_status "front catalog api" 200 "${FRONT_URL}/api/front/catalog/bootstrap"
 check_body_contains "front content highlights" 200 '"popular":' \
   "${FRONT_URL}/api/front/content/highlights?limit=4"
+check_body_contains "front content popular sort" 200 '"sort":"POPULAR"' \
+  "${FRONT_URL}/api/front/content?sort=POPULAR&size=4"
 check_status "front detail page" 200 "${FRONT_URL}/front/products/${FRONT_DETAIL_PRODUCT_ID}"
 check_status "front detail api" 200 "${FRONT_URL}/api/front/products/${FRONT_DETAIL_PRODUCT_ID}"
 check_body_contains "front missing product" 404 '"code":"F002"' \

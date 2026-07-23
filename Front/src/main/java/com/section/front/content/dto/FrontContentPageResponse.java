@@ -9,6 +9,11 @@ public record FrontContentPageResponse(
         long totalElements,
         int totalPages,
         boolean first,
-        boolean last
+        boolean last,
+        String sort,
+        long pageViewCount,
+        int pagePinnedCount,
+        int pageNoticeCount,
+        int pageStyleCount
 ) {
 }

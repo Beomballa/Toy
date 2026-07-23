@@ -115,14 +115,20 @@ class FrontContentRestControllerTest {
     void returnsContentPage() throws Exception {
         when(service.search(any(FrontContentListRequest.class))).thenReturn(new FrontContentPageResponse(
                 List.of(new FrontContentItemResponse(1, "NOTICE", "배송 공지", "일정 안내", 10, true, "2026-07-22")),
-                0, 8, 1, 1, true, true
+                0, 8, 1, 1, true, true, "POPULAR", 10, 1, 1, 0
         ));
 
-        mockMvc.perform(get("/api/front/content").param("boardType", "NOTICE").param("keyword", "배송"))
+        mockMvc.perform(get("/api/front/content")
+                        .param("boardType", "NOTICE")
+                        .param("keyword", "배송")
+                        .param("sort", "POPULAR"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("배송 공지"))
                 .andExpect(jsonPath("$.totalElements").value(1))
-                .andExpect(jsonPath("$.first").value(true));
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.sort").value("POPULAR"))
+                .andExpect(jsonPath("$.pageViewCount").value(10))
+                .andExpect(jsonPath("$.pagePinnedCount").value(1));
     }
 
     @Test

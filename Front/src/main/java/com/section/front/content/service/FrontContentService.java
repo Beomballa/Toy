@@ -3,6 +3,7 @@ package com.section.front.content.service;
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
@@ -82,6 +83,7 @@ public class FrontContentService {
 
     public FrontContentPageResponse search(FrontContentListRequest request) {
         Pageable pageable = request.pageable();
+        DocumentListSort sort = request.normalizedSort();
         Page<DocumentListItemDto> result = documentRepository.getDocumentList(
                 new DocumentListQuery(
                         request.normalizedBoardType(),
@@ -92,18 +94,25 @@ public class FrontContentService {
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        sort
                 ),
                 pageable
         );
+        List<FrontContentItemResponse> items = result.getContent().stream().map(this::toResponse).toList();
         return new FrontContentPageResponse(
-                result.getContent().stream().map(this::toResponse).toList(),
+                items,
                 result.getNumber(),
                 result.getSize(),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.isFirst(),
-                result.isLast()
+                result.isLast(),
+                sort.name(),
+                items.stream().mapToLong(FrontContentItemResponse::viewCount).sum(),
+                (int) items.stream().filter(FrontContentItemResponse::pinned).count(),
+                (int) items.stream().filter(item -> "NOTICE".equals(item.boardType())).count(),
+                (int) items.stream().filter(item -> "STYLE".equals(item.boardType())).count()
         );
     }
 

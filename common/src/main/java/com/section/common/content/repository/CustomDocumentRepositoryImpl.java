@@ -1,6 +1,7 @@
 package com.section.common.content.repository;
 
 import com.querydsl.core.types.Projections;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
 import com.querydsl.core.types.dsl.NumberExpression;
@@ -10,6 +11,7 @@ import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentDailyStatsRow;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
@@ -60,7 +62,7 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         productLinkedEq(query.productLinked()),
                         createdAtBetween(query.startDateTime(), query.endDateTime())
                 )
-                .orderBy(document.pinnedYn.desc(), document.crtDtm.desc(), document.id.desc())
+                .orderBy(resolveOrder(query.sort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
@@ -237,6 +239,28 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                 .then(1L)
                 .otherwise(0L)
                 .sumLong();
+    }
+
+    private OrderSpecifier<?>[] resolveOrder(DocumentListSort sort) {
+        DocumentListSort normalizedSort = sort == null ? DocumentListSort.LATEST : sort;
+        return switch (normalizedSort) {
+            case POPULAR -> new OrderSpecifier<?>[] {
+                    document.pinnedYn.desc(),
+                    document.viewCnt.desc(),
+                    document.crtDtm.desc(),
+                    document.id.desc()
+            };
+            case OLDEST -> new OrderSpecifier<?>[] {
+                    document.pinnedYn.desc(),
+                    document.crtDtm.asc(),
+                    document.id.asc()
+            };
+            case LATEST -> new OrderSpecifier<?>[] {
+                    document.pinnedYn.desc(),
+                    document.crtDtm.desc(),
+                    document.id.desc()
+            };
+        };
     }
 
     private BooleanExpression boardTypeEq(Document.BoardType boardType) {

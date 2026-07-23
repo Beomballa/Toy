@@ -3,6 +3,7 @@ package com.section.front.content.service;
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.DocumentListItemDto;
 import com.section.common.content.dto.DocumentListQuery;
+import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
 import com.section.common.content.entity.Document;
@@ -161,7 +162,8 @@ class FrontContentServiceTest {
         when(documentRepository.getDocumentList(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(new PageImpl<>(List.of(item), PageRequest.of(0, 8), 9));
 
-        FrontContentPageResponse response = service.search(new FrontContentListRequest("NOTICE", " 운영 ", 0, 8));
+        FrontContentPageResponse response =
+                service.search(new FrontContentListRequest("NOTICE", " 운영 ", 0, 8, "POPULAR"));
 
         ArgumentCaptor<DocumentListQuery> queryCaptor = ArgumentCaptor.forClass(DocumentListQuery.class);
         verify(documentRepository).getDocumentList(queryCaptor.capture(), org.mockito.ArgumentMatchers.any());
@@ -169,8 +171,14 @@ class FrontContentServiceTest {
         assertThat(queryCaptor.getValue().keyword()).isEqualTo("운영");
         assertThat(queryCaptor.getValue().status()).isEqualTo(Document.PublishStatus.PUBLISHED);
         assertThat(queryCaptor.getValue().publicYn()).isEqualTo(YN.Y);
+        assertThat(queryCaptor.getValue().sort()).isEqualTo(DocumentListSort.POPULAR);
         assertThat(response.totalElements()).isEqualTo(9);
         assertThat(response.totalPages()).isEqualTo(2);
+        assertThat(response.sort()).isEqualTo("POPULAR");
+        assertThat(response.pageViewCount()).isEqualTo(20);
+        assertThat(response.pagePinnedCount()).isEqualTo(1);
+        assertThat(response.pageNoticeCount()).isEqualTo(1);
+        assertThat(response.pageStyleCount()).isZero();
         assertThat(response.items()).singleElement().satisfies(content -> {
             assertThat(content.summary()).isEqualTo("중요한 안내");
             assertThat(content.pinned()).isTrue();

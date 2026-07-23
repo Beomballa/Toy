@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 
 public interface FrontContentViewEventRepository extends
         JpaRepository<FrontContentViewEvent, Long>,
@@ -29,4 +30,12 @@ public interface FrontContentViewEventRepository extends
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from FrontContentViewEvent event where event.viewedDate < :retentionStartDate")
     int deleteBefore(@Param("retentionStartDate") LocalDate retentionStartDate);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from FrontContentViewEvent event where event.documentNo = :documentNo")
+    int deleteByDocumentNo(@Param("documentNo") long documentNo);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from FrontContentViewEvent event where event.documentNo in :documentNos")
+    int deleteByDocumentNoIn(@Param("documentNos") Collection<Long> documentNos);
 }

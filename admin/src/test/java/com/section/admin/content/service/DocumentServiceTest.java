@@ -9,6 +9,7 @@ import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
+import com.section.common.content.repository.FrontContentViewEventRepository;
 import com.section.common.content.service.DocumentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ class DocumentServiceTest {
 
     @Mock
     private ProductRepository productRepository;
+
+    @Mock
+    private FrontContentViewEventRepository viewEventRepository;
 
     @InjectMocks
     private DocumentService documentService;
@@ -217,6 +221,7 @@ class DocumentServiceTest {
 
         documentService.deleteDocument(9L);
 
+        verify(viewEventRepository).deleteByDocumentNo(9L);
         verify(documentRepository).delete(argThat(item -> item.getId().equals(9L)));
     }
 
@@ -292,6 +297,7 @@ class DocumentServiceTest {
         assertEquals(3, result.requestedCount());
         assertEquals(2, result.deletedCount());
         assertEquals(1, result.missingCount());
+        verify(viewEventRepository).deleteByDocumentNoIn(Set.of(1L, 3L));
         verify(documentRepository).deleteAll(List.of(first, third));
     }
 }

@@ -34,8 +34,8 @@ public class CustomFrontContentViewEventRepositoryImpl implements CustomFrontCon
                         frontContentViewEvent.visitorKey.countDistinct(),
                         frontContentViewEvent.documentNo.countDistinct()
                 ))
-                .from(frontContentViewEvent);
-        joinDocumentWhenFiltered(query, boardType);
+                .from(frontContentViewEvent)
+                .join(document).on(document.id.eq(frontContentViewEvent.documentNo));
         ContentViewSummaryRow row = query
                 .where(viewedDateBetween(startDate, endDate), boardTypeEq(boardType))
                 .fetchOne();
@@ -55,8 +55,8 @@ public class CustomFrontContentViewEventRepositoryImpl implements CustomFrontCon
                         frontContentViewEvent.count(),
                         frontContentViewEvent.visitorKey.countDistinct()
                 ))
-                .from(frontContentViewEvent);
-        joinDocumentWhenFiltered(query, boardType);
+                .from(frontContentViewEvent)
+                .join(document).on(document.id.eq(frontContentViewEvent.documentNo));
         return query
                 .where(viewedDateBetween(startDate, endDate), boardTypeEq(boardType))
                 .groupBy(frontContentViewEvent.viewedDate)
@@ -87,12 +87,6 @@ public class CustomFrontContentViewEventRepositoryImpl implements CustomFrontCon
                 .orderBy(frontContentViewEvent.count().desc(), document.id.desc())
                 .limit(Math.max(1, Math.min(limit, 10)))
                 .fetch();
-    }
-
-    private void joinDocumentWhenFiltered(JPAQuery<?> query, Document.BoardType boardType) {
-        if (boardType != null) {
-            query.join(document).on(document.id.eq(frontContentViewEvent.documentNo));
-        }
     }
 
     private BooleanExpression viewedDateBetween(LocalDate startDate, LocalDate endDate) {

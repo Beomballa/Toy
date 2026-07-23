@@ -102,6 +102,30 @@ class FrontContentViewEventRepositoryIntegrationTest {
         assertThat(remaining.longValue()).isEqualTo(2);
     }
 
+    @Test
+    @DisplayName("전체 조회 분석은 삭제된 문서를 가리키는 고아 이벤트를 제외한다")
+    void excludesOrphanEventsFromAllBoardAnalytics() {
+        Document notice = document("정상 조회 공지", Document.BoardType.NOTICE);
+        documentRepository.save(notice);
+        entityManager.flush();
+        LocalDate viewedDate = LocalDate.of(2026, 7, 23);
+        insertEvent(notice.getId(), "valid-visitor", viewedDate, 10);
+        insertEvent(Long.MAX_VALUE, "orphan-visitor", viewedDate, 11);
+        entityManager.flush();
+        entityManager.clear();
+
+        ContentViewSummaryRow summary = viewEventRepository.getViewSummary(viewedDate, viewedDate, null);
+        List<ContentViewTrendRow> trend = viewEventRepository.getDailyViewTrend(viewedDate, viewedDate, null);
+
+        assertThat(summary.totalViews()).isEqualTo(1);
+        assertThat(summary.uniqueVisitors()).isEqualTo(1);
+        assertThat(summary.viewedContentCount()).isEqualTo(1);
+        assertThat(trend).singleElement().satisfies(item -> {
+            assertThat(item.viewCount()).isEqualTo(1);
+            assertThat(item.uniqueVisitors()).isEqualTo(1);
+        });
+    }
+
     private Document document(String title, Document.BoardType boardType) {
         Document document = new Document();
         document.applyEditorValues(

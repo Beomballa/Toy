@@ -9,6 +9,7 @@ import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
+import com.section.common.content.repository.FrontContentViewEventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,7 @@ import java.util.List;
 public class DocumentService {
     private final DocumentRepository documentRepository;
     private final ProductRepository productRepository;
+    private final FrontContentViewEventRepository viewEventRepository;
 
     public Page<DocumentListItemDto> getDocumentList(DocumentListQuery query, Pageable pageable) {
         return documentRepository.getDocumentList(query, pageable);
@@ -73,6 +75,7 @@ public class DocumentService {
     @Transactional
     public void deleteDocument(Long id) {
         Document document = getDocument(id);
+        viewEventRepository.deleteByDocumentNo(document.getId());
         documentRepository.delete(document);
     }
 
@@ -122,10 +125,11 @@ public class DocumentService {
             throw new BusinessException(ErrorCode.DOCUMENT_NOT_FOUND);
         }
 
-        documentRepository.deleteAll(documents);
         Set<Long> deletedIds = documents.stream()
                 .map(Document::getId)
                 .collect(java.util.stream.Collectors.toSet());
+        viewEventRepository.deleteByDocumentNoIn(deletedIds);
+        documentRepository.deleteAll(documents);
         long missingCount = ids.stream()
                 .filter(id -> !deletedIds.contains(id))
                 .count();

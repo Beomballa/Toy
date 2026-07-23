@@ -3,10 +3,15 @@
     const VALID_SIZES = [4, 8, 12, 20];
     const VALID_SORTS = ["LATEST", "POPULAR", "OLDEST"];
     const RECENT_CONTENT_KEY = "front-recent-content";
+    const BOOKMARKED_CONTENT_KEY = "front-bookmarked-content";
+    const READING_PROGRESS_KEY = "front-content-reading-progress";
     const CONTENT_RETURN_URL_KEY = "front-content-return-url";
+    const SAVED_CONTENT_PREVIEW_LIMIT = 6;
     const state = { ...DEFAULT_STATE };
     let requestController = null;
     let requestSequence = 0;
+    let savedContentsExpanded = false;
+    let savedHashFocused = false;
 
     const elements = {
         liveStatus: document.getElementById("contentListLiveStatus"),
@@ -33,7 +38,17 @@
         rangeText: document.getElementById("contentListRangeText"),
         recentBoard: document.getElementById("contentRecentBoard"),
         recentGrid: document.getElementById("contentRecentGrid"),
-        recentClearButton: document.getElementById("contentRecentClearButton")
+        recentClearButton: document.getElementById("contentRecentClearButton"),
+        savedUtilityCount: document.getElementById("contentSavedUtilityCount"),
+        savedBoard: document.getElementById("contentSavedBoard"),
+        savedGrid: document.getElementById("contentSavedGrid"),
+        savedCount: document.getElementById("contentSavedCount"),
+        savedNoticeCount: document.getElementById("contentSavedNoticeCount"),
+        savedStyleCount: document.getElementById("contentSavedStyleCount"),
+        savedReadingCount: document.getElementById("contentSavedReadingCount"),
+        savedCopyButton: document.getElementById("contentSavedCopyButton"),
+        savedClearButton: document.getElementById("contentSavedClearButton"),
+        savedExpandButton: document.getElementById("contentSavedExpandButton")
     };
 
     function hydrateFromUrl() {
@@ -120,8 +135,10 @@
     }
 
     function createCard(item, index, page) {
+        const card = document.createElement("article");
+        card.className = `content-list-card content-list-card--${item.boardType === "STYLE" ? "style" : "notice"}`;
         const link = document.createElement("a");
-        link.className = `content-list-card content-list-card--${item.boardType === "STYLE" ? "style" : "notice"}`;
+        link.className = "content-list-card__link";
         link.href = `/front/content/${Number(item.id)}`;
         link.addEventListener("click", rememberReturnUrl);
         const visual = document.createElement("div");
@@ -153,7 +170,21 @@
         more.textContent = "읽어보기 →";
         body.append(meta, title, summary, more);
         link.append(visual, body);
-        return link;
+        const bookmark = createBookmarkButton(item);
+        card.append(link, bookmark);
+        return card;
+    }
+
+    function createBookmarkButton(item) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "content-list-card__bookmark";
+        button.dataset.contentBookmarkId = String(Number(item.id));
+        button.setAttribute("aria-pressed", String(isBookmarked(item.id)));
+        button.setAttribute("aria-label", `${item.title || "콘텐츠"} 관심 저장`);
+        button.textContent = isBookmarked(item.id) ? "저장됨" : "저장";
+        button.addEventListener("click", () => toggleCardBookmark(item));
+        return button;
     }
 
     function showState(name) {
@@ -276,11 +307,20 @@
             hydrateFromUrl();
             void loadContents({ updateUrl: false });
         });
+        window.addEventListener("hashchange", () => {
+            savedHashFocused = false;
+            focusSavedBoardFromHash(readBookmarks().length);
+        });
+        window.addEventListener("storage", handleStorageChange);
         elements.recentClearButton.addEventListener("click", clearRecentContents);
+        elements.savedCopyButton.addEventListener("click", copySavedLinks);
+        elements.savedClearButton.addEventListener("click", clearSavedContents);
+        elements.savedExpandButton.addEventListener("click", toggleSavedContents);
     }
 
     function renderRecentContents() {
         const items = readRecentContents();
+        const progress = readReadingProgress();
         elements.recentGrid.replaceChildren();
         elements.recentBoard.hidden = items.length === 0;
         items.forEach((item) => {
@@ -293,7 +333,10 @@
             const title = document.createElement("strong");
             title.textContent = item.title || "제목 없는 콘텐츠";
             const date = document.createElement("em");
-            date.textContent = recentTimeLabel(item.viewedAt);
+            const readingProgress = progress[String(Number(item.id))]?.progress;
+            date.textContent = Number(readingProgress) > 0
+                ? `${recentTimeLabel(item.viewedAt)} · ${Math.round(Number(readingProgress))}% 읽음`
+                : recentTimeLabel(item.viewedAt);
             link.append(type, title, date);
             elements.recentGrid.appendChild(link);
         });
@@ -316,6 +359,196 @@
         }
         renderRecentContents();
         announce("최근 읽은 콘텐츠를 비웠습니다.");
+    }
+
+    function readBookmarks() {
+        try {
+            const value = JSON.parse(window.localStorage.getItem(BOOKMARKED_CONTENT_KEY) || "[]");
+            if (!Array.isArray(value)) return [];
+            const seen = new Set();
+            return value.filter((item) => {
+                const id = Number(item?.id);
+                if (!Number.isInteger(id) || id <= 0 || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            }).slice(0, 50);
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function readReadingProgress() {
+        try {
+            const value = JSON.parse(window.localStorage.getItem(READING_PROGRESS_KEY) || "{}");
+            return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function writeBookmarks(bookmarks) {
+        window.localStorage.setItem(BOOKMARKED_CONTENT_KEY, JSON.stringify(bookmarks.slice(0, 50)));
+    }
+
+    function isBookmarked(contentId) {
+        return readBookmarks().some((item) => Number(item.id) === Number(contentId));
+    }
+
+    function toggleCardBookmark(item) {
+        try {
+            const bookmarks = readBookmarks();
+            const contentId = Number(item.id);
+            const bookmarked = bookmarks.some((saved) => Number(saved.id) === contentId);
+            const next = bookmarked
+                ? bookmarks.filter((saved) => Number(saved.id) !== contentId)
+                : [{
+                    id: contentId,
+                    boardType: item.boardType,
+                    title: item.title,
+                    createdDate: item.createdDate,
+                    savedAt: new Date().toISOString()
+                }].concat(bookmarks).slice(0, 50);
+            writeBookmarks(next);
+            renderSavedContents();
+            syncVisibleBookmarkButtons();
+            announce(bookmarked ? "관심 콘텐츠에서 제거했습니다." : "관심 콘텐츠로 저장했습니다.");
+        } catch (error) {
+            announce("관심 콘텐츠를 저장하지 못했습니다.");
+        }
+    }
+
+    function syncVisibleBookmarkButtons() {
+        const savedIds = new Set(readBookmarks().map((item) => Number(item.id)));
+        document.querySelectorAll("[data-content-bookmark-id]").forEach((button) => {
+            const pressed = savedIds.has(Number(button.dataset.contentBookmarkId));
+            button.setAttribute("aria-pressed", String(pressed));
+            button.textContent = pressed ? "저장됨" : "저장";
+        });
+    }
+
+    function renderSavedContents() {
+        const bookmarks = readBookmarks();
+        const progress = readReadingProgress();
+        const visibleItems = savedContentsExpanded
+            ? bookmarks
+            : bookmarks.slice(0, SAVED_CONTENT_PREVIEW_LIMIT);
+        elements.savedGrid.replaceChildren();
+        elements.savedBoard.hidden = bookmarks.length === 0;
+        setText(elements.savedUtilityCount, String(bookmarks.length));
+        setText(elements.savedCount, String(bookmarks.length));
+        setText(elements.savedNoticeCount, String(bookmarks.filter((item) => item.boardType === "NOTICE").length));
+        setText(elements.savedStyleCount, String(bookmarks.filter((item) => item.boardType === "STYLE").length));
+        setText(elements.savedReadingCount, String(bookmarks.filter((item) => {
+            const value = Number(progress[String(Number(item.id))]?.progress || 0);
+            return value > 0 && value < 100;
+        }).length));
+        visibleItems.forEach((item) => elements.savedGrid.appendChild(createSavedCard(item, progress)));
+        elements.savedExpandButton.hidden = bookmarks.length <= SAVED_CONTENT_PREVIEW_LIMIT;
+        elements.savedExpandButton.textContent = savedContentsExpanded
+            ? "접기"
+            : `전체 ${bookmarks.length}개 보기`;
+        focusSavedBoardFromHash(bookmarks.length);
+    }
+
+    function createSavedCard(item, progress) {
+        const card = document.createElement("article");
+        card.className = "content-saved-card";
+        const link = document.createElement("a");
+        link.href = `/front/content/${Number(item.id)}`;
+        link.addEventListener("click", rememberReturnUrl);
+        const type = document.createElement("span");
+        type.textContent = item.boardType === "STYLE" ? "STYLE EDIT" : "NOTICE";
+        const title = document.createElement("strong");
+        title.textContent = item.title || "제목 없는 콘텐츠";
+        const meta = document.createElement("em");
+        const value = Math.round(Number(progress[String(Number(item.id))]?.progress || 0));
+        meta.textContent = value > 0 ? `${value}% 읽음 · ${savedTimeLabel(item.savedAt)}` : savedTimeLabel(item.savedAt);
+        link.append(type, title, meta);
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.textContent = "삭제";
+        remove.setAttribute("aria-label", `${item.title || "콘텐츠"} 관심 목록에서 삭제`);
+        remove.addEventListener("click", () => removeSavedContent(item.id));
+        card.append(link, remove);
+        return card;
+    }
+
+    function removeSavedContent(contentId) {
+        try {
+            writeBookmarks(readBookmarks().filter((item) => Number(item.id) !== Number(contentId)));
+            renderSavedContents();
+            syncVisibleBookmarkButtons();
+            announce("관심 콘텐츠에서 제거했습니다.");
+        } catch (error) {
+            announce("관심 콘텐츠를 삭제하지 못했습니다.");
+        }
+    }
+
+    function clearSavedContents() {
+        const bookmarks = readBookmarks();
+        if (!bookmarks.length || !window.confirm("관심 콘텐츠를 모두 비울까요?")) return;
+        try {
+            window.localStorage.removeItem(BOOKMARKED_CONTENT_KEY);
+            savedContentsExpanded = false;
+            renderSavedContents();
+            syncVisibleBookmarkButtons();
+            announce("관심 콘텐츠를 모두 비웠습니다.");
+        } catch (error) {
+            announce("관심 콘텐츠를 비우지 못했습니다.");
+        }
+    }
+
+    async function copySavedLinks() {
+        const bookmarks = readBookmarks();
+        if (!bookmarks.length) {
+            announce("복사할 관심 콘텐츠가 없습니다.");
+            return;
+        }
+        const text = bookmarks.map((item) => {
+            const url = new URL(`/front/content/${Number(item.id)}`, window.location.origin);
+            return `${item.title || "제목 없는 콘텐츠"} ${url}`;
+        }).join("\n");
+        try {
+            await navigator.clipboard.writeText(text);
+            announce(`${bookmarks.length}개의 관심 콘텐츠 링크를 복사했습니다.`);
+        } catch (error) {
+            announce("관심 콘텐츠 링크를 복사하지 못했습니다.");
+        }
+    }
+
+    function toggleSavedContents() {
+        savedContentsExpanded = !savedContentsExpanded;
+        renderSavedContents();
+        if (!savedContentsExpanded) elements.savedBoard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function handleStorageChange(event) {
+        if (![BOOKMARKED_CONTENT_KEY, READING_PROGRESS_KEY, RECENT_CONTENT_KEY].includes(event.key)) return;
+        if (event.key === RECENT_CONTENT_KEY || event.key === READING_PROGRESS_KEY) renderRecentContents();
+        if (event.key === BOOKMARKED_CONTENT_KEY || event.key === READING_PROGRESS_KEY) {
+            renderSavedContents();
+            syncVisibleBookmarkButtons();
+        }
+    }
+
+    function focusSavedBoardFromHash(itemCount) {
+        if (savedHashFocused || window.location.hash !== "#contentSavedBoard") return;
+        savedHashFocused = true;
+        if (!itemCount) {
+            announce("저장한 관심 콘텐츠가 없습니다.");
+            return;
+        }
+        window.requestAnimationFrame(() => elements.savedBoard.scrollIntoView({ block: "start" }));
+    }
+
+    function savedTimeLabel(value) {
+        const savedAt = new Date(value);
+        if (Number.isNaN(savedAt.getTime())) return "저장됨";
+        const minutes = Math.max(0, Math.floor((Date.now() - savedAt.getTime()) / 60000));
+        if (minutes < 1) return "방금 저장";
+        if (minutes < 60) return `${minutes}분 전 저장`;
+        if (minutes < 1440) return `${Math.floor(minutes / 60)}시간 전 저장`;
+        return `${Math.floor(minutes / 1440)}일 전 저장`;
     }
 
     function recentTimeLabel(value) {
@@ -411,5 +644,6 @@
     hydrateFromUrl();
     bindEvents();
     renderRecentContents();
+    renderSavedContents();
     void loadContents({ historyMode: "replace" });
 })();

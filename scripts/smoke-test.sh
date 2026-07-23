@@ -124,6 +124,20 @@ check_admin_authenticated_flow() {
   fi
   printf 'PASS %-28s status=%s\n' "admin content daily stats" "$content_stats_status"
 
+  content_view_analytics_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/views?boardType=NOTICE&days=7")"
+  content_view_analytics_status="${content_view_analytics_response##*$'\n'}"
+  content_view_analytics_body="${content_view_analytics_response%$'\n'*}"
+  if [[ "$content_view_analytics_status" != "200" ]] \
+    || ! printf '%s\n' "$content_view_analytics_body" | grep --fixed-strings --quiet '"rangeDays":7' \
+    || ! printf '%s\n' "$content_view_analytics_body" | grep --fixed-strings --quiet '"summary":'; then
+    printf 'FAIL %-28s expected=200 rangeDays=7 summary=required actual=%s\n' \
+      "admin content view stats" "$content_view_analytics_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content view stats" "$content_view_analytics_status"
+
   logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \
     "${ADMIN_URL}/admin/logout" | tr -d '\r')"

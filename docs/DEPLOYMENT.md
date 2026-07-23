@@ -73,7 +73,7 @@ export BATCH_DOCUMENT_STATS_ENABLED=true
 export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 ```
 
-관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다.
+관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다. 같은 화면의 `프론트 조회 분석` 영역과 `/api/admin/content/stats/views?boardType=NOTICE&days=7`에서는 실제 조회 이벤트의 7·14·30일 추이, 순 방문자, 상위 콘텐츠를 확인합니다.
 
 ## 6. 배포 후 확인
 
@@ -92,7 +92,7 @@ ADMIN_SMOKE_PASSWORD='replace-with-secret' \
 ./scripts/smoke-test.sh
 ```
 
-`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계 API, 로그아웃과 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
+`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회 분석 API, 로그아웃과 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
 
 세 애플리케이션은 응답의 `X-Request-Id`를 공통 장애 추적 키로 사용합니다. 프록시가 안전한 요청 ID를 전달하면 그대로 유지하고, 없거나 형식이 잘못된 경우 애플리케이션이 새 ID를 생성합니다. 요청 헤더 한도는 기본 16KB이며 필요한 경우 `SERVER_MAX_HTTP_REQUEST_HEADER_SIZE`로 조정합니다.
 

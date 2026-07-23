@@ -1949,8 +1949,14 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentDetailError\"")
                 .contains("id=\"contentDetailRetryButton\"")
                 .contains("id=\"contentDetailRelatedGrid\"")
-                .contains("/js/view/content-detail.js?v=20260722.2")
-                .contains("/css/storefront.css?v=20260722.42");
+                .contains("id=\"contentDetailReaderProgress\"")
+                .contains("id=\"contentDetailBookmarkButton\" aria-pressed=\"false\"")
+                .contains("id=\"contentDetailFontScaleLabel\"")
+                .contains("id=\"contentDetailResume\"")
+                .contains("id=\"contentDetailNavigation\"")
+                .contains("data-content-return-link")
+                .contains("/js/view/content-detail.js?v=20260723.1")
+                .contains("/css/storefront.css?v=20260723.3");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`)")
                 .contains("paragraph.textContent = content")
@@ -1961,6 +1967,13 @@ class FrontStorefrontResourceTest {
                 .contains("front-content-visitor-key")
                 .contains("window.crypto?.randomUUID?.()")
                 .contains("front-recent-content")
+                .contains("front-bookmarked-content")
+                .contains("front-content-reading-progress")
+                .contains("front-content-font-scale")
+                .contains("front-content-return-url")
+                .contains("renderNavigation(content.newerContent, content.olderContent)")
+                .contains("window.requestAnimationFrame")
+                .contains("aria-valuenow")
                 .contains("elements.retryButton.addEventListener");
         assertThat(mainScript)
                 .contains("href=\"/front/content/${Number(item.id)}\"")
@@ -1968,6 +1981,10 @@ class FrontStorefrontResourceTest {
         assertThat(css)
                 .contains(".content-detail-article")
                 .contains("max-width: 760px")
+                .contains(".content-detail-reader-toolbar")
+                .contains(".content-detail-resume")
+                .contains(".content-detail-navigation")
+                .contains("font-size: calc(17px * var(--content-font-scale))")
                 .contains(".content-detail-related__grid")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
     }

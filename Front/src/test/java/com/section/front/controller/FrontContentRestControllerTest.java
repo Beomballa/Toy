@@ -5,6 +5,7 @@ import com.section.front.content.dto.FrontContentPageResponse;
 import com.section.front.content.req.FrontContentListRequest;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
+import com.section.front.content.dto.FrontContentNavigationResponse;
 import com.section.front.content.dto.FrontPopularContentResponse;
 import com.section.front.content.service.FrontContentService;
 import com.section.front.content.service.FrontContentViewService;
@@ -81,13 +82,28 @@ class FrontContentRestControllerTest {
     @DisplayName("프론트 콘텐츠 상세 API는 본문과 연관 콘텐츠를 반환한다")
     void returnsContentDetail() throws Exception {
         when(service.findDetail(1L)).thenReturn(Optional.of(new FrontContentDetailResponse(
-                1L, "NOTICE", "배송 공지", "배송 일정 안내", 10, true, "2026-07-22", List.of()
+                1L,
+                "NOTICE",
+                "배송 공지",
+                "배송 일정 안내",
+                10,
+                true,
+                "2026-07-22",
+                1,
+                8,
+                new FrontContentNavigationResponse(2, "NOTICE", "다음 공지", "2026-07-23"),
+                null,
+                List.of()
         )));
 
         mockMvc.perform(get("/api/front/content/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.title").value("배송 공지"))
                 .andExpect(jsonPath("$.content").value("배송 일정 안내"))
+                .andExpect(jsonPath("$.estimatedReadMinutes").value(1))
+                .andExpect(jsonPath("$.characterCount").value(8))
+                .andExpect(jsonPath("$.newerContent.title").value("다음 공지"))
+                .andExpect(jsonPath("$.olderContent").doesNotExist())
                 .andExpect(jsonPath("$.relatedContents").isArray());
     }
 

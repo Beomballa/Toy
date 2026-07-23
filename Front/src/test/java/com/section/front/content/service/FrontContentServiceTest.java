@@ -6,6 +6,7 @@ import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
+import com.section.common.content.dto.PublicDocumentNavigationRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
@@ -130,11 +131,35 @@ class FrontContentServiceTest {
         PublicDocumentRow related = row(11L, Document.BoardType.STYLE, "스니커즈 제안", "데일리 슈즈", YN.N);
         when(documentRepository.getPublicDocument(10L)).thenReturn(Optional.of(current));
         when(documentRepository.getPublicDocuments(Document.BoardType.STYLE, 5)).thenReturn(List.of(current, related));
+        when(documentRepository.getNewerPublicDocument(
+                Document.BoardType.STYLE,
+                current.createdAt(),
+                current.id()
+        )).thenReturn(Optional.of(new PublicDocumentNavigationRow(
+                12L,
+                Document.BoardType.STYLE,
+                "새로운 스타일",
+                LocalDateTime.of(2026, 7, 23, 9, 0)
+        )));
+        when(documentRepository.getOlderPublicDocument(
+                Document.BoardType.STYLE,
+                current.createdAt(),
+                current.id()
+        )).thenReturn(Optional.of(new PublicDocumentNavigationRow(
+                9L,
+                Document.BoardType.STYLE,
+                "이전 스타일",
+                LocalDateTime.of(2026, 7, 21, 9, 0)
+        )));
 
         FrontContentDetailResponse response = service.findDetail(10L).orElseThrow();
 
         assertThat(response.content()).isEqualTo("가벼운 여름 스타일");
         assertThat(response.boardType()).isEqualTo("STYLE");
+        assertThat(response.estimatedReadMinutes()).isEqualTo(1);
+        assertThat(response.characterCount()).isEqualTo(10);
+        assertThat(response.newerContent().title()).isEqualTo("새로운 스타일");
+        assertThat(response.olderContent().title()).isEqualTo("이전 스타일");
         assertThat(response.relatedContents()).singleElement().satisfies(item ->
                 assertThat(item.id()).isEqualTo(11L)
         );

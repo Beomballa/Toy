@@ -45,26 +45,28 @@ class FrontContentViewEventRepositoryIntegrationTest {
         documentRepository.saveAll(List.of(notice, style));
         entityManager.flush();
 
-        insertEvent(notice.getId(), "visitor-a", LocalDate.of(2026, 7, 22), 10);
-        insertEvent(notice.getId(), "visitor-b", LocalDate.of(2026, 7, 22), 11);
-        insertEvent(notice.getId(), "visitor-a", LocalDate.of(2026, 7, 23), 12);
-        insertEvent(style.getId(), "visitor-c", LocalDate.of(2026, 7, 23), 13);
+        LocalDate startDate = LocalDate.of(2099, 9, 22);
+        LocalDate endDate = LocalDate.of(2099, 9, 23);
+        insertEvent(notice.getId(), "visitor-a", startDate, 10);
+        insertEvent(notice.getId(), "visitor-b", startDate, 11);
+        insertEvent(notice.getId(), "visitor-a", endDate, 12);
+        insertEvent(style.getId(), "visitor-c", endDate, 13);
         entityManager.flush();
         entityManager.clear();
 
         ContentViewSummaryRow summary = viewEventRepository.getViewSummary(
-                LocalDate.of(2026, 7, 22),
-                LocalDate.of(2026, 7, 23),
+                startDate,
+                endDate,
                 Document.BoardType.NOTICE
         );
         List<ContentViewTrendRow> trend = viewEventRepository.getDailyViewTrend(
-                LocalDate.of(2026, 7, 22),
-                LocalDate.of(2026, 7, 23),
+                startDate,
+                endDate,
                 Document.BoardType.NOTICE
         );
         List<ContentViewTopRow> topContents = viewEventRepository.getTopViewedContents(
-                LocalDate.of(2026, 7, 22),
-                LocalDate.of(2026, 7, 23),
+                startDate,
+                endDate,
                 null,
                 5
         );
@@ -109,7 +111,7 @@ class FrontContentViewEventRepositoryIntegrationTest {
         Document notice = document("정상 조회 공지", Document.BoardType.NOTICE);
         documentRepository.save(notice);
         entityManager.flush();
-        LocalDate viewedDate = LocalDate.of(2026, 7, 23);
+        LocalDate viewedDate = LocalDate.of(2099, 10, 23);
         insertEvent(notice.getId(), "valid-visitor", viewedDate, 10);
         insertEvent(Long.MAX_VALUE, "orphan-visitor", viewedDate, 11);
         entityManager.flush();

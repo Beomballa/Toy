@@ -6,6 +6,7 @@ FRONT_URL="${FRONT_URL:-http://127.0.0.1:8080}"
 ADMIN_URL="${ADMIN_URL:-http://127.0.0.1:9090}"
 BATCH_URL="${BATCH_URL:-http://127.0.0.1:9091}"
 FRONT_DETAIL_PRODUCT_ID="${FRONT_DETAIL_PRODUCT_ID:-12}"
+FRONT_CONTENT_ID="${FRONT_CONTENT_ID:-1}"
 ADMIN_SMOKE_LOGIN_ID="${ADMIN_SMOKE_LOGIN_ID:-}"
 ADMIN_SMOKE_PASSWORD="${ADMIN_SMOKE_PASSWORD:-}"
 ADMIN_COOKIE_JAR=""
@@ -196,6 +197,8 @@ check_body_contains "front content popular sort" 200 '"sort":"POPULAR"' \
   "${FRONT_URL}/api/front/content?sort=POPULAR&size=4"
 check_status "front detail page" 200 "${FRONT_URL}/front/products/${FRONT_DETAIL_PRODUCT_ID}"
 check_status "front detail api" 200 "${FRONT_URL}/api/front/products/${FRONT_DETAIL_PRODUCT_ID}"
+check_body_contains "front content reading data" 200 '"estimatedReadMinutes":' \
+  "${FRONT_URL}/api/front/content/${FRONT_CONTENT_ID}"
 check_body_contains "front missing product" 404 '"code":"F002"' \
   "${FRONT_URL}/api/front/products/9223372036854775807"
 check_header_present "front request tracing" "X-Request-Id" "${FRONT_URL}/"

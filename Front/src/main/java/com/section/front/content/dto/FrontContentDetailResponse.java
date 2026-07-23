@@ -10,6 +10,10 @@ public record FrontContentDetailResponse(
         int viewCount,
         boolean pinned,
         String createdDate,
+        int estimatedReadMinutes,
+        int characterCount,
+        FrontContentNavigationResponse newerContent,
+        FrontContentNavigationResponse olderContent,
         List<FrontContentItemResponse> relatedContents
 ) {
 }

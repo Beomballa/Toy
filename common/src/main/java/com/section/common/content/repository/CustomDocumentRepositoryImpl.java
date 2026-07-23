@@ -15,6 +15,7 @@ import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.DocumentSummaryDto;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
+import com.section.common.content.dto.PublicDocumentNavigationRow;
 import com.section.common.content.entity.Document;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -230,6 +231,55 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
                         document.publicYn.eq(YN.Y)
                 )
                 .fetchOne();
+        return Optional.ofNullable(row);
+    }
+
+    @Override
+    public Optional<PublicDocumentNavigationRow> getNewerPublicDocument(
+            Document.BoardType boardType,
+            LocalDateTime createdAt,
+            long documentId
+    ) {
+        return getAdjacentPublicDocument(boardType, createdAt, documentId, true);
+    }
+
+    @Override
+    public Optional<PublicDocumentNavigationRow> getOlderPublicDocument(
+            Document.BoardType boardType,
+            LocalDateTime createdAt,
+            long documentId
+    ) {
+        return getAdjacentPublicDocument(boardType, createdAt, documentId, false);
+    }
+
+    private Optional<PublicDocumentNavigationRow> getAdjacentPublicDocument(
+            Document.BoardType boardType,
+            LocalDateTime createdAt,
+            long documentId,
+            boolean newer
+    ) {
+        BooleanExpression adjacent = newer
+                ? document.crtDtm.gt(createdAt).or(document.crtDtm.eq(createdAt).and(document.id.gt(documentId)))
+                : document.crtDtm.lt(createdAt).or(document.crtDtm.eq(createdAt).and(document.id.lt(documentId)));
+        PublicDocumentNavigationRow row = queryFactory
+                .select(Projections.constructor(
+                        PublicDocumentNavigationRow.class,
+                        document.id,
+                        document.boardType,
+                        document.title,
+                        document.crtDtm
+                ))
+                .from(document)
+                .where(
+                        document.boardType.eq(boardType),
+                        document.status.eq(Document.PublishStatus.PUBLISHED),
+                        document.publicYn.eq(YN.Y),
+                        adjacent
+                )
+                .orderBy(newer
+                        ? new OrderSpecifier<?>[] {document.crtDtm.asc(), document.id.asc()}
+                        : new OrderSpecifier<?>[] {document.crtDtm.desc(), document.id.desc()})
+                .fetchFirst();
         return Optional.ofNullable(row);
     }
 

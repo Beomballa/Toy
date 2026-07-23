@@ -20,6 +20,8 @@ mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
 
 배포 후 `/api/front/content?sort=POPULAR&size=4` 응답의 `sort`, `pageViewCount`, `pagePinnedCount` 필드를 확인합니다. 콘텐츠 아카이브의 조회순은 누적 `document.view_count`를 사용하며 고정 콘텐츠를 항상 먼저 노출합니다.
 
+콘텐츠 상세 API의 `estimatedReadMinutes`, `characterCount`, `newerContent`, `olderContent`는 추가 응답 필드입니다. 이전·다음 콘텐츠는 동일 게시판의 공개·게시 완료 문서만 `(crt_dtm, no)` 순서로 조회하므로 기존 URL과 요청 계약은 변경되지 않습니다.
+
 ## 2. 빌드
 
 ```bash

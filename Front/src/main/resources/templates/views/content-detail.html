@@ -6,7 +6,7 @@
     <title>콘텐츠 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260722.42">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260723.3">
 </head>
 <body class="content-detail-body" th:attr="data-document-id=${documentId}">
 <a class="skip-link" href="#contentDetailArticle">콘텐츠 본문 바로가기</a>
@@ -17,7 +17,7 @@
     <div class="utility-bar">
         <div class="utility-bar__links">
             <a href="/front">메인으로</a>
-            <a href="/front/content">새로운 소식과 스타일</a>
+            <a href="/front/content" data-content-return-link>새로운 소식과 스타일</a>
             <a href="/front#catalog">상품 탐색</a>
         </div>
     </div>
@@ -31,15 +31,24 @@
             <a href="#contentDetailArticle">EDITORIAL</a>
             <a href="#contentDetailRelated">RELATED</a>
         </nav>
-        <a class="topbar-action" href="/front/content">목록으로 복귀</a>
+        <a class="topbar-action" href="/front/content" data-content-return-link>목록으로 복귀</a>
     </header>
 
     <main class="content-detail-page">
         <nav class="content-detail-breadcrumb" aria-label="콘텐츠 경로">
             <a href="/front">홈</a><span aria-hidden="true">/</span>
-            <a href="/front/content">에디토리얼</a><span aria-hidden="true">/</span>
+            <a href="/front/content" data-content-return-link>에디토리얼</a><span aria-hidden="true">/</span>
             <strong id="contentDetailBreadcrumb" aria-current="page">콘텐츠</strong>
         </nav>
+
+        <section class="content-detail-resume" id="contentDetailResume" aria-label="읽기 이어보기" hidden>
+            <div>
+                <span>READING HISTORY</span>
+                <strong id="contentDetailResumeText">이전에 읽던 위치가 있습니다.</strong>
+            </div>
+            <button type="button" id="contentDetailResumeButton">이어 읽기</button>
+            <button type="button" id="contentDetailResumeDismissButton" aria-label="이어 읽기 안내 닫기">닫기</button>
+        </section>
 
         <article class="content-detail-article" id="contentDetailArticle" aria-busy="true" tabindex="-1">
             <header class="content-detail-article__header">
@@ -51,17 +60,57 @@
                 <div class="content-detail-article__meta">
                     <span id="contentDetailDate">게시일 확인 중</span>
                     <span id="contentDetailViews">조회 0</span>
+                    <span id="contentDetailReadingTime">약 1분</span>
+                    <span id="contentDetailCharacterCount">0자</span>
                 </div>
             </header>
+            <div class="content-detail-reader-toolbar" aria-label="콘텐츠 읽기 설정">
+                <div class="content-detail-reader-progress"
+                     id="contentDetailReaderProgress"
+                     role="progressbar"
+                     aria-label="본문 읽기 진행률"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     aria-valuenow="0">
+                    <span>READING</span>
+                    <strong id="contentDetailProgressText">0%</strong>
+                </div>
+                <div class="content-detail-reader-actions">
+                    <button type="button" id="contentDetailBookmarkButton" aria-pressed="false">관심 저장</button>
+                    <button type="button" id="contentDetailFontDecreaseButton" aria-label="본문 글자 작게">A-</button>
+                    <span id="contentDetailFontScaleLabel" aria-live="polite">100%</span>
+                    <button type="button" id="contentDetailFontIncreaseButton" aria-label="본문 글자 크게">A+</button>
+                    <button type="button" id="contentDetailFontResetButton">기본 크기</button>
+                </div>
+            </div>
             <div class="content-detail-article__body" id="contentDetailBody">
                 <p>잠시만 기다려 주세요.</p>
             </div>
             <footer class="content-detail-article__actions">
                 <button type="button" id="contentDetailCopyButton">요약 복사</button>
                 <button type="button" id="contentDetailShareButton">공유하기</button>
-                <a href="/front/content">다른 콘텐츠 보기</a>
+                <a href="/front/content" data-content-return-link>다른 콘텐츠 보기</a>
             </footer>
         </article>
+
+        <nav class="content-detail-navigation" id="contentDetailNavigation" aria-label="이전 및 다음 콘텐츠" hidden>
+            <a class="content-detail-navigation__item content-detail-navigation__item--newer"
+               id="contentDetailNewerLink"
+               href="/front/content"
+               hidden>
+                <span>NEWER</span>
+                <strong id="contentDetailNewerTitle">새로운 콘텐츠</strong>
+                <em id="contentDetailNewerDate">최근 게시</em>
+            </a>
+            <a class="content-detail-navigation__item content-detail-navigation__item--older"
+               id="contentDetailOlderLink"
+               href="/front/content"
+               hidden>
+                <span>OLDER</span>
+                <strong id="contentDetailOlderTitle">이전 콘텐츠</strong>
+                <em id="contentDetailOlderDate">최근 게시</em>
+            </a>
+        </nav>
 
         <section class="content-detail-error" id="contentDetailError" role="alert" hidden>
             <span>CONTENT UNAVAILABLE</span>
@@ -69,7 +118,7 @@
             <p id="contentDetailErrorMessage">잠시 후 다시 시도해 주세요.</p>
             <div>
                 <button type="button" id="contentDetailRetryButton">다시 불러오기</button>
-                <a href="/front/content">목록으로 이동</a>
+                <a href="/front/content" data-content-return-link>목록으로 이동</a>
             </div>
         </section>
 
@@ -92,6 +141,6 @@
     </footer>
 </div>
 
-<script src="/js/view/content-detail.js?v=20260722.2"></script>
+<script src="/js/view/content-detail.js?v=20260723.1"></script>
 </body>
 </html>

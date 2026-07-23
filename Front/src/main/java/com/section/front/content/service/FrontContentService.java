@@ -6,11 +6,13 @@ import com.section.common.content.dto.DocumentListQuery;
 import com.section.common.content.dto.DocumentListSort;
 import com.section.common.content.dto.PopularPublicContentRow;
 import com.section.common.content.dto.PublicDocumentRow;
+import com.section.common.content.dto.PublicDocumentNavigationRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentDetailResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
+import com.section.front.content.dto.FrontContentNavigationResponse;
 import com.section.front.content.dto.FrontContentPageResponse;
 import com.section.front.content.dto.FrontPopularContentResponse;
 import com.section.front.content.req.FrontContentListRequest;
@@ -34,6 +36,7 @@ public class FrontContentService {
     private static final int DEFAULT_LIMIT = 4;
     private static final int MAX_LIMIT = 8;
     private static final int SUMMARY_MAX_LENGTH = 140;
+    private static final int READING_CHARACTERS_PER_MINUTE = 500;
     private static final Pattern HTML_TAG = Pattern.compile("<[^>]*>");
     private static final Pattern WHITESPACE = Pattern.compile("\\s+");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -69,16 +72,49 @@ public class FrontContentService {
 
     public Optional<FrontContentDetailResponse> findDetail(long documentId) {
         return documentRepository.getPublicDocument(documentId)
-                .map(row -> new FrontContentDetailResponse(
-                        row.id(),
-                        row.boardType().name(),
-                        defaultText(row.title(), "제목 없는 콘텐츠"),
-                        plainText(row.content()),
-                        Math.max(0, row.viewCount()),
-                        row.pinnedYn() == YN.Y,
-                        formatDate(row),
-                        relatedContents(row)
-                ));
+                .map(this::toDetailResponse);
+    }
+
+    private FrontContentDetailResponse toDetailResponse(PublicDocumentRow row) {
+        String content = plainText(row.content());
+        int characterCount = content.codePointCount(0, content.length());
+        int estimatedReadMinutes = Math.max(
+                1,
+                (int) Math.ceil(characterCount / (double) READING_CHARACTERS_PER_MINUTE)
+        );
+        return new FrontContentDetailResponse(
+                row.id(),
+                row.boardType().name(),
+                defaultText(row.title(), "제목 없는 콘텐츠"),
+                content,
+                Math.max(0, row.viewCount()),
+                row.pinnedYn() == YN.Y,
+                formatDate(row),
+                estimatedReadMinutes,
+                characterCount,
+                adjacentContent(row, true),
+                adjacentContent(row, false),
+                relatedContents(row)
+        );
+    }
+
+    private FrontContentNavigationResponse adjacentContent(PublicDocumentRow row, boolean newer) {
+        if (row.createdAt() == null) {
+            return null;
+        }
+        Optional<PublicDocumentNavigationRow> adjacent = newer
+                ? documentRepository.getNewerPublicDocument(row.boardType(), row.createdAt(), row.id())
+                : documentRepository.getOlderPublicDocument(row.boardType(), row.createdAt(), row.id());
+        return adjacent.map(this::toNavigationResponse).orElse(null);
+    }
+
+    private FrontContentNavigationResponse toNavigationResponse(PublicDocumentNavigationRow row) {
+        return new FrontContentNavigationResponse(
+                row.id(),
+                row.boardType().name(),
+                defaultText(row.title(), "제목 없는 콘텐츠"),
+                row.createdAt() == null ? null : row.createdAt().toLocalDate().format(DATE_FORMATTER)
+        );
     }
 
     public FrontContentPageResponse search(FrontContentListRequest request) {

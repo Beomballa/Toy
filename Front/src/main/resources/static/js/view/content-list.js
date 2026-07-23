@@ -3,6 +3,7 @@
     const VALID_SIZES = [4, 8, 12, 20];
     const VALID_SORTS = ["LATEST", "POPULAR", "OLDEST"];
     const RECENT_CONTENT_KEY = "front-recent-content";
+    const CONTENT_RETURN_URL_KEY = "front-content-return-url";
     const state = { ...DEFAULT_STATE };
     let requestController = null;
     let requestSequence = 0;
@@ -122,6 +123,7 @@
         const link = document.createElement("a");
         link.className = `content-list-card content-list-card--${item.boardType === "STYLE" ? "style" : "notice"}`;
         link.href = `/front/content/${Number(item.id)}`;
+        link.addEventListener("click", rememberReturnUrl);
         const visual = document.createElement("div");
         visual.className = "content-list-card__visual";
         const type = document.createElement("span");
@@ -285,6 +287,7 @@
             const link = document.createElement("a");
             link.href = `/front/content/${Number(item.id)}`;
             link.className = "content-recent-card";
+            link.addEventListener("click", rememberReturnUrl);
             const type = document.createElement("span");
             type.textContent = item.boardType === "STYLE" ? "STYLE EDIT" : "NOTICE";
             const title = document.createElement("strong");
@@ -323,6 +326,14 @@
         if (minutes < 60) return `${minutes}분 전`;
         if (minutes < 1440) return `${Math.floor(minutes / 60)}시간 전`;
         return `${Math.floor(minutes / 1440)}일 전`;
+    }
+
+    function rememberReturnUrl() {
+        try {
+            window.sessionStorage.setItem(CONTENT_RETURN_URL_KEY, window.location.href);
+        } catch (error) {
+            // Navigation remains available when session storage is unavailable.
+        }
     }
 
     function changePage(direction) {

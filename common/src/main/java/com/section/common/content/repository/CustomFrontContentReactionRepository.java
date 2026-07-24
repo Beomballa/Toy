@@ -1,6 +1,7 @@
 package com.section.common.content.repository;
 
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
+import com.section.common.content.dto.ContentReactionDataQualityRow;
 import com.section.common.content.dto.ContentReactionSummaryRow;
 import com.section.common.content.dto.ContentReactionTopRow;
 import com.section.common.content.dto.ContentReactionTrendRow;
@@ -13,6 +14,8 @@ public interface CustomFrontContentReactionRepository {
 
     ContentReactionSummaryRow getSummary(long documentNo);
 
+    ContentReactionDataQualityRow getDataQuality();
+
     ContentReactionAnalyticsSummaryRow getAnalyticsSummary(
             LocalDateTime startInclusive,
             LocalDateTime endExclusive,
@@ -23,6 +26,12 @@ public interface CustomFrontContentReactionRepository {
             LocalDateTime startInclusive,
             LocalDateTime endExclusive,
             Document.BoardType boardType
+    );
+
+    List<ContentReactionTrendRow> getDailyReactionTrend(
+            long documentNo,
+            LocalDateTime startInclusive,
+            LocalDateTime endExclusive
     );
 
     List<ContentReactionTopRow> getTopReactedContents(

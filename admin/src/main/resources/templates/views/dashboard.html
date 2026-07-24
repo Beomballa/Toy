@@ -160,6 +160,27 @@
         </div>
     </section>
 
+    <section class="card admin-panel-card admin-table-card dashboard-reaction-card mb-4"
+             id="contentReactionSection" data-dashboard-section="content-reaction">
+        <div class="card-header py-3 dashboard-card-header">
+            <div>
+                <span class="dashboard-reaction-card__eyebrow">Reader Feedback</span>
+                <h6 class="fw-bold mb-0">콘텐츠 반응 운영 신호</h6>
+            </div>
+            <a href="/admin/content/list?source=dashboard-content-reaction&returnTo=/admin/dashboard"
+               class="btn btn-sm btn-outline-secondary"
+               data-entry-source="dashboard-content-reaction"
+               data-entry-target="content-list">전체 분석</a>
+        </div>
+        <div class="card-body" id="contentReactionSnapshotBody">
+            <div class="product-loading-state py-4">
+                <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                <strong>독자 반응 운영 신호를 계산하는 중입니다.</strong>
+                <p>최근 7일 도움 비율과 우선 개선 콘텐츠를 확인하고 있습니다.</p>
+            </div>
+        </div>
+    </section>
+
     <div class="card admin-panel-card admin-table-card mb-4" id="frontDisplaySection" data-dashboard-section="front-display">
         <div class="card-header bg-white py-3 admin-card-header dashboard-card-header">
             <h6 class="fw-bold mb-0">프론트 전시 점검</h6>

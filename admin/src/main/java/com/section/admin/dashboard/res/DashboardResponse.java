@@ -13,6 +13,7 @@ public record DashboardResponse(
         List<UnassignedTask> unassignedTasks,
         TaskWorkloadSummary taskWorkloadSummary,
         List<TaskWorkload> taskWorkloads,
+        ContentReactionSnapshot contentReactionSnapshot,
         List<RecentOrder> recentOrders,
         List<LowStockProduct> lowStockProducts,
         List<ChartData> salesChart,
@@ -144,6 +145,25 @@ public record DashboardResponse(
             long unassignedTaskCount,
             String workloadPath,
             String unassignedPath
+    ) {}
+
+    public record ContentReactionSnapshot(
+            long totalCount,
+            int helpfulRate,
+            long evaluatedContentCount,
+            long orphanCount,
+            String dataQualityStatus,
+            ReactionActionItem priorityAction,
+            String analyticsPath
+    ) {}
+
+    public record ReactionActionItem(
+            Long documentId,
+            String boardType,
+            String title,
+            long notHelpfulCount,
+            int helpfulRate,
+            String detailPath
     ) {}
 
     public record ChartData(

@@ -2,6 +2,7 @@ package com.section.front.content.repository;
 
 import com.section.common.base.entity.type.YN;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
+import com.section.common.content.dto.ContentReactionDataQualityRow;
 import com.section.common.content.dto.ContentReactionSummaryRow;
 import com.section.common.content.dto.ContentReactionTopRow;
 import com.section.common.content.dto.ContentReactionTrendRow;
@@ -117,6 +118,11 @@ class FrontContentReactionRepositoryIntegrationTest {
                 Document.BoardType.NOTICE,
                 10
         );
+        List<ContentReactionTrendRow> documentTrend = reactionRepository.getDailyReactionTrend(
+                notice.getId(),
+                firstDay.toLocalDate().atStartOfDay(),
+                secondDay.toLocalDate().plusDays(1).atStartOfDay()
+        );
 
         assertThat(summary).isEqualTo(new ContentReactionAnalyticsSummaryRow(2, 1, 1, 2, 1));
         assertThat(trend).containsExactly(
@@ -129,6 +135,27 @@ class FrontContentReactionRepositoryIntegrationTest {
             assertThat(row.helpfulCount()).isEqualTo(1);
             assertThat(row.notHelpfulCount()).isEqualTo(1);
         });
+        assertThat(documentTrend).containsExactlyElementsOf(trend);
+    }
+
+    @Test
+    @DisplayName("반응 데이터 품질 조회는 삭제된 문서를 가리키는 고아 반응을 구분한다")
+    void detectsOrphanReactions() {
+        ContentReactionDataQualityRow before = reactionRepository.getDataQuality();
+        reactionRepository.upsert(
+                Long.MAX_VALUE,
+                VISITOR_KEY + "-orphan",
+                "HELPFUL",
+                LocalDateTime.of(2099, 7, 24, 12, 0)
+        );
+        entityManager.flush();
+        entityManager.clear();
+
+        ContentReactionDataQualityRow after = reactionRepository.getDataQuality();
+
+        assertThat(after.totalCount()).isEqualTo(before.totalCount() + 1);
+        assertThat(after.validCount()).isEqualTo(before.validCount());
+        assertThat(after.orphanCount()).isEqualTo(before.orphanCount() + 1);
     }
 
     private Document publicDocument(String title) {

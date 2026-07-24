@@ -10,6 +10,8 @@ import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.res.ContentReactionDetailResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
@@ -155,6 +157,20 @@ public class AdminContentRestController {
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .body(ContentReactionAnalyticsCsvWriter.write(analytics));
+    }
+
+    @GetMapping("/stats/reactions/quality")
+    public ResponseEntity<ContentReactionDataQualityResponse> getReactionDataQuality() {
+        return ResponseEntity.ok(adminContentReactionAnalyticsService.getDataQuality());
+    }
+
+    @GetMapping("/{id}/reactions")
+    public ResponseEntity<ContentReactionDetailResponse> getDocumentReactionInsight(
+            @PathVariable("id") long id,
+            @RequestParam(value = "days", defaultValue = "30") int days
+    ) {
+        documentService.getDocument(id);
+        return ResponseEntity.ok(adminContentReactionAnalyticsService.getDocumentInsight(id, days));
     }
 
     @GetMapping("/export")

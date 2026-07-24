@@ -85,7 +85,9 @@ check_header_present() {
 
 check_admin_authenticated_flow() {
   local login_status
+  local dashboard_response
   local dashboard_status
+  local dashboard_body
   local content_stats_status
   local content_view_export_response
   local content_view_export_status
@@ -99,6 +101,12 @@ check_admin_authenticated_flow() {
   local content_reaction_export_response
   local content_reaction_export_status
   local content_reaction_export_headers
+  local content_reaction_quality_response
+  local content_reaction_quality_status
+  local content_reaction_quality_body
+  local content_reaction_detail_response
+  local content_reaction_detail_status
+  local content_reaction_detail_body
   local logout_response
   local logout_status
   local logout_headers
@@ -121,13 +129,17 @@ check_admin_authenticated_flow() {
   fi
   printf 'PASS %-28s status=%s\n' "admin authenticated login" "$login_status"
 
-  dashboard_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-    --cookie "$ADMIN_COOKIE_JAR" "${ADMIN_URL}/admin/dashboard")"
-  if [[ "$dashboard_status" != "200" ]]; then
-    printf 'FAIL %-28s expected=200 actual=%s\n' "admin authenticated page" "$dashboard_status" >&2
+  dashboard_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" "${ADMIN_URL}/api/admin/dashboard/stats")"
+  dashboard_status="${dashboard_response##*$'\n'}"
+  dashboard_body="${dashboard_response%$'\n'*}"
+  if [[ "$dashboard_status" != "200" ]] \
+    || ! printf '%s\n' "$dashboard_body" | grep --fixed-strings --quiet '"contentReactionSnapshot":'; then
+    printf 'FAIL %-28s expected=200 reaction_snapshot=required actual=%s\n' \
+      "admin authenticated dashboard" "$dashboard_status" >&2
     return 1
   fi
-  printf 'PASS %-28s status=%s\n' "admin authenticated page" "$dashboard_status"
+  printf 'PASS %-28s status=%s\n' "admin authenticated dashboard" "$dashboard_status"
 
   content_stats_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" "${ADMIN_URL}/api/admin/content/stats/daily")"
@@ -194,6 +206,36 @@ check_admin_authenticated_flow() {
     return 1
   fi
   printf 'PASS %-28s status=%s\n' "admin content reactions" "$content_reaction_status"
+
+  content_reaction_quality_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/reactions/quality")"
+  content_reaction_quality_status="${content_reaction_quality_response##*$'\n'}"
+  content_reaction_quality_body="${content_reaction_quality_response%$'\n'*}"
+  if [[ "$content_reaction_quality_status" != "200" ]] \
+    || ! printf '%s\n' "$content_reaction_quality_body" | grep --fixed-strings --quiet '"validCount":' \
+    || ! printf '%s\n' "$content_reaction_quality_body" | grep --fixed-strings --quiet '"orphanCount":' \
+    || ! printf '%s\n' "$content_reaction_quality_body" | grep --fixed-strings --quiet '"status":'; then
+    printf 'FAIL %-28s expected=200 quality_fields=required actual=%s\n' \
+      "admin reaction quality" "$content_reaction_quality_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin reaction quality" "$content_reaction_quality_status"
+
+  content_reaction_detail_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/${FRONT_CONTENT_ID}/reactions?days=30")"
+  content_reaction_detail_status="${content_reaction_detail_response##*$'\n'}"
+  content_reaction_detail_body="${content_reaction_detail_response%$'\n'*}"
+  if [[ "$content_reaction_detail_status" != "200" ]] \
+    || ! printf '%s\n' "$content_reaction_detail_body" | grep --fixed-strings --quiet '"rangeDays":30' \
+    || ! printf '%s\n' "$content_reaction_detail_body" | grep --fixed-strings --quiet '"recentActivityCount":' \
+    || ! printf '%s\n' "$content_reaction_detail_body" | grep --fixed-strings --quiet '"statusMessage":'; then
+    printf 'FAIL %-28s expected=200 detail_fields=required actual=%s\n' \
+      "admin reaction detail" "$content_reaction_detail_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin reaction detail" "$content_reaction_detail_status"
 
   content_reaction_export_response="$(curl --silent --show-error --dump-header - --output /dev/null \
     --write-out $'\n%{http_code}' --cookie "$ADMIN_COOKIE_JAR" \

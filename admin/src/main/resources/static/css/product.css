@@ -2635,7 +2635,159 @@ body {
     font-weight: 700;
 }
 
+.content-reaction-detail {
+    margin-top: 1.5rem;
+    padding: 1.35rem;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 90% 0%, rgba(192, 96, 62, 0.1), transparent 30%),
+        linear-gradient(145deg, #ffffff 0%, #fcf8f5 100%);
+}
+
+.content-reaction-detail__header,
+.content-reaction-detail__body {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.content-reaction-detail__header {
+    align-items: center;
+}
+
+.content-reaction-detail__header h2 {
+    margin: 0.2rem 0 0;
+    color: #2c211d;
+    font-size: 1.15rem;
+    font-weight: 800;
+}
+
+.content-reaction-detail__header p,
+.content-reaction-detail__status {
+    color: #7d6e68;
+    font-size: 0.78rem;
+}
+
+.content-reaction-detail__header p {
+    margin: 0.35rem 0 0;
+}
+
+.content-reaction-detail__status {
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #ecded7;
+}
+
+.content-reaction-detail__metrics {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.content-reaction-detail__metrics article {
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid #eaded8;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.88);
+}
+
+.content-reaction-detail__metrics span,
+.content-reaction-detail__metrics small {
+    display: block;
+    color: #8a7770;
+    font-size: 0.72rem;
+}
+
+.content-reaction-detail__metrics strong {
+    display: block;
+    margin: 0.35rem 0 0.2rem;
+    color: #33251f;
+    font-size: 1.25rem;
+}
+
+.content-reaction-detail__body {
+    align-items: stretch;
+    margin-top: 0.9rem;
+}
+
+.content-reaction-detail__chart-wrap {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding: 1rem;
+    border: 1px solid #eaded8;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.9);
+}
+
+.content-reaction-detail__chart {
+    min-height: 165px;
+}
+
+.content-reaction-detail__decision {
+    display: flex;
+    width: min(280px, 30%);
+    min-width: 230px;
+    flex-direction: column;
+    justify-content: center;
+    padding: 1.2rem;
+    border: 1px solid #dce9e2;
+    border-radius: 18px;
+    background: #f3f8f5;
+}
+
+.content-reaction-detail__decision > span {
+    color: #75867d;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.content-reaction-detail__decision > strong {
+    margin-top: 0.5rem;
+    color: #1f6f50;
+    font-size: 1.15rem;
+}
+
+.content-reaction-detail__decision > p {
+    margin: 0.5rem 0 0;
+    color: #617269;
+    font-size: 0.76rem;
+    line-height: 1.6;
+}
+
+.content-reaction-detail__decision > a {
+    margin-top: 1rem;
+    color: #254a3a;
+    font-size: 0.74rem;
+    font-weight: 800;
+}
+
+.content-reaction-detail__decision[data-status="IMPROVEMENT_REQUIRED"] {
+    border-color: #efd0c4;
+    background: #fff5f0;
+}
+
+.content-reaction-detail__decision[data-status="IMPROVEMENT_REQUIRED"] > strong {
+    color: #b25334;
+}
+
+.content-reaction-detail__decision[data-status="NO_FEEDBACK"] {
+    border-color: #e2e5e7;
+    background: #f7f8f9;
+}
+
+.content-reaction-detail__decision[data-status="NO_FEEDBACK"] > strong {
+    color: #66717a;
+}
+
 @media (max-width: 1200px) {
+    .content-reaction-detail__metrics {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .content-reaction-analytics__body {
         grid-template-columns: 1fr 1fr;
     }
@@ -2679,6 +2831,25 @@ body {
 }
 
 @media (max-width: 768px) {
+    .content-reaction-detail__header,
+    .content-reaction-detail__body {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .content-reaction-detail__header .content-view-analytics__periods {
+        width: 100%;
+    }
+
+    .content-reaction-detail__metrics {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .content-reaction-detail__decision {
+        width: 100%;
+        min-width: 0;
+    }
+
     .content-reaction-analytics__body,
     .content-reaction-analytics__metrics {
         grid-template-columns: 1fr;
@@ -2749,6 +2920,15 @@ body {
 }
 
 @media (max-width: 576px) {
+    .content-reaction-detail {
+        padding: 1rem;
+        border-radius: 18px;
+    }
+
+    .content-reaction-detail__metrics {
+        grid-template-columns: 1fr;
+    }
+
     .content-view-analytics__metrics {
         grid-template-columns: 1fr;
     }

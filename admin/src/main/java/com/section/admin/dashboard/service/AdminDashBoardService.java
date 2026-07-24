@@ -1,5 +1,8 @@
 package com.section.admin.dashboard.service;
 
+import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.dashboard.res.DashboardResponse;
 import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
@@ -53,6 +56,7 @@ public class AdminDashBoardService {
     private final AdminOperationTaskCommentRepository adminOperationTaskCommentRepository;
     private final AdminUserRepository adminUserRepository;
     private final AdminProductService adminProductService;
+    private final AdminContentReactionAnalyticsService contentReactionAnalyticsService;
 
     public DashboardResponse getDashboardData() {
         // 1. 오늘 요약 정보
@@ -122,6 +126,7 @@ public class AdminDashBoardService {
                 "/admin/settings/tasks/workloads",
                 "/admin/settings/tasks?unassignedOnly=Y"
         );
+        DashboardResponse.ContentReactionSnapshot contentReactionSnapshot = buildContentReactionSnapshot();
 
         // 2. 최근 주문 5건
         List<DashboardResponse.RecentOrder> recentOrders = orderRepository.getRecentOrders(5).stream()
@@ -166,7 +171,39 @@ public class AdminDashBoardService {
                     return new DashboardResponse.ChartData(brandName, ((Number) m.get("amount")).longValue());
                 }).toList();
 
-        return new DashboardResponse(summary, frontDisplaySnapshot, operationNotices, operationTasks, unassignedTaskItems, taskWorkloadSummary, taskWorkloads, recentOrders, lowStockProducts, salesChart, topProducts, topBrands);
+        return new DashboardResponse(
+                summary, frontDisplaySnapshot, operationNotices, operationTasks, unassignedTaskItems,
+                taskWorkloadSummary, taskWorkloads, contentReactionSnapshot, recentOrders,
+                lowStockProducts, salesChart, topProducts, topBrands
+        );
+    }
+
+    private DashboardResponse.ContentReactionSnapshot buildContentReactionSnapshot() {
+        ContentReactionAnalyticsResponse analytics = contentReactionAnalyticsService.getAnalytics(null, 7);
+        ContentReactionDataQualityResponse quality = contentReactionAnalyticsService.getDataQuality();
+        DashboardResponse.ReactionActionItem action = analytics.improvementContents().stream()
+                .findFirst()
+                .map(item -> new DashboardResponse.ReactionActionItem(
+                        item.documentId(),
+                        item.boardType(),
+                        item.title(),
+                        item.notHelpfulCount(),
+                        item.helpfulRate(),
+                        "/admin/content/get?id=" + item.documentId()
+                                + "&boardType=" + item.boardType()
+                                + "&source=dashboard-content-reaction"
+                                + "&returnTo=/admin/dashboard"
+                ))
+                .orElse(null);
+        return new DashboardResponse.ContentReactionSnapshot(
+                analytics.summary().totalCount(),
+                analytics.summary().helpfulRate(),
+                analytics.summary().evaluatedContentCount(),
+                quality.orphanCount(),
+                quality.status(),
+                action,
+                "/admin/content/list?source=dashboard-content-reaction&returnTo=/admin/dashboard"
+        );
     }
 
     private DashboardResponse.FrontDisplaySnapshot buildFrontDisplaySnapshot() {

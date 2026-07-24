@@ -1,9 +1,13 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.res.ContentReactionDetailResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
+import com.section.common.content.dto.ContentReactionDataQualityRow;
+import com.section.common.content.dto.ContentReactionSummaryRow;
 import com.section.common.content.dto.ContentReactionTopRow;
 import com.section.common.content.dto.ContentReactionTrendRow;
 import com.section.common.content.entity.Document;
@@ -29,6 +33,7 @@ import java.util.stream.IntStream;
 public class AdminContentReactionAnalyticsService {
 
     private static final Set<Integer> SUPPORTED_RANGE_DAYS = Set.of(7, 14, 30);
+    private static final Set<Integer> SUPPORTED_DETAIL_RANGE_DAYS = Set.of(7, 30, 90);
     private static final int CANDIDATE_LIMIT = 50;
     private static final int DISPLAY_LIMIT = 5;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -88,6 +93,52 @@ public class AdminContentReactionAnalyticsService {
         );
     }
 
+    public ContentReactionDataQualityResponse getDataQuality() {
+        ContentReactionDataQualityRow row = reactionRepository.getDataQuality();
+        return new ContentReactionDataQualityResponse(
+                row.totalCount(),
+                row.validCount(),
+                row.orphanCount(),
+                formatDateTime(row.oldestReactedAt()),
+                formatDateTime(row.latestReactedAt()),
+                row.orphanCount() == 0 ? "HEALTHY" : "CLEANUP_REQUIRED",
+                LocalDateTime.now(clock).format(DATE_TIME_FORMATTER)
+        );
+    }
+
+    public ContentReactionDetailResponse getDocumentInsight(long documentId, int rangeDays) {
+        if (!SUPPORTED_DETAIL_RANGE_DAYS.contains(rangeDays)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+        }
+        LocalDate endDate = LocalDate.now(clock);
+        LocalDate startDate = endDate.minusDays(rangeDays - 1L);
+        ContentReactionSummaryRow summary = reactionRepository.getSummary(documentId);
+        List<ContentReactionTrendRow> rows = reactionRepository.getDailyReactionTrend(
+                documentId,
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay()
+        );
+        long recentActivityCount = rows.stream().mapToLong(ContentReactionTrendRow::totalCount).sum();
+        long totalCount = summary.helpfulCount() + summary.notHelpfulCount();
+        int rate = helpfulRate(summary.helpfulCount(), totalCount);
+        String status = insightStatus(totalCount, rate);
+
+        return new ContentReactionDetailResponse(
+                documentId,
+                rangeDays,
+                startDate.toString(),
+                endDate.toString(),
+                totalCount,
+                summary.helpfulCount(),
+                summary.notHelpfulCount(),
+                rate,
+                recentActivityCount,
+                status,
+                insightStatusMessage(status),
+                fillDocumentTrend(startDate, rangeDays, rows)
+        );
+    }
+
     private ContentReactionAnalyticsResponse.Summary toSummary(ContentReactionAnalyticsSummaryRow row) {
         return new ContentReactionAnalyticsResponse.Summary(
                 row.totalCount(),
@@ -134,6 +185,48 @@ public class AdminContentReactionAnalyticsService {
                 row.notHelpfulCount(),
                 helpfulRate(row.helpfulCount(), row.totalCount())
         );
+    }
+
+    private List<ContentReactionDetailResponse.Trend> fillDocumentTrend(
+            LocalDate startDate,
+            int rangeDays,
+            List<ContentReactionTrendRow> rows
+    ) {
+        Map<LocalDate, ContentReactionTrendRow> rowsByDate = rows.stream()
+                .collect(Collectors.toMap(ContentReactionTrendRow::reactedDate, Function.identity()));
+        return IntStream.range(0, rangeDays)
+                .mapToObj(startDate::plusDays)
+                .map(date -> {
+                    ContentReactionTrendRow row = rowsByDate.get(date);
+                    long helpful = row == null ? 0 : row.helpfulCount();
+                    long notHelpful = row == null ? 0 : row.notHelpfulCount();
+                    return new ContentReactionDetailResponse.Trend(
+                            date.toString(),
+                            helpful + notHelpful,
+                            helpful,
+                            notHelpful
+                    );
+                })
+                .toList();
+    }
+
+    private String insightStatus(long totalCount, int helpfulRate) {
+        if (totalCount == 0) {
+            return "NO_FEEDBACK";
+        }
+        return totalCount >= 3 && helpfulRate < 60 ? "IMPROVEMENT_REQUIRED" : "HEALTHY";
+    }
+
+    private String insightStatusMessage(String status) {
+        return switch (status) {
+            case "NO_FEEDBACK" -> "아직 독자 반응이 없습니다.";
+            case "IMPROVEMENT_REQUIRED" -> "도움 비율이 낮아 제목이나 본문 보완을 검토해 주세요.";
+            default -> "현재 도움 비율이 안정적인 콘텐츠입니다.";
+        };
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value == null ? null : value.format(DATE_TIME_FORMATTER);
     }
 
     private int helpfulRate(long helpfulCount, long totalCount) {

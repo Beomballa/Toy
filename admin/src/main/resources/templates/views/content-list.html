@@ -193,6 +193,24 @@
              role="status" aria-live="polite">
             반응 데이터를 불러오는 중입니다.
         </div>
+        <dl class="content-view-quality content-reaction-quality" aria-label="콘텐츠 반응 데이터 품질">
+            <div>
+                <dt>데이터 상태</dt>
+                <dd><span class="content-view-quality__badge" id="contentReactionQualityStatus">점검 중</span></dd>
+            </div>
+            <div>
+                <dt>정상 반응</dt>
+                <dd id="contentReactionQualityValid">-</dd>
+            </div>
+            <div>
+                <dt>고아 반응</dt>
+                <dd id="contentReactionQualityOrphan">-</dd>
+            </div>
+            <div>
+                <dt>수집 기간</dt>
+                <dd id="contentReactionQualityRange">-</dd>
+            </div>
+        </dl>
 
         <div class="content-view-analytics__metrics content-reaction-analytics__metrics"
              aria-label="독자 반응 핵심 지표">

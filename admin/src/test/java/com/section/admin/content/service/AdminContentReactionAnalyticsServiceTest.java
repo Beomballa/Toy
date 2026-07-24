@@ -1,8 +1,12 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.res.ContentReactionDetailResponse;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
+import com.section.common.content.dto.ContentReactionDataQualityRow;
+import com.section.common.content.dto.ContentReactionSummaryRow;
 import com.section.common.content.dto.ContentReactionTopRow;
 import com.section.common.content.dto.ContentReactionTrendRow;
 import com.section.common.content.entity.Document;
@@ -90,6 +94,52 @@ class AdminContentReactionAnalyticsServiceTest {
     @DisplayName("반응 분석은 지원하지 않는 기간을 거부한다")
     void rejectsUnsupportedRange() {
         assertThatThrownBy(() -> service.getAnalytics(Document.BoardType.STYLE, 10))
+                .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("반응 데이터 품질은 고아 반응 유무와 수집 기간을 운영 상태로 변환한다")
+    void returnsReactionDataQuality() {
+        when(repository.getDataQuality()).thenReturn(new ContentReactionDataQualityRow(
+                10,
+                8,
+                LocalDateTime.of(2026, 7, 1, 9, 0),
+                LocalDateTime.of(2026, 7, 24, 11, 0)
+        ));
+
+        ContentReactionDataQualityResponse response = service.getDataQuality();
+
+        assertThat(response.totalCount()).isEqualTo(10);
+        assertThat(response.orphanCount()).isEqualTo(2);
+        assertThat(response.status()).isEqualTo("CLEANUP_REQUIRED");
+        assertThat(response.oldestReactedAt()).isEqualTo("2026-07-01 09:00:00");
+    }
+
+    @Test
+    @DisplayName("문서 반응 인사이트는 전체 누계와 최근 활동을 분리하고 개선 상태를 계산한다")
+    void returnsDocumentReactionInsight() {
+        LocalDateTime start = LocalDateTime.of(2026, 6, 25, 0, 0);
+        LocalDateTime end = LocalDateTime.of(2026, 7, 25, 0, 0);
+        when(repository.getSummary(31L)).thenReturn(new ContentReactionSummaryRow(2, 3));
+        when(repository.getDailyReactionTrend(31L, start, end)).thenReturn(List.of(
+                new ContentReactionTrendRow(LocalDate.of(2026, 7, 23), 1, 1),
+                new ContentReactionTrendRow(LocalDate.of(2026, 7, 24), 0, 1)
+        ));
+
+        ContentReactionDetailResponse response = service.getDocumentInsight(31L, 30);
+
+        assertThat(response.totalCount()).isEqualTo(5);
+        assertThat(response.helpfulRate()).isEqualTo(40);
+        assertThat(response.recentActivityCount()).isEqualTo(3);
+        assertThat(response.status()).isEqualTo("IMPROVEMENT_REQUIRED");
+        assertThat(response.trend()).hasSize(30);
+        assertThat(response.trend().get(28).totalCount()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("문서 반응 인사이트는 7일, 30일, 90일 이외 기간을 거부한다")
+    void rejectsUnsupportedDocumentRange() {
+        assertThatThrownBy(() -> service.getDocumentInsight(1L, 14))
                 .isInstanceOf(BusinessException.class);
     }
 }

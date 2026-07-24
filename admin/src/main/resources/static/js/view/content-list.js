@@ -7,6 +7,7 @@ const ContentList = {
     dailyStats: null,
     viewAnalytics: null,
     reactionAnalytics: null,
+    reactionDataQuality: null,
     viewDataQuality: null,
     viewAnalyticsRequestId: 0,
     reactionAnalyticsRequestId: 0,
@@ -46,6 +47,7 @@ const ContentList = {
         this.getDailyStats();
         this.getViewAnalytics();
         this.getReactionAnalytics();
+        this.getReactionDataQuality();
         this.getViewDataQuality();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -125,6 +127,7 @@ const ContentList = {
         });
         document.getElementById('btnExportViewAnalytics')?.addEventListener('click', () => this.exportViewAnalytics());
         document.getElementById('btnRefreshReactionAnalytics')?.addEventListener('click', () => this.getReactionAnalytics());
+        document.getElementById('btnRefreshReactionAnalytics')?.addEventListener('click', () => this.getReactionDataQuality());
         document.getElementById('btnExportReactionAnalytics')?.addEventListener('click', () => this.exportReactionAnalytics());
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -493,6 +496,62 @@ const ContentList = {
             this.renderReactionAnalyticsError();
             console.error('독자 반응 분석 실패:', error);
         }
+    },
+
+    async getReactionDataQuality() {
+        this.renderReactionDataQualityLoading();
+        try {
+            const response = await fetch('/api/admin/content/stats/reactions/quality', {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error('반응 데이터 품질 정보를 불러오지 못했습니다.');
+            this.reactionDataQuality = await response.json();
+            this.renderReactionDataQuality();
+        } catch (error) {
+            this.reactionDataQuality = null;
+            this.renderReactionDataQualityError();
+            console.error('반응 데이터 품질 조회 실패:', error);
+        }
+    },
+
+    renderReactionDataQualityLoading() {
+        const status = document.getElementById('contentReactionQualityStatus');
+        if (status) {
+            status.textContent = '점검 중';
+            status.className = 'content-view-quality__badge';
+        }
+        this.setText('contentReactionQualityValid', '-');
+        this.setText('contentReactionQualityOrphan', '-');
+        this.setText('contentReactionQualityRange', '-');
+    },
+
+    renderReactionDataQuality() {
+        const quality = this.reactionDataQuality || {};
+        const healthy = quality.status === 'HEALTHY';
+        const status = document.getElementById('contentReactionQualityStatus');
+        if (status) {
+            status.textContent = healthy ? '정상' : '정리 필요';
+            status.className = `content-view-quality__badge ${healthy ? 'is-healthy' : 'is-warning'}`;
+        }
+        this.setText('contentReactionQualityValid', `${this.formatNumber(quality.validCount)}건`);
+        this.setText('contentReactionQualityOrphan', `${this.formatNumber(quality.orphanCount)}건`);
+        this.setText(
+            'contentReactionQualityRange',
+            quality.oldestReactedAt && quality.latestReactedAt
+                ? `${quality.oldestReactedAt} ~ ${quality.latestReactedAt}`
+                : '수집 데이터 없음'
+        );
+    },
+
+    renderReactionDataQualityError() {
+        const status = document.getElementById('contentReactionQualityStatus');
+        if (status) {
+            status.textContent = '조회 실패';
+            status.className = 'content-view-quality__badge is-error';
+        }
+        this.setText('contentReactionQualityValid', '-');
+        this.setText('contentReactionQualityOrphan', '-');
+        this.setText('contentReactionQualityRange', '연결 확인 필요');
     },
 
     renderReactionAnalyticsLoading() {

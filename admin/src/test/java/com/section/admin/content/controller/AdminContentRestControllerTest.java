@@ -8,6 +8,8 @@ import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.res.ContentReactionDetailResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.common.base.entity.type.YN;
@@ -370,6 +372,44 @@ class AdminContentRestControllerTest {
                 ))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .bytes(com.section.admin.content.support.ContentReactionAnalyticsCsvWriter.write(response)));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 반응 데이터 품질 API는 정상·고아 반응 현황을 반환한다")
+    void getReactionDataQualityReturnsIntegrityStatus() throws Exception {
+        when(adminContentReactionAnalyticsService.getDataQuality())
+                .thenReturn(new ContentReactionDataQualityResponse(
+                        10, 9, 1, "2026-07-01 09:00:00", "2026-07-24 12:00:00",
+                        "CLEANUP_REQUIRED", "2026-07-24 12:01:00"
+                ));
+
+        mockMvc.perform(get("/api/admin/content/stats/reactions/quality"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.validCount").value(9))
+                .andExpect(jsonPath("$.orphanCount").value(1))
+                .andExpect(jsonPath("$.status").value("CLEANUP_REQUIRED"));
+    }
+
+    @Test
+    @DisplayName("문서 반응 인사이트 API는 문서 존재를 확인하고 기간별 결과를 반환한다")
+    void getDocumentReactionInsightReturnsDetail() throws Exception {
+        when(documentService.getDocument(31L)).thenReturn(new Document());
+        when(adminContentReactionAnalyticsService.getDocumentInsight(31L, 90))
+                .thenReturn(new ContentReactionDetailResponse(
+                        31, 90, "2026-04-26", "2026-07-24",
+                        5, 2, 3, 40, 3,
+                        "IMPROVEMENT_REQUIRED", "본문 보완을 검토해 주세요.",
+                        List.of(new ContentReactionDetailResponse.Trend("2026-07-24", 1, 0, 1))
+                ));
+
+        mockMvc.perform(get("/api/admin/content/31/reactions").param("days", "90"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentId").value(31))
+                .andExpect(jsonPath("$.helpfulRate").value(40))
+                .andExpect(jsonPath("$.status").value("IMPROVEMENT_REQUIRED"));
+
+        verify(documentService).getDocument(31L);
+        verify(adminContentReactionAnalyticsService).getDocumentInsight(31L, 90);
     }
 
     @Test

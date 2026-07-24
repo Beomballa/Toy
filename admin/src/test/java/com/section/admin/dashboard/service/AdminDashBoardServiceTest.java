@@ -1,5 +1,8 @@
 package com.section.admin.dashboard.service;
 
+import com.section.admin.content.res.ContentReactionAnalyticsResponse;
+import com.section.admin.content.res.ContentReactionDataQualityResponse;
+import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.dashboard.res.DashboardResponse;
 import com.section.admin.product.req.ProductFrontDisplayListRequest;
 import com.section.admin.product.res.ProductFrontDisplayDashboardResponse;
@@ -22,6 +25,7 @@ import com.section.common.system.repository.AdminOperationNoticeRepository;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import com.section.common.system.repository.AdminUserRepository;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -57,9 +61,22 @@ class AdminDashBoardServiceTest {
     private AdminUserRepository adminUserRepository;
     @Mock
     private AdminProductService adminProductService;
+    @Mock
+    private AdminContentReactionAnalyticsService contentReactionAnalyticsService;
 
     @InjectMocks
     private AdminDashBoardService adminDashBoardService;
+
+    @BeforeEach
+    void setUpReactionSnapshot() {
+        when(contentReactionAnalyticsService.getAnalytics(null, 7))
+                .thenReturn(reactionAnalytics());
+        when(contentReactionAnalyticsService.getDataQuality())
+                .thenReturn(new ContentReactionDataQualityResponse(
+                        4, 4, 0, "2026-07-20 10:00:00", "2026-07-24 10:00:00",
+                        "HEALTHY", "2026-07-24 12:00:00"
+                ));
+    }
 
     @Test
     @DisplayName("브랜드 매출 차트는 브랜드명을 일괄 조회해 N+1 없이 매핑한다")
@@ -180,7 +197,23 @@ class AdminDashBoardServiceTest {
         assertEquals(2, response.topBrands().size());
         assertEquals("나이키", response.topBrands().get(0).label());
         assertEquals("아디다스", response.topBrands().get(1).label());
+        assertEquals(75, response.contentReactionSnapshot().helpfulRate());
+        assertEquals(31L, response.contentReactionSnapshot().priorityAction().documentId());
+        assertEquals("HEALTHY", response.contentReactionSnapshot().dataQualityStatus());
         verify(brandRepository).findAllById(anyList());
+    }
+
+    private ContentReactionAnalyticsResponse reactionAnalytics() {
+        return new ContentReactionAnalyticsResponse(
+                "ALL", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
+                "기간 내 마지막 선택 시각 기준 현재 반응",
+                new ContentReactionAnalyticsResponse.Summary(4, 3, 1, 75, 4, 1),
+                List.of(),
+                List.of(),
+                List.of(new ContentReactionAnalyticsResponse.Content(
+                        31, "NOTICE", "배송 안내", 4, 3, 1, 75
+                ))
+        );
     }
 
     @Test

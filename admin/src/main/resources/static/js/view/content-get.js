@@ -6,10 +6,13 @@ const ContentDetail = {
         boardType: 'NOTICE',
         returnTo: null,
         source: '',
-        data: null
+        data: null,
+        reactionRangeDays: 30,
+        reactionInsight: null
     },
     operationPolicy: null,
     operateInFlight: false,
+    reactionRequestId: 0,
 
     async init() {
         if (this.initialized) return;
@@ -34,7 +37,10 @@ const ContentDetail = {
         this.bindEvents();
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        await this.loadDetail();
+        const detailLoaded = await this.loadDetail();
+        if (detailLoaded) {
+            await this.loadReactionInsight();
+        }
     },
 
     bindEvents() {
@@ -63,6 +69,15 @@ const ContentDetail = {
         document.getElementById('btnToggleContentStatus')?.addEventListener('click', () => this.toggleContentStatus());
         document.getElementById('btnToggleContentPublic')?.addEventListener('click', () => this.toggleContentPublic());
         document.getElementById('btnToggleContentPinned')?.addEventListener('click', () => this.toggleContentPinned());
+        document.querySelectorAll('[data-content-reaction-range]').forEach((button) => {
+            button.addEventListener('click', () => {
+                const rangeDays = Number(button.dataset.contentReactionRange);
+                if (![7, 30, 90].includes(rangeDays) || rangeDays === this.state.reactionRangeDays) return;
+                this.state.reactionRangeDays = rangeDays;
+                this.syncReactionRangeButtons();
+                this.loadReactionInsight();
+            });
+        });
     },
 
     async applyOperationPolicy(settings = null) {
@@ -95,10 +110,12 @@ const ContentDetail = {
             this.applyBoardMeta(this.state.boardType);
             CommonJS.bindMainLogoNavigation(this.getListPath());
             this.renderDetail(data);
+            return true;
         } catch (error) {
             console.error('콘텐츠 상세 로드 실패:', error);
             await CommonJS.alert('상세 내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
             window.location.href = this.getListPath();
+            return false;
         }
     },
 
@@ -124,6 +141,136 @@ const ContentDetail = {
         this.setButtonText('btnToggleContentStatus', nextStatusLabel);
         this.setButtonText('btnToggleContentPublic', nextPublicLabel);
         this.setButtonText('btnToggleContentPinned', nextPinnedLabel);
+        const analysisLink = document.getElementById('contentReactionDetailListLink');
+        if (analysisLink) {
+            analysisLink.href = `/admin/content/list?boardType=${encodeURIComponent(this.state.boardType)}&source=content-reaction-detail`;
+        }
+    },
+
+    async loadReactionInsight() {
+        const requestId = ++this.reactionRequestId;
+        this.renderReactionInsightLoading();
+        try {
+            const response = await fetch(
+                `/api/admin/content/${this.state.id}/reactions?days=${this.state.reactionRangeDays}`,
+                { headers: { Accept: 'application/json' } }
+            );
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '반응 인사이트를 불러오지 못했습니다.'));
+            }
+            const insight = await response.json();
+            if (requestId !== this.reactionRequestId) return;
+            this.state.reactionInsight = insight;
+            this.renderReactionInsight();
+        } catch (error) {
+            if (requestId !== this.reactionRequestId) return;
+            this.state.reactionInsight = null;
+            this.renderReactionInsightError();
+            console.error('콘텐츠 반응 인사이트 조회 실패:', error);
+        }
+    },
+
+    renderReactionInsightLoading() {
+        this.setText('contentReactionDetailStatus', `최근 ${this.state.reactionRangeDays}일 반응 활동을 집계하고 있습니다.`);
+        this.setText('contentReactionDetailTotal', '-');
+        this.setText('contentReactionDetailHelpful', '-');
+        this.setText('contentReactionDetailNotHelpful', '-');
+        this.setText('contentReactionDetailRate', '-');
+        this.setText('contentReactionDetailRecent', '-');
+        this.setText('contentReactionDetailRangeLabel', `최근 ${this.state.reactionRangeDays}일`);
+        this.renderReactionInsightTrend([]);
+        this.syncReactionRangeButtons();
+    },
+
+    renderReactionInsight() {
+        const insight = this.state.reactionInsight || {};
+        this.setText(
+            'contentReactionDetailStatus',
+            `${insight.startDate || '-'} ~ ${insight.endDate || '-'} · 현재 누계와 최근 활동을 함께 표시합니다.`
+        );
+        this.setText('contentReactionDetailTotal', `${this.formatNumber(insight.totalCount)}건`);
+        this.setText('contentReactionDetailHelpful', `${this.formatNumber(insight.helpfulCount)}건`);
+        this.setText('contentReactionDetailNotHelpful', `${this.formatNumber(insight.notHelpfulCount)}건`);
+        this.setText('contentReactionDetailRate', `${this.formatNumber(insight.helpfulRate)}%`);
+        this.setText('contentReactionDetailRecent', `${this.formatNumber(insight.recentActivityCount)}건`);
+        this.setText('contentReactionDetailRangeLabel', `최근 ${insight.rangeDays || this.state.reactionRangeDays}일`);
+        this.renderReactionInsightTrend(Array.isArray(insight.trend) ? insight.trend : []);
+        this.renderReactionDecision(insight);
+        this.syncReactionRangeButtons();
+    },
+
+    renderReactionInsightTrend(trend) {
+        const target = document.getElementById('contentReactionDetailTrend');
+        if (!target) return;
+        if (!trend.length) {
+            target.innerHTML = '<div class="content-view-empty">표시할 반응 활동이 없습니다.</div>';
+            return;
+        }
+        const maxValue = Math.max(1, ...trend.map((item) => Number(item.totalCount) || 0));
+        target.innerHTML = trend.map((item, index) => {
+            const helpful = Number(item.helpfulCount) || 0;
+            const notHelpful = Number(item.notHelpfulCount) || 0;
+            const helpfulHeight = Math.max(helpful > 0 ? 8 : 2, Math.round(helpful / maxValue * 100));
+            const notHelpfulHeight = Math.max(notHelpful > 0 ? 8 : 2, Math.round(notHelpful / maxValue * 100));
+            const showLabel = trend.length <= 7 || index === 0 || index === trend.length - 1
+                || index % (trend.length > 30 ? 15 : 5) === 0;
+            return `
+                <div class="content-view-chart__column"
+                     title="${ContentBoardConfig.escapeHtml(item.date)} · 도움됨 ${this.formatNumber(helpful)}건 · 개선 필요 ${this.formatNumber(notHelpful)}건">
+                    <div class="content-view-chart__value">${item.totalCount ? this.formatNumber(item.totalCount) : ''}</div>
+                    <div class="content-view-chart__bars">
+                        <span class="content-view-chart__bar content-reaction-bar--helpful" style="height:${helpfulHeight}%"></span>
+                        <span class="content-view-chart__bar content-reaction-bar--not-helpful" style="height:${notHelpfulHeight}%"></span>
+                    </div>
+                    <span class="content-view-chart__date">${showLabel ? this.formatShortDate(item.date) : ''}</span>
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderReactionDecision(insight) {
+        const target = document.getElementById('contentReactionDetailDecision');
+        if (!target) return;
+        const status = ['HEALTHY', 'IMPROVEMENT_REQUIRED', 'NO_FEEDBACK'].includes(insight.status)
+            ? insight.status
+            : 'NO_FEEDBACK';
+        const labels = {
+            HEALTHY: '안정',
+            IMPROVEMENT_REQUIRED: '보완 검토',
+            NO_FEEDBACK: '반응 대기'
+        };
+        target.dataset.status = status;
+        const strong = target.querySelector('strong');
+        const message = target.querySelector('p');
+        if (strong) strong.textContent = labels[status];
+        if (message) message.textContent = insight.statusMessage || '반응 데이터를 더 수집해 주세요.';
+    },
+
+    renderReactionInsightError() {
+        this.setText('contentReactionDetailStatus', '반응 인사이트를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        this.renderReactionInsightTrend([]);
+        this.renderReactionDecision({
+            status: 'NO_FEEDBACK',
+            statusMessage: '반응 분석 연결 상태를 확인해 주세요.'
+        });
+    },
+
+    syncReactionRangeButtons() {
+        document.querySelectorAll('[data-content-reaction-range]').forEach((button) => {
+            const active = Number(button.dataset.contentReactionRange) === this.state.reactionRangeDays;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+    },
+
+    formatNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toLocaleString('ko-KR') : '0';
+    },
+
+    formatShortDate(value) {
+        const parts = String(value || '').split('-');
+        return parts.length === 3 ? `${Number(parts[1])}/${Number(parts[2])}` : '';
     },
 
     async openLinkedProduct() {

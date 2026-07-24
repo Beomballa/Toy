@@ -124,6 +124,75 @@
                 </div>
             </div>
         </div>
+
+        <section class="content-reaction-detail admin-panel-card" aria-labelledby="contentReactionDetailTitle">
+            <div class="content-reaction-detail__header">
+                <div>
+                    <span class="content-detail-eyebrow">Reader Feedback</span>
+                    <h2 id="contentReactionDetailTitle">독자 반응 인사이트</h2>
+                    <p>개별 방문자 정보 없이 현재 반응 누계와 최근 선택 활동만 표시합니다.</p>
+                </div>
+                <div class="content-view-analytics__periods" role="group" aria-label="문서 반응 조회 기간">
+                    <button type="button" class="content-view-analytics__period" data-content-reaction-range="7">7일</button>
+                    <button type="button" class="content-view-analytics__period is-active" data-content-reaction-range="30">30일</button>
+                    <button type="button" class="content-view-analytics__period" data-content-reaction-range="90">90일</button>
+                </div>
+            </div>
+            <div class="content-reaction-detail__status" id="contentReactionDetailStatus" role="status" aria-live="polite">
+                반응 인사이트를 불러오는 중입니다.
+            </div>
+            <div class="content-reaction-detail__metrics">
+                <article>
+                    <span>전체 누계</span>
+                    <strong id="contentReactionDetailTotal">-</strong>
+                    <small>현재 선택 상태</small>
+                </article>
+                <article>
+                    <span>도움됨</span>
+                    <strong id="contentReactionDetailHelpful">-</strong>
+                    <small>긍정 반응</small>
+                </article>
+                <article>
+                    <span>개선 필요</span>
+                    <strong id="contentReactionDetailNotHelpful">-</strong>
+                    <small>보완 검토 반응</small>
+                </article>
+                <article>
+                    <span>도움 비율</span>
+                    <strong id="contentReactionDetailRate">-</strong>
+                    <small>전체 누계 대비</small>
+                </article>
+                <article>
+                    <span>최근 활동</span>
+                    <strong id="contentReactionDetailRecent">-</strong>
+                    <small id="contentReactionDetailRangeLabel">최근 30일</small>
+                </article>
+            </div>
+            <div class="content-reaction-detail__body">
+                <div class="content-reaction-detail__chart-wrap">
+                    <div class="content-view-panel-title">
+                        <div>
+                            <strong>일별 반응 활동</strong>
+                            <span>방문자별 마지막 선택 시각 기준</span>
+                        </div>
+                        <div class="content-view-chart-legend">
+                            <span><i class="content-reaction-legend__helpful"></i>도움됨</span>
+                            <span><i class="content-reaction-legend__not-helpful"></i>개선 필요</span>
+                        </div>
+                    </div>
+                    <div class="content-view-chart content-reaction-detail__chart"
+                         id="contentReactionDetailTrend" aria-label="문서 일별 반응 활동">
+                        <div class="content-view-empty">반응 추이를 준비하고 있습니다.</div>
+                    </div>
+                </div>
+                <aside class="content-reaction-detail__decision" id="contentReactionDetailDecision">
+                    <span>운영 판단</span>
+                    <strong>분석 중</strong>
+                    <p>반응 데이터를 확인하고 있습니다.</p>
+                    <a href="/admin/content/list" id="contentReactionDetailListLink">전체 반응 분석 보기</a>
+                </aside>
+            </div>
+        </section>
     </div>
 </main>
 

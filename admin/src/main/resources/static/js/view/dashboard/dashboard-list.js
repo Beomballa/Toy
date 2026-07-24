@@ -107,6 +107,7 @@ const DashBoardListJS = {
             this.renderUnassignedTasks(data.unassignedTasks);
             this.renderTaskWorkloadSummary(data.taskWorkloadSummary);
             this.renderTaskWorkloads(data.taskWorkloads);
+            this.renderContentReactionSnapshot(data.contentReactionSnapshot);
             this.renderRecentOrders(data.recentOrders);
             this.renderLowStockProducts(data.lowStockProducts);
             this.renderSalesChart(data.salesChart);
@@ -121,6 +122,7 @@ const DashBoardListJS = {
             this.renderSectionState('unassignedTaskBody', 'error', '미지정 작업을 불러오지 못했습니다.', '담당자 배정이 필요한 작업 목록을 불러오지 못했습니다.');
             this.renderSectionState('taskWorkloadSummaryBody', 'error', '워크로드 요약을 불러오지 못했습니다.', '담당자별 배정 현황 요약을 다시 확인해주세요.');
             this.renderSectionState('taskWorkloadBody', 'error', '담당자별 작업 현황을 불러오지 못했습니다.', '워크로드 목록을 다시 불러오거나 운영 작업 메뉴에서 직접 확인해주세요.');
+            this.renderSectionState('contentReactionSnapshotBody', 'error', '콘텐츠 반응 신호를 불러오지 못했습니다.', '콘텐츠 관리에서 반응 분석을 직접 확인해 주세요.');
             this.renderTableState('recentOrderTableBody', 6, 'error', '최근 주문 내역을 불러오지 못했습니다.', '주문 목록을 다시 불러오거나 주문 관리 메뉴에서 직접 확인해주세요.');
             this.renderListState('lowStockListBody', 'error', '저재고 상품을 불러오지 못했습니다.', '재고 상태를 다시 불러오거나 상품 관리에서 직접 확인해주세요.');
             this.setSectionStateMeta('operationTaskStateMeta', 'error', '운영 작업을 불러오지 못했습니다.', 0, { pinnedCount: 0 });
@@ -128,6 +130,59 @@ const DashBoardListJS = {
             this.setSectionStateMeta('taskWorkloadSummaryStateMeta', 'error', '워크로드 요약을 불러오지 못했습니다.', 0);
             this.setSectionStateMeta('taskWorkloadStateMeta', 'error', '담당자별 작업 현황을 불러오지 못했습니다.', 0, { overdueRowCount: 0 });
         }
+    },
+
+    renderContentReactionSnapshot(snapshot) {
+        const body = document.getElementById('contentReactionSnapshotBody');
+        if (!body) return;
+        if (!snapshot) {
+            this.renderSectionState(
+                'contentReactionSnapshotBody',
+                'empty',
+                '아직 집계된 콘텐츠 반응이 없습니다.',
+                '프론트 콘텐츠에서 반응이 등록되면 운영 신호가 표시됩니다.'
+            );
+            return;
+        }
+        const qualityHealthy = snapshot.dataQualityStatus === 'HEALTHY';
+        const action = snapshot.priorityAction;
+        body.innerHTML = `
+            <div class="dashboard-reaction-snapshot">
+                <dl class="dashboard-reaction-snapshot__metrics">
+                    <div><dt>최근 7일 반응</dt><dd>${this.formatNumber(snapshot.totalCount)}건</dd></div>
+                    <div><dt>도움 비율</dt><dd>${this.formatNumber(snapshot.helpfulRate)}%</dd></div>
+                    <div><dt>평가 콘텐츠</dt><dd>${this.formatNumber(snapshot.evaluatedContentCount)}건</dd></div>
+                    <div>
+                        <dt>데이터 상태</dt>
+                        <dd class="${qualityHealthy ? 'is-healthy' : 'is-warning'}">
+                            ${qualityHealthy ? '정상' : `정리 필요 ${this.formatNumber(snapshot.orphanCount)}건`}
+                        </dd>
+                    </div>
+                </dl>
+                <div class="dashboard-reaction-snapshot__action ${action ? 'has-action' : ''}">
+                    ${action ? `
+                        <div>
+                            <span>우선 개선 콘텐츠</span>
+                            <strong>${this.escapeHtml(action.title || '제목 없음')}</strong>
+                            <p>${this.escapeHtml(action.boardType)} · 개선 필요 ${this.formatNumber(action.notHelpfulCount)}건 · 도움 비율 ${this.formatNumber(action.helpfulRate)}%</p>
+                        </div>
+                        <a class="btn btn-sm btn-dark" href="${this.escapeHtml(action.detailPath)}">상세 확인</a>
+                    ` : `
+                        <div>
+                            <span>운영 판단</span>
+                            <strong>즉시 개선이 필요한 콘텐츠가 없습니다.</strong>
+                            <p>최근 7일 반응 기준으로 안정적인 상태입니다.</p>
+                        </div>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(snapshot.analyticsPath)}">분석 보기</a>
+                    `}
+                </div>
+            </div>
+        `;
+    },
+
+    formatNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number.toLocaleString('ko-KR') : '0';
     },
 
     renderOperationNotices(notices) {

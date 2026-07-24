@@ -8,6 +8,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
 import com.section.common.content.dto.ContentReactionBaseCountRow;
 import com.section.common.content.dto.ContentReactionCountRow;
+import com.section.common.content.dto.ContentReactionDataQualityRow;
 import com.section.common.content.dto.ContentReactionDailyTypeCountRow;
 import com.section.common.content.dto.ContentReactionDocumentTotalRow;
 import com.section.common.content.dto.ContentReactionDocumentTypeCountRow;
@@ -49,6 +50,25 @@ public class CustomFrontContentReactionRepositoryImpl implements CustomFrontCont
         long helpfulCount = countOf(rows, FrontContentReaction.ReactionType.HELPFUL);
         long notHelpfulCount = countOf(rows, FrontContentReaction.ReactionType.NOT_HELPFUL);
         return new ContentReactionSummaryRow(helpfulCount, notHelpfulCount);
+    }
+
+    @Override
+    public ContentReactionDataQualityRow getDataQuality() {
+        ContentReactionDataQualityRow row = queryFactory
+                .select(Projections.constructor(
+                        ContentReactionDataQualityRow.class,
+                        frontContentReaction.count(),
+                        document.id.count(),
+                        frontContentReaction.createdDtm.min(),
+                        frontContentReaction.updatedDtm.max()
+                ))
+                .from(frontContentReaction)
+                .leftJoin(document).on(document.id.eq(frontContentReaction.documentNo))
+                .fetchOne();
+        if (row == null) {
+            return new ContentReactionDataQualityRow(0, 0, null, null);
+        }
+        return row;
     }
 
     @Override
@@ -98,24 +118,48 @@ public class CustomFrontContentReactionRepositoryImpl implements CustomFrontCont
             LocalDateTime endExclusive,
             Document.BoardType boardType
     ) {
-        DateExpression<Date> reactedDate = Expressions.dateTemplate(
-                Date.class,
-                "DATE({0})",
-                frontContentReaction.updatedDtm
-        );
-        List<ContentReactionDailyTypeCountRow> rows = queryFactory
+        return combineDailyTypeCounts(queryFactory
                 .select(Projections.constructor(
                         ContentReactionDailyTypeCountRow.class,
-                        reactedDate,
+                        reactedDate(),
                         frontContentReaction.reactionType,
                         frontContentReaction.count()
                 ))
                 .from(frontContentReaction)
                 .join(document).on(document.id.eq(frontContentReaction.documentNo))
                 .where(analyticsConditions(startInclusive, endExclusive, boardType))
-                .groupBy(reactedDate, frontContentReaction.reactionType)
-                .orderBy(reactedDate.asc())
-                .fetch();
+                .groupBy(reactedDate(), frontContentReaction.reactionType)
+                .orderBy(reactedDate().asc())
+                .fetch());
+    }
+
+    @Override
+    public List<ContentReactionTrendRow> getDailyReactionTrend(
+            long documentNo,
+            LocalDateTime startInclusive,
+            LocalDateTime endExclusive
+    ) {
+        return combineDailyTypeCounts(queryFactory
+                .select(Projections.constructor(
+                        ContentReactionDailyTypeCountRow.class,
+                        reactedDate(),
+                        frontContentReaction.reactionType,
+                        frontContentReaction.count()
+                ))
+                .from(frontContentReaction)
+                .where(
+                        frontContentReaction.documentNo.eq(documentNo),
+                        frontContentReaction.updatedDtm.goe(startInclusive),
+                        frontContentReaction.updatedDtm.lt(endExclusive)
+                )
+                .groupBy(reactedDate(), frontContentReaction.reactionType)
+                .orderBy(reactedDate().asc())
+                .fetch());
+    }
+
+    private List<ContentReactionTrendRow> combineDailyTypeCounts(
+            List<ContentReactionDailyTypeCountRow> rows
+    ) {
         return rows.stream()
                 .collect(Collectors.groupingBy(
                         row -> row.reactedDate().toLocalDate(),
@@ -129,6 +173,10 @@ public class CustomFrontContentReactionRepositoryImpl implements CustomFrontCont
                 ))
                 .sorted(Comparator.comparing(ContentReactionTrendRow::reactedDate))
                 .toList();
+    }
+
+    private DateExpression<Date> reactedDate() {
+        return Expressions.dateTemplate(Date.class, "DATE({0})", frontContentReaction.updatedDtm);
     }
 
     @Override

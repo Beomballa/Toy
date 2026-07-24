@@ -4,7 +4,9 @@ const ContentList = {
     viewAnalyticsExportInFlight: false,
     reactionAnalyticsExportInFlight: false,
     performanceAnalyticsExportInFlight: false,
+    performanceBulkTaskInFlight: false,
     performanceTaskInFlightIds: new Set(),
+    performanceUnlinkedActionCount: 0,
     operationPolicy: null,
     actionInFlightIds: new Set(),
     dailyStats: null,
@@ -139,6 +141,7 @@ const ContentList = {
         document.getElementById('btnExportReactionAnalytics')?.addEventListener('click', () => this.exportReactionAnalytics());
         document.getElementById('btnRefreshPerformanceAnalytics')?.addEventListener('click', () => this.getPerformanceAnalytics());
         document.getElementById('btnExportPerformanceAnalytics')?.addEventListener('click', () => this.exportPerformanceAnalytics());
+        document.getElementById('btnCreatePerformanceTasks')?.addEventListener('click', () => this.createPerformanceTasks());
         document.getElementById('contentPerformancePriorityList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-role="create-performance-task"]');
             if (!button) return;
@@ -730,6 +733,10 @@ const ContentList = {
         this.setText('contentPerformanceCoverage', '-');
         this.setText('contentPerformanceContentCount', '-');
         this.setText('contentPerformanceActionCount', '-');
+        this.setText('contentPerformanceLinkedCount', '-');
+        this.setText('contentPerformanceUnlinkedCount', '-');
+        this.performanceUnlinkedActionCount = 0;
+        this.syncPerformanceBulkTaskButton();
         this.renderPerformancePriorityList([]);
     },
 
@@ -747,6 +754,10 @@ const ContentList = {
         this.setText('contentPerformanceCoverage', `${this.formatNumber(summary.reactionCoverageRate)}%`);
         this.setText('contentPerformanceContentCount', `${this.formatNumber(summary.analyzedContentCount)}건`);
         this.setText('contentPerformanceActionCount', `${this.formatNumber(summary.actionRequiredCount)}건`);
+        this.setText('contentPerformanceLinkedCount', `${this.formatNumber(summary.linkedActionCount)}건`);
+        this.setText('contentPerformanceUnlinkedCount', `${this.formatNumber(summary.unlinkedActionCount)}건`);
+        this.performanceUnlinkedActionCount = Number(summary.unlinkedActionCount) || 0;
+        this.syncPerformanceBulkTaskButton();
         this.renderPerformancePriorityList(
             Array.isArray(analytics.priorityContents) ? analytics.priorityContents : []
         );
@@ -819,6 +830,8 @@ const ContentList = {
         if (target) {
             target.innerHTML = '<div class="content-view-empty content-view-empty--error">효과 분석 연결을 확인해 주세요.</div>';
         }
+        this.performanceUnlinkedActionCount = 0;
+        this.syncPerformanceBulkTaskButton();
     },
 
     async exportPerformanceAnalytics() {
@@ -894,6 +907,74 @@ const ContentList = {
         }
     },
 
+    async createPerformanceTasks() {
+        if (this.performanceBulkTaskInFlight || this.performanceUnlinkedActionCount <= 0) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(
+                CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 일괄 생성'),
+                '알림',
+                'warning'
+            );
+            return;
+        }
+        const confirmed = await CommonJS.confirm(
+            `현재 우선순위의 미연결 조치 ${this.formatNumber(this.performanceUnlinkedActionCount)}건을 운영 작업으로 생성하시겠습니까?`,
+            '개선 작업 일괄 생성',
+            'warning'
+        );
+        if (!confirmed) return;
+
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.performanceBulkTaskInFlight = true;
+            this.syncPerformanceBulkTaskButton();
+            const response = await fetch(`/api/admin/content/stats/performance/tasks?${params}`, {
+                method: 'POST',
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 일괄 생성에 실패했습니다.'));
+            }
+            const result = await response.json();
+            await CommonJS.alert(
+                `${ContentBoardConfig.escapeHtml(result.message || '일괄 생성을 완료했습니다.')}<br>요청 ${this.formatNumber(result.requestedCount)}건 · 신규 ${this.formatNumber(result.createdCount)}건 · 기존 ${this.formatNumber(result.existingCount)}건`,
+                '개선 작업 일괄 생성 완료',
+                'success'
+            );
+            await this.getPerformanceAnalytics();
+        } catch (error) {
+            await CommonJS.alert(ContentBoardConfig.escapeHtml(error.message), '오류', 'error');
+        } finally {
+            this.performanceBulkTaskInFlight = false;
+            this.syncPerformanceBulkTaskButton();
+        }
+    },
+
+    syncPerformanceBulkTaskButton() {
+        const button = document.getElementById('btnCreatePerformanceTasks');
+        const label = document.getElementById('btnCreatePerformanceTasksLabel');
+        if (label) {
+            label.textContent = this.performanceBulkTaskInFlight
+                ? '작업 생성 중'
+                : `미연결 ${this.formatNumber(this.performanceUnlinkedActionCount)}건 작업화`;
+        }
+        const policyBlocked = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
+        const disabled = this.performanceBulkTaskInFlight
+            || this.performanceUnlinkedActionCount <= 0
+            || policyBlocked;
+        const reason = policyBlocked
+            ? CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 일괄 생성')
+            : this.performanceUnlinkedActionCount <= 0
+                ? '현재 미연결 조치 대상이 없습니다.'
+                : '';
+        CommonJS.setButtonDisabled(button, disabled, reason);
+    },
+
     formatDecimal(value) {
         const number = Number(value);
         return Number.isFinite(number)
@@ -944,6 +1025,7 @@ const ContentList = {
             document.querySelectorAll('[data-role="create-performance-task"]').forEach((button) => {
                 CommonJS.setButtonDisabled(button, taskDisabled, taskReason);
             });
+            this.syncPerformanceBulkTaskButton();
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }

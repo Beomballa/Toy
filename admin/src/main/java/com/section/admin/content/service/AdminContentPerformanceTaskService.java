@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.admin.task.support.AdminTaskLinkSupport;
@@ -16,8 +17,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -77,6 +85,81 @@ public class AdminContentPerformanceTaskService {
                 .orElseGet(() -> createAnalyzedTask(document, boardType, rangeDays));
     }
 
+    @Transactional
+    public ContentPerformanceBulkTaskResponse createTasks(
+            Document.BoardType boardType,
+            int rangeDays
+    ) {
+        ContentPerformanceAnalyticsResponse analytics = analyticsService.getAnalytics(boardType, rangeDays);
+        List<ContentPerformanceAnalyticsResponse.Content> insights = analytics.priorityContents().stream()
+                .filter(item -> isActionRequired(item.status()))
+                .toList();
+        if (insights.isEmpty()) {
+            return new ContentPerformanceBulkTaskResponse(
+                    0, 0, 0, 0, List.of(), buildTaskListPath(boardType),
+                    "현재 작업으로 전환할 조치 대상이 없습니다."
+            );
+        }
+
+        List<Long> documentIds = insights.stream()
+                .map(ContentPerformanceAnalyticsResponse.Content::documentId)
+                .sorted()
+                .toList();
+        Map<Long, Document> documentsById = documentRepository.findAllByIdInForUpdate(documentIds).stream()
+                .collect(Collectors.toMap(Document::getId, Function.identity()));
+        Map<Long, AdminOperationTask> existingBySourceId = taskRepository
+                .findAllBySourceTypeAndSourceIdIn(
+                        AdminContentPerformanceAnalyticsService.CONTENT_PERFORMANCE_SOURCE_TYPE,
+                        documentIds
+                ).stream()
+                .collect(Collectors.toMap(AdminOperationTask::getSourceId, Function.identity()));
+
+        List<AdminOperationTask> createdTasks = insights.stream()
+                .filter(insight -> documentsById.containsKey(insight.documentId()))
+                .filter(insight -> !existingBySourceId.containsKey(insight.documentId()))
+                .sorted(Comparator.comparingLong(ContentPerformanceAnalyticsResponse.Content::documentId))
+                .map(insight -> buildTask(documentsById.get(insight.documentId()), insight))
+                .toList();
+        List<AdminOperationTask> savedTasks = createdTasks.isEmpty()
+                ? List.of()
+                : taskRepository.saveAllAndFlush(createdTasks);
+        Map<Long, AdminOperationTask> createdBySourceId = savedTasks.stream()
+                .collect(Collectors.toMap(AdminOperationTask::getSourceId, Function.identity()));
+        savedTasks.forEach(task -> {
+            adminLogService.recordCurrentAdminLog("TASK_CREATE", task.getTaskNo());
+            adminLogService.recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_CREATE", task.getSourceId());
+        });
+
+        List<ContentPerformanceTaskResponse> taskResponses = insights.stream()
+                .map(insight -> {
+                    Document document = documentsById.get(insight.documentId());
+                    if (document == null) {
+                        return null;
+                    }
+                    AdminOperationTask existing = existingBySourceId.get(insight.documentId());
+                    if (existing != null) {
+                        return toResponse(existing, false, resolveBoardType(boardType, document));
+                    }
+                    AdminOperationTask created = createdBySourceId.get(insight.documentId());
+                    return created == null
+                            ? null
+                            : toResponse(created, true, resolveBoardType(boardType, document));
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        int skippedCount = insights.size() - taskResponses.size();
+        int existingCount = (int) taskResponses.stream().filter(task -> !task.created()).count();
+        return new ContentPerformanceBulkTaskResponse(
+                insights.size(),
+                createdBySourceId.size(),
+                existingCount,
+                skippedCount,
+                taskResponses,
+                buildTaskListPath(boardType),
+                buildBulkMessage(createdBySourceId.size(), existingCount, skippedCount)
+        );
+    }
+
     private ContentPerformanceTaskResponse createAnalyzedTask(
             Document document,
             Document.BoardType boardType,
@@ -98,24 +181,30 @@ public class AdminContentPerformanceTaskService {
             );
         }
 
+        AdminOperationTask task = taskRepository.saveAndFlush(buildTask(document, insight));
+        adminLogService.recordCurrentAdminLog("TASK_CREATE", task.getTaskNo());
+        adminLogService.recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_CREATE", document.getId());
+        return toResponse(task, true, boardType);
+    }
+
+    private AdminOperationTask buildTask(
+            Document document,
+            ContentPerformanceAnalyticsResponse.Content insight
+    ) {
         LocalDate today = LocalDate.now(clock);
         String priority = "IMPROVEMENT_REQUIRED".equals(insight.status())
                 ? AdminOperationTaskPriority.HIGH.name()
                 : AdminOperationTaskPriority.MEDIUM.name();
-        LocalDate dueDate = today.plusDays("IMPROVEMENT_REQUIRED".equals(insight.status()) ? 3 : 5);
-        AdminOperationTask task = taskRepository.saveAndFlush(AdminOperationTask.builder()
+        return AdminOperationTask.builder()
                 .title(buildTitle(document))
                 .description(buildDescription(insight))
                 .status(AdminOperationTaskStatus.TODO.name())
                 .priority(priority)
-                .dueDate(dueDate)
+                .dueDate(today.plusDays("IMPROVEMENT_REQUIRED".equals(insight.status()) ? 3 : 5))
                 .isPinned("HIGH".equals(priority) ? "Y" : "N")
                 .sourceType(AdminContentPerformanceAnalyticsService.CONTENT_PERFORMANCE_SOURCE_TYPE)
                 .sourceId(document.getId())
-                .build());
-        adminLogService.recordCurrentAdminLog("TASK_CREATE", task.getTaskNo());
-        adminLogService.recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_CREATE", document.getId());
-        return toResponse(task, true, boardType);
+                .build();
     }
 
     private boolean isActionRequired(String status) {
@@ -174,5 +263,22 @@ public class AdminContentPerformanceTaskService {
                 ),
                 created ? "운영 작업을 생성했습니다." : "이미 연결된 운영 작업이 있습니다."
         );
+    }
+
+    private Document.BoardType resolveBoardType(Document.BoardType requestedBoardType, Document document) {
+        return requestedBoardType != null ? requestedBoardType : document.getBoardType();
+    }
+
+    private String buildTaskListPath(Document.BoardType boardType) {
+        String returnTo = boardType == null
+                ? "/admin/content/list"
+                : "/admin/content/list?boardType=" + boardType.name();
+        return "/admin/settings/tasks?source=content-performance-bulk&returnTo="
+                + URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
+    }
+
+    private String buildBulkMessage(int createdCount, int existingCount, int skippedCount) {
+        String message = "신규 " + createdCount + "건, 기존 연결 " + existingCount + "건을 확인했습니다.";
+        return skippedCount == 0 ? message : message + " 문서 변경으로 " + skippedCount + "건은 제외했습니다.";
     }
 }

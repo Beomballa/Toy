@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface DocumentRepository extends JpaRepository<Document, Long>, CustomDocumentRepository {
@@ -16,6 +18,15 @@ public interface DocumentRepository extends JpaRepository<Document, Long>, Custo
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select document from Document document where document.id = :documentId")
     Optional<Document> findByIdForUpdate(@Param("documentId") long documentId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select document
+              from Document document
+             where document.id in :documentIds
+             order by document.id asc
+            """)
+    List<Document> findAllByIdInForUpdate(@Param("documentIds") Collection<Long> documentIds);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

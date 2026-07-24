@@ -297,6 +297,9 @@
                 <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshPerformanceAnalytics">
                     <i class="fas fa-rotate-right me-1"></i>새로고침
                 </button>
+                <button type="button" class="btn btn-sm btn-dark" id="btnCreatePerformanceTasks" disabled>
+                    <i class="fas fa-list-check me-1"></i><span id="btnCreatePerformanceTasksLabel">미연결 작업화</span>
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-dark" id="btnExportPerformanceAnalytics">
                     <i class="fas fa-download me-1"></i>효과 CSV
                 </button>
@@ -313,6 +316,8 @@
             <article><span>반응 확보율</span><strong id="contentPerformanceCoverage">-</strong><small>조회 대비 반응</small></article>
             <article><span>분석 콘텐츠</span><strong id="contentPerformanceContentCount">-</strong><small>상위 후보 합집합</small></article>
             <article><span>조치 필요</span><strong id="contentPerformanceActionCount">-</strong><small>보완·반응 확보 대상</small></article>
+            <article><span>작업 연결</span><strong id="contentPerformanceLinkedCount">-</strong><small>운영 작업 연결 완료</small></article>
+            <article><span>미연결 조치</span><strong id="contentPerformanceUnlinkedCount">-</strong><small>일괄 작업화 가능</small></article>
         </div>
         <div class="content-performance-analytics__legend" aria-label="효과 분석 상태 안내">
             <span><i class="is-improvement"></i>보완 필요</span>

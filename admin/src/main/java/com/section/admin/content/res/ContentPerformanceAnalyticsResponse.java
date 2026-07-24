@@ -17,7 +17,9 @@ public record ContentPerformanceAnalyticsResponse(
             int helpfulRate,
             int reactionCoverageRate,
             long analyzedContentCount,
-            long actionRequiredCount
+            long actionRequiredCount,
+            long linkedActionCount,
+            long unlinkedActionCount
     ) {
     }
 

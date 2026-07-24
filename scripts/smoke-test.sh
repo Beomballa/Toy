@@ -259,6 +259,8 @@ check_admin_authenticated_flow() {
   if [[ "$content_performance_status" != "200" ]] \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"reactionCoverageRate":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"actionRequiredCount":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"linkedActionCount":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"unlinkedActionCount":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"priorityContents":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"operationTaskNo":'; then
     printf 'FAIL %-28s expected=200 performance_fields=required actual=%s\n' \

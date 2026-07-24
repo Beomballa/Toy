@@ -10,6 +10,7 @@ import com.section.admin.content.service.AdminContentPerformanceAnalyticsService
 import com.section.admin.content.service.AdminContentPerformanceTaskService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
 import com.section.admin.content.res.ContentReactionDataQualityResponse;
@@ -472,6 +473,40 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 효과 운영 작업 일괄 API는 신규·기존·제외 집계를 반환한다")
+    void createPerformanceTasksReturnsBulkResult() throws Exception {
+        when(adminContentPerformanceTaskService.createTasks(Document.BoardType.NOTICE, 7))
+                .thenReturn(new ContentPerformanceBulkTaskResponse(
+                        3, 2, 1, 0,
+                        List.of(
+                                new ContentPerformanceTaskResponse(
+                                        91L, true, "TODO", "HIGH", "2026-07-27",
+                                        "/admin/settings/tasks?taskNo=91", "운영 작업을 생성했습니다."
+                                ),
+                                new ContentPerformanceTaskResponse(
+                                        92L, false, "IN_PROGRESS", "MEDIUM", "2026-07-29",
+                                        "/admin/settings/tasks?taskNo=92", "이미 연결된 운영 작업이 있습니다."
+                                )
+                        ),
+                        "/admin/settings/tasks",
+                        "신규 2건, 기존 연결 1건을 확인했습니다."
+                ));
+
+        mockMvc.perform(post("/api/admin/content/stats/performance/tasks")
+                        .param("boardType", " notice ")
+                        .param("days", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.createdCount").value(2))
+                .andExpect(jsonPath("$.existingCount").value(1))
+                .andExpect(jsonPath("$.skippedCount").value(0))
+                .andExpect(jsonPath("$.tasks[0].taskNo").value(91L));
+
+        verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        verify(adminContentPerformanceTaskService).createTasks(Document.BoardType.NOTICE, 7);
+    }
+
+    @Test
     @DisplayName("콘텐츠 반응 데이터 품질 API는 정상·고아 반응 현황을 반환한다")
     void getReactionDataQualityReturnsIntegrityStatus() throws Exception {
         when(adminContentReactionAnalyticsService.getDataQuality())
@@ -787,7 +822,7 @@ class AdminContentRestControllerTest {
                 "2026-07-11",
                 "2026-07-24",
                 "2026-07-24 12:00:00",
-                new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1),
+                new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1, 0, 1),
                 List.of(new ContentPerformanceAnalyticsResponse.Content(
                         31, boardType, "스타일", 50, 20, 4, 1, 3,
                         25, 8, 84, "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다.",

@@ -87,8 +87,23 @@ public class AdminContentPerformanceAnalyticsService {
                 CANDIDATE_LIMIT
         );
         List<ContentPerformanceAnalyticsResponse.Content> contents = merge(viewRows, reactionRows);
-        long actionRequiredCount = contents.stream()
-                .filter(item -> !"HEALTHY".equals(item.status()) && !"LOW_SIGNAL".equals(item.status()))
+        List<ContentPerformanceAnalyticsResponse.Content> priorityContents = contents.stream()
+                .sorted(Comparator
+                        .comparingInt(ContentPerformanceAnalyticsResponse.Content::priorityScore).reversed()
+                        .thenComparing(Comparator.comparingLong(
+                                ContentPerformanceAnalyticsResponse.Content::viewCount
+                        ).reversed())
+                        .thenComparing(Comparator.comparingLong(
+                                ContentPerformanceAnalyticsResponse.Content::documentId
+                        ).reversed()))
+                .limit(DISPLAY_LIMIT)
+                .toList();
+        long actionRequiredCount = priorityContents.stream()
+                .filter(this::isActionRequired)
+                .count();
+        long linkedActionCount = priorityContents.stream()
+                .filter(this::isActionRequired)
+                .filter(item -> item.operationTaskNo() != null)
                 .count();
 
         return new ContentPerformanceAnalyticsResponse(
@@ -103,19 +118,11 @@ public class AdminContentPerformanceAnalyticsService {
                         percentage(reactionSummary.helpfulCount(), reactionSummary.totalCount()),
                         coverageRate(reactionSummary.totalCount(), viewSummary.totalViews()),
                         contents.size(),
-                        actionRequiredCount
+                        actionRequiredCount,
+                        linkedActionCount,
+                        actionRequiredCount - linkedActionCount
                 ),
-                contents.stream()
-                        .sorted(Comparator
-                                .comparingInt(ContentPerformanceAnalyticsResponse.Content::priorityScore).reversed()
-                                .thenComparing(Comparator.comparingLong(
-                                        ContentPerformanceAnalyticsResponse.Content::viewCount
-                                ).reversed())
-                                .thenComparing(Comparator.comparingLong(
-                                        ContentPerformanceAnalyticsResponse.Content::documentId
-                                ).reversed()))
-                        .limit(DISPLAY_LIMIT)
-                        .toList()
+                priorityContents
         );
     }
 
@@ -179,6 +186,10 @@ public class AdminContentPerformanceAnalyticsService {
     private String buildTaskPath(long taskNo, Document.BoardType boardType) {
         String returnTo = "/admin/content/list?boardType=" + boardType.name();
         return AdminTaskLinkSupport.buildListOpenPath(taskNo, returnTo, "content-performance");
+    }
+
+    private boolean isActionRequired(ContentPerformanceAnalyticsResponse.Content content) {
+        return "IMPROVEMENT_REQUIRED".equals(content.status()) || "FEEDBACK_NEEDED".equals(content.status());
     }
 
     private int priorityScore(long views, long maxViews, long reactions, int helpfulRate, String status) {

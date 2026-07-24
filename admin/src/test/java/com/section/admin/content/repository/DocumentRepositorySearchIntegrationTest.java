@@ -73,6 +73,21 @@ class DocumentRepositorySearchIntegrationTest {
         return document;
     }
 
+    @Test
+    @DisplayName("콘텐츠 일괄 잠금 조회는 문서 번호 오름차순으로 반환한다")
+    void findAllByIdInForUpdateOrdersDocumentsToPreventDeadlocks() {
+        Document first = document("잠금 순서 첫 번째", Document.PublishStatus.PUBLISHED, YN.Y, YN.N);
+        Document second = document("잠금 순서 두 번째", Document.PublishStatus.PUBLISHED, YN.Y, YN.N);
+        documentRepository.saveAllAndFlush(List.of(first, second));
+        entityManager.clear();
+
+        List<Document> locked = documentRepository.findAllByIdInForUpdate(
+                List.of(second.getId(), first.getId())
+        );
+
+        assertEquals(List.of(first.getId(), second.getId()), locked.stream().map(Document::getId).toList());
+    }
+
     private int indexOfTitle(List<PublicDocumentRow> rows, String title) {
         for (int index = 0; index < rows.size(); index++) {
             if (rows.get(index).title().equals(title)) {

@@ -16,7 +16,7 @@ class ContentPerformanceAnalyticsCsvWriterTest {
     void writesPerformanceAnalytics() {
         ContentPerformanceAnalyticsResponse response = new ContentPerformanceAnalyticsResponse(
                 "NOTICE", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
-                new ContentPerformanceAnalyticsResponse.Summary(100, 5, 40, 5, 3, 2),
+                new ContentPerformanceAnalyticsResponse.Summary(100, 5, 40, 5, 3, 2, 1, 1),
                 List.of(new ContentPerformanceAnalyticsResponse.Content(
                         1, "NOTICE", "배송, 안내", 50, 20,
                         4, 1, 3, 25, 8, 84,
@@ -32,6 +32,7 @@ class ContentPerformanceAnalyticsCsvWriterTest {
         assertThat(csv)
                 .contains("반응확보율")
                 .contains("우선순위점수")
+                .contains("미연결조치")
                 .contains("IMPROVEMENT_REQUIRED")
                 .contains("91")
                 .contains("\"배송, 안내\"");

@@ -90,6 +90,7 @@ export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 `/api/admin/content/stats/reactions/quality`는 전체·정상·고아 반응과 수집 기간을 반환합니다. 고아 반응이 존재하면 `CLEANUP_REQUIRED`로 표시하지만 자동 삭제하지 않으며, 정리는 운영 데이터 확인 후 별도 절차로 수행해야 합니다.
 `콘텐츠 효과 분석`과 `/api/admin/content/stats/performance?boardType=NOTICE&days=7`은 조회 상위와 반응 상위 후보를 문서 단위로 병합해 최대 10개의 조치 우선순위를 제공합니다. `반응 확보율`은 기간 조회수 대비 현재 반응 수를 비교한 방향성 운영 지표이며 방문별 전환율을 의미하지 않습니다. `/api/admin/content/stats/performance/export`는 같은 조건의 판단 근거와 점수를 UTF-8 BOM CSV로 제공합니다.
 보완 필요 또는 반응 확보 필요 카드의 `작업 생성`은 `POST /api/admin/content/{id}/performance-task?boardType=NOTICE&days=7`을 호출합니다. 서버가 최신 분석 결과를 다시 검증하고 우선순위와 마감일을 계산하며, 문서 잠금과 출처 유니크 키로 중복 생성을 방지합니다. 연결된 작업 상세에서는 원본 콘텐츠로 복귀할 수 있습니다.
+`POST /api/admin/content/stats/performance/tasks?boardType=NOTICE&days=7`은 화면에 표시된 최대 10개 우선순위 중 미연결 조치 대상을 일괄 작업화합니다. 분석 스냅샷은 한 번만 계산하고 문서를 번호 오름차순으로 잠근 뒤 기존 출처를 일괄 조회하므로 N+1 조회와 다중 요청의 교착 가능성을 줄입니다. 응답의 `createdCount`, `existingCount`, `skippedCount`로 신규·기존·삭제 경합 제외 결과를 확인합니다.
 관리자 대시보드 응답의 `contentReactionSnapshot`은 최근 7일 도움 비율, 평가 콘텐츠, 데이터 품질과 최우선 개선 문서를 제공합니다. `/api/admin/content/{id}/reactions?days=30`은 문서별 전체 누계와 7·30·90일 최근 활동을 분리해 반환합니다.
 
 조회 이벤트가 장기간 누적되는 운영 환경에서는 보존 배치를 활성화합니다. 기본값은 비활성이며, 활성화 시 매일 03:30에 오늘을 포함한 최근 180일을 유지하고 그 이전 이벤트를 단일 bulk delete로 정리합니다.

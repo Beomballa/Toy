@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.log.service.AdminLogService;
 import com.section.common.base.exception.BusinessException;
@@ -21,6 +22,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -127,7 +129,7 @@ class AdminContentPerformanceTaskServiceTest {
         when(analyticsService.getAnalytics(Document.BoardType.QNA, 30))
                 .thenReturn(new ContentPerformanceAnalyticsResponse(
                         "QNA", 30, "2026-06-25", "2026-07-24", "2026-07-24 12:00:00",
-                        new ContentPerformanceAnalyticsResponse.Summary(20, 0, 0, 0, 1, 1),
+                        new ContentPerformanceAnalyticsResponse.Summary(20, 0, 0, 0, 1, 1, 0, 1),
                         List.of(feedback)
                 ));
         when(taskRepository.saveAndFlush(any(AdminOperationTask.class)))
@@ -188,6 +190,86 @@ class AdminContentPerformanceTaskServiceTest {
         verify(taskRepository, never()).findBySourceTypeAndSourceId(any(), any());
     }
 
+    @Test
+    @DisplayName("일괄 생성은 한 번의 분석과 정렬 잠금으로 신규·기존·제외 결과를 집계한다")
+    void createsBulkTasksWithSingleSnapshot() {
+        ContentPerformanceAnalyticsResponse.Content third = content(
+                3L, "STYLE", "세 번째", "IMPROVEMENT_REQUIRED", 90
+        );
+        ContentPerformanceAnalyticsResponse.Content second = content(
+                2L, "STYLE", "두 번째", "FEEDBACK_NEEDED", 70
+        );
+        ContentPerformanceAnalyticsResponse.Content first = content(
+                1L, "STYLE", "첫 번째", "IMPROVEMENT_REQUIRED", 60
+        );
+        when(analyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(new ContentPerformanceAnalyticsResponse(
+                        "STYLE", 14, "2026-07-11", "2026-07-24", "2026-07-24 12:00:00",
+                        new ContentPerformanceAnalyticsResponse.Summary(100, 5, 40, 5, 3, 3, 1, 2),
+                        List.of(third, second, first)
+                ));
+        when(documentRepository.findAllByIdInForUpdate(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(
+                        document(1L, Document.BoardType.STYLE, "첫 번째"),
+                        document(2L, Document.BoardType.STYLE, "두 번째")
+                ));
+        AdminOperationTask existing = AdminOperationTask.builder()
+                .taskNo(82L)
+                .status("IN_PROGRESS")
+                .priority("MEDIUM")
+                .sourceType("CONTENT_PERFORMANCE")
+                .sourceId(2L)
+                .build();
+        when(taskRepository.findAllBySourceTypeAndSourceIdIn(
+                "CONTENT_PERFORMANCE",
+                List.of(1L, 2L, 3L)
+        )).thenReturn(List.of(existing));
+        when(taskRepository.saveAllAndFlush(anyList()))
+                .thenReturn(List.of(AdminOperationTask.builder()
+                        .taskNo(81L)
+                        .status("TODO")
+                        .priority("HIGH")
+                        .dueDate(java.time.LocalDate.of(2026, 7, 27))
+                        .sourceType("CONTENT_PERFORMANCE")
+                        .sourceId(1L)
+                        .build()));
+
+        ContentPerformanceBulkTaskResponse response =
+                service.createTasks(Document.BoardType.STYLE, 14);
+
+        assertThat(response.requestedCount()).isEqualTo(3);
+        assertThat(response.createdCount()).isEqualTo(1);
+        assertThat(response.existingCount()).isEqualTo(1);
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.tasks()).extracting(ContentPerformanceTaskResponse::taskNo)
+                .containsExactly(82L, 81L);
+        assertThat(response.message()).contains("신규 1건").contains("기존 연결 1건").contains("제외");
+        verify(analyticsService).getAnalytics(Document.BoardType.STYLE, 14);
+        verify(documentRepository).findAllByIdInForUpdate(List.of(1L, 2L, 3L));
+        verify(taskRepository).saveAllAndFlush(anyList());
+        verify(adminLogService).recordCurrentAdminLog("TASK_CREATE", 81L);
+    }
+
+    @Test
+    @DisplayName("일괄 생성은 조치 대상이 없으면 잠금과 저장 없이 빈 결과를 반환한다")
+    void returnsEmptyBulkResultWithoutWrites() {
+        when(analyticsService.getAnalytics(Document.BoardType.NOTICE, 7))
+                .thenReturn(new ContentPerformanceAnalyticsResponse(
+                        "NOTICE", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
+                        new ContentPerformanceAnalyticsResponse.Summary(10, 2, 100, 20, 1, 0, 0, 0),
+                        List.of(content(1L, "NOTICE", "안정 공지", "HEALTHY", 10))
+                ));
+
+        ContentPerformanceBulkTaskResponse response =
+                service.createTasks(Document.BoardType.NOTICE, 7);
+
+        assertThat(response.requestedCount()).isZero();
+        assertThat(response.tasks()).isEmpty();
+        assertThat(response.message()).contains("조치 대상이 없습니다");
+        verify(documentRepository, never()).findAllByIdInForUpdate(any());
+        verify(taskRepository, never()).saveAllAndFlush(anyList());
+    }
+
     private Document document(long id, Document.BoardType boardType, String title) {
         Document document = new Document();
         document.setId(id);
@@ -201,14 +283,24 @@ class AdminContentPerformanceTaskServiceTest {
     ) {
         return new ContentPerformanceAnalyticsResponse(
                 content.boardType(), 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
-                new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1),
+                new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1, 0, 1),
                 List.of(content)
         );
     }
 
     private ContentPerformanceAnalyticsResponse.Content content(String status, int score) {
+        return content(31L, "STYLE", "여름 스타일", status, score);
+    }
+
+    private ContentPerformanceAnalyticsResponse.Content content(
+            long documentId,
+            String boardType,
+            String title,
+            String status,
+            int score
+    ) {
         return new ContentPerformanceAnalyticsResponse.Content(
-                31L, "STYLE", "여름 스타일", 50, 20,
+                documentId, boardType, title, 50, 20,
                 4, 1, 3, 25, 8, score, status,
                 "본문 보완이 필요합니다.", null, null
         );

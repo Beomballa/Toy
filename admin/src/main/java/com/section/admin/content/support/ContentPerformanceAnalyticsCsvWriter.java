@@ -24,6 +24,8 @@ public final class ContentPerformanceAnalyticsCsvWriter {
         row(builder, "반응확보율", summary.reactionCoverageRate() + "%");
         row(builder, "분석콘텐츠", String.valueOf(summary.analyzedContentCount()));
         row(builder, "조치필요", String.valueOf(summary.actionRequiredCount()));
+        row(builder, "작업연결", String.valueOf(summary.linkedActionCount()));
+        row(builder, "미연결조치", String.valueOf(summary.unlinkedActionCount()));
         builder.append("\r\n");
         builder.append("순위,콘텐츠번호,게시판,제목,조회수,순방문자,반응수,도움됨,개선필요,도움비율,반응확보율,우선순위점수,상태,판단근거,연결작업번호,연결작업경로\r\n");
         for (int index = 0; index < analytics.priorityContents().size(); index++) {

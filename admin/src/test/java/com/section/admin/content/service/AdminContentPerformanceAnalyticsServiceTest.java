@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.LongStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -85,6 +86,8 @@ class AdminContentPerformanceAnalyticsServiceTest {
         assertThat(response.summary().reactionCoverageRate()).isEqualTo(5);
         assertThat(response.summary().analyzedContentCount()).isEqualTo(4);
         assertThat(response.summary().actionRequiredCount()).isEqualTo(3);
+        assertThat(response.summary().linkedActionCount()).isEqualTo(1);
+        assertThat(response.summary().unlinkedActionCount()).isEqualTo(2);
         assertThat(response.priorityContents()).extracting(ContentPerformanceAnalyticsResponse.Content::documentId)
                 .containsExactly(1L, 2L, 3L, 4L);
         assertThat(response.priorityContents().get(0).status()).isEqualTo("IMPROVEMENT_REQUIRED");
@@ -126,5 +129,48 @@ class AdminContentPerformanceAnalyticsServiceTest {
     void rejectsUnsupportedRange() {
         assertThatThrownBy(() -> service.getAnalytics(Document.BoardType.STYLE, 90))
                 .isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("조치·연결 지표는 실제 표시 및 일괄 처리 대상인 상위 10개 기준으로 계산한다")
+    void calculatesActionCountsFromDisplayedPriorities() {
+        LocalDate startDate = LocalDate.of(2026, 7, 18);
+        LocalDate endDate = LocalDate.of(2026, 7, 24);
+        when(viewRepository.getViewSummary(startDate, endDate, Document.BoardType.NOTICE))
+                .thenReturn(new ContentViewSummaryRow(110, 80, 11));
+        when(reactionRepository.getAnalyticsSummary(
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE
+        )).thenReturn(new ContentReactionAnalyticsSummaryRow(0, 0, 0, 0, 0));
+        List<ContentViewTopRow> rows = LongStream.rangeClosed(1, 11)
+                .mapToObj(id -> new ContentViewTopRow(
+                        id,
+                        Document.BoardType.NOTICE,
+                        "무반응 공지 " + id,
+                        20 - id,
+                        10
+                ))
+                .toList();
+        when(viewRepository.getTopViewedContents(startDate, endDate, Document.BoardType.NOTICE, 50))
+                .thenReturn(rows);
+        when(reactionRepository.getTopReactedContents(
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE,
+                50
+        )).thenReturn(List.of());
+        when(taskRepository.findAllBySourceTypeAndSourceIdIn(
+                "CONTENT_PERFORMANCE",
+                rows.stream().map(ContentViewTopRow::documentId).collect(java.util.stream.Collectors.toSet())
+        )).thenReturn(List.of());
+
+        ContentPerformanceAnalyticsResponse response =
+                service.getAnalytics(Document.BoardType.NOTICE, 7);
+
+        assertThat(response.summary().analyzedContentCount()).isEqualTo(11);
+        assertThat(response.summary().actionRequiredCount()).isEqualTo(10);
+        assertThat(response.summary().unlinkedActionCount()).isEqualTo(10);
+        assertThat(response.priorityContents()).hasSize(10);
     }
 }

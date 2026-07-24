@@ -7,6 +7,7 @@ import com.section.admin.content.req.ContentQuickOperateRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
@@ -221,6 +222,18 @@ public class AdminContentRestController {
                 ? null
                 : parseBoardType(boardType);
         return ResponseEntity.ok(adminContentPerformanceTaskService.createTask(id, normalizedBoardType, days));
+    }
+
+    @PostMapping("/stats/performance/tasks")
+    public ResponseEntity<ContentPerformanceBulkTaskResponse> createPerformanceTasks(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        return ResponseEntity.ok(adminContentPerformanceTaskService.createTasks(normalizedBoardType, days));
     }
 
     @GetMapping("/export")

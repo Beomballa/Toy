@@ -21,6 +21,7 @@ mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
 
 `front_content_reaction`은 문서·방문자 조합을 유니크 키로 유지해 반복 요청을 중복 집계하지 않습니다. 반응 변경은 원자적 upsert로 처리되며 문서 삭제 시 애플리케이션 트랜잭션에서 관련 반응을 먼저 정리합니다.
 반응 조회의 방문자 키는 URL이 아닌 `X-Content-Visitor-Key` 헤더로 전달해 access log와 브라우저 히스토리에 남지 않게 합니다.
+관리자 반응 분석은 `updated_dtm` 인덱스를 사용해 7·14·30일 기간을 제한하고, 게시판별 도움 비율·일별 활동·반응 상위·개선 필요 콘텐츠를 고정 개수의 집계 쿼리로 조회합니다. 반응 변경 이력을 별도로 저장하지 않으므로 추이는 선택 이벤트 누계가 아니라 기간 내 각 방문자의 마지막 선택 상태를 의미합니다.
 
 배포 후 `/api/front/content?sort=POPULAR&size=4` 응답의 `sort`, `pageViewCount`, `pagePinnedCount` 필드를 확인합니다. 콘텐츠 아카이브의 조회순은 누적 `document.view_count`를 사용하며 고정 콘텐츠를 항상 먼저 노출합니다.
 
@@ -82,6 +83,7 @@ export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 ```
 
 관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다. 같은 화면의 `프론트 조회 분석` 영역과 `/api/admin/content/stats/views?boardType=NOTICE&days=7`에서는 실제 조회 이벤트의 7·14·30일 추이, 순 방문자, 상위 콘텐츠를 확인합니다. `/api/admin/content/stats/views/quality`는 전체·정상·고아 이벤트와 수집 기간을 제공하며 고아 이벤트가 있으면 화면에 `정리 필요`로 표시합니다.
+같은 화면의 `독자 반응 분석`과 `/api/admin/content/stats/reactions?boardType=NOTICE&days=7`은 도움됨·개선 필요 반응을 집계합니다. `/api/admin/content/stats/reactions/export`는 동일한 게시판·기간 조건의 요약, 일별 추이, 반응 상위와 개선 필요 콘텐츠를 UTF-8 BOM CSV로 제공합니다.
 
 조회 이벤트가 장기간 누적되는 운영 환경에서는 보존 배치를 활성화합니다. 기본값은 비활성이며, 활성화 시 매일 03:30에 오늘을 포함한 최근 180일을 유지하고 그 이전 이벤트를 단일 bulk delete로 정리합니다.
 

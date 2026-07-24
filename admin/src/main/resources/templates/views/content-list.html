@@ -170,6 +170,102 @@
         </div>
     </section>
 
+    <section class="content-view-analytics content-reaction-analytics admin-panel-card"
+             aria-labelledby="contentReactionAnalyticsTitle">
+        <div class="content-view-analytics__header">
+            <div>
+                <div class="content-view-analytics__eyebrow">Reader Feedback</div>
+                <h2 id="contentReactionAnalyticsTitle">독자 반응 분석</h2>
+                <p>현재 선택 기간에 마지막으로 남긴 도움됨·개선 필요 반응을 비교합니다.</p>
+            </div>
+            <div class="content-view-analytics__controls">
+                <span class="content-reaction-analytics__range" id="contentReactionRangeLabel">최근 7일</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshReactionAnalytics">
+                    <i class="fas fa-rotate-right me-1"></i>새로고침
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-dark" id="btnExportReactionAnalytics">
+                    <i class="fas fa-download me-1"></i>반응 CSV
+                </button>
+            </div>
+        </div>
+
+        <div class="content-view-analytics__status" id="contentReactionAnalyticsStatus"
+             role="status" aria-live="polite">
+            반응 데이터를 불러오는 중입니다.
+        </div>
+
+        <div class="content-view-analytics__metrics content-reaction-analytics__metrics"
+             aria-label="독자 반응 핵심 지표">
+            <article class="content-view-metric">
+                <span>전체 반응</span>
+                <strong id="contentReactionTotal">-</strong>
+                <small id="contentReactionVisitorCount">참여 방문자 -</small>
+            </article>
+            <article class="content-view-metric">
+                <span>도움됨</span>
+                <strong id="contentReactionHelpful">-</strong>
+                <small>현재 도움됨 선택</small>
+            </article>
+            <article class="content-view-metric">
+                <span>개선 필요</span>
+                <strong id="contentReactionNotHelpful">-</strong>
+                <small>현재 도움 안 됨 선택</small>
+            </article>
+            <article class="content-view-metric">
+                <span>도움 비율</span>
+                <strong id="contentReactionHelpfulRate">-</strong>
+                <small>전체 반응 대비</small>
+            </article>
+            <article class="content-view-metric">
+                <span>평가 콘텐츠</span>
+                <strong id="contentReactionContentCount">-</strong>
+                <small>반응이 있는 문서</small>
+            </article>
+        </div>
+
+        <div class="content-view-analytics__body content-reaction-analytics__body">
+            <article class="content-view-chart-panel">
+                <div class="content-view-panel-title">
+                    <div>
+                        <strong>일별 반응 활동</strong>
+                        <span>마지막 선택 시각 기준</span>
+                    </div>
+                    <div class="content-view-chart-legend">
+                        <span><i class="content-reaction-legend__helpful"></i>도움됨</span>
+                        <span><i class="content-reaction-legend__not-helpful"></i>개선 필요</span>
+                    </div>
+                </div>
+                <div class="content-view-chart" id="contentReactionTrend" aria-label="일별 독자 반응 추이">
+                    <div class="content-view-empty">반응 추이를 준비하고 있습니다.</div>
+                </div>
+            </article>
+
+            <article class="content-view-ranking-panel">
+                <div class="content-view-panel-title">
+                    <div>
+                        <strong>반응 상위 콘텐츠</strong>
+                        <span>전체 반응 Top 5</span>
+                    </div>
+                </div>
+                <ol class="content-view-ranking" id="contentReactionTopContents">
+                    <li class="content-view-empty">반응 상위를 불러오는 중입니다.</li>
+                </ol>
+            </article>
+
+            <article class="content-view-ranking-panel">
+                <div class="content-view-panel-title">
+                    <div>
+                        <strong>개선 필요 콘텐츠</strong>
+                        <span>도움 안 됨 선택 Top 5</span>
+                    </div>
+                </div>
+                <ol class="content-view-ranking" id="contentReactionImprovementContents">
+                    <li class="content-view-empty">개선 후보를 불러오는 중입니다.</li>
+                </ol>
+            </article>
+        </div>
+    </section>
+
     <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
             <section class="content-board-search-section content-board-search-section--primary">

@@ -93,6 +93,12 @@ check_admin_authenticated_flow() {
   local content_view_quality_response
   local content_view_quality_status
   local content_view_quality_body
+  local content_reaction_response
+  local content_reaction_status
+  local content_reaction_body
+  local content_reaction_export_response
+  local content_reaction_export_status
+  local content_reaction_export_headers
   local logout_response
   local logout_status
   local logout_headers
@@ -173,6 +179,35 @@ check_admin_authenticated_flow() {
     return 1
   fi
   printf 'PASS %-28s status=%s\n' "admin content view export" "$content_view_export_status"
+
+  content_reaction_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/reactions?boardType=NOTICE&days=7")"
+  content_reaction_status="${content_reaction_response##*$'\n'}"
+  content_reaction_body="${content_reaction_response%$'\n'*}"
+  if [[ "$content_reaction_status" != "200" ]] \
+    || ! printf '%s\n' "$content_reaction_body" | grep --fixed-strings --quiet '"metricBasis":' \
+    || ! printf '%s\n' "$content_reaction_body" | grep --fixed-strings --quiet '"helpfulRate":' \
+    || ! printf '%s\n' "$content_reaction_body" | grep --fixed-strings --quiet '"improvementContents":'; then
+    printf 'FAIL %-28s expected=200 reaction_fields=required actual=%s\n' \
+      "admin content reactions" "$content_reaction_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content reactions" "$content_reaction_status"
+
+  content_reaction_export_response="$(curl --silent --show-error --dump-header - --output /dev/null \
+    --write-out $'\n%{http_code}' --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/reactions/export?boardType=NOTICE&days=7" | tr -d '\r')"
+  content_reaction_export_status="${content_reaction_export_response##*$'\n'}"
+  content_reaction_export_headers="${content_reaction_export_response%$'\n'*}"
+  if [[ "$content_reaction_export_status" != "200" ]] \
+    || ! printf '%s\n' "$content_reaction_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Type: text/csv' \
+    || ! printf '%s\n' "$content_reaction_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Disposition: attachment; filename="content-reaction-analytics-'; then
+    printf 'FAIL %-28s expected=200 csv_headers=required actual=%s\n' \
+      "admin reaction export" "$content_reaction_export_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin reaction export" "$content_reaction_export_status"
 
   logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \

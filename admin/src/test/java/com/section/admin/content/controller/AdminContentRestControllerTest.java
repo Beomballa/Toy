@@ -5,7 +5,9 @@ import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
+import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.res.ContentReactionAnalyticsResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.common.base.entity.type.YN;
@@ -62,6 +64,9 @@ class AdminContentRestControllerTest {
     @Mock
     private AdminContentViewAnalyticsService adminContentViewAnalyticsService;
 
+    @Mock
+    private AdminContentReactionAnalyticsService adminContentReactionAnalyticsService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -71,7 +76,8 @@ class AdminContentRestControllerTest {
                         documentService,
                         adminOperationPolicyService,
                         adminContentStatsService,
-                        adminContentViewAnalyticsService
+                        adminContentViewAnalyticsService,
+                        adminContentReactionAnalyticsService
                 ))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
@@ -330,6 +336,43 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 반응 분석 API는 게시판과 기간을 정규화한다")
+    void getReactionAnalyticsReturnsBoardAnalytics() throws Exception {
+        ContentReactionAnalyticsResponse response = reactionAnalyticsResponse("STYLE", 14);
+        when(adminContentReactionAnalyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/content/stats/reactions")
+                        .param("boardType", " style ")
+                        .param("days", "14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.boardType").value("STYLE"))
+                .andExpect(jsonPath("$.summary.helpfulRate").value(75))
+                .andExpect(jsonPath("$.improvementContents[0].documentId").value(31L));
+
+        verify(adminContentReactionAnalyticsService).getAnalytics(Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("콘텐츠 반응 분석 CSV는 필터 정보와 다운로드 헤더를 유지한다")
+    void exportReactionAnalyticsReturnsCsvAttachment() throws Exception {
+        ContentReactionAnalyticsResponse response = reactionAnalyticsResponse("NOTICE", 30);
+        when(adminContentReactionAnalyticsService.getAnalytics(Document.BoardType.NOTICE, 30))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/content/stats/reactions/export")
+                        .param("boardType", "NOTICE")
+                        .param("days", "30"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        org.hamcrest.Matchers.containsString("content-reaction-analytics-notice-30d-")
+                ))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .bytes(com.section.admin.content.support.ContentReactionAnalyticsCsvWriter.write(response)));
+    }
+
+    @Test
     @DisplayName("잘못된 게시 상태 필터는 400 INVALID_INPUT_VALUE를 반환한다")
     void getListReturnsBadRequestWhenStatusInvalid() throws Exception {
         mockMvc.perform(get("/api/admin/content/list")
@@ -582,6 +625,21 @@ class AdminContentRestControllerTest {
                 List.of(new ContentViewAnalyticsResponse.TopContent(
                         31L, boardType, "여름 스타일", 25, 18
                 ))
+        );
+    }
+
+    private ContentReactionAnalyticsResponse reactionAnalyticsResponse(String boardType, int rangeDays) {
+        return new ContentReactionAnalyticsResponse(
+                boardType,
+                rangeDays,
+                "2026-07-11",
+                "2026-07-24",
+                "2026-07-24 12:00:00",
+                "기간 내 마지막 선택 시각 기준 현재 반응",
+                new ContentReactionAnalyticsResponse.Summary(4, 3, 1, 75, 4, 1),
+                List.of(new ContentReactionAnalyticsResponse.Trend("2026-07-24", 4, 3, 1, 75)),
+                List.of(new ContentReactionAnalyticsResponse.Content(31, boardType, "스타일", 4, 3, 1, 75)),
+                List.of(new ContentReactionAnalyticsResponse.Content(31, boardType, "스타일", 4, 3, 1, 75))
         );
     }
 }

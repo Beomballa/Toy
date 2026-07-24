@@ -2,11 +2,14 @@ const ContentList = {
     initialized: false,
     exportInFlight: false,
     viewAnalyticsExportInFlight: false,
+    reactionAnalyticsExportInFlight: false,
     actionInFlightIds: new Set(),
     dailyStats: null,
     viewAnalytics: null,
+    reactionAnalytics: null,
     viewDataQuality: null,
     viewAnalyticsRequestId: 0,
+    reactionAnalyticsRequestId: 0,
     viewAnalyticsLoading: false,
     state: {
         page: 0,
@@ -42,6 +45,7 @@ const ContentList = {
         this.applyOperationPolicy();
         this.getDailyStats();
         this.getViewAnalytics();
+        this.getReactionAnalytics();
         this.getViewDataQuality();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -89,6 +93,7 @@ const ContentList = {
                 this.updatePageMeta();
                 this.renderDailyStats();
                 this.getViewAnalytics();
+                this.getReactionAnalytics();
                 this.getList();
             });
         });
@@ -102,6 +107,7 @@ const ContentList = {
             this.updatePageMeta();
             this.renderDailyStats();
             this.getViewAnalytics();
+            this.getReactionAnalytics();
             CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
             CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
             this.getList();
@@ -118,6 +124,8 @@ const ContentList = {
             this.getViewDataQuality();
         });
         document.getElementById('btnExportViewAnalytics')?.addEventListener('click', () => this.exportViewAnalytics());
+        document.getElementById('btnRefreshReactionAnalytics')?.addEventListener('click', () => this.getReactionAnalytics());
+        document.getElementById('btnExportReactionAnalytics')?.addEventListener('click', () => this.exportReactionAnalytics());
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
                 const rangeDays = Number(button.dataset.viewRange);
@@ -127,6 +135,7 @@ const ContentList = {
                 this.state.viewRangeDays = rangeDays;
                 this.syncViewAnalyticsPeriod();
                 this.getViewAnalytics();
+                this.getReactionAnalytics();
             });
         });
 
@@ -456,6 +465,153 @@ const ContentList = {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
             this.viewAnalyticsExportInFlight = false;
+            CommonJS.setButtonDisabled(button, false);
+        }
+    },
+
+    async getReactionAnalytics() {
+        const requestId = ++this.reactionAnalyticsRequestId;
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        this.renderReactionAnalyticsLoading();
+        try {
+            const response = await fetch(`/api/admin/content/stats/reactions?${params}`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error('독자 반응 분석을 불러오지 못했습니다.');
+            }
+            const analytics = await response.json();
+            if (requestId !== this.reactionAnalyticsRequestId) return;
+            this.reactionAnalytics = analytics;
+            this.renderReactionAnalytics();
+        } catch (error) {
+            if (requestId !== this.reactionAnalyticsRequestId) return;
+            this.reactionAnalytics = null;
+            this.renderReactionAnalyticsError();
+            console.error('독자 반응 분석 실패:', error);
+        }
+    },
+
+    renderReactionAnalyticsLoading() {
+        this.setText(
+            'contentReactionAnalyticsStatus',
+            `${this.state.boardType} 게시판의 최근 ${this.state.viewRangeDays}일 반응을 집계하고 있습니다.`
+        );
+        this.setText('contentReactionRangeLabel', `최근 ${this.state.viewRangeDays}일`);
+        this.setText('contentReactionTotal', '-');
+        this.setText('contentReactionVisitorCount', '참여 방문자 -');
+        this.setText('contentReactionHelpful', '-');
+        this.setText('contentReactionNotHelpful', '-');
+        this.setText('contentReactionHelpfulRate', '-');
+        this.setText('contentReactionContentCount', '-');
+        this.renderReactionTrend([]);
+        this.renderReactionContents('contentReactionTopContents', [], '표시할 반응 상위가 없습니다.');
+        this.renderReactionContents('contentReactionImprovementContents', [], '표시할 개선 후보가 없습니다.');
+    },
+
+    renderReactionAnalytics() {
+        const analytics = this.reactionAnalytics || {};
+        const summary = analytics.summary || {};
+        this.setText(
+            'contentReactionAnalyticsStatus',
+            `${analytics.startDate || '-'} ~ ${analytics.endDate || '-'} · ${analytics.metricBasis || '현재 반응 기준'} · ${analytics.generatedAt || '-'} 갱신`
+        );
+        this.setText('contentReactionRangeLabel', `최근 ${analytics.rangeDays || this.state.viewRangeDays}일`);
+        this.setText('contentReactionTotal', `${this.formatNumber(summary.totalCount)}건`);
+        this.setText('contentReactionVisitorCount', `참여 방문자 ${this.formatNumber(summary.uniqueVisitors)}명`);
+        this.setText('contentReactionHelpful', `${this.formatNumber(summary.helpfulCount)}건`);
+        this.setText('contentReactionNotHelpful', `${this.formatNumber(summary.notHelpfulCount)}건`);
+        this.setText('contentReactionHelpfulRate', `${this.formatNumber(summary.helpfulRate)}%`);
+        this.setText('contentReactionContentCount', `${this.formatNumber(summary.evaluatedContentCount)}건`);
+        this.renderReactionTrend(Array.isArray(analytics.trend) ? analytics.trend : []);
+        this.renderReactionContents(
+            'contentReactionTopContents',
+            Array.isArray(analytics.topContents) ? analytics.topContents : [],
+            '선택한 기간에 반응이 남은 콘텐츠가 없습니다.'
+        );
+        this.renderReactionContents(
+            'contentReactionImprovementContents',
+            Array.isArray(analytics.improvementContents) ? analytics.improvementContents : [],
+            '선택한 기간에 개선 필요 반응이 없습니다.'
+        );
+    },
+
+    renderReactionTrend(trend) {
+        const target = document.getElementById('contentReactionTrend');
+        if (!target) return;
+        if (!trend.length) {
+            target.innerHTML = '<div class="content-view-empty">표시할 반응 추이가 없습니다.</div>';
+            return;
+        }
+        const maxValue = Math.max(1, ...trend.map((item) => Number(item.totalCount) || 0));
+        target.innerHTML = trend.map((item, index) => {
+            const helpful = Number(item.helpfulCount) || 0;
+            const notHelpful = Number(item.notHelpfulCount) || 0;
+            const helpfulHeight = Math.max(helpful > 0 ? 8 : 2, Math.round(helpful / maxValue * 100));
+            const notHelpfulHeight = Math.max(notHelpful > 0 ? 8 : 2, Math.round(notHelpful / maxValue * 100));
+            const showLabel = trend.length <= 14 || index === 0 || index === trend.length - 1 || index % 5 === 0;
+            return `
+                <div class="content-view-chart__column"
+                     title="${ContentBoardConfig.escapeHtml(item.date)} · 도움됨 ${this.formatNumber(helpful)}건 · 개선 필요 ${this.formatNumber(notHelpful)}건">
+                    <div class="content-view-chart__value">${item.totalCount ? this.formatNumber(item.totalCount) : ''}</div>
+                    <div class="content-view-chart__bars">
+                        <span class="content-view-chart__bar content-reaction-bar--helpful" style="height:${helpfulHeight}%"></span>
+                        <span class="content-view-chart__bar content-reaction-bar--not-helpful" style="height:${notHelpfulHeight}%"></span>
+                    </div>
+                    <span class="content-view-chart__date">${showLabel ? this.formatShortDate(item.date) : ''}</span>
+                </div>
+            `;
+        }).join('');
+    },
+
+    renderReactionContents(targetId, items, emptyMessage) {
+        const target = document.getElementById(targetId);
+        if (!target) return;
+        if (!items.length) {
+            target.innerHTML = `<li class="content-view-empty">${ContentBoardConfig.escapeHtml(emptyMessage)}</li>`;
+            return;
+        }
+        target.innerHTML = items.map((item, index) => `
+            <li class="content-view-ranking__item">
+                <span class="content-view-ranking__rank">${index + 1}</span>
+                <a href="/admin/content/get?id=${encodeURIComponent(item.documentId)}&boardType=${encodeURIComponent(item.boardType)}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}"
+                   class="content-view-ranking__content">
+                    <strong>${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</strong>
+                    <span>${ContentBoardConfig.escapeHtml(item.boardType)} · 도움 ${this.formatNumber(item.helpfulCount)} · 개선 ${this.formatNumber(item.notHelpfulCount)}</span>
+                </a>
+                <strong class="content-view-ranking__views">${this.formatNumber(item.helpfulRate)}%</strong>
+            </li>
+        `).join('');
+    },
+
+    renderReactionAnalyticsError() {
+        this.setText('contentReactionAnalyticsStatus', '독자 반응 분석을 불러오지 못했습니다. 연결 상태를 확인해 주세요.');
+        this.renderReactionTrend([]);
+        this.renderReactionContents('contentReactionTopContents', [], '반응 분석 연결을 확인해 주세요.');
+        this.renderReactionContents('contentReactionImprovementContents', [], '반응 분석 연결을 확인해 주세요.');
+    },
+
+    async exportReactionAnalytics() {
+        if (this.reactionAnalyticsExportInFlight) return;
+        const button = document.getElementById('btnExportReactionAnalytics');
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.reactionAnalyticsExportInFlight = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(
+                `/api/admin/content/stats/reactions/export?${params}`,
+                `content-reaction-analytics-${this.state.boardType}-${this.state.viewRangeDays}d.csv`
+            );
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.reactionAnalyticsExportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },

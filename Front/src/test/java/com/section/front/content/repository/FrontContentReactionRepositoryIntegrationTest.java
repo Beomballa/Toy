@@ -1,7 +1,10 @@
 package com.section.front.content.repository;
 
 import com.section.common.base.entity.type.YN;
+import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
 import com.section.common.content.dto.ContentReactionSummaryRow;
+import com.section.common.content.dto.ContentReactionTopRow;
+import com.section.common.content.dto.ContentReactionTrendRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.entity.FrontContentReaction;
 import com.section.common.content.repository.DocumentRepository;
@@ -17,6 +20,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -82,10 +86,59 @@ class FrontContentReactionRepositoryIntegrationTest {
         assertThat(documentRepository.findById(document.getId())).isEmpty();
     }
 
+    @Test
+    @DisplayName("반응 분석 조회는 기간과 게시판별 요약, 일별 추이, 상위 콘텐츠를 함께 집계한다")
+    void aggregatesReactionAnalyticsWithDynamicFilters() {
+        Document notice = documentRepository.save(publicDocument("분석 공지"));
+        Document style = documentRepository.save(publicDocument("분석 스타일", Document.BoardType.STYLE));
+        entityManager.flush();
+        LocalDateTime firstDay = LocalDateTime.of(2099, 7, 23, 11, 0);
+        LocalDateTime secondDay = LocalDateTime.of(2099, 7, 24, 12, 0);
+
+        reactionRepository.upsert(notice.getId(), VISITOR_KEY + "-1", "HELPFUL", firstDay);
+        reactionRepository.upsert(notice.getId(), VISITOR_KEY + "-2", "NOT_HELPFUL", secondDay);
+        reactionRepository.upsert(style.getId(), VISITOR_KEY + "-3", "HELPFUL", secondDay);
+        entityManager.flush();
+        entityManager.clear();
+
+        ContentReactionAnalyticsSummaryRow summary = reactionRepository.getAnalyticsSummary(
+                firstDay.toLocalDate().atStartOfDay(),
+                secondDay.toLocalDate().plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE
+        );
+        List<ContentReactionTrendRow> trend = reactionRepository.getDailyReactionTrend(
+                firstDay.toLocalDate().atStartOfDay(),
+                secondDay.toLocalDate().plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE
+        );
+        List<ContentReactionTopRow> top = reactionRepository.getTopReactedContents(
+                firstDay.toLocalDate().atStartOfDay(),
+                secondDay.toLocalDate().plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE,
+                10
+        );
+
+        assertThat(summary).isEqualTo(new ContentReactionAnalyticsSummaryRow(2, 1, 1, 2, 1));
+        assertThat(trend).containsExactly(
+                new ContentReactionTrendRow(firstDay.toLocalDate(), 1, 0),
+                new ContentReactionTrendRow(secondDay.toLocalDate(), 0, 1)
+        );
+        assertThat(top).singleElement().satisfies(row -> {
+            assertThat(row.documentId()).isEqualTo(notice.getId());
+            assertThat(row.totalCount()).isEqualTo(2);
+            assertThat(row.helpfulCount()).isEqualTo(1);
+            assertThat(row.notHelpfulCount()).isEqualTo(1);
+        });
+    }
+
     private Document publicDocument(String title) {
+        return publicDocument(title, Document.BoardType.NOTICE);
+    }
+
+    private Document publicDocument(String title, Document.BoardType boardType) {
         Document document = new Document();
         document.applyEditorValues(
-                Document.BoardType.NOTICE,
+                boardType,
                 Document.PublishStatus.PUBLISHED,
                 YN.Y,
                 YN.N,

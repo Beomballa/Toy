@@ -9,10 +9,13 @@ import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.res.ContentReactionAnalyticsResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
+import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
+import com.section.admin.content.support.ContentReactionAnalyticsCsvWriter;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.content.support.ContentViewAnalyticsCsvWriter;
@@ -47,6 +50,7 @@ public class AdminContentRestController {
     private final AdminOperationPolicyService adminOperationPolicyService;
     private final AdminContentStatsService adminContentStatsService;
     private final AdminContentViewAnalyticsService adminContentViewAnalyticsService;
+    private final AdminContentReactionAnalyticsService adminContentReactionAnalyticsService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -121,6 +125,36 @@ public class AdminContentRestController {
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .body(ContentViewAnalyticsCsvWriter.write(analytics));
+    }
+
+    @GetMapping("/stats/reactions")
+    public ResponseEntity<ContentReactionAnalyticsResponse> getReactionAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        return ResponseEntity.ok(adminContentReactionAnalyticsService.getAnalytics(normalizedBoardType, days));
+    }
+
+    @GetMapping("/stats/reactions/export")
+    public ResponseEntity<byte[]> exportReactionAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        ContentReactionAnalyticsResponse analytics =
+                adminContentReactionAnalyticsService.getAnalytics(normalizedBoardType, days);
+        String boardLabel = normalizedBoardType == null ? "all" : normalizedBoardType.name().toLowerCase(Locale.ROOT);
+        String fileName = "content-reaction-analytics-" + boardLabel + "-" + days + "d-"
+                + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(ContentReactionAnalyticsCsvWriter.write(analytics));
     }
 
     @GetMapping("/export")

@@ -122,7 +122,10 @@ mysql -h127.0.0.1 -uroot -p new_toy < db/front_content_highlights_demo.sql
 
 ```bash
 mysql -h127.0.0.1 -uroot -p new_toy < db/front_content_view_event.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_content_reaction.sql
 ```
+
+콘텐츠 반응은 문서와 브라우저 방문자 키 조합당 한 건을 유지하며 `도움됐어요`와 `아쉬워요` 사이에서 변경할 수 있습니다. 반응 집계는 공개·게시 완료 콘텐츠에서만 제공되며 반응 스크립트는 최신 공개 콘텐츠에 화면 확인용 더미 데이터 3건을 멱등 추가합니다.
 
 ## 테스트와 패키징
 

@@ -235,6 +235,20 @@ public class CustomDocumentRepositoryImpl implements CustomDocumentRepository {
     }
 
     @Override
+    public boolean existsPublicDocument(long documentId) {
+        Integer result = queryFactory
+                .selectOne()
+                .from(document)
+                .where(
+                        document.id.eq(documentId),
+                        document.status.eq(Document.PublishStatus.PUBLISHED),
+                        document.publicYn.eq(YN.Y)
+                )
+                .fetchFirst();
+        return result != null;
+    }
+
+    @Override
     public Optional<PublicDocumentNavigationRow> getNewerPublicDocument(
             Document.BoardType boardType,
             LocalDateTime createdAt,

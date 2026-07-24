@@ -13,6 +13,7 @@
     let fontScale = 1;
     let lastSavedProgress = -1;
     let scrollFrame = null;
+    let reactionRequestInFlight = false;
 
     const elements = {
         article: document.getElementById("contentDetailArticle"),
@@ -51,7 +52,16 @@
         olderDate: document.getElementById("contentDetailOlderDate"),
         related: document.getElementById("contentDetailRelated"),
         relatedGrid: document.getElementById("contentDetailRelatedGrid"),
-        scrollProgress: document.getElementById("contentDetailScrollProgress")
+        scrollProgress: document.getElementById("contentDetailScrollProgress"),
+        reaction: document.getElementById("contentDetailReaction"),
+        reactionSummary: document.getElementById("contentDetailReactionSummary"),
+        reactionStatus: document.getElementById("contentDetailReactionStatus"),
+        reactionMeter: document.getElementById("contentDetailReactionMeter"),
+        helpfulButton: document.getElementById("contentDetailHelpfulButton"),
+        notHelpfulButton: document.getElementById("contentDetailNotHelpfulButton"),
+        helpfulCount: document.getElementById("contentDetailHelpfulCount"),
+        notHelpfulCount: document.getElementById("contentDetailNotHelpfulCount"),
+        reactionRetryButton: document.getElementById("contentDetailReactionRetryButton")
     };
 
     async function loadContentDetail() {
@@ -94,6 +104,7 @@
         renderResumePrompt();
         rememberContent(content);
         void recordContentView();
+        void loadReactionSummary();
         window.requestAnimationFrame(syncScrollProgress);
         announce("콘텐츠를 불러왔습니다.");
     }
@@ -136,6 +147,84 @@
         } catch (error) {
             // Reading remains available even when engagement recording is temporarily unavailable.
         }
+    }
+
+    async function loadReactionSummary() {
+        setReactionLoading(true);
+        elements.reaction.hidden = false;
+        elements.reactionRetryButton.hidden = true;
+        setText(elements.reactionStatus, "반응을 불러오는 중입니다.");
+        try {
+            const response = await fetch(`/api/front/content/${documentId}/reactions`, {
+                headers: { "X-Content-Visitor-Key": resolveVisitorKey() }
+            });
+            if (!response.ok) throw new Error("반응을 불러오지 못했습니다.");
+            renderReaction(await response.json());
+        } catch (error) {
+            showReactionError("반응 정보를 불러오지 못했습니다.");
+        } finally {
+            setReactionLoading(false);
+        }
+    }
+
+    async function submitReaction(reaction) {
+        if (!currentContent || reactionRequestInFlight) return;
+        setReactionLoading(true);
+        setText(elements.reactionStatus, "반응을 저장하는 중입니다.");
+        try {
+            const response = await fetch(`/api/front/content/${documentId}/reactions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    visitorKey: resolveVisitorKey(),
+                    reaction
+                })
+            });
+            if (!response.ok) throw new Error("반응을 저장하지 못했습니다.");
+            const payload = await response.json();
+            renderReaction(payload);
+            announce(payload.changed ? "콘텐츠 반응을 저장했습니다." : "이미 선택한 반응입니다.");
+        } catch (error) {
+            showReactionError("반응을 저장하지 못했습니다. 다시 시도해 주세요.");
+            announce("콘텐츠 반응을 저장하지 못했습니다.");
+        } finally {
+            setReactionLoading(false);
+        }
+    }
+
+    function renderReaction(payload) {
+        const helpfulCount = Math.max(0, Number(payload.helpfulCount || 0));
+        const notHelpfulCount = Math.max(0, Number(payload.notHelpfulCount || 0));
+        const totalCount = Math.max(0, Number(payload.totalCount || helpfulCount + notHelpfulCount));
+        const helpfulRate = Math.min(100, Math.max(0, Number(payload.helpfulRate || 0)));
+        const selectedReaction = payload.selectedReaction || "";
+        setText(elements.helpfulCount, helpfulCount.toLocaleString("ko-KR"));
+        setText(elements.notHelpfulCount, notHelpfulCount.toLocaleString("ko-KR"));
+        setText(elements.reactionSummary, totalCount > 0
+            ? `${totalCount.toLocaleString("ko-KR")}명 중 ${helpfulRate}%가 도움됐다고 답했습니다.`
+            : "첫 번째 반응을 남겨주세요.");
+        setText(elements.reactionStatus, selectedReaction === "HELPFUL"
+            ? "도움됐어요를 선택했습니다."
+            : selectedReaction === "NOT_HELPFUL"
+                ? "아쉬워요를 선택했습니다."
+                : "한 번 선택한 뒤에도 반응을 변경할 수 있습니다.");
+        elements.reactionMeter.style.width = `${helpfulRate}%`;
+        elements.helpfulButton.setAttribute("aria-pressed", String(selectedReaction === "HELPFUL"));
+        elements.notHelpfulButton.setAttribute("aria-pressed", String(selectedReaction === "NOT_HELPFUL"));
+        elements.reactionRetryButton.hidden = true;
+    }
+
+    function setReactionLoading(loading) {
+        reactionRequestInFlight = loading;
+        elements.reaction.setAttribute("aria-busy", String(loading));
+        elements.helpfulButton.disabled = loading;
+        elements.notHelpfulButton.disabled = loading;
+        elements.reactionRetryButton.disabled = loading;
+    }
+
+    function showReactionError(message) {
+        setText(elements.reactionStatus, message);
+        elements.reactionRetryButton.hidden = false;
     }
 
     function resolveVisitorKey() {
@@ -341,6 +430,7 @@
         elements.related.hidden = true;
         elements.navigation.hidden = true;
         elements.resume.hidden = true;
+        elements.reaction.hidden = true;
         announce("콘텐츠를 불러오는 중입니다.");
     }
 
@@ -349,6 +439,7 @@
         elements.related.hidden = true;
         elements.navigation.hidden = true;
         elements.resume.hidden = true;
+        elements.reaction.hidden = true;
         elements.error.hidden = false;
         setText(elements.errorMessage, message);
         announce(message);
@@ -459,6 +550,9 @@
     elements.fontResetButton.addEventListener("click", resetFontScale);
     elements.resumeButton.addEventListener("click", resumeReading);
     elements.resumeDismissButton.addEventListener("click", dismissResume);
+    elements.helpfulButton.addEventListener("click", () => submitReaction("HELPFUL"));
+    elements.notHelpfulButton.addEventListener("click", () => submitReaction("NOT_HELPFUL"));
+    elements.reactionRetryButton.addEventListener("click", loadReactionSummary);
     window.addEventListener("scroll", requestScrollProgressSync, { passive: true });
     window.addEventListener("resize", requestScrollProgressSync);
     window.addEventListener("keydown", handleReaderShortcut);

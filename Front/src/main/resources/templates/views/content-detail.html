@@ -6,7 +6,7 @@
     <title>콘텐츠 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260723.4">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260724.1">
 </head>
 <body class="content-detail-body" th:attr="data-document-id=${documentId}">
 <a class="skip-link" href="#contentDetailArticle">콘텐츠 본문 바로가기</a>
@@ -86,6 +86,44 @@
             <div class="content-detail-article__body" id="contentDetailBody">
                 <p>잠시만 기다려 주세요.</p>
             </div>
+            <section class="content-detail-reaction"
+                     id="contentDetailReaction"
+                     aria-labelledby="contentDetailReactionHeading"
+                     hidden>
+                <div class="content-detail-reaction__heading">
+                    <div>
+                        <span>YOUR FEEDBACK</span>
+                        <h2 id="contentDetailReactionHeading">이 콘텐츠가 도움이 되었나요?</h2>
+                    </div>
+                    <p id="contentDetailReactionSummary">아직 등록된 반응이 없습니다.</p>
+                </div>
+                <div class="content-detail-reaction__controls" role="group" aria-label="콘텐츠 평가">
+                    <button type="button"
+                            id="contentDetailHelpfulButton"
+                            data-content-reaction="HELPFUL"
+                            aria-pressed="false">
+                        <span>도움됐어요</span>
+                        <strong id="contentDetailHelpfulCount">0</strong>
+                    </button>
+                    <button type="button"
+                            id="contentDetailNotHelpfulButton"
+                            data-content-reaction="NOT_HELPFUL"
+                            aria-pressed="false">
+                        <span>아쉬워요</span>
+                        <strong id="contentDetailNotHelpfulCount">0</strong>
+                    </button>
+                </div>
+                <div class="content-detail-reaction__meter" aria-hidden="true">
+                    <span id="contentDetailReactionMeter"></span>
+                </div>
+                <p class="content-detail-reaction__status" id="contentDetailReactionStatus">
+                    반응을 불러오는 중입니다.
+                </p>
+                <button class="content-detail-reaction__retry"
+                        type="button"
+                        id="contentDetailReactionRetryButton"
+                        hidden>다시 불러오기</button>
+            </section>
             <footer class="content-detail-article__actions">
                 <button type="button" id="contentDetailCopyButton">요약 복사</button>
                 <button type="button" id="contentDetailShareButton">공유하기</button>
@@ -142,6 +180,6 @@
     </footer>
 </div>
 
-<script src="/js/view/content-detail.js?v=20260723.1"></script>
+<script src="/js/view/content-detail.js?v=20260724.1"></script>
 </body>
 </html>

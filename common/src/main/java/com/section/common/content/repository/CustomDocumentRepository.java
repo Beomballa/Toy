@@ -23,6 +23,7 @@ public interface CustomDocumentRepository {
     List<PublicDocumentRow> getPublicDocuments(Document.BoardType boardType, int limit);
     List<PopularPublicContentRow> getPopularPublicDocuments(LocalDate startDate, LocalDate endDate, int limit);
     Optional<PublicDocumentRow> getPublicDocument(long documentId);
+    boolean existsPublicDocument(long documentId);
     Optional<PublicDocumentNavigationRow> getNewerPublicDocument(
             Document.BoardType boardType,
             LocalDateTime createdAt,

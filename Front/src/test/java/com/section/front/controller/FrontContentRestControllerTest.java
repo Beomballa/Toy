@@ -7,6 +7,8 @@ import com.section.front.content.dto.FrontContentHighlightsResponse;
 import com.section.front.content.dto.FrontContentItemResponse;
 import com.section.front.content.dto.FrontContentNavigationResponse;
 import com.section.front.content.dto.FrontPopularContentResponse;
+import com.section.front.content.dto.FrontContentReactionResponse;
+import com.section.front.content.service.FrontContentReactionService;
 import com.section.front.content.service.FrontContentService;
 import com.section.front.content.service.FrontContentViewService;
 import com.section.front.content.dto.FrontContentViewResponse;
@@ -33,13 +35,17 @@ class FrontContentRestControllerTest {
 
     private FrontContentService service;
     private FrontContentViewService viewService;
+    private FrontContentReactionService reactionService;
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         service = mock(FrontContentService.class);
         viewService = mock(FrontContentViewService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new FrontContentRestController(service, viewService))
+        reactionService = mock(FrontContentReactionService.class);
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                        new FrontContentRestController(service, viewService, reactionService)
+                )
                 .setControllerAdvice(new FrontGlobalExceptionHandler())
                 .build();
     }
@@ -189,6 +195,68 @@ class FrontContentRestControllerTest {
     void missingViewRequestBodyReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/front/content/1/views")
                         .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 반응 조회 API는 집계와 현재 방문자의 선택을 반환한다")
+    void returnsContentReactionSummary() throws Exception {
+        String visitorKey = "123e4567-e89b-12d3-a456-426614174000";
+        when(reactionService.getSummary(1L, visitorKey))
+                .thenReturn(new FrontContentReactionResponse(3, 1, 4, 75, "HELPFUL", false));
+
+        mockMvc.perform(get("/api/front/content/1/reactions")
+                        .header("X-Content-Visitor-Key", visitorKey))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.helpfulCount").value(3))
+                .andExpect(jsonPath("$.notHelpfulCount").value(1))
+                .andExpect(jsonPath("$.totalCount").value(4))
+                .andExpect(jsonPath("$.helpfulRate").value(75))
+                .andExpect(jsonPath("$.selectedReaction").value("HELPFUL"))
+                .andExpect(jsonPath("$.changed").value(false));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 반응 저장 API는 변경된 선택과 최신 집계를 반환한다")
+    void recordsContentReaction() throws Exception {
+        String visitorKey = "123e4567-e89b-12d3-a456-426614174000";
+        when(reactionService.react(1L, visitorKey, "NOT_HELPFUL"))
+                .thenReturn(new FrontContentReactionResponse(3, 2, 5, 60, "NOT_HELPFUL", true));
+
+        mockMvc.perform(post("/api/front/content/1/reactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"visitorKey":"%s","reaction":"NOT_HELPFUL"}
+                                """.formatted(visitorKey)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.notHelpfulCount").value(2))
+                .andExpect(jsonPath("$.helpfulRate").value(60))
+                .andExpect(jsonPath("$.selectedReaction").value("NOT_HELPFUL"))
+                .andExpect(jsonPath("$.changed").value(true));
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 콘텐츠 반응은 표준 400 오류를 반환한다")
+    void invalidContentReactionReturnsBadRequest() throws Exception {
+        String visitorKey = "123e4567-e89b-12d3-a456-426614174000";
+        when(reactionService.react(1L, visitorKey, "LIKE"))
+                .thenThrow(new IllegalArgumentException("invalid reaction"));
+
+        mockMvc.perform(post("/api/front/content/1/reactions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"visitorKey":"%s","reaction":"LIKE"}
+                                """.formatted(visitorKey)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("F001"));
+    }
+
+    @Test
+    @DisplayName("0 이하 콘텐츠 번호의 반응 요청은 표준 400 오류를 반환한다")
+    void nonPositiveReactionContentIdReturnsBadRequest() throws Exception {
+        mockMvc.perform(get("/api/front/content/0/reactions")
+                        .header("X-Content-Visitor-Key", "123e4567-e89b-12d3-a456-426614174000"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("F001"));
     }

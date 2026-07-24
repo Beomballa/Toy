@@ -300,6 +300,9 @@
                 <button type="button" class="btn btn-sm btn-dark" id="btnCreatePerformanceTasks" disabled>
                     <i class="fas fa-list-check me-1"></i><span id="btnCreatePerformanceTasksLabel">미연결 작업화</span>
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-success" id="btnResolvePerformanceTasks" disabled>
+                    <i class="fas fa-circle-check me-1"></i><span id="btnResolvePerformanceTasksLabel">회복 작업 완료</span>
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-dark" id="btnExportPerformanceAnalytics">
                     <i class="fas fa-download me-1"></i>효과 CSV
                 </button>
@@ -318,6 +321,9 @@
             <article><span>조치 필요</span><strong id="contentPerformanceActionCount">-</strong><small>보완·반응 확보 대상</small></article>
             <article><span>작업 연결</span><strong id="contentPerformanceLinkedCount">-</strong><small>운영 작업 연결 완료</small></article>
             <article><span>미연결 조치</span><strong id="contentPerformanceUnlinkedCount">-</strong><small>일괄 작업화 가능</small></article>
+            <article><span>진행 작업</span><strong id="contentPerformanceOpenTaskCount">-</strong><small>완료 전 연결 작업</small></article>
+            <article><span>연체 작업</span><strong id="contentPerformanceOverdueTaskCount">-</strong><small>기한 경과 작업</small></article>
+            <article><span>성과 회복</span><strong id="contentPerformanceRecoverableTaskCount">-</strong><small>일괄 완료 가능</small></article>
         </div>
         <div class="content-performance-analytics__legend" aria-label="효과 분석 상태 안내">
             <span><i class="is-improvement"></i>보완 필요</span>

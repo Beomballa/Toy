@@ -173,4 +173,52 @@ class AdminContentPerformanceAnalyticsServiceTest {
         assertThat(response.summary().unlinkedActionCount()).isEqualTo(10);
         assertThat(response.priorityContents()).hasSize(10);
     }
+
+    @Test
+    @DisplayName("안정 상태로 회복된 진행 작업은 기한과 연체 여부를 포함해 완료 후보로 집계한다")
+    void detectsRecoverableAndOverdueTask() {
+        LocalDate startDate = LocalDate.of(2026, 7, 18);
+        LocalDate endDate = LocalDate.of(2026, 7, 24);
+        when(viewRepository.getViewSummary(startDate, endDate, Document.BoardType.NOTICE))
+                .thenReturn(new ContentViewSummaryRow(10, 8, 1));
+        when(reactionRepository.getAnalyticsSummary(
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE
+        )).thenReturn(new ContentReactionAnalyticsSummaryRow(3, 3, 0, 3, 1));
+        when(viewRepository.getTopViewedContents(startDate, endDate, Document.BoardType.NOTICE, 50))
+                .thenReturn(List.of(new ContentViewTopRow(
+                        7L, Document.BoardType.NOTICE, "회복 공지", 10, 8
+                )));
+        when(reactionRepository.getTopReactedContents(
+                startDate.atStartOfDay(),
+                endDate.plusDays(1).atStartOfDay(),
+                Document.BoardType.NOTICE,
+                50
+        )).thenReturn(List.of(new ContentReactionTopRow(
+                7L, Document.BoardType.NOTICE, "회복 공지", 3, 0
+        )));
+        when(taskRepository.findAllBySourceTypeAndSourceIdIn("CONTENT_PERFORMANCE", Set.of(7L)))
+                .thenReturn(List.of(AdminOperationTask.builder()
+                        .taskNo(97L)
+                        .status("IN_PROGRESS")
+                        .dueDate(LocalDate.of(2026, 7, 23))
+                        .sourceType("CONTENT_PERFORMANCE")
+                        .sourceId(7L)
+                        .build()));
+
+        ContentPerformanceAnalyticsResponse response =
+                service.getAnalytics(Document.BoardType.NOTICE, 7);
+
+        ContentPerformanceAnalyticsResponse.Content item = response.priorityContents().get(0);
+        assertThat(item.status()).isEqualTo("HEALTHY");
+        assertThat(item.operationTaskStatus()).isEqualTo("IN_PROGRESS");
+        assertThat(item.operationTaskStatusLabel()).isEqualTo("진행중");
+        assertThat(item.operationTaskDueDate()).isEqualTo("2026-07-23");
+        assertThat(item.operationTaskOverdue()).isTrue();
+        assertThat(item.operationTaskRecoverable()).isTrue();
+        assertThat(response.summary().openTaskCount()).isEqualTo(1);
+        assertThat(response.summary().overdueTaskCount()).isEqualTo(1);
+        assertThat(response.summary().recoverableTaskCount()).isEqualTo(1);
+    }
 }

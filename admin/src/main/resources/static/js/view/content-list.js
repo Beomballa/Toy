@@ -5,8 +5,10 @@ const ContentList = {
     reactionAnalyticsExportInFlight: false,
     performanceAnalyticsExportInFlight: false,
     performanceBulkTaskInFlight: false,
+    performanceResolveInFlight: false,
     performanceTaskInFlightIds: new Set(),
     performanceUnlinkedActionCount: 0,
+    performanceRecoverableTaskCount: 0,
     operationPolicy: null,
     actionInFlightIds: new Set(),
     dailyStats: null,
@@ -142,6 +144,7 @@ const ContentList = {
         document.getElementById('btnRefreshPerformanceAnalytics')?.addEventListener('click', () => this.getPerformanceAnalytics());
         document.getElementById('btnExportPerformanceAnalytics')?.addEventListener('click', () => this.exportPerformanceAnalytics());
         document.getElementById('btnCreatePerformanceTasks')?.addEventListener('click', () => this.createPerformanceTasks());
+        document.getElementById('btnResolvePerformanceTasks')?.addEventListener('click', () => this.resolvePerformanceTasks());
         document.getElementById('contentPerformancePriorityList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-role="create-performance-task"]');
             if (!button) return;
@@ -735,8 +738,13 @@ const ContentList = {
         this.setText('contentPerformanceActionCount', '-');
         this.setText('contentPerformanceLinkedCount', '-');
         this.setText('contentPerformanceUnlinkedCount', '-');
+        this.setText('contentPerformanceOpenTaskCount', '-');
+        this.setText('contentPerformanceOverdueTaskCount', '-');
+        this.setText('contentPerformanceRecoverableTaskCount', '-');
         this.performanceUnlinkedActionCount = 0;
+        this.performanceRecoverableTaskCount = 0;
         this.syncPerformanceBulkTaskButton();
+        this.syncPerformanceResolveButton();
         this.renderPerformancePriorityList([]);
     },
 
@@ -756,8 +764,13 @@ const ContentList = {
         this.setText('contentPerformanceActionCount', `${this.formatNumber(summary.actionRequiredCount)}건`);
         this.setText('contentPerformanceLinkedCount', `${this.formatNumber(summary.linkedActionCount)}건`);
         this.setText('contentPerformanceUnlinkedCount', `${this.formatNumber(summary.unlinkedActionCount)}건`);
+        this.setText('contentPerformanceOpenTaskCount', `${this.formatNumber(summary.openTaskCount)}건`);
+        this.setText('contentPerformanceOverdueTaskCount', `${this.formatNumber(summary.overdueTaskCount)}건`);
+        this.setText('contentPerformanceRecoverableTaskCount', `${this.formatNumber(summary.recoverableTaskCount)}건`);
         this.performanceUnlinkedActionCount = Number(summary.unlinkedActionCount) || 0;
+        this.performanceRecoverableTaskCount = Number(summary.recoverableTaskCount) || 0;
         this.syncPerformanceBulkTaskButton();
+        this.syncPerformanceResolveButton();
         this.renderPerformancePriorityList(
             Array.isArray(analytics.priorityContents) ? analytics.priorityContents : []
         );
@@ -793,6 +806,14 @@ const ContentList = {
                            작업 생성
                        </button>`
                     : '';
+            const taskMeta = item.operationTaskNo
+                ? `<span class="content-performance-item__task-meta${item.operationTaskOverdue ? ' is-overdue' : ''}${item.operationTaskRecoverable ? ' is-recoverable' : ''}">
+                       ${ContentBoardConfig.escapeHtml(item.operationTaskStatusLabel || item.operationTaskStatus || '연결')}
+                       ${item.operationTaskDueDate ? ` · ${ContentBoardConfig.escapeHtml(item.operationTaskDueDate)}` : ''}
+                       ${item.operationTaskOverdue ? ' · 연체' : ''}
+                       ${item.operationTaskRecoverable ? ' · 회복 확인' : ''}
+                   </span>`
+                : '';
             return `
                 <article class="content-performance-item" data-status="${status}">
                     <span class="content-performance-item__rank">${index + 1}</span>
@@ -816,6 +837,7 @@ const ContentList = {
                             <span>${labels[status]}</span>
                             <strong>${this.formatNumber(item.priorityScore)}점</strong>
                         </div>
+                        ${taskMeta}
                         ${taskAction}
                     </div>
                 </article>
@@ -831,7 +853,9 @@ const ContentList = {
             target.innerHTML = '<div class="content-view-empty content-view-empty--error">효과 분석 연결을 확인해 주세요.</div>';
         }
         this.performanceUnlinkedActionCount = 0;
+        this.performanceRecoverableTaskCount = 0;
         this.syncPerformanceBulkTaskButton();
+        this.syncPerformanceResolveButton();
     },
 
     async exportPerformanceAnalytics() {
@@ -975,6 +999,74 @@ const ContentList = {
         CommonJS.setButtonDisabled(button, disabled, reason);
     },
 
+    async resolvePerformanceTasks() {
+        if (this.performanceResolveInFlight || this.performanceRecoverableTaskCount <= 0) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(
+                CommonJS.getAdminWriteBlockedReason('성과 회복 작업 일괄 완료'),
+                '알림',
+                'warning'
+            );
+            return;
+        }
+        const confirmed = await CommonJS.confirm(
+            `성과가 안정 상태로 회복된 연결 작업 ${this.formatNumber(this.performanceRecoverableTaskCount)}건을 완료 처리하시겠습니까?`,
+            '성과 회복 작업 완료',
+            'warning'
+        );
+        if (!confirmed) return;
+
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.performanceResolveInFlight = true;
+            this.syncPerformanceResolveButton();
+            const response = await fetch(`/api/admin/content/stats/performance/tasks/resolve?${params}`, {
+                method: 'POST',
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '성과 회복 작업 완료에 실패했습니다.'));
+            }
+            const result = await response.json();
+            await CommonJS.alert(
+                `${ContentBoardConfig.escapeHtml(result.message || '회복 작업 처리를 완료했습니다.')}<br>요청 ${this.formatNumber(result.requestedCount)}건 · 완료 ${this.formatNumber(result.completedCount)}건 · 기존 완료 ${this.formatNumber(result.alreadyCompletedCount)}건`,
+                '성과 회복 작업 완료',
+                'success'
+            );
+            await this.getPerformanceAnalytics();
+        } catch (error) {
+            await CommonJS.alert(ContentBoardConfig.escapeHtml(error.message), '오류', 'error');
+        } finally {
+            this.performanceResolveInFlight = false;
+            this.syncPerformanceResolveButton();
+        }
+    },
+
+    syncPerformanceResolveButton() {
+        const button = document.getElementById('btnResolvePerformanceTasks');
+        const label = document.getElementById('btnResolvePerformanceTasksLabel');
+        if (label) {
+            label.textContent = this.performanceResolveInFlight
+                ? '완료 처리 중'
+                : `회복 ${this.formatNumber(this.performanceRecoverableTaskCount)}건 완료`;
+        }
+        const policyBlocked = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
+        const disabled = this.performanceResolveInFlight
+            || this.performanceRecoverableTaskCount <= 0
+            || policyBlocked;
+        const reason = policyBlocked
+            ? CommonJS.getAdminWriteBlockedReason('성과 회복 작업 일괄 완료')
+            : this.performanceRecoverableTaskCount <= 0
+                ? '현재 성과가 회복된 진행 작업이 없습니다.'
+                : '';
+        CommonJS.setButtonDisabled(button, disabled, reason);
+    },
+
     formatDecimal(value) {
         const number = Number(value);
         return Number.isFinite(number)
@@ -1026,6 +1118,7 @@ const ContentList = {
                 CommonJS.setButtonDisabled(button, taskDisabled, taskReason);
             });
             this.syncPerformanceBulkTaskButton();
+            this.syncPerformanceResolveButton();
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }

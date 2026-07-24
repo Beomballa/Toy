@@ -10,6 +10,7 @@ import com.section.admin.content.service.AdminContentPerformanceAnalyticsService
 import com.section.admin.content.service.AdminContentPerformanceTaskService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
@@ -504,6 +505,47 @@ class AdminContentRestControllerTest {
 
         verify(adminOperationPolicyService).assertAdminWriteAllowed();
         verify(adminContentPerformanceTaskService).createTasks(Document.BoardType.NOTICE, 7);
+    }
+
+    @Test
+    @DisplayName("성과 회복 작업 완료 API는 게시판을 정규화하고 처리 집계를 반환한다")
+    void resolveRecoveredPerformanceTasksReturnsBulkResult() throws Exception {
+        when(adminContentPerformanceTaskService.resolveRecoveredTasks(Document.BoardType.STYLE, 14))
+                .thenReturn(new ContentPerformanceBulkResolveResponse(
+                        3, 2, 1, 0, List.of(91L, 92L),
+                        "/admin/settings/tasks", "성과 회복 작업 2건을 완료했습니다."
+                ));
+
+        mockMvc.perform(post("/api/admin/content/stats/performance/tasks/resolve")
+                        .param("boardType", " style ")
+                        .param("days", "14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(3))
+                .andExpect(jsonPath("$.completedCount").value(2))
+                .andExpect(jsonPath("$.alreadyCompletedCount").value(1))
+                .andExpect(jsonPath("$.skippedCount").value(0))
+                .andExpect(jsonPath("$.completedTaskNos[1]").value(92L));
+
+        verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        verify(adminContentPerformanceTaskService)
+                .resolveRecoveredTasks(Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("관리자 쓰기 제한 중에는 성과 회복 작업을 완료하지 않는다")
+    void resolveRecoveredPerformanceTasksRejectsBlockedAdminWrite() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/content/stats/performance/tasks/resolve")
+                        .param("boardType", "NOTICE")
+                        .param("days", "7"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
+
+        verify(adminContentPerformanceTaskService, never())
+                .resolveRecoveredTasks(any(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test

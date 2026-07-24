@@ -2171,6 +2171,16 @@ body {
     color: #6d7e8d;
 }
 
+.content-performance-analytics .content-view-analytics__header {
+    align-items: flex-start;
+}
+
+.content-performance-analytics .content-view-analytics__controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
 .content-performance-analytics__range {
     display: inline-flex;
     align-items: center;
@@ -2404,6 +2414,23 @@ body {
 .content-performance-item__task-button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+}
+
+.content-performance-item__task-meta {
+    display: inline-flex;
+    justify-content: flex-end;
+    color: #667988;
+    font-size: 0.61rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.content-performance-item__task-meta.is-overdue {
+    color: #b24e35;
+}
+
+.content-performance-item__task-meta.is-recoverable {
+    color: #257151;
 }
 
 .task-detail-source {

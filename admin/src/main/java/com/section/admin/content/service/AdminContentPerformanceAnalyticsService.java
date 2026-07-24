@@ -2,6 +2,7 @@ package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
 import com.section.admin.task.support.AdminTaskLinkSupport;
+import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
@@ -105,6 +106,16 @@ public class AdminContentPerformanceAnalyticsService {
                 .filter(this::isActionRequired)
                 .filter(item -> item.operationTaskNo() != null)
                 .count();
+        long openTaskCount = priorityContents.stream()
+                .filter(item -> item.operationTaskNo() != null)
+                .filter(item -> !AdminOperationTaskStatus.DONE.name().equals(item.operationTaskStatus()))
+                .count();
+        long overdueTaskCount = priorityContents.stream()
+                .filter(ContentPerformanceAnalyticsResponse.Content::operationTaskOverdue)
+                .count();
+        long recoverableTaskCount = priorityContents.stream()
+                .filter(ContentPerformanceAnalyticsResponse.Content::operationTaskRecoverable)
+                .count();
 
         return new ContentPerformanceAnalyticsResponse(
                 boardType == null ? "ALL" : boardType.name(),
@@ -120,7 +131,10 @@ public class AdminContentPerformanceAnalyticsService {
                         contents.size(),
                         actionRequiredCount,
                         linkedActionCount,
-                        actionRequiredCount - linkedActionCount
+                        actionRequiredCount - linkedActionCount,
+                        openTaskCount,
+                        overdueTaskCount,
+                        recoverableTaskCount
                 ),
                 priorityContents
         );
@@ -164,6 +178,11 @@ public class AdminContentPerformanceAnalyticsService {
         int helpfulRate = percentage(candidate.helpfulCount, reactionCount);
         int coverageRate = coverageRate(reactionCount, candidate.viewCount);
         String status = status(candidate.viewCount, reactionCount, helpfulRate);
+        boolean taskOpen = task != null && !AdminOperationTaskStatus.DONE.name().equals(task.getStatus());
+        boolean taskOverdue = taskOpen
+                && task.getDueDate() != null
+                && task.getDueDate().isBefore(LocalDate.now(clock));
+        boolean taskRecoverable = taskOpen && "HEALTHY".equals(status);
         return new ContentPerformanceAnalyticsResponse.Content(
                 candidate.documentId,
                 candidate.boardType.name(),
@@ -179,8 +198,21 @@ public class AdminContentPerformanceAnalyticsService {
                 status,
                 statusMessage(status),
                 task == null ? null : task.getTaskNo(),
-                task == null ? null : buildTaskPath(task.getTaskNo(), candidate.boardType)
+                task == null ? null : buildTaskPath(task.getTaskNo(), candidate.boardType),
+                task == null ? null : task.getStatus(),
+                task == null ? null : taskStatusLabel(task.getStatus()),
+                task == null || task.getDueDate() == null ? null : task.getDueDate().toString(),
+                taskOverdue,
+                taskRecoverable
         );
+    }
+
+    private String taskStatusLabel(String status) {
+        try {
+            return AdminOperationTaskStatus.fromCode(status).getLabel();
+        } catch (IllegalArgumentException exception) {
+            return status;
+        }
     }
 
     private String buildTaskPath(long taskNo, Document.BoardType boardType) {

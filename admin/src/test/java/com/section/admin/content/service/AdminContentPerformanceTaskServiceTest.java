@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.log.service.AdminLogService;
@@ -270,6 +271,63 @@ class AdminContentPerformanceTaskServiceTest {
         verify(taskRepository, never()).saveAllAndFlush(anyList());
     }
 
+    @Test
+    @DisplayName("성과 회복 일괄 완료는 작업 번호 순으로 잠그고 완료·기존 완료·제외를 구분한다")
+    void resolvesRecoveredTasksWithOrderedLockAndRevalidation() {
+        ContentPerformanceAnalyticsResponse.Content first = recoveredContent(1L, 103L);
+        ContentPerformanceAnalyticsResponse.Content second = recoveredContent(2L, 101L);
+        ContentPerformanceAnalyticsResponse.Content third = recoveredContent(3L, 102L);
+        when(analyticsService.getAnalytics(Document.BoardType.NOTICE, 7))
+                .thenReturn(new ContentPerformanceAnalyticsResponse(
+                        "NOTICE", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
+                        new ContentPerformanceAnalyticsResponse.Summary(
+                                30, 9, 100, 30, 3, 0, 0, 0, 3, 0, 3
+                        ),
+                        List.of(first, second, third)
+                ));
+        AdminOperationTask completed = task(101L, 2L, "CONTENT_PERFORMANCE", "DONE");
+        AdminOperationTask skipped = task(102L, 999L, "CONTENT_PERFORMANCE", "IN_PROGRESS");
+        AdminOperationTask open = task(103L, 1L, "CONTENT_PERFORMANCE", "IN_PROGRESS");
+        when(taskRepository.findAllByTaskNoInForUpdate(List.of(101L, 102L, 103L)))
+                .thenReturn(List.of(completed, skipped, open));
+
+        ContentPerformanceBulkResolveResponse response =
+                service.resolveRecoveredTasks(Document.BoardType.NOTICE, 7);
+
+        assertThat(response.requestedCount()).isEqualTo(3);
+        assertThat(response.completedCount()).isEqualTo(1);
+        assertThat(response.alreadyCompletedCount()).isEqualTo(1);
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.completedTaskNos()).containsExactly(103L);
+        assertThat(open.getStatus()).isEqualTo("DONE");
+        assertThat(skipped.getStatus()).isEqualTo("IN_PROGRESS");
+        verify(taskRepository).findAllByTaskNoInForUpdate(List.of(101L, 102L, 103L));
+        verify(taskRepository).flush();
+        verify(adminLogService).recordCurrentAdminLog("TASK_STATUS_UPDATE", 103L);
+        verify(adminLogService).recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_RESOLVE", 1L);
+    }
+
+    @Test
+    @DisplayName("성과 회복 후보가 없으면 작업 잠금과 flush 없이 종료한다")
+    void returnsEmptyResolveResultWithoutWrites() {
+        when(analyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(new ContentPerformanceAnalyticsResponse(
+                        "STYLE", 14, "2026-07-11", "2026-07-24", "2026-07-24 12:00:00",
+                        new ContentPerformanceAnalyticsResponse.Summary(
+                                10, 1, 100, 10, 1, 0, 0, 0, 0, 0, 0
+                        ),
+                        List.of(content(1L, "STYLE", "관찰", "LOW_SIGNAL", 10))
+                ));
+
+        ContentPerformanceBulkResolveResponse response =
+                service.resolveRecoveredTasks(Document.BoardType.STYLE, 14);
+
+        assertThat(response.requestedCount()).isZero();
+        assertThat(response.completedTaskNos()).isEmpty();
+        verify(taskRepository, never()).findAllByTaskNoInForUpdate(any());
+        verify(taskRepository, never()).flush();
+    }
+
     private Document document(long id, Document.BoardType boardType, String title) {
         Document document = new Document();
         document.setId(id);
@@ -304,5 +362,23 @@ class AdminContentPerformanceTaskServiceTest {
                 4, 1, 3, 25, 8, score, status,
                 "본문 보완이 필요합니다.", null, null
         );
+    }
+
+    private ContentPerformanceAnalyticsResponse.Content recoveredContent(long documentId, long taskNo) {
+        return new ContentPerformanceAnalyticsResponse.Content(
+                documentId, "NOTICE", "회복 콘텐츠 " + documentId, 10, 8,
+                3, 3, 0, 100, 30, 10, "HEALTHY",
+                "조회와 독자 반응이 안정적입니다.", taskNo, "/admin/settings/tasks?taskNo=" + taskNo,
+                "IN_PROGRESS", "진행중", "2026-07-23", true, true
+        );
+    }
+
+    private AdminOperationTask task(long taskNo, long sourceId, String sourceType, String status) {
+        return AdminOperationTask.builder()
+                .taskNo(taskNo)
+                .sourceType(sourceType)
+                .sourceId(sourceId)
+                .status(status)
+                .build();
     }
 }

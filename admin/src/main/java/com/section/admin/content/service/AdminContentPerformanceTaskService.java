@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.log.service.AdminLogService;
@@ -21,6 +22,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -160,6 +162,68 @@ public class AdminContentPerformanceTaskService {
         );
     }
 
+    @Transactional
+    public ContentPerformanceBulkResolveResponse resolveRecoveredTasks(
+            Document.BoardType boardType,
+            int rangeDays
+    ) {
+        ContentPerformanceAnalyticsResponse analytics = analyticsService.getAnalytics(boardType, rangeDays);
+        List<ContentPerformanceAnalyticsResponse.Content> recovered = analytics.priorityContents().stream()
+                .filter(ContentPerformanceAnalyticsResponse.Content::operationTaskRecoverable)
+                .toList();
+        if (recovered.isEmpty()) {
+            return new ContentPerformanceBulkResolveResponse(
+                    0, 0, 0, 0, List.of(), buildTaskListPath(boardType),
+                    "현재 성과 회복으로 완료할 운영 작업이 없습니다."
+            );
+        }
+
+        List<Long> taskNos = recovered.stream()
+                .map(ContentPerformanceAnalyticsResponse.Content::operationTaskNo)
+                .sorted()
+                .toList();
+        Map<Long, Long> expectedSourceIds = recovered.stream()
+                .collect(Collectors.toMap(
+                        ContentPerformanceAnalyticsResponse.Content::operationTaskNo,
+                        ContentPerformanceAnalyticsResponse.Content::documentId
+                ));
+        List<AdminOperationTask> lockedTasks = taskRepository.findAllByTaskNoInForUpdate(taskNos);
+        int alreadyCompletedCount = 0;
+        int skippedCount = taskNos.size() - lockedTasks.size();
+        List<AdminOperationTask> completedTasks = new ArrayList<>();
+        for (AdminOperationTask task : lockedTasks) {
+            if (AdminOperationTaskStatus.DONE.name().equals(task.getStatus())) {
+                alreadyCompletedCount++;
+                continue;
+            }
+            Long expectedSourceId = expectedSourceIds.get(task.getTaskNo());
+            if (!AdminContentPerformanceAnalyticsService.CONTENT_PERFORMANCE_SOURCE_TYPE.equals(task.getSourceType())
+                    || expectedSourceId == null
+                    || !expectedSourceId.equals(task.getSourceId())) {
+                skippedCount++;
+                continue;
+            }
+            task.updateStatus(AdminOperationTaskStatus.DONE.name());
+            completedTasks.add(task);
+        }
+        if (!completedTasks.isEmpty()) {
+            taskRepository.flush();
+        }
+        completedTasks.forEach(task -> {
+            adminLogService.recordCurrentAdminLog("TASK_STATUS_UPDATE", task.getTaskNo());
+            adminLogService.recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_RESOLVE", task.getSourceId());
+        });
+        return new ContentPerformanceBulkResolveResponse(
+                recovered.size(),
+                completedTasks.size(),
+                alreadyCompletedCount,
+                skippedCount,
+                completedTasks.stream().map(AdminOperationTask::getTaskNo).toList(),
+                buildTaskListPath(boardType),
+                buildResolveMessage(completedTasks.size(), alreadyCompletedCount, skippedCount)
+        );
+    }
+
     private ContentPerformanceTaskResponse createAnalyzedTask(
             Document document,
             Document.BoardType boardType,
@@ -280,5 +344,13 @@ public class AdminContentPerformanceTaskService {
     private String buildBulkMessage(int createdCount, int existingCount, int skippedCount) {
         String message = "신규 " + createdCount + "건, 기존 연결 " + existingCount + "건을 확인했습니다.";
         return skippedCount == 0 ? message : message + " 문서 변경으로 " + skippedCount + "건은 제외했습니다.";
+    }
+
+    private String buildResolveMessage(int completedCount, int alreadyCompletedCount, int skippedCount) {
+        String message = "성과 회복 작업 " + completedCount + "건을 완료했습니다.";
+        if (alreadyCompletedCount > 0) {
+            message += " 이미 완료된 " + alreadyCompletedCount + "건을 확인했습니다.";
+        }
+        return skippedCount == 0 ? message : message + " 상태 변경으로 " + skippedCount + "건은 제외했습니다.";
     }
 }

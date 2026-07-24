@@ -65,6 +65,32 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
     }
 
     @Test
+    @DisplayName("운영 작업 일괄 잠금 조회는 교착 방지를 위해 작업 번호 오름차순을 유지한다")
+    void findsTasksForUpdateInTaskNumberOrder() {
+        AdminOperationTask first = adminOperationTaskRepository.save(AdminOperationTask.builder()
+                .title("회복 작업 1")
+                .status("IN_PROGRESS")
+                .priority("HIGH")
+                .isPinned("N")
+                .build());
+        AdminOperationTask second = adminOperationTaskRepository.saveAndFlush(AdminOperationTask.builder()
+                .title("회복 작업 2")
+                .status("IN_PROGRESS")
+                .priority("MEDIUM")
+                .isPinned("N")
+                .build());
+
+        List<AdminOperationTask> locked = adminOperationTaskRepository.findAllByTaskNoInForUpdate(
+                List.of(second.getTaskNo(), first.getTaskNo())
+        );
+
+        assertIterableEquals(
+                List.of(first.getTaskNo(), second.getTaskNo()),
+                locked.stream().map(AdminOperationTask::getTaskNo).toList()
+        );
+    }
+
+    @Test
     @DisplayName("같은 출처의 운영 작업은 DB 유니크 제약으로 중복 저장되지 않는다")
     void rejectsDuplicatedTaskSource() {
         adminOperationTaskRepository.saveAndFlush(AdminOperationTask.builder()

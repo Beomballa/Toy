@@ -303,6 +303,9 @@
                 <button type="button" class="btn btn-sm btn-outline-success" id="btnResolvePerformanceTasks" disabled>
                     <i class="fas fa-circle-check me-1"></i><span id="btnResolvePerformanceTasksLabel">회복 작업 완료</span>
                 </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAssignPerformanceTasks" disabled>
+                    <i class="fas fa-user-check me-1"></i><span id="btnAssignPerformanceTasksLabel">미배정 작업 배정</span>
+                </button>
                 <button type="button" class="btn btn-sm btn-outline-dark" id="btnExportPerformanceAnalytics">
                     <i class="fas fa-download me-1"></i>효과 CSV
                 </button>
@@ -324,12 +327,17 @@
             <article><span>진행 작업</span><strong id="contentPerformanceOpenTaskCount">-</strong><small>완료 전 연결 작업</small></article>
             <article><span>연체 작업</span><strong id="contentPerformanceOverdueTaskCount">-</strong><small>기한 경과 작업</small></article>
             <article><span>성과 회복</span><strong id="contentPerformanceRecoverableTaskCount">-</strong><small>일괄 완료 가능</small></article>
+            <article><span>미배정 작업</span><strong id="contentPerformanceUnassignedTaskCount">-</strong><small>추천 담당자 배정 가능</small></article>
         </div>
         <div class="content-performance-analytics__legend" aria-label="효과 분석 상태 안내">
             <span><i class="is-improvement"></i>보완 필요</span>
             <span><i class="is-feedback"></i>반응 확보 필요</span>
             <span><i class="is-low-signal"></i>추가 관찰</span>
             <span><i class="is-healthy"></i>안정</span>
+        </div>
+        <div class="content-performance-assignment" id="contentPerformanceAssignment"
+             aria-label="콘텐츠 개선 작업 추천 담당자">
+            <div class="content-view-empty">담당자 추천을 준비하고 있습니다.</div>
         </div>
         <div class="content-performance-list" id="contentPerformancePriorityList">
             <div class="content-view-empty">우선순위 콘텐츠를 준비하고 있습니다.</div>

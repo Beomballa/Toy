@@ -29,8 +29,9 @@ public final class ContentPerformanceAnalyticsCsvWriter {
         row(builder, "진행작업", String.valueOf(summary.openTaskCount()));
         row(builder, "연체작업", String.valueOf(summary.overdueTaskCount()));
         row(builder, "회복완료후보", String.valueOf(summary.recoverableTaskCount()));
+        row(builder, "미배정작업", String.valueOf(summary.unassignedTaskCount()));
         builder.append("\r\n");
-        builder.append("순위,콘텐츠번호,게시판,제목,조회수,순방문자,반응수,도움됨,개선필요,도움비율,반응확보율,우선순위점수,상태,판단근거,연결작업번호,연결작업상태,연결작업기한,연체,회복완료후보,연결작업경로\r\n");
+        builder.append("순위,콘텐츠번호,게시판,제목,조회수,순방문자,반응수,도움됨,개선필요,도움비율,반응확보율,우선순위점수,상태,판단근거,연결작업번호,연결작업상태,연결작업기한,연체,회복완료후보,담당관리자번호,연결작업경로\r\n");
         for (int index = 0; index < analytics.priorityContents().size(); index++) {
             ContentPerformanceAnalyticsResponse.Content item = analytics.priorityContents().get(index);
             builder.append(csv(String.valueOf(index + 1))).append(',')
@@ -52,8 +53,26 @@ public final class ContentPerformanceAnalyticsCsvWriter {
                     .append(csv(item.operationTaskDueDate())).append(',')
                     .append(csv(item.operationTaskOverdue() ? "Y" : "N")).append(',')
                     .append(csv(item.operationTaskRecoverable() ? "Y" : "N")).append(',')
+                    .append(csv(item.operationTaskAssigneeAdminNo() == null
+                            ? ""
+                            : String.valueOf(item.operationTaskAssigneeAdminNo()))).append(',')
                     .append(csv(item.operationTaskPath()))
                     .append("\r\n");
+        }
+        if (!analytics.assignmentRecommendations().isEmpty()) {
+            builder.append("\r\n추천순위,관리자번호,관리자명,전체작업,진행작업,연체작업,추천근거\r\n");
+            for (int index = 0; index < analytics.assignmentRecommendations().size(); index++) {
+                ContentPerformanceAnalyticsResponse.AssignmentRecommendation item =
+                        analytics.assignmentRecommendations().get(index);
+                builder.append(csv(String.valueOf(index + 1))).append(',')
+                        .append(csv(String.valueOf(item.adminNo()))).append(',')
+                        .append(csv(item.adminName())).append(',')
+                        .append(csv(String.valueOf(item.totalCount()))).append(',')
+                        .append(csv(String.valueOf(item.inProgressCount()))).append(',')
+                        .append(csv(String.valueOf(item.overdueCount()))).append(',')
+                        .append(csv(item.reasonLabel()))
+                        .append("\r\n");
+            }
         }
         byte[] body = builder.toString().getBytes(StandardCharsets.UTF_8);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream(UTF8_BOM.length + body.length);

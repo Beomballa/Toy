@@ -73,4 +73,8 @@ public class AdminOperationTask extends BaseEntity {
     public void updateStatus(String status) {
         this.status = status;
     }
+
+    public void updateAssignee(Long assigneeAdminNo) {
+        this.assigneeAdminNo = assigneeAdminNo;
+    }
 }

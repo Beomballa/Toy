@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkAssignResponse;
 import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
@@ -13,7 +14,9 @@ import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminOperationTaskRepository;
+import com.section.common.system.repository.AdminUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +41,7 @@ public class AdminContentPerformanceTaskService {
     private final AdminContentPerformanceAnalyticsService analyticsService;
     private final DocumentRepository documentRepository;
     private final AdminOperationTaskRepository taskRepository;
+    private final AdminUserRepository adminUserRepository;
     private final AdminLogService adminLogService;
     private final Clock clock;
 
@@ -46,21 +50,31 @@ public class AdminContentPerformanceTaskService {
             AdminContentPerformanceAnalyticsService analyticsService,
             DocumentRepository documentRepository,
             AdminOperationTaskRepository taskRepository,
+            AdminUserRepository adminUserRepository,
             AdminLogService adminLogService
     ) {
-        this(analyticsService, documentRepository, taskRepository, adminLogService, Clock.systemDefaultZone());
+        this(
+                analyticsService,
+                documentRepository,
+                taskRepository,
+                adminUserRepository,
+                adminLogService,
+                Clock.systemDefaultZone()
+        );
     }
 
     AdminContentPerformanceTaskService(
             AdminContentPerformanceAnalyticsService analyticsService,
             DocumentRepository documentRepository,
             AdminOperationTaskRepository taskRepository,
+            AdminUserRepository adminUserRepository,
             AdminLogService adminLogService,
             Clock clock
     ) {
         this.analyticsService = analyticsService;
         this.documentRepository = documentRepository;
         this.taskRepository = taskRepository;
+        this.adminUserRepository = adminUserRepository;
         this.adminLogService = adminLogService;
         this.clock = clock;
     }
@@ -224,6 +238,91 @@ public class AdminContentPerformanceTaskService {
         );
     }
 
+    @Transactional
+    public ContentPerformanceBulkAssignResponse assignUnassignedTasks(
+            Document.BoardType boardType,
+            int rangeDays
+    ) {
+        ContentPerformanceAnalyticsResponse analytics = analyticsService.getAnalytics(boardType, rangeDays);
+        List<ContentPerformanceAnalyticsResponse.Content> unassigned = analytics.priorityContents().stream()
+                .filter(item -> item.operationTaskNo() != null)
+                .filter(item -> !AdminOperationTaskStatus.DONE.name().equals(item.operationTaskStatus()))
+                .filter(item -> item.operationTaskAssigneeAdminNo() == null)
+                .filter(item -> !item.operationTaskRecoverable())
+                .toList();
+        if (unassigned.isEmpty()) {
+            return emptyAssignmentResponse(boardType, "현재 배정할 콘텐츠 개선 작업이 없습니다.");
+        }
+
+        List<Long> recommendedAdminNos = analytics.assignmentRecommendations().stream()
+                .map(ContentPerformanceAnalyticsResponse.AssignmentRecommendation::adminNo)
+                .toList();
+        Map<Long, AdminUser> activeAdmins = adminUserRepository.findAllById(recommendedAdminNos).stream()
+                .filter(admin -> "ACTIVE".equals(admin.getStatus()))
+                .collect(Collectors.toMap(AdminUser::getAdminNo, Function.identity()));
+        List<AssignmentCandidate> candidates = analytics.assignmentRecommendations().stream()
+                .filter(item -> activeAdmins.containsKey(item.adminNo()))
+                .map(AssignmentCandidate::new)
+                .toList();
+        if (candidates.isEmpty()) {
+            return new ContentPerformanceBulkAssignResponse(
+                    unassigned.size(), 0, 0, unassigned.size(), List.of(), buildTaskListPath(boardType),
+                    "배정 가능한 활성 관리자가 없습니다."
+            );
+        }
+
+        Map<Long, ContentPerformanceAnalyticsResponse.Content> expectedByTaskNo = unassigned.stream()
+                .collect(Collectors.toMap(
+                        ContentPerformanceAnalyticsResponse.Content::operationTaskNo,
+                        Function.identity()
+                ));
+        List<Long> taskNos = expectedByTaskNo.keySet().stream().sorted().toList();
+        List<AdminOperationTask> lockedTasks = taskRepository.findAllByTaskNoInForUpdate(taskNos);
+        int alreadyAssignedCount = 0;
+        int skippedCount = taskNos.size() - lockedTasks.size();
+        List<ContentPerformanceBulkAssignResponse.Assignment> assignments = new ArrayList<>();
+        for (AdminOperationTask task : lockedTasks) {
+            ContentPerformanceAnalyticsResponse.Content expected = expectedByTaskNo.get(task.getTaskNo());
+            if (AdminOperationTaskStatus.DONE.name().equals(task.getStatus())
+                    || expected == null
+                    || !AdminContentPerformanceAnalyticsService.CONTENT_PERFORMANCE_SOURCE_TYPE.equals(task.getSourceType())
+                    || !Long.valueOf(expected.documentId()).equals(task.getSourceId())) {
+                skippedCount++;
+                continue;
+            }
+            if (task.getAssigneeAdminNo() != null) {
+                alreadyAssignedCount++;
+                continue;
+            }
+            AssignmentCandidate selected = candidates.stream()
+                    .min(AssignmentCandidate.ORDER)
+                    .orElseThrow();
+            task.updateAssignee(selected.adminNo);
+            selected.totalCount++;
+            assignments.add(new ContentPerformanceBulkAssignResponse.Assignment(
+                    task.getTaskNo(),
+                    selected.adminNo,
+                    activeAdmins.get(selected.adminNo).getName()
+            ));
+        }
+        if (!assignments.isEmpty()) {
+            taskRepository.flush();
+        }
+        assignments.forEach(assignment -> {
+            adminLogService.recordCurrentAdminLog("TASK_ASSIGN", assignment.taskNo());
+            adminLogService.recordCurrentAdminLog("CONTENT_PERFORMANCE_TASK_ASSIGN", assignment.taskNo());
+        });
+        return new ContentPerformanceBulkAssignResponse(
+                unassigned.size(),
+                assignments.size(),
+                alreadyAssignedCount,
+                skippedCount,
+                assignments,
+                buildTaskListPath(boardType),
+                buildAssignmentMessage(assignments.size(), alreadyAssignedCount, skippedCount)
+        );
+    }
+
     private ContentPerformanceTaskResponse createAnalyzedTask(
             Document document,
             Document.BoardType boardType,
@@ -352,5 +451,42 @@ public class AdminContentPerformanceTaskService {
             message += " 이미 완료된 " + alreadyCompletedCount + "건을 확인했습니다.";
         }
         return skippedCount == 0 ? message : message + " 상태 변경으로 " + skippedCount + "건은 제외했습니다.";
+    }
+
+    private ContentPerformanceBulkAssignResponse emptyAssignmentResponse(
+            Document.BoardType boardType,
+            String message
+    ) {
+        return new ContentPerformanceBulkAssignResponse(
+                0, 0, 0, 0, List.of(), buildTaskListPath(boardType), message
+        );
+    }
+
+    private String buildAssignmentMessage(int assignedCount, int alreadyAssignedCount, int skippedCount) {
+        String message = "콘텐츠 개선 작업 " + assignedCount + "건을 추천 담당자에게 배정했습니다.";
+        if (alreadyAssignedCount > 0) {
+            message += " 이미 배정된 " + alreadyAssignedCount + "건을 확인했습니다.";
+        }
+        return skippedCount == 0 ? message : message + " 상태 변경으로 " + skippedCount + "건은 제외했습니다.";
+    }
+
+    private static final class AssignmentCandidate {
+        private static final Comparator<AssignmentCandidate> ORDER = Comparator
+                .comparingLong((AssignmentCandidate item) -> item.overdueCount)
+                .thenComparingLong(item -> item.inProgressCount)
+                .thenComparingLong(item -> item.totalCount)
+                .thenComparingLong(item -> item.adminNo);
+
+        private final long adminNo;
+        private final long inProgressCount;
+        private final long overdueCount;
+        private long totalCount;
+
+        private AssignmentCandidate(ContentPerformanceAnalyticsResponse.AssignmentRecommendation recommendation) {
+            this.adminNo = recommendation.adminNo();
+            this.totalCount = recommendation.totalCount();
+            this.inProgressCount = recommendation.inProgressCount();
+            this.overdueCount = recommendation.overdueCount();
+        }
     }
 }

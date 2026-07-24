@@ -16,13 +16,16 @@ class ContentPerformanceAnalyticsCsvWriterTest {
     void writesPerformanceAnalytics() {
         ContentPerformanceAnalyticsResponse response = new ContentPerformanceAnalyticsResponse(
                 "NOTICE", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
-                new ContentPerformanceAnalyticsResponse.Summary(100, 5, 40, 5, 3, 2, 1, 1, 1, 1, 1),
+                new ContentPerformanceAnalyticsResponse.Summary(100, 5, 40, 5, 3, 2, 1, 1, 1, 1, 1, 1),
                 List.of(new ContentPerformanceAnalyticsResponse.Content(
                         1, "NOTICE", "배송, 안내", 50, 20,
                         4, 1, 3, 25, 8, 84,
                         "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다.",
                         91L, "/admin/settings/tasks?taskNo=91",
-                        "IN_PROGRESS", "진행중", "2026-07-23", true, false
+                        "IN_PROGRESS", "진행중", "2026-07-23", true, false, null
+                )),
+                List.of(new ContentPerformanceAnalyticsResponse.AssignmentRecommendation(
+                        7L, "콘텐츠 담당", 2, 0, 0, "진행중/기한 초과 없이 여유가 있습니다."
                 ))
         );
 
@@ -36,6 +39,9 @@ class ContentPerformanceAnalyticsCsvWriterTest {
                 .contains("미연결조치")
                 .contains("연체작업")
                 .contains("연결작업상태")
+                .contains("미배정작업")
+                .contains("추천순위")
+                .contains("콘텐츠 담당")
                 .contains("IN_PROGRESS")
                 .contains("IMPROVEMENT_REQUIRED")
                 .contains("91")

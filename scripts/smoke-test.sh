@@ -264,9 +264,12 @@ check_admin_authenticated_flow() {
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"openTaskCount":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"overdueTaskCount":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"recoverableTaskCount":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"unassignedTaskCount":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"assignmentRecommendations":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"priorityContents":' \
     || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"operationTaskNo":' \
-    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"operationTaskRecoverable":'; then
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"operationTaskRecoverable":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"operationTaskAssigneeAdminNo":'; then
     printf 'FAIL %-28s expected=200 performance_fields=required actual=%s\n' \
       "admin content performance" "$content_performance_status" >&2
     return 1

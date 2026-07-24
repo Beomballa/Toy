@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkAssignResponse;
 import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
@@ -9,7 +10,9 @@ import com.section.common.base.exception.BusinessException;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.DocumentRepository;
 import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.entity.AdminUser;
 import com.section.common.system.repository.AdminOperationTaskRepository;
+import com.section.common.system.repository.AdminUserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,11 +43,13 @@ class AdminContentPerformanceTaskServiceTest {
             mock(AdminContentPerformanceAnalyticsService.class);
     private final DocumentRepository documentRepository = mock(DocumentRepository.class);
     private final AdminOperationTaskRepository taskRepository = mock(AdminOperationTaskRepository.class);
+    private final AdminUserRepository adminUserRepository = mock(AdminUserRepository.class);
     private final AdminLogService adminLogService = mock(AdminLogService.class);
     private final AdminContentPerformanceTaskService service = new AdminContentPerformanceTaskService(
             analyticsService,
             documentRepository,
             taskRepository,
+            adminUserRepository,
             adminLogService,
             FIXED_CLOCK
     );
@@ -328,6 +333,105 @@ class AdminContentPerformanceTaskServiceTest {
         verify(taskRepository, never()).flush();
     }
 
+    @Test
+    @DisplayName("미배정 개선 작업은 추천 담당자의 현재 부하를 갱신하며 분산 배정한다")
+    void assignsUnassignedTasksAcrossRecommendedAdmins() {
+        List<ContentPerformanceAnalyticsResponse.Content> contents = List.of(
+                unassignedContent(1L, 101L),
+                unassignedContent(2L, 102L),
+                unassignedContent(3L, 103L)
+        );
+        List<ContentPerformanceAnalyticsResponse.AssignmentRecommendation> recommendations = List.of(
+                recommendation(10L, "운영 A", 0),
+                recommendation(20L, "운영 B", 1)
+        );
+        when(analyticsService.getAnalytics(Document.BoardType.NOTICE, 7))
+                .thenReturn(assignmentAnalytics(contents, recommendations));
+        when(adminUserRepository.findAllById(List.of(10L, 20L))).thenReturn(List.of(
+                activeAdmin(10L, "운영 A"),
+                activeAdmin(20L, "운영 B")
+        ));
+        List<AdminOperationTask> tasks = List.of(
+                task(101L, 1L, "CONTENT_PERFORMANCE", "TODO"),
+                task(102L, 2L, "CONTENT_PERFORMANCE", "TODO"),
+                task(103L, 3L, "CONTENT_PERFORMANCE", "TODO")
+        );
+        when(taskRepository.findAllByTaskNoInForUpdate(List.of(101L, 102L, 103L))).thenReturn(tasks);
+
+        ContentPerformanceBulkAssignResponse response =
+                service.assignUnassignedTasks(Document.BoardType.NOTICE, 7);
+
+        assertThat(response.requestedCount()).isEqualTo(3);
+        assertThat(response.assignedCount()).isEqualTo(3);
+        assertThat(response.assignments())
+                .extracting(ContentPerformanceBulkAssignResponse.Assignment::adminNo)
+                .containsExactly(10L, 10L, 20L);
+        assertThat(tasks).extracting(AdminOperationTask::getAssigneeAdminNo)
+                .containsExactly(10L, 10L, 20L);
+        verify(taskRepository).findAllByTaskNoInForUpdate(List.of(101L, 102L, 103L));
+        verify(taskRepository).flush();
+        verify(adminLogService).recordCurrentAdminLog("TASK_ASSIGN", 101L);
+    }
+
+    @Test
+    @DisplayName("일괄 배정은 비활성 추천자를 제외하고 잠금 후 기존 배정과 출처 변경을 구분한다")
+    void revalidatesAdminsAndTasksBeforeAssignment() {
+        List<ContentPerformanceAnalyticsResponse.Content> contents = List.of(
+                unassignedContent(1L, 101L),
+                unassignedContent(2L, 102L),
+                unassignedContent(3L, 103L)
+        );
+        List<ContentPerformanceAnalyticsResponse.AssignmentRecommendation> recommendations = List.of(
+                recommendation(10L, "활성", 0),
+                recommendation(20L, "정지", 0)
+        );
+        when(analyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(assignmentAnalytics(contents, recommendations));
+        when(adminUserRepository.findAllById(List.of(10L, 20L))).thenReturn(List.of(
+                activeAdmin(10L, "활성"),
+                AdminUser.builder().adminNo(20L).name("정지").status("SUSPENDED").build()
+        ));
+        AdminOperationTask assignable = task(101L, 1L, "CONTENT_PERFORMANCE", "TODO");
+        AdminOperationTask assigned = task(102L, 2L, "CONTENT_PERFORMANCE", "TODO");
+        assigned.updateAssignee(99L);
+        AdminOperationTask changed = task(103L, 999L, "CONTENT_PERFORMANCE", "TODO");
+        when(taskRepository.findAllByTaskNoInForUpdate(List.of(101L, 102L, 103L)))
+                .thenReturn(List.of(assignable, assigned, changed));
+
+        ContentPerformanceBulkAssignResponse response =
+                service.assignUnassignedTasks(Document.BoardType.STYLE, 14);
+
+        assertThat(response.assignedCount()).isEqualTo(1);
+        assertThat(response.alreadyAssignedCount()).isEqualTo(1);
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.assignments().get(0).adminName()).isEqualTo("활성");
+        assertThat(assignable.getAssigneeAdminNo()).isEqualTo(10L);
+        assertThat(assigned.getAssigneeAdminNo()).isEqualTo(99L);
+    }
+
+    @Test
+    @DisplayName("활성 추천 담당자가 없으면 작업 잠금과 flush 없이 전체를 제외한다")
+    void skipsAssignmentWhenNoActiveRecommendationExists() {
+        List<ContentPerformanceAnalyticsResponse.Content> contents =
+                List.of(unassignedContent(1L, 101L));
+        List<ContentPerformanceAnalyticsResponse.AssignmentRecommendation> recommendations =
+                List.of(recommendation(20L, "정지", 0));
+        when(analyticsService.getAnalytics(Document.BoardType.NOTICE, 7))
+                .thenReturn(assignmentAnalytics(contents, recommendations));
+        when(adminUserRepository.findAllById(List.of(20L))).thenReturn(List.of(
+                AdminUser.builder().adminNo(20L).name("정지").status("SUSPENDED").build()
+        ));
+
+        ContentPerformanceBulkAssignResponse response =
+                service.assignUnassignedTasks(Document.BoardType.NOTICE, 7);
+
+        assertThat(response.assignedCount()).isZero();
+        assertThat(response.skippedCount()).isEqualTo(1);
+        assertThat(response.message()).contains("활성 관리자");
+        verify(taskRepository, never()).findAllByTaskNoInForUpdate(any());
+        verify(taskRepository, never()).flush();
+    }
+
     private Document document(long id, Document.BoardType boardType, String title) {
         Document document = new Document();
         document.setId(id);
@@ -379,6 +483,48 @@ class AdminContentPerformanceTaskServiceTest {
                 .sourceType(sourceType)
                 .sourceId(sourceId)
                 .status(status)
+                .build();
+    }
+
+    private ContentPerformanceAnalyticsResponse.Content unassignedContent(long documentId, long taskNo) {
+        return new ContentPerformanceAnalyticsResponse.Content(
+                documentId, "NOTICE", "개선 콘텐츠 " + documentId, 20, 10,
+                1, 0, 1, 0, 5, 70, "IMPROVEMENT_REQUIRED",
+                "본문 보완이 필요합니다.", taskNo, "/admin/settings/tasks?taskNo=" + taskNo,
+                "TODO", "대기", "2026-07-27", false, false, null
+        );
+    }
+
+    private ContentPerformanceAnalyticsResponse.AssignmentRecommendation recommendation(
+            long adminNo,
+            String name,
+            long totalCount
+    ) {
+        return new ContentPerformanceAnalyticsResponse.AssignmentRecommendation(
+                adminNo, name, totalCount, 0, 0, "현재 부하 기준 추천"
+        );
+    }
+
+    private ContentPerformanceAnalyticsResponse assignmentAnalytics(
+            List<ContentPerformanceAnalyticsResponse.Content> contents,
+            List<ContentPerformanceAnalyticsResponse.AssignmentRecommendation> recommendations
+    ) {
+        return new ContentPerformanceAnalyticsResponse(
+                "NOTICE", 7, "2026-07-18", "2026-07-24", "2026-07-24 12:00:00",
+                new ContentPerformanceAnalyticsResponse.Summary(
+                        60, 3, 0, 5, contents.size(), contents.size(), contents.size(), 0,
+                        contents.size(), 0, 0, contents.size()
+                ),
+                contents,
+                recommendations
+        );
+    }
+
+    private AdminUser activeAdmin(long adminNo, String name) {
+        return AdminUser.builder()
+                .adminNo(adminNo)
+                .name(name)
+                .status("ACTIVE")
                 .build();
     }
 }

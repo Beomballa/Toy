@@ -12,6 +12,7 @@ import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.FrontContentReactionRepository;
 import com.section.common.content.repository.FrontContentViewEventRepository;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.entity.AdminOperationTask;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,6 +117,18 @@ public class AdminContentPerformanceAnalyticsService {
         long recoverableTaskCount = priorityContents.stream()
                 .filter(ContentPerformanceAnalyticsResponse.Content::operationTaskRecoverable)
                 .count();
+        long unassignedTaskCount = priorityContents.stream()
+                .filter(item -> item.operationTaskNo() != null)
+                .filter(item -> !AdminOperationTaskStatus.DONE.name().equals(item.operationTaskStatus()))
+                .filter(item -> item.operationTaskAssigneeAdminNo() == null)
+                .filter(item -> !item.operationTaskRecoverable())
+                .count();
+        List<ContentPerformanceAnalyticsResponse.AssignmentRecommendation> assignmentRecommendations =
+                unassignedTaskCount == 0
+                        ? List.of()
+                        : taskRepository.getTaskAssignmentRecommendations(endDate, null, 3).stream()
+                                .map(this::toAssignmentRecommendation)
+                                .toList();
 
         return new ContentPerformanceAnalyticsResponse(
                 boardType == null ? "ALL" : boardType.name(),
@@ -134,9 +147,11 @@ public class AdminContentPerformanceAnalyticsService {
                         actionRequiredCount - linkedActionCount,
                         openTaskCount,
                         overdueTaskCount,
-                        recoverableTaskCount
+                        recoverableTaskCount,
+                        unassignedTaskCount
                 ),
-                priorityContents
+                priorityContents,
+                assignmentRecommendations
         );
     }
 
@@ -203,8 +218,34 @@ public class AdminContentPerformanceAnalyticsService {
                 task == null ? null : taskStatusLabel(task.getStatus()),
                 task == null || task.getDueDate() == null ? null : task.getDueDate().toString(),
                 taskOverdue,
-                taskRecoverable
+                taskRecoverable,
+                task == null ? null : task.getAssigneeAdminNo()
         );
+    }
+
+    private ContentPerformanceAnalyticsResponse.AssignmentRecommendation toAssignmentRecommendation(
+            AdminOperationTaskAssigneeRecommendationDto recommendation
+    ) {
+        return new ContentPerformanceAnalyticsResponse.AssignmentRecommendation(
+                recommendation.adminNo(),
+                recommendation.adminName(),
+                recommendation.totalCount(),
+                recommendation.inProgressCount(),
+                recommendation.overdueCount(),
+                assignmentReason(recommendation)
+        );
+    }
+
+    private String assignmentReason(AdminOperationTaskAssigneeRecommendationDto recommendation) {
+        if (recommendation.overdueCount() == 0 && recommendation.totalCount() == 0) {
+            return "현재 배정 작업이 없습니다.";
+        }
+        if (recommendation.overdueCount() == 0 && recommendation.inProgressCount() == 0) {
+            return "진행중/기한 초과 없이 여유가 있습니다.";
+        }
+        return "기한 초과 " + recommendation.overdueCount()
+                + "건 · 진행중 " + recommendation.inProgressCount()
+                + "건 · 전체 " + recommendation.totalCount() + "건";
     }
 
     private String taskStatusLabel(String status) {

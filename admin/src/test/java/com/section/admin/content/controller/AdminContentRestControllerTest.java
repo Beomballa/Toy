@@ -10,6 +10,7 @@ import com.section.admin.content.service.AdminContentPerformanceAnalyticsService
 import com.section.admin.content.service.AdminContentPerformanceTaskService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceBulkAssignResponse;
 import com.section.admin.content.res.ContentPerformanceBulkResolveResponse;
 import com.section.admin.content.res.ContentPerformanceBulkTaskResponse;
 import com.section.admin.content.res.ContentPerformanceTaskResponse;
@@ -546,6 +547,50 @@ class AdminContentRestControllerTest {
 
         verify(adminContentPerformanceTaskService, never())
                 .resolveRecoveredTasks(any(), org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    @DisplayName("콘텐츠 개선 작업 배정 API는 게시판을 정규화하고 분산 배정 결과를 반환한다")
+    void assignPerformanceTasksReturnsBulkResult() throws Exception {
+        when(adminContentPerformanceTaskService.assignUnassignedTasks(Document.BoardType.QNA, 30))
+                .thenReturn(new ContentPerformanceBulkAssignResponse(
+                        2, 2, 0, 0,
+                        List.of(
+                                new ContentPerformanceBulkAssignResponse.Assignment(91L, 7L, "운영자"),
+                                new ContentPerformanceBulkAssignResponse.Assignment(92L, 8L, "콘텐츠 담당")
+                        ),
+                        "/admin/settings/tasks", "콘텐츠 개선 작업 2건을 배정했습니다."
+                ));
+
+        mockMvc.perform(post("/api/admin/content/stats/performance/tasks/assign")
+                        .param("boardType", " qna ")
+                        .param("days", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requestedCount").value(2))
+                .andExpect(jsonPath("$.assignedCount").value(2))
+                .andExpect(jsonPath("$.assignments[0].adminNo").value(7L))
+                .andExpect(jsonPath("$.assignments[1].adminName").value("콘텐츠 담당"));
+
+        verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        verify(adminContentPerformanceTaskService)
+                .assignUnassignedTasks(Document.BoardType.QNA, 30);
+    }
+
+    @Test
+    @DisplayName("관리자 쓰기 제한 중에는 콘텐츠 개선 작업을 배정하지 않는다")
+    void assignPerformanceTasksRejectsBlockedAdminWrite() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/content/stats/performance/tasks/assign")
+                        .param("boardType", "NOTICE")
+                        .param("days", "7"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
+
+        verify(adminContentPerformanceTaskService, never())
+                .assignUnassignedTasks(any(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test

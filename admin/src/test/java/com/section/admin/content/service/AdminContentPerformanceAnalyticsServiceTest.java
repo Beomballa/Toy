@@ -10,6 +10,7 @@ import com.section.common.content.entity.Document;
 import com.section.common.content.repository.FrontContentReactionRepository;
 import com.section.common.content.repository.FrontContentViewEventRepository;
 import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.dto.AdminOperationTaskAssigneeRecommendationDto;
 import com.section.common.system.repository.AdminOperationTaskRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,9 +74,14 @@ class AdminContentPerformanceAnalyticsServiceTest {
                 Set.of(1L, 2L, 3L, 4L)
         )).thenReturn(List.of(AdminOperationTask.builder()
                 .taskNo(91L)
+                .status("IN_PROGRESS")
                 .sourceType("CONTENT_PERFORMANCE")
                 .sourceId(1L)
                 .build()));
+        when(taskRepository.getTaskAssignmentRecommendations(endDate, null, 3))
+                .thenReturn(List.of(new AdminOperationTaskAssigneeRecommendationDto(
+                        7L, "콘텐츠 담당", 2, 0, 0
+                )));
 
         ContentPerformanceAnalyticsResponse response =
                 service.getAnalytics(Document.BoardType.NOTICE, 7);
@@ -88,6 +94,10 @@ class AdminContentPerformanceAnalyticsServiceTest {
         assertThat(response.summary().actionRequiredCount()).isEqualTo(3);
         assertThat(response.summary().linkedActionCount()).isEqualTo(1);
         assertThat(response.summary().unlinkedActionCount()).isEqualTo(2);
+        assertThat(response.summary().unassignedTaskCount()).isEqualTo(1);
+        assertThat(response.assignmentRecommendations()).hasSize(1);
+        assertThat(response.assignmentRecommendations().get(0).adminName()).isEqualTo("콘텐츠 담당");
+        assertThat(response.assignmentRecommendations().get(0).reasonLabel()).contains("여유");
         assertThat(response.priorityContents()).extracting(ContentPerformanceAnalyticsResponse.Content::documentId)
                 .containsExactly(1L, 2L, 3L, 4L);
         assertThat(response.priorityContents().get(0).status()).isEqualTo("IMPROVEMENT_REQUIRED");

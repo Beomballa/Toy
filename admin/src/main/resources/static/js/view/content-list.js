@@ -6,9 +6,12 @@ const ContentList = {
     performanceAnalyticsExportInFlight: false,
     performanceBulkTaskInFlight: false,
     performanceResolveInFlight: false,
+    performanceAssignInFlight: false,
     performanceTaskInFlightIds: new Set(),
     performanceUnlinkedActionCount: 0,
     performanceRecoverableTaskCount: 0,
+    performanceUnassignedTaskCount: 0,
+    performanceAssignmentRecommendationCount: 0,
     operationPolicy: null,
     actionInFlightIds: new Set(),
     dailyStats: null,
@@ -145,6 +148,7 @@ const ContentList = {
         document.getElementById('btnExportPerformanceAnalytics')?.addEventListener('click', () => this.exportPerformanceAnalytics());
         document.getElementById('btnCreatePerformanceTasks')?.addEventListener('click', () => this.createPerformanceTasks());
         document.getElementById('btnResolvePerformanceTasks')?.addEventListener('click', () => this.resolvePerformanceTasks());
+        document.getElementById('btnAssignPerformanceTasks')?.addEventListener('click', () => this.assignPerformanceTasks());
         document.getElementById('contentPerformancePriorityList')?.addEventListener('click', (event) => {
             const button = event.target.closest('[data-role="create-performance-task"]');
             if (!button) return;
@@ -741,10 +745,15 @@ const ContentList = {
         this.setText('contentPerformanceOpenTaskCount', '-');
         this.setText('contentPerformanceOverdueTaskCount', '-');
         this.setText('contentPerformanceRecoverableTaskCount', '-');
+        this.setText('contentPerformanceUnassignedTaskCount', '-');
         this.performanceUnlinkedActionCount = 0;
         this.performanceRecoverableTaskCount = 0;
+        this.performanceUnassignedTaskCount = 0;
+        this.performanceAssignmentRecommendationCount = 0;
         this.syncPerformanceBulkTaskButton();
         this.syncPerformanceResolveButton();
+        this.syncPerformanceAssignButton();
+        this.renderPerformanceAssignment([]);
         this.renderPerformancePriorityList([]);
     },
 
@@ -767,10 +776,18 @@ const ContentList = {
         this.setText('contentPerformanceOpenTaskCount', `${this.formatNumber(summary.openTaskCount)}건`);
         this.setText('contentPerformanceOverdueTaskCount', `${this.formatNumber(summary.overdueTaskCount)}건`);
         this.setText('contentPerformanceRecoverableTaskCount', `${this.formatNumber(summary.recoverableTaskCount)}건`);
+        this.setText('contentPerformanceUnassignedTaskCount', `${this.formatNumber(summary.unassignedTaskCount)}건`);
         this.performanceUnlinkedActionCount = Number(summary.unlinkedActionCount) || 0;
         this.performanceRecoverableTaskCount = Number(summary.recoverableTaskCount) || 0;
+        this.performanceUnassignedTaskCount = Number(summary.unassignedTaskCount) || 0;
+        const recommendations = Array.isArray(analytics.assignmentRecommendations)
+            ? analytics.assignmentRecommendations
+            : [];
+        this.performanceAssignmentRecommendationCount = recommendations.length;
         this.syncPerformanceBulkTaskButton();
         this.syncPerformanceResolveButton();
+        this.syncPerformanceAssignButton();
+        this.renderPerformanceAssignment(recommendations);
         this.renderPerformancePriorityList(
             Array.isArray(analytics.priorityContents) ? analytics.priorityContents : []
         );
@@ -810,6 +827,7 @@ const ContentList = {
                 ? `<span class="content-performance-item__task-meta${item.operationTaskOverdue ? ' is-overdue' : ''}${item.operationTaskRecoverable ? ' is-recoverable' : ''}">
                        ${ContentBoardConfig.escapeHtml(item.operationTaskStatusLabel || item.operationTaskStatus || '연결')}
                        ${item.operationTaskDueDate ? ` · ${ContentBoardConfig.escapeHtml(item.operationTaskDueDate)}` : ''}
+                       ${item.operationTaskAssigneeAdminNo ? ` · 관리자 #${this.formatNumber(item.operationTaskAssigneeAdminNo)}` : ' · 미배정'}
                        ${item.operationTaskOverdue ? ' · 연체' : ''}
                        ${item.operationTaskRecoverable ? ' · 회복 확인' : ''}
                    </span>`
@@ -854,8 +872,12 @@ const ContentList = {
         }
         this.performanceUnlinkedActionCount = 0;
         this.performanceRecoverableTaskCount = 0;
+        this.performanceUnassignedTaskCount = 0;
+        this.performanceAssignmentRecommendationCount = 0;
         this.syncPerformanceBulkTaskButton();
         this.syncPerformanceResolveButton();
+        this.syncPerformanceAssignButton();
+        this.renderPerformanceAssignment([]);
     },
 
     async exportPerformanceAnalytics() {
@@ -1067,6 +1089,105 @@ const ContentList = {
         CommonJS.setButtonDisabled(button, disabled, reason);
     },
 
+    renderPerformanceAssignment(items) {
+        const target = document.getElementById('contentPerformanceAssignment');
+        if (!target) return;
+        if (!items.length) {
+            target.innerHTML = `<div class="content-view-empty">${
+                this.performanceUnassignedTaskCount > 0
+                    ? '현재 배정 가능한 활성 관리자가 없습니다.'
+                    : '미배정 콘텐츠 개선 작업이 없습니다.'
+            }</div>`;
+            return;
+        }
+        target.innerHTML = items.map((item, index) => `
+            <article class="content-performance-assignment__item">
+                <span>${index + 1}순위</span>
+                <strong>${ContentBoardConfig.escapeHtml(item.adminName || `관리자 #${item.adminNo}`)}</strong>
+                <small>${ContentBoardConfig.escapeHtml(item.reasonLabel || '')}</small>
+                <dl>
+                    <div><dt>전체</dt><dd>${this.formatNumber(item.totalCount)}</dd></div>
+                    <div><dt>진행</dt><dd>${this.formatNumber(item.inProgressCount)}</dd></div>
+                    <div><dt>연체</dt><dd>${this.formatNumber(item.overdueCount)}</dd></div>
+                </dl>
+            </article>
+        `).join('');
+    },
+
+    async assignPerformanceTasks() {
+        if (this.performanceAssignInFlight
+            || this.performanceUnassignedTaskCount <= 0
+            || this.performanceAssignmentRecommendationCount <= 0) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(
+                CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 일괄 배정'),
+                '알림',
+                'warning'
+            );
+            return;
+        }
+        const confirmed = await CommonJS.confirm(
+            `미배정 콘텐츠 개선 작업 ${this.formatNumber(this.performanceUnassignedTaskCount)}건을 현재 워크로드가 낮은 담당자에게 분산 배정하시겠습니까?`,
+            '추천 담당자 일괄 배정',
+            'warning'
+        );
+        if (!confirmed) return;
+
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.performanceAssignInFlight = true;
+            this.syncPerformanceAssignButton();
+            const response = await fetch(`/api/admin/content/stats/performance/tasks/assign?${params}`, {
+                method: 'POST',
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '콘텐츠 개선 작업 배정에 실패했습니다.'));
+            }
+            const result = await response.json();
+            await CommonJS.alert(
+                `${ContentBoardConfig.escapeHtml(result.message || '작업 배정을 완료했습니다.')}<br>요청 ${this.formatNumber(result.requestedCount)}건 · 배정 ${this.formatNumber(result.assignedCount)}건 · 기존 배정 ${this.formatNumber(result.alreadyAssignedCount)}건`,
+                '추천 담당자 배정 완료',
+                'success'
+            );
+            await this.getPerformanceAnalytics();
+        } catch (error) {
+            await CommonJS.alert(ContentBoardConfig.escapeHtml(error.message), '오류', 'error');
+        } finally {
+            this.performanceAssignInFlight = false;
+            this.syncPerformanceAssignButton();
+        }
+    },
+
+    syncPerformanceAssignButton() {
+        const button = document.getElementById('btnAssignPerformanceTasks');
+        const label = document.getElementById('btnAssignPerformanceTasksLabel');
+        if (label) {
+            label.textContent = this.performanceAssignInFlight
+                ? '담당자 배정 중'
+                : `미배정 ${this.formatNumber(this.performanceUnassignedTaskCount)}건 배정`;
+        }
+        const policyBlocked = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
+        const noRecommendation = this.performanceAssignmentRecommendationCount <= 0;
+        const disabled = this.performanceAssignInFlight
+            || this.performanceUnassignedTaskCount <= 0
+            || noRecommendation
+            || policyBlocked;
+        const reason = policyBlocked
+            ? CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 일괄 배정')
+            : this.performanceUnassignedTaskCount <= 0
+                ? '현재 미배정 콘텐츠 개선 작업이 없습니다.'
+                : noRecommendation
+                    ? '배정 가능한 활성 관리자가 없습니다.'
+                    : '';
+        CommonJS.setButtonDisabled(button, disabled, reason);
+    },
+
     formatDecimal(value) {
         const number = Number(value);
         return Number.isFinite(number)
@@ -1119,6 +1240,7 @@ const ContentList = {
             });
             this.syncPerformanceBulkTaskButton();
             this.syncPerformanceResolveButton();
+            this.syncPerformanceAssignButton();
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);
         }

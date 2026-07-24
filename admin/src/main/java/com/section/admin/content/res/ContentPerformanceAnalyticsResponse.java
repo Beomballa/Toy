@@ -34,7 +34,9 @@ public record ContentPerformanceAnalyticsResponse(
             int reactionCoverageRate,
             int priorityScore,
             String status,
-            String statusMessage
+            String statusMessage,
+            Long operationTaskNo,
+            String operationTaskPath
     ) {
     }
 }

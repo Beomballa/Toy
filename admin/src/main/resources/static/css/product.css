@@ -2259,7 +2259,7 @@ body {
 
 .content-performance-item {
     display: grid;
-    grid-template-columns: 32px minmax(220px, 1fr) minmax(300px, 0.8fr) 84px;
+    grid-template-columns: 32px minmax(220px, 1fr) minmax(300px, 0.8fr) 132px;
     align-items: center;
     gap: 0.8rem;
     min-width: 0;
@@ -2355,6 +2355,9 @@ body {
 }
 
 .content-performance-item__decision {
+    display: grid;
+    justify-items: end;
+    gap: 0.35rem;
     text-align: right;
 }
 
@@ -2371,6 +2374,62 @@ body {
 .content-performance-item__decision strong {
     margin-top: 0.15rem;
     color: #263f52;
+    font-size: 0.82rem;
+}
+
+.content-performance-item__task-button,
+.content-performance-item__task-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 0.55rem;
+    border: 1px solid #b9cad7;
+    border-radius: 8px;
+    background: #fff;
+    color: #315f87;
+    font-size: 0.64rem;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.content-performance-item__task-button:hover,
+.content-performance-item__task-link:hover {
+    border-color: #315f87;
+    color: #203f5a;
+}
+
+.content-performance-item__task-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.task-detail-source {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid #dbe6ee;
+    border-radius: 14px;
+    background: #f4f8fb;
+}
+
+.task-detail-source span,
+.task-detail-source strong {
+    display: block;
+}
+
+.task-detail-source span {
+    color: #788996;
+    font-size: 0.7rem;
+}
+
+.task-detail-source strong {
+    margin-top: 0.15rem;
+    color: #29465d;
     font-size: 0.82rem;
 }
 
@@ -3017,7 +3076,7 @@ body {
     }
 
     .content-performance-item {
-        grid-template-columns: 32px minmax(0, 1fr) 84px;
+        grid-template-columns: 32px minmax(0, 1fr) 132px;
     }
 
     .content-performance-item__metrics {
@@ -3084,6 +3143,7 @@ body {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        justify-items: initial;
         text-align: left;
     }
 

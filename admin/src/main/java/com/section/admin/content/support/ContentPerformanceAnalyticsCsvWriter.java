@@ -25,7 +25,7 @@ public final class ContentPerformanceAnalyticsCsvWriter {
         row(builder, "분석콘텐츠", String.valueOf(summary.analyzedContentCount()));
         row(builder, "조치필요", String.valueOf(summary.actionRequiredCount()));
         builder.append("\r\n");
-        builder.append("순위,콘텐츠번호,게시판,제목,조회수,순방문자,반응수,도움됨,개선필요,도움비율,반응확보율,우선순위점수,상태,판단근거\r\n");
+        builder.append("순위,콘텐츠번호,게시판,제목,조회수,순방문자,반응수,도움됨,개선필요,도움비율,반응확보율,우선순위점수,상태,판단근거,연결작업번호,연결작업경로\r\n");
         for (int index = 0; index < analytics.priorityContents().size(); index++) {
             ContentPerformanceAnalyticsResponse.Content item = analytics.priorityContents().get(index);
             builder.append(csv(String.valueOf(index + 1))).append(',')
@@ -41,7 +41,9 @@ public final class ContentPerformanceAnalyticsCsvWriter {
                     .append(csv(item.reactionCoverageRate() + "%")).append(',')
                     .append(csv(String.valueOf(item.priorityScore()))).append(',')
                     .append(csv(item.status())).append(',')
-                    .append(csv(item.statusMessage()))
+                    .append(csv(item.statusMessage())).append(',')
+                    .append(csv(item.operationTaskNo() == null ? "" : String.valueOf(item.operationTaskNo()))).append(',')
+                    .append(csv(item.operationTaskPath()))
                     .append("\r\n");
         }
         byte[] body = builder.toString().getBytes(StandardCharsets.UTF_8);

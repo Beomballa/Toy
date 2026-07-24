@@ -11,7 +11,13 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-@Table(name = "admin_operation_task")
+@Table(
+        name = "admin_operation_task",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_admin_operation_task_source",
+                columnNames = {"source_type", "source_id"}
+        )
+)
 public class AdminOperationTask extends BaseEntity {
 
     @Id
@@ -39,6 +45,12 @@ public class AdminOperationTask extends BaseEntity {
 
     @Column(name = "is_pinned", nullable = false, length = 1)
     private String isPinned;
+
+    @Column(name = "source_type", length = 30)
+    private String sourceType;
+
+    @Column(name = "source_id")
+    private Long sourceId;
 
     public void update(
             String title,

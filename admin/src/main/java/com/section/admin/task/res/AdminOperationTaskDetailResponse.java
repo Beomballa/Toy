@@ -7,6 +7,8 @@ import com.section.common.base.entity.type.AdminOperationTaskStatus;
 import com.section.common.system.dto.AdminOperationTaskCommentResDto;
 import com.section.common.system.entity.AdminOperationTask;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +29,10 @@ public record AdminOperationTaskDetailResponse(
         String crtDtm,
         String historyPath,
         String activityLogPath,
+        String sourceType,
+        Long sourceId,
+        String sourceLabel,
+        String sourcePath,
         List<AssigneeOption> assigneeOptions,
         List<AssignmentRecommendation> assignmentRecommendations,
         List<RecentHistory> recentHistories,
@@ -58,11 +64,35 @@ public record AdminOperationTaskDetailResponse(
                 format(task.getCrtDtm()),
                 "/admin/settings/tasks/history?taskNo=" + task.getTaskNo(),
                 "/admin/settings/logs?actionType=TASK_&targetId=" + task.getTaskNo(),
+                task.getSourceType(),
+                task.getSourceId(),
+                resolveSourceLabel(task),
+                resolveSourcePath(task),
                 assigneeOptions == null ? List.of() : assigneeOptions,
                 assignmentRecommendations == null ? List.of() : assignmentRecommendations.stream().map(AssignmentRecommendation::from).toList(),
                 recentHistories == null ? List.of() : recentHistories.stream().map(RecentHistory::from).toList(),
                 comments == null ? List.of() : comments.stream().map(Comment::from).toList()
         );
+    }
+
+    private static String resolveSourceLabel(AdminOperationTask task) {
+        if ("CONTENT_PERFORMANCE".equals(task.getSourceType()) && task.getSourceId() != null) {
+            return "효과 분석 콘텐츠 #" + task.getSourceId();
+        }
+        return null;
+    }
+
+    private static String resolveSourcePath(AdminOperationTask task) {
+        if ("CONTENT_PERFORMANCE".equals(task.getSourceType()) && task.getSourceId() != null) {
+            String returnTo = URLEncoder.encode(
+                    "/admin/settings/tasks/get?no=" + task.getTaskNo(),
+                    StandardCharsets.UTF_8
+            );
+            return "/admin/content/get?id=" + task.getSourceId()
+                    + "&source=task-content-source"
+                    + "&returnTo=" + returnTo;
+        }
+        return null;
     }
 
     public record AssigneeOption(

@@ -9,6 +9,8 @@ import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.FrontContentReactionRepository;
 import com.section.common.content.repository.FrontContentViewEventRepository;
+import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.repository.AdminOperationTaskRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -33,8 +36,14 @@ class AdminContentPerformanceAnalyticsServiceTest {
 
     private final FrontContentViewEventRepository viewRepository = mock(FrontContentViewEventRepository.class);
     private final FrontContentReactionRepository reactionRepository = mock(FrontContentReactionRepository.class);
+    private final AdminOperationTaskRepository taskRepository = mock(AdminOperationTaskRepository.class);
     private final AdminContentPerformanceAnalyticsService service =
-            new AdminContentPerformanceAnalyticsService(viewRepository, reactionRepository, FIXED_CLOCK);
+            new AdminContentPerformanceAnalyticsService(
+                    viewRepository,
+                    reactionRepository,
+                    taskRepository,
+                    FIXED_CLOCK
+            );
 
     @Test
     @DisplayName("효과 분석은 전체 요약과 조회·반응 후보를 병합해 조치 우선순위를 계산한다")
@@ -58,6 +67,14 @@ class AdminContentPerformanceAnalyticsServiceTest {
                         new ContentReactionTopRow(1, Document.BoardType.NOTICE, "개선 공지", 1, 3),
                         new ContentReactionTopRow(4, Document.BoardType.NOTICE, "반응 전용", 1, 0)
                 ));
+        when(taskRepository.findAllBySourceTypeAndSourceIdIn(
+                "CONTENT_PERFORMANCE",
+                Set.of(1L, 2L, 3L, 4L)
+        )).thenReturn(List.of(AdminOperationTask.builder()
+                .taskNo(91L)
+                .sourceType("CONTENT_PERFORMANCE")
+                .sourceId(1L)
+                .build()));
 
         ContentPerformanceAnalyticsResponse response =
                 service.getAnalytics(Document.BoardType.NOTICE, 7);
@@ -71,6 +88,8 @@ class AdminContentPerformanceAnalyticsServiceTest {
         assertThat(response.priorityContents()).extracting(ContentPerformanceAnalyticsResponse.Content::documentId)
                 .containsExactly(1L, 2L, 3L, 4L);
         assertThat(response.priorityContents().get(0).status()).isEqualTo("IMPROVEMENT_REQUIRED");
+        assertThat(response.priorityContents().get(0).operationTaskNo()).isEqualTo(91L);
+        assertThat(response.priorityContents().get(0).operationTaskPath()).contains("taskNo=91");
         assertThat(response.priorityContents().get(1).status()).isEqualTo("FEEDBACK_NEEDED");
         assertThat(response.priorityContents().get(3).status()).isEqualTo("LOW_SIGNAL");
     }

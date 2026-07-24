@@ -21,6 +21,8 @@ class AdminOperationTaskDetailResponseTest {
                 .status("TODO")
                 .priority("HIGH")
                 .isPinned("N")
+                .sourceType("CONTENT_PERFORMANCE")
+                .sourceId(31L)
                 .build();
         AdminLogListResponse.Item history = new AdminLogListResponse.Item(
                 3L,
@@ -44,5 +46,10 @@ class AdminOperationTaskDetailResponseTest {
         );
 
         assertEquals("댓글 수정", response.recentHistories().get(0).actionLabel());
+        assertEquals("효과 분석 콘텐츠 #31", response.sourceLabel());
+        assertEquals(
+                "/admin/content/get?id=31&source=task-content-source&returnTo=%2Fadmin%2Fsettings%2Ftasks%2Fget%3Fno%3D15",
+                response.sourcePath()
+        );
     }
 }

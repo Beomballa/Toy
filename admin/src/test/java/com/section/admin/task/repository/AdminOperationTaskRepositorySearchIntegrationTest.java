@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(classes = AdminToyApplication.class)
@@ -42,6 +44,49 @@ class AdminOperationTaskRepositorySearchIntegrationTest {
 
     @Autowired
     private AdminUserRepository adminUserRepository;
+
+    @Test
+    @DisplayName("운영 작업은 출처 유형과 ID로 연결 작업을 조회한다")
+    void findsTaskBySource() {
+        AdminOperationTask saved = adminOperationTaskRepository.saveAndFlush(AdminOperationTask.builder()
+                .title("콘텐츠 개선")
+                .status("TODO")
+                .priority("HIGH")
+                .isPinned("Y")
+                .sourceType("CONTENT_PERFORMANCE")
+                .sourceId(31001L)
+                .build());
+
+        AdminOperationTask found = adminOperationTaskRepository
+                .findBySourceTypeAndSourceId("CONTENT_PERFORMANCE", 31001L)
+                .orElseThrow();
+
+        assertEquals(saved.getTaskNo(), found.getTaskNo());
+    }
+
+    @Test
+    @DisplayName("같은 출처의 운영 작업은 DB 유니크 제약으로 중복 저장되지 않는다")
+    void rejectsDuplicatedTaskSource() {
+        adminOperationTaskRepository.saveAndFlush(AdminOperationTask.builder()
+                .title("첫 번째 콘텐츠 개선")
+                .status("TODO")
+                .priority("HIGH")
+                .isPinned("Y")
+                .sourceType("CONTENT_PERFORMANCE")
+                .sourceId(31002L)
+                .build());
+
+        assertThrows(DataIntegrityViolationException.class, () ->
+                adminOperationTaskRepository.saveAndFlush(AdminOperationTask.builder()
+                        .title("중복 콘텐츠 개선")
+                        .status("TODO")
+                        .priority("HIGH")
+                        .isPinned("Y")
+                        .sourceType("CONTENT_PERFORMANCE")
+                        .sourceId(31002L)
+                        .build())
+        );
+    }
 
     @Test
     @DisplayName("운영 작업 목록 검색은 공백으로 구분된 여러 키워드를 모두 만족하는 작업만 찾는다")

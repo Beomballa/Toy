@@ -7,6 +7,7 @@ import com.section.admin.content.req.ContentQuickOperateRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
@@ -17,6 +18,7 @@ import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.content.service.AdminContentPerformanceAnalyticsService;
+import com.section.admin.content.service.AdminContentPerformanceTaskService;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.support.ContentReactionAnalyticsCsvWriter;
@@ -57,6 +59,7 @@ public class AdminContentRestController {
     private final AdminContentViewAnalyticsService adminContentViewAnalyticsService;
     private final AdminContentReactionAnalyticsService adminContentReactionAnalyticsService;
     private final AdminContentPerformanceAnalyticsService adminContentPerformanceAnalyticsService;
+    private final AdminContentPerformanceTaskService adminContentPerformanceTaskService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -205,6 +208,19 @@ public class AdminContentRestController {
                 .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .body(ContentPerformanceAnalyticsCsvWriter.write(analytics));
+    }
+
+    @PostMapping("/{id}/performance-task")
+    public ResponseEntity<ContentPerformanceTaskResponse> createPerformanceTask(
+            @PathVariable("id") long id,
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        return ResponseEntity.ok(adminContentPerformanceTaskService.createTask(id, normalizedBoardType, days));
     }
 
     @GetMapping("/export")

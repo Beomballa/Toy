@@ -4,6 +4,8 @@ const ContentList = {
     viewAnalyticsExportInFlight: false,
     reactionAnalyticsExportInFlight: false,
     performanceAnalyticsExportInFlight: false,
+    performanceTaskInFlightIds: new Set(),
+    operationPolicy: null,
     actionInFlightIds: new Set(),
     dailyStats: null,
     viewAnalytics: null,
@@ -137,6 +139,14 @@ const ContentList = {
         document.getElementById('btnExportReactionAnalytics')?.addEventListener('click', () => this.exportReactionAnalytics());
         document.getElementById('btnRefreshPerformanceAnalytics')?.addEventListener('click', () => this.getPerformanceAnalytics());
         document.getElementById('btnExportPerformanceAnalytics')?.addEventListener('click', () => this.exportPerformanceAnalytics());
+        document.getElementById('contentPerformancePriorityList')?.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-role="create-performance-task"]');
+            if (!button) return;
+            this.createPerformanceTask(
+                Number(button.dataset.documentId),
+                button.dataset.boardType
+            );
+        });
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
                 const rangeDays = Number(button.dataset.viewRange);
@@ -757,6 +767,21 @@ const ContentList = {
         };
         target.innerHTML = items.map((item, index) => {
             const status = labels[item.status] ? item.status : 'LOW_SIGNAL';
+            const actionRequired = ['IMPROVEMENT_REQUIRED', 'FEEDBACK_NEEDED'].includes(status);
+            const taskAction = item.operationTaskNo && item.operationTaskPath
+                ? `<a class="content-performance-item__task-link"
+                      href="${ContentBoardConfig.escapeHtml(item.operationTaskPath)}">
+                       작업 #${this.formatNumber(item.operationTaskNo)} 보기
+                   </a>`
+                : actionRequired
+                    ? `<button type="button"
+                               class="content-performance-item__task-button"
+                               data-role="create-performance-task"
+                               data-document-id="${Number(item.documentId)}"
+                               data-board-type="${ContentBoardConfig.escapeHtml(item.boardType)}">
+                           작업 생성
+                       </button>`
+                    : '';
             return `
                 <article class="content-performance-item" data-status="${status}">
                     <span class="content-performance-item__rank">${index + 1}</span>
@@ -776,12 +801,16 @@ const ContentList = {
                         <div><dt>확보</dt><dd>${this.formatNumber(item.reactionCoverageRate)}%</dd></div>
                     </dl>
                     <div class="content-performance-item__decision">
-                        <span>${labels[status]}</span>
-                        <strong>${this.formatNumber(item.priorityScore)}점</strong>
+                        <div>
+                            <span>${labels[status]}</span>
+                            <strong>${this.formatNumber(item.priorityScore)}점</strong>
+                        </div>
+                        ${taskAction}
                     </div>
                 </article>
             `;
         }).join('');
+        this.applyOperationPolicy();
     },
 
     renderPerformanceAnalyticsError() {
@@ -810,6 +839,57 @@ const ContentList = {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
             this.performanceAnalyticsExportInFlight = false;
+            CommonJS.setButtonDisabled(button, false);
+        }
+    },
+
+    async createPerformanceTask(documentId, boardType) {
+        if (!Number.isInteger(documentId) || documentId <= 0 || this.performanceTaskInFlightIds.has(documentId)) {
+            return;
+        }
+        if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
+            await CommonJS.alert(
+                CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 생성'),
+                '알림',
+                'warning'
+            );
+            return;
+        }
+        const confirmed = await CommonJS.confirm(
+            `콘텐츠 #${documentId}의 현재 효과 분석 결과로 운영 작업을 생성하시겠습니까?`,
+            '콘텐츠 개선 작업 생성',
+            'info'
+        );
+        if (!confirmed) return;
+
+        const button = document.querySelector(
+            `[data-role="create-performance-task"][data-document-id="${documentId}"]`
+        );
+        const params = new URLSearchParams({
+            boardType: ContentBoardConfig.normalizeBoardType(boardType),
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.performanceTaskInFlightIds.add(documentId);
+            CommonJS.setButtonDisabled(button, true, '작업을 생성하고 있습니다.');
+            const response = await fetch(`/api/admin/content/${documentId}/performance-task?${params}`, {
+                method: 'POST',
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 생성에 실패했습니다.'));
+            }
+            const result = await response.json();
+            await CommonJS.alert(
+                `${result.message || '운영 작업을 연결했습니다.'}<br>작업 #${this.formatNumber(result.taskNo)} · ${ContentBoardConfig.escapeHtml(result.priority || '-')}`,
+                result.created ? '작업 생성 완료' : '기존 작업 확인',
+                'success'
+            );
+            await this.getPerformanceAnalytics();
+        } catch (error) {
+            await CommonJS.alert(ContentBoardConfig.escapeHtml(error.message), '오류', 'error');
+        } finally {
+            this.performanceTaskInFlightIds.delete(documentId);
             CommonJS.setButtonDisabled(button, false);
         }
     },
@@ -844,6 +924,7 @@ const ContentList = {
         const bulkDeleteButton = document.getElementById('btnBulkDeleteContent');
         try {
             const resolvedSettings = settings || await CommonJS.fetchSystemSettings();
+            this.operationPolicy = resolvedSettings;
             const disabled = CommonJS.isCommunityWriteBlocked(resolvedSettings);
             const reason = CommonJS.getCommunityWriteBlockedReason(resolvedSettings, '커뮤니티 작성');
             CommonJS.setButtonDisabled(createButton, disabled, reason);
@@ -857,6 +938,11 @@ const ContentList = {
             });
             document.querySelectorAll('[data-role="content-status-toggle"], [data-role="content-visibility-toggle"], [data-role="content-delete"]').forEach((button) => {
                 CommonJS.setButtonDisabled(button, disabled, reason);
+            });
+            const taskDisabled = CommonJS.isAdminWriteBlocked(resolvedSettings);
+            const taskReason = CommonJS.getAdminWriteBlockedReason('콘텐츠 개선 작업 생성');
+            document.querySelectorAll('[data-role="create-performance-task"]').forEach((button) => {
+                CommonJS.setButtonDisabled(button, taskDisabled, taskReason);
             });
         } catch (error) {
             console.error('운영 설정 로드 실패:', error);

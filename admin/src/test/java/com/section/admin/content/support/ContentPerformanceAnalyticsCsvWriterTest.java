@@ -20,7 +20,8 @@ class ContentPerformanceAnalyticsCsvWriterTest {
                 List.of(new ContentPerformanceAnalyticsResponse.Content(
                         1, "NOTICE", "배송, 안내", 50, 20,
                         4, 1, 3, 25, 8, 84,
-                        "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다."
+                        "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다.",
+                        91L, "/admin/settings/tasks?taskNo=91"
                 ))
         );
 
@@ -32,6 +33,7 @@ class ContentPerformanceAnalyticsCsvWriterTest {
                 .contains("반응확보율")
                 .contains("우선순위점수")
                 .contains("IMPROVEMENT_REQUIRED")
+                .contains("91")
                 .contains("\"배송, 안내\"");
     }
 }

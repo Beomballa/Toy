@@ -15,6 +15,7 @@
 mysql -h db-host -u grade_stock_app -p new_toy < db/document_daily_stats.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
+mysql -h db-host -u grade_stock_app -p new_toy < db/admin_operation_task_content_source.sql
 ```
 
 `front_content_view_event`는 공개 콘텐츠 조회를 문서·방문자·날짜별로 중복 제거합니다. 애플리케이션 배포 전에 테이블을 생성해야 하며 기존 `document.view_count` 값에는 영향을 주지 않습니다. 프론트 홈은 이 테이블의 최근 7일 이벤트를 집계해 공개·게시 완료 콘텐츠의 주간 인기 순위를 표시합니다.
@@ -22,6 +23,8 @@ mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
 `front_content_reaction`은 문서·방문자 조합을 유니크 키로 유지해 반복 요청을 중복 집계하지 않습니다. 반응 변경은 원자적 upsert로 처리되며 문서 삭제 시 애플리케이션 트랜잭션에서 관련 반응을 먼저 정리합니다.
 반응 조회의 방문자 키는 URL이 아닌 `X-Content-Visitor-Key` 헤더로 전달해 access log와 브라우저 히스토리에 남지 않게 합니다.
 관리자 반응 분석은 `updated_dtm` 인덱스를 사용해 7·14·30일 기간을 제한하고, 게시판별 도움 비율·일별 활동·반응 상위·개선 필요 콘텐츠를 고정 개수의 집계 쿼리로 조회합니다. 반응 변경 이력을 별도로 저장하지 않으므로 추이는 선택 이벤트 누계가 아니라 기간 내 각 방문자의 마지막 선택 상태를 의미합니다.
+
+`admin_operation_task_content_source.sql`은 기존 운영 작업에 nullable 출처 컬럼을 추가합니다. 기존 행은 변경하지 않으며 `(source_type, source_id)` 유니크 키로 동일 콘텐츠 효과 분석에서 운영 작업이 중복 생성되는 것을 차단합니다. ALTER 스크립트이므로 환경별 마이그레이션 이력에서 한 번만 실행합니다.
 
 배포 후 `/api/front/content?sort=POPULAR&size=4` 응답의 `sort`, `pageViewCount`, `pagePinnedCount` 필드를 확인합니다. 콘텐츠 아카이브의 조회순은 누적 `document.view_count`를 사용하며 고정 콘텐츠를 항상 먼저 노출합니다.
 
@@ -86,6 +89,7 @@ export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 같은 화면의 `독자 반응 분석`과 `/api/admin/content/stats/reactions?boardType=NOTICE&days=7`은 도움됨·개선 필요 반응을 집계합니다. `/api/admin/content/stats/reactions/export`는 동일한 게시판·기간 조건의 요약, 일별 추이, 반응 상위와 개선 필요 콘텐츠를 UTF-8 BOM CSV로 제공합니다.
 `/api/admin/content/stats/reactions/quality`는 전체·정상·고아 반응과 수집 기간을 반환합니다. 고아 반응이 존재하면 `CLEANUP_REQUIRED`로 표시하지만 자동 삭제하지 않으며, 정리는 운영 데이터 확인 후 별도 절차로 수행해야 합니다.
 `콘텐츠 효과 분석`과 `/api/admin/content/stats/performance?boardType=NOTICE&days=7`은 조회 상위와 반응 상위 후보를 문서 단위로 병합해 최대 10개의 조치 우선순위를 제공합니다. `반응 확보율`은 기간 조회수 대비 현재 반응 수를 비교한 방향성 운영 지표이며 방문별 전환율을 의미하지 않습니다. `/api/admin/content/stats/performance/export`는 같은 조건의 판단 근거와 점수를 UTF-8 BOM CSV로 제공합니다.
+보완 필요 또는 반응 확보 필요 카드의 `작업 생성`은 `POST /api/admin/content/{id}/performance-task?boardType=NOTICE&days=7`을 호출합니다. 서버가 최신 분석 결과를 다시 검증하고 우선순위와 마감일을 계산하며, 문서 잠금과 출처 유니크 키로 중복 생성을 방지합니다. 연결된 작업 상세에서는 원본 콘텐츠로 복귀할 수 있습니다.
 관리자 대시보드 응답의 `contentReactionSnapshot`은 최근 7일 도움 비율, 평가 콘텐츠, 데이터 품질과 최우선 개선 문서를 제공합니다. `/api/admin/content/{id}/reactions?days=30`은 문서별 전체 누계와 7·30·90일 최근 활동을 분리해 반환합니다.
 
 조회 이벤트가 장기간 누적되는 운영 환경에서는 보존 배치를 활성화합니다. 기본값은 비활성이며, 활성화 시 매일 03:30에 오늘을 포함한 최근 180일을 유지하고 그 이전 이벤트를 단일 bulk delete로 정리합니다.

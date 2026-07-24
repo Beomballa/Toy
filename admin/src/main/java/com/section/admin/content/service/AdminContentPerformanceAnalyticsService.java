@@ -1,6 +1,7 @@
 package com.section.admin.content.service;
 
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.task.support.AdminTaskLinkSupport;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
 import com.section.common.content.dto.ContentReactionAnalyticsSummaryRow;
@@ -10,6 +11,8 @@ import com.section.common.content.dto.ContentViewTopRow;
 import com.section.common.content.entity.Document;
 import com.section.common.content.repository.FrontContentReactionRepository;
 import com.section.common.content.repository.FrontContentViewEventRepository;
+import com.section.common.system.entity.AdminOperationTask;
+import com.section.common.system.repository.AdminOperationTaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,26 +37,31 @@ public class AdminContentPerformanceAnalyticsService {
     private static final int CANDIDATE_LIMIT = 50;
     private static final int DISPLAY_LIMIT = 10;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    static final String CONTENT_PERFORMANCE_SOURCE_TYPE = "CONTENT_PERFORMANCE";
 
     private final FrontContentViewEventRepository viewRepository;
     private final FrontContentReactionRepository reactionRepository;
+    private final AdminOperationTaskRepository taskRepository;
     private final Clock clock;
 
     @Autowired
     public AdminContentPerformanceAnalyticsService(
             FrontContentViewEventRepository viewRepository,
-            FrontContentReactionRepository reactionRepository
+            FrontContentReactionRepository reactionRepository,
+            AdminOperationTaskRepository taskRepository
     ) {
-        this(viewRepository, reactionRepository, Clock.systemDefaultZone());
+        this(viewRepository, reactionRepository, taskRepository, Clock.systemDefaultZone());
     }
 
     AdminContentPerformanceAnalyticsService(
             FrontContentViewEventRepository viewRepository,
             FrontContentReactionRepository reactionRepository,
+            AdminOperationTaskRepository taskRepository,
             Clock clock
     ) {
         this.viewRepository = viewRepository;
         this.reactionRepository = reactionRepository;
+        this.taskRepository = taskRepository;
         this.clock = clock;
     }
 
@@ -123,10 +133,26 @@ public class AdminContentPerformanceAnalyticsService {
                 ignored -> PerformanceCandidate.from(row)
         ).applyReaction(row));
         long maxViews = candidates.values().stream().mapToLong(candidate -> candidate.viewCount).max().orElse(0);
-        return candidates.values().stream().map(candidate -> toContent(candidate, maxViews)).toList();
+        Map<Long, AdminOperationTask> tasksBySourceId = candidates.isEmpty()
+                ? Map.of()
+                : taskRepository.findAllBySourceTypeAndSourceIdIn(
+                                CONTENT_PERFORMANCE_SOURCE_TYPE,
+                                candidates.keySet()
+                        ).stream()
+                        .collect(Collectors.toMap(
+                                AdminOperationTask::getSourceId,
+                                Function.identity()
+                        ));
+        return candidates.values().stream()
+                .map(candidate -> toContent(candidate, maxViews, tasksBySourceId.get(candidate.documentId)))
+                .toList();
     }
 
-    private ContentPerformanceAnalyticsResponse.Content toContent(PerformanceCandidate candidate, long maxViews) {
+    private ContentPerformanceAnalyticsResponse.Content toContent(
+            PerformanceCandidate candidate,
+            long maxViews,
+            AdminOperationTask task
+    ) {
         long reactionCount = candidate.helpfulCount + candidate.notHelpfulCount;
         int helpfulRate = percentage(candidate.helpfulCount, reactionCount);
         int coverageRate = coverageRate(reactionCount, candidate.viewCount);
@@ -144,8 +170,15 @@ public class AdminContentPerformanceAnalyticsService {
                 coverageRate,
                 priorityScore(candidate.viewCount, maxViews, reactionCount, helpfulRate, status),
                 status,
-                statusMessage(status)
+                statusMessage(status),
+                task == null ? null : task.getTaskNo(),
+                task == null ? null : buildTaskPath(task.getTaskNo(), candidate.boardType)
         );
+    }
+
+    private String buildTaskPath(long taskNo, Document.BoardType boardType) {
+        String returnTo = "/admin/content/list?boardType=" + boardType.name();
+        return AdminTaskLinkSupport.buildListOpenPath(taskNo, returnTo, "content-performance");
     }
 
     private int priorityScore(long views, long maxViews, long reactions, int helpfulRate, String status) {

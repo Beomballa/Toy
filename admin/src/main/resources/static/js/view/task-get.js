@@ -140,6 +140,16 @@ const TaskDetailPage = {
         document.getElementById('taskDetailTaskNo').textContent = data.taskNo || '-';
         document.getElementById('taskDetailMeta').textContent = `운영 작업 #${data.taskNo}`;
         document.getElementById('taskDetailSummary').textContent = `${data.statusLabel} · ${data.priorityLabel} · 담당자 ${data.assigneeAdminName || '미지정'}`;
+        const sourceEl = document.getElementById('taskDetailSource');
+        const sourceLink = document.getElementById('btnTaskDetailSource');
+        if (sourceEl && sourceLink && data.sourceLabel && data.sourcePath) {
+            document.getElementById('taskDetailSourceLabel').textContent = data.sourceLabel;
+            sourceLink.href = data.sourcePath;
+            sourceEl.classList.remove('d-none');
+        } else {
+            sourceEl?.classList.add('d-none');
+            sourceLink?.removeAttribute('href');
+        }
         this.renderAssigneeOptions(data.assigneeOptions || []);
         this.renderAssignmentRecommendations(data.assignmentRecommendations || []);
         const historyPath = this.buildHistoryPathFromBase(data.historyPath);

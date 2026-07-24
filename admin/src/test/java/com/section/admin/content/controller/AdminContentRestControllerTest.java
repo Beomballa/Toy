@@ -7,8 +7,10 @@ import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
 import com.section.admin.content.service.AdminContentPerformanceAnalyticsService;
+import com.section.admin.content.service.AdminContentPerformanceTaskService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
 import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
+import com.section.admin.content.res.ContentPerformanceTaskResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
 import com.section.admin.content.res.ContentReactionDataQualityResponse;
 import com.section.admin.content.res.ContentReactionDetailResponse;
@@ -74,6 +76,9 @@ class AdminContentRestControllerTest {
     @Mock
     private AdminContentPerformanceAnalyticsService adminContentPerformanceAnalyticsService;
 
+    @Mock
+    private AdminContentPerformanceTaskService adminContentPerformanceTaskService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -85,7 +90,8 @@ class AdminContentRestControllerTest {
                         adminContentStatsService,
                         adminContentViewAnalyticsService,
                         adminContentReactionAnalyticsService,
-                        adminContentPerformanceAnalyticsService
+                        adminContentPerformanceAnalyticsService,
+                        adminContentPerformanceTaskService
                 ))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
@@ -424,6 +430,48 @@ class AdminContentRestControllerTest {
     }
 
     @Test
+    @DisplayName("콘텐츠 효과 운영 작업 API는 쓰기 정책 확인 후 생성 결과를 반환한다")
+    void createPerformanceTaskReturnsLinkedTask() throws Exception {
+        when(adminContentPerformanceTaskService.createTask(31L, Document.BoardType.STYLE, 14))
+                .thenReturn(new ContentPerformanceTaskResponse(
+                        91L, true, "TODO", "HIGH", "2026-07-27",
+                        "/admin/settings/tasks?taskNo=91", "운영 작업을 생성했습니다."
+                ));
+
+        mockMvc.perform(post("/api/admin/content/31/performance-task")
+                        .param("boardType", " style ")
+                        .param("days", "14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taskNo").value(91L))
+                .andExpect(jsonPath("$.created").value(true))
+                .andExpect(jsonPath("$.priority").value("HIGH"))
+                .andExpect(jsonPath("$.taskPath").value("/admin/settings/tasks?taskNo=91"));
+
+        verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        verify(adminContentPerformanceTaskService).createTask(31L, Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("관리자 쓰기가 제한되면 콘텐츠 효과 운영 작업을 생성하지 않는다")
+    void createPerformanceTaskRejectsBlockedAdminWrite() throws Exception {
+        doThrow(new BusinessException(ErrorCode.ADMIN_MAINTENANCE_MODE))
+                .when(adminOperationPolicyService)
+                .assertAdminWriteAllowed();
+
+        mockMvc.perform(post("/api/admin/content/31/performance-task")
+                        .param("boardType", "STYLE")
+                        .param("days", "7"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("A001"));
+
+        verify(adminContentPerformanceTaskService, never()).createTask(
+                org.mockito.ArgumentMatchers.anyLong(),
+                any(),
+                org.mockito.ArgumentMatchers.anyInt()
+        );
+    }
+
+    @Test
     @DisplayName("콘텐츠 반응 데이터 품질 API는 정상·고아 반응 현황을 반환한다")
     void getReactionDataQualityReturnsIntegrityStatus() throws Exception {
         when(adminContentReactionAnalyticsService.getDataQuality())
@@ -742,7 +790,8 @@ class AdminContentRestControllerTest {
                 new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1),
                 List.of(new ContentPerformanceAnalyticsResponse.Content(
                         31, boardType, "스타일", 50, 20, 4, 1, 3,
-                        25, 8, 84, "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다."
+                        25, 8, 84, "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다.",
+                        null, null
                 ))
         );
     }

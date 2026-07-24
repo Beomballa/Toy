@@ -210,6 +210,8 @@ class AdminOperationTaskRestControllerTest {
                         3L, "정산 확인", "정산 마감", "TODO", "대기", "HIGH", "높음", 2L, "운영자", "2026-05-22", "오늘 마감", "Y", "2026-05-23 10:00",
                         "/admin/settings/tasks/history?taskNo=3",
                         "/admin/settings/logs?actionType=TASK_&targetId=3",
+                        "CONTENT_PERFORMANCE", 31L, "효과 분석 콘텐츠 #31",
+                        "/admin/content/get?id=31",
                         List.of(new AdminOperationTaskDetailResponse.AssigneeOption(2L, "운영자")),
                         List.of(new AdminOperationTaskDetailResponse.AssignmentRecommendation(5L, "지원자", 1L, 0L, 0L, "기한 초과 없이 운영 중입니다.")),
                         List.of(new AdminOperationTaskDetailResponse.RecentHistory(8L, "TASK_UPDATE", "작업 수정", "운영자", "2026-05-23 11:00", "/admin/settings/logs?actionType=TASK_UPDATE&targetId=3", "/admin/settings/tasks/history?taskNo=3")),
@@ -223,6 +225,8 @@ class AdminOperationTaskRestControllerTest {
                 .andExpect(jsonPath("$.priority").value("HIGH"))
                 .andExpect(jsonPath("$.historyPath").value("/admin/settings/tasks/history?taskNo=3"))
                 .andExpect(jsonPath("$.activityLogPath").value("/admin/settings/logs?actionType=TASK_&targetId=3"))
+                .andExpect(jsonPath("$.sourceLabel").value("효과 분석 콘텐츠 #31"))
+                .andExpect(jsonPath("$.sourcePath").value("/admin/content/get?id=31"))
                 .andExpect(jsonPath("$.assigneeOptions[0].name").value("운영자"))
                 .andExpect(jsonPath("$.assignmentRecommendations[0].adminName").value("지원자"))
                 .andExpect(jsonPath("$.recentHistories[0].actionLabel").value("작업 수정"))

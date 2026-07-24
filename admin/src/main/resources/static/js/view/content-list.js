@@ -3,14 +3,17 @@ const ContentList = {
     exportInFlight: false,
     viewAnalyticsExportInFlight: false,
     reactionAnalyticsExportInFlight: false,
+    performanceAnalyticsExportInFlight: false,
     actionInFlightIds: new Set(),
     dailyStats: null,
     viewAnalytics: null,
     reactionAnalytics: null,
     reactionDataQuality: null,
+    performanceAnalytics: null,
     viewDataQuality: null,
     viewAnalyticsRequestId: 0,
     reactionAnalyticsRequestId: 0,
+    performanceAnalyticsRequestId: 0,
     viewAnalyticsLoading: false,
     state: {
         page: 0,
@@ -48,6 +51,7 @@ const ContentList = {
         this.getViewAnalytics();
         this.getReactionAnalytics();
         this.getReactionDataQuality();
+        this.getPerformanceAnalytics();
         this.getViewDataQuality();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         this.getList();
@@ -96,6 +100,7 @@ const ContentList = {
                 this.renderDailyStats();
                 this.getViewAnalytics();
                 this.getReactionAnalytics();
+                this.getPerformanceAnalytics();
                 this.getList();
             });
         });
@@ -110,6 +115,7 @@ const ContentList = {
             this.renderDailyStats();
             this.getViewAnalytics();
             this.getReactionAnalytics();
+            this.getPerformanceAnalytics();
             CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/content/list');
             CommonJS.renderSourceContextNotice({ noticeId: 'contentListSourceContextNotice', source: this.state.source });
             this.getList();
@@ -129,6 +135,8 @@ const ContentList = {
         document.getElementById('btnRefreshReactionAnalytics')?.addEventListener('click', () => this.getReactionAnalytics());
         document.getElementById('btnRefreshReactionAnalytics')?.addEventListener('click', () => this.getReactionDataQuality());
         document.getElementById('btnExportReactionAnalytics')?.addEventListener('click', () => this.exportReactionAnalytics());
+        document.getElementById('btnRefreshPerformanceAnalytics')?.addEventListener('click', () => this.getPerformanceAnalytics());
+        document.getElementById('btnExportPerformanceAnalytics')?.addEventListener('click', () => this.exportPerformanceAnalytics());
         document.querySelectorAll('[data-view-range]').forEach((button) => {
             button.addEventListener('click', () => {
                 const rangeDays = Number(button.dataset.viewRange);
@@ -139,6 +147,7 @@ const ContentList = {
                 this.syncViewAnalyticsPeriod();
                 this.getViewAnalytics();
                 this.getReactionAnalytics();
+                this.getPerformanceAnalytics();
             });
         });
 
@@ -671,6 +680,136 @@ const ContentList = {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
             this.reactionAnalyticsExportInFlight = false;
+            CommonJS.setButtonDisabled(button, false);
+        }
+    },
+
+    async getPerformanceAnalytics() {
+        const requestId = ++this.performanceAnalyticsRequestId;
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        this.renderPerformanceAnalyticsLoading();
+        try {
+            const response = await fetch(`/api/admin/content/stats/performance?${params}`, {
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) throw new Error('콘텐츠 효과 분석을 불러오지 못했습니다.');
+            const analytics = await response.json();
+            if (requestId !== this.performanceAnalyticsRequestId) return;
+            this.performanceAnalytics = analytics;
+            this.renderPerformanceAnalytics();
+        } catch (error) {
+            if (requestId !== this.performanceAnalyticsRequestId) return;
+            this.performanceAnalytics = null;
+            this.renderPerformanceAnalyticsError();
+            console.error('콘텐츠 효과 분석 실패:', error);
+        }
+    },
+
+    renderPerformanceAnalyticsLoading() {
+        this.setText(
+            'contentPerformanceAnalyticsStatus',
+            `${this.state.boardType} 게시판의 최근 ${this.state.viewRangeDays}일 효과를 계산하고 있습니다.`
+        );
+        this.setText('contentPerformanceRangeLabel', `최근 ${this.state.viewRangeDays}일`);
+        this.setText('contentPerformanceViews', '-');
+        this.setText('contentPerformanceReactions', '-');
+        this.setText('contentPerformanceHelpfulRate', '-');
+        this.setText('contentPerformanceCoverage', '-');
+        this.setText('contentPerformanceContentCount', '-');
+        this.setText('contentPerformanceActionCount', '-');
+        this.renderPerformancePriorityList([]);
+    },
+
+    renderPerformanceAnalytics() {
+        const analytics = this.performanceAnalytics || {};
+        const summary = analytics.summary || {};
+        this.setText(
+            'contentPerformanceAnalyticsStatus',
+            `${analytics.startDate || '-'} ~ ${analytics.endDate || '-'} · ${analytics.generatedAt || '-'} 갱신`
+        );
+        this.setText('contentPerformanceRangeLabel', `최근 ${analytics.rangeDays || this.state.viewRangeDays}일`);
+        this.setText('contentPerformanceViews', `${this.formatNumber(summary.totalViews)}회`);
+        this.setText('contentPerformanceReactions', `${this.formatNumber(summary.totalReactions)}건`);
+        this.setText('contentPerformanceHelpfulRate', `${this.formatNumber(summary.helpfulRate)}%`);
+        this.setText('contentPerformanceCoverage', `${this.formatNumber(summary.reactionCoverageRate)}%`);
+        this.setText('contentPerformanceContentCount', `${this.formatNumber(summary.analyzedContentCount)}건`);
+        this.setText('contentPerformanceActionCount', `${this.formatNumber(summary.actionRequiredCount)}건`);
+        this.renderPerformancePriorityList(
+            Array.isArray(analytics.priorityContents) ? analytics.priorityContents : []
+        );
+    },
+
+    renderPerformancePriorityList(items) {
+        const target = document.getElementById('contentPerformancePriorityList');
+        if (!target) return;
+        if (!items.length) {
+            target.innerHTML = '<div class="content-view-empty">선택한 기간에 분석할 콘텐츠 신호가 없습니다.</div>';
+            return;
+        }
+        const labels = {
+            IMPROVEMENT_REQUIRED: '보완 필요',
+            FEEDBACK_NEEDED: '반응 확보',
+            LOW_SIGNAL: '추가 관찰',
+            HEALTHY: '안정'
+        };
+        target.innerHTML = items.map((item, index) => {
+            const status = labels[item.status] ? item.status : 'LOW_SIGNAL';
+            return `
+                <article class="content-performance-item" data-status="${status}">
+                    <span class="content-performance-item__rank">${index + 1}</span>
+                    <div class="content-performance-item__main">
+                        <div class="content-performance-item__title">
+                            <span>${ContentBoardConfig.escapeHtml(item.boardType)}</span>
+                            <a href="/admin/content/get?id=${encodeURIComponent(item.documentId)}&boardType=${encodeURIComponent(item.boardType)}&source=content-performance&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
+                                ${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}
+                            </a>
+                        </div>
+                        <p>${ContentBoardConfig.escapeHtml(item.statusMessage || '')}</p>
+                    </div>
+                    <dl class="content-performance-item__metrics">
+                        <div><dt>조회</dt><dd>${this.formatNumber(item.viewCount)}</dd></div>
+                        <div><dt>반응</dt><dd>${this.formatNumber(item.reactionCount)}</dd></div>
+                        <div><dt>도움</dt><dd>${this.formatNumber(item.helpfulRate)}%</dd></div>
+                        <div><dt>확보</dt><dd>${this.formatNumber(item.reactionCoverageRate)}%</dd></div>
+                    </dl>
+                    <div class="content-performance-item__decision">
+                        <span>${labels[status]}</span>
+                        <strong>${this.formatNumber(item.priorityScore)}점</strong>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    },
+
+    renderPerformanceAnalyticsError() {
+        this.setText('contentPerformanceAnalyticsStatus', '콘텐츠 효과 분석을 불러오지 못했습니다. 연결 상태를 확인해 주세요.');
+        const target = document.getElementById('contentPerformancePriorityList');
+        if (target) {
+            target.innerHTML = '<div class="content-view-empty content-view-empty--error">효과 분석 연결을 확인해 주세요.</div>';
+        }
+    },
+
+    async exportPerformanceAnalytics() {
+        if (this.performanceAnalyticsExportInFlight) return;
+        const button = document.getElementById('btnExportPerformanceAnalytics');
+        const params = new URLSearchParams({
+            boardType: this.state.boardType,
+            days: String(this.state.viewRangeDays)
+        });
+        try {
+            this.performanceAnalyticsExportInFlight = true;
+            CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
+            await CommonJS.downloadFile(
+                `/api/admin/content/stats/performance/export?${params}`,
+                `content-performance-${this.state.boardType}-${this.state.viewRangeDays}d.csv`
+            );
+        } catch (error) {
+            await CommonJS.alert(error.message, '오류', 'error');
+        } finally {
+            this.performanceAnalyticsExportInFlight = false;
             CommonJS.setButtonDisabled(button, false);
         }
     },

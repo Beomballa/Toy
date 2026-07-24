@@ -6,7 +6,9 @@ import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
+import com.section.admin.content.service.AdminContentPerformanceAnalyticsService;
 import com.section.admin.content.res.ContentDailyStatsResponse;
+import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
 import com.section.admin.content.res.ContentReactionAnalyticsResponse;
 import com.section.admin.content.res.ContentReactionDataQualityResponse;
 import com.section.admin.content.res.ContentReactionDetailResponse;
@@ -69,6 +71,9 @@ class AdminContentRestControllerTest {
     @Mock
     private AdminContentReactionAnalyticsService adminContentReactionAnalyticsService;
 
+    @Mock
+    private AdminContentPerformanceAnalyticsService adminContentPerformanceAnalyticsService;
+
     private MockMvc mockMvc;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -79,7 +84,8 @@ class AdminContentRestControllerTest {
                         adminOperationPolicyService,
                         adminContentStatsService,
                         adminContentViewAnalyticsService,
-                        adminContentReactionAnalyticsService
+                        adminContentReactionAnalyticsService,
+                        adminContentPerformanceAnalyticsService
                 ))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
@@ -372,6 +378,49 @@ class AdminContentRestControllerTest {
                 ))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
                         .bytes(com.section.admin.content.support.ContentReactionAnalyticsCsvWriter.write(response)));
+    }
+
+    @Test
+    @DisplayName("콘텐츠 효과 분석 API는 게시판과 기간을 정규화해 조치 우선순위를 반환한다")
+    void getPerformanceAnalyticsReturnsPriorities() throws Exception {
+        ContentPerformanceAnalyticsResponse response = performanceAnalyticsResponse("STYLE", 14);
+        when(adminContentPerformanceAnalyticsService.getAnalytics(Document.BoardType.STYLE, 14))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/content/stats/performance")
+                        .param("boardType", " style ")
+                        .param("days", "14"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.boardType").value("STYLE"))
+                .andExpect(jsonPath("$.rangeDays").value(14))
+                .andExpect(jsonPath("$.summary.reactionCoverageRate").value(8))
+                .andExpect(jsonPath("$.summary.actionRequiredCount").value(1))
+                .andExpect(jsonPath("$.priorityContents[0].priorityScore").value(84))
+                .andExpect(jsonPath("$.priorityContents[0].status").value("IMPROVEMENT_REQUIRED"));
+
+        verify(adminContentPerformanceAnalyticsService).getAnalytics(Document.BoardType.STYLE, 14);
+    }
+
+    @Test
+    @DisplayName("콘텐츠 효과 분석 CSV는 동일 조건과 다운로드 헤더를 유지한다")
+    void exportPerformanceAnalyticsReturnsCsvAttachment() throws Exception {
+        ContentPerformanceAnalyticsResponse response = performanceAnalyticsResponse("NOTICE", 30);
+        when(adminContentPerformanceAnalyticsService.getAnalytics(Document.BoardType.NOTICE, 30))
+                .thenReturn(response);
+
+        mockMvc.perform(get("/api/admin/content/stats/performance/export")
+                        .param("boardType", " notice ")
+                        .param("days", "30"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", org.hamcrest.Matchers.containsString("text/csv")))
+                .andExpect(header().string(
+                        "Content-Disposition",
+                        org.hamcrest.Matchers.containsString("content-performance-notice-30d-")
+                ))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.content()
+                        .bytes(com.section.admin.content.support.ContentPerformanceAnalyticsCsvWriter.write(response)));
+
+        verify(adminContentPerformanceAnalyticsService).getAnalytics(Document.BoardType.NOTICE, 30);
     }
 
     @Test
@@ -680,6 +729,21 @@ class AdminContentRestControllerTest {
                 List.of(new ContentReactionAnalyticsResponse.Trend("2026-07-24", 4, 3, 1, 75)),
                 List.of(new ContentReactionAnalyticsResponse.Content(31, boardType, "스타일", 4, 3, 1, 75)),
                 List.of(new ContentReactionAnalyticsResponse.Content(31, boardType, "스타일", 4, 3, 1, 75))
+        );
+    }
+
+    private ContentPerformanceAnalyticsResponse performanceAnalyticsResponse(String boardType, int rangeDays) {
+        return new ContentPerformanceAnalyticsResponse(
+                boardType,
+                rangeDays,
+                "2026-07-11",
+                "2026-07-24",
+                "2026-07-24 12:00:00",
+                new ContentPerformanceAnalyticsResponse.Summary(50, 4, 25, 8, 1, 1),
+                List.of(new ContentPerformanceAnalyticsResponse.Content(
+                        31, boardType, "스타일", 50, 20, 4, 1, 3,
+                        25, 8, 84, "IMPROVEMENT_REQUIRED", "본문 보완이 필요합니다."
+                ))
         );
     }
 }

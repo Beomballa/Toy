@@ -284,6 +284,47 @@
         </div>
     </section>
 
+    <section class="content-performance-analytics admin-panel-card"
+             aria-labelledby="contentPerformanceAnalyticsTitle">
+        <div class="content-view-analytics__header">
+            <div>
+                <div class="content-view-analytics__eyebrow">Content Effectiveness</div>
+                <h2 id="contentPerformanceAnalyticsTitle">콘텐츠 효과 분석</h2>
+                <p>조회 도달과 독자 반응을 함께 비교해 먼저 손볼 콘텐츠를 찾습니다.</p>
+            </div>
+            <div class="content-view-analytics__controls">
+                <span class="content-performance-analytics__range" id="contentPerformanceRangeLabel">최근 7일</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRefreshPerformanceAnalytics">
+                    <i class="fas fa-rotate-right me-1"></i>새로고침
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-dark" id="btnExportPerformanceAnalytics">
+                    <i class="fas fa-download me-1"></i>효과 CSV
+                </button>
+            </div>
+        </div>
+        <div class="content-view-analytics__status" id="contentPerformanceAnalyticsStatus"
+             role="status" aria-live="polite">
+            효과 데이터를 불러오는 중입니다.
+        </div>
+        <div class="content-performance-analytics__metrics" aria-label="콘텐츠 효과 핵심 지표">
+            <article><span>전체 조회</span><strong id="contentPerformanceViews">-</strong><small>선택 기간 조회 이벤트</small></article>
+            <article><span>전체 반응</span><strong id="contentPerformanceReactions">-</strong><small>최근 선택 상태</small></article>
+            <article><span>도움 비율</span><strong id="contentPerformanceHelpfulRate">-</strong><small>전체 반응 대비</small></article>
+            <article><span>반응 확보율</span><strong id="contentPerformanceCoverage">-</strong><small>조회 대비 반응</small></article>
+            <article><span>분석 콘텐츠</span><strong id="contentPerformanceContentCount">-</strong><small>상위 후보 합집합</small></article>
+            <article><span>조치 필요</span><strong id="contentPerformanceActionCount">-</strong><small>보완·반응 확보 대상</small></article>
+        </div>
+        <div class="content-performance-analytics__legend" aria-label="효과 분석 상태 안내">
+            <span><i class="is-improvement"></i>보완 필요</span>
+            <span><i class="is-feedback"></i>반응 확보 필요</span>
+            <span><i class="is-low-signal"></i>추가 관찰</span>
+            <span><i class="is-healthy"></i>안정</span>
+        </div>
+        <div class="content-performance-list" id="contentPerformancePriorityList">
+            <div class="content-view-empty">우선순위 콘텐츠를 준비하고 있습니다.</div>
+        </div>
+    </section>
+
     <div class="content-board-toolbar content-board-toolbar--search admin-panel-card">
         <form id="contentSearchForm" class="content-board-search-form">
             <section class="content-board-search-section content-board-search-section--primary">

@@ -251,6 +251,35 @@ check_admin_authenticated_flow() {
   fi
   printf 'PASS %-28s status=%s\n' "admin reaction export" "$content_reaction_export_status"
 
+  content_performance_response="$(curl --silent --show-error --write-out $'\n%{http_code}' \
+    --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/performance?boardType=NOTICE&days=7")"
+  content_performance_status="${content_performance_response##*$'\n'}"
+  content_performance_body="${content_performance_response%$'\n'*}"
+  if [[ "$content_performance_status" != "200" ]] \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"reactionCoverageRate":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"actionRequiredCount":' \
+    || ! printf '%s\n' "$content_performance_body" | grep --fixed-strings --quiet '"priorityContents":'; then
+    printf 'FAIL %-28s expected=200 performance_fields=required actual=%s\n' \
+      "admin content performance" "$content_performance_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin content performance" "$content_performance_status"
+
+  content_performance_export_response="$(curl --silent --show-error --dump-header - --output /dev/null \
+    --write-out $'\n%{http_code}' --cookie "$ADMIN_COOKIE_JAR" \
+    "${ADMIN_URL}/api/admin/content/stats/performance/export?boardType=NOTICE&days=7" | tr -d '\r')"
+  content_performance_export_status="${content_performance_export_response##*$'\n'}"
+  content_performance_export_headers="${content_performance_export_response%$'\n'*}"
+  if [[ "$content_performance_export_status" != "200" ]] \
+    || ! printf '%s\n' "$content_performance_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Type: text/csv' \
+    || ! printf '%s\n' "$content_performance_export_headers" | grep --ignore-case --fixed-strings --quiet 'Content-Disposition: attachment; filename="content-performance-'; then
+    printf 'FAIL %-28s expected=200 csv_headers=required actual=%s\n' \
+      "admin performance export" "$content_performance_export_status" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s\n' "admin performance export" "$content_performance_export_status"
+
   logout_response="$(curl --silent --show-error --dump-header - --output /dev/null --write-out $'\n%{http_code}' \
     --cookie "$ADMIN_COOKIE_JAR" --request POST --header "Origin: ${ADMIN_URL}" \
     "${ADMIN_URL}/admin/logout" | tr -d '\r')"

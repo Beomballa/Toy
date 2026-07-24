@@ -85,6 +85,7 @@ export BATCH_DOCUMENT_STATS_CRON='0 */10 * * * *'
 관리자는 콘텐츠 목록의 `문서 일일 통계` 영역과 `/api/admin/content/stats/daily`에서 최신 TOTAL·게시판별 스냅샷을 확인할 수 있습니다. 같은 화면의 `프론트 조회 분석` 영역과 `/api/admin/content/stats/views?boardType=NOTICE&days=7`에서는 실제 조회 이벤트의 7·14·30일 추이, 순 방문자, 상위 콘텐츠를 확인합니다. `/api/admin/content/stats/views/quality`는 전체·정상·고아 이벤트와 수집 기간을 제공하며 고아 이벤트가 있으면 화면에 `정리 필요`로 표시합니다.
 같은 화면의 `독자 반응 분석`과 `/api/admin/content/stats/reactions?boardType=NOTICE&days=7`은 도움됨·개선 필요 반응을 집계합니다. `/api/admin/content/stats/reactions/export`는 동일한 게시판·기간 조건의 요약, 일별 추이, 반응 상위와 개선 필요 콘텐츠를 UTF-8 BOM CSV로 제공합니다.
 `/api/admin/content/stats/reactions/quality`는 전체·정상·고아 반응과 수집 기간을 반환합니다. 고아 반응이 존재하면 `CLEANUP_REQUIRED`로 표시하지만 자동 삭제하지 않으며, 정리는 운영 데이터 확인 후 별도 절차로 수행해야 합니다.
+`콘텐츠 효과 분석`과 `/api/admin/content/stats/performance?boardType=NOTICE&days=7`은 조회 상위와 반응 상위 후보를 문서 단위로 병합해 최대 10개의 조치 우선순위를 제공합니다. `반응 확보율`은 기간 조회수 대비 현재 반응 수를 비교한 방향성 운영 지표이며 방문별 전환율을 의미하지 않습니다. `/api/admin/content/stats/performance/export`는 같은 조건의 판단 근거와 점수를 UTF-8 BOM CSV로 제공합니다.
 관리자 대시보드 응답의 `contentReactionSnapshot`은 최근 7일 도움 비율, 평가 콘텐츠, 데이터 품질과 최우선 개선 문서를 제공합니다. `/api/admin/content/{id}/reactions?days=30`은 문서별 전체 누계와 7·30·90일 최근 활동을 분리해 반환합니다.
 
 조회 이벤트가 장기간 누적되는 운영 환경에서는 보존 배치를 활성화합니다. 기본값은 비활성이며, 활성화 시 매일 03:30에 오늘을 포함한 최근 180일을 유지하고 그 이전 이벤트를 단일 bulk delete로 정리합니다.
@@ -114,7 +115,7 @@ ADMIN_SMOKE_PASSWORD='replace-with-secret' \
 ./scripts/smoke-test.sh
 ```
 
-`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회 분석 API, 로그아웃과 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
+`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회·독자 반응·콘텐츠 효과 분석 API와 CSV 다운로드, 로그아웃 및 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
 
 세 애플리케이션은 응답의 `X-Request-Id`를 공통 장애 추적 키로 사용합니다. 프록시가 안전한 요청 ID를 전달하면 그대로 유지하고, 없거나 형식이 잘못된 경우 애플리케이션이 새 ID를 생성합니다. 요청 헤더 한도는 기본 16KB이며 필요한 경우 `SERVER_MAX_HTTP_REQUEST_HEADER_SIZE`로 조정합니다.
 

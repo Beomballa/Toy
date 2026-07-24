@@ -102,7 +102,7 @@ public class CustomFrontContentViewEventRepositoryImpl implements CustomFrontCon
                 .where(viewedDateBetween(startDate, endDate), boardTypeEq(boardType))
                 .groupBy(document.id, document.boardType, document.title)
                 .orderBy(frontContentViewEvent.count().desc(), document.id.desc())
-                .limit(Math.max(1, Math.min(limit, 10)))
+                .limit(Math.max(1, Math.min(limit, 50)))
                 .fetch();
     }
 

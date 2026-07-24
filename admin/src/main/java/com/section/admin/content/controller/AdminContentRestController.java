@@ -6,6 +6,7 @@ import com.section.admin.content.req.ContentBulkDeleteRequest;
 import com.section.admin.content.req.ContentQuickOperateRequest;
 import com.section.admin.content.res.ContentDetailResponse;
 import com.section.admin.content.res.ContentListResponse;
+import com.section.admin.content.res.ContentPerformanceAnalyticsResponse;
 import com.section.admin.content.res.ContentSaveResponse;
 import com.section.admin.content.res.ContentSummaryResponse;
 import com.section.admin.content.res.ContentDailyStatsResponse;
@@ -15,9 +16,11 @@ import com.section.admin.content.res.ContentReactionDetailResponse;
 import com.section.admin.content.res.ContentViewAnalyticsResponse;
 import com.section.admin.content.res.ContentViewDataQualityResponse;
 import com.section.admin.content.service.AdminContentReactionAnalyticsService;
+import com.section.admin.content.service.AdminContentPerformanceAnalyticsService;
 import com.section.admin.content.service.AdminContentStatsService;
 import com.section.admin.content.service.AdminContentViewAnalyticsService;
 import com.section.admin.content.support.ContentReactionAnalyticsCsvWriter;
+import com.section.admin.content.support.ContentPerformanceAnalyticsCsvWriter;
 import com.section.admin.content.support.ContentExportCsvWriter;
 import com.section.admin.content.support.ContentExportSummary;
 import com.section.admin.content.support.ContentViewAnalyticsCsvWriter;
@@ -53,6 +56,7 @@ public class AdminContentRestController {
     private final AdminContentStatsService adminContentStatsService;
     private final AdminContentViewAnalyticsService adminContentViewAnalyticsService;
     private final AdminContentReactionAnalyticsService adminContentReactionAnalyticsService;
+    private final AdminContentPerformanceAnalyticsService adminContentPerformanceAnalyticsService;
 
     @GetMapping("/list")
     public ResponseEntity<ContentListResponse> getList(
@@ -171,6 +175,36 @@ public class AdminContentRestController {
     ) {
         documentService.getDocument(id);
         return ResponseEntity.ok(adminContentReactionAnalyticsService.getDocumentInsight(id, days));
+    }
+
+    @GetMapping("/stats/performance")
+    public ResponseEntity<ContentPerformanceAnalyticsResponse> getPerformanceAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        return ResponseEntity.ok(adminContentPerformanceAnalyticsService.getAnalytics(normalizedBoardType, days));
+    }
+
+    @GetMapping("/stats/performance/export")
+    public ResponseEntity<byte[]> exportPerformanceAnalytics(
+            @RequestParam(value = "boardType", required = false) String boardType,
+            @RequestParam(value = "days", defaultValue = "7") int days
+    ) {
+        Document.BoardType normalizedBoardType = boardType == null || boardType.isBlank()
+                ? null
+                : parseBoardType(boardType);
+        ContentPerformanceAnalyticsResponse analytics =
+                adminContentPerformanceAnalyticsService.getAnalytics(normalizedBoardType, days);
+        String boardLabel = normalizedBoardType == null ? "all" : normalizedBoardType.name().toLowerCase(Locale.ROOT);
+        String fileName = "content-performance-" + boardLabel + "-" + days + "d-"
+                + LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE) + ".csv";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(ContentPerformanceAnalyticsCsvWriter.write(analytics));
     }
 
     @GetMapping("/export")

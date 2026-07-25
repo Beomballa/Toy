@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
@@ -24,6 +25,8 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
@@ -121,6 +124,34 @@ class FrontProductCatalogServiceTest {
         assertEquals(179000, bootstrap.metrics().minimumPrice());
         assertEquals(289000, bootstrap.metrics().maximumPrice());
         assertEquals(3, bootstrap.metrics().brandCount());
+    }
+
+    @Test
+    @DisplayName("홈 컬렉션은 count 없는 preview 조회로 다섯 상품군을 분리한다")
+    void getHomeCollectionsUsesDedicatedPreviewQueries() {
+        FrontCatalogProductRow preview = row(
+                101L, 1L, 11L, "New Balance", "러닝화", "990v6", "Grey", "M990",
+                289000, 18, LocalDate.now(), "설명", "Grey", true, 1
+        );
+        when(productRepository.getFrontCatalogPreviewProducts(any(FrontCatalogQuery.class), eq(8)))
+                .thenReturn(List.of(preview));
+        when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(101L)))
+                .thenReturn(List.of(option(101L, "260", 18)));
+
+        var collections = frontProductCatalogService.getHomeCollections();
+
+        assertEquals(1, collections.recommended().size());
+        assertEquals(1, collections.ranking().size());
+        assertEquals(1, collections.fastDelivery().size());
+        assertEquals(1, collections.latestDrops().size());
+        assertEquals(1, collections.lowStock().size());
+
+        ArgumentCaptor<FrontCatalogQuery> queryCaptor = ArgumentCaptor.forClass(FrontCatalogQuery.class);
+        verify(productRepository, times(5)).getFrontCatalogPreviewProducts(queryCaptor.capture(), eq(8));
+        List<FrontCatalogQuery> queries = queryCaptor.getAllValues();
+        assertTrue(queries.stream().anyMatch(query -> query.featuredOnly() && "FEATURED".equals(query.sort())));
+        assertTrue(queries.stream().anyMatch(query -> "STABLE".equals(query.stock()) && "STOCK_DESC".equals(query.sort())));
+        assertTrue(queries.stream().anyMatch(query -> "LOW".equals(query.stock()) && "STOCK_ASC".equals(query.sort())));
     }
 
     @Test

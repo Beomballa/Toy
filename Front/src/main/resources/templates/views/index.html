@@ -6,7 +6,7 @@
     <title>Grade Stock Front</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260723.1">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.2">
 </head>
 <body>
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -43,9 +43,9 @@
                 </span>
             </a>
             <nav class="topbar-nav" aria-label="주요 탐색">
-                <a href="#top">HOME</a>
-                <a href="#featured">STYLE</a>
-                <a href="#catalog">SHOP</a>
+                <a href="/front">HOME</a>
+                <a href="/front/collections/recommended">STYLE</a>
+                <a href="/front#catalog">SHOP</a>
             </nav>
             <div class="topbar-controls">
                 <button class="topbar-search-button" type="button" id="openDrawerFromTop" aria-expanded="false" aria-controls="headerSearchPanel">검색</button>
@@ -53,12 +53,12 @@
             </div>
         </div>
         <nav class="topbar-subnav" id="topbarSubnav" aria-label="카테고리 스트립">
-            <a href="#featured">추천</a>
-            <a href="#latestDropGrid">랭킹</a>
-            <a href="#lowStockGrid">빠른배송</a>
+            <a href="/front/collections/recommended">추천</a>
+            <a href="/front/collections/ranking">랭킹</a>
+            <a href="/front/collections/fast-delivery">빠른배송</a>
             <a href="#discoveryStrip">브랜드</a>
-            <a href="#catalog">신상</a>
-            <a href="#catalog">럭셔리</a>
+            <a href="/front/collections/new">신상</a>
+            <a href="/front/collections/luxury">럭셔리</a>
             <a href="#flowBoard">마이</a>
         </nav>
         <div class="header-search-panel" id="headerSearchPanel" role="search" aria-label="헤더 상품 검색" hidden>
@@ -85,8 +85,8 @@
                     지금 주목받는 브랜드와 새롭게 등록된 상품을 만나보세요.
                 </p>
                 <div class="hero-actions">
-                    <a class="hero-primary" href="#featured">셀렉션 보기</a>
-                    <a class="hero-secondary" href="#catalog">상품 보러가기</a>
+                    <a class="hero-primary" href="/front/collections/recommended">셀렉션 보기</a>
+                    <a class="hero-secondary" href="/front#catalog">상품 보러가기</a>
                     <button class="hero-secondary" type="button" id="focusLowStockButton">품절 임박만 보기</button>
                 </div>
                 <div class="hero-carousel-controls" aria-label="프로모션 배너 이동">
@@ -143,12 +143,12 @@
         </section>
 
         <nav class="home-category-rail" id="homeCategoryRail" aria-label="홈 카테고리 바로가기">
-            <button type="button" data-home-preset="LATEST_DROP"><span>NEW</span><strong>신상품</strong></button>
-            <button type="button" data-home-preset="FEATURED"><span>BEST</span><strong>인기 상품</strong></button>
-            <button type="button" data-home-preset="LOW_STOCK"><span>FAST</span><strong>빠른 확인</strong></button>
+            <a href="/front/collections/new"><span>NEW</span><strong>신상품</strong></a>
+            <a href="/front/collections/ranking"><span>BEST</span><strong>인기 상품</strong></a>
+            <a href="/front/collections/fast-delivery"><span>FAST</span><strong>빠른배송</strong></a>
             <button type="button" data-home-target="brandSpotlightGrid"><span>BRAND</span><strong>브랜드</strong></button>
             <button type="button" data-home-target="categoryShortcutGrid"><span>SHOES</span><strong>카테고리</strong></button>
-            <button type="button" data-home-preset="PREMIUM"><span>LUXURY</span><strong>럭셔리</strong></button>
+            <a href="/front/collections/luxury"><span>LUXURY</span><strong>럭셔리</strong></a>
             <button type="button" data-home-target="bookmarkBoardSection"><span>WISH</span><strong>관심 상품</strong></button>
             <button type="button" data-home-target="recentViewedSection"><span>RECENT</span><strong>최근 본 상품</strong></button>
         </nav>
@@ -268,6 +268,7 @@
                         <p>가장 최근에 등록된 상품을 빠르게 훑고 바로 상세로 이동할 수 있습니다.</p>
                     </div>
                     <div class="section-action-bar" aria-label="신규 드롭 관리">
+                        <a class="catalog-reset-button" href="/front/collections/new">전체 보기</a>
                         <button class="catalog-reset-button" type="button" id="sortLatestPriceButton">가격 낮은 순</button>
                         <button class="catalog-reset-button" type="button" id="bookmarkLatestButton">신규 드롭 모두 찜</button>
                         <button class="catalog-reset-button" type="button" id="copyLatestSummaryButton">신규 요약 복사</button>
@@ -285,6 +286,7 @@
                         <p>현재 기준 긴장 재고 상품을 먼저 모아 보여줍니다.</p>
                     </div>
                     <div class="section-action-bar" aria-label="저재고 상품 관리">
+                        <a class="catalog-reset-button" href="/front?stock=LOW&amp;sort=STOCK_ASC#catalog">전체 보기</a>
                         <button class="catalog-reset-button" type="button" id="sortLowStockPriceButton">가격 낮은 순</button>
                         <button class="catalog-reset-button" type="button" id="compareLowStockButton">저재고 비교 담기</button>
                         <button class="catalog-reset-button" type="button" id="copyLowStockSummaryButton">저재고 요약 복사</button>
@@ -303,6 +305,7 @@
                 </div>
             </div>
             <div class="section-action-bar section-action-bar--featured">
+                <a class="catalog-reset-button" href="/front/collections/recommended">전체 보기</a>
                 <button class="catalog-reset-button" type="button" id="sortFeaturedPriceButton">가격 낮은 순</button>
                 <button class="catalog-reset-button" type="button" id="sortFeaturedStockButton">재고 낮은 순</button>
                 <button class="catalog-reset-button" type="button" id="bookmarkFeaturedButton">Featured 모두 찜</button>
@@ -904,6 +907,6 @@
 
 <button class="floating-top-button" type="button" id="scrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/app.js?v=20260723.1"></script>
+<script src="/js/view/app.js?v=20260725.2"></script>
 </body>
 </html>

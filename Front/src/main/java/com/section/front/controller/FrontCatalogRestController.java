@@ -1,6 +1,7 @@
 package com.section.front.controller;
 
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
+import com.section.front.product.dto.FrontHomeCollectionsResponse;
 import com.section.front.product.req.FrontCatalogRequest;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
@@ -19,5 +20,10 @@ public class FrontCatalogRestController {
     @GetMapping("/bootstrap")
     public FrontCatalogBootstrapResponse getBootstrap(@ModelAttribute FrontCatalogRequest request) {
         return frontProductCatalogService.getBootstrap(request.toQuery(), request.toPageable());
+    }
+
+    @GetMapping("/home-collections")
+    public FrontHomeCollectionsResponse getHomeCollections() {
+        return frontProductCatalogService.getHomeCollections();
     }
 }

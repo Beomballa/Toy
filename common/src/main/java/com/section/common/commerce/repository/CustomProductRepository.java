@@ -32,6 +32,8 @@ public interface CustomProductRepository {
 
     Page<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query, Pageable pageable);
 
+    List<FrontCatalogProductRow> getFrontCatalogPreviewProducts(FrontCatalogQuery query, int limit);
+
     List<FrontCatalogSummaryRow> getFrontCatalogSummary(FrontCatalogQuery query);
 
     Optional<FrontCatalogProductRow> getFrontCatalogProduct(Long productNo);

@@ -44,7 +44,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260723.1")
+                .contains("/css/storefront.css?v=20260725.2")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -52,7 +52,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260723.1");
+                .contains("/js/view/app.js?v=20260725.2");
     }
 
     @Test
@@ -203,12 +203,38 @@ class FrontStorefrontResourceTest {
                 .contains("productRailCard(product, featuredRankLabel(product), \"spotlight-card\")")
                 .contains("bindRailBookmarkButtons")
                 .contains("rail-product-card__wish")
-                .contains("rail-product-card__preview")
+                .contains("rail-product-card__detail")
+                .contains("상품 더보기")
                 .contains("return list.slice(0, 4)");
         assertThat(css)
                 .contains(".signal-feed")
                 .contains(".rail-product-card")
                 .contains("grid-template-columns: repeat(4, minmax(0, 1fr))");
+    }
+
+    @Test
+    void productCollectionKeepsIndependentNavigationServerPagingAndDetailCta() throws IOException {
+        String html = readResource("templates/views/product-collection.html");
+        String script = readResource("static/js/view/product-collection.js");
+        String css = readResource("static/css/product-collection.css");
+
+        assertThat(html)
+                .contains("data-collection-type")
+                .contains("id=\"collectionSearchInput\"")
+                .contains("id=\"collectionGrid\"")
+                .contains("id=\"collectionPreviousButton\"")
+                .contains("/front/collections/recommended")
+                .contains("/front/collections/fast-delivery");
+        assertThat(script)
+                .contains("/api/front/products?")
+                .contains("page: state.page")
+                .contains("size: state.size")
+                .contains("상품 더보기")
+                .contains("fast-delivery");
+        assertThat(css)
+                .contains(".collection-grid")
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
+                .contains(".collection-product__detail");
     }
 
     @Test

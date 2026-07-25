@@ -217,6 +217,32 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
+    public List<FrontCatalogProductRow> getFrontCatalogPreviewProducts(FrontCatalogQuery query, int limit) {
+        return frontCatalogBaseQuery()
+                .where(frontCatalogConditions(query))
+                .groupBy(
+                        product.id,
+                        product.brandNo,
+                        product.categoryNo,
+                        brand.nameKo,
+                        category.name,
+                        product.nameKo,
+                        frontProductDisplay.headline,
+                        product.modelNum,
+                        product.releasePrice,
+                        product.crtDtm,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        frontProductDisplay.featuredYn,
+                        frontProductDisplay.featuredRank
+                )
+                .having(frontStockCondition(query))
+                .orderBy(frontCatalogOrder(query))
+                .limit(Math.max(1, Math.min(limit, 20)))
+                .fetch();
+    }
+
+    @Override
     public List<FrontCatalogSummaryRow> getFrontCatalogSummary(FrontCatalogQuery query) {
         return queryFactory
                 .select(Projections.constructor(
@@ -741,13 +767,13 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
 
     private OrderSpecifier<?>[] frontCatalogOrder(FrontCatalogQuery query) {
         return switch (query.sort()) {
-            case "PRICE_HIGH" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.releasePrice.desc(), product.id.desc()};
-            case "PRICE_LOW" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.releasePrice.asc(), product.id.desc()};
-            case "NAME_ASC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.nameKo.asc(), product.id.desc()};
-            case "STOCK_ASC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), totalStockSum().asc(), product.id.desc()};
-            case "STOCK_DESC" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), totalStockSum().desc(), product.id.desc()};
+            case "PRICE_HIGH" -> new OrderSpecifier<?>[]{product.releasePrice.desc(), product.id.desc()};
+            case "PRICE_LOW" -> new OrderSpecifier<?>[]{product.releasePrice.asc(), product.id.desc()};
+            case "NAME_ASC" -> new OrderSpecifier<?>[]{product.nameKo.asc(), product.id.desc()};
+            case "STOCK_ASC" -> new OrderSpecifier<?>[]{totalStockSum().asc(), product.id.desc()};
+            case "STOCK_DESC" -> new OrderSpecifier<?>[]{totalStockSum().desc(), product.id.desc()};
             case "FEATURED" -> new OrderSpecifier<?>[]{frontFeaturedOrder(), frontProductDisplay.featuredRank.asc().nullsLast(), product.id.desc()};
-            default -> new OrderSpecifier<?>[]{frontFeaturedOrder(), product.crtDtm.desc(), product.id.desc()};
+            default -> new OrderSpecifier<?>[]{product.crtDtm.desc(), product.id.desc()};
         };
     }
 

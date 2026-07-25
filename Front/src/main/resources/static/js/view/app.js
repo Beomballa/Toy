@@ -60,6 +60,13 @@
     };
     let brandFacets = [];
     let categoryFacets = [];
+    let homeCollections = {
+        recommended: [],
+        ranking: [],
+        fastDelivery: [],
+        latestDrops: [],
+        lowStock: []
+    };
     let catalogPagination = {
         page: 0,
         size: 12,
@@ -464,7 +471,7 @@
 
     async function init() {
         hydrateStateFromUrl();
-        const shouldRender = await loadProducts();
+        const [shouldRender] = await Promise.all([loadProducts(), loadHomeCollections()]);
         if (!shouldRender) {
             return;
         }
@@ -752,6 +759,31 @@
         }
         syncPresetButtons();
         return true;
+    }
+
+    async function loadHomeCollections() {
+        try {
+            const response = await fetch("/api/front/catalog/home-collections");
+            if (!response.ok) {
+                throw new Error("홈 컬렉션을 불러오지 못했습니다.");
+            }
+            const payload = await response.json();
+            homeCollections = {
+                recommended: Array.isArray(payload?.recommended) ? payload.recommended : [],
+                ranking: Array.isArray(payload?.ranking) ? payload.ranking : [],
+                fastDelivery: Array.isArray(payload?.fastDelivery) ? payload.fastDelivery : [],
+                latestDrops: Array.isArray(payload?.latestDrops) ? payload.latestDrops : [],
+                lowStock: Array.isArray(payload?.lowStock) ? payload.lowStock : []
+            };
+        } catch (error) {
+            homeCollections = {
+                recommended: products.filter((product) => product.featured),
+                ranking: products.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0)),
+                fastDelivery: products.filter((product) => product.stock >= lowStockThresholdValue()),
+                latestDrops: products.slice(),
+                lowStock: products.filter((product) => product.stock < lowStockThresholdValue())
+            };
+        }
     }
 
     function populateFilters() {
@@ -2377,8 +2409,7 @@
     }
 
     function latestDropProducts() {
-        const latestCreatedDate = metrics.latestCreatedDate;
-        const list = products.filter((product) => !latestCreatedDate || product.createdDate === latestCreatedDate);
+        const list = homeCollections.latestDrops.slice();
         if (boardState.latestSort === "PRICE_LOW") {
             return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
         }
@@ -2386,7 +2417,7 @@
     }
 
     function lowStockHighlightProducts() {
-        const list = products.filter((product) => product.stock < lowStockThresholdValue());
+        const list = homeCollections.lowStock.slice();
         if (boardState.lowStockSort === "PRICE_LOW") {
             return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
         }
@@ -2394,7 +2425,7 @@
     }
 
     function featuredProducts() {
-        const list = products.filter((product) => product.featured);
+        const list = homeCollections.recommended.slice();
         if (boardState.featuredSort === "PRICE_LOW") {
             return list.sort((left, right) => Number(left.price || 0) - Number(right.price || 0)).slice(0, 4);
         }
@@ -2481,10 +2512,11 @@
                     <span class="rail-product-card__brand">${product.brand}</span>
                     <span class="rail-product-card__kicker">${kicker}</span>
                     <h3><a href="${detailPageUrl(product.id)}">${product.name}</a></h3>
-                    <strong>${product.priceLabel || formatPrice(product.price)}</strong>
-                    <span class="rail-product-card__meta">${product.stockStatus || stockLabel(product.stock)} · ${product.category}</span>
+                    <strong class="rail-product-card__price">${product.priceLabel || formatPrice(product.price)}</strong>
+                    <span class="rail-product-card__meta">${product.stockStatus || stockLabel(product.stock)} · 재고 ${Number(product.stock || 0)}개</span>
+                    <span class="rail-product-card__category">${product.category}</span>
+                    <a class="rail-product-card__detail" href="${detailPageUrl(product.id)}">상품 더보기</a>
                 </div>
-                <button class="rail-product-card__preview" type="button" data-product-id="${product.id}" aria-label="${product.name} 빠른 보기">•••</button>
             </article>
         `;
     }
@@ -2607,7 +2639,8 @@
                         <div class="catalog-card__meta">${product.stockStatus || stockLabel(product.stock)} · ${relativeDropLabel(product.createdDate)}</div>
                     </div>
                     <div class="catalog-card__action">
-                        <button class="catalog-card__button" type="button" data-product-id="${product.id}" aria-label="${product.name} 빠른 보기">•••</button>
+                        <a class="catalog-card__link" href="${detailPageUrl(product.id)}">더보기</a>
+                        <button class="catalog-card__button" type="button" data-product-id="${product.id}" aria-label="${product.name} 빠른 보기">빠른 보기</button>
                     </div>
                 </div>
             </article>
@@ -4357,8 +4390,15 @@
         });
     }
 
+    function findKnownProduct(productId) {
+        const collectionProducts = Object.values(homeCollections).flat();
+        return products
+            .concat(collectionProducts)
+            .find((product) => Number(product.id) === Number(productId));
+    }
+
     function toggleCompareProduct(productId) {
-        const source = products.find((product) => Number(product.id) === Number(productId));
+        const source = findKnownProduct(productId);
         if (!source) {
             return;
         }
@@ -4400,7 +4440,7 @@
     }
 
     function toggleBookmarkProduct(productId) {
-        const source = products.find((product) => Number(product.id) === Number(productId));
+        const source = findKnownProduct(productId);
         if (!source) {
             return;
         }

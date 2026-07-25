@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>상품 컬렉션 | Grade Stock</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.2">
+    <link rel="stylesheet" href="/css/product-collection.css?v=20260725.1">
+</head>
+<body class="collection-body" th:attr="data-collection-type=${collectionType}">
+<a class="skip-link" href="#collectionMain">상품 목록 바로가기</a>
+<div class="collection-shell">
+    <header class="collection-header">
+        <a class="collection-brand" href="/front" aria-label="Grade Stock 홈">
+            <span>GS</span>
+            <strong>Grade Stock</strong>
+        </a>
+        <nav aria-label="컬렉션 탐색">
+            <a href="/front/collections/recommended">추천</a>
+            <a href="/front/collections/ranking">랭킹</a>
+            <a href="/front/collections/fast-delivery">빠른배송</a>
+            <a href="/front/collections/new">신상</a>
+            <a href="/front">전체 상품</a>
+        </nav>
+        <a class="collection-header__back" href="/front">홈으로</a>
+    </header>
+
+    <main id="collectionMain">
+        <section class="collection-hero" aria-labelledby="collectionTitle">
+            <div>
+                <p id="collectionEyebrow">Collection</p>
+                <h1 id="collectionTitle">상품 컬렉션</h1>
+                <p id="collectionDescription">선별된 상품을 불러오고 있습니다.</p>
+            </div>
+            <dl class="collection-hero__metrics" aria-label="컬렉션 결과">
+                <div><dt>상품</dt><dd id="collectionTotalCount">0</dd></div>
+                <div><dt>페이지</dt><dd id="collectionPageCount">0</dd></div>
+            </dl>
+        </section>
+
+        <section class="collection-toolbar" aria-label="상품 검색 및 정렬">
+            <label>
+                <span>컬렉션 검색</span>
+                <input id="collectionSearchInput" type="search" placeholder="상품명, 브랜드, 모델번호" autocomplete="off">
+            </label>
+            <label>
+                <span>정렬</span>
+                <select id="collectionSortSelect">
+                    <option value="DEFAULT">컬렉션 기본순</option>
+                    <option value="PRICE_LOW">가격 낮은 순</option>
+                    <option value="PRICE_HIGH">가격 높은 순</option>
+                    <option value="STOCK_DESC">재고 많은 순</option>
+                    <option value="LATEST">최근 등록순</option>
+                </select>
+            </label>
+            <button type="button" id="collectionSearchButton">검색</button>
+            <button type="button" id="collectionResetButton">초기화</button>
+        </section>
+
+        <div class="collection-result-head">
+            <p id="collectionResultText" role="status" aria-live="polite">상품을 불러오고 있습니다.</p>
+            <span id="collectionRangeText">0 / 0</span>
+        </div>
+
+        <section class="collection-grid" id="collectionGrid" aria-label="컬렉션 상품 목록" aria-busy="true"></section>
+
+        <nav class="collection-pagination" aria-label="컬렉션 페이지 이동">
+            <button type="button" id="collectionPreviousButton">이전</button>
+            <strong id="collectionPaginationText">1 / 1</strong>
+            <button type="button" id="collectionNextButton">다음</button>
+        </nav>
+    </main>
+
+    <footer class="collection-footer">
+        <strong>Grade Stock</strong>
+        <p>상품 탐색과 재고 비교를 위한 데모 마켓플레이스입니다. 빠른배송 컬렉션은 재고 확보 여부를 기준으로 하며 실제 배송일을 보장하지 않습니다.</p>
+    </footer>
+</div>
+<script src="/js/view/product-collection.js?v=20260725.1"></script>
+</body>
+</html>

@@ -6,6 +6,7 @@ import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontCatalogPageResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.dto.FrontHomeCollectionsResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import com.section.common.commerce.dto.FrontCatalogQuery;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,5 +118,32 @@ class FrontCatalogRestControllerTest {
                         && query.featuredOnly()
                         && "UNDER_200".equals(query.priceBand())
         ), argThat(pageable -> pageable.getPageNumber() == 2 && pageable.getPageSize() == 24));
+    }
+
+    @Test
+    @DisplayName("홈 컬렉션 API는 추천 랭킹 빠른배송 신상 저재고를 분리해 반환한다")
+    void getHomeCollectionsReturnsIndependentSections() throws Exception {
+        FrontProductResponse product = new FrontProductResponse(
+                101L, "New Balance", "러닝화", "990v6", "Grey", "M990",
+                289000, 18, "2026-07-25", "설명", "Grey", true, 1,
+                "품절 임박", "289,000원", List.of(), null
+        );
+        when(frontProductCatalogService.getHomeCollections()).thenReturn(new FrontHomeCollectionsResponse(
+                List.of(product),
+                List.of(product),
+                List.of(product),
+                List.of(product),
+                List.of(product)
+        ));
+
+        mockMvc.perform(get("/api/front/catalog/home-collections"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recommended[0].id").value(101L))
+                .andExpect(jsonPath("$.ranking[0].brand").value("New Balance"))
+                .andExpect(jsonPath("$.fastDelivery[0].stock").value(18))
+                .andExpect(jsonPath("$.latestDrops[0].name").value("990v6"))
+                .andExpect(jsonPath("$.lowStock[0].featured").value(true));
+
+        verify(frontProductCatalogService).getHomeCollections();
     }
 }

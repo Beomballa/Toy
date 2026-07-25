@@ -40,6 +40,15 @@ class FrontViewControllerTest {
     }
 
     @Test
+    @DisplayName("상품 컬렉션 경로는 독립 목록 뷰와 컬렉션 타입을 반환한다")
+    void productCollectionReturnsCollectionView() throws Exception {
+        mockMvc.perform(get("/front/collections/ranking"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/product-collection"))
+                .andExpect(model().attribute("collectionType", "ranking"));
+    }
+
+    @Test
     @DisplayName("콘텐츠 상세 경로는 상세 뷰와 문서 번호를 반환한다")
     void contentDetailReturnsDetailView() throws Exception {
         mockMvc.perform(get("/front/content/101"))

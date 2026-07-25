@@ -3239,7 +3239,8 @@ select {
     margin-top: 16px;
 }
 
-.home-category-rail button {
+.home-category-rail button,
+.home-category-rail a {
     display: grid;
     gap: 8px;
     min-width: 92px;
@@ -3253,7 +3254,9 @@ select {
 }
 
 .home-category-rail button:hover span,
-.home-category-rail button:focus-visible span {
+.home-category-rail button:focus-visible span,
+.home-category-rail a:hover span,
+.home-category-rail a:focus-visible span {
     background: #eeeeee;
 }
 
@@ -3408,7 +3411,8 @@ select {
         font-size: 20px;
     }
 
-    .home-category-rail button {
+    .home-category-rail button,
+    .home-category-rail a {
         min-width: 76px;
     }
 
@@ -4756,7 +4760,8 @@ main#top {
         padding-right: 14px;
     }
 
-    .home-category-rail button {
+    .home-category-rail button,
+    .home-category-rail a {
         min-width: 76px;
     }
 

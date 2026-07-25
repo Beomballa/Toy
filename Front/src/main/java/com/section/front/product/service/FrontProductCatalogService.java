@@ -10,6 +10,7 @@ import com.section.front.product.dto.FrontCatalogBootstrapResponse;
 import com.section.front.product.dto.FrontCatalogFacetResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
 import com.section.front.product.dto.FrontCatalogPageResponse;
+import com.section.front.product.dto.FrontHomeCollectionsResponse;
 import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontProductResponse;
@@ -98,6 +99,25 @@ public class FrontProductCatalogService {
                 ),
                 buildFacetResponses(summary, FrontCatalogSummaryRow::brandName),
                 buildFacetResponses(summary, FrontCatalogSummaryRow::categoryName)
+        );
+    }
+
+    public FrontHomeCollectionsResponse getHomeCollections() {
+        return new FrontHomeCollectionsResponse(
+                getCatalogPreview(new FrontCatalogQuery(null, null, null, "ALL", "FEATURED", 20, true, "ALL")),
+                getCatalogPreview(new FrontCatalogQuery(null, null, null, "ALL", "STOCK_DESC", 20, false, "ALL")),
+                getCatalogPreview(new FrontCatalogQuery(null, null, null, "STABLE", "STOCK_DESC", 20, false, "ALL")),
+                getCatalogPreview(FrontCatalogQuery.defaultQuery()),
+                getCatalogPreview(new FrontCatalogQuery(null, null, null, "LOW", "STOCK_ASC", 20, false, "ALL"))
+        );
+    }
+
+    private List<FrontProductResponse> getCatalogPreview(FrontCatalogQuery query) {
+        List<FrontCatalogProductRow> rows = productRepository.getFrontCatalogPreviewProducts(query, 8);
+        return toProductResponses(
+                rows,
+                loadOptionMap(rows.stream().map(FrontCatalogProductRow::productNo).toList()),
+                query.lowStockThreshold()
         );
     }
 

@@ -6,7 +6,7 @@
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260725.3">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
 </head>
 <body class="detail-body" th:attr="data-product-id=${productId}">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -101,6 +101,7 @@
             <a href="#detailHero">요약</a>
             <a href="#detailOverview">개요</a>
             <a href="#detailOptions">옵션</a>
+            <a href="#detailGuide">안내</a>
             <a href="#detailRelated">연관 상품</a>
             <a href="#detailRecentSection">최근 본 상품</a>
         </nav>
@@ -234,6 +235,36 @@
             </div>
         </section>
 
+        <section class="detail-section detail-guide" id="detailGuide">
+            <div class="section-heading">
+                <p class="eyebrow">Information</p>
+                <div>
+                    <h2>구매 전 확인사항</h2>
+                    <p>상품 정보와 배송·교환 정책을 주문 전에 확인해주세요.</p>
+                </div>
+            </div>
+            <div class="detail-guide__list">
+                <details open>
+                    <summary>상품 상세 정보 <span>+</span></summary>
+                    <div>
+                        <p id="detailGuideDescription">상품 설명을 불러오는 중입니다.</p>
+                        <dl>
+                            <div><dt>모델 번호</dt><dd id="detailGuideModel">-</dd></div>
+                            <div><dt>카테고리</dt><dd id="detailGuideCategory">-</dd></div>
+                        </dl>
+                    </div>
+                </details>
+                <details>
+                    <summary>배송 안내 <span>+</span></summary>
+                    <div><p>주문 접수 후 재고 확인을 거쳐 배송이 준비됩니다. 실제 배송 일정과 택배 정보는 관리자 주문 상태에 따라 갱신됩니다.</p></div>
+                </details>
+                <details>
+                    <summary>교환·반품 안내 <span>+</span></summary>
+                    <div><p>상품 수령 후 상태를 확인한 뒤 고객센터를 통해 접수할 수 있습니다. 사용 흔적이나 구성품 누락이 있는 경우 처리가 제한될 수 있습니다.</p></div>
+                </details>
+            </div>
+        </section>
+
         <section class="detail-section" id="detailRelated">
             <div class="section-heading">
                 <p class="eyebrow">Related</p>
@@ -358,6 +389,6 @@
 
 <button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/detail.js?v=20260725.1"></script>
+<script src="/js/view/detail.js?v=20260725.2"></script>
 </body>
 </html>

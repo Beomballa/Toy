@@ -1337,6 +1337,71 @@ main#top {
     cursor: wait;
 }
 
+.detail-guide__list {
+    border-top: 2px solid #222;
+}
+
+.detail-guide__list details {
+    border-bottom: 1px solid #e9e9e9;
+}
+
+.detail-guide__list summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 58px;
+    padding: 0 4px;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    list-style: none;
+}
+
+.detail-guide__list summary::-webkit-details-marker {
+    display: none;
+}
+
+.detail-guide__list summary span {
+    color: #999;
+    font-size: 18px;
+    transition: transform .2s ease;
+}
+
+.detail-guide__list details[open] summary span {
+    transform: rotate(45deg);
+}
+
+.detail-guide__list details > div {
+    padding: 0 4px 24px;
+    color: #666;
+    font-size: 12px;
+    line-height: 1.7;
+}
+
+.detail-guide__list details p {
+    margin: 0;
+}
+
+.detail-guide__list dl {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 18px 0 0;
+}
+
+.detail-guide__list dl > div {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px;
+    border-radius: 8px;
+    background: #f7f7f7;
+}
+
+.detail-guide__list dt,
+.detail-guide__list dd {
+    margin: 0;
+}
+
 @media (max-width: 640px) {
     .catalog-live-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));

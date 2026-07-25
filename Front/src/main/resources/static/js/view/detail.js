@@ -40,6 +40,9 @@
         detailVisualBrand: document.getElementById("detailVisualBrand"),
         detailVisualModel: document.getElementById("detailVisualModel"),
         detailDescription: document.getElementById("detailDescription"),
+        detailGuideDescription: document.getElementById("detailGuideDescription"),
+        detailGuideModel: document.getElementById("detailGuideModel"),
+        detailGuideCategory: document.getElementById("detailGuideCategory"),
         detailPrice: document.getElementById("detailPrice"),
         detailStockText: document.getElementById("detailStockText"),
         detailMetaRow: document.getElementById("detailMetaRow"),
@@ -2263,6 +2266,9 @@
             if (elements.detailDescription) {
                 elements.detailDescription.textContent = product.description || "상품 설명이 아직 등록되지 않았습니다.";
             }
+            setElementText(elements.detailGuideDescription, product.description || "상품 설명이 아직 등록되지 않았습니다.");
+            setElementText(elements.detailGuideModel, product.model || "-");
+            setElementText(elements.detailGuideCategory, product.category || "-");
             if (elements.detailPrice) {
                 elements.detailPrice.textContent = product.priceLabel || formatPrice(product.price);
             }

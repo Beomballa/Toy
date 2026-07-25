@@ -49,10 +49,25 @@
         latestCreatedDate: null,
         latestDropCount: 0,
         featuredCount: 0,
-        totalStock: 0
+        totalStock: 0,
+        averagePrice: 0,
+        minimumPrice: 0,
+        maximumPrice: 0,
+        brandCount: 0,
+        under200Count: 0,
+        between200And300Count: 0,
+        over300Count: 0
     };
     let brandFacets = [];
     let categoryFacets = [];
+    let catalogPagination = {
+        page: 0,
+        size: 12,
+        totalElements: 0,
+        totalPages: 0,
+        first: true,
+        last: true
+    };
     let searchIndexProducts = [];
     let activeSearchSuggestions = [];
     let activeSearchSuggestionIndex = -1;
@@ -98,7 +113,9 @@
     const selectionFuture = [];
     const paginationState = {
         page: 1,
-        size: window.localStorage.getItem(PAGE_SIZE_KEY) || "12",
+        size: ["6", "12", "24", "48"].includes(window.localStorage.getItem(PAGE_SIZE_KEY))
+            ? window.localStorage.getItem(PAGE_SIZE_KEY)
+            : "12",
         extra: 0
     };
     const heroSlides = [
@@ -644,13 +661,14 @@
         });
     }
 
-    async function loadProducts() {
+    async function loadProducts(includeSummary = true) {
         const requestSequence = ++catalogRequestSequence;
         catalogRequestController?.abort();
         catalogRequestController = new AbortController();
         catalogLoadError = "";
         try {
-            const response = await fetch(`/api/front/catalog/bootstrap?${new URLSearchParams({
+            const endpoint = includeSummary ? "/api/front/catalog/bootstrap" : "/api/front/products";
+            const response = await fetch(`${endpoint}?${new URLSearchParams({
                 keyword: state.search,
                 brand: state.brand,
                 category: state.category,
@@ -658,7 +676,9 @@
                 sort: state.sort,
                 lowStockThreshold: state.lowStockThreshold,
                 featuredOnly: state.featuredOnly === "FEATURED",
-                priceBand: state.priceBand
+                priceBand: state.priceBand,
+                page: Math.max(0, paginationState.page - 1),
+                size: requestedCatalogPageSize()
             })}`, { signal: catalogRequestController.signal });
             if (!response.ok) {
                 throw new Error("상품 데이터를 불러오지 못했습니다.");
@@ -668,13 +688,16 @@
                 return false;
             }
             products = Array.isArray(payload?.products) ? payload.products.slice() : [];
+            catalogPagination = normalizeCatalogPagination(payload?.pagination);
+            paginationState.page = catalogPagination.page + 1;
+            syncUrlState();
             if (!searchIndexProducts.length || !state.search) {
                 searchIndexProducts = products.slice();
             }
             metrics = payload?.metrics || metrics;
-            brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : [];
-            categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : [];
-            writeCatalogSessionCache(payload);
+            brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : brandFacets;
+            categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : categoryFacets;
+            writeCatalogSessionCache({ ...payload, metrics, brandFacets, categoryFacets });
         } catch (error) {
             if (error?.name === "AbortError" || requestSequence !== catalogRequestSequence) {
                 return false;
@@ -682,6 +705,8 @@
             const cachedPayload = readCatalogSessionCache();
             if (cachedPayload) {
                 products = cachedPayload.products.slice();
+                catalogPagination = normalizeCatalogPagination(cachedPayload.pagination);
+                paginationState.page = catalogPagination.page + 1;
                 metrics = cachedPayload.metrics || metrics;
                 brandFacets = cachedPayload.brandFacets.slice();
                 categoryFacets = cachedPayload.categoryFacets.slice();
@@ -690,13 +715,21 @@
             }
             catalogLoadError = error instanceof Error ? error.message : "상품 데이터를 불러오지 못했습니다.";
             products = [];
+            catalogPagination = normalizeCatalogPagination(null);
             metrics = {
                 totalCount: 0,
                 lowStockCount: 0,
                 latestCreatedDate: null,
                 latestDropCount: 0,
                 featuredCount: 0,
-                totalStock: 0
+                totalStock: 0,
+                averagePrice: 0,
+                minimumPrice: 0,
+                maximumPrice: 0,
+                brandCount: 0,
+                under200Count: 0,
+                between200And300Count: 0,
+                over300Count: 0
             };
             brandFacets = [];
             categoryFacets = [];
@@ -1652,8 +1685,8 @@
             paginationState.page = 1;
             paginationState.extra = 0;
             window.localStorage.setItem(PAGE_SIZE_KEY, paginationState.size);
-            renderCatalog();
-            showToast("페이지 표시 개수를 변경했습니다.", `${paginationState.size === "ALL" ? "전체" : `${paginationState.size}개`} 단위로 상품을 표시합니다.`);
+            reloadCatalogPage();
+            showToast("페이지 표시 개수를 변경했습니다.", `${paginationState.size}개 단위로 상품을 표시합니다.`);
         });
         elements.catalogPageSelect?.addEventListener("change", () => {
             moveCatalogPage(Number(elements.catalogPageSelect.value));
@@ -1663,10 +1696,13 @@
         elements.catalogNextPageButton?.addEventListener("click", () => moveCatalogPage(paginationState.page + 1));
         elements.catalogLastPageButton?.addEventListener("click", () => moveCatalogPage(catalogPaginationDetails().totalPages));
         elements.catalogLoadMoreButton?.addEventListener("click", () => {
-            paginationState.extra += 6;
+            const nextSize = [6, 12, 24, 48].find((size) => size > requestedCatalogPageSize()) || 48;
+            paginationState.size = String(nextSize);
+            window.localStorage.setItem(PAGE_SIZE_KEY, paginationState.size);
+            paginationState.extra = 0;
             paginationState.page = 1;
-            renderCatalog();
-            showToast("상품을 더 불러왔습니다.", `현재 페이지에 최대 ${catalogPaginationDetails().effectiveSize}개 상품을 표시합니다.`);
+            reloadCatalogPage();
+            showToast("상품을 더 불러옵니다.", `현재 페이지에 최대 ${nextSize}개 상품을 표시합니다.`);
         });
         elements.copyCurrentPageLinksButton?.addEventListener("click", async () => {
             const links = currentCatalogPageProducts().map((product) =>
@@ -2499,7 +2535,7 @@
         const list = currentCatalogPageProducts(allList);
         const positionOffset = (paginationState.page - 1) * details.effectiveSize;
         const bookmarkedIds = new Set(readBookmarkProducts().map((product) => Number(product.id)));
-        syncCatalogDocumentTitle(allList.length);
+        syncCatalogDocumentTitle(Number(metrics.totalCount || 0));
         renderCatalogSummary(allList);
         renderCatalogSelection();
         renderCatalogPagination(allList);
@@ -2546,7 +2582,7 @@
         elements.catalogGrid.innerHTML = list.map((product, index) => {
             product = markupSafeObject(product);
             return `
-            <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" data-keyboard-hint="B 관심 · C 비교 · S 선택 · Q 미리보기 · L 링크" aria-label="${escapeAttribute(`${product.name}, ${product.priceLabel || formatPrice(product.price)}, ${product.stockStatus || stockLabel(product.stock)}`)}" aria-posinset="${positionOffset + index + 1}" aria-setsize="${allList.length}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
+                <article class="catalog-card ${selectedProductIds.has(Number(product.id)) ? "is-selected" : ""}" role="listitem" data-catalog-product-id="${product.id}" data-keyboard-hint="B 관심 · C 비교 · S 선택 · Q 미리보기 · L 링크" aria-label="${escapeAttribute(`${product.name}, ${product.priceLabel || formatPrice(product.price)}, ${product.stockStatus || stockLabel(product.stock)}`)}" aria-posinset="${positionOffset + index + 1}" aria-setsize="${details.total}" aria-keyshortcuts="Enter B C S Q L" tabindex="${index === 0 ? "0" : "-1"}">
                 <button class="catalog-card__select ${selectedProductIds.has(Number(product.id)) ? "is-active" : ""}" type="button" data-select-product-id="${product.id}" aria-pressed="${selectedProductIds.has(Number(product.id))}" aria-label="${escapeAttribute(product.name)} ${selectedProductIds.has(Number(product.id)) ? "선택 해제" : "선택"}">
                     ${selectedProductIds.has(Number(product.id)) ? "선택됨" : "선택"}
                 </button>
@@ -2580,24 +2616,20 @@
     }
 
     function catalogPaginationDetails(list = filteredProducts()) {
-        const total = list.length;
-        const baseSize = paginationState.size === "ALL" ? Math.max(1, total) : Number(paginationState.size || 12);
-        const effectiveSize = paginationState.size === "ALL" ? baseSize : baseSize + paginationState.extra;
+        const total = Number(catalogPagination.totalElements || 0);
+        const effectiveSize = Number(catalogPagination.size || requestedCatalogPageSize());
         return {
             total,
             effectiveSize,
-            totalPages: Math.max(1, Math.ceil(total / effectiveSize))
+            totalPages: Math.max(1, Number(catalogPagination.totalPages || Math.ceil(total / effectiveSize)))
         };
     }
 
     function currentCatalogPageProducts(list = filteredProducts()) {
-        const details = catalogPaginationDetails(list);
-        const page = Math.min(Math.max(1, paginationState.page), details.totalPages);
-        const start = (page - 1) * details.effectiveSize;
-        return list.slice(start, start + details.effectiveSize);
+        return list;
     }
 
-    function moveCatalogPage(nextPage) {
+    async function moveCatalogPage(nextPage) {
         const details = catalogPaginationDetails();
         const clampedPage = Math.min(Math.max(1, Number(nextPage) || 1), details.totalPages);
         if (clampedPage === paginationState.page && !paginationState.extra) {
@@ -2605,7 +2637,10 @@
         }
         paginationState.page = clampedPage;
         paginationState.extra = 0;
-        renderCatalog();
+        const shouldRender = await reloadCatalogPage();
+        if (!shouldRender) {
+            return;
+        }
         announceStorefrontStatus(`${paginationState.page} 페이지로 이동했습니다.`);
         document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" });
         focusCatalogCardAfterRender();
@@ -2642,7 +2677,37 @@
         elements.catalogPreviousPageButton.disabled = isFirst;
         elements.catalogNextPageButton.disabled = isLast;
         elements.catalogLastPageButton.disabled = isLast;
-        elements.catalogLoadMoreButton.disabled = paginationState.size === "ALL" || end >= details.total;
+        elements.catalogLoadMoreButton.disabled = requestedCatalogPageSize() >= 48 || end >= details.total;
+    }
+
+    function requestedCatalogPageSize() {
+        return Math.min(48, Math.max(1, Number(paginationState.size || 12) + Number(paginationState.extra || 0)));
+    }
+
+    function normalizeCatalogPagination(value) {
+        const size = Math.min(48, Math.max(1, Number(value?.size || requestedCatalogPageSize())));
+        const totalElements = Math.max(0, Number(value?.totalElements || 0));
+        const totalPages = Math.max(0, Number(value?.totalPages || 0));
+        const page = Math.min(Math.max(0, Number(value?.page || 0)), Math.max(0, totalPages - 1));
+        return {
+            page,
+            size,
+            totalElements,
+            totalPages,
+            first: value?.first !== false && page === 0,
+            last: value?.last !== false && (totalPages === 0 || page >= totalPages - 1)
+        };
+    }
+
+    async function reloadCatalogPage() {
+        elements.catalogGrid?.setAttribute("aria-busy", "true");
+        syncUrlState();
+        const shouldRender = await loadProducts(false);
+        if (shouldRender) {
+            renderCatalog();
+        }
+        elements.catalogGrid?.setAttribute("aria-busy", "false");
+        return shouldRender;
     }
 
     function selectedProducts() {
@@ -2925,30 +2990,28 @@
     }
 
     function renderCatalogSummary(list) {
-        setText(elements.catalogCountText, `${list.length}개 상품이 현재 조건에 맞습니다.`);
-        setText(elements.catalogSummaryText, buildSummaryText(list.length));
+        const totalCount = Number(metrics.totalCount || 0);
+        setText(elements.catalogCountText, `${totalCount}개 상품이 현재 조건에 맞습니다.`);
+        setText(elements.catalogSummaryText, buildSummaryText(totalCount));
         renderCatalogSearchQuality(list);
-        const prices = list.map((product) => Number(product.price || 0));
-        const averagePrice = prices.length
-            ? Math.round(prices.reduce((sum, price) => sum + price, 0) / prices.length)
-            : 0;
-        const priceRange = prices.length
-            ? `${formatPrice(Math.min(...prices))} - ${formatPrice(Math.max(...prices))}`
+        const averagePrice = Number(metrics.averagePrice || 0);
+        const priceRange = totalCount
+            ? `${formatPrice(metrics.minimumPrice)} - ${formatPrice(metrics.maximumPrice)}`
             : "0원";
         setText(elements.catalogAveragePrice, formatPrice(averagePrice));
         setText(elements.catalogPriceRange, priceRange);
-        setText(elements.catalogTotalStock, `${list.reduce((sum, product) => sum + Number(product.stock || 0), 0)}개`);
-        setText(elements.catalogBrandCount, `${new Set(list.map((product) => product.brand).filter(Boolean)).size}개`);
-        setText(elements.catalogLowStockCount, `${list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length}개`);
+        setText(elements.catalogTotalStock, `${Number(metrics.totalStock || 0)}개`);
+        setText(elements.catalogBrandCount, `${Number(metrics.brandCount || 0)}개`);
+        setText(elements.catalogLowStockCount, `${Number(metrics.lowStockCount || 0)}개`);
         const distributionItems = [
-            [elements.catalogUnderPriceRate, elements.catalogUnderPriceBar, list.filter((product) => Number(product.price || 0) < 200000).length],
-            [elements.catalogMiddlePriceRate, elements.catalogMiddlePriceBar, list.filter((product) => Number(product.price || 0) >= 200000 && Number(product.price || 0) <= 300000).length],
-            [elements.catalogHighPriceRate, elements.catalogHighPriceBar, list.filter((product) => Number(product.price || 0) > 300000).length],
-            [elements.catalogLowStockRate, elements.catalogLowStockBar, list.filter((product) => Number(product.stock || 0) < lowStockThresholdValue()).length],
-            [elements.catalogFeaturedRate, elements.catalogFeaturedBar, list.filter((product) => Boolean(product.featured)).length]
+            [elements.catalogUnderPriceRate, elements.catalogUnderPriceBar, Number(metrics.under200Count || 0)],
+            [elements.catalogMiddlePriceRate, elements.catalogMiddlePriceBar, Number(metrics.between200And300Count || 0)],
+            [elements.catalogHighPriceRate, elements.catalogHighPriceBar, Number(metrics.over300Count || 0)],
+            [elements.catalogLowStockRate, elements.catalogLowStockBar, Number(metrics.lowStockCount || 0)],
+            [elements.catalogFeaturedRate, elements.catalogFeaturedBar, Number(metrics.featuredCount || 0)]
         ];
         distributionItems.forEach(([label, bar, count]) => {
-            const rate = list.length ? Math.round((count / list.length) * 100) : 0;
+            const rate = totalCount ? Math.round((count / totalCount) * 100) : 0;
             setText(label, `${rate}%`);
             if (bar) {
                 bar.style.width = `${rate}%`;
@@ -3170,7 +3233,7 @@
         renderCatalog();
         syncViewButtons();
         elements.catalogGrid?.setAttribute("aria-busy", "false");
-        announceStorefrontStatus(catalogLoadError || `${filteredProducts().length}개 상품을 표시했습니다.`);
+        announceStorefrontStatus(catalogLoadError || `${Number(metrics.totalCount || 0)}개 상품 중 ${filteredProducts().length}개를 표시했습니다.`);
         syncNetworkStatus();
     }
 
@@ -3295,6 +3358,11 @@
             ["ALL", "UNDER_200", "BETWEEN_200_300", "OVER_300"],
             DEFAULT_STATE.priceBand
         );
+        paginationState.page = Math.max(1, Number(params.get("page") || 1));
+        const requestedSize = params.get("size");
+        if (["6", "12", "24", "48"].includes(requestedSize)) {
+            paginationState.size = requestedSize;
+        }
     }
 
     function syncUrlState() {
@@ -3304,6 +3372,12 @@
                 params.set(key, value);
             }
         });
+        if (paginationState.page > 1) {
+            params.set("page", paginationState.page);
+        }
+        if (paginationState.size !== "12") {
+            params.set("size", paginationState.size);
+        }
         const nextUrl = params.toString() ? `${window.location.pathname}?${params}` : window.location.pathname;
         window.history.replaceState({}, "", nextUrl);
     }

@@ -1,9 +1,11 @@
 package com.section.front.controller;
 
 import com.section.front.product.dto.FrontProductDetailResponse;
+import com.section.front.product.dto.FrontCatalogPageResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontRelatedProductResponse;
 import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.dto.FrontProductPageResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import com.section.common.commerce.dto.FrontCatalogQuery;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
@@ -41,7 +44,7 @@ class FrontProductRestControllerTest {
     @Test
     @DisplayName("프론트 상품 API는 카탈로그 목록을 반환한다")
     void getProductsReturnsCatalog() throws Exception {
-        when(frontProductCatalogService.getCatalog(any(FrontCatalogQuery.class))).thenReturn(List.of(
+        when(frontProductCatalogService.getCatalog(any(FrontCatalogQuery.class), any(Pageable.class))).thenReturn(new FrontProductPageResponse(List.of(
                 new FrontProductResponse(
                         101L,
                         "New Balance",
@@ -61,29 +64,33 @@ class FrontProductRestControllerTest {
                         List.of(new FrontProductOptionResponse("260", 4)),
                         "/images/product/m990gl6.png"
                 )
-        ));
+        ), new FrontCatalogPageResponse(0, 12, 37, 4, true, false)));
 
         mockMvc.perform(get("/api/front/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(101L))
-                .andExpect(jsonPath("$[0].brand").value("New Balance"))
-                .andExpect(jsonPath("$[0].headline").value("Grey precision"))
-                .andExpect(jsonPath("$[0].stockStatus").value("품절 임박"))
-                .andExpect(jsonPath("$[0].thumbnailUrl").value("/images/product/m990gl6.png"))
-                .andExpect(jsonPath("$[0].options[0].name").value("260"));
+                .andExpect(jsonPath("$.products[0].id").value(101L))
+                .andExpect(jsonPath("$.products[0].brand").value("New Balance"))
+                .andExpect(jsonPath("$.products[0].headline").value("Grey precision"))
+                .andExpect(jsonPath("$.products[0].stockStatus").value("품절 임박"))
+                .andExpect(jsonPath("$.products[0].thumbnailUrl").value("/images/product/m990gl6.png"))
+                .andExpect(jsonPath("$.products[0].options[0].name").value("260"))
+                .andExpect(jsonPath("$.pagination.totalElements").value(37));
     }
 
     @Test
     @DisplayName("프론트 상품 API는 필터 요청을 서비스 쿼리로 전달한다")
     void getProductsPassesNormalizedQuery() throws Exception {
-        when(frontProductCatalogService.getCatalog(any(FrontCatalogQuery.class))).thenReturn(List.of());
+        when(frontProductCatalogService.getCatalog(any(FrontCatalogQuery.class), any(Pageable.class)))
+                .thenReturn(new FrontProductPageResponse(List.of(), new FrontCatalogPageResponse(1, 24, 0, 0, false, true)));
 
         mockMvc.perform(get("/api/front/products")
                         .param("stock", "stable")
                         .param("sort", "name_asc")
                         .param("lowStockThreshold", "50")
                         .param("featuredOnly", "true")
-                        .param("priceBand", "between_200_300"))
+                        .param("priceBand", "between_200_300")
+                        .param("page", "1")
+                        .param("size", "24"))
                 .andExpect(status().isOk());
 
         verify(frontProductCatalogService).getCatalog(argThat(query ->
@@ -92,7 +99,7 @@ class FrontProductRestControllerTest {
                         && query.lowStockThreshold() == 50
                         && query.featuredOnly()
                         && "BETWEEN_200_300".equals(query.priceBand())
-        ));
+        ), argThat(pageable -> pageable.getPageNumber() == 1 && pageable.getPageSize() == 24));
     }
 
     @Test

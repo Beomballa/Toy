@@ -2,17 +2,23 @@ package com.section.front.product.service;
 
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.dto.FrontCatalogQuery;
+import com.section.common.commerce.dto.FrontCatalogSummaryRow;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.front.product.dto.FrontCatalogBootstrapResponse;
 import com.section.front.product.dto.FrontCatalogFacetResponse;
 import com.section.front.product.dto.FrontCatalogMetricsResponse;
+import com.section.front.product.dto.FrontCatalogPageResponse;
 import com.section.front.product.dto.FrontProductDetailResponse;
 import com.section.front.product.dto.FrontProductOptionResponse;
 import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.dto.FrontProductPageResponse;
 import com.section.front.product.dto.FrontRelatedProductResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,36 +41,63 @@ public class FrontProductCatalogService {
     private final ProductRepository productRepository;
     private final ProductOptionRepository productOptionRepository;
 
-    public List<FrontProductResponse> getCatalog(FrontCatalogQuery query) {
-        List<FrontCatalogProductRow> rows = productRepository.getFrontCatalogProducts(query);
-        return toProductResponses(
-                rows,
+    public FrontProductPageResponse getCatalog(FrontCatalogQuery query, Pageable pageable) {
+        Page<FrontCatalogProductRow> rows = productRepository.getFrontCatalogProducts(query, pageable);
+        if (rows.isEmpty() && rows.getTotalElements() > 0 && pageable.getPageNumber() >= rows.getTotalPages()) {
+            Pageable lastPage = PageRequest.of(rows.getTotalPages() - 1, pageable.getPageSize());
+            rows = productRepository.getFrontCatalogProducts(query, lastPage);
+        }
+        List<FrontProductResponse> products = toProductResponses(
+                rows.getContent(),
                 loadOptionMap(rows.stream().map(FrontCatalogProductRow::productNo).toList()),
                 query.lowStockThreshold()
         );
+        return new FrontProductPageResponse(products, toPageResponse(rows));
     }
 
-    public FrontCatalogBootstrapResponse getBootstrap(FrontCatalogQuery query) {
-        List<FrontProductResponse> catalog = getCatalog(query);
-        String latestCreatedDate = catalog.stream()
-                .map(FrontProductResponse::createdDate)
+    public FrontCatalogBootstrapResponse getBootstrap(FrontCatalogQuery query, Pageable pageable) {
+        FrontProductPageResponse catalogPage = getCatalog(query, pageable);
+        List<FrontCatalogSummaryRow> summary = productRepository.getFrontCatalogSummary(query);
+        String latestCreatedDate = summary.stream()
+                .map(FrontCatalogSummaryRow::createdAt)
+                .filter(java.util.Objects::nonNull)
+                .map(createdAt -> createdAt.toLocalDate().format(DATE_FORMATTER))
                 .max(String::compareTo)
                 .orElse(null);
+        java.util.IntSummaryStatistics priceStats = summary.stream()
+                .map(FrontCatalogSummaryRow::releasePrice)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .summaryStatistics();
 
         return new FrontCatalogBootstrapResponse(
-                catalog,
+                catalogPage.products(),
+                catalogPage.pagination(),
                 new FrontCatalogMetricsResponse(
-                        catalog.size(),
-                        (int) catalog.stream().filter(product -> product.stock() < query.lowStockThreshold()).count(),
+                        summary.size(),
+                        (int) summary.stream().filter(product -> safeStock(product.totalStock()) < query.lowStockThreshold()).count(),
                         latestCreatedDate,
-                        (int) catalog.stream()
-                                .filter(product -> latestCreatedDate != null && latestCreatedDate.equals(product.createdDate()))
+                        (int) summary.stream()
+                                .filter(product -> latestCreatedDate != null
+                                        && product.createdAt() != null
+                                        && latestCreatedDate.equals(product.createdAt().toLocalDate().format(DATE_FORMATTER)))
                                 .count(),
-                        (int) catalog.stream().filter(FrontProductResponse::featured).count(),
-                        catalog.stream().mapToInt(FrontProductResponse::stock).sum()
+                        (int) summary.stream().filter(FrontCatalogSummaryRow::featured).count(),
+                        saturatedInt(summary.stream().mapToLong(product -> safeStock(product.totalStock())).sum()),
+                        priceStats.getCount() == 0 ? 0 : saturatedInt(Math.round(priceStats.getAverage())),
+                        priceStats.getCount() == 0 ? 0 : priceStats.getMin(),
+                        priceStats.getCount() == 0 ? 0 : priceStats.getMax(),
+                        (int) summary.stream().map(FrontCatalogSummaryRow::brandName).filter(java.util.Objects::nonNull).distinct().count(),
+                        (int) summary.stream().filter(product -> product.releasePrice() != null
+                                && product.releasePrice() < 200000).count(),
+                        (int) summary.stream().filter(product -> product.releasePrice() != null
+                                && product.releasePrice() >= 200000
+                                && product.releasePrice() <= 300000).count(),
+                        (int) summary.stream().filter(product -> product.releasePrice() != null
+                                && product.releasePrice() > 300000).count()
                 ),
-                buildFacetResponses(catalog, FrontProductResponse::brand),
-                buildFacetResponses(catalog, FrontProductResponse::category)
+                buildFacetResponses(summary, FrontCatalogSummaryRow::brandName),
+                buildFacetResponses(summary, FrontCatalogSummaryRow::categoryName)
         );
     }
 
@@ -253,11 +286,31 @@ public class FrontProductCatalogService {
         return String.format("%,d원", releasePrice);
     }
 
+    private FrontCatalogPageResponse toPageResponse(Page<?> page) {
+        return new FrontCatalogPageResponse(
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast()
+        );
+    }
+
+    private int safeStock(Integer stock) {
+        return stock == null ? 0 : stock;
+    }
+
+    private int saturatedInt(long value) {
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(Integer.MIN_VALUE, value));
+    }
+
     private List<FrontCatalogFacetResponse> buildFacetResponses(
-            List<FrontProductResponse> catalog,
-            Function<FrontProductResponse, String> classifier
+            List<FrontCatalogSummaryRow> catalog,
+            Function<FrontCatalogSummaryRow, String> classifier
     ) {
         return catalog.stream()
+                .filter(product -> classifier.apply(product) != null)
                 .collect(Collectors.groupingBy(classifier, Collectors.counting()))
                 .entrySet()
                 .stream()

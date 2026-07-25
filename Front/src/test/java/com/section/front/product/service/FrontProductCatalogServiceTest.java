@@ -2,6 +2,7 @@ package com.section.front.product.service;
 
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.dto.FrontCatalogQuery;
+import com.section.common.commerce.dto.FrontCatalogSummaryRow;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -11,6 +12,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class FrontProductCatalogServiceTest {
@@ -40,15 +45,60 @@ class FrontProductCatalogServiceTest {
         mockCatalogRows();
         mockOptions();
 
-        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery());
+        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery(), PageRequest.of(0, 12));
 
-        assertEquals(3, catalog.size());
-        assertEquals(101L, catalog.getFirst().id());
-        assertEquals("New Balance", catalog.getFirst().brand());
-        assertEquals("Grey precision", catalog.getFirst().headline());
-        assertEquals("289,000원", catalog.getFirst().priceLabel());
-        assertEquals("품절 임박", catalog.getFirst().stockStatus());
-        assertTrue(catalog.stream().allMatch(product -> !product.options().isEmpty()));
+        assertEquals(3, catalog.products().size());
+        assertEquals(101L, catalog.products().getFirst().id());
+        assertEquals("New Balance", catalog.products().getFirst().brand());
+        assertEquals("Grey precision", catalog.products().getFirst().headline());
+        assertEquals("289,000원", catalog.products().getFirst().priceLabel());
+        assertEquals("품절 임박", catalog.products().getFirst().stockStatus());
+        assertTrue(catalog.products().stream().allMatch(product -> !product.options().isEmpty()));
+        assertEquals(3, catalog.pagination().totalElements());
+    }
+
+    @Test
+    @DisplayName("프론트 카탈로그 서비스는 현재 페이지 상품의 옵션만 조회하고 전체 건수를 유지한다")
+    void getCatalogLoadsOptionsForCurrentPageOnly() {
+        List<FrontCatalogProductRow> pageRows = List.of(
+                row(101L, 1L, 11L, "New Balance", "러닝화", "990v6", "Grey", "M990", 289000, 18, LocalDate.now(), "설명", "Grey", true, 1),
+                row(102L, 2L, 12L, "Nike", "라이프스타일", "Air Max", "Air", "AM1", 219000, 10, LocalDate.now(), "설명", "Air", false, null)
+        );
+        PageRequest pageable = PageRequest.of(2, 2);
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(pageRows, pageable, 31));
+        when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(101L, 102L)))
+                .thenReturn(List.of(option(101L, "260", 18), option(102L, "270", 10)));
+
+        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery(), pageable);
+
+        assertEquals(2, catalog.products().size());
+        assertEquals(31, catalog.pagination().totalElements());
+        assertEquals(16, catalog.pagination().totalPages());
+        assertEquals(2, catalog.pagination().page());
+        verify(productOptionRepository).findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(101L, 102L));
+    }
+
+    @Test
+    @DisplayName("프론트 카탈로그 서비스는 범위를 벗어난 페이지를 마지막 페이지로 보정한다")
+    void getCatalogMovesOutOfRangeRequestToLastPage() {
+        FrontCatalogProductRow lastRow = row(
+                131L, 1L, 11L, "New Balance", "러닝화", "Last Product", "Last", "LAST",
+                199000, 7, LocalDate.now(), "설명", "Last", false, null
+        );
+        PageRequest invalidPage = PageRequest.of(99, 12);
+        PageRequest lastPage = PageRequest.of(2, 12);
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(), invalidPage, 25))
+                .thenReturn(new PageImpl<>(List.of(lastRow), lastPage, 25));
+        when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(131L)))
+                .thenReturn(List.of(option(131L, "260", 7)));
+
+        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery(), invalidPage);
+
+        assertEquals(2, catalog.pagination().page());
+        assertEquals(3, catalog.pagination().totalPages());
+        assertEquals(131L, catalog.products().getFirst().id());
     }
 
     @Test
@@ -57,7 +107,9 @@ class FrontProductCatalogServiceTest {
         mockCatalogRows();
         mockOptions();
 
-        var bootstrap = frontProductCatalogService.getBootstrap(FrontCatalogQuery.defaultQuery());
+        mockSummaryRows();
+
+        var bootstrap = frontProductCatalogService.getBootstrap(FrontCatalogQuery.defaultQuery(), PageRequest.of(0, 12));
 
         assertEquals(3, bootstrap.metrics().totalCount());
         assertEquals(3, bootstrap.metrics().lowStockCount());
@@ -65,18 +117,22 @@ class FrontProductCatalogServiceTest {
         assertEquals(2, bootstrap.metrics().latestDropCount());
         assertEquals(2, bootstrap.metrics().featuredCount());
         assertEquals(40, bootstrap.metrics().totalStock());
+        assertEquals(229000, bootstrap.metrics().averagePrice());
+        assertEquals(179000, bootstrap.metrics().minimumPrice());
+        assertEquals(289000, bootstrap.metrics().maximumPrice());
+        assertEquals(3, bootstrap.metrics().brandCount());
     }
 
     @Test
     @DisplayName("프론트 카탈로그 서비스는 전시 메타가 비어 있어도 기본 문구로 응답을 만든다")
     void getCatalogFallsBackWhenDisplayMetadataMissing() {
-        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class))).thenReturn(List.of(
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class))).thenReturn(pageOf(List.of(
                 row(201L, 7L, 21L, "Salomon", "아웃도어", "ACS Pro", null, "L123", 199000, 21, LocalDate.now(), null, null, false, null)
-        ));
+        )));
         when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(201L)))
                 .thenReturn(List.of(option(201L, "270", 21)));
 
-        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery());
+        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery(), PageRequest.of(0, 12)).products();
 
         assertEquals(1, catalog.size());
         assertEquals("Salomon curated", catalog.getFirst().headline());
@@ -88,7 +144,7 @@ class FrontProductCatalogServiceTest {
     @Test
     @DisplayName("프론트 카탈로그 서비스는 상품 생성일 기준으로 createdDate를 노출한다")
     void getCatalogUsesCreatedAtForCreatedDate() {
-        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class))).thenReturn(List.of(
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class))).thenReturn(pageOf(List.of(
                 new FrontCatalogProductRow(
                         301L,
                         9L,
@@ -107,11 +163,11 @@ class FrontProductCatalogServiceTest {
                         1,
                         "/images/product/pd-elite.png"
                 )
-        ));
+        )));
         when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(301L)))
                 .thenReturn(List.of(option(301L, "270", 14)));
 
-        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery());
+        var catalog = frontProductCatalogService.getCatalog(FrontCatalogQuery.defaultQuery(), PageRequest.of(0, 12)).products();
 
         assertEquals("2026-06-05", catalog.getFirst().createdDate());
         assertEquals(1, catalog.getFirst().featuredRank());
@@ -121,14 +177,20 @@ class FrontProductCatalogServiceTest {
     @Test
     @DisplayName("프론트 카탈로그 서비스의 stockStatus는 조회 임계값 기준으로 계산된다")
     void getCatalogBuildsStockStatusFromQueryThreshold() {
-        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class))).thenReturn(List.of(
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class))).thenReturn(pageOf(List.of(
                 row(401L, 1L, 11L, "New Balance", "러닝화", "990v6 Grey Day", "Grey precision", "M990GL6", 289000, 18, LocalDate.now(), "설명", "Grey precision", true, 1)
-        ));
+        )));
         when(productOptionRepository.findAllByProductNoInOrderByProductNoAscOptionNameAsc(List.of(401L)))
                 .thenReturn(List.of(option(401L, "260", 18)));
 
-        var stableCatalog = frontProductCatalogService.getCatalog(new FrontCatalogQuery(null, null, null, "ALL", "LATEST", 10, false, "ALL"));
-        var tenseCatalog = frontProductCatalogService.getCatalog(new FrontCatalogQuery(null, null, null, "ALL", "LATEST", 20, false, "ALL"));
+        var stableCatalog = frontProductCatalogService.getCatalog(
+                new FrontCatalogQuery(null, null, null, "ALL", "LATEST", 10, false, "ALL"),
+                PageRequest.of(0, 12)
+        ).products();
+        var tenseCatalog = frontProductCatalogService.getCatalog(
+                new FrontCatalogQuery(null, null, null, "ALL", "LATEST", 20, false, "ALL"),
+                PageRequest.of(0, 12)
+        ).products();
 
         assertEquals("재고 안정", stableCatalog.getFirst().stockStatus());
         assertEquals("품절 임박", tenseCatalog.getFirst().stockStatus());
@@ -191,11 +253,34 @@ class FrontProductCatalogServiceTest {
     }
 
     private void mockCatalogRows() {
-        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class))).thenReturn(List.of(
+        when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class))).thenReturn(pageOf(List.of(
                 row(101L, 1L, 11L, "New Balance", "러닝화", "990v6 Grey Day", "Grey precision", "M990GL6", 289000, 18, LocalDate.now().minusDays(2), "설명", "Grey precision", true, 1),
                 row(102L, 2L, 12L, "Nike", "라이프스타일", "Air Max DN Ember", "Ember energy", "DV3337-800", 219000, 10, LocalDate.now().minusDays(3), "설명", "Ember energy", true, 2),
                 row(103L, 3L, 11L, "ASICS", "러닝화", "Gel-Kayano 14 Oyster", "Metal calm", "1201A019-200", 179000, 12, LocalDate.now().minusDays(2), "설명", "Metal calm", false, 3)
+        )));
+    }
+
+    private void mockSummaryRows() {
+        when(productRepository.getFrontCatalogSummary(any(FrontCatalogQuery.class))).thenReturn(List.of(
+                summary("New Balance", "러닝화", 289000, 18, LocalDate.now().minusDays(2), true),
+                summary("Nike", "라이프스타일", 219000, 10, LocalDate.now().minusDays(3), true),
+                summary("ASICS", "러닝화", 179000, 12, LocalDate.now().minusDays(2), false)
         ));
+    }
+
+    private PageImpl<FrontCatalogProductRow> pageOf(List<FrontCatalogProductRow> rows) {
+        return new PageImpl<>(rows, PageRequest.of(0, 12), rows.size());
+    }
+
+    private FrontCatalogSummaryRow summary(
+            String brand,
+            String category,
+            int price,
+            int stock,
+            LocalDate createdDate,
+            boolean featured
+    ) {
+        return new FrontCatalogSummaryRow(brand, category, price, stock, createdDate.atTime(java.time.LocalTime.NOON), featured);
     }
 
     private void mockOptions() {

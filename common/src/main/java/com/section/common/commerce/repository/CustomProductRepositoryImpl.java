@@ -17,6 +17,7 @@ import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
 import com.section.common.commerce.dto.AdminFrontDisplayProductRow;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.dto.FrontCatalogQuery;
+import com.section.common.commerce.dto.FrontCatalogSummaryRow;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -183,8 +184,8 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
-    public List<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query) {
-        return frontCatalogBaseQuery()
+    public Page<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query, Pageable pageable) {
+        List<FrontCatalogProductRow> content = frontCatalogBaseQuery()
                 .where(frontCatalogConditions(query))
                 .groupBy(
                         product.id,
@@ -204,6 +205,44 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 )
                 .having(frontStockCondition(query))
                 .orderBy(frontCatalogOrder(query))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();
+
+        return PageableExecutionUtils.getPage(
+                content,
+                pageable,
+                () -> countFrontCatalogProducts(query)
+        );
+    }
+
+    @Override
+    public List<FrontCatalogSummaryRow> getFrontCatalogSummary(FrontCatalogQuery query) {
+        return queryFactory
+                .select(Projections.constructor(
+                        FrontCatalogSummaryRow.class,
+                        brand.nameKo,
+                        category.name,
+                        product.releasePrice,
+                        totalStockSum().intValue(),
+                        product.crtDtm,
+                        new CaseBuilder().when(frontProductDisplay.featuredYn.eq("Y")).then(true).otherwise(false)
+                ))
+                .from(product)
+                .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                .where(frontCatalogConditions(query))
+                .groupBy(
+                        product.id,
+                        brand.nameKo,
+                        category.name,
+                        product.releasePrice,
+                        product.crtDtm,
+                        frontProductDisplay.featuredYn
+                )
+                .having(frontStockCondition(query))
                 .fetch();
     }
 
@@ -589,6 +628,34 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
                 .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
                 .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
                 .leftJoin(productOption).on(productOption.productNo.eq(product.id));
+    }
+
+    private long countFrontCatalogProducts(FrontCatalogQuery query) {
+        if (query.isLowStockOnly() || query.isStableStockOnly()) {
+            // 재고 조건은 상품별 합계 HAVING이므로 그룹 결과의 수를 계산해야 합니다.
+            return queryFactory
+                    .select(product.id)
+                    .from(product)
+                    .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
+                    .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                    .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                    .leftJoin(productOption).on(productOption.productNo.eq(product.id))
+                    .where(frontCatalogConditions(query))
+                    .groupBy(product.id)
+                    .having(frontStockCondition(query))
+                    .fetch()
+                    .size();
+        }
+
+        Long count = queryFactory
+                .select(product.countDistinct())
+                .from(product)
+                .leftJoin(frontProductDisplay).on(frontProductDisplay.productNo.eq(product.id))
+                .leftJoin(brand).on(brand.brandNo.eq(product.brandNo))
+                .leftJoin(category).on(category.categoryNo.eq(product.categoryNo))
+                .where(frontCatalogConditions(query))
+                .fetchOne();
+        return count == null ? 0L : count;
     }
 
     private BooleanExpression[] frontCatalogConditions(FrontCatalogQuery query) {

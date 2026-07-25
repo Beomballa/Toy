@@ -70,7 +70,8 @@ class FrontGlobalExceptionHandlerTest {
     @Test
     @DisplayName("서버 예외는 내부 정보를 노출하지 않는 500 오류를 반환한다")
     void unexpectedErrorReturnsGenericContract() throws Exception {
-        when(service.getCatalog(any(FrontCatalogQuery.class))).thenThrow(new IllegalStateException("database-secret"));
+        when(service.getCatalog(any(FrontCatalogQuery.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenThrow(new IllegalStateException("database-secret"));
 
         mockMvc.perform(get("/api/front/products"))
                 .andExpect(status().isInternalServerError())

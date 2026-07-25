@@ -1,7 +1,7 @@
 package com.section.front.controller;
 
 import com.section.front.product.dto.FrontProductDetailResponse;
-import com.section.front.product.dto.FrontProductResponse;
+import com.section.front.product.dto.FrontProductPageResponse;
 import com.section.front.product.req.FrontCatalogRequest;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/front/products")
@@ -23,8 +21,8 @@ public class FrontProductRestController {
     private final FrontProductCatalogService frontProductCatalogService;
 
     @GetMapping
-    public List<FrontProductResponse> getProducts(@ModelAttribute FrontCatalogRequest request) {
-        return frontProductCatalogService.getCatalog(request.toQuery());
+    public FrontProductPageResponse getProducts(@ModelAttribute FrontCatalogRequest request) {
+        return frontProductCatalogService.getCatalog(request.toQuery(), request.toPageable());
     }
 
     @GetMapping("/{productId}")

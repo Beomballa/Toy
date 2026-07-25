@@ -4,6 +4,7 @@ import com.section.common.commerce.dto.AdminFrontDisplayProductQuery;
 import com.section.common.commerce.dto.AdminFrontDisplayProductRow;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.dto.FrontCatalogQuery;
+import com.section.common.commerce.dto.FrontCatalogSummaryRow;
 import com.section.common.commerce.dto.ProductListQuery;
 import com.section.common.commerce.dto.ProductListResDto;
 import com.section.common.commerce.dto.ProductStatsDto;
@@ -29,7 +30,9 @@ public interface CustomProductRepository {
 
     List<Long> getReferencedCategoryNos(Collection<Long> categoryNos);
 
-    List<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query);
+    Page<FrontCatalogProductRow> getFrontCatalogProducts(FrontCatalogQuery query, Pageable pageable);
+
+    List<FrontCatalogSummaryRow> getFrontCatalogSummary(FrontCatalogQuery query);
 
     Optional<FrontCatalogProductRow> getFrontCatalogProduct(Long productNo);
 

@@ -95,4 +95,20 @@ class FrontCatalogRequestTest {
         assertThrows(IllegalArgumentException.class, brandRequest::toQuery);
         assertThrows(IllegalArgumentException.class, categoryRequest::toQuery);
     }
+
+    @Test
+    @DisplayName("프론트 카탈로그 요청은 페이지 번호를 보정하고 페이지 크기를 48개로 제한한다")
+    void toPageableNormalizesPageAndSize() {
+        var negativePage = new FrontCatalogRequest(
+                null, null, null, null, null, null, null, null, -3, 0
+        ).toPageable();
+        var oversizedPage = new FrontCatalogRequest(
+                null, null, null, null, null, null, null, null, 4, 1000
+        ).toPageable();
+
+        assertEquals(0, negativePage.getPageNumber());
+        assertEquals(1, negativePage.getPageSize());
+        assertEquals(4, oversizedPage.getPageNumber());
+        assertEquals(48, oversizedPage.getPageSize());
+    }
 }

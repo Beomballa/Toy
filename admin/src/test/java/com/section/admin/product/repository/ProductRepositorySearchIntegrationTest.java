@@ -470,8 +470,9 @@ class ProductRepositorySearchIntegrationTest {
                 .build());
 
         List<FrontCatalogProductRow> result = productRepository.getFrontCatalogProducts(
-                new FrontCatalogQuery("Grey", "뉴발란스", "러닝화", "LOW", "FEATURED", 20, true, "UNDER_200")
-        );
+                new FrontCatalogQuery("Grey", "뉴발란스", "러닝화", "LOW", "FEATURED", 20, true, "UNDER_200"),
+                org.springframework.data.domain.PageRequest.of(0, 12)
+        ).getContent();
 
         assertEquals(1, result.size());
         assertEquals(featuredLowStockProduct.getId(), result.getFirst().productNo());

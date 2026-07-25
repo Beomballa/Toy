@@ -1064,7 +1064,7 @@ class FrontStorefrontResourceTest {
 
         assertThat(script)
                 .contains("aria-posinset=\"${positionOffset + index + 1}\"")
-                .contains("aria-setsize=\"${allList.length}\"")
+                .contains("aria-setsize=\"${details.total}\"")
                 .contains("data-keyboard-hint")
                 .contains("${escapeAttribute(product.name)} ${selectedProductIds")
                 .contains("${escapeAttribute(product.name)} ${bookmarkedIds")
@@ -1092,6 +1092,22 @@ class FrontStorefrontResourceTest {
                 .contains("function exportCurrentPageCsv()")
                 .contains("function csvCell(value)")
                 .contains("function downloadTextFile(fileName, content, type)");
+    }
+
+    @Test
+    void catalogPaginationUsesServerPageMetadataAndPageOnlyEndpoint() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(html)
+                .contains("<option value=\"48\">48개</option>")
+                .doesNotContain("<option value=\"ALL\">전체</option>");
+        assertThat(script)
+                .contains("const endpoint = includeSummary ? \"/api/front/catalog/bootstrap\" : \"/api/front/products\"")
+                .contains("page: Math.max(0, paginationState.page - 1)")
+                .contains("totalElements")
+                .contains("await loadProducts(false)")
+                .doesNotContain("return list.slice(start, start + details.effectiveSize)");
     }
 
     @Test
@@ -1232,8 +1248,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"catalogBrandCount\"")
                 .contains("id=\"catalogLowStockCount\"");
         assertThat(script)
-                .contains("const averagePrice = prices.length")
-                .contains("new Set(list.map((product) => product.brand)")
+                .contains("const averagePrice = Number(metrics.averagePrice || 0)")
+                .contains("Number(metrics.brandCount || 0)")
                 .contains("setText(elements.catalogLowStockCount");
         assertThat(css).contains(".catalog-live-metrics");
     }
@@ -1379,7 +1395,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"catalogFeaturedRate\"");
         assertThat(script)
                 .contains("const distributionItems = [")
-                .contains("Math.round((count / list.length) * 100)")
+                .contains("Math.round((count / totalCount) * 100)")
                 .contains("bar.style.width = `${rate}%`");
         assertThat(css).contains(".catalog-distribution");
     }

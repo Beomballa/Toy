@@ -18,6 +18,6 @@ public class FrontCatalogRestController {
 
     @GetMapping("/bootstrap")
     public FrontCatalogBootstrapResponse getBootstrap(@ModelAttribute FrontCatalogRequest request) {
-        return frontProductCatalogService.getBootstrap(request.toQuery());
+        return frontProductCatalogService.getBootstrap(request.toQuery(), request.toPageable());
     }
 }

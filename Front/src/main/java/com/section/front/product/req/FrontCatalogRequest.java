@@ -1,6 +1,8 @@
 package com.section.front.product.req;
 
 import com.section.common.commerce.dto.FrontCatalogQuery;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 public record FrontCatalogRequest(
         String keyword,
@@ -10,11 +12,28 @@ public record FrontCatalogRequest(
         String sort,
         Integer lowStockThreshold,
         Boolean featuredOnly,
-        String priceBand
+        String priceBand,
+        Integer page,
+        Integer size
 ) {
 
     private static final int MAX_KEYWORD_LENGTH = 100;
     private static final int MAX_FACET_LENGTH = 80;
+    private static final int DEFAULT_PAGE_SIZE = 12;
+    private static final int MAX_PAGE_SIZE = 48;
+
+    public FrontCatalogRequest(
+            String keyword,
+            String brand,
+            String category,
+            String stock,
+            String sort,
+            Integer lowStockThreshold,
+            Boolean featuredOnly,
+            String priceBand
+    ) {
+        this(keyword, brand, category, stock, sort, lowStockThreshold, featuredOnly, priceBand, null, null);
+    }
 
     public FrontCatalogQuery toQuery() {
         return new FrontCatalogQuery(
@@ -27,6 +46,12 @@ public record FrontCatalogRequest(
                 Boolean.TRUE.equals(featuredOnly),
                 normalizePriceBand(priceBand)
         );
+    }
+
+    public Pageable toPageable() {
+        int normalizedPage = page == null ? 0 : Math.max(0, page);
+        int normalizedSize = size == null ? DEFAULT_PAGE_SIZE : Math.max(1, Math.min(size, MAX_PAGE_SIZE));
+        return PageRequest.of(normalizedPage, normalizedSize);
     }
 
     private String normalizeText(String value, int maxLength, String fieldName) {

@@ -35,6 +35,12 @@ public class FrontViewController {
         return "views/checkout";
     }
 
+    @GetMapping({"/front/orders", "/front/orders/{orderNumber}"})
+    public String orderLookup(@PathVariable(required = false) String orderNumber, Model model) {
+        model.addAttribute("orderNumber", orderNumber == null ? "" : orderNumber);
+        return "views/order-lookup";
+    }
+
     @GetMapping("/front/content/{documentId}")
     public String contentDetail(@PathVariable long documentId, Model model) {
         model.addAttribute("documentId", documentId);

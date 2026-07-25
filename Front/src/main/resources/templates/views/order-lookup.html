@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 조회 | Grade Stock</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260725.2">
+</head>
+<body class="order-lookup-body" th:attr="data-order-number=${orderNumber}">
+<header class="commerce-header">
+    <a class="commerce-logo" href="/front">GS <span>Grade Stock</span></a>
+    <nav><a href="/front">홈</a><a href="/front/cart">장바구니</a><strong>주문 조회</strong></nav>
+</header>
+<main class="order-lookup-shell">
+    <section class="order-lookup-intro">
+        <p>Order Tracking</p>
+        <h1>주문 상태 조회</h1>
+        <span>주문번호와 주문 시 입력한 연락처를 함께 확인합니다.</span>
+        <form id="orderLookupForm">
+            <label>주문번호<input name="orderNumber" th:value="${orderNumber}" required autocomplete="off" placeholder="GS로 시작하는 주문번호"></label>
+            <label>주문자 연락처<input name="phone" required inputmode="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
+            <button type="submit">주문 조회</button>
+        </form>
+        <p class="order-lookup-error" id="orderLookupError" role="alert" hidden></p>
+    </section>
+
+    <section class="order-result" id="orderResult" hidden aria-live="polite">
+        <div class="order-result__head">
+            <div><p>Order Detail</p><h2 id="orderResultNumber"></h2><span id="orderResultDate"></span></div>
+            <strong id="orderResultStatus"></strong>
+        </div>
+        <ol class="order-progress" id="orderProgress" aria-label="주문 처리 단계">
+            <li>주문 접수</li><li>결제 확인</li><li>배송 준비</li><li>배송 중</li><li>배송 완료</li>
+        </ol>
+        <div class="order-result__grid">
+            <section><h3>주문 상품</h3><div id="orderItems"></div></section>
+            <aside>
+                <h3>배송 정보</h3>
+                <dl id="orderDelivery"></dl>
+                <h3>결제 정보</h3>
+                <dl><div><dt>총 주문 금액</dt><dd id="orderTotalAmount"></dd></div></dl>
+                <div class="order-tracking" id="orderTracking" hidden></div>
+            </aside>
+        </div>
+        <section class="order-history"><h3>처리 이력</h3><ol id="orderHistory"></ol></section>
+    </section>
+</main>
+<script src="/js/view/order-lookup.js?v=20260725.1"></script>
+</body>
+</html>

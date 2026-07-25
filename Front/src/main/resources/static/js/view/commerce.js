@@ -14,6 +14,7 @@
         complete: document.getElementById("orderComplete"),
         orderNumber: document.getElementById("completedOrderNumber"),
         orderAmount: document.getElementById("completedOrderAmount"),
+        orderLink: document.getElementById("completedOrderLink"),
         toast: document.getElementById("commerceToast")
     };
     let cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
@@ -168,6 +169,14 @@
             });
             elements.orderNumber.textContent = order.orderNumber;
             elements.orderAmount.textContent = `${formatPrice(order.totalAmount)} · 주문 접수`;
+            const buyerPhone = String(body.buyerPhone || "");
+            window.sessionStorage.setItem("grade-stock-last-order", JSON.stringify({
+                orderNumber: order.orderNumber,
+                phone: buyerPhone
+            }));
+            if (elements.orderLink) {
+                elements.orderLink.href = `/front/orders/${encodeURIComponent(order.orderNumber)}`;
+            }
             elements.complete.hidden = false;
         } catch (error) {
             showToast(error.message);

@@ -12,6 +12,7 @@ import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
+import com.section.common.commerce.repository.OrderStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.front.commerce.dto.FrontCartItemRequest;
@@ -19,6 +20,10 @@ import com.section.front.commerce.dto.FrontCartItemResponse;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
+import com.section.front.commerce.dto.FrontOrderDeliveryResponse;
+import com.section.front.commerce.dto.FrontOrderDetailResponse;
+import com.section.front.commerce.dto.FrontOrderItemResponse;
+import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,6 +52,7 @@ public class FrontCommerceService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final OrderDeliveryRepository orderDeliveryRepository;
+    private final OrderStatusHistoryRepository orderStatusHistoryRepository;
 
     @Transactional(readOnly = true)
     public FrontCartResponse getCart(String cartToken) {
@@ -154,6 +160,72 @@ public class FrontCommerceService {
         return new FrontOrderCreateResponse(order.getId(), orderNumber, totalAmount, order.getStatus());
     }
 
+    @Transactional(readOnly = true)
+    public FrontOrderDetailResponse getOrder(String orderNumber, String buyerPhone) {
+        if (orderNumber == null || !orderNumber.matches("GS[A-Z0-9]{10,40}") || isBlank(buyerPhone)) {
+            throw new IllegalArgumentException("주문 조회 정보가 올바르지 않습니다.");
+        }
+        Orders order = orderRepository.findByOrderNum(orderNumber)
+                .filter(candidate -> normalizePhone(candidate.getBuyerPhone()).equals(normalizePhone(buyerPhone)))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        List<OrderItem> orderItems = orderItemRepository.findByOrderNo(order.getId());
+        Map<Long, Product> orderProducts = productRepository.findAllById(
+                        orderItems.stream().map(OrderItem::getProductNo).distinct().toList()
+                ).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        List<FrontOrderItemResponse> items = orderItems.stream()
+                .map(item -> new FrontOrderItemResponse(
+                        item.getProductNo(),
+                        item.getProductName(),
+                        orderProducts.containsKey(item.getProductNo())
+                                ? safeThumbnailUrl(orderProducts.get(item.getProductNo()).getThumbnailUrl())
+                                : null,
+                        item.getOrderPrice(),
+                        item.getCount(),
+                        Math.multiplyExact(item.getOrderPrice(), item.getCount())
+                ))
+                .toList();
+        FrontOrderDeliveryResponse delivery = orderDeliveryRepository.findByOrderNo(order.getId())
+                .map(value -> new FrontOrderDeliveryResponse(
+                        value.getRecipientName(),
+                        maskPhone(value.getRecipientPhone()),
+                        value.getPostalCode(),
+                        value.getAddress1(),
+                        value.getAddress2(),
+                        value.getDeliveryRequest()
+                ))
+                .orElse(null);
+        List<FrontOrderStatusEventResponse> persistedHistory = orderStatusHistoryRepository
+                .findTop20ByOrderNoOrderByCrtDtmDescIdDesc(order.getId()).stream()
+                .map(value -> new FrontOrderStatusEventResponse(
+                        value.getAfterStatus(),
+                        statusLabel(value.getAfterStatus()),
+                        formatDateTime(value.getCrtDtm())
+                ))
+                .toList();
+        List<FrontOrderStatusEventResponse> history = persistedHistory.isEmpty()
+                ? List.of(new FrontOrderStatusEventResponse(
+                        order.getStatus(),
+                        statusLabel(order.getStatus()),
+                        formatDateTime(order.getCrtDtm())
+                ))
+                : persistedHistory;
+        return new FrontOrderDetailResponse(
+                order.getOrderNum(),
+                maskName(order.getBuyerName()),
+                order.getTotalAmount(),
+                order.getStatus(),
+                statusLabel(order.getStatus()),
+                statusStep(order.getStatus()),
+                formatDateTime(order.getCrtDtm()),
+                order.getDeliveryCompany(),
+                order.getTrackingNum(),
+                delivery,
+                items,
+                history
+        );
+    }
+
     private FrontCartResponse toCartResponse(FrontCart cart) {
         List<FrontCartItem> items = cartItemRepository.findAllByCartNoOrderByIdDesc(cart.getId());
         if (items.isEmpty()) {
@@ -180,7 +252,7 @@ public class FrontCommerceService {
                             option.getId(),
                             product.getNameKo(),
                             option.getOptionName(),
-                            product.getThumbnailUrl(),
+                            safeThumbnailUrl(product.getThumbnailUrl()),
                             unitPrice,
                             item.getQuantity(),
                             option.getStockCnt(),
@@ -257,8 +329,68 @@ public class FrontCommerceService {
         return isBlank(value) ? null : value.trim();
     }
 
+    private String normalizePhone(String value) {
+        return value == null ? "" : value.replaceAll("[^0-9]", "");
+    }
+
+    private String maskPhone(String value) {
+        String normalized = normalizePhone(value);
+        if (normalized.length() < 7) {
+            return "***";
+        }
+        return normalized.substring(0, 3) + "-****-" + normalized.substring(normalized.length() - 4);
+    }
+
+    private String maskName(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+        if (value.length() == 1) {
+            return value;
+        }
+        return value.charAt(0) + "*".repeat(Math.max(1, value.length() - 1));
+    }
+
+    private String formatDateTime(LocalDateTime value) {
+        return value == null ? "-" : value.format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"));
+    }
+
+    private String statusLabel(String status) {
+        return switch (status == null ? "" : status) {
+            case "ORDERED" -> "주문 접수";
+            case "PAID" -> "결제 확인";
+            case "PREPARING" -> "배송 준비";
+            case "SHIPPED" -> "배송 중";
+            case "DELIVERED" -> "배송 완료";
+            case "CANCELLED" -> "주문 취소";
+            default -> "상태 확인";
+        };
+    }
+
+    private int statusStep(String status) {
+        return switch (status == null ? "" : status) {
+            case "ORDERED" -> 1;
+            case "PAID" -> 2;
+            case "PREPARING" -> 3;
+            case "SHIPPED" -> 4;
+            case "DELIVERED" -> 5;
+            case "CANCELLED" -> 0;
+            default -> 0;
+        };
+    }
+
     private int safePrice(Integer value) {
         return value == null ? 0 : Math.max(value, 0);
+    }
+
+    private String safeThumbnailUrl(String value) {
+        if (value == null || value.isBlank() || value.contains("\"") || value.contains("'")) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.startsWith("/") || trimmed.startsWith("https://") || trimmed.startsWith("http://")
+                ? trimmed
+                : null;
     }
 
     private String createOrderNumber() {

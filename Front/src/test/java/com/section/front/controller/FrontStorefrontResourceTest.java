@@ -72,6 +72,26 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void orderLookupKeepsPrivateVerificationAndTrackingHooks() throws IOException {
+        String html = readResource("templates/views/order-lookup.html");
+        String script = readResource("static/js/view/order-lookup.js");
+        String css = readResource("static/css/commerce.css");
+
+        assertThat(html)
+                .contains("id=\"orderLookupForm\"")
+                .contains("id=\"orderProgress\"")
+                .contains("id=\"orderDelivery\"")
+                .contains("/js/view/order-lookup.js?v=20260725.1");
+        assertThat(script)
+                .contains("encodeURIComponent(phone)")
+                .contains("grade-stock-last-order")
+                .contains("order.statusStep");
+        assertThat(css)
+                .contains(".order-result__grid")
+                .contains(".order-progress li.is-current");
+    }
+
+    @Test
     void storefrontKeepsKreamTypographyScale() throws IOException {
         String css = readResource("static/css/storefront.css");
 

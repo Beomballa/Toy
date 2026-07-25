@@ -5,6 +5,7 @@ import com.section.front.commerce.dto.FrontCartQuantityRequest;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
+import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.service.FrontCommerceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -62,5 +64,13 @@ public class FrontCommerceRestController {
             @RequestBody FrontOrderCreateRequest request
     ) {
         return commerceService.createOrder(cartToken, request);
+    }
+
+    @GetMapping("/orders/{orderNumber}")
+    public FrontOrderDetailResponse getOrder(
+            @PathVariable String orderNumber,
+            @RequestParam String phone
+    ) {
+        return commerceService.getOrder(orderNumber, phone);
     }
 }

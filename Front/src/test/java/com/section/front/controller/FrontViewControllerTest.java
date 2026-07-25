@@ -61,6 +61,15 @@ class FrontViewControllerTest {
     }
 
     @Test
+    @DisplayName("주문 조회 경로는 주문번호를 조회 화면에 전달한다")
+    void orderLookupReturnsOrderView() throws Exception {
+        mockMvc.perform(get("/front/orders/GS202607250001"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/order-lookup"))
+                .andExpect(model().attribute("orderNumber", "GS202607250001"));
+    }
+
+    @Test
     @DisplayName("콘텐츠 상세 경로는 상세 뷰와 문서 번호를 반환한다")
     void contentDetailReturnsDetailView() throws Exception {
         mockMvc.perform(get("/front/content/101"))

@@ -3,6 +3,7 @@ package com.section.front.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
+import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.service.FrontCommerceService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,5 +64,20 @@ class FrontCommerceRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderNumber").value("GS202607250001"))
                 .andExpect(jsonPath("$.totalAmount").value(139000));
+    }
+
+    @Test
+    void returnsOrderWhenOrderNumberAndPhoneMatch() throws Exception {
+        given(commerceService.getOrder("GS202607250001", "010-1111-2222"))
+                .willReturn(new FrontOrderDetailResponse(
+                        "GS202607250001", "홍**", 139000, "ORDERED", "주문 접수", 1,
+                        "2026.07.25 16:30", null, null, null, java.util.List.of(), java.util.List.of()
+                ));
+
+        mockMvc.perform(get("/api/front/orders/GS202607250001")
+                        .param("phone", "010-1111-2222"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.orderNumber").value("GS202607250001"))
+                .andExpect(jsonPath("$.statusLabel").value("주문 접수"));
     }
 }

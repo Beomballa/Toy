@@ -60,11 +60,13 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260722.42")
+                .contains("/css/storefront.css?v=20260725.3")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
-                .contains("/js/view/detail.js?v=20260721.37");
+                .contains("id=\"detailAddCartButton\"")
+                .contains("id=\"detailBuyNowButton\"")
+                .contains("/js/view/detail.js?v=20260725.1");
     }
 
     @Test

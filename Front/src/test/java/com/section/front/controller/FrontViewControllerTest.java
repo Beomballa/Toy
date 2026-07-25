@@ -49,6 +49,18 @@ class FrontViewControllerTest {
     }
 
     @Test
+    @DisplayName("장바구니와 주문서 경로는 각각의 거래 뷰를 반환한다")
+    void commerceViewsReturnExpectedViews() throws Exception {
+        mockMvc.perform(get("/front/cart"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/cart"));
+
+        mockMvc.perform(get("/front/checkout"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/checkout"));
+    }
+
+    @Test
     @DisplayName("콘텐츠 상세 경로는 상세 뷰와 문서 번호를 반환한다")
     void contentDetailReturnsDetailView() throws Exception {
         mockMvc.perform(get("/front/content/101"))

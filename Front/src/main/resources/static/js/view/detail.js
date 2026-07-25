@@ -142,6 +142,8 @@
         detailQuantityMaxButton: document.getElementById("detailQuantityMaxButton"),
         detailQuantityResetButton: document.getElementById("detailQuantityResetButton"),
         detailCopyOrderSummaryButton: document.getElementById("detailCopyOrderSummaryButton"),
+        detailAddCartButton: document.getElementById("detailAddCartButton"),
+        detailBuyNowButton: document.getElementById("detailBuyNowButton"),
         detailZoomButton: document.getElementById("detailZoomButton"),
         detailImageModal: document.getElementById("detailImageModal"),
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
@@ -717,6 +719,55 @@
         await copyText(`${optionSummary}\n수량 ${selectedQuantity}개 · 예상 상품 금액 ${total}`, "주문 요약을 복사했습니다.");
     }
 
+    function cartToken() {
+        const key = "grade-stock-cart-token";
+        let token = window.localStorage.getItem(key);
+        if (!token) {
+            token = window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            window.localStorage.setItem(key, token);
+        }
+        return token;
+    }
+
+    async function addSelectedOptionToCart(moveToCheckout = false) {
+        const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
+        if (!currentProduct || !option?.id) {
+            focusDetailOptions();
+            showToast("구매 옵션을 선택해주세요.", "재고가 있는 옵션을 선택한 뒤 다시 시도해주세요.", true);
+            return;
+        }
+        const targetButton = moveToCheckout ? elements.detailBuyNowButton : elements.detailAddCartButton;
+        targetButton?.setAttribute("disabled", "disabled");
+        try {
+            const response = await fetch("/api/front/cart/items", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Cart-Token": cartToken()
+                },
+                body: JSON.stringify({
+                    productId: currentProduct.id,
+                    optionId: option.id,
+                    quantity: selectedQuantity
+                })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.message || "장바구니에 담지 못했습니다.");
+            }
+            if (moveToCheckout) {
+                window.location.href = "/front/checkout";
+                return;
+            }
+            showToast("장바구니에 담았습니다.", `${selectedOptionName} · ${selectedQuantity}개`);
+            setElementText(elements.detailStatus, `장바구니 ${payload.totalQuantity || selectedQuantity}개, 총 ${formatPrice(payload.totalAmount || 0)}`);
+        } catch (error) {
+            showToast("장바구니 요청을 처리하지 못했습니다.", error.message, true);
+        } finally {
+            targetButton?.removeAttribute("disabled");
+        }
+    }
+
     async function shareSelectedOption() {
         const text = selectedOptionSummary();
         if (!text) {
@@ -1062,6 +1113,10 @@
     }
 
     function buildCatalogUrl() {
+        const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+        if (returnTo?.startsWith("/front/collections/")) {
+            return returnTo;
+        }
         return `/front${detailNavigationSearch()}`;
     }
 
@@ -1876,8 +1931,22 @@
         elements.detailFocusRelated?.addEventListener("click", () => {
             document.getElementById("detailRelated")?.scrollIntoView({ behavior: "smooth", block: "start" });
         });
-        elements.detailPrimaryAction?.addEventListener("click", focusDetailOptions);
-        elements.detailMobilePrimaryButton?.addEventListener("click", focusDetailOptions);
+        elements.detailPrimaryAction?.addEventListener("click", () => {
+            if (selectedOptionName) {
+                addSelectedOptionToCart(false);
+                return;
+            }
+            focusDetailOptions();
+        });
+        elements.detailMobilePrimaryButton?.addEventListener("click", () => {
+            if (selectedOptionName) {
+                addSelectedOptionToCart(false);
+                return;
+            }
+            focusDetailOptions();
+        });
+        elements.detailAddCartButton?.addEventListener("click", () => addSelectedOptionToCart(false));
+        elements.detailBuyNowButton?.addEventListener("click", () => addSelectedOptionToCart(true));
         elements.detailOptionGrid?.addEventListener("click", (event) => {
             const optionButton = event.target.closest("[data-detail-option]");
             if (optionButton) {

@@ -180,13 +180,14 @@
         const stockSignal = collectionType === "fast-delivery"
             ? `재고 확보 ${Number(product.stock || 0).toLocaleString("ko-KR")}개`
             : `${product.stockStatus || "재고 확인"} · 재고 ${Number(product.stock || 0).toLocaleString("ko-KR")}개`;
+        const detailUrl = productDetailUrl(product.id);
         return `
             <article class="collection-product">
                 <button class="collection-product__wish ${bookmarked ? "is-active" : ""}" type="button"
                         data-bookmark-id="${product.id}" aria-pressed="${bookmarked}" aria-label="${escapeHtml(product.name)} 관심 상품 ${bookmarked ? "해제" : "추가"}">
                     <span aria-hidden="true">${bookmarked ? "♥" : "♡"}</span>
                 </button>
-                <a class="collection-product__visual" href="/front/products/${product.id}" aria-label="${escapeHtml(product.name)} 상세 보기">
+                <a class="collection-product__visual" href="${detailUrl}" aria-label="${escapeHtml(product.name)} 상세 보기">
                     <img src="${escapeAttribute(imageUrl)}" alt="${escapeAttribute(product.name)}" loading="lazy">
                 </a>
                 <div class="collection-product__body">
@@ -197,9 +198,14 @@
                         <span>${escapeHtml(stockSignal)}</span>
                         <span>${escapeHtml(product.category || "미분류")}</span>
                     </div>
-                    <a class="collection-product__detail" href="/front/products/${product.id}">상품 더보기</a>
+                    <a class="collection-product__detail" href="${detailUrl}">상품 더보기</a>
                 </div>
             </article>`;
+    }
+
+    function productDetailUrl(productId) {
+        const returnTo = `${window.location.pathname}${window.location.search}`;
+        return `/front/products/${productId}?returnTo=${encodeURIComponent(returnTo)}`;
     }
 
     function handleGridClick(event) {

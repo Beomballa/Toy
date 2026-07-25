@@ -33,4 +33,22 @@ public class OrderItem {
 
     @Column(name = "count", nullable = false)
     private Integer count;
+
+    public static OrderItem create(
+            Long orderNo,
+            Long productNo,
+            Long optionNo,
+            String productName,
+            int orderPrice,
+            int count
+    ) {
+        return OrderItem.builder()
+                .orderNo(orderNo)
+                .productNo(productNo)
+                .optionNo(optionNo)
+                .productName(productName)
+                .orderPrice(orderPrice)
+                .count(count)
+                .build();
+    }
 }

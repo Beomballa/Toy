@@ -6,7 +6,7 @@
     <title>Grade Stock Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260722.42">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.3">
 </head>
 <body class="detail-body" th:attr="data-product-id=${productId}">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -16,6 +16,7 @@
     <div class="utility-bar">
         <div class="utility-bar__links">
             <a href="/front">메인으로</a>
+            <a href="/front/cart">장바구니</a>
             <a href="#detailHero">상품 요약</a>
             <a href="#detailRelated">연관 상품</a>
         </div>
@@ -214,6 +215,10 @@
                     <button type="button" id="detailQuantityResetButton">초기화</button>
                     <button type="button" id="detailCopyOrderSummaryButton">주문 요약 복사</button>
                 </div>
+                <div class="detail-checkout-actions">
+                    <button type="button" id="detailAddCartButton">장바구니 담기</button>
+                    <button type="button" id="detailBuyNowButton">바로 구매</button>
+                </div>
                 <div class="detail-stock-usage">
                     <div><span>선택 재고 소진율</span><strong id="detailStockUsageRate">0%</strong></div>
                     <span class="detail-stock-usage__track" aria-hidden="true"><i id="detailStockUsageBar"></i></span>
@@ -353,6 +358,6 @@
 
 <button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
 
-<script src="/js/view/detail.js?v=20260721.37"></script>
+<script src="/js/view/detail.js?v=20260725.1"></script>
 </body>
 </html>

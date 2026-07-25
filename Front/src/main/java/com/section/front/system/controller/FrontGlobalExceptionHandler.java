@@ -37,7 +37,10 @@ public class FrontGlobalExceptionHandler {
     public ResponseEntity<FrontApiErrorResponse> handleResponseStatus(ResponseStatusException exception) {
         HttpStatus status = HttpStatus.resolve(exception.getStatusCode().value());
         if (status == HttpStatus.NOT_FOUND) {
-            return response(HttpStatus.NOT_FOUND, "F002", "상품을 찾을 수 없습니다.");
+            return response(HttpStatus.NOT_FOUND, "F002", reasonOrDefault(exception, "상품을 찾을 수 없습니다."));
+        }
+        if (status == HttpStatus.CONFLICT) {
+            return response(HttpStatus.CONFLICT, "F004", reasonOrDefault(exception, "현재 재고로 요청을 처리할 수 없습니다."));
         }
         log.warn("Unexpected front response status: {}", exception.getStatusCode());
         return response(HttpStatus.BAD_REQUEST, "F001", "요청을 처리할 수 없습니다.");
@@ -51,5 +54,11 @@ public class FrontGlobalExceptionHandler {
 
     private ResponseEntity<FrontApiErrorResponse> response(HttpStatus status, String code, String message) {
         return ResponseEntity.status(status).body(new FrontApiErrorResponse(code, message, status.value()));
+    }
+
+    private String reasonOrDefault(ResponseStatusException exception, String defaultMessage) {
+        return exception.getReason() == null || exception.getReason().isBlank()
+                ? defaultMessage
+                : exception.getReason();
     }
 }

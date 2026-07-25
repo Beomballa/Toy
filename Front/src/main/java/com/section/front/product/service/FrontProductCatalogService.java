@@ -185,7 +185,12 @@ public class FrontProductCatalogService {
                 .collect(Collectors.groupingBy(
                         ProductOption::getProductNo,
                         Collectors.mapping(
-                                option -> new FrontProductOptionResponse(option.getOptionName(), option.getStockCnt()),
+                                option -> new FrontProductOptionResponse(
+                                        option.getId(),
+                                        option.getOptionName(),
+                                        option.getStockCnt(),
+                                        option.getAdditionalPrice()
+                                ),
                                 Collectors.toList()
                         )
                 ));

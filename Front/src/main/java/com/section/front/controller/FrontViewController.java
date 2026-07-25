@@ -25,6 +25,16 @@ public class FrontViewController {
         return "views/product-collection";
     }
 
+    @GetMapping("/front/cart")
+    public String cart() {
+        return "views/cart";
+    }
+
+    @GetMapping("/front/checkout")
+    public String checkout() {
+        return "views/checkout";
+    }
+
     @GetMapping("/front/content/{documentId}")
     public String contentDetail(@PathVariable long documentId, Model model) {
         model.addAttribute("documentId", documentId);

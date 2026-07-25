@@ -72,6 +72,14 @@
     text-align: right;
 }
 
+.collection-header__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .collection-hero {
     display: flex;
     justify-content: space-between;

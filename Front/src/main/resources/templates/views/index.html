@@ -8,8 +8,9 @@
     <link rel="stylesheet" href="/vendor/swiper/12.2.0/swiper-bundle.min.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260726.1">
+    <link rel="stylesheet" href="/css/storefront-home.css?v=20260726.1">
 </head>
-<body>
+<body class="storefront-home">
 <a class="skip-link" href="#top">본문 바로가기</a>
 <div class="storefront-scroll-progress" aria-hidden="true"><span id="storefrontScrollProgress"></span></div>
 <p class="sr-only" id="storefrontStatus" role="status" aria-live="polite"></p>
@@ -82,41 +83,23 @@
     <main id="top" tabindex="-1">
         <section class="hero" aria-roledescription="carousel" aria-label="주요 프로모션">
             <div class="hero-copy">
-                <p class="eyebrow">Weekly Selection</p>
-                <h1>이번 주 가장 주목받는<br>새로운 셀렉션</h1>
+                <p class="eyebrow">New &amp; Notable</p>
+                <h1>가장 주목받는 신상</h1>
                 <p class="hero-description">
-                    지금 주목받는 브랜드와 새롭게 등록된 상품을 만나보세요.
+                    이번 주 새롭게 등록된 상품과 빠르게 움직이는 재고를 한 번에 확인하세요.
                 </p>
                 <div class="hero-actions">
                     <a class="hero-primary" href="/front/collections/recommended">셀렉션 보기</a>
                     <a class="hero-secondary" href="/front#catalog">상품 보러가기</a>
-                    <button class="hero-secondary" type="button" id="focusLowStockButton">품절 임박만 보기</button>
+                    <button class="hero-secondary hero-secondary--stock" type="button" id="focusLowStockButton">빠른배송 상품</button>
                 </div>
                 <div class="hero-carousel-controls" aria-label="프로모션 배너 이동">
-                    <button type="button" id="heroPreviousButton" aria-label="이전 배너">이전</button>
+                    <button type="button" id="heroPreviousButton" aria-label="이전 배너">←</button>
                     <span id="heroSlideStatus">1 / 3</span>
                     <div class="hero-carousel-dots" id="heroDots" aria-label="배너 위치"></div>
-                    <button type="button" id="heroNextButton" aria-label="다음 배너">다음</button>
+                    <button type="button" id="heroNextButton" aria-label="다음 배너">→</button>
                 </div>
-                <div class="hero-shortcuts" aria-label="빠른 메뉴">
-                    <div>
-                        <strong>추천</strong>
-                        <span>큐레이션된 상품 보기</span>
-                    </div>
-                    <div>
-                        <strong>비교</strong>
-                        <span>상품 3개까지 바로 비교</span>
-                    </div>
-                    <div>
-                        <strong>관심</strong>
-                        <span>찜한 상품 다시 보기</span>
-                    </div>
-                    <div>
-                        <strong>시그널</strong>
-                        <span>재고와 등록 흐름 확인</span>
-                    </div>
-                </div>
-                <dl class="hero-metrics" id="heroMetrics">
+                <dl class="hero-metrics sr-only" id="heroMetrics">
                     <div>
                         <dt>Curated</dt>
                         <dd id="metricCount">0</dd>
@@ -131,7 +114,13 @@
                     </div>
                 </dl>
             </div>
-            <aside class="hero-panel" id="signals">
+            <div class="hero-art" aria-hidden="true">
+                <div class="hero-art__halo"></div>
+                <div class="hero-art__platform"></div>
+                <img src="/images/product-placeholder.svg" alt="">
+                <span>GRADE STOCK / WEEKLY DROP</span>
+            </div>
+            <aside class="hero-panel" id="signals" hidden>
                 <div class="hero-panel__card">
                     <p class="hero-panel__label">Main signal</p>
                     <strong id="todaySignalTitle">오늘 등록된 신규 상품을 계산 중입니다.</strong>
@@ -271,14 +260,19 @@
                         <p>가장 최근에 등록된 상품을 빠르게 훑고 바로 상세로 이동할 수 있습니다.</p>
                     </div>
                     <div class="section-action-bar" aria-label="신규 드롭 관리">
+                        <a class="product-rail-more" href="/front/collections/new">더보기</a>
+                        <details class="rail-action-menu">
+                            <summary aria-label="신규 드롭 추가 기능">•••</summary>
+                            <div class="rail-action-menu__panel">
+                                <button type="button" id="sortLatestPriceButton">가격 낮은 순</button>
+                                <button type="button" id="bookmarkLatestButton">신규 드롭 모두 찜</button>
+                                <button type="button" id="copyLatestSummaryButton">신규 요약 복사</button>
+                            </div>
+                        </details>
                         <div class="product-rail-navigation" aria-label="신규 드롭 슬라이드 이동">
                             <button type="button" id="latestDropPreviousButton" aria-label="이전 신규 상품"><i data-lucide="chevron-left" aria-hidden="true"></i><span aria-hidden="true">←</span></button>
                             <button type="button" id="latestDropNextButton" aria-label="다음 신규 상품"><i data-lucide="chevron-right" aria-hidden="true"></i><span aria-hidden="true">→</span></button>
                         </div>
-                        <a class="catalog-reset-button" href="/front/collections/new">전체 보기</a>
-                        <button class="catalog-reset-button" type="button" id="sortLatestPriceButton">가격 낮은 순</button>
-                        <button class="catalog-reset-button" type="button" id="bookmarkLatestButton">신규 드롭 모두 찜</button>
-                        <button class="catalog-reset-button" type="button" id="copyLatestSummaryButton">신규 요약 복사</button>
                     </div>
                 </header>
                 <div class="signal-feed" id="latestDropGrid"></div>
@@ -293,14 +287,19 @@
                         <p>현재 기준 긴장 재고 상품을 먼저 모아 보여줍니다.</p>
                     </div>
                     <div class="section-action-bar" aria-label="저재고 상품 관리">
+                        <a class="product-rail-more" href="/front/collections/fast-delivery">더보기</a>
+                        <details class="rail-action-menu">
+                            <summary aria-label="저재고 상품 추가 기능">•••</summary>
+                            <div class="rail-action-menu__panel">
+                                <button type="button" id="sortLowStockPriceButton">가격 낮은 순</button>
+                                <button type="button" id="compareLowStockButton">저재고 비교 담기</button>
+                                <button type="button" id="copyLowStockSummaryButton">저재고 요약 복사</button>
+                            </div>
+                        </details>
                         <div class="product-rail-navigation" aria-label="저재고 상품 슬라이드 이동">
                             <button type="button" id="lowStockPreviousButton" aria-label="이전 저재고 상품"><i data-lucide="chevron-left" aria-hidden="true"></i><span aria-hidden="true">←</span></button>
                             <button type="button" id="lowStockNextButton" aria-label="다음 저재고 상품"><i data-lucide="chevron-right" aria-hidden="true"></i><span aria-hidden="true">→</span></button>
                         </div>
-                        <a class="catalog-reset-button" href="/front?stock=LOW&amp;sort=STOCK_ASC#catalog">전체 보기</a>
-                        <button class="catalog-reset-button" type="button" id="sortLowStockPriceButton">가격 낮은 순</button>
-                        <button class="catalog-reset-button" type="button" id="compareLowStockButton">저재고 비교 담기</button>
-                        <button class="catalog-reset-button" type="button" id="copyLowStockSummaryButton">저재고 요약 복사</button>
                     </div>
                 </header>
                 <div class="signal-feed" id="lowStockGrid"></div>

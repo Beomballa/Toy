@@ -45,6 +45,8 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
+                .contains("/css/storefront-home.css?v=20260726.1")
+                .contains("class=\"storefront-home\"")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -69,6 +71,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"latestDropNextButton\"")
                 .contains("id=\"lowStockPreviousButton\"")
                 .contains("id=\"lowStockNextButton\"")
+                .contains("class=\"rail-action-menu\"")
+                .contains("class=\"product-rail-more\"")
                 .contains("data-lucide=\"chevron-left\"")
                 .contains("data-lucide=\"chevron-right\"");
         assertThat(script)

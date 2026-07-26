@@ -127,21 +127,21 @@
     };
     const heroSlides = [
         {
-            eyebrow: "Weekly Selection",
-            title: "이번 주 가장 주목받는<br>새로운 셀렉션",
-            description: "지금 주목받는 브랜드와 새롭게 등록된 상품을 만나보세요.",
+            eyebrow: "New & Notable",
+            title: "가장 주목받는 신상",
+            description: "이번 주 새롭게 등록된 상품과 빠르게 움직이는 재고를 한 번에 확인하세요.",
             tone: "LIGHT"
         },
         {
-            eyebrow: "Fast Discovery",
-            title: "재고가 빠르게 움직이는<br>상품을 먼저 확인하세요",
-            description: "현재 재고 흐름을 기준으로 놓치기 쉬운 상품을 빠르게 모았습니다.",
+            eyebrow: "Fast Delivery",
+            title: "고민은 배송을 늦출 뿐",
+            description: "구매 가능한 재고가 있는 상품을 먼저 확인하고 탐색 시간을 줄여보세요.",
             tone: "DARK"
         },
         {
-            eyebrow: "Curated Brands",
-            title: "취향에 맞는 브랜드를<br>한곳에서 비교하세요",
-            description: "브랜드, 카테고리, 가격 조건을 조합해 원하는 상품을 찾을 수 있습니다.",
+            eyebrow: "Brand Focus",
+            title: "이번 주 급상승 브랜드",
+            description: "등록 상품과 재고 흐름을 기준으로 지금 주목할 브랜드를 모았습니다.",
             tone: "TEAL"
         }
     ];
@@ -628,7 +628,7 @@
     }
 
     function initActionMenuBehavior() {
-        const menuSelector = "details.board-action-menu, details.catalog-pagination__menu, details.saved-product-card__menu";
+        const menuSelector = "details.board-action-menu, details.catalog-pagination__menu, details.saved-product-card__menu, details.rail-action-menu";
         const openMenuSelector = menuSelector.split(", ").map((selector) => `${selector}[open]`).join(", ");
         document.addEventListener("toggle", (event) => {
             const menu = event.target.closest?.(menuSelector);

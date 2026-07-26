@@ -20,10 +20,10 @@
 <div class="page-shell">
     <div class="utility-bar">
         <div class="utility-bar__links">
-            <a href="#catalog">고객센터</a>
-            <a href="#recentViewedSection">최근 본 상품 <span class="utility-count" id="utilityRecentCount">0</span></a>
-            <a href="#bookmarkBoardSection">관심 <span class="utility-count" id="utilityBookmarkCount">0</span></a>
-            <a href="#compareBoardSection">비교 <span class="utility-count" id="utilityCompareCount">0</span></a>
+            <a href="/front/support">고객센터</a>
+            <a href="/front/my?tab=recent">최근 본 상품 <span class="utility-count" id="utilityRecentCount">0</span></a>
+            <a href="/front/my?tab=wishlist">관심 <span class="utility-count" id="utilityBookmarkCount">0</span></a>
+            <a href="/front/compare">비교 <span class="utility-count" id="utilityCompareCount">0</span></a>
             <a href="/front/cart">장바구니</a>
             <a href="/front/orders">주문 조회</a>
             <a href="#catalog">로그인</a>
@@ -58,10 +58,10 @@
             <a href="/front/collections/recommended">추천</a>
             <a href="/front/collections/ranking">랭킹</a>
             <a href="/front/collections/fast-delivery">빠른배송</a>
-            <a href="#discoveryStrip">브랜드</a>
+            <a href="/front/brands">브랜드</a>
             <a href="/front/collections/new">신상</a>
             <a href="/front/collections/luxury">럭셔리</a>
-            <a href="#flowBoard">마이</a>
+            <a href="/front/my">마이</a>
         </nav>
         <div class="header-search-panel" id="headerSearchPanel" role="search" aria-label="헤더 상품 검색" hidden>
             <label for="headerSearchInput">상품 검색</label>
@@ -148,11 +148,11 @@
             <a href="/front/collections/new"><span>NEW</span><strong>신상품</strong></a>
             <a href="/front/collections/ranking"><span>BEST</span><strong>인기 상품</strong></a>
             <a href="/front/collections/fast-delivery"><span>FAST</span><strong>빠른배송</strong></a>
-            <button type="button" data-home-target="brandSpotlightGrid"><span>BRAND</span><strong>브랜드</strong></button>
+            <a href="/front/brands"><span>BRAND</span><strong>브랜드</strong></a>
             <button type="button" data-home-target="categoryShortcutGrid"><span>SHOES</span><strong>카테고리</strong></button>
             <a href="/front/collections/luxury"><span>LUXURY</span><strong>럭셔리</strong></a>
-            <button type="button" data-home-target="bookmarkBoardSection"><span>WISH</span><strong>관심 상품</strong></button>
-            <button type="button" data-home-target="recentViewedSection"><span>RECENT</span><strong>최근 본 상품</strong></button>
+            <a href="/front/my?tab=wishlist"><span>WISH</span><strong>관심 상품</strong></a>
+            <a href="/front/my?tab=recent"><span>RECENT</span><strong>최근 본 상품</strong></a>
         </nav>
 
         <section class="flow-board" id="flowBoard">
@@ -378,6 +378,7 @@
                     <div><dt>카테고리</dt><dd id="compareCategoryCount">0개</dd></div>
                 </dl>
                 <div class="saved-board-actions">
+                    <a class="catalog-reset-button" href="/front/compare">상세 비교 열기</a>
                     <button class="catalog-reset-button" type="button" id="sortComparePriceLowButton">가격 낮은 순</button>
                     <button class="catalog-reset-button" type="button" id="addCompareToBookmarkButton">비교 상품 모두 찜</button>
                     <details class="board-action-menu">
@@ -841,14 +842,14 @@
         </nav>
         <nav class="site-footer__links" aria-label="고객지원">
             <strong>고객지원</strong>
-            <a href="#catalog">공지사항</a>
-            <a href="#catalog">자주 묻는 질문</a>
-            <a href="#catalog">문의하기</a>
+            <a href="/front/support?view=notice">공지사항</a>
+            <a href="/front/support?view=faq">자주 묻는 질문</a>
+            <a href="/front/support#supportContact">문의하기</a>
         </nav>
         <section class="site-footer__support" aria-labelledby="footerSupportTitle">
             <strong id="footerSupportTitle">Grade Stock 고객지원</strong>
             <p>상품 탐색과 재고 비교 기능에 대한 도움말을 확인하세요.</p>
-            <a class="site-footer__support-link" href="#catalog">문의하기</a>
+            <a class="site-footer__support-link" href="/front/support#supportContact">문의하기</a>
         </section>
         <div class="site-footer__bottom">
             <nav class="site-footer__policy" aria-label="약관 및 정책">

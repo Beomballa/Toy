@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>고객지원 | Grade Stock</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
+    <link rel="stylesheet" href="/css/support-center.css?v=20260726.1">
+</head>
+<body class="support-body">
+<a class="skip-link" href="#supportMain">고객지원 본문 바로가기</a>
+<p class="sr-only" id="supportLiveStatus" role="status" aria-live="polite"></p>
+
+<div class="page-shell page-shell--support">
+    <div class="utility-bar">
+        <div class="utility-bar__links">
+            <a href="/front">메인으로</a>
+            <a href="/front/orders">주문 조회</a>
+            <a href="/front/my?tab=wishlist">관심 상품</a>
+            <a href="/front/content">에디토리얼</a>
+        </div>
+        <div class="utility-bar__meta">
+            <span>Customer Care</span>
+            <span>Self Service</span>
+        </div>
+    </div>
+
+    <header class="topbar topbar--support">
+        <div class="topbar__main">
+            <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
+                <span class="brand-mark__badge">GS</span>
+                <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Customer care</span></span>
+            </a>
+            <nav class="topbar-nav" aria-label="고객지원 탐색">
+                <a href="/front">HOME</a>
+                <a href="/front/support" aria-current="page">SUPPORT</a>
+                <a href="/front#catalog">SHOP</a>
+            </nav>
+            <a class="topbar-action" href="/front">쇼핑으로 돌아가기</a>
+        </div>
+    </header>
+
+    <main class="support-main" id="supportMain">
+        <section class="support-hero" aria-labelledby="supportTitle">
+            <div class="support-hero__copy">
+                <p class="eyebrow">Grade Stock Help Center</p>
+                <h1 id="supportTitle">무엇을<br>도와드릴까요?</h1>
+                <p>상품 탐색부터 주문 확인까지 필요한 답을 빠르게 찾아보세요.</p>
+            </div>
+            <div class="support-hero__search">
+                <form id="supportSearchForm" role="search">
+                    <label for="supportKeyword">도움말 통합 검색</label>
+                    <div>
+                        <input id="supportKeyword" type="search" maxlength="100" placeholder="예: 주문 조회, 재고, 관심 상품" autocomplete="off">
+                        <button type="button" id="supportSearchClearButton" hidden>지우기</button>
+                        <button type="submit">검색</button>
+                    </div>
+                </form>
+                <div class="support-suggestions" aria-label="추천 검색어">
+                    <span>빠른 검색</span>
+                    <button type="button" data-support-keyword="주문">주문 조회</button>
+                    <button type="button" data-support-keyword="재고">재고 확인</button>
+                    <button type="button" data-support-keyword="관심 상품">관심 상품</button>
+                    <button type="button" data-support-keyword="비교">상품 비교</button>
+                </div>
+                <div class="support-recent" id="supportRecentSearches" hidden>
+                    <span>최근 검색</span>
+                    <div id="supportRecentSearchList"></div>
+                    <button type="button" id="supportRecentClearButton">전체 삭제</button>
+                </div>
+            </div>
+        </section>
+
+        <nav class="support-quick-grid" aria-label="빠른 고객지원">
+            <a href="/front/orders"><span>01</span><strong>주문 조회</strong><em>주문번호와 연락처로 확인</em></a>
+            <a href="/front/my?tab=recent"><span>02</span><strong>최근 본 상품</strong><em>탐색 흐름 이어보기</em></a>
+            <a href="/front/cart"><span>03</span><strong>장바구니</strong><em>구매 전 상품 점검</em></a>
+            <a href="/front/content"><span>04</span><strong>공지 모아보기</strong><em>운영 소식 전체 확인</em></a>
+        </nav>
+
+        <div class="support-layout">
+            <aside class="support-sidebar" aria-label="도움말 주제">
+                <div>
+                    <span>HELP TOPICS</span>
+                    <h2>주제별 도움말</h2>
+                </div>
+                <div class="support-topic-list" role="list">
+                    <button type="button" data-support-topic="ALL" class="is-active" aria-pressed="true"><span>전체</span><em id="supportTopicAllCount">0</em></button>
+                    <button type="button" data-support-topic="SHOPPING" aria-pressed="false"><span>상품 탐색</span><em id="supportTopicShoppingCount">0</em></button>
+                    <button type="button" data-support-topic="ORDER" aria-pressed="false"><span>주문·결제</span><em id="supportTopicOrderCount">0</em></button>
+                    <button type="button" data-support-topic="ACCOUNT" aria-pressed="false"><span>관심·기록</span><em id="supportTopicAccountCount">0</em></button>
+                    <button type="button" data-support-topic="SERVICE" aria-pressed="false"><span>서비스 이용</span><em id="supportTopicServiceCount">0</em></button>
+                </div>
+                <section class="support-hours" aria-labelledby="supportHoursTitle">
+                    <span>OPERATING GUIDE</span>
+                    <h3 id="supportHoursTitle">셀프 서비스</h3>
+                    <p>주문 조회와 MY 쇼핑 활동은 언제든 확인할 수 있습니다.</p>
+                    <strong><i aria-hidden="true"></i> 24시간 이용 가능</strong>
+                </section>
+            </aside>
+
+            <div class="support-workspace">
+                <div class="support-view-tabs" role="tablist" aria-label="고객지원 콘텐츠">
+                    <button type="button" role="tab" data-support-view="faq" aria-selected="true">자주 묻는 질문 <span id="supportFaqCount">0</span></button>
+                    <button type="button" role="tab" data-support-view="notice" aria-selected="false" tabindex="-1">공지사항 <span id="supportNoticeCount">0</span></button>
+                </div>
+
+                <section class="support-panel support-panel--faq" id="supportFaqPanel" aria-labelledby="supportFaqHeading">
+                    <div class="support-panel__heading">
+                        <div>
+                            <span>FREQUENTLY ASKED</span>
+                            <h2 id="supportFaqHeading" tabindex="-1">자주 묻는 질문</h2>
+                            <p id="supportFaqResultText">필요한 답변을 정리하고 있습니다.</p>
+                        </div>
+                        <div class="support-panel__actions">
+                            <button type="button" id="supportExpandAllButton">모두 펼치기</button>
+                            <button type="button" id="supportResetButton">검색 초기화</button>
+                        </div>
+                    </div>
+                    <div class="support-applied" id="supportAppliedFilters" aria-label="적용된 검색 조건"></div>
+                    <div class="support-faq-list" id="supportFaqList"></div>
+                    <div class="support-empty" id="supportFaqEmpty" hidden>
+                        <strong>일치하는 도움말이 없습니다.</strong>
+                        <p>검색어를 줄이거나 다른 주제를 선택해 주세요.</p>
+                        <button type="button" id="supportFaqEmptyResetButton">전체 도움말 보기</button>
+                    </div>
+                </section>
+
+                <section class="support-panel support-panel--notice" id="supportNoticePanel" aria-labelledby="supportNoticeHeading" hidden>
+                    <div class="support-panel__heading">
+                        <div>
+                            <span>SERVICE NOTICE</span>
+                            <h2 id="supportNoticeHeading" tabindex="-1">공지사항</h2>
+                            <p id="supportNoticeResultText">공개 공지를 불러오는 중입니다.</p>
+                        </div>
+                        <div class="support-notice-settings">
+                            <label>정렬
+                                <select id="supportNoticeSort">
+                                    <option value="LATEST">최신순</option>
+                                    <option value="POPULAR">조회순</option>
+                                    <option value="OLDEST">오래된순</option>
+                                </select>
+                            </label>
+                            <label>표시
+                                <select id="supportNoticeSize">
+                                    <option value="5">5개</option>
+                                    <option value="10" selected>10개</option>
+                                    <option value="20">20개</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="support-notice-list is-loading" id="supportNoticeList" aria-busy="true">
+                        <div class="support-notice-state">공지를 불러오는 중입니다.</div>
+                    </div>
+                    <nav class="support-pagination" id="supportNoticePagination" aria-label="공지 페이지 이동" hidden>
+                        <button type="button" id="supportNoticePreviousButton">이전</button>
+                        <label><span class="sr-only">공지 페이지 선택</span><select id="supportNoticePageSelect"></select></label>
+                        <span id="supportNoticePageText">1 / 1 페이지</span>
+                        <button type="button" id="supportNoticeNextButton">다음</button>
+                    </nav>
+                </section>
+            </div>
+        </div>
+
+        <section class="support-contact" id="supportContact" aria-labelledby="supportContactTitle">
+            <div>
+                <span>NEED MORE HELP?</span>
+                <h2 id="supportContactTitle">원하는 답을 찾지 못했나요?</h2>
+                <p>현재 Grade Stock은 데모 서비스입니다. 실제 거래 상담 대신 주문 상태와 서비스 이용 경로를 제공합니다.</p>
+            </div>
+            <div class="support-contact__actions">
+                <a href="/front/orders">주문 상태 확인</a>
+                <button type="button" id="supportCopySummaryButton">현재 문의 내용 복사</button>
+                <a href="/front#catalog">상품 다시 찾기</a>
+            </div>
+        </section>
+    </main>
+
+    <footer class="content-detail-footer">
+        <strong>Grade Stock Customer Care</strong>
+        <p>고객지원 정보는 서비스 기능과 함께 지속적으로 갱신됩니다.</p>
+        <a href="/front">Grade Stock 홈</a>
+    </footer>
+</div>
+
+<button class="support-top-button" id="supportTopButton" type="button" aria-label="페이지 맨 위로 이동" hidden>TOP</button>
+<div class="support-toast" id="supportToast" role="status" aria-live="polite" hidden></div>
+<script src="/js/view/support-center.js?v=20260726.1"></script>
+</body>
+</html>

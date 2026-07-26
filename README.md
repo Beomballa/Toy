@@ -41,7 +41,11 @@ flowchart LR
 
 - 브랜드, 카테고리, 가격, 재고 상태, 검색어 기반 상품 탐색
 - 신규 드롭, 랭킹, 빠른 확인 등 독립 컬렉션 화면과 서버 페이징
+- 브랜드 검색, 관심 브랜드, 브랜드별 지표와 상품 필터를 제공하는 브랜드 디렉터리
 - 상품 옵션 재고, 연관 상품, 최근 본 상품, 관심·비교 보드
+- 최대 3개 상품의 최신 가격·재고·옵션과 기준별 추천을 제공하는 비교 워크스페이스
+- 관심·최근·비교·숨김 상품을 검색, 정렬, 일괄 관리하는 MY 쇼핑 활동 화면
+- 도움말 검색, 주제별 FAQ, 공개 공지 페이징을 제공하는 고객지원 센터
 - 공개 공지·에디토리얼 목록, 상세, 조회 집계, 독자 반응
 - 브라우저 토큰 기반 장바구니, 배송지 입력, 비회원 주문 접수
 - 주문번호와 전화번호 검증을 사용하는 비회원 주문·배송 상태 조회
@@ -171,6 +175,10 @@ mysql -h127.0.0.1 -uroot -p new_toy < db/front_bulk_demo_data.sql
 | 서비스 | URL |
 | --- | --- |
 | Storefront | `http://localhost:8080` |
+| 브랜드 디렉터리 | `http://localhost:8080/front/brands` |
+| 상품 비교 | `http://localhost:8080/front/compare` |
+| MY 쇼핑 활동 | `http://localhost:8080/front/my` |
+| 고객지원 센터 | `http://localhost:8080/front/support` |
 | Admin login | `http://localhost:9090/admin/login` |
 | Batch liveness | `http://localhost:9091/health/live` |
 

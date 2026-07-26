@@ -2347,22 +2347,13 @@
         }
 
         elements.brandSpotlightGrid.innerHTML = rankedBrands.map((item, index) => `
-            <button class="brand-rank-card" type="button" data-brand-rank="${escapeAttribute(item.brand)}">
+            <a class="brand-rank-card" href="/front/brands?brand=${encodeURIComponent(item.brand)}">
                 <span class="brand-rank-card__visual" aria-hidden="true">${brandInitials(item.brand)}</span>
                 <strong>${item.brand}</strong>
                 <span>${item.count}개 상품</span>
                 <em>${index + 1}위</em>
-            </button>
+            </a>
         `).join("");
-
-        elements.brandSpotlightGrid.querySelectorAll("[data-brand-rank]").forEach((button) => {
-            button.addEventListener("click", async () => {
-                state.brand = button.dataset.brandRank;
-                syncControls();
-                await refreshCatalog();
-                document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            });
-        });
     }
 
     function renderCategoryShortcuts() {

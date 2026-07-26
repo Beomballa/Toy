@@ -133,6 +133,124 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void myActivityKeepsFourBoardsAndBulkManagementHooks() throws IOException {
+        String html = readResource("templates/views/my-activity.html");
+        String script = readResource("static/js/view/my-activity.js");
+        String css = readResource("static/css/my-activity.css");
+
+        assertThat(html)
+                .contains("data-tab=\"recent\"")
+                .contains("data-tab=\"wishlist\"")
+                .contains("data-tab=\"compare\"")
+                .contains("data-tab=\"hidden\"")
+                .contains("id=\"myDeleteSelectedButton\"")
+                .contains("id=\"myExportButton\"")
+                .contains("/css/my-activity.css?v=20260726.2")
+                .contains("/js/view/my-activity.js?v=20260726.1");
+        assertThat(script)
+                .contains("front-recent-viewed-products")
+                .contains("front-bookmark-products")
+                .contains("front-compare-products")
+                .contains("front-hidden-products")
+                .contains("downloadCsv")
+                .contains("navigator.clipboard.writeText")
+                .contains("addEventListener(\"storage\"");
+        assertThat(css)
+                .contains(".my-grid.is-list")
+                .contains(".my-selection[hidden]")
+                .contains("@media (max-width:780px)");
+    }
+
+    @Test
+    void supportCenterKeepsSearchFaqAndPublicNoticeContracts() throws IOException {
+        String home = readResource("templates/views/index.html");
+        String html = readResource("templates/views/support-center.html");
+        String script = readResource("static/js/view/support-center.js");
+        String css = readResource("static/css/support-center.css");
+
+        assertThat(home)
+                .contains("href=\"/front/support\">고객센터")
+                .contains("href=\"/front/support?view=notice\">공지사항")
+                .contains("href=\"/front/support?view=faq\">자주 묻는 질문")
+                .contains("href=\"/front/support#supportContact\">문의하기");
+        assertThat(html)
+                .contains("id=\"supportSearchForm\"")
+                .contains("data-support-topic=\"SHOPPING\"")
+                .contains("data-support-topic=\"ORDER\"")
+                .contains("data-support-view=\"faq\"")
+                .contains("data-support-view=\"notice\"")
+                .contains("id=\"supportExpandAllButton\"")
+                .contains("id=\"supportNoticePagination\"")
+                .contains("id=\"supportCopySummaryButton\"")
+                .contains("/css/support-center.css?v=20260726.1")
+                .contains("/js/view/support-center.js?v=20260726.1");
+        assertThat(script)
+                .contains("grade-stock-support-searches")
+                .contains("boardType: \"NOTICE\"")
+                .contains("/api/front/content?${params}")
+                .contains("noticeController?.abort()")
+                .contains("compactPageIndexes(totalPages, currentPage)")
+                .contains("state.expandedFaqIds")
+                .contains("navigator.clipboard?.writeText")
+                .contains("window.addEventListener(\"popstate\"")
+                .contains("event.key === \"/\"");
+        assertThat(css)
+                .contains(".support-layout")
+                .contains("grid-template-columns: 220px minmax(0, 1fr)")
+                .contains(".support-faq h3 > button")
+                .contains(".support-body [hidden]")
+                .contains("@media (max-width: 620px)");
+    }
+
+    @Test
+    void brandDirectoryKeepsFacetMetricsPagingAndPersonalBoardContracts() throws IOException {
+        String home = readResource("templates/views/index.html");
+        String app = readResource("static/js/view/app.js");
+        String html = readResource("templates/views/brand-directory.html");
+        String script = readResource("static/js/view/brand-directory.js");
+        String css = readResource("static/css/brand-directory.css");
+
+        assertThat(home)
+                .contains("href=\"/front/brands\">브랜드")
+                .doesNotContain("data-home-target=\"brandSpotlightGrid\"");
+        assertThat(app)
+                .contains("href=\"/front/brands?brand=${encodeURIComponent(item.brand)}\"")
+                .doesNotContain("data-brand-rank=");
+        assertThat(html)
+                .contains("id=\"brandSearchForm\"")
+                .contains("data-brand-letter=\"POPULAR\"")
+                .contains("data-brand-letter=\"SAVED\"")
+                .contains("id=\"brandProfile\"")
+                .contains("id=\"brandCategoryBars\"")
+                .contains("id=\"brandProductGrid\"")
+                .contains("id=\"brandProductSize\"")
+                .contains("id=\"brandPageSelect\"")
+                .contains("id=\"brandSelectionBar\"")
+                .contains("/css/brand-directory.css?v=20260726.1")
+                .contains("/js/view/brand-directory.js?v=20260726.1");
+        assertThat(script)
+                .contains("/api/front/catalog/bootstrap?page=0&size=1")
+                .contains("fetch(`/api/front/catalog/bootstrap?${productParams()}`")
+                .contains("fetch(`/api/front/products?${productParams()}`")
+                .contains("productController?.abort()")
+                .contains("front-saved-brands")
+                .contains("front-bookmark-products")
+                .contains("front-compare-products")
+                .contains("selectedProductIds.size >= 3")
+                .contains("compactPageIndexes(pagination.totalPages, state.page)")
+                .contains("window.addEventListener(\"popstate\"")
+                .contains("clearBrandWorkspace()")
+                .contains("navigator.clipboard?.writeText");
+        assertThat(css)
+                .contains(".brand-card-grid")
+                .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
+                .contains(".brand-product-toolbar")
+                .contains(".brand-selection-bar")
+                .contains(".brand-body [hidden]")
+                .contains("@media (max-width: 680px)");
+    }
+
+    @Test
     void storefrontKeepsKreamTypographyScale() throws IOException {
         String css = readResource("static/css/storefront.css");
 
@@ -2179,6 +2297,56 @@ class FrontStorefrontResourceTest {
                 .contains(".content-saved-card")
                 .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
                 .contains(".content-list-grid.is-error");
+    }
+
+    @Test
+    void productComparisonKeepsRefreshDecisionAndResponsiveTableContract() throws IOException {
+        String home = readResource("templates/views/index.html");
+        String html = readResource("templates/views/product-comparison.html");
+        String script = readResource("static/js/view/product-comparison.js");
+        String css = readResource("static/css/product-comparison.css");
+
+        assertThat(home)
+                .contains("href=\"/front/compare\">비교")
+                .contains("href=\"/front/compare\">상세 비교 열기");
+        assertThat(html)
+                .contains("id=\"comparisonDifferenceOnly\"")
+                .contains("data-compare-mode=\"BALANCE\"")
+                .contains("data-compare-mode=\"PRICE\"")
+                .contains("data-compare-mode=\"STOCK\"")
+                .contains("id=\"comparisonCandidateList\"")
+                .contains("id=\"comparisonRecommendation\"")
+                .contains("id=\"comparisonTable\" role=\"table\"")
+                .contains("id=\"comparisonOptionTable\"")
+                .contains("id=\"comparisonCsvButton\"")
+                .contains("id=\"comparisonPrintButton\"")
+                .contains("/js/view/product-comparison.js?v=20260726.1")
+                .contains("/css/product-comparison.css?v=20260726.1");
+        assertThat(script)
+                .contains("front-compare-products")
+                .contains("front-recent-viewed-products")
+                .contains("front-bookmark-products")
+                .contains("Promise.allSettled")
+                .contains("fetch(`/api/front/products/${Number(item.id)}`)")
+                .contains("renderRecommendation(products)")
+                .contains("renderOptions(products)")
+                .contains("window.history")
+                .contains("window.addEventListener(\"popstate\"")
+                .contains("window.addEventListener(\"storage\"")
+                .contains("new Blob([csv]")
+                .contains("window.print()")
+                .contains("escapeHtml(product.name")
+                .contains("state.products = next.slice(-3)");
+        assertThat(css)
+                .contains(".comparison-table-wrap")
+                .contains("overflow-x: auto")
+                .contains("min-width: max-content")
+                .contains(".comparison-table__label")
+                .contains("position: sticky")
+                .contains(".comparison-table__value.is-best")
+                .contains(".comparison-candidate")
+                .contains("@media (max-width: 520px)")
+                .contains("@media print");
     }
 
     private String readResource(String path) throws IOException {

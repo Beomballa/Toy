@@ -51,4 +51,24 @@ public class FrontViewController {
     public String contentList() {
         return "views/content-list";
     }
+
+    @GetMapping("/front/my")
+    public String myActivity() {
+        return "views/my-activity";
+    }
+
+    @GetMapping("/front/support")
+    public String supportCenter() {
+        return "views/support-center";
+    }
+
+    @GetMapping("/front/brands")
+    public String brandDirectory() {
+        return "views/brand-directory";
+    }
+
+    @GetMapping("/front/compare")
+    public String productComparison() {
+        return "views/product-comparison";
+    }
 }

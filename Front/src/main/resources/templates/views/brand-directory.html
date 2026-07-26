@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>브랜드 탐색 | Grade Stock</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
+    <link rel="stylesheet" href="/css/brand-directory.css?v=20260726.1">
+</head>
+<body class="brand-body">
+<a class="skip-link" href="#brandMain">브랜드 탐색 바로가기</a>
+<p class="sr-only" id="brandLiveStatus" role="status" aria-live="polite"></p>
+
+<div class="page-shell page-shell--brands">
+    <div class="utility-bar">
+        <div class="utility-bar__links">
+            <a href="/front/support">고객센터</a>
+            <a href="/front/my?tab=recent">최근 본 상품</a>
+            <a href="/front/my?tab=wishlist">관심 상품</a>
+            <a href="/front/cart">장바구니</a>
+        </div>
+        <div class="utility-bar__meta"><span>Brand Index</span><span>Catalog Archive</span></div>
+    </div>
+
+    <header class="topbar topbar--brands">
+        <div class="topbar__main">
+            <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
+                <span class="brand-mark__badge">GS</span>
+                <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Brand directory</span></span>
+            </a>
+            <nav class="topbar-nav" aria-label="브랜드 탐색">
+                <a href="/front">HOME</a>
+                <a href="/front/brands" aria-current="page">BRANDS</a>
+                <a href="/front#catalog">SHOP</a>
+            </nav>
+            <a class="topbar-action" href="/front">홈으로 돌아가기</a>
+        </div>
+    </header>
+
+    <main class="brand-main" id="brandMain">
+        <section class="brand-hero" aria-labelledby="brandPageTitle">
+            <div>
+                <p class="eyebrow">Explore by Label</p>
+                <h1 id="brandPageTitle">브랜드를 기준으로<br>상품을 다시 봅니다.</h1>
+                <p>브랜드 규모, 평균 가격, 재고 흐름과 카테고리 구성을 비교하고 원하는 상품까지 바로 이동하세요.</p>
+            </div>
+            <dl class="brand-hero__metrics" aria-label="전체 브랜드 현황">
+                <div><dt>브랜드</dt><dd id="brandDirectoryTotal">0</dd></div>
+                <div><dt>상품</dt><dd id="brandDirectoryProducts">0</dd></div>
+                <div><dt>총재고</dt><dd id="brandDirectoryStock">0</dd></div>
+            </dl>
+        </section>
+
+        <section class="brand-index" aria-labelledby="brandIndexTitle">
+            <div class="brand-index__heading">
+                <div><span>BRAND INDEX</span><h2 id="brandIndexTitle">전체 브랜드</h2></div>
+                <form class="brand-search" id="brandSearchForm" role="search">
+                    <label class="sr-only" for="brandSearchInput">브랜드 검색</label>
+                    <input id="brandSearchInput" type="search" maxlength="80" placeholder="브랜드 이름 검색" autocomplete="off">
+                    <button type="button" id="brandSearchClearButton" hidden>지우기</button>
+                    <button type="submit">검색</button>
+                </form>
+            </div>
+            <div class="brand-index__filters">
+                <div class="brand-letter-filter" role="toolbar" aria-label="브랜드 이름 분류">
+                    <button type="button" data-brand-letter="ALL" aria-pressed="true">전체</button>
+                    <button type="button" data-brand-letter="POPULAR" aria-pressed="false">인기</button>
+                    <button type="button" data-brand-letter="KOREAN" aria-pressed="false">ㄱ-ㅎ</button>
+                    <button type="button" data-brand-letter="LATIN" aria-pressed="false">A-Z</button>
+                    <button type="button" data-brand-letter="NUMBER" aria-pressed="false">0-9</button>
+                    <button type="button" data-brand-letter="SAVED" aria-pressed="false">관심 브랜드</button>
+                </div>
+                <label class="brand-directory-sort">정렬
+                    <select id="brandDirectorySort">
+                        <option value="COUNT_DESC">상품 많은 순</option>
+                        <option value="NAME_ASC">이름순</option>
+                        <option value="COUNT_ASC">상품 적은 순</option>
+                    </select>
+                </label>
+            </div>
+            <p class="brand-index__result" id="brandIndexResult">브랜드 데이터를 불러오는 중입니다.</p>
+            <div class="brand-card-grid is-loading" id="brandCardGrid" aria-busy="true">
+                <div class="brand-directory-state">브랜드를 불러오는 중입니다.</div>
+            </div>
+        </section>
+
+        <section class="brand-profile" id="brandProfile" aria-labelledby="brandProfileTitle" hidden>
+            <div class="brand-profile__identity">
+                <button class="brand-profile__save" type="button" id="brandSaveButton" aria-pressed="false">관심 브랜드 저장</button>
+                <span class="brand-profile__monogram" id="brandProfileMonogram" aria-hidden="true">GS</span>
+                <div>
+                    <p>SELECTED BRAND</p>
+                    <h2 id="brandProfileTitle" tabindex="-1">브랜드를 선택해 주세요.</h2>
+                    <span id="brandProfileDescription">상품과 재고 지표가 여기에 표시됩니다.</span>
+                </div>
+                <div class="brand-profile__actions">
+                    <button type="button" id="brandCopyLinkButton">브랜드 링크 복사</button>
+                    <button type="button" id="brandCopySummaryButton">지표 요약 복사</button>
+                </div>
+            </div>
+            <dl class="brand-profile__metrics" aria-label="선택 브랜드 지표">
+                <div><dt>상품</dt><dd id="brandMetricProducts">0</dd></div>
+                <div><dt>평균가</dt><dd id="brandMetricAverage">0원</dd></div>
+                <div><dt>가격 범위</dt><dd id="brandMetricRange">0원</dd></div>
+                <div><dt>총재고</dt><dd id="brandMetricStock">0</dd></div>
+                <div><dt>재고주의</dt><dd id="brandMetricLowStock">0</dd></div>
+                <div><dt>Featured</dt><dd id="brandMetricFeatured">0</dd></div>
+            </dl>
+            <div class="brand-category-distribution" aria-labelledby="brandCategoryTitle">
+                <div><span>CATEGORY MIX</span><h3 id="brandCategoryTitle">카테고리 구성</h3></div>
+                <div id="brandCategoryBars"></div>
+            </div>
+        </section>
+
+        <section class="brand-products" id="brandProducts" aria-labelledby="brandProductsTitle" hidden>
+            <div class="brand-products__heading">
+                <div><span>PRODUCT ARCHIVE</span><h2 id="brandProductsTitle" tabindex="-1">브랜드 상품</h2><p id="brandProductResult">상품을 불러오는 중입니다.</p></div>
+                <div class="brand-products__utilities">
+                    <button type="button" id="brandSelectAllButton">현재 페이지 전체 선택</button>
+                    <button type="button" id="brandCompareSelectedButton">선택 비교</button>
+                    <button type="button" id="brandClearSelectionButton">선택 해제</button>
+                </div>
+            </div>
+            <div class="brand-product-toolbar" aria-label="브랜드 상품 필터">
+                <label>카테고리<select id="brandCategoryFilter"><option value="ALL">전체 카테고리</option></select></label>
+                <label>재고<select id="brandStockFilter"><option value="ALL">전체 재고</option><option value="STABLE">재고 안정</option><option value="LOW">재고 주의</option></select></label>
+                <label>가격대<select id="brandPriceFilter"><option value="ALL">전체 가격</option><option value="UNDER_200">20만원 미만</option><option value="BETWEEN_200_300">20~30만원</option><option value="OVER_300">30만원 초과</option></select></label>
+                <label>정렬<select id="brandProductSort"><option value="LATEST">최근 등록순</option><option value="FEATURED">추천순</option><option value="PRICE_LOW">가격 낮은 순</option><option value="PRICE_HIGH">가격 높은 순</option><option value="STOCK_DESC">재고 많은 순</option><option value="NAME_ASC">이름순</option></select></label>
+                <label>표시<select id="brandProductSize"><option value="8">8개</option><option value="12" selected>12개</option><option value="24">24개</option><option value="48">48개</option></select></label>
+                <button type="button" id="brandProductResetButton">필터 초기화</button>
+            </div>
+            <div class="brand-applied-filters" id="brandAppliedFilters" aria-label="적용된 상품 조건"></div>
+            <div class="brand-product-grid is-loading" id="brandProductGrid" aria-busy="true">
+                <div class="brand-directory-state">상품을 불러오는 중입니다.</div>
+            </div>
+            <nav class="brand-pagination" id="brandPagination" aria-label="브랜드 상품 페이지 이동" hidden>
+                <button type="button" id="brandPreviousButton">이전</button>
+                <label><span class="sr-only">페이지 선택</span><select id="brandPageSelect"></select></label>
+                <span id="brandPageText">1 / 1 페이지</span>
+                <button type="button" id="brandNextButton">다음</button>
+                <em id="brandRangeText">0개 표시</em>
+            </nav>
+        </section>
+
+        <section class="brand-empty-profile" id="brandEmptyProfile">
+            <span>START EXPLORING</span>
+            <h2>브랜드 카드를 선택하면<br>상품 흐름을 분석합니다.</h2>
+            <p>상품 수가 많은 브랜드부터 살펴보거나 이름으로 검색해 보세요.</p>
+        </section>
+    </main>
+
+    <footer class="content-detail-footer">
+        <strong>Grade Stock Brand Directory</strong>
+        <p>브랜드별 공개 상품과 현재 재고 기준 정보를 제공합니다.</p>
+        <a href="/front">Grade Stock 홈</a>
+    </footer>
+</div>
+
+<div class="brand-selection-bar" id="brandSelectionBar" hidden>
+    <span id="brandSelectionText">0개 선택</span>
+    <button type="button" id="brandSelectionCompareButton">비교 보드에 담기</button>
+    <button type="button" id="brandSelectionCancelButton">취소</button>
+</div>
+<div class="brand-toast" id="brandToast" role="status" aria-live="polite" hidden></div>
+<script src="/js/view/brand-directory.js?v=20260726.1"></script>
+</body>
+</html>

@@ -85,4 +85,36 @@ class FrontViewControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("views/content-list"));
     }
+
+    @Test
+    @DisplayName("MY 쇼핑 활동 경로는 독립 관리 화면을 반환한다")
+    void myActivityReturnsActivityView() throws Exception {
+        mockMvc.perform(get("/front/my"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/my-activity"));
+    }
+
+    @Test
+    @DisplayName("고객지원 경로는 독립 도움말 화면을 반환한다")
+    void supportCenterReturnsSupportView() throws Exception {
+        mockMvc.perform(get("/front/support"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/support-center"));
+    }
+
+    @Test
+    @DisplayName("브랜드 탐색 경로는 독립 브랜드 디렉터리를 반환한다")
+    void brandDirectoryReturnsBrandView() throws Exception {
+        mockMvc.perform(get("/front/brands"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/brand-directory"));
+    }
+
+    @Test
+    @DisplayName("상품 비교 경로는 독립 비교 워크스페이스를 반환한다")
+    void productComparisonReturnsComparisonView() throws Exception {
+        mockMvc.perform(get("/front/compare"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/product-comparison"));
+    }
 }

@@ -1,5 +1,6 @@
 const DashBoardListJS = {
     initialized: false,
+    charts: new Map(),
     state: {
         section: ''
     },
@@ -748,9 +749,9 @@ const DashBoardListJS = {
 
     renderSalesChart(chartData) {
         const ctx = document.getElementById('salesChart');
-        if (!ctx || !chartData) return;
+        if (!ctx || !chartData || typeof Chart !== 'function') return;
 
-        new Chart(ctx, {
+        this.replaceChart('sales', ctx, {
             type: 'line',
             data: {
                 labels: chartData.map(d => d.label),
@@ -784,9 +785,9 @@ const DashBoardListJS = {
 
     renderTopProductsChart(chartData) {
         const ctx = document.getElementById('topProductsChart');
-        if (!ctx || !chartData) return;
+        if (!ctx || !chartData || typeof Chart !== 'function') return;
 
-        new Chart(ctx, {
+        this.replaceChart('top-products', ctx, {
             type: 'bar',
             data: {
                 labels: chartData.map(d => d.label),
@@ -808,9 +809,9 @@ const DashBoardListJS = {
 
     renderTopBrandsChart(chartData) {
         const ctx = document.getElementById('topBrandsChart');
-        if (!ctx || !chartData) return;
+        if (!ctx || !chartData || typeof Chart !== 'function') return;
 
-        new Chart(ctx, {
+        this.replaceChart('top-brands', ctx, {
             type: 'doughnut',
             data: {
                 labels: chartData.map(d => d.label),
@@ -831,6 +832,13 @@ const DashBoardListJS = {
                 cutout: '60%' // 도넛 두께
             }
         });
+    },
+
+    replaceChart(key, canvas, configuration) {
+        this.charts.get(key)?.destroy();
+        const chart = new Chart(canvas, configuration);
+        this.charts.set(key, chart);
+        return chart;
     },
 
     renderSummary(summary) {

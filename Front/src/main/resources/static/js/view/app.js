@@ -148,6 +148,7 @@
     let activeHeroSlide = 0;
     let heroCarouselTimer = null;
     let heroPointerStartX = null;
+    const productRailSwipers = new Map();
     let drawerReturnFocus = null;
     let activeDrawerProductId = 0;
     let previousDrawerProductId = 0;
@@ -324,6 +325,10 @@
         categoryShortcutGrid: document.getElementById("categoryShortcutGrid"),
         latestDropGrid: document.getElementById("latestDropGrid"),
         lowStockGrid: document.getElementById("lowStockGrid"),
+        latestDropPreviousButton: document.getElementById("latestDropPreviousButton"),
+        latestDropNextButton: document.getElementById("latestDropNextButton"),
+        lowStockPreviousButton: document.getElementById("lowStockPreviousButton"),
+        lowStockNextButton: document.getElementById("lowStockNextButton"),
         featuredGrid: document.getElementById("featuredGrid"),
         sortLatestPriceButton: document.getElementById("sortLatestPriceButton"),
         bookmarkLatestButton: document.getElementById("bookmarkLatestButton"),
@@ -505,6 +510,7 @@
         syncScrollState();
         syncNetworkStatus();
         restoreCatalogScrollPosition();
+        refreshLucideIcons();
         void loadContentHighlights();
     }
 
@@ -2433,6 +2439,7 @@
         const latestProducts = latestDropProducts();
 
         if (!latestProducts.length) {
+            destroyProductSwiper("latest", elements.latestDropGrid, elements.latestDropPreviousButton, elements.latestDropNextButton);
             elements.latestDropGrid.innerHTML = `
                 <article class="catalog-empty">
                     <strong>신규 드롭을 준비 중입니다.</strong>
@@ -2442,9 +2449,13 @@
             return;
         }
 
-        elements.latestDropGrid.innerHTML = latestProducts.map((product) => signalFeedCard(product, relativeDropLabel(product.createdDate))).join("");
-        bindProductButtons(elements.latestDropGrid);
-        bindRailBookmarkButtons(elements.latestDropGrid);
+        renderProductSwiper(
+            "latest",
+            elements.latestDropGrid,
+            latestProducts.map((product) => signalFeedCard(product, relativeDropLabel(product.createdDate), true)).join(""),
+            elements.latestDropPreviousButton,
+            elements.latestDropNextButton
+        );
     }
 
     function renderLowStockHighlights() {
@@ -2454,6 +2465,7 @@
         const lowStockProducts = lowStockHighlightProducts();
 
         if (!lowStockProducts.length) {
+            destroyProductSwiper("low-stock", elements.lowStockGrid, elements.lowStockPreviousButton, elements.lowStockNextButton);
             elements.lowStockGrid.innerHTML = `
                 <article class="catalog-empty">
                     <strong>긴장 재고 상품이 없습니다.</strong>
@@ -2463,13 +2475,90 @@
             return;
         }
 
-        elements.lowStockGrid.innerHTML = lowStockProducts.map((product) => signalFeedCard(product, stockPressureLabel(product.stock))).join("");
-        bindProductButtons(elements.lowStockGrid);
-        bindRailBookmarkButtons(elements.lowStockGrid);
+        renderProductSwiper(
+            "low-stock",
+            elements.lowStockGrid,
+            lowStockProducts.map((product) => signalFeedCard(product, stockPressureLabel(product.stock), true)).join(""),
+            elements.lowStockPreviousButton,
+            elements.lowStockNextButton
+        );
     }
 
-    function signalFeedCard(product, kicker) {
+    function signalFeedCard(product, kicker, slide = false) {
+        if (slide) {
+            return productRailCard(product, kicker, "signal-feed-card", true);
+        }
         return productRailCard(product, kicker, "signal-feed-card");
+    }
+
+    function renderProductSwiper(key, container, slides, previousButton, nextButton) {
+        destroyProductSwiperInstance(key);
+        productRailSwipers.delete(key);
+        container.classList.add("swiper");
+        container.innerHTML = `<div class="swiper-wrapper">${slides}</div><div class="product-rail-pagination"></div>`;
+        bindProductButtons(container);
+        bindRailBookmarkButtons(container);
+        refreshLucideIcons();
+
+        if (typeof window.Swiper !== "function") {
+            container.classList.add("is-grid-fallback");
+            previousButton.hidden = true;
+            nextButton.hidden = true;
+            return;
+        }
+
+        container.classList.remove("is-grid-fallback");
+        previousButton.hidden = false;
+        nextButton.hidden = false;
+        const swiper = new window.Swiper(container, {
+            slidesPerView: 1.25,
+            spaceBetween: 12,
+            watchOverflow: true,
+            observer: true,
+            observeParents: true,
+            keyboard: { enabled: true, onlyInViewport: true },
+            navigation: { prevEl: previousButton, nextEl: nextButton },
+            pagination: {
+                el: container.querySelector(".product-rail-pagination"),
+                clickable: true
+            },
+            breakpoints: {
+                0: { slidesPerView: 1.25, spaceBetween: 12 },
+                520: { slidesPerView: 2.15, spaceBetween: 14 },
+                768: { slidesPerView: 3, spaceBetween: 16 },
+                1100: { slidesPerView: 4, spaceBetween: 16 }
+            },
+            on: {
+                slideChange(current) {
+                    announceStorefrontStatus(`${key === "latest" ? "신규 드롭" : "저재고 상품"} ${current.activeIndex + 1}번째 항목을 보고 있습니다.`);
+                }
+            }
+        });
+        const visibilityObserver = typeof window.IntersectionObserver === "function"
+            ? new window.IntersectionObserver((entries) => {
+                if (!entries.some((entry) => entry.isIntersecting)) {
+                    return;
+                }
+                swiper.update();
+                visibilityObserver.disconnect();
+            }, { rootMargin: "200px 0px" })
+            : null;
+        visibilityObserver?.observe(container);
+        productRailSwipers.set(key, { swiper, visibilityObserver });
+    }
+
+    function destroyProductSwiper(key, container, previousButton, nextButton) {
+        destroyProductSwiperInstance(key);
+        productRailSwipers.delete(key);
+        container.classList.remove("swiper", "is-grid-fallback");
+        previousButton.hidden = true;
+        nextButton.hidden = true;
+    }
+
+    function destroyProductSwiperInstance(key) {
+        const current = productRailSwipers.get(key);
+        current?.visibilityObserver?.disconnect();
+        current?.swiper?.destroy(true, true);
     }
 
     function renderFeatured() {
@@ -2486,15 +2575,15 @@
         syncCurationButtons();
     }
 
-    function productRailCard(product, kicker, className) {
+    function productRailCard(product, kicker, className, slide = false) {
         product = markupSafeObject(product);
         kicker = escapeMarkup(kicker);
         const bookmarked = isBookmarkedProduct(product.id);
         const visualClass = className === "spotlight-card" ? "spotlight-card__visual" : "signal-feed-card__visual";
         return `
-            <article class="${className} rail-product-card">
+            <article class="${className}${slide ? " swiper-slide" : ""} rail-product-card">
                 <button class="rail-product-card__wish ${bookmarked ? "is-active" : ""}" type="button" data-bookmark-product-id="${product.id}" aria-pressed="${bookmarked}" aria-label="${bookmarked ? "관심 상품 해제" : "관심 상품 추가"}">
-                    <span aria-hidden="true">${bookmarked ? "♥" : "♡"}</span>
+                    <i data-lucide="heart" aria-hidden="true"></i><span aria-hidden="true">${bookmarked ? "♥" : "♡"}</span>
                 </button>
                 <a class="rail-product-card__visual-link" href="${detailPageUrl(product.id)}" aria-label="${product.name} 상세 보기">
                     ${productVisualMarkup(product, visualClass)}
@@ -2516,6 +2605,21 @@
         container.querySelectorAll("[data-bookmark-product-id]").forEach((button) => {
             button.addEventListener("click", () => toggleBookmarkProduct(Number(button.dataset.bookmarkProductId)));
         });
+    }
+
+    function refreshLucideIcons() {
+        if (!window.lucide?.createIcons) {
+            document.documentElement.classList.remove("lucide-ready");
+            return;
+        }
+        window.lucide.createIcons({
+            attrs: {
+                width: 17,
+                height: 17,
+                "stroke-width": 1.8
+            }
+        });
+        document.documentElement.classList.add("lucide-ready");
     }
 
     function renderSignals() {

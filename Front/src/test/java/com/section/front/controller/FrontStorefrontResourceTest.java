@@ -44,7 +44,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/index.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260725.2")
+                .contains("/css/storefront.css?v=20260726.1")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
@@ -52,7 +52,51 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260725.2");
+                .contains("/js/view/app.js?v=20260726.1");
+    }
+
+    @Test
+    void homeProductRailsKeepPinnedIconSwiperAndFallbackContract() throws IOException {
+        String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String css = readResource("static/css/storefront.css");
+
+        assertThat(html)
+                .contains("/vendor/swiper/12.2.0/swiper-bundle.min.css")
+                .contains("/vendor/lucide/1.26.0/lucide.min.js")
+                .contains("/vendor/swiper/12.2.0/swiper-bundle.min.js")
+                .contains("id=\"latestDropPreviousButton\"")
+                .contains("id=\"latestDropNextButton\"")
+                .contains("id=\"lowStockPreviousButton\"")
+                .contains("id=\"lowStockNextButton\"")
+                .contains("data-lucide=\"chevron-left\"")
+                .contains("data-lucide=\"chevron-right\"");
+        assertThat(script)
+                .contains("const productRailSwipers = new Map()")
+                .contains("function renderProductSwiper(")
+                .contains("function destroyProductSwiper(")
+                .contains("typeof window.Swiper !== \"function\"")
+                .contains("slidesPerView: 1.25")
+                .contains("0: { slidesPerView: 1.25, spaceBetween: 12 }")
+                .contains("observer: true")
+                .contains("observeParents: true")
+                .contains("new window.IntersectionObserver")
+                .contains("swiper.update()")
+                .contains("keyboard: { enabled: true, onlyInViewport: true }")
+                .contains("navigation: { prevEl: previousButton, nextEl: nextButton }")
+                .contains("current?.swiper?.destroy(true, true)")
+                .contains("function refreshLucideIcons()")
+                .contains("window.lucide?.createIcons")
+                .contains("data-lucide=\"heart\"");
+        assertThat(css)
+                .contains(".signal-feed.swiper")
+                .contains(".signal-strip > .discovery-card")
+                .contains("min-width: 0")
+                .contains("max-width: 100%")
+                .contains(".signal-feed.is-grid-fallback .swiper-wrapper")
+                .contains(".product-rail-navigation")
+                .contains(".product-rail-pagination")
+                .contains(".lucide-ready .rail-product-card__wish > span");
     }
 
     @Test

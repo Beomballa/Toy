@@ -221,6 +221,18 @@ mysql -h127.0.0.1 -uroot -p new_toy < db/front_bulk_demo_data.sql
 ./gradlew :batch:test
 ```
 
+프론트 데스크톱·모바일 시각 회귀 테스트:
+
+```bash
+npm install
+npx playwright install chromium
+npm run test:e2e
+```
+
+의도한 디자인 변경으로 기준 이미지를 갱신할 때만 `npm run test:e2e:update`을 사용합니다.
+
+Lucide, Swiper와 Chart.js 브라우저 배포 파일은 외부 CDN 장애에 영향을 받지 않도록 각 모듈의 `static/vendor`에 버전과 라이선스를 함께 고정합니다.
+
 생성 결과:
 
 ```text

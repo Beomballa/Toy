@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>장바구니 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/commerce.css?v=20260725.2">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260726.1">
 </head>
 <body data-commerce-page="cart">
 <header class="commerce-header">
@@ -14,17 +14,18 @@
 </header>
 <main class="commerce-shell">
     <section class="commerce-main">
-        <div class="commerce-title"><div><p>Shopping Bag</p><h1>장바구니</h1></div><span id="commerceItemCount">0개 상품</span></div>
-        <div class="commerce-list" id="commerceCartList" aria-live="polite"></div>
+        <div class="commerce-title"><div><p>Shopping Bag</p><h1>장바구니</h1></div><div class="commerce-title__tools"><span id="commerceItemCount">0개 상품</span><button type="button" id="clearCartButton">전체 삭제</button></div></div>
+        <div class="commerce-list" id="commerceCartList" aria-live="polite" aria-busy="true"></div>
     </section>
     <aside class="commerce-summary">
         <h2>주문 예상 금액</h2>
-        <dl><div><dt>상품 금액</dt><dd id="commerceSubtotal">0원</dd></div><div><dt>배송비</dt><dd>무료</dd></div><div class="total"><dt>총 결제 예정 금액</dt><dd id="commerceTotal">0원</dd></div></dl>
+        <dl><div><dt>총 수량</dt><dd id="commerceTotalQuantity">0개</dd></div><div><dt>상품 금액</dt><dd id="commerceSubtotal">0원</dd></div><div><dt>배송비</dt><dd>무료</dd></div><div class="total"><dt>총 결제 예정 금액</dt><dd id="commerceTotal">0원</dd></div></dl>
+        <div class="commerce-stock-summary" id="commerceStockSummary" role="status">상품을 담으면 재고 상태를 확인할 수 있습니다.</div>
         <a class="commerce-primary" href="/front/checkout" id="commerceCheckoutLink">주문하기</a>
         <p>주문서에서 배송지를 확인한 후 주문이 접수됩니다.</p>
     </aside>
 </main>
 <div class="commerce-toast" id="commerceToast" role="status" aria-live="polite" hidden></div>
-<script src="/js/view/commerce.js?v=20260725.2"></script>
+<script src="/js/view/commerce.js?v=20260726.2"></script>
 </body>
 </html>

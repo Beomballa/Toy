@@ -42,6 +42,13 @@ public class FrontGlobalExceptionHandler {
         if (status == HttpStatus.CONFLICT) {
             return response(HttpStatus.CONFLICT, "F004", reasonOrDefault(exception, "현재 재고로 요청을 처리할 수 없습니다."));
         }
+        if (status == HttpStatus.TOO_MANY_REQUESTS) {
+            return response(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "F005",
+                    reasonOrDefault(exception, "요청이 많습니다. 잠시 후 다시 시도해주세요.")
+            );
+        }
         log.warn("Unexpected front response status: {}", exception.getStatusCode());
         return response(HttpStatus.BAD_REQUEST, "F001", "요청을 처리할 수 없습니다.");
     }

@@ -6,8 +6,10 @@ import com.section.common.commerce.dto.FrontCatalogQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -77,5 +79,17 @@ class FrontGlobalExceptionHandlerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("F003"))
                 .andExpect(jsonPath("$.message").value("상품 정보를 불러오지 못했습니다."));
+    }
+
+    @Test
+    @DisplayName("주문 조회 제한 초과는 표준 429 오류를 반환한다")
+    void rateLimitReturnsTooManyRequestsContract() throws Exception {
+        when(service.getCatalog(any(FrontCatalogQuery.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "잠시 후 다시 시도해주세요."));
+
+        mockMvc.perform(get("/api/front/products"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("F005"))
+                .andExpect(jsonPath("$.status").value(429));
     }
 }

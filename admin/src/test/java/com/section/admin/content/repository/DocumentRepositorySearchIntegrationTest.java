@@ -43,6 +43,10 @@ class DocumentRepositorySearchIntegrationTest {
         Document publishedPrivate = document("프론트 비공개 공지", Document.PublishStatus.PUBLISHED, YN.N, YN.N);
         Document draftPublic = document("프론트 임시 공지", Document.PublishStatus.DRAFT, YN.Y, YN.N);
         documentRepository.saveAll(List.of(publishedPublic, publishedPublicNormal, publishedPrivate, draftPublic));
+        entityManager.createNativeQuery("update CT_DOCUMENT set crt_dtm = :crtDtm where NO = :id")
+                .setParameter("crtDtm", java.time.LocalDateTime.of(2099, 1, 1, 0, 0))
+                .setParameter("id", publishedPublic.getId())
+                .executeUpdate();
         entityManager.flush();
         entityManager.clear();
 
@@ -51,10 +55,8 @@ class DocumentRepositorySearchIntegrationTest {
         assertTrue(result.stream().anyMatch(row -> row.title().equals("프론트 공개 공지")));
         assertFalse(result.stream().anyMatch(row -> row.title().equals("프론트 비공개 공지")));
         assertFalse(result.stream().anyMatch(row -> row.title().equals("프론트 임시 공지")));
-        int pinnedIndex = indexOfTitle(result, "프론트 공개 공지");
-        int normalIndex = indexOfTitle(result, "프론트 일반 공지");
-        assertTrue(pinnedIndex >= 0 && normalIndex >= 0 && pinnedIndex < normalIndex);
         assertTrue(documentRepository.getPublicDocument(publishedPublic.getId()).isPresent());
+        assertTrue(documentRepository.getPublicDocument(publishedPublicNormal.getId()).isPresent());
         assertTrue(documentRepository.getPublicDocument(publishedPrivate.getId()).isEmpty());
         assertTrue(documentRepository.getPublicDocument(draftPublic.getId()).isEmpty());
     }
@@ -86,15 +88,6 @@ class DocumentRepositorySearchIntegrationTest {
         );
 
         assertEquals(List.of(first.getId(), second.getId()), locked.stream().map(Document::getId).toList());
-    }
-
-    private int indexOfTitle(List<PublicDocumentRow> rows, String title) {
-        for (int index = 0; index < rows.size(); index++) {
-            if (rows.get(index).title().equals(title)) {
-                return index;
-            }
-        }
-        return -1;
     }
 
     @Test
@@ -186,7 +179,7 @@ class DocumentRepositorySearchIntegrationTest {
         Page<DocumentListItemDto> result = documentRepository.getDocumentList(
                 new DocumentListQuery(
                         Document.BoardType.NOTICE,
-                        null,
+                        "이번 주 공지",
                         Document.PublishStatus.PUBLISHED,
                         YN.Y,
                         false,

@@ -1,9 +1,12 @@
 package com.section.front.commerce.service;
 
+import com.section.common.commerce.entity.FrontCart;
+import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.OrderDelivery;
 import com.section.common.commerce.entity.OrderItem;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.Product;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
@@ -12,6 +15,9 @@ import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.OrderStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.front.commerce.dto.FrontCartItemRequest;
+import com.section.front.commerce.dto.FrontCartResponse;
+import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +29,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -120,5 +127,166 @@ class FrontCommerceServiceTest {
 
         verify(orderItemRepository, never()).findByOrderNo(org.mockito.ArgumentMatchers.anyLong());
         verify(orderDeliveryRepository, never()).findByOrderNo(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void reopensCompletedCartBeforeAddingANewItem() {
+        FrontCart cart = mock(FrontCart.class);
+        Product product = mock(Product.class);
+        ProductOption option = mock(ProductOption.class);
+
+        given(cart.getId()).willReturn(17L);
+        given(cart.getStatus()).willReturn("ORDERED");
+        given(product.getId()).willReturn(3L);
+        given(product.isActive()).willReturn(true);
+        given(productRepository.findById(3L)).willReturn(Optional.of(product));
+        given(option.getId()).willReturn(8L);
+        given(option.getProductNo()).willReturn(3L);
+        given(option.getStockCnt()).willReturn(5);
+        given(productOptionRepository.findById(8L)).willReturn(Optional.of(option));
+        given(cartRepository.findByCartTokenForUpdate("1234567890abcdef")).willReturn(Optional.of(cart));
+        given(cartItemRepository.findByCartNoAndProductNoAndOptionNo(17L, 3L, 8L))
+                .willReturn(Optional.empty());
+        given(cartItemRepository.findAllByCartNoOrderByIdDesc(17L)).willReturn(List.of());
+
+        commerceService.addItem("1234567890abcdef", new FrontCartItemRequest(3L, 8L, 1));
+
+        verify(cartItemRepository).deleteAllByCartNo(17L);
+        verify(cart).reopen();
+        verify(cartItemRepository).save(any(FrontCartItem.class));
+    }
+
+    @Test
+    void rejectsRepeatedCheckoutAfterCartHasAlreadyCompleted() {
+        FrontCart cart = mock(FrontCart.class);
+        given(cart.getStatus()).willReturn("ORDERED");
+        given(cartRepository.findByCartTokenForUpdate("1234567890abcdef")).willReturn(Optional.of(cart));
+
+        assertThatThrownBy(() -> commerceService.createOrder(
+                "1234567890abcdef",
+                validOrderRequest()
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("409");
+
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
+    void locksCheckoutOptionsInAscendingIdOrderAndClearsCompletedCart() {
+        FrontCart cart = mock(FrontCart.class);
+        FrontCartItem secondItem = mock(FrontCartItem.class);
+        FrontCartItem firstItem = mock(FrontCartItem.class);
+        Product secondProduct = mock(Product.class);
+        Product firstProduct = mock(Product.class);
+        ProductOption secondOption = mock(ProductOption.class);
+        ProductOption firstOption = mock(ProductOption.class);
+        Orders savedOrder = mock(Orders.class);
+
+        given(cart.getId()).willReturn(21L);
+        given(cart.getStatus()).willReturn("ACTIVE");
+        given(cartRepository.findByCartTokenForUpdate("1234567890abcdef")).willReturn(Optional.of(cart));
+        given(secondItem.getProductNo()).willReturn(2L);
+        given(secondItem.getOptionNo()).willReturn(20L);
+        given(secondItem.getQuantity()).willReturn(1);
+        given(firstItem.getProductNo()).willReturn(1L);
+        given(firstItem.getOptionNo()).willReturn(10L);
+        given(firstItem.getQuantity()).willReturn(2);
+        given(cartItemRepository.findAllByCartNoOrderByIdDesc(21L)).willReturn(List.of(secondItem, firstItem));
+
+        configureCheckoutProduct(secondProduct, 2L, "두 번째 상품", 20000);
+        configureCheckoutProduct(firstProduct, 1L, "첫 번째 상품", 10000);
+        given(productRepository.findAllById(List.of(1L, 2L))).willReturn(List.of(firstProduct, secondProduct));
+        configureCheckoutOption(secondOption, 20L, 2L, "L", 5);
+        configureCheckoutOption(firstOption, 10L, 1L, "M", 5);
+        given(productOptionRepository.findAllByIdForUpdate(List.of(10L, 20L)))
+                .willReturn(List.of(firstOption, secondOption));
+        given(savedOrder.getId()).willReturn(99L);
+        given(savedOrder.getStatus()).willReturn("ORDERED");
+        given(orderRepository.save(any(Orders.class))).willReturn(savedOrder);
+
+        commerceService.createOrder("1234567890abcdef", validOrderRequest());
+
+        verify(productOptionRepository).findAllByIdForUpdate(List.of(10L, 20L));
+        verify(firstOption).removeStock(2);
+        verify(secondOption).removeStock(1);
+        verify(cartItemRepository).deleteAllByCartNo(21L);
+        verify(cart).complete();
+    }
+
+    @Test
+    void rejectsOrderFieldsThatExceedDatabaseColumnLength() {
+        FrontOrderCreateRequest request = new FrontOrderCreateRequest(
+                "가".repeat(51),
+                "010-1111-2222",
+                "홍길동",
+                "010-1111-2222",
+                "06236",
+                "서울시 강남구",
+                null,
+                null
+        );
+
+        assertThatThrownBy(() -> commerceService.createOrder("1234567890abcdef", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("주문자 이름");
+
+        verify(cartRepository, never()).findByCartTokenForUpdate(any());
+    }
+
+    @Test
+    void rejectsPhoneNumbersContainingUnexpectedCharacters() {
+        assertThatThrownBy(() -> commerceService.getOrder(ORDER_NUMBER, "call-010-1111-2222"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("연락처");
+
+        verify(orderRepository, never()).findByOrderNum(any());
+    }
+
+    @Test
+    void clearsCartWhileHoldingTheCartLock() {
+        FrontCart cart = mock(FrontCart.class);
+        given(cart.getId()).willReturn(72L);
+        given(cart.getStatus()).willReturn("ACTIVE");
+        given(cartRepository.findByCartTokenForUpdate("1234567890abcdef")).willReturn(Optional.of(cart));
+
+        assertThat(commerceService.clearCart("1234567890abcdef"))
+                .isEqualTo(FrontCartResponse.empty());
+
+        verify(cartItemRepository).deleteAllByCartNo(72L);
+    }
+
+    private void configureCheckoutProduct(Product product, long id, String name, int price) {
+        given(product.getId()).willReturn(id);
+        given(product.getNameKo()).willReturn(name);
+        given(product.getReleasePrice()).willReturn(price);
+        given(product.isActive()).willReturn(true);
+    }
+
+    private void configureCheckoutOption(
+            ProductOption option,
+            long id,
+            long productId,
+            String name,
+            int stock
+    ) {
+        given(option.getId()).willReturn(id);
+        given(option.getProductNo()).willReturn(productId);
+        given(option.getOptionName()).willReturn(name);
+        given(option.getStockCnt()).willReturn(stock);
+        given(option.getAdditionalPrice()).willReturn(0);
+    }
+
+    private FrontOrderCreateRequest validOrderRequest() {
+        return new FrontOrderCreateRequest(
+                "홍길동",
+                "010-1111-2222",
+                "홍길동",
+                "010-1111-2222",
+                "06236",
+                "서울시 강남구",
+                "101호",
+                "문 앞"
+        );
     }
 }

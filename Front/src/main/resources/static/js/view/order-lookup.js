@@ -4,7 +4,10 @@
     const form = document.getElementById("orderLookupForm");
     const result = document.getElementById("orderResult");
     const error = document.getElementById("orderLookupError");
+    const toast = document.getElementById("commerceToast");
     const initialOrderNumber = document.body.dataset.orderNumber || "";
+    let currentOrder = null;
+    let toastTimer = null;
 
     function escapeMarkup(value) {
         return String(value ?? "")
@@ -23,32 +26,84 @@
         return `https://placehold.co/180x180/f4f4f4/999?text=${encodeURIComponent(String(name || "GS").slice(0, 10))}`;
     }
 
+    function showToast(message) {
+        toast.textContent = message;
+        toast.hidden = false;
+        window.clearTimeout(toastTimer);
+        toastTimer = window.setTimeout(() => {
+            toast.hidden = true;
+        }, 2400);
+    }
+
+    function formatPhone(value) {
+        const digits = String(value || "").replace(/\D/g, "").slice(0, 11);
+        if (digits.length <= 3) return digits;
+        if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+        return `${digits.slice(0, 3)}-${digits.slice(3, digits.length - 4)}-${digits.slice(-4)}`;
+    }
+
+    function readRecentOrder() {
+        try {
+            return JSON.parse(window.sessionStorage.getItem("grade-stock-last-order") || "{}");
+        } catch (ignored) {
+            return {};
+        }
+    }
+
+    async function copyText(value, successMessage) {
+        if (!value) return;
+        try {
+            await navigator.clipboard.writeText(value);
+            showToast(successMessage);
+        } catch (ignored) {
+            showToast("복사하지 못했습니다. 값을 직접 선택해주세요.");
+        }
+    }
+
     async function lookup(orderNumber, phone) {
         error.hidden = true;
         const button = form.querySelector("button");
         button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        button.querySelector("span").textContent = "조회 중";
         try {
-            const response = await fetch(`/api/front/orders/${encodeURIComponent(orderNumber)}?phone=${encodeURIComponent(phone)}`);
+            const response = await fetch("/api/front/orders/lookup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderNumber, phone })
+            });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
-                throw new Error(payload.message || "주문 정보를 확인할 수 없습니다.");
+                const fallback = response.status === 429
+                    ? "조회 요청이 많습니다. 5분 후 다시 시도해주세요."
+                    : "주문 정보를 확인할 수 없습니다.";
+                throw new Error(payload.message || fallback);
             }
             render(payload);
-            window.history.replaceState(null, "", `/front/orders/${encodeURIComponent(payload.orderNumber)}`);
+            try {
+                window.history.replaceState(null, "", `/front/orders/${encodeURIComponent(payload.orderNumber)}`);
+            } catch (ignored) {
+                // URL 갱신이 제한된 환경에서도 조회 결과는 유지한다.
+            }
         } catch (requestError) {
             result.hidden = true;
             error.textContent = requestError.message;
             error.hidden = false;
         } finally {
             button.disabled = false;
+            button.removeAttribute("aria-busy");
+            button.querySelector("span").textContent = "주문 조회";
         }
     }
 
     function render(order) {
+        currentOrder = order;
         document.getElementById("orderResultNumber").textContent = order.orderNumber;
         document.getElementById("orderResultDate").textContent = `${order.orderedAt} · 주문자 ${order.buyerName}`;
         document.getElementById("orderResultStatus").textContent = order.statusLabel;
         document.getElementById("orderTotalAmount").textContent = formatPrice(order.totalAmount);
+        const totalQuantity = order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+        document.getElementById("orderItemSummary").textContent = `${order.items.length}개 상품 · 총 ${totalQuantity}개`;
         document.querySelectorAll("#orderProgress li").forEach((item, index) => {
             item.classList.toggle("is-complete", order.statusStep > 0 && index + 1 <= order.statusStep);
             item.classList.toggle("is-current", index + 1 === order.statusStep);
@@ -69,7 +124,7 @@
         ` : "<div><dt>배송지</dt><dd>등록된 배송지가 없습니다.</dd></div>";
         const tracking = document.getElementById("orderTracking");
         tracking.hidden = !order.trackingNumber;
-        tracking.textContent = order.trackingNumber
+        document.getElementById("orderTrackingText").textContent = order.trackingNumber
             ? `${order.deliveryCompany || "택배사 확인"} · ${order.trackingNumber}`
             : "";
         document.getElementById("orderHistory").innerHTML = order.statusHistory.map((event) => `
@@ -83,18 +138,48 @@
         event.preventDefault();
         if (!form.reportValidity()) return;
         const values = new FormData(form);
-        lookup(String(values.get("orderNumber") || "").trim(), String(values.get("phone") || "").trim());
+        const orderNumber = String(values.get("orderNumber") || "").trim().toUpperCase();
+        form.elements.orderNumber.value = orderNumber;
+        lookup(orderNumber, String(values.get("phone") || "").trim());
     });
 
+    form.elements.orderNumber.addEventListener("input", (event) => {
+        event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    });
+    form.elements.phone.addEventListener("input", (event) => {
+        event.target.value = formatPhone(event.target.value);
+    });
+    document.getElementById("clearOrderLookupButton").addEventListener("click", () => {
+        form.reset();
+        if (initialOrderNumber) form.elements.orderNumber.value = initialOrderNumber;
+        currentOrder = null;
+        result.hidden = true;
+        error.hidden = true;
+        form.elements.orderNumber.focus();
+    });
+    document.getElementById("loadRecentOrderButton").addEventListener("click", () => {
+        const recent = readRecentOrder();
+        if (!recent.orderNumber || !recent.phone) {
+            showToast("최근 주문 정보가 없습니다.");
+            return;
+        }
+        form.elements.orderNumber.value = recent.orderNumber;
+        form.elements.phone.value = formatPhone(recent.phone);
+        lookup(recent.orderNumber, recent.phone);
+    });
+    document.getElementById("copyOrderNumberButton").addEventListener("click", () => {
+        copyText(currentOrder?.orderNumber, "주문번호를 복사했습니다.");
+    });
+    document.getElementById("copyTrackingButton").addEventListener("click", () => {
+        copyText(currentOrder?.trackingNumber, "송장번호를 복사했습니다.");
+    });
+    document.getElementById("printOrderButton").addEventListener("click", () => window.print());
+
     if (initialOrderNumber) {
-        try {
-            const recent = JSON.parse(window.sessionStorage.getItem("grade-stock-last-order") || "{}");
-            if (recent.orderNumber === initialOrderNumber && recent.phone) {
-                form.elements.phone.value = recent.phone;
-                lookup(initialOrderNumber, recent.phone);
-            }
-        } catch (ignored) {
-            // 세션 저장소를 사용할 수 없어도 직접 조회 폼은 정상 동작한다.
+        const recent = readRecentOrder();
+        if (recent.orderNumber === initialOrderNumber && recent.phone) {
+            form.elements.phone.value = formatPhone(recent.phone);
+            lookup(initialOrderNumber, recent.phone);
         }
     }
 })();

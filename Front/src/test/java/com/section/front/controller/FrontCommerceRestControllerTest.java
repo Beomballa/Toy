@@ -5,6 +5,7 @@ import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.service.FrontCommerceService;
+import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,7 +16,9 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -27,10 +30,14 @@ class FrontCommerceRestControllerTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final FrontCommerceService commerceService = org.mockito.Mockito.mock(FrontCommerceService.class);
+    private final FrontOrderLookupRateLimiter orderLookupRateLimiter =
+            org.mockito.Mockito.mock(FrontOrderLookupRateLimiter.class);
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new FrontCommerceRestController(commerceService)).build();
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new FrontCommerceRestController(commerceService, orderLookupRateLimiter))
+                .build();
     }
 
     @Test
@@ -67,6 +74,17 @@ class FrontCommerceRestControllerTest {
     }
 
     @Test
+    void clearsEveryItemFromCart() throws Exception {
+        given(commerceService.clearCart("1234567890abcdef")).willReturn(FrontCartResponse.empty());
+
+        mockMvc.perform(delete("/api/front/cart/items")
+                        .header("X-Cart-Token", "1234567890abcdef"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.itemCount").value(0))
+                .andExpect(jsonPath("$.totalAmount").value(0));
+    }
+
+    @Test
     void returnsOrderWhenOrderNumberAndPhoneMatch() throws Exception {
         given(commerceService.getOrder("GS202607250001", "010-1111-2222"))
                 .willReturn(new FrontOrderDetailResponse(
@@ -74,10 +92,22 @@ class FrontCommerceRestControllerTest {
                         "2026.07.25 16:30", null, null, null, java.util.List.of(), java.util.List.of()
                 ));
 
-        mockMvc.perform(get("/api/front/orders/GS202607250001")
-                        .param("phone", "010-1111-2222"))
+        Map<String, String> request = Map.of(
+                "orderNumber", "GS202607250001",
+                "phone", "010-1111-2222"
+        );
+
+        mockMvc.perform(post("/api/front/orders/lookup")
+                        .with(servletRequest -> {
+                            servletRequest.setRemoteAddr("192.0.2.10");
+                            return servletRequest;
+                        })
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.orderNumber").value("GS202607250001"))
                 .andExpect(jsonPath("$.statusLabel").value("주문 접수"));
+
+        verify(orderLookupRateLimiter).checkAndRecord("192.0.2.10");
     }
 }

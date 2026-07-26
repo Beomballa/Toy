@@ -42,4 +42,8 @@ public class FrontCart extends BaseEntity {
     public void complete() {
         this.status = "ORDERED";
     }
+
+    public void reopen() {
+        this.status = "ACTIVE";
+    }
 }

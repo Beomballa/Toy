@@ -81,14 +81,55 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"orderLookupForm\"")
                 .contains("id=\"orderProgress\"")
                 .contains("id=\"orderDelivery\"")
-                .contains("/js/view/order-lookup.js?v=20260725.1");
+                .contains("id=\"loadRecentOrderButton\"")
+                .contains("id=\"copyOrderNumberButton\"")
+                .contains("id=\"copyTrackingButton\"")
+                .contains("id=\"printOrderButton\"")
+                .contains("/js/view/order-lookup.js?v=20260726.2");
         assertThat(script)
-                .contains("encodeURIComponent(phone)")
+                .contains("fetch(\"/api/front/orders/lookup\"")
+                .contains("JSON.stringify({ orderNumber, phone })")
                 .contains("grade-stock-last-order")
+                .contains("navigator.clipboard.writeText")
+                .contains("window.print()")
                 .contains("order.statusStep");
         assertThat(css)
                 .contains(".order-result__grid")
                 .contains(".order-progress li.is-current");
+    }
+
+    @Test
+    void checkoutKeepsSuccessfulOrderVisibleWhenSessionStorageIsUnavailable() throws IOException {
+        String html = readResource("templates/views/checkout.html");
+        String script = readResource("static/js/view/commerce.js");
+
+        assertThat(html)
+                .contains("id=\"deliveryRequestPreset\"")
+                .contains("data-field-counter=\"deliveryRequest\"")
+                .contains("id=\"commerceTotalQuantity\"")
+                .contains("/js/view/commerce.js?v=20260726.2");
+        assertThat(script)
+                .contains("window.sessionStorage.setItem(\"grade-stock-last-order\"")
+                .contains("저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.")
+                .contains("formatPhoneInput")
+                .contains("syncBuyerToRecipient")
+                .contains("elements.complete.hidden = false");
+    }
+
+    @Test
+    void cartKeepsBulkClearAndStockWarningHooks() throws IOException {
+        String html = readResource("templates/views/cart.html");
+        String script = readResource("static/js/view/commerce.js");
+
+        assertThat(html)
+                .contains("id=\"clearCartButton\"")
+                .contains("id=\"commerceStockSummary\"")
+                .contains("id=\"commerceTotalQuantity\"")
+                .contains("/js/view/commerce.js?v=20260726.2");
+        assertThat(script)
+                .contains("request(\"/api/front/cart/items\", { method: \"DELETE\" })")
+                .contains("commerce-stock-badge")
+                .contains("aria-busy");
     }
 
     @Test

@@ -7,6 +7,9 @@
         count: document.getElementById("commerceItemCount"),
         subtotal: document.getElementById("commerceSubtotal"),
         total: document.getElementById("commerceTotal"),
+        totalQuantity: document.getElementById("commerceTotalQuantity"),
+        stockSummary: document.getElementById("commerceStockSummary"),
+        clearCart: document.getElementById("clearCartButton"),
         checkoutLink: document.getElementById("commerceCheckoutLink"),
         form: document.getElementById("checkoutForm"),
         submit: document.getElementById("submitOrderButton"),
@@ -15,19 +18,31 @@
         orderNumber: document.getElementById("completedOrderNumber"),
         orderAmount: document.getElementById("completedOrderAmount"),
         orderLink: document.getElementById("completedOrderLink"),
+        deliveryPreset: document.getElementById("deliveryRequestPreset"),
         toast: document.getElementById("commerceToast")
     };
     let cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
     let toastTimer = null;
+    let memoryCartToken = null;
+    let submitting = false;
 
     function cartToken() {
         const key = "grade-stock-cart-token";
-        let token = window.localStorage.getItem(key);
-        if (!token) {
-            token = window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            window.localStorage.setItem(key, token);
+        try {
+            let token = window.localStorage.getItem(key);
+            if (!token) {
+                token = createCartToken();
+                window.localStorage.setItem(key, token);
+            }
+            return token;
+        } catch (ignored) {
+            memoryCartToken ||= createCartToken();
+            return memoryCartToken;
         }
-        return token;
+    }
+
+    function createCartToken() {
+        return window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
     function formatPrice(value) {
@@ -74,12 +89,15 @@
     }
 
     async function loadCart() {
+        setListBusy(true);
         try {
             cart = await request("/api/front/cart");
             renderCart();
         } catch (error) {
             showToast(error.message);
             renderEmpty("장바구니를 불러오지 못했습니다.");
+        } finally {
+            setListBusy(false);
         }
     }
 
@@ -87,7 +105,17 @@
         elements.count.textContent = `${cart.itemCount}개 상품 · 총 ${cart.totalQuantity}개`;
         elements.subtotal.textContent = formatPrice(cart.totalAmount);
         elements.total.textContent = formatPrice(cart.totalAmount);
+        if (elements.totalQuantity) elements.totalQuantity.textContent = `${cart.totalQuantity}개`;
+        const lowStockCount = cart.items.filter((item) => item.stock - item.quantity <= 3).length;
+        if (elements.stockSummary) {
+            elements.stockSummary.textContent = lowStockCount
+                ? `${lowStockCount}개 옵션의 남은 재고가 3개 이하입니다.`
+                : "현재 담긴 옵션은 재고가 안정적입니다.";
+            elements.stockSummary.classList.toggle("is-alert", lowStockCount > 0);
+        }
+        if (elements.clearCart) elements.clearCart.disabled = !cart.items.length;
         elements.checkoutLink?.classList.toggle("is-disabled", !cart.items.length);
+        elements.checkoutLink?.setAttribute("aria-disabled", String(!cart.items.length));
         if (elements.submit) elements.submit.disabled = !cart.items.length;
         if (!cart.items.length) {
             renderEmpty("장바구니가 비어 있습니다.");
@@ -98,9 +126,9 @@
                 <a href="/front/products/${item.productId}"><img src="${escapeMarkup(item.thumbnailUrl || fallbackImage(item.productName))}" alt="${escapeMarkup(item.productName)}"></a>
                 <div class="commerce-item__copy">
                     <h2><a href="/front/products/${item.productId}">${escapeMarkup(item.productName)}</a></h2>
-                    <p>옵션 ${escapeMarkup(item.optionName)} · 재고 ${item.stock}개</p>
+                    <p>옵션 ${escapeMarkup(item.optionName)} · 재고 ${item.stock}개 <span class="commerce-stock-badge ${item.stock - item.quantity <= 3 ? "is-low" : ""}">${item.stock - item.quantity <= 3 ? "품절 임박" : "재고 안정"}</span></p>
                     <strong>${formatPrice(item.unitPrice)}</strong>
-                    ${page === "cart" ? `<div class="commerce-item__control"><button type="button" data-quantity="-1" aria-label="수량 줄이기">−</button><span>${item.quantity}</span><button type="button" data-quantity="1" aria-label="수량 늘리기" ${item.quantity >= item.stock || item.quantity >= 20 ? "disabled" : ""}>＋</button><button class="commerce-item__remove" type="button" data-remove>삭제</button></div>` : ""}
+                    ${page === "cart" ? `<div class="commerce-item__control"><button type="button" data-quantity="-1" aria-label="수량 줄이기" ${item.quantity <= 1 ? "disabled" : ""}>−</button><span aria-label="현재 수량 ${item.quantity}개">${item.quantity}</span><button type="button" data-quantity="1" aria-label="수량 늘리기" ${item.quantity >= item.stock || item.quantity >= 20 ? "disabled" : ""}>＋</button><button class="commerce-item__remove" type="button" data-remove>삭제</button></div>` : ""}
                 </div>
                 <div class="commerce-item__amount"><strong>${formatPrice(item.lineAmount)}</strong><span>${item.quantity}개</span></div>
             </article>
@@ -114,7 +142,12 @@
         }
     }
 
+    function setListBusy(busy) {
+        elements.list?.setAttribute("aria-busy", String(busy));
+    }
+
     async function changeItem(itemId, nextQuantity) {
+        setListBusy(true);
         try {
             cart = await request(`/api/front/cart/items/${itemId}`, {
                 method: "PATCH",
@@ -123,16 +156,37 @@
             renderCart();
         } catch (error) {
             showToast(error.message);
+        } finally {
+            setListBusy(false);
         }
     }
 
     async function removeItem(itemId) {
+        setListBusy(true);
         try {
             cart = await request(`/api/front/cart/items/${itemId}`, { method: "DELETE" });
             renderCart();
             showToast("상품을 장바구니에서 삭제했습니다.");
         } catch (error) {
             showToast(error.message);
+        } finally {
+            setListBusy(false);
+        }
+    }
+
+    async function clearCart() {
+        if (!cart.items.length || !window.confirm("장바구니의 모든 상품을 삭제할까요?")) return;
+        elements.clearCart.disabled = true;
+        setListBusy(true);
+        try {
+            cart = await request("/api/front/cart/items", { method: "DELETE" });
+            renderCart();
+            showToast("장바구니를 비웠습니다.");
+        } catch (error) {
+            showToast(error.message);
+            elements.clearCart.disabled = false;
+        } finally {
+            setListBusy(false);
         }
     }
 
@@ -152,15 +206,59 @@
     });
 
     elements.sameBuyer?.addEventListener("change", () => {
-        if (!elements.sameBuyer.checked || !elements.form) return;
+        syncBuyerToRecipient();
+    });
+
+    elements.clearCart?.addEventListener("click", clearCart);
+
+    function syncBuyerToRecipient() {
+        if (!elements.sameBuyer?.checked || !elements.form) return;
         elements.form.elements.recipientName.value = elements.form.elements.buyerName.value;
         elements.form.elements.recipientPhone.value = elements.form.elements.buyerPhone.value;
+    }
+
+    function formatPhoneInput(input) {
+        const digits = input.value.replace(/\D/g, "").slice(0, 11);
+        input.value = digits.length <= 3
+            ? digits
+            : digits.length <= 7
+                ? `${digits.slice(0, 3)}-${digits.slice(3)}`
+                : `${digits.slice(0, 3)}-${digits.slice(3, digits.length - 4)}-${digits.slice(-4)}`;
+    }
+
+    elements.form?.querySelectorAll('input[inputmode="tel"]').forEach((input) => {
+        input.addEventListener("input", () => {
+            formatPhoneInput(input);
+            if (input.name === "buyerPhone") syncBuyerToRecipient();
+        });
+    });
+    elements.form?.elements.buyerName?.addEventListener("input", syncBuyerToRecipient);
+    elements.form?.elements.postalCode?.addEventListener("input", (event) => {
+        event.target.value = event.target.value.replace(/\D/g, "").slice(0, 10);
+    });
+    elements.form?.querySelectorAll("[data-field-counter]").forEach((counter) => {
+        const input = elements.form.elements[counter.dataset.fieldCounter];
+        const update = () => {
+            counter.textContent = `${input.value.length} / ${input.maxLength}`;
+        };
+        input.addEventListener("input", update);
+        update();
+    });
+    elements.deliveryPreset?.addEventListener("change", () => {
+        if (!elements.deliveryPreset.value) return;
+        const input = elements.form.elements.deliveryRequest;
+        input.value = elements.deliveryPreset.value;
+        input.dispatchEvent(new Event("input"));
+        input.focus();
     });
 
     elements.form?.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (!cart.items.length || !elements.form.reportValidity()) return;
+        if (submitting || !cart.items.length || !elements.form.reportValidity()) return;
+        submitting = true;
         elements.submit.disabled = true;
+        elements.submit.setAttribute("aria-busy", "true");
+        elements.submit.querySelector("span").textContent = "주문 접수 중";
         const body = Object.fromEntries(new FormData(elements.form).entries());
         try {
             const order = await request("/api/front/orders", {
@@ -170,10 +268,14 @@
             elements.orderNumber.textContent = order.orderNumber;
             elements.orderAmount.textContent = `${formatPrice(order.totalAmount)} · 주문 접수`;
             const buyerPhone = String(body.buyerPhone || "");
-            window.sessionStorage.setItem("grade-stock-last-order", JSON.stringify({
-                orderNumber: order.orderNumber,
-                phone: buyerPhone
-            }));
+            try {
+                window.sessionStorage.setItem("grade-stock-last-order", JSON.stringify({
+                    orderNumber: order.orderNumber,
+                    phone: buyerPhone
+                }));
+            } catch (ignored) {
+                // 저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.
+            }
             if (elements.orderLink) {
                 elements.orderLink.href = `/front/orders/${encodeURIComponent(order.orderNumber)}`;
             }
@@ -182,6 +284,10 @@
             showToast(error.message);
             elements.submit.disabled = false;
             await loadCart();
+        } finally {
+            submitting = false;
+            elements.submit.removeAttribute("aria-busy");
+            elements.submit.querySelector("span").textContent = "주문 접수하기";
         }
     });
 

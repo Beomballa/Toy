@@ -4,6 +4,7 @@ import com.section.common.commerce.entity.ProductOption;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -19,6 +20,10 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption,Lon
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT po FROM ProductOption po WHERE po.id = :optionId")
     Optional<ProductOption> findByIdForUpdate(Long optionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT po FROM ProductOption po WHERE po.id IN :optionIds ORDER BY po.id ASC")
+    List<ProductOption> findAllByIdForUpdate(@Param("optionIds") List<Long> optionIds);
 
     void deleteByProductNo(Long productNo);
 }

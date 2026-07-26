@@ -44,6 +44,10 @@ public class FrontCommerceService {
 
     private static final int MAX_ITEM_QUANTITY = 20;
     private static final String ACTIVE = "ACTIVE";
+    private static final int MAX_NAME_LENGTH = 50;
+    private static final int MAX_PHONE_LENGTH = 20;
+    private static final int MAX_POSTAL_CODE_LENGTH = 10;
+    private static final int MAX_ADDRESS_LENGTH = 200;
 
     private final FrontCartRepository cartRepository;
     private final FrontCartItemRepository cartItemRepository;
@@ -70,7 +74,8 @@ public class FrontCommerceService {
         ProductOption option = requireOption(request.optionId());
         validateOption(product, option);
 
-        FrontCart cart = cartRepository.findByCartTokenAndStatus(cartToken, ACTIVE)
+        FrontCart cart = cartRepository.findByCartTokenForUpdate(cartToken)
+                .map(existing -> reopenCart(existing))
                 .orElseGet(() -> cartRepository.save(FrontCart.create(cartToken)));
         FrontCartItem item = cartItemRepository
                 .findByCartNoAndProductNoAndOptionNo(cart.getId(), product.getId(), option.getId())
@@ -86,7 +91,7 @@ public class FrontCommerceService {
     public FrontCartResponse changeQuantity(String cartToken, long itemId, int quantity) {
         validateToken(cartToken);
         validateQuantity(quantity);
-        FrontCart cart = requireCart(cartToken);
+        FrontCart cart = requireActiveCartForUpdate(cartToken);
         FrontCartItem item = cartItemRepository.findByIdAndCartNo(itemId, cart.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "장바구니 상품을 찾을 수 없습니다."));
         ProductOption option = requireOption(item.getOptionNo());
@@ -98,7 +103,7 @@ public class FrontCommerceService {
     @Transactional
     public FrontCartResponse removeItem(String cartToken, long itemId) {
         validateToken(cartToken);
-        FrontCart cart = requireCart(cartToken);
+        FrontCart cart = requireActiveCartForUpdate(cartToken);
         FrontCartItem item = cartItemRepository.findByIdAndCartNo(itemId, cart.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "장바구니 상품을 찾을 수 없습니다."));
         cartItemRepository.delete(item);
@@ -106,19 +111,47 @@ public class FrontCommerceService {
     }
 
     @Transactional
+    public FrontCartResponse clearCart(String cartToken) {
+        validateToken(cartToken);
+        FrontCart cart = requireActiveCartForUpdate(cartToken);
+        cartItemRepository.deleteAllByCartNo(cart.getId());
+        return FrontCartResponse.empty();
+    }
+
+    @Transactional
     public FrontOrderCreateResponse createOrder(String cartToken, FrontOrderCreateRequest request) {
         validateToken(cartToken);
         validateOrderRequest(request);
-        FrontCart cart = requireCart(cartToken);
+        FrontCart cart = requireCartForCheckout(cartToken);
         List<FrontCartItem> cartItems = cartItemRepository.findAllByCartNoOrderByIdDesc(cart.getId());
         if (cartItems.isEmpty()) {
             throw new IllegalArgumentException("장바구니가 비어 있습니다.");
         }
 
+        List<Long> productIds = cartItems.stream()
+                .map(FrontCartItem::getProductNo)
+                .distinct()
+                .sorted()
+                .toList();
+        Map<Long, Product> products = productRepository.findAllById(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        List<Long> optionIds = cartItems.stream()
+                .map(FrontCartItem::getOptionNo)
+                .distinct()
+                .sorted()
+                .toList();
+        Map<Long, ProductOption> options = productOptionRepository.findAllByIdForUpdate(optionIds).stream()
+                .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
+
         List<CheckoutLine> lines = cartItems.stream().map(item -> {
-            Product product = requireProduct(item.getProductNo());
-            ProductOption option = productOptionRepository.findByIdForUpdate(item.getOptionNo())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "상품 옵션을 찾을 수 없습니다."));
+            Product product = products.get(item.getProductNo());
+            if (product == null || !product.isActive()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "판매 중인 상품을 찾을 수 없습니다.");
+            }
+            ProductOption option = options.get(item.getOptionNo());
+            if (option == null) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "상품 옵션을 찾을 수 없습니다.");
+            }
             validateOption(product, option);
             validatePurchasableQuantity(item.getQuantity(), option.getStockCnt());
             int unitPrice = safePrice(product.getReleasePrice()) + safePrice(option.getAdditionalPrice());
@@ -156,15 +189,17 @@ public class FrontCommerceService {
                 trimToNull(request.address2()),
                 trimToNull(request.deliveryRequest())
         ));
+        cartItemRepository.deleteAllByCartNo(cart.getId());
         cart.complete();
         return new FrontOrderCreateResponse(order.getId(), orderNumber, totalAmount, order.getStatus());
     }
 
     @Transactional(readOnly = true)
     public FrontOrderDetailResponse getOrder(String orderNumber, String buyerPhone) {
-        if (orderNumber == null || !orderNumber.matches("GS[A-Z0-9]{10,40}") || isBlank(buyerPhone)) {
+        if (orderNumber == null || !orderNumber.matches("GS[A-Z0-9]{10,40}")) {
             throw new IllegalArgumentException("주문 조회 정보가 올바르지 않습니다.");
         }
+        validatePhone(buyerPhone, "주문자 연락처");
         Orders order = orderRepository.findByOrderNum(orderNumber)
                 .filter(candidate -> normalizePhone(candidate.getBuyerPhone()).equals(normalizePhone(buyerPhone)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
@@ -268,9 +303,30 @@ public class FrontCommerceService {
         );
     }
 
-    private FrontCart requireCart(String cartToken) {
-        return cartRepository.findByCartTokenAndStatus(cartToken, ACTIVE)
+    private FrontCart requireCartForCheckout(String cartToken) {
+        FrontCart cart = cartRepository.findByCartTokenForUpdate(cartToken)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "장바구니를 찾을 수 없습니다."));
+        if (!ACTIVE.equals(cart.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 주문 처리된 장바구니입니다.");
+        }
+        return cart;
+    }
+
+    private FrontCart requireActiveCartForUpdate(String cartToken) {
+        FrontCart cart = cartRepository.findByCartTokenForUpdate(cartToken)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "장바구니를 찾을 수 없습니다."));
+        if (!ACTIVE.equals(cart.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 주문 처리된 장바구니입니다.");
+        }
+        return cart;
+    }
+
+    private FrontCart reopenCart(FrontCart cart) {
+        if (!ACTIVE.equals(cart.getStatus())) {
+            cartItemRepository.deleteAllByCartNo(cart.getId());
+            cart.reopen();
+        }
+        return cart;
     }
 
     private Product requireProduct(long productId) {
@@ -310,14 +366,40 @@ public class FrontCommerceService {
     }
 
     private void validateOrderRequest(FrontOrderCreateRequest request) {
-        if (request == null
-                || isBlank(request.buyerName())
-                || isBlank(request.buyerPhone())
-                || isBlank(request.recipientName())
-                || isBlank(request.recipientPhone())
-                || isBlank(request.postalCode())
-                || isBlank(request.address1())) {
+        if (request == null) {
             throw new IllegalArgumentException("주문자와 배송지 필수 정보를 입력해주세요.");
+        }
+        validateRequiredText(request.buyerName(), MAX_NAME_LENGTH, "주문자 이름");
+        validatePhone(request.buyerPhone(), "주문자 연락처");
+        validateRequiredText(request.recipientName(), MAX_NAME_LENGTH, "받는 분 이름");
+        validatePhone(request.recipientPhone(), "받는 분 연락처");
+        validateRequiredText(request.postalCode(), MAX_POSTAL_CODE_LENGTH, "우편번호");
+        validateRequiredText(request.address1(), MAX_ADDRESS_LENGTH, "기본 주소");
+        validateOptionalText(request.address2(), MAX_ADDRESS_LENGTH, "상세 주소");
+        validateOptionalText(request.deliveryRequest(), MAX_ADDRESS_LENGTH, "배송 요청사항");
+    }
+
+    private void validateRequiredText(String value, int maxLength, String fieldName) {
+        if (isBlank(value) || value.trim().length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + " 정보가 올바르지 않습니다.");
+        }
+    }
+
+    private void validateOptionalText(String value, int maxLength, String fieldName) {
+        if (value != null && value.trim().length() > maxLength) {
+            throw new IllegalArgumentException(fieldName + "은 " + maxLength + "자 이하여야 합니다.");
+        }
+    }
+
+    private void validatePhone(String value, String fieldName) {
+        if (isBlank(value)
+                || value.trim().length() > MAX_PHONE_LENGTH
+                || !value.trim().matches("[0-9()\\-\\s]+")) {
+            throw new IllegalArgumentException(fieldName + " 정보가 올바르지 않습니다.");
+        }
+        String normalized = normalizePhone(value);
+        if (!normalized.matches("\\d{10,11}")) {
+            throw new IllegalArgumentException(fieldName + " 정보가 올바르지 않습니다.");
         }
     }
 

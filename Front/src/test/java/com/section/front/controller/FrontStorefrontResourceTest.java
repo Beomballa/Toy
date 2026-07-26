@@ -12,6 +12,7 @@ class FrontStorefrontResourceTest {
     @Test
     void secondaryFrontPagesShareNavigationSearchAndFooterContract() throws IOException {
         String fragment = readResource("templates/fragments/storefront-shell.html");
+        String stateScript = readResource("static/js/view/storefront-state.js");
         String script = readResource("static/js/view/storefront-shell.js");
         String css = readResource("static/css/storefront-shell.css");
         String[] pages = {
@@ -43,6 +44,13 @@ class FrontStorefrontResourceTest {
                 .contains("encodeURIComponent(keyword)")
                 .contains("window.addEventListener(\"storage\"")
                 .contains("document.addEventListener(\"storefront:storage-change\"");
+        assertThat(stateScript)
+                .contains("window.StorefrontState")
+                .contains("front-bookmark-products")
+                .contains("front-compare-products")
+                .contains("front-recent-viewed-products")
+                .contains("new CustomEvent(\"storefront:storage-change\"")
+                .contains("Object.freeze({ keys, read, write, remove, count, notify })");
         assertThat(css)
                 .contains("--store-shell-width: 1200px")
                 .contains(".store-shell__primary")
@@ -58,7 +66,8 @@ class FrontStorefrontResourceTest {
                     .contains("/css/storefront-shell.css?v=20260726.2")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
-                    .contains("/js/view/storefront-shell.js?v=20260726.1");
+                    .contains("/js/view/storefront-state.js?v=20260726.1")
+                    .contains("/js/view/storefront-shell.js?v=20260726.2");
         }
     }
 
@@ -95,19 +104,38 @@ class FrontStorefrontResourceTest {
     @Test
     void mainPageKeepsStorefrontStructureAndAccessibleDialogHooks() throws IOException {
         String html = readResource("templates/views/index.html");
+        String script = readResource("static/js/view/app.js");
+        String homeCss = readResource("static/css/storefront-home.css");
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
-                .contains("/css/storefront-home.css?v=20260726.1")
+                .contains("/css/storefront-home.css?v=20260726.2")
                 .contains("class=\"storefront-home\"")
                 .contains("id=\"headerSearchPanel\"")
+                .contains("id=\"headerSearchPanel\" role=\"dialog\" aria-modal=\"true\"")
+                .contains("id=\"headerSearchTitle\"")
+                .contains("<form role=\"search\" aria-label=\"헤더 상품 검색\">")
+                .contains("href=\"/front/content\">STYLE")
+                .contains("data-storefront-count=\"bookmark\"")
+                .contains("data-storefront-count=\"compare\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
                 .contains("id=\"catalogMemoryTools\"")
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/app.js?v=20260726.1");
+                .contains("/js/view/storefront-state.js?v=20260726.1")
+                .contains("/js/view/app.js?v=20260726.2");
+        assertThat(script)
+                .contains("window.StorefrontState?.keys.bookmark")
+                .contains("window.StorefrontState.write(\"bookmark\"")
+                .contains("window.StorefrontState.write(\"compare\"")
+                .contains("headerSearchPanel?.querySelector(\"form\")?.addEventListener(\"submit\"")
+                .contains("document.body.classList.add(\"is-header-search-open\")")
+                .contains("document.body.classList.remove(\"is-header-search-open\")");
+        assertThat(homeCss)
+                .contains("body.storefront-home.is-header-search-open")
+                .contains("overflow: hidden");
     }
 
     @Test
@@ -169,7 +197,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260725.2");
+                .contains("/js/view/detail.js?v=20260726.1");
     }
 
     @Test
@@ -247,7 +275,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
                 .contains("/css/my-activity.css?v=20260726.2")
-                .contains("/js/view/my-activity.js?v=20260726.1");
+                .contains("/js/view/my-activity.js?v=20260726.2");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -328,7 +356,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"brandPageSelect\"")
                 .contains("id=\"brandSelectionBar\"")
                 .contains("/css/brand-directory.css?v=20260726.1")
-                .contains("/js/view/brand-directory.js?v=20260726.1");
+                .contains("/js/view/brand-directory.js?v=20260726.2");
         assertThat(script)
                 .contains("/api/front/catalog/bootstrap?page=0&size=1")
                 .contains("fetch(`/api/front/catalog/bootstrap?${productParams()}`")
@@ -2424,7 +2452,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"comparisonOptionTable\"")
                 .contains("id=\"comparisonCsvButton\"")
                 .contains("id=\"comparisonPrintButton\"")
-                .contains("/js/view/product-comparison.js?v=20260726.1")
+                .contains("/js/view/product-comparison.js?v=20260726.2")
                 .contains("/css/product-comparison.css?v=20260726.1");
         assertThat(script)
                 .contains("front-compare-products")

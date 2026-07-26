@@ -84,6 +84,10 @@
     background: transparent;
 }
 
+body.storefront-home.is-header-search-open {
+    overflow: hidden;
+}
+
 .storefront-home .topbar-subnav {
     min-height: 44px;
     gap: 28px;

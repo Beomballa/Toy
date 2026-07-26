@@ -25,6 +25,12 @@
         } catch (_) { return []; }
     }
     function write(tab, items) {
+        if (window.StorefrontState) {
+            if (!window.StorefrontState.write(KEYS[tab], items)) {
+                toast("브라우저 저장소를 사용할 수 없습니다.");
+            }
+            return;
+        }
         try { localStorage.setItem(KEYS[tab], JSON.stringify(items)); } catch (_) { toast("브라우저 저장소를 사용할 수 없습니다."); }
     }
     function safe(value) {

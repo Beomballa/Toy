@@ -1560,6 +1560,10 @@
     }
 
     function writeBookmarkProducts(bookmarkedProducts) {
+        if (window.StorefrontState) {
+            window.StorefrontState.write(BOOKMARK_PRODUCTS_KEY, bookmarkedProducts);
+            return;
+        }
         window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarkedProducts));
     }
 
@@ -1573,6 +1577,10 @@
     }
 
     function writeCompareProducts(comparedProducts) {
+        if (window.StorefrontState) {
+            window.StorefrontState.write(COMPARE_PRODUCTS_KEY, comparedProducts);
+            return;
+        }
         window.localStorage.setItem(COMPARE_PRODUCTS_KEY, JSON.stringify(comparedProducts));
     }
 

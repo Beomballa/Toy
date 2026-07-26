@@ -224,7 +224,11 @@
                 bookmarks.unshift(product);
             }
         }
-        window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarks.slice(0, 24)));
+        if (window.StorefrontState) {
+            window.StorefrontState.write(BOOKMARK_PRODUCTS_KEY, bookmarks.slice(0, 24));
+        } else {
+            window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarks.slice(0, 24)));
+        }
         button.classList.toggle("is-active", existingIndex < 0);
         button.setAttribute("aria-pressed", String(existingIndex < 0));
         button.querySelector("span").textContent = existingIndex < 0 ? "♥" : "♡";

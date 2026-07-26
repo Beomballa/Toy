@@ -6,7 +6,7 @@
         return;
     }
 
-    const storageKeys = {
+    const storageKeys = window.StorefrontState?.keys || {
         bookmark: "front-bookmark-products",
         compare: "front-compare-products"
     };
@@ -20,6 +20,9 @@
     let searchReturnFocus = null;
 
     function storedCount(key) {
+        if (window.StorefrontState) {
+            return window.StorefrontState.count(key);
+        }
         try {
             const value = JSON.parse(window.localStorage.getItem(key) || "[]");
             return Array.isArray(value) ? value.length : 0;
@@ -127,7 +130,11 @@
             window.requestAnimationFrame(syncCounts);
         }
     });
-    document.addEventListener("storefront:storage-change", syncCounts);
+    document.addEventListener("storefront:storage-change", (event) => {
+        if (!event.detail?.key || Object.values(storageKeys).includes(event.detail.key)) {
+            syncCounts();
+        }
+    });
 
     syncCounts();
 })();

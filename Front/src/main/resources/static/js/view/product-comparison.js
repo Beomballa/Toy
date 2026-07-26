@@ -374,6 +374,12 @@
     }
 
     function writeProducts(key, products) {
+        if (window.StorefrontState) {
+            if (!window.StorefrontState.write(key, products)) {
+                showToast("비교 정보를 저장하지 못했습니다.");
+            }
+            return;
+        }
         try { localStorage.setItem(key, JSON.stringify(products)); } catch (error) { showToast("비교 정보를 저장하지 못했습니다."); }
     }
 

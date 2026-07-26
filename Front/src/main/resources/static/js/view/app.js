@@ -1,6 +1,6 @@
 (function () {
-    const BOOKMARK_PRODUCTS_KEY = "front-bookmark-products";
-    const COMPARE_PRODUCTS_KEY = "front-compare-products";
+    const BOOKMARK_PRODUCTS_KEY = window.StorefrontState?.keys.bookmark || "front-bookmark-products";
+    const COMPARE_PRODUCTS_KEY = window.StorefrontState?.keys.compare || "front-compare-products";
     const RECENT_VIEWED_KEY = "front-recent-viewed-products";
     const SAVED_VIEWS_KEY = "front-saved-views";
     const SEARCH_HISTORY_KEY = "front-search-history";
@@ -1012,7 +1012,10 @@
         });
         elements.openDrawerFromTop?.addEventListener("click", openHeaderSearch);
         elements.closeHeaderSearchButton?.addEventListener("click", () => closeHeaderSearch(true));
-        elements.submitHeaderSearchButton?.addEventListener("click", applyHeaderSearch);
+        elements.headerSearchPanel?.querySelector("form")?.addEventListener("submit", (event) => {
+            event.preventDefault();
+            void applyHeaderSearch();
+        });
         elements.headerSearchInput?.addEventListener("keydown", (event) => {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -1920,6 +1923,7 @@
             headerSearchReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         }
         elements.headerSearchPanel.hidden = false;
+        document.body.classList.add("is-header-search-open");
         elements.openDrawerFromTop?.setAttribute("aria-expanded", "true");
         if (elements.headerSearchInput) {
             elements.headerSearchInput.value = state.search;
@@ -1932,6 +1936,7 @@
             return;
         }
         elements.headerSearchPanel.hidden = true;
+        document.body.classList.remove("is-header-search-open");
         elements.openDrawerFromTop?.setAttribute("aria-expanded", "false");
         if (elements.mobileStoreNav?.querySelector('[data-mobile-nav="SEARCH"].is-active')) {
             syncMobileStoreNavigation(currentMobileNavigationAction());
@@ -4590,6 +4595,10 @@
     }
 
     function writeCompareProducts(productsToCompare) {
+        if (window.StorefrontState) {
+            window.StorefrontState.write("compare", productsToCompare);
+            return;
+        }
         window.localStorage.setItem(COMPARE_PRODUCTS_KEY, JSON.stringify(productsToCompare));
     }
 
@@ -4667,6 +4676,10 @@
     }
 
     function writeBookmarkProducts(bookmarkedProducts) {
+        if (window.StorefrontState) {
+            window.StorefrontState.write("bookmark", bookmarkedProducts);
+            return;
+        }
         window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarkedProducts));
     }
 

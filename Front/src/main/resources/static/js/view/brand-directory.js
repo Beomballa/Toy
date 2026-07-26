@@ -879,6 +879,10 @@
     }
 
     function writeList(key, value) {
+        if (window.StorefrontState && [BOOKMARK_PRODUCTS_KEY, COMPARE_PRODUCTS_KEY].includes(key)) {
+            window.StorefrontState.write(key, value);
+            return;
+        }
         try {
             window.localStorage.setItem(key, JSON.stringify(value));
         } catch (error) {

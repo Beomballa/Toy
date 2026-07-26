@@ -3189,11 +3189,16 @@ select {
     display: none;
 }
 
-.header-search-panel > label {
+.header-search-panel > label,
+.header-search-panel form > label {
     display: block;
     margin-bottom: 12px;
     font-size: 13px;
     font-weight: 700;
+}
+
+.header-search-panel form {
+    margin: 0;
 }
 
 .header-search-panel__field {

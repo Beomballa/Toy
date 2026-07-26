@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,20 +8,13 @@
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
     <link rel="stylesheet" href="/css/product-comparison.css?v=20260726.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="comparison-body">
+<body class="comparison-body storefront-page">
 <a class="skip-link" href="#comparisonMain">비교 결과 바로가기</a>
 <p class="sr-only" id="comparisonLiveStatus" role="status" aria-live="polite"></p>
+<header th:replace="~{fragments/storefront-shell :: header('MY', '상품 비교')}"></header>
 <div class="page-shell page-shell--comparison">
-    <div class="utility-bar"><div class="utility-bar__links"><a href="/front">메인으로</a><a href="/front/brands">브랜드</a><a href="/front/my?tab=compare">MY 비교 목록</a><a href="/front/cart">장바구니</a></div></div>
-    <header class="topbar topbar--comparison">
-        <div class="topbar__main">
-            <a class="brand-mark" href="/front" aria-label="Grade Stock 홈"><span class="brand-mark__badge">GS</span><span class="brand-mark__copy"><strong>Grade Stock</strong><span>Compare studio</span></span></a>
-            <nav class="topbar-nav" aria-label="비교 화면 탐색"><a href="/front">HOME</a><a href="/front/compare" aria-current="page">COMPARE</a><a href="/front#catalog">SHOP</a></nav>
-            <a class="topbar-action" href="/front/my?tab=compare">비교 목록 관리</a>
-        </div>
-    </header>
-
     <main class="comparison-main" id="comparisonMain">
         <section class="comparison-hero" aria-labelledby="comparisonTitle">
             <div><p>Decision Workspace</p><h1 id="comparisonTitle">비슷해 보여도<br>차이는 분명합니다.</h1><span>가격, 재고, 옵션을 최신 상품 정보로 다시 확인하고 구매 후보를 결정하세요.</span></div>
@@ -54,9 +47,10 @@
             <section class="comparison-options" aria-labelledby="comparisonOptionsTitle"><div><span>OPTION MATRIX</span><h2 id="comparisonOptionsTitle">옵션별 재고</h2><p>동일한 옵션 이름을 기준으로 구매 가능한 재고를 비교합니다.</p></div><div class="comparison-option-table-wrap"><div id="comparisonOptionTable" class="comparison-option-table" role="table" aria-label="옵션 재고 비교표"></div></div></section>
         </section>
     </main>
-    <footer class="content-detail-footer"><strong>Grade Stock Compare Studio</strong><p>비교 결과는 현재 등록된 상품과 옵션 재고를 기준으로 합니다.</p><a href="/front">Grade Stock 홈</a></footer>
 </div>
 <div class="comparison-toast" id="comparisonToast" role="status" aria-live="polite" hidden></div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/product-comparison.js?v=20260726.1"></script>
 </body>
 </html>

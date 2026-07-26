@@ -72,7 +72,7 @@
         elements.title.textContent = collection.title;
         elements.description.textContent = collection.description;
         document.title = `${collection.title} | Grade Stock`;
-        document.querySelector(`.collection-header nav a[href$="/${collectionType}"]`)?.classList.add("is-active");
+        document.querySelector(`.store-shell__category a[href$="/${collectionType}"]`)?.classList.add("is-current");
         elements.searchInput.value = state.keyword;
         elements.sortSelect.value = state.sort;
         bindEvents();

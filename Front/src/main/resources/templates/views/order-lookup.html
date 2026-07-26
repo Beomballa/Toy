@@ -6,12 +6,10 @@
     <title>주문 조회 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/commerce.css?v=20260726.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="order-lookup-body" th:attr="data-order-number=${orderNumber}">
-<header class="commerce-header">
-    <a class="commerce-logo" href="/front">GS <span>Grade Stock</span></a>
-    <nav><a href="/front">홈</a><a href="/front/cart">장바구니</a><strong>주문 조회</strong></nav>
-</header>
+<body class="order-lookup-body storefront-page" th:attr="data-order-number=${orderNumber}">
+<header th:replace="~{fragments/storefront-shell :: header('MY', '주문 조회')}"></header>
 <main class="order-lookup-shell">
     <section class="order-lookup-intro">
         <p>Order Tracking</p>
@@ -48,6 +46,8 @@
     </section>
 </main>
 <div class="commerce-toast" id="commerceToast" role="status" aria-live="polite" hidden></div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/order-lookup.js?v=20260726.2"></script>
 </body>
 </html>

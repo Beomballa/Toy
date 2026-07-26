@@ -10,6 +10,59 @@ import org.springframework.core.io.ClassPathResource;
 class FrontStorefrontResourceTest {
 
     @Test
+    void secondaryFrontPagesShareNavigationSearchAndFooterContract() throws IOException {
+        String fragment = readResource("templates/fragments/storefront-shell.html");
+        String script = readResource("static/js/view/storefront-shell.js");
+        String css = readResource("static/css/storefront-shell.css");
+        String[] pages = {
+                "product-detail.html",
+                "product-collection.html",
+                "product-comparison.html",
+                "brand-directory.html",
+                "content-list.html",
+                "content-detail.html",
+                "support-center.html",
+                "cart.html",
+                "checkout.html",
+                "order-lookup.html",
+                "my-activity.html"
+        };
+
+        assertThat(fragment)
+                .contains("th:fragment=\"header(activeSection, contextLabel)\"")
+                .contains("data-store-shell-menu-button")
+                .contains("data-store-shell-search-form")
+                .contains("data-store-shell-count=\"bookmark\"")
+                .contains("data-store-shell-count=\"compare\"")
+                .contains("th:fragment=\"footer\"");
+        assertThat(script)
+                .contains("front-bookmark-products")
+                .contains("front-compare-products")
+                .contains("function toggleMenu()")
+                .contains("function openSearch()")
+                .contains("encodeURIComponent(keyword)")
+                .contains("window.addEventListener(\"storage\"")
+                .contains("document.addEventListener(\"storefront:storage-change\"");
+        assertThat(css)
+                .contains("--store-shell-width: 1200px")
+                .contains(".store-shell__primary")
+                .contains(".store-shell__category")
+                .contains(".store-shell__search")
+                .contains(".store-footer__grid")
+                .contains("@media (max-width: 767px)");
+
+        for (String page : pages) {
+            assertThat(readResource("templates/views/" + page))
+                    .as(page)
+                    .contains("storefront-page")
+                    .contains("/css/storefront-shell.css?v=20260726.2")
+                    .contains("fragments/storefront-shell :: header(")
+                    .contains("fragments/storefront-shell :: footer")
+                    .contains("/js/view/storefront-shell.js?v=20260726.1");
+        }
+    }
+
+    @Test
     void publicContentHighlightsKeepIndependentAccessibleRenderingContract() throws IOException {
         String html = readResource("templates/views/index.html");
         String script = readResource("static/js/view/app.js");
@@ -370,7 +423,7 @@ class FrontStorefrontResourceTest {
         String css = readResource("static/css/storefront.css");
 
         assertThat(html)
-                .contains("class=\"detail-body\"")
+                .contains("class=\"detail-body storefront-page\"")
                 .contains("id=\"detailMobileActions\"")
                 .contains("id=\"detailMobileBookmarkButton\"")
                 .contains("id=\"detailMobileCompareButton\"")
@@ -446,6 +499,7 @@ class FrontStorefrontResourceTest {
     @Test
     void productCollectionKeepsIndependentNavigationServerPagingAndDetailCta() throws IOException {
         String html = readResource("templates/views/product-collection.html");
+        String shell = readResource("templates/fragments/storefront-shell.html");
         String script = readResource("static/js/view/product-collection.js");
         String css = readResource("static/css/product-collection.css");
 
@@ -454,6 +508,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionSearchInput\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
+                .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
+        assertThat(shell)
                 .contains("/front/collections/recommended")
                 .contains("/front/collections/fast-delivery");
         assertThat(script)

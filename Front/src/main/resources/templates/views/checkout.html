@@ -1,17 +1,15 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문서 | Grade Stock</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/commerce.css?v=20260726.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body data-commerce-page="checkout">
-<header class="commerce-header">
-    <a class="commerce-logo" href="/front">GS <span>Grade Stock</span></a>
-    <nav><a href="/front/cart">장바구니</a><strong>주문서</strong><span>주문 접수</span><a href="/front/orders">주문 조회</a></nav>
-</header>
+<body class="storefront-page" data-commerce-page="checkout">
+<header th:replace="~{fragments/storefront-shell :: header('SHOP', '주문서')}"></header>
 <main class="commerce-shell">
     <section class="commerce-main">
         <div class="commerce-title"><div><p>Checkout</p><h1>주문서</h1></div><span id="commerceItemCount">0개 상품</span></div>
@@ -32,6 +30,8 @@
 </main>
 <section class="order-complete" id="orderComplete" hidden><div><p>Order Complete</p><h1>주문이 접수되었습니다.</h1><strong id="completedOrderNumber"></strong><span id="completedOrderAmount"></span><div class="order-complete__actions"><a href="#" id="completedOrderLink">주문 상세 보기</a><a href="/front">쇼핑 계속하기</a></div></div></section>
 <div class="commerce-toast" id="commerceToast" role="status" aria-live="polite" hidden></div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/commerce.js?v=20260726.2"></script>
 </body>
 </html>

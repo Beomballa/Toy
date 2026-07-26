@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,33 +7,15 @@
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260723.4">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="content-list-body">
+<body class="content-list-body storefront-page">
 <a class="skip-link" href="#contentListMain">콘텐츠 목록 바로가기</a>
 <p class="sr-only" id="contentListLiveStatus" role="status" aria-live="polite">콘텐츠를 불러오는 중입니다.</p>
+<span class="sr-only" id="contentSavedUtilityCount">0</span>
+<header th:replace="~{fragments/storefront-shell :: header('STYLE', '에디토리얼')}"></header>
 
 <div class="page-shell page-shell--content-list">
-    <div class="utility-bar">
-        <div class="utility-bar__links">
-            <a href="/front">메인으로</a>
-            <a href="/front#catalog">상품 탐색</a>
-            <a href="/front#recentViewedSection">최근 본 상품</a>
-            <a href="#contentSavedBoard">관심 콘텐츠 <span id="contentSavedUtilityCount">0</span></a>
-        </div>
-    </div>
-    <header class="topbar topbar--content-list">
-        <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
-            <span class="brand-mark__badge">GS</span>
-            <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Editorial</span></span>
-        </a>
-        <nav class="topbar-nav" aria-label="에디토리얼 탐색">
-            <a href="/front">HOME</a>
-            <a href="/front/content" aria-current="page">EDITORIAL</a>
-            <a href="/front#catalog">SHOP</a>
-        </nav>
-        <a class="topbar-action" href="/front">홈으로 복귀</a>
-    </header>
-
     <main class="content-list-page" id="contentListMain">
         <section class="content-list-hero">
             <p class="eyebrow">Grade Stock Editorial</p>
@@ -141,13 +123,10 @@
         </section>
     </main>
 
-    <footer class="content-detail-footer">
-        <strong>Grade Stock Editorial</strong>
-        <p>공개된 운영 소식과 스타일 콘텐츠만 제공합니다.</p>
-        <a href="/front">Grade Stock 홈</a>
-    </footer>
 </div>
 
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/content-list.js?v=20260723.2"></script>
 </body>
 </html>

@@ -7,33 +7,15 @@
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260724.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="content-detail-body" th:attr="data-document-id=${documentId}">
+<body class="content-detail-body storefront-page" th:attr="data-document-id=${documentId}">
 <a class="skip-link" href="#contentDetailArticle">콘텐츠 본문 바로가기</a>
 <div class="storefront-scroll-progress" aria-hidden="true"><span id="contentDetailScrollProgress"></span></div>
 <p class="sr-only" id="contentDetailStatus" role="status" aria-live="polite">콘텐츠를 불러오는 중입니다.</p>
+<header th:replace="~{fragments/storefront-shell :: header('STYLE', '에디토리얼 상세')}"></header>
 
 <div class="page-shell page-shell--content-detail">
-    <div class="utility-bar">
-        <div class="utility-bar__links">
-            <a href="/front">메인으로</a>
-            <a href="/front/content" data-content-return-link>새로운 소식과 스타일</a>
-            <a href="/front#catalog">상품 탐색</a>
-        </div>
-    </div>
-    <header class="topbar topbar--content-detail">
-        <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
-            <span class="brand-mark__badge">GS</span>
-            <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Editorial</span></span>
-        </a>
-        <nav class="topbar-nav" aria-label="콘텐츠 탐색">
-            <a href="/front">HOME</a>
-            <a href="#contentDetailArticle">EDITORIAL</a>
-            <a href="#contentDetailRelated">RELATED</a>
-        </nav>
-        <a class="topbar-action" href="/front/content" data-content-return-link>목록으로 복귀</a>
-    </header>
-
     <main class="content-detail-page">
         <nav class="content-detail-breadcrumb" aria-label="콘텐츠 경로">
             <a href="/front">홈</a><span aria-hidden="true">/</span>
@@ -173,13 +155,10 @@
         </section>
     </main>
 
-    <footer class="content-detail-footer">
-        <strong>Grade Stock Editorial</strong>
-        <p>상품과 재고를 이해하는 데 필요한 운영 소식과 스타일 제안을 전합니다.</p>
-        <a href="/front">Grade Stock 홈</a>
-    </footer>
 </div>
 
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/content-detail.js?v=20260724.1"></script>
 </body>
 </html>

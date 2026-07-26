@@ -8,28 +8,12 @@
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260725.2">
     <link rel="stylesheet" href="/css/product-collection.css?v=20260725.2">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="collection-body" th:attr="data-collection-type=${collectionType}">
+<body class="collection-body storefront-page" th:attr="data-collection-type=${collectionType}">
 <a class="skip-link" href="#collectionMain">상품 목록 바로가기</a>
+<header th:replace="~{fragments/storefront-shell :: header('SHOP', '상품 컬렉션')}"></header>
 <div class="collection-shell">
-    <header class="collection-header">
-        <a class="collection-brand" href="/front" aria-label="Grade Stock 홈">
-            <span>GS</span>
-            <strong>Grade Stock</strong>
-        </a>
-        <nav aria-label="컬렉션 탐색">
-            <a href="/front/collections/recommended">추천</a>
-            <a href="/front/collections/ranking">랭킹</a>
-            <a href="/front/collections/fast-delivery">빠른배송</a>
-            <a href="/front/collections/new">신상</a>
-            <a href="/front">전체 상품</a>
-        </nav>
-        <div class="collection-header__actions">
-            <a href="/front/cart">장바구니</a>
-            <a class="collection-header__back" href="/front">홈으로</a>
-        </div>
-    </header>
-
     <main id="collectionMain">
         <section class="collection-hero" aria-labelledby="collectionTitle">
             <div>
@@ -76,11 +60,9 @@
         </nav>
     </main>
 
-    <footer class="collection-footer">
-        <strong>Grade Stock</strong>
-        <p>상품 탐색과 재고 비교를 위한 데모 마켓플레이스입니다. 빠른배송 컬렉션은 재고 확보 여부를 기준으로 하며 실제 배송일을 보장하지 않습니다.</p>
-    </footer>
 </div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/product-collection.js?v=20260725.2"></script>
 </body>
 </html>

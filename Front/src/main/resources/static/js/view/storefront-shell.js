@@ -1,0 +1,133 @@
+(() => {
+    "use strict";
+
+    const shell = document.querySelector("[data-store-shell]");
+    if (!shell) {
+        return;
+    }
+
+    const storageKeys = {
+        bookmark: "front-bookmark-products",
+        compare: "front-compare-products"
+    };
+    const menuButton = shell.querySelector("[data-store-shell-menu-button]");
+    const categoryNav = shell.querySelector("#storeShellCategoryNav");
+    const searchLayer = shell.querySelector("[data-store-shell-search]");
+    const searchOpenButton = shell.querySelector("[data-store-shell-search-open]");
+    const searchCloseButton = shell.querySelector("[data-store-shell-search-close]");
+    const searchForm = shell.querySelector("[data-store-shell-search-form]");
+    const searchInput = shell.querySelector("[data-store-shell-search-input]");
+    let searchReturnFocus = null;
+
+    function storedCount(key) {
+        try {
+            const value = JSON.parse(window.localStorage.getItem(key) || "[]");
+            return Array.isArray(value) ? value.length : 0;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function syncCounts() {
+        Object.entries(storageKeys).forEach(([name, key]) => {
+            const count = storedCount(key);
+            shell.querySelectorAll(`[data-store-shell-count="${name}"]`).forEach((target) => {
+                target.textContent = String(count);
+                target.hidden = count === 0;
+            });
+        });
+    }
+
+    function closeMenu(restoreFocus = false) {
+        if (!shell.classList.contains("is-menu-open")) {
+            return;
+        }
+        shell.classList.remove("is-menu-open");
+        menuButton?.setAttribute("aria-expanded", "false");
+        menuButton?.setAttribute("aria-label", "메뉴 열기");
+        if (restoreFocus) {
+            menuButton?.focus();
+        }
+    }
+
+    function toggleMenu() {
+        const willOpen = !shell.classList.contains("is-menu-open");
+        shell.classList.toggle("is-menu-open", willOpen);
+        menuButton?.setAttribute("aria-expanded", String(willOpen));
+        menuButton?.setAttribute("aria-label", willOpen ? "메뉴 닫기" : "메뉴 열기");
+        if (willOpen) {
+            categoryNav?.querySelector("a")?.focus();
+        }
+    }
+
+    function openSearch() {
+        searchReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        searchLayer.hidden = false;
+        document.body.classList.add("store-shell-lock");
+        window.requestAnimationFrame(() => searchInput?.focus());
+    }
+
+    function closeSearch() {
+        if (searchLayer.hidden) {
+            return;
+        }
+        searchLayer.hidden = true;
+        document.body.classList.remove("store-shell-lock");
+        if (searchReturnFocus?.isConnected) {
+            searchReturnFocus.focus();
+        }
+        searchReturnFocus = null;
+    }
+
+    function submitSearch(event) {
+        event.preventDefault();
+        const keyword = searchInput?.value.trim();
+        if (!keyword) {
+            searchInput?.focus();
+            return;
+        }
+        window.location.assign(`/front?keyword=${encodeURIComponent(keyword)}#catalog`);
+    }
+
+    menuButton?.addEventListener("click", toggleMenu);
+    categoryNav?.addEventListener("click", () => closeMenu());
+    searchOpenButton?.addEventListener("click", openSearch);
+    searchCloseButton?.addEventListener("click", closeSearch);
+    searchForm?.addEventListener("submit", submitSearch);
+    searchLayer?.addEventListener("click", (event) => {
+        if (event.target === searchLayer) {
+            closeSearch();
+        }
+    });
+    window.addEventListener("storage", (event) => {
+        if (Object.values(storageKeys).includes(event.key)) {
+            syncCounts();
+        }
+    });
+    window.addEventListener("resize", () => {
+        if (window.innerWidth >= 768) {
+            closeMenu();
+        }
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !searchLayer.hidden) {
+            closeSearch();
+            return;
+        }
+        if (event.key === "Escape") {
+            closeMenu(true);
+        }
+    });
+    document.addEventListener("click", (event) => {
+        if (event.target.closest(
+            "[data-bookmark-product-id], [data-compare-product-id], [data-related-bookmark-id], " +
+            "[data-related-compare-id], #detailBookmarkButton, #detailCompareButton, " +
+            "#detailMobileBookmarkButton, #detailMobileCompareButton"
+        )) {
+            window.requestAnimationFrame(syncCounts);
+        }
+    });
+    document.addEventListener("storefront:storage-change", syncCounts);
+
+    syncCounts();
+})();

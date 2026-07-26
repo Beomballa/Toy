@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<header class="store-shell" data-store-shell th:fragment="header(activeSection, contextLabel)">
+    <div class="store-shell__utility">
+        <div class="store-shell__inner">
+            <span class="store-shell__context" th:text="${contextLabel}">Grade Stock</span>
+            <nav aria-label="사용자 메뉴">
+                <a href="/front/support">고객센터</a>
+                <a href="/front/orders">주문조회</a>
+                <a href="/front/my">관심 <span class="store-shell__count" data-store-shell-count="bookmark">0</span></a>
+                <a href="/front/compare">비교 <span class="store-shell__count" data-store-shell-count="compare">0</span></a>
+                <a href="/front/cart">장바구니</a>
+            </nav>
+        </div>
+    </div>
+
+    <div class="store-shell__primary">
+        <div class="store-shell__inner">
+            <a class="store-shell__logo" href="/front" aria-label="Grade Stock 홈">
+                <strong>GS</strong>
+                <span>Grade Stock</span>
+            </a>
+            <nav class="store-shell__main-nav" aria-label="주요 탐색">
+                <a href="/front" th:classappend="${activeSection == 'HOME'} ? 'is-current'">HOME</a>
+                <a href="/front/content" th:classappend="${activeSection == 'STYLE'} ? 'is-current'">STYLE</a>
+                <a href="/front/collections/recommended" th:classappend="${activeSection == 'SHOP'} ? 'is-current'">SHOP</a>
+            </nav>
+            <div class="store-shell__actions">
+                <button type="button" data-store-shell-search-open aria-haspopup="dialog">
+                    <span>검색</span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
+                </button>
+                <button class="store-shell__menu-button" type="button" data-store-shell-menu-button
+                        aria-expanded="false" aria-controls="storeShellCategoryNav" aria-label="메뉴 열기">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="store-shell__category-wrap">
+        <nav class="store-shell__category" id="storeShellCategoryNav" aria-label="카테고리 탐색">
+            <a href="/front/collections/recommended" th:classappend="${activeSection == 'SHOP'} ? 'is-current'">추천</a>
+            <a href="/front/collections/ranking">랭킹</a>
+            <a href="/front/collections/fast-delivery">빠른배송</a>
+            <a href="/front/brands" th:classappend="${activeSection == 'BRAND'} ? 'is-current'">브랜드</a>
+            <a href="/front/collections/new">신상</a>
+            <a href="/front/content" th:classappend="${activeSection == 'STYLE'} ? 'is-current'">콘텐츠</a>
+            <a href="/front/my" th:classappend="${activeSection == 'MY'} ? 'is-current'">마이</a>
+        </nav>
+    </div>
+
+    <div class="store-shell__search" data-store-shell-search role="dialog" aria-modal="true"
+         aria-labelledby="storeShellSearchTitle" hidden>
+        <div class="store-shell__search-panel">
+            <div class="store-shell__search-head">
+                <strong id="storeShellSearchTitle">상품 검색</strong>
+                <button type="button" data-store-shell-search-close aria-label="검색 닫기">닫기</button>
+            </div>
+            <form data-store-shell-search-form>
+                <label for="storeShellSearchInput">찾고 있는 상품을 입력하세요.</label>
+                <div>
+                    <input id="storeShellSearchInput" data-store-shell-search-input type="search"
+                           placeholder="브랜드, 상품명, 모델번호" autocomplete="off">
+                    <button type="submit">검색</button>
+                </div>
+            </form>
+            <div class="store-shell__search-links">
+                <span>빠른 탐색</span>
+                <a href="/front/collections/ranking">인기 상품</a>
+                <a href="/front/collections/new">신상품</a>
+                <a href="/front/brands">브랜드</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<footer class="store-footer" th:fragment="footer">
+    <div class="store-footer__grid">
+        <section><strong>이용안내</strong><a href="/front/support">검수 및 이용 정책</a><a href="/front/support">자주 묻는 질문</a></section>
+        <section><strong>쇼핑 관리</strong><a href="/front/my">MY 쇼핑 활동</a><a href="/front/compare">상품 비교</a><a href="/front/orders">주문 조회</a></section>
+        <section class="store-footer__support"><strong>Grade Stock 고객지원</strong><p>상품 탐색, 재고 비교와 주문 접수에 필요한 도움말을 확인하세요.</p><a href="/front/support">고객센터 바로가기</a></section>
+    </div>
+    <div class="store-footer__bottom">
+        <strong>Grade Stock</strong>
+        <p>상품 탐색과 재고 비교를 위한 데모 마켓플레이스이며 실제 결제를 제공하지 않습니다.</p>
+        <span>© Grade Stock</span>
+    </div>
+</footer>
+</body>
+</html>

@@ -7,47 +7,21 @@
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="detail-body" th:attr="data-product-id=${productId}">
+<body class="detail-body storefront-page" th:attr="data-product-id=${productId}">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
 <div class="storefront-scroll-progress" aria-hidden="true"><span id="detailScrollProgress"></span></div>
 <p class="sr-only" id="detailStatus" role="status" aria-live="polite"></p>
+<header th:replace="~{fragments/storefront-shell :: header('SHOP', '상품 상세')}"></header>
 <div class="page-shell page-shell--detail">
-    <div class="utility-bar">
-        <div class="utility-bar__links">
-            <a href="/front">메인으로</a>
-            <a href="/front/cart">장바구니</a>
-            <a href="#detailHero">상품 요약</a>
-            <a href="#detailRelated">연관 상품</a>
-        </div>
-        <div class="utility-bar__meta">
-            <span>Product Detail</span>
-            <span>Marketplace edit</span>
-        </div>
-    </div>
-
-    <header class="topbar topbar--detail">
-        <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
-            <span class="brand-mark__badge">GS</span>
-            <span class="brand-mark__copy">
-                <strong>Grade Stock</strong>
-                <span>Marketplace edit</span>
-            </span>
-        </a>
-        <nav class="topbar-nav" aria-label="상세 탐색">
-            <a href="#detailHero">SUMMARY</a>
-            <a href="#detailOptions">OPTIONS</a>
-            <a href="#detailRelated">RELATED</a>
-        </nav>
-        <a class="topbar-action" href="/front" id="backToCatalogLink">카탈로그로 복귀</a>
-    </header>
-
     <main class="detail-page" id="detailPage" tabindex="-1" th:attr="data-product-id=${productId}">
         <nav class="detail-breadcrumb" aria-label="상품 경로">
             <a href="/front">홈</a><span aria-hidden="true">/</span>
             <a href="/front#catalog" id="detailBreadcrumbCategory">상품</a><span aria-hidden="true">/</span>
             <strong id="detailBreadcrumbProduct" aria-current="page">상세</strong>
             <button type="button" id="detailCopyBreadcrumbButton">경로 복사</button>
+            <a class="detail-catalog-return" href="/front" id="backToCatalogLink">카탈로그로 복귀</a>
         </nav>
         <section class="detail-hero" id="detailHero">
             <div class="detail-product-visual" id="detailProductVisual" aria-label="상품 비주얼">
@@ -389,6 +363,8 @@
 
 <button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
 
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/detail.js?v=20260725.2"></script>
 </body>
 </html>

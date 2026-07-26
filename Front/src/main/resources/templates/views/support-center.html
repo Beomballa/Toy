@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,40 +8,14 @@
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
     <link rel="stylesheet" href="/css/support-center.css?v=20260726.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260726.2">
 </head>
-<body class="support-body">
+<body class="support-body storefront-page">
 <a class="skip-link" href="#supportMain">고객지원 본문 바로가기</a>
 <p class="sr-only" id="supportLiveStatus" role="status" aria-live="polite"></p>
+<header th:replace="~{fragments/storefront-shell :: header('SUPPORT', '고객센터')}"></header>
 
 <div class="page-shell page-shell--support">
-    <div class="utility-bar">
-        <div class="utility-bar__links">
-            <a href="/front">메인으로</a>
-            <a href="/front/orders">주문 조회</a>
-            <a href="/front/my?tab=wishlist">관심 상품</a>
-            <a href="/front/content">에디토리얼</a>
-        </div>
-        <div class="utility-bar__meta">
-            <span>Customer Care</span>
-            <span>Self Service</span>
-        </div>
-    </div>
-
-    <header class="topbar topbar--support">
-        <div class="topbar__main">
-            <a class="brand-mark" href="/front" aria-label="Grade Stock 홈">
-                <span class="brand-mark__badge">GS</span>
-                <span class="brand-mark__copy"><strong>Grade Stock</strong><span>Customer care</span></span>
-            </a>
-            <nav class="topbar-nav" aria-label="고객지원 탐색">
-                <a href="/front">HOME</a>
-                <a href="/front/support" aria-current="page">SUPPORT</a>
-                <a href="/front#catalog">SHOP</a>
-            </nav>
-            <a class="topbar-action" href="/front">쇼핑으로 돌아가기</a>
-        </div>
-    </header>
-
     <main class="support-main" id="supportMain">
         <section class="support-hero" aria-labelledby="supportTitle">
             <div class="support-hero__copy">
@@ -179,15 +153,12 @@
         </section>
     </main>
 
-    <footer class="content-detail-footer">
-        <strong>Grade Stock Customer Care</strong>
-        <p>고객지원 정보는 서비스 기능과 함께 지속적으로 갱신됩니다.</p>
-        <a href="/front">Grade Stock 홈</a>
-    </footer>
 </div>
 
 <button class="support-top-button" id="supportTopButton" type="button" aria-label="페이지 맨 위로 이동" hidden>TOP</button>
 <div class="support-toast" id="supportToast" role="status" aria-live="polite" hidden></div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-shell.js?v=20260726.1"></script>
 <script src="/js/view/support-center.js?v=20260726.1"></script>
 </body>
 </html>

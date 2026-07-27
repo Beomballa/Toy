@@ -236,12 +236,14 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"deliveryRequestPreset\"")
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/js/view/commerce.js?v=20260726.2");
+                .contains("/css/commerce.css?v=20260727.1")
+                .contains("/js/view/commerce.js?v=20260727.1");
         assertThat(script)
                 .contains("window.sessionStorage.setItem(\"grade-stock-last-order\"")
                 .contains("저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.")
                 .contains("formatPhoneInput")
                 .contains("syncBuyerToRecipient")
+                .contains("elements.form.hidden = false")
                 .contains("elements.complete.hidden = false");
     }
 
@@ -254,11 +256,17 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"clearCartButton\"")
                 .contains("id=\"commerceStockSummary\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/js/view/commerce.js?v=20260726.2");
+                .contains("/css/commerce.css?v=20260727.1")
+                .contains("/js/view/commerce.js?v=20260727.1");
         assertThat(script)
                 .contains("request(\"/api/front/cart/items\", { method: \"DELETE\" })")
                 .contains("commerce-stock-badge")
-                .contains("aria-busy");
+                .contains("aria-busy")
+                .contains("data-cart-retry")
+                .contains("if (cartMutating) return")
+                .contains("syncCheckoutAvailability(false)")
+                .contains("\"/images/product-placeholder.svg\"")
+                .doesNotContain("placehold.co");
     }
 
     @Test

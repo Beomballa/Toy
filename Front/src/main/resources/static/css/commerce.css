@@ -105,6 +105,19 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .commerce-empty strong { display: block; font-size: 18px; }
 .commerce-empty p { margin: 10px 0 24px; color: var(--muted); }
 .commerce-empty a { display: inline-flex; padding: 12px 20px; border: 1px solid var(--ink); border-radius: 9px; }
+.commerce-empty button {
+    min-height: 42px;
+    padding: 0 20px;
+    border: 1px solid var(--ink);
+    border-radius: 9px;
+    color: #fff;
+    background: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.commerce-empty--error { color: #8f352d; }
+.commerce-empty--error p { color: var(--muted); }
 
 .commerce-summary {
     position: sticky;

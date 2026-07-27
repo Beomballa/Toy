@@ -25,6 +25,7 @@
     let toastTimer = null;
     let memoryCartToken = null;
     let submitting = false;
+    let cartMutating = false;
 
     function cartToken() {
         const key = "grade-stock-cart-token";
@@ -58,8 +59,8 @@
             .replaceAll("'", "&#39;");
     }
 
-    function fallbackImage(name) {
-        return `https://placehold.co/240x240/f4f4f4/999?text=${encodeURIComponent(String(name || "GS").slice(0, 12))}`;
+    function fallbackImage() {
+        return "/images/product-placeholder.svg";
     }
 
     function showToast(message) {
@@ -90,12 +91,13 @@
 
     async function loadCart() {
         setListBusy(true);
+        syncCheckoutAvailability(false);
         try {
             cart = await request("/api/front/cart");
             renderCart();
         } catch (error) {
             showToast(error.message);
-            renderEmpty("장바구니를 불러오지 못했습니다.");
+            renderUnavailable();
         } finally {
             setListBusy(false);
         }
@@ -113,13 +115,13 @@
                 : "현재 담긴 옵션은 재고가 안정적입니다.";
             elements.stockSummary.classList.toggle("is-alert", lowStockCount > 0);
         }
-        if (elements.clearCart) elements.clearCart.disabled = !cart.items.length;
-        elements.checkoutLink?.classList.toggle("is-disabled", !cart.items.length);
-        elements.checkoutLink?.setAttribute("aria-disabled", String(!cart.items.length));
-        if (elements.submit) elements.submit.disabled = !cart.items.length;
+        syncCheckoutAvailability(cart.items.length > 0);
         if (!cart.items.length) {
             renderEmpty("장바구니가 비어 있습니다.");
             return;
+        }
+        if (page === "checkout" && elements.form) {
+            elements.form.hidden = false;
         }
         elements.list.innerHTML = cart.items.map((item) => `
             <article class="commerce-item" data-cart-item="${item.itemId}">
@@ -142,11 +144,37 @@
         }
     }
 
+    function renderUnavailable() {
+        elements.list.innerHTML = `
+            <div class="commerce-empty commerce-empty--error">
+                <strong>장바구니를 불러오지 못했습니다.</strong>
+                <p>네트워크 상태를 확인한 후 다시 시도해주세요.</p>
+                <button type="button" data-cart-retry>다시 시도</button>
+            </div>`;
+        if (page === "checkout" && elements.form) {
+            elements.form.hidden = true;
+        }
+    }
+
+    function syncCheckoutAvailability(available) {
+        if (elements.clearCart) {
+            elements.clearCart.disabled = !available || cartMutating;
+        }
+        elements.checkoutLink?.classList.toggle("is-disabled", !available);
+        elements.checkoutLink?.setAttribute("aria-disabled", String(!available));
+        if (elements.submit) {
+            elements.submit.disabled = !available || submitting;
+        }
+    }
+
     function setListBusy(busy) {
         elements.list?.setAttribute("aria-busy", String(busy));
     }
 
     async function changeItem(itemId, nextQuantity) {
+        if (cartMutating) return;
+        cartMutating = true;
+        syncCheckoutAvailability(false);
         setListBusy(true);
         try {
             cart = await request(`/api/front/cart/items/${itemId}`, {
@@ -157,11 +185,16 @@
         } catch (error) {
             showToast(error.message);
         } finally {
+            cartMutating = false;
             setListBusy(false);
+            syncCheckoutAvailability(cart.items.length > 0);
         }
     }
 
     async function removeItem(itemId) {
+        if (cartMutating) return;
+        cartMutating = true;
+        syncCheckoutAvailability(false);
         setListBusy(true);
         try {
             cart = await request(`/api/front/cart/items/${itemId}`, { method: "DELETE" });
@@ -170,13 +203,16 @@
         } catch (error) {
             showToast(error.message);
         } finally {
+            cartMutating = false;
             setListBusy(false);
+            syncCheckoutAvailability(cart.items.length > 0);
         }
     }
 
     async function clearCart() {
-        if (!cart.items.length || !window.confirm("장바구니의 모든 상품을 삭제할까요?")) return;
-        elements.clearCart.disabled = true;
+        if (cartMutating || !cart.items.length || !window.confirm("장바구니의 모든 상품을 삭제할까요?")) return;
+        cartMutating = true;
+        syncCheckoutAvailability(false);
         setListBusy(true);
         try {
             cart = await request("/api/front/cart/items", { method: "DELETE" });
@@ -184,13 +220,18 @@
             showToast("장바구니를 비웠습니다.");
         } catch (error) {
             showToast(error.message);
-            elements.clearCart.disabled = false;
         } finally {
+            cartMutating = false;
             setListBusy(false);
+            syncCheckoutAvailability(cart.items.length > 0);
         }
     }
 
     elements.list?.addEventListener("click", (event) => {
+        if (event.target.closest("[data-cart-retry]")) {
+            loadCart();
+            return;
+        }
         const article = event.target.closest("[data-cart-item]");
         if (!article) return;
         const item = cart.items.find((candidate) => Number(candidate.itemId) === Number(article.dataset.cartItem));
@@ -288,6 +329,7 @@
             submitting = false;
             elements.submit.removeAttribute("aria-busy");
             elements.submit.querySelector("span").textContent = "주문 접수하기";
+            syncCheckoutAvailability(cart.items.length > 0);
         }
     });
 

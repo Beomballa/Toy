@@ -53,6 +53,29 @@ check_body_contains() {
   printf 'PASS %-28s status=%s body_token=%s\n' "$name" "$status" "$expected_body"
 }
 
+check_body_contains_with_header() {
+  local name="$1"
+  local expected_status="$2"
+  local expected_body="$3"
+  local header_name="$4"
+  local header_value="$5"
+  local url="$6"
+  local response
+  local status
+  local body
+
+  response="$(curl --silent --show-error --header "${header_name}: ${header_value}" \
+    --write-out $'\n%{http_code}' "$url")"
+  status="${response##*$'\n'}"
+  body="${response%$'\n'*}"
+  if [[ "$status" != "$expected_status" || "$body" != *"$expected_body"* ]]; then
+    printf 'FAIL %-28s expected_status=%s actual_status=%s body_token=%s url=%s\n' \
+      "$name" "$expected_status" "$status" "$expected_body" "$url" >&2
+    return 1
+  fi
+  printf 'PASS %-28s status=%s body_token=%s\n' "$name" "$status" "$expected_body"
+}
+
 check_header_contains() {
   local name="$1"
   local header_name="$2"
@@ -306,7 +329,16 @@ check_admin_authenticated_flow() {
 check_status "front liveness" 200 "${FRONT_URL}/health/live"
 check_status "front readiness" 200 "${FRONT_URL}/health/ready"
 check_status "front storefront" 200 "${FRONT_URL}/"
+check_status "front new collection" 200 "${FRONT_URL}/front/collections/new"
+check_status "front cart page" 200 "${FRONT_URL}/front/cart"
+check_status "front checkout page" 200 "${FRONT_URL}/front/checkout"
+check_status "front order lookup page" 200 "${FRONT_URL}/front/orders"
+check_status "front compare page" 200 "${FRONT_URL}/front/compare"
+check_status "front my page" 200 "${FRONT_URL}/front/my"
+check_status "front content archive" 200 "${FRONT_URL}/front/content"
 check_status "front catalog api" 200 "${FRONT_URL}/api/front/catalog/bootstrap"
+check_body_contains_with_header "front cart api" 200 '"itemCount":' \
+  "X-Cart-Token" "smoke-cart-token-00000001" "${FRONT_URL}/api/front/cart"
 check_body_contains "front content highlights" 200 '"popular":' \
   "${FRONT_URL}/api/front/content/highlights?limit=4"
 check_body_contains "front content popular sort" 200 '"sort":"POPULAR"' \
@@ -315,6 +347,9 @@ check_status "front detail page" 200 "${FRONT_URL}/front/products/${FRONT_DETAIL
 check_status "front detail api" 200 "${FRONT_URL}/api/front/products/${FRONT_DETAIL_PRODUCT_ID}"
 check_body_contains "front content reading data" 200 '"estimatedReadMinutes":' \
   "${FRONT_URL}/api/front/content/${FRONT_CONTENT_ID}"
+check_body_contains_with_header "front content reactions" 200 '"helpfulCount":' \
+  "X-Content-Visitor-Key" "smoke-content-visitor-0001" \
+  "${FRONT_URL}/api/front/content/${FRONT_CONTENT_ID}/reactions"
 check_body_contains "front missing product" 404 '"code":"F002"' \
   "${FRONT_URL}/api/front/products/9223372036854775807"
 check_header_present "front request tracing" "X-Request-Id" "${FRONT_URL}/"

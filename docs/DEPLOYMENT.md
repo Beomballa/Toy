@@ -9,14 +9,23 @@
 
 운영 기본값은 `ddl-auto=none`입니다. DB 스키마는 배포 전에 별도로 반영해야 하며 운영에서 `JPA_DDL_AUTO=create`, `create-drop`, `update`를 사용하지 않습니다.
 
-문서 일일 통계 기능을 포함한 버전을 처음 배포할 때 애플리케이션 기동 전에 다음 스크립트를 적용합니다. 스크립트는 테이블을 생성하고 현재 문서 데이터 기준 초기 스냅샷을 멱등 반영합니다.
+기능 스키마를 포함한 버전을 처음 배포할 때 애플리케이션 기동 전에 다음 스크립트를 순서대로 적용합니다. 기본 상품, 옵션, 주문, 문서와 관리자 테이블이 먼저 존재해야 합니다.
 
 ```bash
+mysql -h db-host -u grade_stock_app -p new_toy < db/front_product_display.sql
+mysql -h db-host -u grade_stock_app -p new_toy < db/front_commerce.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/document_daily_stats.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/admin_operation_task_content_source.sql
+mysql -h db-host -u grade_stock_app -p new_toy < db/admin_system_setting_history.sql
 ```
+
+`front_product_display`는 고객용 상품 설명과 대표 노출 정보를 저장합니다. `front_commerce`는 장바구니, 장바구니 항목과 주문 배송지를 추가하므로 상품·옵션·주문 기본 스키마 이후 적용해야 합니다.
+
+`admin_system_setting_history`는 설정 변경 감사 이력 테이블만 생성하며 운영 데이터는 삽입하지 않습니다. 로컬 화면용 예시는 `local` 프로파일의 시더가 담당합니다.
+
+`document_daily_stats`는 테이블 생성 후 현재 문서 데이터 기준 초기 스냅샷을 멱등 반영합니다.
 
 `front_content_view_event`는 공개 콘텐츠 조회를 문서·방문자·날짜별로 중복 제거합니다. 애플리케이션 배포 전에 테이블을 생성해야 하며 기존 `document.view_count` 값에는 영향을 주지 않습니다. 프론트 홈은 이 테이블의 최근 7일 이벤트를 집계해 공개·게시 완료 콘텐츠의 주간 인기 순위를 표시합니다.
 
@@ -117,12 +126,13 @@ FRONT_URL=https://service.example.com \
 ADMIN_URL=https://admin.example.com \
 BATCH_URL=http://batch.internal:9091 \
 FRONT_DETAIL_PRODUCT_ID=12 \
+FRONT_CONTENT_ID=1 \
 ADMIN_SMOKE_LOGIN_ID=smoke-admin \
 ADMIN_SMOKE_PASSWORD='replace-with-secret' \
 ./scripts/smoke-test.sh
 ```
 
-`FRONT_DETAIL_PRODUCT_ID`에는 운영 DB에 존재하는 대표 상품 ID를 지정합니다. 프론트 smoke test는 카탈로그와 상세 화면/API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회·독자 반응·콘텐츠 효과 분석 API와 CSV 다운로드, 로그아웃 및 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
+`FRONT_DETAIL_PRODUCT_ID`와 `FRONT_CONTENT_ID`에는 운영 DB에 존재하는 대표 상품·콘텐츠 ID를 지정합니다. 프론트 smoke test는 메인, 신규 컬렉션, 장바구니, 주문 조회, 비교, MY, 콘텐츠 아카이브 화면과 카탈로그·상품 상세·장바구니·콘텐츠 반응 조회 API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 장바구니·주문·반응 데이터를 변경하는 요청은 호출하지 않습니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회·독자 반응·콘텐츠 효과 분석 API와 CSV 다운로드, 로그아웃 및 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
 
 세 애플리케이션은 응답의 `X-Request-Id`를 공통 장애 추적 키로 사용합니다. 프록시가 안전한 요청 ID를 전달하면 그대로 유지하고, 없거나 형식이 잘못된 경우 애플리케이션이 새 ID를 생성합니다. 요청 헤더 한도는 기본 16KB이며 필요한 경우 `SERVER_MAX_HTTP_REQUEST_HEADER_SIZE`로 조정합니다.
 

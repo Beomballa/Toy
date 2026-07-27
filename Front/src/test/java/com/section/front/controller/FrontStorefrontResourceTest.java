@@ -197,7 +197,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260726.1");
+                .contains("/js/view/detail.js?v=20260727.1");
     }
 
     @Test
@@ -492,6 +492,10 @@ class FrontStorefrontResourceTest {
                 .contains("data-detail-option")
                 .contains("selectDetailOption")
                 .contains("syncSelectedOptionActions")
+                .contains("if (cartSubmitting)")
+                .contains("function setCartSubmitting(")
+                .contains("memoryCartToken ||= createCartToken()")
+                .contains("button?.toggleAttribute(\"disabled\", submitting)")
                 .contains("aria-checked=\"${selectedOptionName === option.name}\"")
                 .doesNotContain("추가금 ${formatPrice(option.additionalPrice)}");
         assertThat(css)

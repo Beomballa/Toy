@@ -33,6 +33,8 @@
     const optionSelectionHistory = [];
     let toastTimerSeed = 0;
     let detailModalReturnFocus = null;
+    let memoryCartToken = null;
+    let cartSubmitting = false;
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -724,15 +726,36 @@
 
     function cartToken() {
         const key = "grade-stock-cart-token";
-        let token = window.localStorage.getItem(key);
-        if (!token) {
-            token = window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            window.localStorage.setItem(key, token);
+        try {
+            let token = window.localStorage.getItem(key);
+            if (!token) {
+                token = createCartToken();
+                window.localStorage.setItem(key, token);
+            }
+            return token;
+        } catch (error) {
+            memoryCartToken ||= createCartToken();
+            return memoryCartToken;
         }
-        return token;
+    }
+
+    function createCartToken() {
+        return window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function setCartSubmitting(submitting, targetButton) {
+        cartSubmitting = submitting;
+        [elements.detailAddCartButton, elements.detailBuyNowButton].forEach((button) => {
+            button?.toggleAttribute("disabled", submitting);
+            button?.removeAttribute("aria-busy");
+        });
+        targetButton?.toggleAttribute("aria-busy", submitting);
     }
 
     async function addSelectedOptionToCart(moveToCheckout = false) {
+        if (cartSubmitting) {
+            return;
+        }
         const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
         if (!currentProduct || !option?.id) {
             focusDetailOptions();
@@ -740,7 +763,7 @@
             return;
         }
         const targetButton = moveToCheckout ? elements.detailBuyNowButton : elements.detailAddCartButton;
-        targetButton?.setAttribute("disabled", "disabled");
+        setCartSubmitting(true, targetButton);
         try {
             const response = await fetch("/api/front/cart/items", {
                 method: "POST",
@@ -767,7 +790,7 @@
         } catch (error) {
             showToast("장바구니 요청을 처리하지 못했습니다.", error.message, true);
         } finally {
-            targetButton?.removeAttribute("disabled");
+            setCartSubmitting(false, targetButton);
         }
     }
 

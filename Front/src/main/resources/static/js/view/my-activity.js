@@ -21,23 +21,34 @@
     function read(tab = state.tab) {
         try {
             const parsed = JSON.parse(localStorage.getItem(KEYS[tab]) || "[]");
-            return Array.isArray(parsed) ? parsed.filter(item => item?.id) : [];
+            return Array.isArray(parsed)
+                ? parsed
+                    .filter(item => Number.isSafeInteger(Number(item?.id)) && Number(item.id) > 0)
+                    .map(item => ({ ...item, id: Number(item.id) }))
+                : [];
         } catch (_) { return []; }
     }
     function write(tab, items) {
         if (window.StorefrontState) {
             if (!window.StorefrontState.write(KEYS[tab], items)) {
                 toast("브라우저 저장소를 사용할 수 없습니다.");
+                return false;
             }
-            return;
+            return true;
         }
-        try { localStorage.setItem(KEYS[tab], JSON.stringify(items)); } catch (_) { toast("브라우저 저장소를 사용할 수 없습니다."); }
+        try {
+            localStorage.setItem(KEYS[tab], JSON.stringify(items));
+            return true;
+        } catch (_) {
+            toast("브라우저 저장소를 사용할 수 없습니다.");
+            return false;
+        }
     }
     function safe(value) {
         return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("\"","&quot;").replaceAll("'","&#39;");
     }
     function price(value) { return `${Number(value || 0).toLocaleString("ko-KR")}원`; }
-    function image(item) { return item.thumbnailUrl || `https://placehold.co/500x500/f2f2f0/999?text=${encodeURIComponent(String(item.brand || "GS").slice(0,10))}`; }
+    function image(item) { return item.thumbnailUrl || "/images/product-placeholder.svg"; }
     function toast(message) {
         el.toast.textContent = message; el.toast.hidden = false; clearTimeout(toastTimer);
         toastTimer = setTimeout(() => { el.toast.hidden = true; }, 2400);
@@ -83,19 +94,56 @@
             <div class="my-card__copy"><div class="my-card__brand"><span>${safe(item.brand||"Grade Stock")}</span><span>${Number(item.stock||0)<=0?"품절":Number(item.stock||0)<=20?"재고주의":"재고안정"}</span></div><h2>${safe(item.name||item.headline||`상품 ${item.id}`)}</h2><p>${safe(item.model||item.category||"상품 정보 확인")}</p><div class="my-card__price"><strong>${price(item.price)}</strong><span>재고 ${Number(item.stock||0)}개</span></div></div>
             <div class="my-card__actions"><a href="/front/products/${item.id}">상세 보기</a><button type="button" data-remove-id="${item.id}">목록에서 삭제</button></div>
           </article>`).join("") : `<div class="my-empty"><strong>${labels[state.tab]}이 없습니다.</strong><p>검색 조건을 바꾸거나 상품을 둘러보고 활동을 시작해보세요.</p><a href="/front#catalog">상품 둘러보기</a></div>`;
+        bindImageFallbacks();
         syncCounts(); syncSelection(items);
         document.getElementById("mySelectAllButton").disabled = !items.length;
         document.getElementById("myClearTabButton").disabled = !read().length;
         history.replaceState(null,"",`/front/my?tab=${state.tab}`);
     }
+    function bindImageFallbacks() {
+        el.grid.querySelectorAll(".my-card__visual img").forEach(img => {
+            img.addEventListener("error", () => {
+                if (!img.src.endsWith("/images/product-placeholder.svg")) {
+                    img.src = "/images/product-placeholder.svg";
+                }
+            }, { once: true });
+        });
+    }
     function remove(ids) {
-        const set = new Set(ids.map(Number)); write(state.tab,read().filter(item=>!set.has(Number(item.id)))); state.selected.clear(); render();
+        const set = new Set(ids.map(Number));
+        if (write(state.tab,read().filter(item=>!set.has(Number(item.id))))) {
+            state.selected.clear();
+            render();
+        }
     }
     function move(target) {
         const source = read().filter(item=>state.selected.has(Number(item.id)));
         const limit = target==="compare" ? 3 : 50;
         const merged = source.concat(read(target)).filter((item,index,all)=>all.findIndex(x=>Number(x.id)===Number(item.id))===index).slice(0,limit);
-        write(target,merged); toast(`${source.length}개 상품을 ${labels[target]}에 반영했습니다.`); syncCounts();
+        if (write(target,merged)) {
+            toast(`${source.length}개 상품을 ${labels[target]}에 반영했습니다.`);
+            syncCounts();
+        }
+    }
+    function resetAllActivity() {
+        const removed = Object.keys(KEYS).map(tab => {
+            if (window.StorefrontState) {
+                return window.StorefrontState.remove(KEYS[tab]);
+            }
+            try {
+                localStorage.removeItem(KEYS[tab]);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }).every(Boolean);
+        if (!removed) {
+            toast("브라우저 저장소를 초기화하지 못했습니다.");
+            return;
+        }
+        state.selected.clear();
+        render();
+        toast("모든 쇼핑 활동을 초기화했습니다.");
     }
     function downloadCsv() {
         const rows = [["상품번호","브랜드","상품명","모델","가격","재고"],...filtered().map(i=>[i.id,i.brand,i.name||i.headline,i.model,i.price,i.stock])];
@@ -116,8 +164,8 @@
     document.getElementById("myDeleteSelectedButton").addEventListener("click",()=>{if(confirm("선택 상품을 현재 목록에서 삭제할까요?"))remove([...state.selected]);});
     document.getElementById("myMoveWishlistButton").addEventListener("click",()=>move("wishlist"));
     document.getElementById("myMoveCompareButton").addEventListener("click",()=>move("compare"));
-    document.getElementById("myClearTabButton").addEventListener("click",()=>{if(confirm(`${labels[state.tab]} 전체를 비울까요?`)){write(state.tab,[]);state.selected.clear();render();}});
-    document.getElementById("myResetAllButton").addEventListener("click",()=>{if(confirm("모든 쇼핑 활동을 초기화할까요?")){Object.keys(KEYS).forEach(tab=>localStorage.removeItem(KEYS[tab]));state.selected.clear();render();}});
+    document.getElementById("myClearTabButton").addEventListener("click",()=>{if(confirm(`${labels[state.tab]} 전체를 비울까요?`) && write(state.tab,[])){state.selected.clear();render();}});
+    document.getElementById("myResetAllButton").addEventListener("click",()=>{if(confirm("모든 쇼핑 활동을 초기화할까요?"))resetAllActivity();});
     document.getElementById("myExportButton").addEventListener("click",downloadCsv);
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});

@@ -291,7 +291,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
                 .contains("/css/my-activity.css?v=20260726.2")
-                .contains("/js/view/my-activity.js?v=20260726.2");
+                .contains("/js/view/my-activity.js?v=20260727.1");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -299,7 +299,13 @@ class FrontStorefrontResourceTest {
                 .contains("front-hidden-products")
                 .contains("downloadCsv")
                 .contains("navigator.clipboard.writeText")
-                .contains("addEventListener(\"storage\"");
+                .contains("addEventListener(\"storage\"")
+                .contains("Number.isSafeInteger(Number(item?.id))")
+                .contains("\"/images/product-placeholder.svg\"")
+                .contains("function bindImageFallbacks()")
+                .contains("function resetAllActivity()")
+                .contains("window.StorefrontState.remove(KEYS[tab])")
+                .doesNotContain("placehold.co");
         assertThat(css)
                 .contains(".my-grid.is-list")
                 .contains(".my-selection[hidden]")

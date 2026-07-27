@@ -533,9 +533,12 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("data-collection-type")
+                .contains("id=\"collectionSearchForm\" role=\"search\"")
                 .contains("id=\"collectionSearchInput\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
+                .contains("/css/product-collection.css?v=20260727.1")
+                .contains("/js/view/product-collection.js?v=20260727.1")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)
                 .contains("/front/collections/recommended")
@@ -545,11 +548,17 @@ class FrontStorefrontResourceTest {
                 .contains("page: state.page")
                 .contains("size: state.size")
                 .contains("상품 더보기")
+                .contains("productController?.abort()")
+                .contains("signal: productController.signal")
+                .contains("data-collection-retry")
+                .contains("storefront:storage-change")
+                .contains("function syncBookmarkButtons()")
                 .contains("fast-delivery");
         assertThat(css)
                 .contains(".collection-grid")
                 .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
-                .contains(".collection-product__detail");
+                .contains(".collection-product__detail")
+                .contains(".collection-state__retry");
     }
 
     @Test

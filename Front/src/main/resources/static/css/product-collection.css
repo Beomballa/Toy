@@ -313,6 +313,37 @@
     text-align: center;
 }
 
+.collection-state > div {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+}
+
+.collection-state strong,
+.collection-state p {
+    margin: 0;
+}
+
+.collection-state__retry {
+    min-width: 96px;
+    min-height: 40px;
+    margin-top: 6px;
+    padding: 0 16px;
+    border: 1px solid var(--collection-ink);
+    border-radius: 8px;
+    background: var(--collection-ink);
+    color: #fff;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.collection-state__retry:focus-visible {
+    outline: 2px solid var(--collection-accent);
+    outline-offset: 3px;
+}
+
 .collection-pagination {
     display: flex;
     justify-content: center;

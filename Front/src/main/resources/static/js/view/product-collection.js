@@ -48,10 +48,13 @@
         last: true
     };
     let currentProducts = [];
+    let productController = null;
+    let requestSequence = 0;
     const elements = {
         eyebrow: document.getElementById("collectionEyebrow"),
         title: document.getElementById("collectionTitle"),
         description: document.getElementById("collectionDescription"),
+        searchForm: document.getElementById("collectionSearchForm"),
         totalCount: document.getElementById("collectionTotalCount"),
         pageCount: document.getElementById("collectionPageCount"),
         searchInput: document.getElementById("collectionSearchInput"),
@@ -80,11 +83,9 @@
     }
 
     function bindEvents() {
-        elements.searchButton.addEventListener("click", applySearch);
-        elements.searchInput.addEventListener("keydown", (event) => {
-            if (event.key === "Enter") {
-                applySearch();
-            }
+        elements.searchForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            applySearch();
         });
         elements.sortSelect.addEventListener("change", () => {
             state.sort = elements.sortSelect.value;
@@ -102,6 +103,8 @@
         elements.previousButton.addEventListener("click", () => movePage(state.page - 1));
         elements.nextButton.addEventListener("click", () => movePage(state.page + 1));
         elements.grid.addEventListener("click", handleGridClick);
+        document.addEventListener("storefront:storage-change", handleStorageChange);
+        window.addEventListener("storage", handleStorageChange);
     }
 
     function applySearch() {
@@ -121,6 +124,9 @@
     }
 
     async function loadProducts() {
+        productController?.abort();
+        productController = new AbortController();
+        const activeRequest = ++requestSequence;
         elements.grid.setAttribute("aria-busy", "true");
         elements.grid.innerHTML = '<div class="collection-state"><p>상품을 불러오고 있습니다.</p></div>';
         const params = new URLSearchParams({
@@ -132,22 +138,36 @@
         });
         syncUrl();
         try {
-            const response = await fetch(`/api/front/products?${params}`);
+            const response = await fetch(`/api/front/products?${params}`, {
+                signal: productController.signal
+            });
             if (!response.ok) {
                 throw new Error("상품을 불러오지 못했습니다.");
             }
             const payload = await response.json();
+            if (activeRequest !== requestSequence) {
+                return;
+            }
             pagination = payload.pagination || pagination;
             state.page = Number(pagination.page || 0);
             renderProducts(Array.isArray(payload.products) ? payload.products : []);
         } catch (error) {
+            if (error.name === "AbortError" || activeRequest !== requestSequence) {
+                return;
+            }
             elements.grid.innerHTML = `
                 <div class="collection-state">
-                    <div><strong>상품을 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해주세요.</p></div>
+                    <div>
+                        <strong>상품을 불러오지 못했습니다.</strong>
+                        <p>잠시 후 다시 시도해주세요.</p>
+                        <button class="collection-state__retry" type="button" data-collection-retry>다시 시도</button>
+                    </div>
                 </div>`;
             elements.resultText.textContent = error.message;
         } finally {
-            elements.grid.setAttribute("aria-busy", "false");
+            if (activeRequest === requestSequence) {
+                elements.grid.setAttribute("aria-busy", "false");
+            }
         }
     }
 
@@ -209,6 +229,10 @@
     }
 
     function handleGridClick(event) {
+        if (event.target.closest("[data-collection-retry]")) {
+            loadProducts();
+            return;
+        }
         const button = event.target.closest("[data-bookmark-id]");
         if (!button) {
             return;
@@ -232,6 +256,25 @@
         button.classList.toggle("is-active", existingIndex < 0);
         button.setAttribute("aria-pressed", String(existingIndex < 0));
         button.querySelector("span").textContent = existingIndex < 0 ? "♥" : "♡";
+    }
+
+    function handleStorageChange(event) {
+        const key = event.detail?.key || event.key;
+        if (key !== BOOKMARK_PRODUCTS_KEY) {
+            return;
+        }
+        syncBookmarkButtons();
+    }
+
+    function syncBookmarkButtons() {
+        const bookmarks = bookmarkIds();
+        elements.grid.querySelectorAll("[data-bookmark-id]").forEach((button) => {
+            const bookmarked = bookmarks.has(Number(button.dataset.bookmarkId));
+            button.classList.toggle("is-active", bookmarked);
+            button.setAttribute("aria-pressed", String(bookmarked));
+            button.setAttribute("aria-label", `${button.closest(".collection-product")?.querySelector("h2")?.textContent || "상품"} 관심 상품 ${bookmarked ? "해제" : "추가"}`);
+            button.querySelector("span").textContent = bookmarked ? "♥" : "♡";
+        });
     }
 
     function bindImageFallbacks() {

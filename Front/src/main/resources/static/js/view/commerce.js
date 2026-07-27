@@ -258,6 +258,29 @@
         elements.form.elements.recipientPhone.value = elements.form.elements.buyerPhone.value;
     }
 
+    function showCompletedOrder(order, buyerPhone) {
+        elements.orderNumber.textContent = order.orderNumber;
+        elements.orderAmount.textContent = `${formatPrice(order.totalAmount)} · 주문 접수`;
+        try {
+            window.sessionStorage.setItem("grade-stock-last-order", JSON.stringify({
+                orderNumber: order.orderNumber,
+                phone: buyerPhone
+            }));
+        } catch (ignored) {
+            // 저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.
+        }
+        if (elements.orderLink) {
+            elements.orderLink.href = `/front/orders/${encodeURIComponent(order.orderNumber)}`;
+        }
+
+        // 완료된 주문서의 개인정보와 이전 장바구니 상태를 브라우저에 남기지 않는다.
+        elements.form.reset();
+        cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
+        renderCart();
+        elements.complete.hidden = false;
+        document.getElementById("completedOrderTitle")?.focus();
+    }
+
     function formatPhoneInput(input) {
         const digits = input.value.replace(/\D/g, "").slice(0, 11);
         input.value = digits.length <= 3
@@ -306,21 +329,8 @@
                 method: "POST",
                 body: JSON.stringify(body)
             });
-            elements.orderNumber.textContent = order.orderNumber;
-            elements.orderAmount.textContent = `${formatPrice(order.totalAmount)} · 주문 접수`;
             const buyerPhone = String(body.buyerPhone || "");
-            try {
-                window.sessionStorage.setItem("grade-stock-last-order", JSON.stringify({
-                    orderNumber: order.orderNumber,
-                    phone: buyerPhone
-                }));
-            } catch (ignored) {
-                // 저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.
-            }
-            if (elements.orderLink) {
-                elements.orderLink.href = `/front/orders/${encodeURIComponent(order.orderNumber)}`;
-            }
-            elements.complete.hidden = false;
+            showCompletedOrder(order, buyerPhone);
         } catch (error) {
             showToast(error.message);
             elements.submit.disabled = false;

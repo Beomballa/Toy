@@ -245,10 +245,16 @@ class FrontStorefrontResourceTest {
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
                 .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260727.1");
+                .contains("/js/view/commerce.js?v=20260727.2")
+                .contains("role=\"dialog\"")
+                .contains("aria-modal=\"true\"")
+                .contains("id=\"completedOrderTitle\"");
         assertThat(script)
                 .contains("window.sessionStorage.setItem(\"grade-stock-last-order\"")
                 .contains("저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.")
+                .contains("elements.form.reset()")
+                .contains("cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 }")
+                .contains("document.getElementById(\"completedOrderTitle\")?.focus()")
                 .contains("formatPhoneInput")
                 .contains("syncBuyerToRecipient")
                 .contains("elements.form.hidden = false")
@@ -265,7 +271,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"commerceStockSummary\"")
                 .contains("id=\"commerceTotalQuantity\"")
                 .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260727.1");
+                .contains("/js/view/commerce.js?v=20260727.2");
         assertThat(script)
                 .contains("request(\"/api/front/cart/items\", { method: \"DELETE\" })")
                 .contains("commerce-stock-badge")

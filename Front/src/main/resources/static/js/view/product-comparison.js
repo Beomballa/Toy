@@ -5,8 +5,9 @@
         wishlist: "front-bookmark-products"
     };
     const PLACEHOLDER = "/images/product-placeholder.svg";
-    const state = { products: [], mode: "BALANCE", sort: "SAVED", differenceOnly: false, candidateKeyword: "" };
+    const state = { products: [], mode: "BALANCE", sort: "SAVED", differenceOnly: false, candidateKeyword: "", failedCount: 0 };
     let requestSequence = 0;
+    let loadController = null;
     let toastTimer = null;
     const elements = {
         live: document.getElementById("comparisonLiveStatus"),
@@ -24,6 +25,8 @@
         candidateList: document.getElementById("comparisonCandidateList"),
         refresh: document.getElementById("comparisonRefreshButton"),
         empty: document.getElementById("comparisonEmpty"),
+        emptyDescription: document.getElementById("comparisonEmptyDescription"),
+        emptyRetry: document.getElementById("comparisonEmptyRetryButton"),
         emptyCandidate: document.getElementById("comparisonEmptyCandidateButton"),
         workspace: document.getElementById("comparisonWorkspace"),
         workspaceTitle: document.getElementById("comparisonWorkspaceTitle"),
@@ -45,26 +48,37 @@
     }
 
     async function loadProducts() {
+        loadController?.abort();
+        loadController = new AbortController();
         const sequence = ++requestSequence;
         const stored = requestedProducts();
         if (!stored.length) {
             state.products = [];
+            state.failedCount = 0;
             render();
             return;
         }
         showLoading();
         const results = await Promise.allSettled(stored.slice(0, 3).map(async (item) => {
-            const response = await fetch(`/api/front/products/${Number(item.id)}`);
+            const response = await fetch(`/api/front/products/${Number(item.id)}`, {
+                signal: loadController.signal
+            });
             if (!response.ok) throw new Error("상품 조회 실패");
             return response.json();
         }));
         if (sequence !== requestSequence) return;
-        state.products = results.map((result, index) => result.status === "fulfilled" ? result.value : stored[index]).filter(Boolean);
-        writeProducts(KEYS.compare, state.products);
-        syncUrl("replace");
+        state.failedCount = results.filter((result) => result.status === "rejected").length;
+        state.products = results
+            .map((result, index) => result.status === "fulfilled"
+                ? result.value
+                : hasStoredSnapshot(stored[index]) ? stored[index] : null)
+            .filter(Boolean);
+        if (!state.failedCount) {
+            writeProducts(KEYS.compare, state.products);
+            syncUrl("replace");
+        }
         render();
-        const failed = results.filter((result) => result.status === "rejected").length;
-        announce(failed ? `${failed}개 상품은 저장된 정보를 표시합니다.` : "비교 상품의 최신 정보를 반영했습니다.");
+        announce(state.failedCount ? `${state.failedCount}개 상품의 최신 정보를 불러오지 못했습니다.` : "비교 상품의 최신 정보를 반영했습니다.");
     }
 
     function showLoading() {
@@ -73,6 +87,8 @@
         elements.table.setAttribute("aria-busy", "true");
         elements.table.innerHTML = '<div class="comparison-state">최신 상품 정보를 불러오는 중입니다.</div>';
         elements.optionTable.innerHTML = "";
+        elements.refresh.disabled = true;
+        elements.refresh.setAttribute("aria-busy", "true");
     }
 
     function render() {
@@ -83,14 +99,25 @@
         syncMetrics(products);
         renderCandidates();
         if (!enough) {
-            elements.result.textContent = products.length ? "상품을 하나 더 추가해 주세요." : "비교 상품이 없습니다.";
+            elements.emptyDescription.textContent = state.failedCount
+                ? `${state.failedCount}개 상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.`
+                : "최근 본 상품이나 관심 상품에서 최대 3개까지 선택할 수 있습니다.";
+            elements.emptyRetry.hidden = state.failedCount === 0;
+            elements.result.textContent = state.failedCount
+                ? "일부 상품 조회에 실패했습니다."
+                : products.length ? "상품을 하나 더 추가해 주세요." : "비교 상품이 없습니다.";
+            elements.refresh.disabled = false;
+            elements.refresh.removeAttribute("aria-busy");
             return;
         }
+        elements.emptyRetry.hidden = true;
         renderRecommendation(products);
         renderTable(products);
         renderOptions(products);
         elements.result.textContent = `${products.length}개 상품의 최신 가격, 재고, 옵션을 비교합니다.`;
         elements.table.setAttribute("aria-busy", "false");
+        elements.refresh.disabled = false;
+        elements.refresh.removeAttribute("aria-busy");
         document.title = `${products.length}개 상품 비교 | Grade Stock`;
     }
 
@@ -328,6 +355,7 @@
         elements.candidateClose.addEventListener("click", closeCandidates);
         elements.candidateSearch.addEventListener("input", () => { state.candidateKeyword = elements.candidateSearch.value; renderCandidates(); });
         elements.refresh.addEventListener("click", loadProducts);
+        elements.emptyRetry.addEventListener("click", loadProducts);
         elements.copy.addEventListener("click", copySummary);
         elements.csv.addEventListener("click", exportCsv);
         elements.link.addEventListener("click", () => copyText(location.href, "공유 링크를 복사했습니다."));
@@ -370,7 +398,16 @@
     }
 
     function readProducts(key) {
-        try { const value = JSON.parse(localStorage.getItem(key) || "[]"); return Array.isArray(value) ? value.filter((item) => item?.id) : []; } catch (error) { return []; }
+        try {
+            const value = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(value)
+                ? value
+                    .filter((item) => Number.isSafeInteger(Number(item?.id)) && Number(item.id) > 0)
+                    .map((item) => ({ ...item, id: Number(item.id) }))
+                : [];
+        } catch (error) {
+            return [];
+        }
     }
 
     function writeProducts(key, products) {
@@ -387,6 +424,7 @@
         return items.filter((item, index) => items.findIndex((source) => Number(source.id) === Number(item.id)) === index);
     }
 
+    function hasStoredSnapshot(product) { return Boolean(product?.name || product?.brand || product?.priceLabel); }
     function safeOptions(product) { return Array.isArray(product?.options) ? product.options : []; }
     function range(values) { return values.length ? Math.max(...values) - Math.min(...values) : 0; }
     function normalized(value, values) { const min = Math.min(...values); const gap = Math.max(...values) - min; return gap ? (value - min) / gap * 100 : 100; }

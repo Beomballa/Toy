@@ -2427,7 +2427,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentSavedClearButton\"")
                 .contains("id=\"contentSavedExpandButton\"")
                 .contains("id=\"contentSavedUtilityCount\"")
-                .contains("/js/view/content-list.js?v=20260723.2")
+                .contains("/js/view/content-list.js?v=20260727.1")
                 .contains("/css/storefront.css?v=20260723.4");
         assertThat(script)
                 .contains("fetch(`/api/front/content?${params}`")
@@ -2443,6 +2443,9 @@ class FrontStorefrontResourceTest {
                 .contains("summary.textContent = item.summary")
                 .contains("window.localStorage.getItem(RECENT_CONTENT_KEY)")
                 .contains("window.localStorage.removeItem(RECENT_CONTENT_KEY)")
+                .contains("function normalizeStoredContentItems(value, limit)")
+                .contains("Number.isSafeInteger(id)")
+                .contains("최근 읽은 콘텐츠를 비우지 못했습니다.")
                 .contains("front-bookmarked-content")
                 .contains("front-content-reading-progress")
                 .contains("window.addEventListener(\"storage\"")

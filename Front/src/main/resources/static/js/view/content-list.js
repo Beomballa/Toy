@@ -345,7 +345,7 @@
     function readRecentContents() {
         try {
             const value = JSON.parse(window.localStorage.getItem(RECENT_CONTENT_KEY) || "[]");
-            return Array.isArray(value) ? value.slice(0, 6) : [];
+            return normalizeStoredContentItems(value, 6);
         } catch (error) {
             return [];
         }
@@ -355,7 +355,8 @@
         try {
             window.localStorage.removeItem(RECENT_CONTENT_KEY);
         } catch (error) {
-            // Storage can be unavailable in private browsing mode.
+            announce("최근 읽은 콘텐츠를 비우지 못했습니다.");
+            return;
         }
         renderRecentContents();
         announce("최근 읽은 콘텐츠를 비웠습니다.");
@@ -364,17 +365,24 @@
     function readBookmarks() {
         try {
             const value = JSON.parse(window.localStorage.getItem(BOOKMARKED_CONTENT_KEY) || "[]");
-            if (!Array.isArray(value)) return [];
-            const seen = new Set();
-            return value.filter((item) => {
-                const id = Number(item?.id);
-                if (!Number.isInteger(id) || id <= 0 || seen.has(id)) return false;
-                seen.add(id);
-                return true;
-            }).slice(0, 50);
+            return normalizeStoredContentItems(value, 50);
         } catch (error) {
             return [];
         }
+    }
+
+    function normalizeStoredContentItems(value, limit) {
+        if (!Array.isArray(value)) return [];
+        const seen = new Set();
+        return value
+            .filter((item) => {
+                const id = Number(item?.id);
+                if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id)) return false;
+                seen.add(id);
+                return true;
+            })
+            .map((item) => ({ ...item, id: Number(item.id) }))
+            .slice(0, limit);
     }
 
     function readReadingProgress() {

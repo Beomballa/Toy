@@ -214,14 +214,22 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"copyOrderNumberButton\"")
                 .contains("id=\"copyTrackingButton\"")
                 .contains("id=\"printOrderButton\"")
-                .contains("/js/view/order-lookup.js?v=20260726.2");
+                .contains("/css/commerce.css?v=20260727.1")
+                .contains("/js/view/order-lookup.js?v=20260727.1");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
                 .contains("JSON.stringify({ orderNumber, phone })")
                 .contains("grade-stock-last-order")
                 .contains("navigator.clipboard.writeText")
                 .contains("window.print()")
-                .contains("order.statusStep");
+                .contains("order.statusStep")
+                .contains("lookupController?.abort()")
+                .contains("signal: lookupController.signal")
+                .contains("function clearOrderResult()")
+                .contains("document.getElementById(\"orderDelivery\").replaceChildren()")
+                .contains("window.history.replaceState(null, \"\", \"/front/orders\")")
+                .contains("\"/images/product-placeholder.svg\"")
+                .doesNotContain("placehold.co");
         assertThat(css)
                 .contains(".order-result__grid")
                 .contains(".order-progress li.is-current");

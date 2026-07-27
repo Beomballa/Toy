@@ -8,6 +8,8 @@
     const initialOrderNumber = document.body.dataset.orderNumber || "";
     let currentOrder = null;
     let toastTimer = null;
+    let lookupController = null;
+    let lookupSequence = 0;
 
     function escapeMarkup(value) {
         return String(value ?? "")
@@ -22,8 +24,8 @@
         return `${Number(value || 0).toLocaleString("ko-KR")}원`;
     }
 
-    function fallbackImage(name) {
-        return `https://placehold.co/180x180/f4f4f4/999?text=${encodeURIComponent(String(name || "GS").slice(0, 10))}`;
+    function fallbackImage() {
+        return "/images/product-placeholder.svg";
     }
 
     function showToast(message) {
@@ -61,16 +63,18 @@
     }
 
     async function lookup(orderNumber, phone) {
+        lookupController?.abort();
+        lookupController = new AbortController();
+        const activeRequest = ++lookupSequence;
+        clearOrderResult();
         error.hidden = true;
-        const button = form.querySelector("button");
-        button.disabled = true;
-        button.setAttribute("aria-busy", "true");
-        button.querySelector("span").textContent = "조회 중";
+        setLookupBusy(true);
         try {
             const response = await fetch("/api/front/orders/lookup", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ orderNumber, phone })
+                body: JSON.stringify({ orderNumber, phone }),
+                signal: lookupController.signal
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
@@ -79,6 +83,7 @@
                     : "주문 정보를 확인할 수 없습니다.";
                 throw new Error(payload.message || fallback);
             }
+            if (activeRequest !== lookupSequence) return;
             render(payload);
             try {
                 window.history.replaceState(null, "", `/front/orders/${encodeURIComponent(payload.orderNumber)}`);
@@ -86,14 +91,37 @@
                 // URL 갱신이 제한된 환경에서도 조회 결과는 유지한다.
             }
         } catch (requestError) {
-            result.hidden = true;
+            if (requestError.name === "AbortError" || activeRequest !== lookupSequence) return;
+            clearOrderResult();
             error.textContent = requestError.message;
             error.hidden = false;
         } finally {
-            button.disabled = false;
-            button.removeAttribute("aria-busy");
-            button.querySelector("span").textContent = "주문 조회";
+            if (activeRequest === lookupSequence) {
+                setLookupBusy(false);
+            }
         }
+    }
+
+    function setLookupBusy(busy) {
+        const button = form.querySelector("button");
+        button.disabled = busy;
+        button.toggleAttribute("aria-busy", busy);
+        button.querySelector("span").textContent = busy ? "조회 중" : "주문 조회";
+    }
+
+    function clearOrderResult() {
+        currentOrder = null;
+        result.hidden = true;
+        document.getElementById("orderResultNumber").textContent = "";
+        document.getElementById("orderResultDate").textContent = "";
+        document.getElementById("orderResultStatus").textContent = "";
+        document.getElementById("orderTotalAmount").textContent = "";
+        document.getElementById("orderItemSummary").textContent = "";
+        document.getElementById("orderItems").replaceChildren();
+        document.getElementById("orderDelivery").replaceChildren();
+        document.getElementById("orderHistory").replaceChildren();
+        document.getElementById("orderTracking").hidden = true;
+        document.getElementById("orderTrackingText").textContent = "";
     }
 
     function render(order) {
@@ -150,11 +178,17 @@
         event.target.value = formatPhone(event.target.value);
     });
     document.getElementById("clearOrderLookupButton").addEventListener("click", () => {
+        lookupController?.abort();
+        lookupSequence += 1;
+        setLookupBusy(false);
         form.reset();
-        if (initialOrderNumber) form.elements.orderNumber.value = initialOrderNumber;
-        currentOrder = null;
-        result.hidden = true;
+        clearOrderResult();
         error.hidden = true;
+        try {
+            window.history.replaceState(null, "", "/front/orders");
+        } catch (ignored) {
+            // URL 갱신이 제한된 환경에서도 입력과 조회 결과는 초기화한다.
+        }
         form.elements.orderNumber.focus();
     });
     document.getElementById("loadRecentOrderButton").addEventListener("click", () => {

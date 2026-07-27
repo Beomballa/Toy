@@ -1,0 +1,62 @@
+import { expect, test } from "@playwright/test";
+
+const orderResponse = (orderNumber, recipientName) => ({
+  orderNumber,
+  buyerName: "홍**",
+  totalAmount: 75000,
+  status: "ORDERED",
+  statusLabel: "주문 접수",
+  statusStep: 1,
+  orderedAt: "2026.07.27 10:00",
+  deliveryCompany: null,
+  trackingNumber: null,
+  delivery: {
+    recipientName,
+    recipientPhone: "010-****-5678",
+    postalCode: "06236",
+    address1: "서울시 강남구 테스트로",
+    address2: "101호",
+    deliveryRequest: "문 앞"
+  },
+  items: [{
+    productId: 12,
+    productName: "반스 올드스쿨 블랙",
+    unitPrice: 75000,
+    quantity: 1,
+    lineAmount: 75000,
+    thumbnailUrl: null
+  }],
+  statusHistory: [{ statusLabel: "주문 접수", changedAt: "2026.07.27 10:00" }]
+});
+
+test("주문조회는 최신 응답만 표시하고 초기화 시 개인정보 DOM을 제거한다", async ({ page }) => {
+  await page.route("**/api/front/orders/lookup", async (route) => {
+    const body = route.request().postDataJSON();
+    if (body.orderNumber === "GSSLOW") {
+      await new Promise((resolve) => setTimeout(resolve, 250));
+      await route.fulfill({ json: orderResponse("GSSLOW", "느린수령인") });
+      return;
+    }
+    await route.fulfill({ json: orderResponse("GSFAST", "최신수령인") });
+  });
+
+  await page.goto("/front/orders");
+  const orderNumber = page.locator('[name="orderNumber"]');
+  const phone = page.locator('[name="phone"]');
+
+  await orderNumber.fill("GSSLOW");
+  await phone.fill("010-1234-5678");
+  await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
+  await orderNumber.fill("GSFAST");
+  await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
+
+  await expect(page.locator("#orderResultNumber")).toHaveText("GSFAST");
+  await expect(page.locator("#orderDelivery")).toContainText("최신수령인");
+  await expect(page.locator("body")).not.toContainText("느린수령인");
+
+  await page.locator("#clearOrderLookupButton").click();
+  await expect(page.locator("#orderResult")).toBeHidden();
+  await expect(page.locator("#orderDelivery")).toBeEmpty();
+  await expect(page.locator("body")).not.toContainText("최신수령인");
+  await expect(page).toHaveURL(/\/front\/orders$/);
+});

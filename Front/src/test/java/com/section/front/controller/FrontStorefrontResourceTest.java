@@ -2354,7 +2354,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentDetailSavedListLink\"")
                 .contains("/front/content#contentSavedBoard")
                 .contains("data-content-return-link")
-                .contains("/js/view/content-detail.js?v=20260724.1")
+                .contains("/js/view/content-detail.js?v=20260727.1")
                 .contains("/css/storefront.css?v=20260724.1");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`)")
@@ -2365,6 +2365,9 @@ class FrontStorefrontResourceTest {
                 .contains("method: \"POST\"")
                 .contains("front-content-visitor-key")
                 .contains("window.crypto?.randomUUID?.()")
+                .contains("memoryVisitorKey ||= createVisitorKey()")
+                .contains("function isValidVisitorKey(value)")
+                .contains("/^[A-Za-z0-9-]{16,64}$/")
                 .contains("front-recent-content")
                 .contains("front-bookmarked-content")
                 .contains("front-content-reading-progress")

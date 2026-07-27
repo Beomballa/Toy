@@ -14,6 +14,7 @@
     let lastSavedProgress = -1;
     let scrollFrame = null;
     let reactionRequestInFlight = false;
+    let memoryVisitorKey = null;
 
     const elements = {
         article: document.getElementById("contentDetailArticle"),
@@ -229,14 +230,23 @@
 
     function resolveVisitorKey() {
         try {
-            const saved = window.localStorage.getItem(CONTENT_VISITOR_KEY);
-            if (saved) return saved;
-            const generated = window.crypto?.randomUUID?.() || fallbackVisitorKey();
+            const saved = String(window.localStorage.getItem(CONTENT_VISITOR_KEY) || "").trim();
+            if (isValidVisitorKey(saved)) return saved;
+            const generated = createVisitorKey();
             window.localStorage.setItem(CONTENT_VISITOR_KEY, generated);
             return generated;
         } catch (error) {
-            return fallbackVisitorKey();
+            memoryVisitorKey ||= createVisitorKey();
+            return memoryVisitorKey;
         }
+    }
+
+    function createVisitorKey() {
+        return window.crypto?.randomUUID?.() || fallbackVisitorKey();
+    }
+
+    function isValidVisitorKey(value) {
+        return /^[A-Za-z0-9-]{16,64}$/.test(value);
     }
 
     function fallbackVisitorKey() {

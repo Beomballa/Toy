@@ -32,9 +32,10 @@ let CommonJS = {
     bindMainLogoNavigation: function (targetUrl) {
         const logo = document.getElementById('main-logo');
         if (!logo) return;
+        const safeTargetUrl = this.normalizeAdminReturnPath(targetUrl, '/admin');
         // 로고 이동은 화면별 문맥이 달라 addEventListener 누적보다 onclick 재할당이 안전합니다.
         logo.onclick = () => {
-            window.location.href = targetUrl;
+            window.location.href = safeTargetUrl;
         };
     },
 
@@ -282,6 +283,24 @@ let CommonJS = {
     normalizeOptionalText: function(value) {
         const normalized = this.normalizeRequiredText(value);
         return normalized ? normalized : null;
+    },
+
+    normalizeAdminReturnPath: function(value, fallbackPath = '/admin') {
+        const fallback = this.normalizeOptionalText(fallbackPath) || '';
+        const candidate = this.normalizeOptionalText(value);
+        if (!candidate || /[\u0000-\u001F\u007F\\]/.test(candidate)) {
+            return fallback;
+        }
+        try {
+            const parsed = new URL(candidate, window.location.origin);
+            const isAdminPath = parsed.pathname === '/admin' || parsed.pathname.startsWith('/admin/');
+            if (parsed.origin !== window.location.origin || !isAdminPath) {
+                return fallback;
+            }
+            return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } catch (ignored) {
+            return fallback;
+        }
     },
 
     renderListMeta: function(config = {}) {
@@ -575,8 +594,13 @@ let CommonJS = {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-    if (typeof CommonJS !== 'undefined' && CommonJS && typeof CommonJS.init === 'function') {
-        CommonJS.init();
-    }
-});
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof CommonJS !== 'undefined' && CommonJS && typeof CommonJS.init === 'function') {
+            CommonJS.init();
+        }
+    });
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CommonJS;
+}

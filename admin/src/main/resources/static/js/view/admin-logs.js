@@ -89,7 +89,7 @@ const AdminLogPage = {
         this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'))?.toString() || '';
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.returnTo = params.get('returnTo') || '/admin/settings/logs';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '/admin/settings/logs');
         this.state.source = params.get('source') || '';
         document.getElementById('logPageSize').value = String(this.state.size);
         this.syncQuickFilterState();

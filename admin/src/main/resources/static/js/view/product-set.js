@@ -19,7 +19,7 @@ const ProductCreate = {
         this.brands = brands || [];
         this.categories = categories || [];
         const params = new URLSearchParams(window.location.search);
-        this.returnTo = params.get('returnTo') || '/admin/products';
+        this.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '/admin/products');
         this.source = params.get('source') || '';
 
         // 선택박스 렌더링

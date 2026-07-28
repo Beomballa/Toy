@@ -30,7 +30,7 @@ const NoticeDetailPage = {
     readBootstrapState() {
         const bootstrapState = window.noticeDetailBootstrap || {};
         this.state.noticeNo = this.normalizeNoticeNo(bootstrapState.noticeNo);
-        this.state.returnTo = CommonJS.normalizeOptionalText(bootstrapState.returnTo) || '/admin/settings/notices';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(bootstrapState.returnTo, '/admin/settings/notices');
         this.state.source = CommonJS.normalizeOptionalText(bootstrapState.source) || '';
         this.syncReturnLinks();
         this.syncReturnContextMeta();

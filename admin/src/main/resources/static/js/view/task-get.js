@@ -36,7 +36,7 @@ const TaskDetailPage = {
     readBootstrapState() {
         const bootstrapState = window.taskDetailBootstrap || {};
         this.state.taskNo = this.normalizePositiveNumber(bootstrapState.taskNo);
-        this.state.returnTo = CommonJS.normalizeOptionalText(bootstrapState.returnTo) || '/admin/settings/tasks';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(bootstrapState.returnTo, '/admin/settings/tasks');
         this.state.source = CommonJS.normalizeOptionalText(bootstrapState.source) || '';
         this.syncReturnLinks();
         this.syncReturnContextMeta();

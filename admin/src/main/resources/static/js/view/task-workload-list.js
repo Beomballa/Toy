@@ -62,7 +62,7 @@ const TaskWorkloadList = {
         this.state.adminNo = this.normalizeOptionalPositiveNumber(params.get('adminNo'))?.toString() || '';
         this.state.focusAdminNo = this.normalizeOptionalPositiveNumber(params.get('focusAdminNo'))?.toString() || '';
         this.state.source = params.get('source') || '';
-        this.state.returnTo = params.get('returnTo') || '';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '');
 
         document.getElementById('taskWorkloadKeyword').value = this.state.keyword;
         document.getElementById('taskWorkloadPriority').value = this.state.priority;

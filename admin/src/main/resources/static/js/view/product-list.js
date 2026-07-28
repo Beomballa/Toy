@@ -1131,7 +1131,7 @@ const ProductList = {
         this.state.searchKeyword = CommonJS.normalizeOptionalText(params.get('searchKeyword')) || '';
         this.state.orderType = this._normalizeOrderType(params.get('orderType'));
         this.state.source = params.get('source') || '';
-        this.state.returnTo = params.get('returnTo') || '';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '');
     },
 
     _syncFilterInputs() {

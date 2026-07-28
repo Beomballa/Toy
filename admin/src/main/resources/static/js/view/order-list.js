@@ -621,7 +621,7 @@ const OrderList = {
             endDate: params.get('endDate') || '',
             searchKeyword: (params.get('searchKeyword') || '').trim().replace(/\s+/g, ' '),
             source: params.get('source') || '',
-            returnTo: params.get('returnTo') || ''
+            returnTo: CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '')
         };
     },
 

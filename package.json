@@ -2,6 +2,7 @@
   "name": "grade-stock-ui-tests",
   "private": true,
   "scripts": {
+    "test:admin-js": "node --test admin/src/test/js/*.test.cjs",
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots"
   },

@@ -1893,7 +1893,7 @@ const ContentList = {
         this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
         const productLinked = this.normalizeYnFilterValue(params.get('productLinked'));
         this.state.source = params.get('source') || '';
-        this.state.returnTo = params.get('returnTo') || '';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '');
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.productNo = this.normalizeOptionalPositiveNumber(params.get('productNo'));

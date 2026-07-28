@@ -18,7 +18,7 @@ const ProductUpdate = {
 
         const urlParams = new URLSearchParams(window.location.search);
         this.productNo = this.normalizeProductNo(urlParams.get('no'));
-        this.returnTo = CommonJS.normalizeOptionalText(urlParams.get('returnTo')) || '/admin/products';
+        this.returnTo = CommonJS.normalizeAdminReturnPath(urlParams.get('returnTo'), '/admin/products');
         this.source = CommonJS.normalizeOptionalText(urlParams.get('source')) || '';
 
         if (!this.isValidProductNo(this.productNo)) {

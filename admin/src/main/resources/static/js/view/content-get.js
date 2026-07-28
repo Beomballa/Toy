@@ -22,7 +22,10 @@ const ContentDetail = {
         this.state.boardType = ContentBoardConfig.normalizeBoardType(
             window.initialContentDetail?.boardType || params.get('boardType')
         );
-        this.state.returnTo = CommonJS.normalizeOptionalText(window.initialContentDetail?.returnTo || params.get('returnTo'));
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(
+            window.initialContentDetail?.returnTo || params.get('returnTo'),
+            ''
+        );
         this.state.source = CommonJS.normalizeOptionalText(window.initialContentDetail?.source || params.get('source')) || '';
 
         if (!this.isValidContentId(this.state.id)) {

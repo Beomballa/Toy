@@ -101,7 +101,7 @@ const MemberListPage = {
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.source = params.get('source') || '';
-        this.state.returnTo = params.get('returnTo') || '';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '');
         document.getElementById('memberPageSize').value = String(this.state.size);
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/members');
         CommonJS.renderSourceContextNotice({ noticeId: 'memberSourceContextNotice', source: this.state.source });

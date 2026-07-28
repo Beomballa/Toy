@@ -13,7 +13,10 @@ const TaskWorkloadDetail = {
         if (this.initialized) return;
         this.initialized = true;
         this.bootstrap.adminNo = this.normalizeTaskNo(this.bootstrap.adminNo);
-        this.bootstrap.returnTo = CommonJS.normalizeOptionalText(this.bootstrap.returnTo) || '/admin/settings/tasks/workloads';
+        this.bootstrap.returnTo = CommonJS.normalizeAdminReturnPath(
+            this.bootstrap.returnTo,
+            '/admin/settings/tasks/workloads'
+        );
         this.bootstrap.source = CommonJS.normalizeOptionalText(this.bootstrap.source) || '';
         const modalEl = document.getElementById('taskReassignModal');
         if (modalEl) {

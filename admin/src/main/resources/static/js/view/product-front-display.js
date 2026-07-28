@@ -109,7 +109,7 @@ const ProductFrontDisplayList = {
                 : this.initialLowStockThreshold,
             sort: this.isValidSortValue(sort) ? sort : 'FEATURED',
             source: params.get('source') || '',
-            returnTo: params.get('returnTo') || ''
+            returnTo: CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '')
         };
     },
 

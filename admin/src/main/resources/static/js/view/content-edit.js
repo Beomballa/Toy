@@ -23,7 +23,7 @@ const ContentEdit = {
         this.initialBoardType = ContentBoardConfig.normalizeBoardType(
             document.getElementById('initialBoardType')?.value
         );
-        this.returnTo = CommonJS.normalizeOptionalText(document.getElementById('contentReturnTo')?.value) || '';
+        this.returnTo = CommonJS.normalizeAdminReturnPath(document.getElementById('contentReturnTo')?.value, '');
         this.source = CommonJS.normalizeOptionalText(document.getElementById('contentSource')?.value) || '';
         const boardTypeSelect = document.getElementById('boardType');
 

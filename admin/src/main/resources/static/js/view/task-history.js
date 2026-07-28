@@ -85,7 +85,7 @@ const TaskHistoryPage = {
         this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.returnTo = params.get('returnTo') || '/admin/settings/tasks';
+        this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '/admin/settings/tasks');
         this.state.source = params.get('source') || '';
         document.getElementById('taskHistoryPageSize').value = String(this.state.size);
         this.syncQuickFilterState();

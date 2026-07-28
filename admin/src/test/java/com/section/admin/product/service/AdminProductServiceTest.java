@@ -39,6 +39,8 @@ import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.FrontProductDisplayRepository;
+import com.section.common.commerce.repository.FrontCartItemRepository;
+import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.commerce.service.ProductService;
@@ -84,6 +86,10 @@ class AdminProductServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private FrontProductDisplayRepository frontProductDisplayRepository;
+    @Mock
+    private FrontCartItemRepository frontCartItemRepository;
+    @Mock
+    private OrderItemRepository orderItemRepository;
     @Mock
     private ProductService productService;
     @Mock
@@ -246,6 +252,65 @@ class AdminProductServiceTest {
     }
 
     @Test
+    @DisplayName("상품 수정은 기존 옵션 식별자를 유지한 채 값을 갱신한다")
+    void updateProductInfoPreservesExistingOptionIdentity() {
+        ProductOption currentOption = ProductOption.builder()
+                .id(41L)
+                .productNo(1L)
+                .optionName("270")
+                .stockCnt(2)
+                .additionalPrice(0)
+                .build();
+        ProductUpdateRequest.ProductOptionUpdateRequest option = new ProductUpdateRequest.ProductOptionUpdateRequest();
+        option.setOptionNo(41L);
+        option.setOptionName("275");
+        option.setStockCnt(8);
+        option.setAdditionalPrice(3000);
+        ProductUpdateRequest request = productUpdateRequest(List.of(option));
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(activeProduct()));
+        when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of(currentOption));
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.empty());
+        stubActiveBrandAndCategory();
+
+        adminProductService.updateProductInfo(request);
+
+        assertEquals(41L, currentOption.getId());
+        assertEquals("275", currentOption.getOptionName());
+        assertEquals(8, currentOption.getStockCnt());
+        assertEquals(3000, currentOption.getAdditionalPrice());
+        verify(productOptionRepository).deleteAll(List.of());
+        verify(productOptionRepository).saveAll(List.of());
+    }
+
+    @Test
+    @DisplayName("장바구니에서 사용 중인 옵션 삭제는 충돌 오류로 거부한다")
+    void updateProductInfoRejectsRemovingReferencedOption() {
+        ProductOption currentOption = ProductOption.builder()
+                .id(42L)
+                .productNo(1L)
+                .optionName("280")
+                .stockCnt(2)
+                .additionalPrice(0)
+                .build();
+        ProductUpdateRequest request = productUpdateRequest(List.of());
+
+        when(productRepository.findById(1L)).thenReturn(Optional.of(activeProduct()));
+        when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of(currentOption));
+        when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.empty());
+        when(frontCartItemRepository.existsByOptionNo(42L)).thenReturn(true);
+        stubActiveBrandAndCategory();
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> adminProductService.updateProductInfo(request)
+        );
+
+        assertEquals(ErrorCode.PRODUCT_OPTION_IN_USE, exception.getErrorCode());
+        verify(productOptionRepository, never()).deleteAll(any());
+    }
+
+    @Test
     @DisplayName("대표 노출 상품을 비활성 상태로 수정하면 featured 순번을 해제하고 이력 요약에 반영한다")
     void updateProductInfoDemotesFeaturedDisplayWhenStatusBecomesInactive() {
         ProductUpdateRequest request = new ProductUpdateRequest();
@@ -275,7 +340,7 @@ class AdminProductServiceTest {
                 .status(ProductStatus.ACTIVE.name())
                 .releasePrice(259000)
                 .build()));
-        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of());
+        when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of());
         when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.of(currentDisplay));
         when(frontProductDisplayRepository.save(any(FrontProductDisplay.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -1184,8 +1249,8 @@ class AdminProductServiceTest {
                 .status("ACTIVE")
                 .releasePrice(1000)
                 .build()));
-        when(productOptionRepository.findByProductId(1L)).thenReturn(List.of(
-                ProductOption.builder().productNo(1L).optionName("280").stockCnt(3).additionalPrice(5000).build()
+        when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of(
+                ProductOption.builder().id(81L).productNo(1L).optionName("280").stockCnt(3).additionalPrice(5000).build()
         ));
         when(brandRepository.findById(1L)).thenReturn(Optional.of(
                 Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
@@ -1460,5 +1525,43 @@ class AdminProductServiceTest {
         assertEquals("발매가순 · 검색=뉴발란스 993 · 상태=ACTIVE", response.resultMeta().querySignature());
         assertEquals("기본 필터 기준", response.productStats().contextLabel());
         assertEquals("발매가순 · 검색=뉴발란스 993", response.productStats().querySignature());
+    }
+
+    private ProductUpdateRequest productUpdateRequest(List<ProductUpdateRequest.ProductOptionUpdateRequest> options) {
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setProductNo(1L);
+        request.setBrandNo(1L);
+        request.setCategoryNo(2L);
+        request.setNameKo("기존 상품");
+        request.setModelNum("MODEL");
+        request.setReleasePrice(1000);
+        request.setStatus(ProductStatus.ACTIVE.name());
+        request.setOptions(options);
+        return request;
+    }
+
+    private Product activeProduct() {
+        return Product.builder()
+                .id(1L)
+                .brandNo(1L)
+                .categoryNo(2L)
+                .nameKo("기존 상품")
+                .modelNum("MODEL")
+                .releasePrice(1000)
+                .status(ProductStatus.ACTIVE.name())
+                .build();
+    }
+
+    private void stubActiveBrandAndCategory() {
+        when(brandRepository.findById(1L)).thenReturn(Optional.of(
+                Brand.builder().brandNo(1L).nameKo("나이키").isActive("Y").build()
+        ));
+        when(categoryRepository.findById(2L)).thenReturn(Optional.of(
+                Category.builder().categoryNo(2L).parentNo(1L).name("러닝화").depth(2).isActive("Y").build()
+        ));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(
+                Category.builder().categoryNo(1L).name("신발").depth(1).isActive("Y").build()
+        ));
+        when(categoryRepository.existsByParentNo(2L)).thenReturn(false);
     }
 }

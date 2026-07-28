@@ -15,6 +15,10 @@ public interface ProductOptionRepository extends JpaRepository<ProductOption,Lon
     @Query("SELECT po FROM ProductOption po WHERE po.productNo =:productId")
     List<ProductOption> findByProductId(Long productId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT po FROM ProductOption po WHERE po.productNo = :productId ORDER BY po.id ASC")
+    List<ProductOption> findByProductIdForUpdate(@Param("productId") Long productId);
+
     List<ProductOption> findAllByProductNoInOrderByProductNoAscOptionNameAsc(List<Long> productNos);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

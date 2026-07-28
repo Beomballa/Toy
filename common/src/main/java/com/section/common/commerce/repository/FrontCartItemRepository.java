@@ -13,6 +13,7 @@ public interface FrontCartItemRepository extends JpaRepository<FrontCartItem, Lo
     List<FrontCartItem> findAllByCartNoOrderByIdDesc(Long cartNo);
     Optional<FrontCartItem> findByCartNoAndProductNoAndOptionNo(Long cartNo, Long productNo, Long optionNo);
     Optional<FrontCartItem> findByIdAndCartNo(Long id, Long cartNo);
+    boolean existsByOptionNo(Long optionNo);
 
     @Modifying
     @Query("DELETE FROM FrontCartItem fci WHERE fci.cartNo = :cartNo")

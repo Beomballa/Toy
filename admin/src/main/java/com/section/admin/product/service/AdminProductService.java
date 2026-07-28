@@ -49,6 +49,8 @@ import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.CategoryRepository;
 import com.section.common.commerce.repository.FrontProductDisplayRepository;
+import com.section.common.commerce.repository.FrontCartItemRepository;
+import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.ProductChangeHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -62,9 +64,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -84,6 +88,8 @@ public class AdminProductService {
     private final BrandRepository brandRepository;
     private final CategoryRepository categoryRepository;
     private final FrontProductDisplayRepository frontProductDisplayRepository;
+    private final FrontCartItemRepository frontCartItemRepository;
+    private final OrderItemRepository orderItemRepository;
     private final AdminUserRepository adminUserRepository;
     private final AdminSettingsService adminSettingsService;
 
@@ -205,7 +211,7 @@ public class AdminProductService {
     public void updateProductInfo(ProductUpdateRequest reqDto) {
         Product product = productRepository.findById(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
-        List<ProductOption> currentOptions = productOptionRepository.findByProductId(product.getId());
+        List<ProductOption> currentOptions = productOptionRepository.findByProductIdForUpdate(product.getId());
         FrontProductDisplay currentDisplay = frontProductDisplayRepository.findByProductNo(product.getId()).orElse(null);
         String updateSummary = buildUpdateSummary(product, currentOptions, currentDisplay, reqDto);
         validateBrandAndCategory(reqDto.getBrandNo(), reqDto.getCategoryNo());
@@ -228,22 +234,7 @@ public class AdminProductService {
             product.changeStatus(parseProductStatus(reqDto.getStatus()));
         }
 
-        // 옵션 수정: 기존 옵션 삭제 후 재등록
-        productOptionRepository.deleteByProductNo(product.getId());
-
-        if (reqDto.getOptions() != null && !reqDto.getOptions().isEmpty()) {
-            List<ProductOption> productOptions = reqDto.getOptions().stream()
-                    .filter(opt -> opt.getOptionName() != null && !opt.getOptionName().isBlank())
-                    .map(optDto -> ProductOption.builder()
-                            .productNo(product.getId())
-                            .optionName(optDto.normalizeOptionName())
-                            .stockCnt(optDto.getStockCnt())
-                            .additionalPrice(optDto.getAdditionalPrice())
-                            .build())
-                    .toList();
-
-            productOptionRepository.saveAll(productOptions);
-        }
+        synchronizeProductOptions(product.getId(), currentOptions, reqDto.getOptions());
 
         synchronizeFrontDisplayForStatus(product);
 
@@ -259,6 +250,59 @@ public class AdminProductService {
                         .mapToLong(Integer::longValue)
                         .sum()
         );
+    }
+
+    private void synchronizeProductOptions(
+            Long productNo,
+            List<ProductOption> currentOptions,
+            List<ProductUpdateRequest.ProductOptionUpdateRequest> requestedOptions
+    ) {
+        Map<Long, ProductOption> currentById = currentOptions.stream()
+                .collect(Collectors.toMap(ProductOption::getId, option -> option));
+        Map<String, ProductOption> currentByName = currentOptions.stream()
+                .collect(Collectors.toMap(ProductOption::getOptionName, option -> option));
+        Set<Long> retainedOptionIds = new HashSet<>();
+        List<ProductOption> newOptions = new ArrayList<>();
+
+        for (ProductUpdateRequest.ProductOptionUpdateRequest requested :
+                requestedOptions == null ? List.<ProductUpdateRequest.ProductOptionUpdateRequest>of() : requestedOptions) {
+            if (requested.getOptionName() == null || requested.getOptionName().isBlank()) {
+                continue;
+            }
+            String optionName = requested.normalizeOptionName();
+            ProductOption current = requested.getOptionNo() == null
+                    ? currentByName.get(optionName)
+                    : currentById.get(requested.getOptionNo());
+            if (requested.getOptionNo() != null && current == null) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+            if (current == null) {
+                newOptions.add(ProductOption.builder()
+                        .productNo(productNo)
+                        .optionName(optionName)
+                        .stockCnt(requested.getStockCnt())
+                        .additionalPrice(requested.getAdditionalPrice())
+                        .build());
+                continue;
+            }
+            if (!retainedOptionIds.add(current.getId())) {
+                throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
+            }
+            current.updateOption(optionName, requested.getStockCnt(), requested.getAdditionalPrice());
+        }
+
+        List<ProductOption> removedOptions = currentOptions.stream()
+                .filter(option -> !retainedOptionIds.contains(option.getId()))
+                .toList();
+        boolean referencedOptionExists = removedOptions.stream()
+                .map(ProductOption::getId)
+                .anyMatch(optionNo -> frontCartItemRepository.existsByOptionNo(optionNo)
+                        || orderItemRepository.existsByOptionNo(optionNo));
+        if (referencedOptionExists) {
+            throw new BusinessException(ErrorCode.PRODUCT_OPTION_IN_USE);
+        }
+        productOptionRepository.deleteAll(removedOptions);
+        productOptionRepository.saveAll(newOptions);
     }
 
     /**

@@ -17,6 +17,7 @@ public enum ErrorCode {
 
     // Product & Commerce
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "P001", "존재하지 않는 상품입니다."),
+    PRODUCT_OPTION_IN_USE(HttpStatus.CONFLICT, "P002", "장바구니 또는 주문에서 사용 중인 옵션은 삭제할 수 없습니다."),
     BRAND_NOT_FOUND(HttpStatus.NOT_FOUND, "B001", "존재하지 않는 브랜드입니다."),
     BRAND_NAME_DUPLICATED(HttpStatus.BAD_REQUEST, "B002", "이미 사용 중인 브랜드명입니다."),
     CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "CA001", "존재하지 않는 카테고리입니다."),

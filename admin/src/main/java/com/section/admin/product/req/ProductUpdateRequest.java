@@ -57,6 +57,8 @@ public class ProductUpdateRequest {
     @Getter
     @Setter
     public static class ProductOptionUpdateRequest {
+        private Long optionNo;
+
         @NotBlank(message = "옵션명을 입력해주세요")
         @Size(max = 100, message = "옵션명은 100자 이내로 입력해주세요")
         private String optionName;

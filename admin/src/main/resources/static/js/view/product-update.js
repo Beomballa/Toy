@@ -131,7 +131,7 @@ const ProductUpdate = {
         tbody.innerHTML = '';
         if (data.options && data.options.length > 0) {
             data.options.forEach(opt => {
-                this.addOption(opt.optionName, opt.stockQty, opt.additionalPrice);
+                this.addOption(opt.optionName, opt.stockQty, opt.additionalPrice, opt.optionNo);
             });
         } else {
             this.showEmptyOptionMessage();
@@ -229,13 +229,13 @@ const ProductUpdate = {
         hint.classList.add('text-muted');
     },
 
-    addOption(name = '', qty = 0, addPrice = 0) {
+    addOption(name = '', qty = 0, addPrice = 0, persistedOptionNo = null) {
         this.optionCount++;
         const optionId = this.optionCount;
         const lowStockClass = qty < 10 ? 'text-danger fw-bold' : '';
 
         const optionHtml = `
-            <tr class="option-item" data-option-id="${optionId}">
+            <tr class="option-item" data-option-id="${optionId}" ${persistedOptionNo ? `data-option-no="${persistedOptionNo}"` : ''}>
                 <td>
                     <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" value="${name}" required>
                 </td>
@@ -360,7 +360,7 @@ const ProductUpdate = {
         }
 
         try {
-            // 수정 API는 옵션 삭제/재등록까지 같이 처리하므로 중복 요청을 먼저 막습니다.
+            // 상품과 옵션 식별자 갱신이 한 번만 반영되도록 중복 요청을 먼저 막습니다.
             this.isSubmitting = true;
             this.setSubmitDisabled(true);
             const response = await fetch('/api/admin/product/update', {
@@ -538,7 +538,13 @@ const ProductUpdate = {
             if (seenOptionNames.has(optionName)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
 
             seenOptionNames.add(optionName);
-            options.push({ optionName, stockCnt, additionalPrice });
+            const optionNo = Number(item.dataset.optionNo);
+            options.push({
+                optionNo: Number.isSafeInteger(optionNo) && optionNo > 0 ? optionNo : null,
+                optionName,
+                stockCnt,
+                additionalPrice
+            });
         }
 
         return { valid: true, options };

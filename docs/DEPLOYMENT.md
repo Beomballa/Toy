@@ -7,22 +7,19 @@
 - TLS를 종료하고 `X-Forwarded-*` 헤더를 전달하는 reverse proxy 또는 load balancer
 - 스키마가 반영된 DB와 배포 직전 백업
 
-운영 기본값은 `ddl-auto=none`입니다. DB 스키마는 배포 전에 별도로 반영해야 하며 운영에서 `JPA_DDL_AUTO=create`, `create-drop`, `update`를 사용하지 않습니다.
+운영 기본값은 `ddl-auto=none`입니다. DB 스키마는 배포 전에 버전 실행기로 반영하며 운영에서 `JPA_DDL_AUTO=create`, `create-drop`, `update`를 사용하지 않습니다.
 
-기능 스키마를 포함한 버전을 처음 배포할 때 애플리케이션 기동 전에 다음 스크립트를 순서대로 적용합니다. 기본 상품, 옵션, 주문, 문서와 관리자 테이블이 먼저 존재해야 합니다.
+빈 DB와 기존 DB 모두 애플리케이션 기동 전에 다음 명령을 실행합니다. 빈 DB에는 `db/baseline_schema.sql`을 먼저 적용하고, 기존 DB에는 기준 버전을 등록한 뒤 미적용 증분 SQL만 실행합니다.
 
 ```bash
-mysql -h db-host -u grade_stock_app -p new_toy < db/front_product_display.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/front_commerce.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/document_daily_stats.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/admin_operation_task_content_source.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/admin_system_setting_history.sql
-mysql -h db-host -u grade_stock_app -p new_toy < db/request_rate_limit_bucket.sql
+DB_HOST=db-host \
+DB_NAME=new_toy \
+DB_USERNAME=grade_stock_app \
+DB_PASSWORD='secret' \
+./scripts/migrate-db.sh
 ```
 
-`front_product_display`는 고객용 상품 설명과 대표 노출 정보를 저장합니다. `front_commerce`는 장바구니, 장바구니 항목과 주문 배송지를 추가하므로 상품·옵션·주문 기본 스키마 이후 적용해야 합니다.
+적용된 버전과 SHA-256 체크섬은 `schema_migration`에 기록됩니다. 이미 적용된 SQL 파일의 내용이 변경되면 실행기는 배포를 중단하므로 기존 파일을 수정하지 말고 새 버전 SQL을 추가해야 합니다.
 
 `request_rate_limit_bucket`은 모든 애플리케이션 인스턴스가 관리자 로그인과 주문조회 제한 상태를 공유하는 운영 보안 테이블입니다.
 

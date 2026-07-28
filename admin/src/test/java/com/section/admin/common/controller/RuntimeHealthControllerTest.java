@@ -39,4 +39,16 @@ class RuntimeHealthControllerTest {
         assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
         assertEquals("OUT_OF_SERVICE", response.getBody().status());
     }
+
+    @Test
+    void readinessIsUnavailableWhenRequiredSecurityTableIsMissing() {
+        when(jdbcTemplate.queryForObject("SELECT 1", Integer.class)).thenReturn(1);
+        when(jdbcTemplate.queryForList("SELECT rate_key FROM request_rate_limit_bucket WHERE 1 = 0"))
+                .thenThrow(new IllegalStateException("missing table"));
+
+        var response = controller.ready();
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertEquals("OUT_OF_SERVICE", response.getBody().status());
+    }
 }

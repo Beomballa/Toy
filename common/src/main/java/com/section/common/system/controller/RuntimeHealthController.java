@@ -23,6 +23,7 @@ public class RuntimeHealthController {
         try {
             Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
             if (Integer.valueOf(1).equals(result)) {
+                jdbcTemplate.queryForList("SELECT rate_key FROM request_rate_limit_bucket WHERE 1 = 0");
                 return ResponseEntity.ok(new RuntimeHealthResponse("UP"));
             }
         } catch (RuntimeException ignored) {

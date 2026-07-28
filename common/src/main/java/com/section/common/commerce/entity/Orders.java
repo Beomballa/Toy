@@ -100,7 +100,9 @@ public class Orders extends BaseEntity {
      * 주문 취소 처리
      */
     public void cancel() {
-        if (OrderStatus.SHIPPED.name().equals(this.status) || OrderStatus.DELIVERED.name().equals(this.status)) {
+        if (OrderStatus.SHIPPED.name().equals(this.status)
+                || OrderStatus.DELIVERED.name().equals(this.status)
+                || OrderStatus.CANCELLED.name().equals(this.status)) {
             throw new BusinessException(ErrorCode.ORDER_STATUS_NOT_ALLOWED);
         }
         this.status = OrderStatus.CANCELLED.name();

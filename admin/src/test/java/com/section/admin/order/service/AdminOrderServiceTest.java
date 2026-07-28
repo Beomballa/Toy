@@ -9,6 +9,8 @@ import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.common.commerce.dto.OrderStatusSummaryDto;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.OrderStatusHistory;
+import com.section.common.commerce.entity.OrderItem;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.*;
 import com.section.common.commerce.service.OrderService;
 import com.section.admin.order.req.OrderHistoryListRequest;
@@ -96,6 +98,52 @@ class AdminOrderServiceTest {
         assertEquals("PAID", historyCaptor.getValue().getBeforeStatus());
         assertEquals("PREPARING", historyCaptor.getValue().getAfterStatus());
         assertEquals("출고 준비", historyCaptor.getValue().getReason());
+    }
+
+    @Test
+    @DisplayName("주문 취소는 주문과 옵션을 잠그고 동일 옵션 수량을 합산해 복구한다")
+    void cancelOrderLocksRowsAndRestoresAggregatedStock() {
+        Orders order = Orders.createOrder("ORD-CANCEL", "홍길동", "010", 1000);
+        ProductOption option = ProductOption.builder()
+                .id(21L)
+                .productNo(3L)
+                .optionName("270")
+                .stockCnt(4)
+                .additionalPrice(0)
+                .build();
+        when(orderRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(order));
+        when(orderItemRepository.findByOrderNo(7L)).thenReturn(List.of(
+                OrderItem.create(7L, 3L, 21L, "상품 / 270", 1000, 2),
+                OrderItem.create(7L, 3L, 21L, "상품 / 270", 1000, 1)
+        ));
+        when(productOptionRepository.findAllByIdForUpdate(List.of(21L))).thenReturn(List.of(option));
+
+        adminOrderService.cancelOrder(7L, "고객 요청");
+
+        assertEquals(OrderStatus.CANCELLED.name(), order.getStatus());
+        assertEquals(7, option.getStockCnt());
+        verify(orderRepository).findByIdForUpdate(7L);
+        verify(productOptionRepository).findAllByIdForUpdate(List.of(21L));
+        verify(orderStatusHistoryRepository).save(any(OrderStatusHistory.class));
+    }
+
+    @Test
+    @DisplayName("주문 취소 중 옵션이 누락되면 재고 복구와 이력을 완료하지 않는다")
+    void cancelOrderFailsWhenReferencedOptionIsMissing() {
+        Orders order = Orders.createOrder("ORD-MISSING", "홍길동", "010", 1000);
+        when(orderRepository.findByIdForUpdate(8L)).thenReturn(Optional.of(order));
+        when(orderItemRepository.findByOrderNo(8L)).thenReturn(List.of(
+                OrderItem.create(8L, 3L, 22L, "상품 / 280", 1000, 1)
+        ));
+        when(productOptionRepository.findAllByIdForUpdate(List.of(22L))).thenReturn(List.of());
+
+        BusinessException exception = assertThrows(
+                BusinessException.class,
+                () -> adminOrderService.cancelOrder(8L, "고객 요청")
+        );
+
+        assertEquals(ErrorCode.ENTITY_NOT_FOUND, exception.getErrorCode());
+        verify(orderStatusHistoryRepository, never()).save(any());
     }
 
     @Test

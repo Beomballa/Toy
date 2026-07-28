@@ -49,6 +49,17 @@ class OrdersTest {
     }
 
     @Test
+    @DisplayName("이미 취소된 주문은 다시 취소할 수 없다")
+    void cancelThrowsBusinessExceptionWhenOrderAlreadyCancelled() {
+        Orders order = Orders.createOrder("ORD-CANCELLED", "홍길동", "010-1111-2222", 10000);
+        order.cancel();
+
+        BusinessException exception = assertThrows(BusinessException.class, order::cancel);
+
+        assertEquals(ErrorCode.ORDER_STATUS_NOT_ALLOWED, exception.getErrorCode());
+    }
+
+    @Test
     @DisplayName("일반 상태 변경은 허용된 전이만 통과한다")
     void changeStatusAllowsExpectedTransition() {
         Orders order = Orders.createOrder("ORD-4", "홍길동", "010-1111-2222", 10000);

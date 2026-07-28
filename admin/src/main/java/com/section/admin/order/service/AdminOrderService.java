@@ -18,6 +18,7 @@ import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.entity.OrderItem;
+import com.section.common.commerce.entity.ProductOption;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.OrderStatusHistoryRepository;
@@ -30,7 +31,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -118,21 +123,28 @@ public class AdminOrderService {
 
     @Transactional
     public void cancelOrder(Long orderNo, String reason) {
-        Orders order = findOrder(orderNo);
+        Orders order = findOrderForUpdate(orderNo);
         String beforeStatus = order.getStatus();
-        
-        // 주문 상태 변경 (상태 전이 유효성 검사는 엔티티 내에서 수행)
         order.cancel();
 
-        // 재고 복구 로직 연동
         List<OrderItem> items = orderItemRepository.findByOrderNo(orderNo);
-        for (OrderItem item : items) {
-            if (item.getOptionNo() != null) {
-                productOptionRepository.findById(item.getOptionNo()).ifPresent(option -> {
-                    option.addStock(item.getCount());
-                });
-            }
+        Map<Long, Integer> restoreQuantities = items.stream()
+                .filter(item -> item.getOptionNo() != null)
+                .collect(Collectors.toMap(
+                        OrderItem::getOptionNo,
+                        OrderItem::getCount,
+                        Integer::sum,
+                        LinkedHashMap::new
+                ));
+        List<Long> optionIds = restoreQuantities.keySet().stream().sorted().toList();
+        Map<Long, ProductOption> options = optionIds.isEmpty()
+                ? Map.of()
+                : productOptionRepository.findAllByIdForUpdate(optionIds).stream()
+                .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
+        if (options.size() != optionIds.size()) {
+            throw new BusinessException(ErrorCode.ENTITY_NOT_FOUND);
         }
+        restoreQuantities.forEach((optionId, quantity) -> options.get(optionId).addStock(quantity));
 
         saveHistory(order, "CANCEL", beforeStatus, order.getStatus(), reason);
     }
@@ -151,6 +163,11 @@ public class AdminOrderService {
 
     private Orders findOrder(Long orderNo) {
         return orderRepository.findById(orderNo)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+    }
+
+    private Orders findOrderForUpdate(Long orderNo) {
+        return orderRepository.findByIdForUpdate(orderNo)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
     }
 

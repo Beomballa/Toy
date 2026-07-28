@@ -161,38 +161,44 @@ const OrderDetail = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.map(item => {
+            const productName = CommonJS.escapeHtml(item.productName || '-');
+            const productNo = CommonJS.escapeHtml(item.productNo || '');
+            const thumbnailUrl = CommonJS.escapeHtml(CommonJS.normalizeImageSource(item.thumbnailUrl));
+            return `
             <tr class="item-row">
                 <td class="ps-4">
                     <div style="width:64px; height:64px;">
-                        <img src="${item.thumbnailUrl || ''}" 
-                             alt="${item.productName}" class="product-img"
-                             onerror="CommonJS.handleImageError(this)">
+                        <img src="${thumbnailUrl}" alt="${productName}" class="product-img">
                     </div>
                 </td>
                 <td>
-                    <div class="fw-bold text-dark">${item.productName}</div>
-                    <div class="text-muted small">상품번호: ${item.productNo}</div>
+                    <div class="fw-bold text-dark">${productName}</div>
+                    <div class="text-muted small">상품번호: ${productNo}</div>
                     <div class="d-flex flex-wrap gap-2 mt-2">
                         <button type="button"
                                 class="btn btn-sm btn-outline-secondary"
                                 data-role="open-order-item-product"
-                                data-product-no="${item.productNo}">
+                                data-product-no="${productNo}">
                             상품 상세
                         </button>
                         <button type="button"
                                 class="btn btn-sm btn-outline-secondary"
                                 data-role="search-order-item-image"
-                                data-product-name="${CommonJS.escapeHtml(item.productName || '')}"
-                                data-product-no="${item.productNo}">
+                                data-product-name="${productName}"
+                                data-product-no="${productNo}">
                             이미지 검색
                         </button>
                     </div>
                 </td>
-                <td class="text-center fw-medium">${item.count}개</td>
-                <td class="text-end pe-4 fw-bold text-primary">${item.orderPrice}</td>
+                <td class="text-center fw-medium">${CommonJS.escapeHtml(item.count || 0)}개</td>
+                <td class="text-end pe-4 fw-bold text-primary">${CommonJS.escapeHtml(item.orderPrice || '-')}</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
+        tbody.querySelectorAll('img.product-img').forEach((image) => {
+            image.addEventListener('error', () => CommonJS.handleImageError(image));
+        });
     },
 
     renderOrderHistory(histories) {
@@ -224,18 +230,18 @@ const OrderDetail = {
         container.innerHTML = histories.map((history) => `
             <div class="border rounded-3 p-3">
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
-                    <div class="fw-semibold text-dark">${history.actionLabel || history.actionType}</div>
-                    <div class="text-muted small">${history.crtDtm || '-'}</div>
+                    <div class="fw-semibold text-dark">${CommonJS.escapeHtml(history.actionLabel || history.actionType || '-')}</div>
+                    <div class="text-muted small">${CommonJS.escapeHtml(history.crtDtm || '-')}</div>
                 </div>
                 <div class="small text-muted mb-2">
-                    상태: ${history.beforeStatusDesc || '-'} -> ${history.afterStatusDesc || '-'}
+                    상태: ${CommonJS.escapeHtml(history.beforeStatusDesc || '-')} -> ${CommonJS.escapeHtml(history.afterStatusDesc || '-')}
                 </div>
                 ${history.reason ? `<div class="small mb-1"><span class="text-muted">사유</span> ${CommonJS.escapeHtml(history.reason)}</div>` : ''}
                 ${history.adminMemoSnapshot ? `<div class="small mb-1"><span class="text-muted">메모</span> ${CommonJS.escapeHtml(history.adminMemoSnapshot)}</div>` : ''}
                 ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
                 <div class="d-flex flex-wrap gap-2 small mt-1">
-                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${this.orderNo}&historyNo=${history.historyNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
-                    ${history.activityLogPath ? `<a class="text-decoration-none" href="${this.buildLogPathFromBase(history.activityLogPath)}">${history.activityLogLabel || '활동 로그 보기'}</a>` : ''}
+                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${encodeURIComponent(this.orderNo)}&historyNo=${encodeURIComponent(history.historyNo)}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
+                    ${this.buildActivityLogLink(history)}
                 </div>
             </div>
         `).join('');
@@ -264,16 +270,25 @@ const OrderDetail = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.source) {
             params.set('source', this.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    buildActivityLogLink(history) {
+        const path = this.buildLogPathFromBase(history.activityLogPath);
+        if (!path) {
+            return '';
+        }
+        return `<a class="text-decoration-none" href="${CommonJS.escapeHtml(path)}">${CommonJS.escapeHtml(history.activityLogLabel || '활동 로그 보기')}</a>`;
     },
 
     async cancelOrder() {

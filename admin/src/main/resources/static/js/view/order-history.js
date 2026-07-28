@@ -205,19 +205,19 @@ const OrderHistoryPage = {
         }
 
         tbody.innerHTML = items.map((item) => `
-            <tr data-order-history-row="${item.historyNo}">
-                <td class="ps-4 text-muted small">${item.historyNo}</td>
-                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${item.orderNo}&returnTo=${returnTo}${this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : ''}">${item.orderNo}</a></td>
-                <td><span class="badge bg-dark">${item.actionLabel}</span></td>
+            <tr data-order-history-row="${CommonJS.escapeHtml(item.historyNo || '')}">
+                <td class="ps-4 text-muted small">${CommonJS.escapeHtml(item.historyNo || '-')}</td>
+                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${encodeURIComponent(item.orderNo)}&returnTo=${returnTo}${this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : ''}">${CommonJS.escapeHtml(item.orderNo || '-')}</a></td>
+                <td><span class="badge bg-dark">${CommonJS.escapeHtml(item.actionLabel || '-')}</span></td>
                 <td>
-                    <div class="fw-semibold">상태 ${item.beforeStatusDesc || '-'} -> ${item.afterStatusDesc || '-'}</div>
+                    <div class="fw-semibold">상태 ${CommonJS.escapeHtml(item.beforeStatusDesc || '-')} -> ${CommonJS.escapeHtml(item.afterStatusDesc || '-')}</div>
                     ${item.reason ? `<div class="text-muted small">사유 ${CommonJS.escapeHtml(item.reason)}</div>` : ''}
                     ${item.adminMemoSnapshot ? `<div class="text-muted small">메모 ${CommonJS.escapeHtml(item.adminMemoSnapshot)}</div>` : ''}
                     ${(item.deliveryCompany || item.trackingNum) ? `<div class="text-muted small">배송 ${CommonJS.escapeHtml(item.deliveryCompany || '-')} / ${CommonJS.escapeHtml(item.trackingNum || '-')}</div>` : ''}
-                    ${item.activityLogPath ? `<div class="small"><a class="text-decoration-none" href="${this.buildLogPathFromBase(item.activityLogPath)}">${item.activityLogLabel || '활동 로그 보기'}</a></div>` : ''}
+                    ${this.buildActivityLogLink(item)}
                 </td>
-                <td>${item.actorName}${item.actorNo ? ` <span class="text-muted small">(#${item.actorNo})</span>` : ''}</td>
-                <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
+                <td>${CommonJS.escapeHtml(item.actorName || '-')}${item.actorNo ? ` <span class="text-muted small">(#${CommonJS.escapeHtml(item.actorNo)})</span>` : ''}</td>
+                <td class="text-end pe-4 small text-muted">${CommonJS.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
         `).join('');
     },
@@ -233,16 +233,25 @@ const OrderHistoryPage = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    buildActivityLogLink(item) {
+        const path = this.buildLogPathFromBase(item.activityLogPath);
+        if (!path) {
+            return '';
+        }
+        return `<div class="small"><a class="text-decoration-none" href="${CommonJS.escapeHtml(path)}">${CommonJS.escapeHtml(item.activityLogLabel || '활동 로그 보기')}</a></div>`;
     },
 
     renderPagination(data) {

@@ -285,6 +285,33 @@ let CommonJS = {
         return normalized ? normalized : null;
     },
 
+    escapeHtml: function(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    },
+
+    normalizeImageSource: function(value, fallbackPath = '/images/product-placeholder.svg') {
+        const candidate = this.normalizeOptionalText(value);
+        if (!candidate || /[\u0000-\u001F\u007F"'\\]/.test(candidate)) {
+            return fallbackPath;
+        }
+        try {
+            const parsed = new URL(candidate, window.location.origin);
+            if (!['http:', 'https:'].includes(parsed.protocol)) {
+                return fallbackPath;
+            }
+            return parsed.origin === window.location.origin
+                ? `${parsed.pathname}${parsed.search}${parsed.hash}`
+                : parsed.href;
+        } catch (ignored) {
+            return fallbackPath;
+        }
+    },
+
     normalizeAdminReturnPath: function(value, fallbackPath = '/admin') {
         const fallback = this.normalizeOptionalText(fallbackPath) || '';
         const candidate = this.normalizeOptionalText(value);

@@ -29,3 +29,18 @@ test("normalizeAdminReturnPath rejects executable, external, and non-admin paths
     assert.equal(CommonJS.normalizeAdminReturnPath("/admin\\evil", fallback), fallback);
     assert.equal(CommonJS.normalizeAdminReturnPath("/admin/\u0000evil", fallback), fallback);
 });
+
+test("escapeHtml and normalizeImageSource neutralize stored markup", () => {
+    assert.equal(
+        CommonJS.escapeHtml("<img src=x onerror='alert(1)'>"),
+        "&lt;img src=x onerror=&#39;alert(1)&#39;&gt;"
+    );
+    assert.equal(
+        CommonJS.normalizeImageSource("javascript:alert(1)"),
+        "/images/product-placeholder.svg"
+    );
+    assert.equal(
+        CommonJS.normalizeImageSource("https://images.example/item.png"),
+        "https://images.example/item.png"
+    );
+});

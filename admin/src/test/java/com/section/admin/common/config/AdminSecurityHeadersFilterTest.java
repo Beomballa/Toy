@@ -25,6 +25,8 @@ class AdminSecurityHeadersFilterTest {
         assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
         assertEquals("no-referrer", response.getHeader("Referrer-Policy"));
         assertTrue(response.getHeader("Content-Security-Policy").contains("frame-ancestors 'none'"));
+        assertTrue(response.getHeader("Content-Security-Policy").contains("default-src 'self'"));
+        assertTrue(response.getHeader("Content-Security-Policy").contains("script-src 'self'"));
         assertEquals("same-origin", response.getHeader("Cross-Origin-Opener-Policy"));
         assertEquals("same-origin", response.getHeader("Cross-Origin-Resource-Policy"));
         assertEquals("none", response.getHeader("X-Permitted-Cross-Domain-Policies"));

@@ -22,7 +22,13 @@ public class AdminSecurityHeadersFilter extends OncePerRequestFilter {
         response.setHeader("X-Frame-Options", "DENY");
         response.setHeader("Referrer-Policy", "no-referrer");
         response.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()");
-        response.setHeader("Content-Security-Policy", "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'");
+        response.setHeader(
+                "Content-Security-Policy",
+                "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://code.jquery.com; "
+                        + "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https:; "
+                        + "font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self'; frame-ancestors 'none'; "
+                        + "object-src 'none'; base-uri 'self'; form-action 'self'"
+        );
         response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
         response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
         response.setHeader("X-Permitted-Cross-Domain-Policies", "none");

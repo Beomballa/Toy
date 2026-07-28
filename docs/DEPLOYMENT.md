@@ -19,9 +19,12 @@ mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_view_event.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/front_content_reaction.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/admin_operation_task_content_source.sql
 mysql -h db-host -u grade_stock_app -p new_toy < db/admin_system_setting_history.sql
+mysql -h db-host -u grade_stock_app -p new_toy < db/request_rate_limit_bucket.sql
 ```
 
 `front_product_display`는 고객용 상품 설명과 대표 노출 정보를 저장합니다. `front_commerce`는 장바구니, 장바구니 항목과 주문 배송지를 추가하므로 상품·옵션·주문 기본 스키마 이후 적용해야 합니다.
+
+`request_rate_limit_bucket`은 모든 애플리케이션 인스턴스가 관리자 로그인과 주문조회 제한 상태를 공유하는 운영 보안 테이블입니다.
 
 `admin_system_setting_history`는 설정 변경 감사 이력 테이블만 생성하며 운영 데이터는 삽입하지 않습니다. 로컬 화면용 예시는 `local` 프로파일의 시더가 담당합니다.
 

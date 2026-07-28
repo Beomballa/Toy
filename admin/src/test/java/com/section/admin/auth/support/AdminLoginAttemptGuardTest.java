@@ -1,5 +1,6 @@
 package com.section.admin.auth.support;
 
+import com.section.common.system.ratelimit.InMemoryRateLimitStore;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,7 @@ class AdminLoginAttemptGuardTest {
     @DisplayName("설정된 실패 횟수에 도달하면 로그인을 잠근다")
     void blocksAfterMaximumFailures() {
         AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(),
                 3, Duration.ofMinutes(15), Clock.fixed(Instant.parse("2026-07-20T05:00:00Z"), ZoneOffset.UTC)
         );
 
@@ -32,7 +34,12 @@ class AdminLoginAttemptGuardTest {
     @Test
     @DisplayName("로그인 성공 시 누적 실패 횟수를 초기화한다")
     void clearsFailuresAfterSuccess() {
-        AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(2, Duration.ofMinutes(15), Clock.systemUTC());
+        AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(),
+                2,
+                Duration.ofMinutes(15),
+                Clock.systemUTC()
+        );
         guard.recordFailure("127.0.0.1", "master");
         guard.recordFailure("127.0.0.1", "master");
         assertTrue(guard.isBlocked("127.0.0.1", "master"));
@@ -45,6 +52,7 @@ class AdminLoginAttemptGuardTest {
     @DisplayName("동일 IP에서 여러 계정을 시도해도 IP 단위로 차단한다")
     void blocksDistributedLoginIdsByIp() {
         AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(),
                 3, 4, Duration.ofMinutes(15), Clock.systemUTC(), 100
         );
 
@@ -61,7 +69,14 @@ class AdminLoginAttemptGuardTest {
     @DisplayName("실패 시간 창이 지나면 부분 누적 횟수를 초기화한다")
     void resetsPartialFailuresAfterWindow() {
         MutableClock clock = new MutableClock(Instant.parse("2026-07-20T05:00:00Z"));
-        AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(2, 10, Duration.ofMinutes(15), clock, 100);
+        AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(),
+                2,
+                10,
+                Duration.ofMinutes(15),
+                clock,
+                100
+        );
         guard.recordFailure("127.0.0.1", "master");
 
         clock.advance(Duration.ofMinutes(16));
@@ -74,6 +89,7 @@ class AdminLoginAttemptGuardTest {
     @DisplayName("추적 엔트리는 설정된 최대 크기를 넘지 않는다")
     void boundsTrackedAttemptEntries() {
         AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(6),
                 10, 50, Duration.ofMinutes(15), Clock.systemUTC(), 6
         );
 

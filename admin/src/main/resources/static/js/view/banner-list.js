@@ -17,6 +17,7 @@ const BannerList = {
     exportInFlight: false,
     bulkInFlight: false,
     selectedBannerNos: new Set(),
+    bannerItemsByNo: new Map(),
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
 
@@ -84,7 +85,8 @@ const BannerList = {
             }
             const editButton = event.target.closest('[data-role="edit-banner"]');
             if (editButton) {
-                const banner = this.parseBannerDataset(editButton.dataset.banner);
+                const bannerNo = this.normalizeOptionalPositiveNumber(editButton.dataset.bannerNo);
+                const banner = bannerNo == null ? null : this.bannerItemsByNo.get(bannerNo);
                 if (!banner) {
                     void CommonJS.alert('수정할 배너 정보를 읽을 수 없습니다.', '알림', 'warning');
                     return;
@@ -206,6 +208,11 @@ const BannerList = {
     renderList(items) {
         const tbody = document.getElementById('bannerListBody');
         if (!tbody) return;
+        this.bannerItemsByNo = new Map(
+            (items || [])
+                .map((item) => [this.normalizeOptionalPositiveNumber(item.bannerNo), item])
+                .filter(([bannerNo]) => bannerNo != null)
+        );
 
         if (!items || items.length === 0) {
             tbody.innerHTML = `
@@ -214,7 +221,7 @@ const BannerList = {
                         <div class="product-empty-state">
                             <i class="fas fa-images product-empty-state-icon"></i>
                             <strong>조건에 맞는 배너가 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -224,36 +231,47 @@ const BannerList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.map(item => {
+            const bannerNo = this.normalizeOptionalPositiveNumber(item.bannerNo);
+            const imageUrl = CommonJS.escapeHtml(CommonJS.normalizeImageSource(item.imageUrl));
+            const title = this.escapeHtml(item.title || '-');
+            const targetUrl = this.escapeHtml(item.targetUrl || '이동 링크 없음');
+            const startDtm = this.escapeHtml(String(item.startDtm || '-').replace('T', ' '));
+            const endDtm = this.escapeHtml(String(item.endDtm || '-').replace('T', ' '));
+            const isActive = item.isActive === 'Y';
+            return `
             <tr>
                 <td class="ps-4">
-                    <input type="checkbox" data-role="select-banner" data-banner-no="${item.bannerNo}" ${this.selectedBannerNos.has(item.bannerNo) ? 'checked' : ''}>
+                    <input type="checkbox" data-role="select-banner" data-banner-no="${bannerNo || ''}" ${this.selectedBannerNos.has(bannerNo) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-center fw-bold">${item.sortOrder}</td>
+                <td class="ps-4 text-center fw-bold">${Number(item.sortOrder || 0).toLocaleString()}</td>
                 <td>
-                    <img src="${item.imageUrl}" class="banner-preview-img" alt="banner" 
-                         onerror="CommonJS.handleImageError(this)">
-                </td>
-                <td>
-                    <button type="button" class="btn btn-link p-0 fw-bold text-dark text-decoration-none" data-role="open-banner-detail" data-banner-no="${item.bannerNo}">${this.escapeHtml(item.title)}</button>
-                    <div class="text-muted small">${item.targetUrl || '이동 링크 없음'}</div>
+                    <img src="${imageUrl}" class="banner-preview-img" alt="${title}">
                 </td>
                 <td>
-                    <div class="small">${item.startDtm.replace('T', ' ')}</div>
-                    <div class="small text-muted">~ ${item.endDtm.replace('T', ' ')}</div>
+                    <button type="button" class="btn btn-link p-0 fw-bold text-dark text-decoration-none" data-role="open-banner-detail" data-banner-no="${bannerNo || ''}">${title}</button>
+                    <div class="text-muted small">${targetUrl}</div>
+                </td>
+                <td>
+                    <div class="small">${startDtm}</div>
+                    <div class="small text-muted">~ ${endDtm}</div>
                 </td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                        ${item.displayStatus}
+                    <span class="badge rounded-pill ${isActive ? 'badge-y' : 'badge-n'}">
+                        ${this.escapeHtml(item.displayStatus || '-')}
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-banner" data-banner='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
-                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-banner" data-banner-no="${item.bannerNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
-                    <button class="btn btn-sm btn-outline-danger" data-role="delete-banner" data-banner-no="${item.bannerNo}">삭제</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-banner" data-banner-no="${bannerNo || ''}">수정</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-banner" data-banner-no="${bannerNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-banner" data-banner-no="${bannerNo || ''}">삭제</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
+        tbody.querySelectorAll('.banner-preview-img').forEach((image) => {
+            image.addEventListener('error', () => CommonJS.handleImageError(image), {once: true});
+        });
         this.setListStateMeta('ready', '', items.length, null, null);
         this.updateSelectionMeta(items);
     },
@@ -904,15 +922,6 @@ const BannerList = {
         }
         const number = Number(value);
         return this.isValidBannerNo(number) ? number : null;
-    },
-
-    parseBannerDataset(value) {
-        try {
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('배너 dataset 파싱 실패:', error);
-            return null;
-        }
     },
 
     normalizeStatFilter(value) {

@@ -16,6 +16,7 @@ const BannerList = {
     saveInFlight: false,
     exportInFlight: false,
     bulkInFlight: false,
+    listRequestId: 0,
     selectedBannerNos: new Set(),
     bannerItemsByNo: new Map(),
     toggleInFlight: new Set(),
@@ -173,6 +174,7 @@ const BannerList = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         try {
             this._updateStateFromInputs();
             if (!this.validateState()) {
@@ -188,12 +190,18 @@ const BannerList = {
             const res = await fetch(`/api/admin/banners/list?${params.toString()}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 목록을 불러오지 못했습니다.'));
             const data = await res.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderList(data.items || []);
             this.renderStats(data.bannerStats);
             this.renderMeta(data);
             this.renderPagination(data);
             await this.openDeepLinkedBannerIfNeeded(data.items || []);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             document.getElementById('bannerMetaText').textContent = err.message;
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
@@ -660,7 +668,7 @@ const BannerList = {
             await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
             return;
         }
-        const target = items.find((item) => item.bannerNo === bannerNo);
+        const target = items.find((item) => this.normalizeOptionalPositiveNumber(item.bannerNo) === bannerNo);
         if (target) {
             await this.openEditModal(target);
         } else if (bannerNo > 0) {

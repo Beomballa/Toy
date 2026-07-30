@@ -1,7 +1,7 @@
 const AdminLogPage = {
     initialized: false,
     modal: null,
-    isLoading: false,
+    listRequestId: 0,
     isOpeningDetail: false,
     isExporting: false,
     state: {
@@ -131,9 +131,7 @@ const AdminLogPage = {
     },
 
     async getList() {
-        if (this.isLoading) {
-            return;
-        }
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -168,18 +166,23 @@ const AdminLogPage = {
         this.renderLoadingState();
 
         try {
-            this.isLoading = true;
             const res = await fetch(`/api/admin/logs/list?${params.toString()}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '로그를 불러오지 못했습니다.'));
             }
             const data = await res.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderSummary(data.summary);
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
             await this.openDeepLinkedLogIfNeeded(data.items || []);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             document.getElementById('logListBody').innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -197,8 +200,6 @@ const AdminLogPage = {
             this.setResultMetaText(err.message);
             this.setPageMetaText('페이지 메타 확인 불가');
             document.getElementById('logPagination').innerHTML = '';
-        } finally {
-            this.isLoading = false;
         }
     },
 

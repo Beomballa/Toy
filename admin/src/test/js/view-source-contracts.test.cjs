@@ -42,3 +42,11 @@ test("member list and detail discard responses from an older screen state", () =
     assert.match(source, /requestId !== this\.listRequestId/);
     assert.match(source, /requestId !== this\.detailRequestId/);
 });
+
+test("banner and activity log lists keep only the latest filter response", () => {
+    for (const fileName of ["banner-list.js", "admin-logs.js"]) {
+        const source = readViewScript(fileName);
+        assert.match(source, /const requestId = \+\+this\.listRequestId/);
+        assert.match(source, /requestId !== this\.listRequestId/);
+    }
+});

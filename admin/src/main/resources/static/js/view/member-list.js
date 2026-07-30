@@ -199,7 +199,7 @@ const MemberListPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-users-slash product-empty-state-icon"></i>
                             <strong>조건에 맞는 회원이 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -207,25 +207,27 @@ const MemberListPage = {
             this.syncSelectionUi();
             return;
         }
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.map(item => {
+            const memberId = this.normalizeOptionalPositiveNumber(item.id);
+            return `
             <tr>
                 <td class="ps-4">
-                    <input type="checkbox" class="form-check-input" data-role="select-member" data-member-id="${item.id}" ${this.selectedMemberIds.has(item.id) ? 'checked' : ''}>
+                    <input type="checkbox" class="form-check-input" data-role="select-member" data-member-id="${memberId || ''}" ${this.selectedMemberIds.has(memberId) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-muted small">${item.id}</td>
+                <td class="ps-4 text-muted small">${memberId || '-'}</td>
                 <td>
-                    <div class="fw-bold text-dark">${item.name || 'Unknown'}</div>
-                    <div class="text-muted small">${item.nickname || '-'}</div>
+                    <div class="fw-bold text-dark">${this.escapeHtml(item.name || 'Unknown')}</div>
+                    <div class="text-muted small">${this.escapeHtml(item.nickname || '-')}</div>
                 </td>
-                <td>${item.email || '-'}</td>
+                <td>${this.escapeHtml(item.email || '-')}</td>
                 <td class="text-center">
                     <span class="badge ${item.masterYn === 'Y' ? 'badge-master' : 'badge-user'}">
                         ${item.masterYn === 'Y' ? '마스터' : '일반회원'}
                     </span>
                 </td>
-                <td class="text-center text-muted small">${item.crtDtm || '-'}</td>
+                <td class="text-center text-muted small">${this.escapeHtml(item.crtDtm || '-')}</td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-member-detail" data-member-id="${item.id}">상세</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-member-detail" data-member-id="${memberId || ''}">상세</button>
                 </td>
                 <td class="text-end pe-4">
                     <span class="badge ${item.delYn === 'N' ? 'badge-normal' : 'badge-deleted'}">
@@ -233,7 +235,8 @@ const MemberListPage = {
                     </span>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         this.currentPageMemberIds = items.map((item) => item.id).filter((id) => this.isPositiveNumber(id));
         tbody.querySelectorAll('[data-role="select-member"]').forEach((checkbox) => {
             checkbox.addEventListener('change', () => {
@@ -637,9 +640,13 @@ const MemberListPage = {
     renderMemberAvatar(data) {
         const name = data.name || data.nickname || data.email || '회원';
         if (data.profileImgPath) {
+            const profileImageUrl = CommonJS.normalizeImageSource(data.profileImgPath, '');
+            if (!profileImageUrl) {
+                return `<div class="member-detail-avatar">${this.escapeHtml(this.getInitials(name))}</div>`;
+            }
             return `
                 <div class="member-detail-avatar-shell">
-                    <img src="${this.escapeHtml(data.profileImgPath)}" alt="${this.escapeHtml(name)}" class="member-detail-avatar-img" id="memberDetailAvatarImage">
+                    <img src="${this.escapeHtml(profileImageUrl)}" alt="${this.escapeHtml(name)}" class="member-detail-avatar-img" id="memberDetailAvatarImage">
                 </div>
             `;
         }

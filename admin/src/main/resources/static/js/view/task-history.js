@@ -2,6 +2,8 @@ const TaskHistoryPage = {
     initialized: false,
     modal: null,
     isExporting: false,
+    listRequestId: 0,
+    detailRequestId: 0,
     state: {
         page: 0,
         size: 20,
@@ -12,7 +14,11 @@ const TaskHistoryPage = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
-        this.modal = new bootstrap.Modal(document.getElementById('taskHistoryDetailModal'));
+        const modalElement = document.getElementById('taskHistoryDetailModal');
+        this.modal = new bootstrap.Modal(modalElement);
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            this.detailRequestId += 1;
+        });
         this.bindEvents();
         this.readStateFromUrl();
         this.syncReturnLinks();
@@ -118,6 +124,7 @@ const TaskHistoryPage = {
     },
 
     async loadHistory() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -140,13 +147,20 @@ const TaskHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 이력을 불러오지 못했습니다.'));
             }
             const data = await response.json();
-            this.renderList(data.items || []);
+            if (requestId !== this.listRequestId) {
+                return;
+            }
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
-            this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
-            await this.openDeepLinkedLogIfNeeded(data.items || []);
+            this.setListStateMeta('ready', '', items.length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
+            await this.openDeepLinkedLogIfNeeded(items);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -160,7 +174,7 @@ const TaskHistoryPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-list-check product-empty-state-icon"></i>
                             <strong>조건에 맞는 운영 작업 이력이 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -169,23 +183,29 @@ const TaskHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => `
-            <tr data-log-row="${item.logNo}">
-                <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td>${item.taskPath ? `<a class="text-decoration-none fw-bold" href="${this.buildTaskDetailPath(item.taskPath)}">${item.taskLabel}</a>` : (item.taskLabel || '-')}</td>
-                <td><span class="badge bg-dark">${item.actionLabel}</span></td>
-                <td>${item.adminName}${item.adminNo ? ` <span class="text-muted small">(#${item.adminNo})</span>` : ''}</td>
-                <td><code class="small">${item.ipAddress || '-'}</code></td>
+        tbody.innerHTML = items.flatMap((item) => {
+            const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
+            const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
+            const taskPath = this.buildTaskDetailPath(item.taskPath);
+            if (!logNo) return [];
+            return [`
+            <tr data-log-row="${logNo}">
+                <td class="ps-4 text-muted small">${logNo}</td>
+                <td>${taskPath !== '#' ? `<a class="text-decoration-none fw-bold" href="${taskPath}">${this.escapeHtml(item.taskLabel || '-')}</a>` : this.escapeHtml(item.taskLabel || '-')}</td>
+                <td><span class="badge bg-dark">${this.escapeHtml(item.actionLabel)}</span></td>
+                <td>${this.formatAdminLabel(item.adminName, item.adminNo)}</td>
+                <td><code class="small">${this.escapeHtml(item.ipAddress || '-')}</code></td>
                 <td class="text-center">
                     <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${item.logNo}">상세</button>
-                        ${item.taskPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskDetailPath(item.taskPath)}">작업</a>` : ''}
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskLogPath(item.taskNo)}">활동 로그</a>
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-task-log-detail" data-log-no="${logNo}">상세</button>
+                        ${taskPath !== '#' ? `<a class="btn btn-sm btn-outline-secondary" href="${taskPath}">작업</a>` : ''}
+                        ${taskNo ? `<a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskLogPath(taskNo)}">활동 로그</a>` : ''}
                     </div>
                 </td>
-                <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
+                <td class="text-end pe-4 small text-muted">${this.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
-        `).join('');
+        `];
+        }).join('');
     },
 
     renderMeta(data) {
@@ -239,6 +259,7 @@ const TaskHistoryPage = {
             await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
+        const requestId = ++this.detailRequestId;
         this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 작업 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
         this.setDetailStateMeta('loading', '로그 상세를 불러오는 중입니다.', logNo, '', '');
         this.modal.show();
@@ -248,17 +269,22 @@ const TaskHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             const detailLogPath = this.buildTaskLogPath(data.targetId || '');
             const targetPath = this.buildTaskDetailPath(data.targetPath || '');
+            const safeDetailLogPath = detailLogPath === '#' ? '' : detailLogPath;
+            const safeTargetPath = targetPath === '#' ? '' : targetPath;
             document.getElementById('taskHistoryDetailBody').innerHTML = `
                 <div class="admin-modal-detail-grid">
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">로그 번호</div>
-                        <div class="admin-modal-detail-value">${data.logNo}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.logNo)}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 일시</div>
-                        <div class="admin-modal-detail-value">${data.actionDtm || '-'}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.actionDtm || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">관리자</div>
@@ -266,20 +292,20 @@ const TaskHistoryPage = {
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 종류</div>
-                        <div class="admin-modal-detail-value">${data.actionType || '-'}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.actionType || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">대상</div>
-                        <div class="admin-modal-detail-value">${data.targetPath ? `<a class="text-decoration-none" href="${targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                        <div class="admin-modal-detail-value">${safeTargetPath ? `<a class="text-decoration-none" href="${safeTargetPath}">${this.escapeHtml(data.targetLabel || '-')}</a>` : this.escapeHtml(data.targetLabel || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">IP 주소</div>
-                        <div class="admin-modal-detail-value"><code>${data.ipAddress || '-'}</code></div>
+                        <div class="admin-modal-detail-value"><code>${this.escapeHtml(data.ipAddress || '-')}</code></div>
                     </div>
                 </div>
             `;
-            this.setDetailFooterLinks(targetPath, detailLogPath);
-            this.setDetailStateMeta('ready', '', logNo, targetPath, detailLogPath);
+            this.setDetailFooterLinks(safeTargetPath, safeDetailLogPath);
+            this.setDetailStateMeta('ready', '', logNo, safeTargetPath, safeDetailLogPath);
             this.state.logNo = String(logNo);
             const listMetaEl = document.getElementById('taskHistoryStateMeta');
             if (listMetaEl) {
@@ -288,6 +314,9 @@ const TaskHistoryPage = {
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.renderDetailState('error', '상세 로그를 불러오지 못했습니다.', error.message);
             this.setDetailFooterLinks('', '');
             this.setDetailStateMeta('error', error.message, logNo, '', '');
@@ -344,10 +373,11 @@ const TaskHistoryPage = {
     },
 
     buildTaskDetailPath(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '#';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -357,9 +387,11 @@ const TaskHistoryPage = {
     },
 
     buildTaskLogPath(taskNo) {
+        const safeTaskNo = this.normalizeOptionalPositiveNumber(taskNo);
+        if (!safeTaskNo) return '#';
         const params = new URLSearchParams();
         params.set('actionType', 'TASK_');
-        params.set('targetId', String(taskNo || ''));
+        params.set('targetId', safeTaskNo);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
             params.set('source', this.state.source);
@@ -580,10 +612,8 @@ const TaskHistoryPage = {
             this.state.logNo = '';
             return;
         }
-        const target = items.find((item) => item.logNo === logNo);
-        if (target || logNo > 0) {
-            await this.openDetail(logNo);
-        }
+        const target = items.find((item) => this.normalizeOptionalPositiveNumber(item.logNo) === logNo);
+        if (target) await this.openDetail(logNo);
         this.state.logNo = '';
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
     },
@@ -605,7 +635,10 @@ const TaskHistoryPage = {
     },
 
     formatAdminLabel(adminName, adminNo) {
-        return adminNo ? `${adminName} (#${adminNo})` : adminName;
+        const safeAdminNo = this.normalizeOptionalPositiveNumber(adminNo);
+        return safeAdminNo
+            ? `${this.escapeHtml(adminName || '-')} (#${safeAdminNo})`
+            : this.escapeHtml(adminName || '-');
     },
 
     escapeHtml(value) {

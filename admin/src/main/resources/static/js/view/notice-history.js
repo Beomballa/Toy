@@ -3,6 +3,8 @@ const NoticeHistoryPage = {
     modal: null,
     isOpeningDetail: false,
     isExporting: false,
+    listRequestId: 0,
+    detailRequestId: 0,
     state: {
         page: 0,
         size: 20,
@@ -14,7 +16,12 @@ const NoticeHistoryPage = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
-        this.modal = new bootstrap.Modal(document.getElementById('noticeHistoryDetailModal'));
+        const modalElement = document.getElementById('noticeHistoryDetailModal');
+        this.modal = new bootstrap.Modal(modalElement);
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            this.detailRequestId += 1;
+            this.isOpeningDetail = false;
+        });
         this.bindEvents();
         this.readStateFromUrl();
         this.syncReturnLinks();
@@ -121,6 +128,7 @@ const NoticeHistoryPage = {
     },
 
     async loadHistory() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -143,12 +151,19 @@ const NoticeHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지 이력을 불러오지 못했습니다.'));
             }
             const data = await response.json();
-            this.renderList(data.items || []);
+            if (requestId !== this.listRequestId) {
+                return;
+            }
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
-            await this.openDeepLinkedLogIfNeeded(data.items || []);
+            await this.openDeepLinkedLogIfNeeded(items);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -162,7 +177,7 @@ const NoticeHistoryPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-bullhorn product-empty-state-icon"></i>
                             <strong>조건에 맞는 운영 공지 이력이 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -171,19 +186,24 @@ const NoticeHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => `
-            <tr data-notice-log-row="${item.logNo}">
-                <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td>${item.noticePath ? `<a class="text-decoration-none fw-bold" href="${this.buildNoticeDetailPath(item.noticePath)}">${item.noticeLabel}</a>` : (item.noticeLabel || '-')}</td>
-                <td><span class="badge bg-dark">${item.actionLabel}</span></td>
-                <td>${item.adminName}${item.adminNo ? ` <span class="text-muted small">(#${item.adminNo})</span>` : ''}</td>
-                <td><code class="small">${item.ipAddress || '-'}</code></td>
+        tbody.innerHTML = items.flatMap((item) => {
+            const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
+            const noticePath = this.buildNoticeDetailPath(item.noticePath);
+            if (!logNo) return [];
+            return [`
+            <tr data-notice-log-row="${logNo}">
+                <td class="ps-4 text-muted small">${logNo}</td>
+                <td>${noticePath !== '#' ? `<a class="text-decoration-none fw-bold" href="${noticePath}">${this.escapeHtml(item.noticeLabel || '-')}</a>` : this.escapeHtml(item.noticeLabel || '-')}</td>
+                <td><span class="badge bg-dark">${this.escapeHtml(item.actionLabel)}</span></td>
+                <td>${this.formatAdminLabel(item.adminName, item.adminNo)}</td>
+                <td><code class="small">${this.escapeHtml(item.ipAddress || '-')}</code></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-notice-log-detail" data-log-no="${item.logNo}">상세</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-notice-log-detail" data-log-no="${logNo}">상세</button>
                 </td>
-                <td class="text-end pe-4 small text-muted">${item.actionDtm || '-'}</td>
+                <td class="text-end pe-4 small text-muted">${this.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
-        `).join('');
+        `];
+        }).join('');
     },
 
     renderMeta(data) {
@@ -227,13 +247,11 @@ const NoticeHistoryPage = {
     },
 
     async openDetail(logNo) {
-        if (this.isOpeningDetail) {
-            return;
-        }
         if (!this.isPositiveNumber(logNo)) {
             await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
+        const requestId = ++this.detailRequestId;
         this.renderDetailState('loading', '로그 상세를 불러오는 중입니다.', '선택한 공지 이력의 상세 정보와 바로가기를 준비하고 있습니다.');
         this.setDetailTargetLink('');
         this.modal.show();
@@ -244,40 +262,47 @@ const NoticeHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             const targetPath = this.buildNoticeDetailPath(data.targetPath || '');
+            const safeTargetPath = targetPath === '#' ? '' : targetPath;
             document.getElementById('noticeHistoryDetailBody').innerHTML = `
                 <div class="admin-modal-detail-grid">
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">로그 번호</div>
-                        <div class="admin-modal-detail-value">${data.logNo}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.logNo)}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 일시</div>
-                        <div class="admin-modal-detail-value">${data.actionDtm || '-'}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.actionDtm || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">관리자</div>
-                        <div class="admin-modal-detail-value">${data.adminName} (#${data.adminNo})</div>
+                        <div class="admin-modal-detail-value">${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 종류</div>
-                        <div class="admin-modal-detail-value">${data.actionType || '-'}</div>
+                        <div class="admin-modal-detail-value">${this.escapeHtml(data.actionType || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">대상</div>
-                        <div class="admin-modal-detail-value">${data.targetPath ? `<a class="text-decoration-none" href="${targetPath}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                        <div class="admin-modal-detail-value">${safeTargetPath ? `<a class="text-decoration-none" href="${safeTargetPath}">${this.escapeHtml(data.targetLabel || '-')}</a>` : this.escapeHtml(data.targetLabel || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">IP 주소</div>
-                        <div class="admin-modal-detail-value"><code>${data.ipAddress || '-'}</code></div>
+                        <div class="admin-modal-detail-value"><code>${this.escapeHtml(data.ipAddress || '-')}</code></div>
                     </div>
                 </div>
             `;
-            this.setDetailTargetLink(targetPath);
+            this.setDetailTargetLink(safeTargetPath);
             this.state.logNo = String(logNo);
             this.highlightLogRow(logNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (error) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.renderDetailState('error', '상세 로그를 불러오지 못했습니다.', error.message);
             this.setDetailTargetLink('');
         } finally {
@@ -567,8 +592,8 @@ const NoticeHistoryPage = {
             this.state.logNo = '';
             return;
         }
-        const hasLog = items.some((item) => item.logNo === logNo);
-        if (!hasLog || this.isOpeningDetail) {
+        const hasLog = items.some((item) => this.normalizeOptionalPositiveNumber(item.logNo) === logNo);
+        if (!hasLog) {
             return;
         }
         await this.openDetail(logNo);
@@ -597,10 +622,11 @@ const NoticeHistoryPage = {
     },
 
     buildNoticeDetailPath(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '#';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -652,6 +678,13 @@ const NoticeHistoryPage = {
 
     isPositiveNumber(value) {
         return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+    },
+
+    formatAdminLabel(adminName, adminNo) {
+        const safeAdminNo = this.normalizeOptionalPositiveNumber(adminNo);
+        return safeAdminNo
+            ? `${this.escapeHtml(adminName || '-')} (#${safeAdminNo})`
+            : this.escapeHtml(adminName || '-');
     },
 
     escapeHtml(value) {

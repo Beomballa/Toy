@@ -97,3 +97,16 @@ test("task workload detail rejects stale responses and unsafe identifiers", () =
     assert.match(source, /safeOptions\.flatMap/);
     assert.equal(source.includes("returnButton.innerHTML"), false);
 });
+
+test("task and notice histories keep latest responses and escape log fields", () => {
+    const taskSource = readViewScript("task-history.js");
+    const noticeSource = readViewScript("notice-history.js");
+
+    for (const source of [taskSource, noticeSource]) {
+        assert.match(source, /requestId !== this\.listRequestId/);
+        assert.match(source, /requestId !== this\.detailRequestId/);
+        assert.match(source, /CommonJS\.normalizeAdminReturnPath\(basePath, ''\)/);
+        assert.match(source, /this\.escapeHtml\(data\.ipAddress/);
+        assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\.logNo\)/);
+    }
+});

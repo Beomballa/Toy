@@ -110,3 +110,18 @@ test("task and notice histories keep latest responses and escape log fields", ()
         assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\.logNo\)/);
     }
 });
+
+test("product and order histories validate rows and keep the latest response", () => {
+    const productSource = readViewScript("product-history.js");
+    const orderSource = readViewScript("order-history.js");
+
+    for (const source of [productSource, orderSource]) {
+        assert.match(source, /requestId !== this\.listRequestId/);
+        assert.match(source, /Array\.isArray\(data\.items\)/);
+        assert.match(source, /this\.escapeHtml\(this\.buildEmptyStateMessage\(\)\)/);
+        assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\.historyNo\)/);
+    }
+    assert.match(productSource, /CommonJS\.normalizeAdminReturnPath\(basePath, ''\)/);
+    assert.match(productSource, /this\.escapeHtml\(item\.summary/);
+    assert.match(orderSource, /this\.normalizeOptionalPositiveNumber\(item\.orderNo\)/);
+});

@@ -8,6 +8,7 @@ const OrderHistoryPage = {
         historyNo: ''
     },
     isExporting: false,
+    listRequestId: 0,
 
     init() {
         if (this.initialized) return;
@@ -153,6 +154,7 @@ const OrderHistoryPage = {
     },
 
     async loadHistory() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -175,13 +177,20 @@ const OrderHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '주문 처리 이력을 불러오지 못했습니다.'));
             }
             const data = await response.json();
-            this.renderList(data.items || []);
+            if (requestId !== this.listRequestId) {
+                return;
+            }
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
             this.highlightHistoryRow(this.state.historyNo);
-            this.consumeDeepLinkHistoryNo(data.items || []);
+            this.consumeDeepLinkHistoryNo(items);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -196,7 +205,7 @@ const OrderHistoryPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-receipt product-empty-state-icon"></i>
                             <strong>조건에 맞는 주문 처리 이력이 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -204,10 +213,14 @@ const OrderHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => `
-            <tr data-order-history-row="${CommonJS.escapeHtml(item.historyNo || '')}">
-                <td class="ps-4 text-muted small">${CommonJS.escapeHtml(item.historyNo || '-')}</td>
-                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${encodeURIComponent(item.orderNo)}&returnTo=${returnTo}${this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : ''}">${CommonJS.escapeHtml(item.orderNo || '-')}</a></td>
+        tbody.innerHTML = items.flatMap((item) => {
+            const historyNo = this.normalizeOptionalPositiveNumber(item.historyNo);
+            const orderNo = this.normalizeOptionalPositiveNumber(item.orderNo);
+            if (!historyNo || !orderNo) return [];
+            return [`
+            <tr data-order-history-row="${historyNo}">
+                <td class="ps-4 text-muted small">${historyNo}</td>
+                <td><a class="text-decoration-none fw-bold" href="/admin/orders/get?no=${orderNo}&returnTo=${returnTo}${this.state.source ? `&source=${encodeURIComponent(this.state.source)}` : ''}">${orderNo}</a></td>
                 <td><span class="badge bg-dark">${CommonJS.escapeHtml(item.actionLabel || '-')}</span></td>
                 <td>
                     <div class="fw-semibold">상태 ${CommonJS.escapeHtml(item.beforeStatusDesc || '-')} -> ${CommonJS.escapeHtml(item.afterStatusDesc || '-')}</div>
@@ -216,10 +229,11 @@ const OrderHistoryPage = {
                     ${(item.deliveryCompany || item.trackingNum) ? `<div class="text-muted small">배송 ${CommonJS.escapeHtml(item.deliveryCompany || '-')} / ${CommonJS.escapeHtml(item.trackingNum || '-')}</div>` : ''}
                     ${this.buildActivityLogLink(item)}
                 </td>
-                <td>${CommonJS.escapeHtml(item.actorName || '-')}${item.actorNo ? ` <span class="text-muted small">(#${CommonJS.escapeHtml(item.actorNo)})</span>` : ''}</td>
+                <td>${CommonJS.escapeHtml(item.actorName || '-')}${this.normalizeOptionalPositiveNumber(item.actorNo) ? ` <span class="text-muted small">(#${this.normalizeOptionalPositiveNumber(item.actorNo)})</span>` : ''}</td>
                 <td class="text-end pe-4 small text-muted">${CommonJS.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
-        `).join('');
+        `];
+        }).join('');
     },
 
     renderMeta(data) {
@@ -516,7 +530,7 @@ const OrderHistoryPage = {
         const historyNo = this.normalizeOptionalPositiveNumber(this.state.historyNo);
         if (!historyNo) {
             this.state.historyNo = '';
-        } else if (items.some((item) => item.historyNo === historyNo)) {
+        } else if (items.some((item) => this.normalizeOptionalPositiveNumber(item.historyNo) === historyNo)) {
             this.state.historyNo = '';
         } else {
             return;

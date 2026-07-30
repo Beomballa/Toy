@@ -1,6 +1,7 @@
 const ProductHistoryPage = {
     initialized: false,
     isExporting: false,
+    listRequestId: 0,
     state: {
         page: 0,
         size: 20,
@@ -120,6 +121,7 @@ const ProductHistoryPage = {
     },
 
     async loadHistory() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -142,10 +144,16 @@ const ProductHistoryPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '변경 이력을 불러오지 못했습니다.'));
             }
             const data = await response.json();
-            this.renderList(data.items || []);
+            if (requestId !== this.listRequestId) {
+                return;
+            }
+            this.renderList(Array.isArray(data.items) ? data.items : []);
             this.renderMeta(data);
             this.renderPagination(data);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -159,7 +167,7 @@ const ProductHistoryPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품 변경 이력이 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -167,34 +175,41 @@ const ProductHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.flatMap((item) => {
+            const historyNo = this.normalizeOptionalPositiveNumber(item.historyNo);
+            const productNo = this.normalizeOptionalPositiveNumber(item.productNo);
+            const relatedProductNo = this.normalizeOptionalPositiveNumber(item.relatedProductNo);
+            const activityLogPath = this.buildLogPathFromBase(item.activityLogPath);
+            if (!historyNo || !productNo) return [];
+            return [`
             <tr>
-                <td class="ps-4 text-muted small">${item.historyNo}</td>
-                <td><a class="text-decoration-none fw-bold" href="${this.buildProductDetailPath(item.productNo)}">${item.productNo}</a></td>
-                <td><span class="badge bg-dark">${item.actionLabel}</span></td>
+                <td class="ps-4 text-muted small">${historyNo}</td>
+                <td><a class="text-decoration-none fw-bold" href="${this.buildProductDetailPath(productNo)}">${productNo}</a></td>
+                <td><span class="badge bg-dark">${this.escapeHtml(item.actionLabel || '-')}</span></td>
                 <td>
-                    <div class="fw-semibold">${item.summary}</div>
-                    ${item.relatedProductNo ? `
+                    <div class="fw-semibold">${this.escapeHtml(item.summary || '-')}</div>
+                    ${relatedProductNo ? `
                         <div class="small">
-                            <a class="text-decoration-none" href="${this.buildProductDetailPath(item.relatedProductNo)}">
-                                ${item.relatedProductLabel} #${item.relatedProductNo}
+                            <a class="text-decoration-none" href="${this.buildProductDetailPath(relatedProductNo)}">
+                                ${this.escapeHtml(item.relatedProductLabel || '-')} #${relatedProductNo}
                             </a>
                         </div>
                     ` : ''}
-                    ${item.activityLogPath ? `
+                    ${activityLogPath ? `
                         <div class="small">
-                            <a class="text-decoration-none" href="${this.buildLogPathFromBase(item.activityLogPath)}">
-                                ${item.activityLogLabel || '활동 로그 보기'}
+                            <a class="text-decoration-none" href="${this.escapeHtml(activityLogPath)}">
+                                ${this.escapeHtml(item.activityLogLabel || '활동 로그 보기')}
                             </a>
                         </div>
                     ` : ''}
-                    <div class="text-muted small">상태 ${item.statusSnapshot || '-'} · 옵션 ${item.optionCount}개 · 재고 ${item.totalStock}개</div>
+                    <div class="text-muted small">상태 ${this.escapeHtml(item.statusSnapshot || '-')} · 옵션 ${this.formatCount(item.optionCount)}개 · 재고 ${this.formatCount(item.totalStock)}개</div>
                 </td>
-                <td>${item.actorName}${item.actorNo ? ` <span class="text-muted small">(#${item.actorNo})</span>` : ''}</td>
-                <td class="text-muted small">${item.totalStock} / ${item.optionCount}</td>
-                <td class="text-end pe-4 small text-muted">${item.actionDtm}</td>
+                <td>${this.escapeHtml(item.actorName || '-')}${this.normalizeOptionalPositiveNumber(item.actorNo) ? ` <span class="text-muted small">(#${this.normalizeOptionalPositiveNumber(item.actorNo)})</span>` : ''}</td>
+                <td class="text-muted small">${this.formatCount(item.totalStock)} / ${this.formatCount(item.optionCount)}</td>
+                <td class="text-end pe-4 small text-muted">${this.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
-        `).join('');
+        `];
+        }).join('');
     },
 
     buildProductDetailPath(productNo) {
@@ -211,10 +226,11 @@ const ProductHistoryPage = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', this.getReturnTo());
         if (this.state.source) {
@@ -527,6 +543,11 @@ const ProductHistoryPage = {
 
     isPositiveNumber(value) {
         return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+    },
+
+    formatCount(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed.toLocaleString() : '0';
     }
 };
 

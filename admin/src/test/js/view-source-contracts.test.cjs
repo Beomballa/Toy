@@ -33,3 +33,12 @@ test("order filtering accepts a new request and ignores an older response", () =
     assert.match(source, /const requestId = \+\+this\.listRequestId/);
     assert.match(source, /requestId !== this\.listRequestId/);
 });
+
+test("member list and detail discard responses from an older screen state", () => {
+    const source = readViewScript("member-list.js");
+
+    assert.match(source, /const requestId = \+\+this\.listRequestId/);
+    assert.match(source, /const requestId = \+\+this\.detailRequestId/);
+    assert.match(source, /requestId !== this\.listRequestId/);
+    assert.match(source, /requestId !== this\.detailRequestId/);
+});

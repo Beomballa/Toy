@@ -5,6 +5,8 @@ const MemberListPage = {
     operationPolicy: null,
     detailActionInFlight: false,
     detailLoadInFlight: false,
+    listRequestId: 0,
+    detailRequestId: 0,
     exportInFlight: false,
     bulkUpdateInFlight: false,
     selectedMemberIds: new Set(),
@@ -82,7 +84,9 @@ const MemberListPage = {
         document.getElementById('btnToggleMasterYn')?.addEventListener('click', () => this.toggleMemberStatus('master'));
         document.getElementById('btnToggleMemberStatus')?.addEventListener('click', () => this.toggleMemberStatus('deleted'));
         document.getElementById('memberDetailModal')?.addEventListener('hidden.bs.modal', () => {
+            this.detailRequestId++;
             this.selectedMember = null;
+            this.detailLoadInFlight = false;
             this.detailActionInFlight = false;
             this.setDetailActionState(false);
         });
@@ -125,6 +129,7 @@ const MemberListPage = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         this.validateState();
         const params = this.buildParams();
         history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
@@ -144,11 +149,17 @@ const MemberListPage = {
             if (!summaryRes.ok) throw new Error(await CommonJS.extractErrorMessage(summaryRes, '회원 요약을 불러오지 못했습니다.'));
             const data = await res.json();
             const summary = await summaryRes.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderSummary(summary);
             this.renderPagination(data.currentPage ?? 0, data.totalPages ?? 0);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             const tbody = document.getElementById('memberListBody');
             if (tbody) {
                 this.currentPageMemberIds = [];
@@ -544,16 +555,21 @@ const MemberListPage = {
             await CommonJS.alert('유효한 회원 번호를 확인할 수 없습니다.', '알림', 'warning');
             return;
         }
-        if (this.detailLoadInFlight) {
-            return;
-        }
+        const requestId = ++this.detailRequestId;
         this.setDetailLoadingState('회원 상세를 불러오는 중입니다.', '프로필, 권한, 상태 정보를 정리하고 있습니다.');
         this.modal.show();
         try {
             this.detailLoadInFlight = true;
             const data = await this.fetchMemberDetail(memberId);
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
+            this.selectedMember = data;
             this.renderDetail(data);
         } catch (err) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             document.getElementById('memberDetailBody').innerHTML = `
                 <div class="product-empty-state py-4">
                     <div class="product-empty-state__icon text-danger">
@@ -565,7 +581,9 @@ const MemberListPage = {
             `;
             this.setDetailActionState(true);
         } finally {
-            this.detailLoadInFlight = false;
+            if (requestId === this.detailRequestId) {
+                this.detailLoadInFlight = false;
+            }
         }
     },
 
@@ -578,7 +596,6 @@ const MemberListPage = {
             throw new Error(await CommonJS.extractErrorMessage(res, '회원 상세를 불러오지 못했습니다.'));
         }
         const data = await res.json();
-        this.selectedMember = data;
         return data;
     },
 

@@ -78,3 +78,12 @@ test("task workload accepts newer filters and validates server paths", () => {
     assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
     assert.match(source, /this\.escapeHtml\(this\.buildEmptyStateMessage\(\)\)/);
 });
+
+test("product front display validates filters and keeps the latest response", () => {
+    const source = readViewScript("product-front-display.js");
+
+    assert.match(source, /requestId !== this\.listRequestId/);
+    assert.match(source, /Number\.isInteger\(parsed\)/);
+    assert.match(source, /\['', 'ACTIVE', 'HIDDEN', 'SOLD_OUT'\]/);
+    assert.equal(source.includes("backButton.innerHTML"), false);
+});

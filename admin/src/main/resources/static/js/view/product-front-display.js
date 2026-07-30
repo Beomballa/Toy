@@ -1,5 +1,7 @@
 const ProductFrontDisplayList = {
+    initialized: false,
     exportInFlight: false,
+    listRequestId: 0,
     state: {
         keyword: '',
         status: '',
@@ -17,6 +19,10 @@ const ProductFrontDisplayList = {
     initialLowStockThreshold: 20,
 
     init() {
+        if (this.initialized) {
+            return;
+        }
+        this.initialized = true;
         const thresholdInput = document.getElementById('displayLowStockThreshold');
         this.initialLowStockThreshold = Number(thresholdInput?.value || 20);
         this.state.lowStockThreshold = this.initialLowStockThreshold;
@@ -97,7 +103,7 @@ const ProductFrontDisplayList = {
 
         this.state = {
             keyword: CommonJS.normalizeOptionalText(params.get('keyword')) || '',
-            status: params.get('status') || '',
+            status: this.normalizeStatusValue(params.get('status')),
             brandNo: this.isValidOptionalPositiveNumber(brandNo) ? brandNo : '',
             categoryNo: this.isValidOptionalPositiveNumber(categoryNo) ? categoryNo : '',
             configured: this.isValidConfiguredValue(configured) ? configured : '',
@@ -150,7 +156,11 @@ const ProductFrontDisplayList = {
         const returnContext = CommonJS.getReturnContext(this.state.returnTo || '/admin/products', '상품 관리');
         if (backButton) {
             backButton.href = this.state.returnTo || '/admin/products';
-            backButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
+            backButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-arrow-left me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            backButton.append(icon, document.createTextNode(returnContext.buttonLabel));
         }
     },
 
@@ -168,6 +178,7 @@ const ProductFrontDisplayList = {
     },
 
     async load() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -185,8 +196,14 @@ const ProductFrontDisplayList = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 목록을 불러오지 못했습니다.'));
             }
             const payload = await response.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.render(payload);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             console.error('Front display list load failed:', error);
             this.renderError(error.message || '프론트 노출 목록을 불러오지 못했습니다.');
         }
@@ -285,11 +302,14 @@ const ProductFrontDisplayList = {
         }
 
         const returnTo = encodeURIComponent(this.getReturnTo());
-        tbody.innerHTML = items.map((item) => `
+        tbody.innerHTML = items.map((item) => {
+            const productNo = this.normalizeOptionalPositiveNumber(item.productNo);
+            const featuredRank = this.normalizeOptionalPositiveNumber(item.featuredRank);
+            return `
             <tr>
                 <td class="ps-4">
                     <div class="fw-bold">${this.escapeHtml(item.productName || '-')}</div>
-                    <div class="small text-muted">#${item.productNo} · ${this.escapeHtml(item.headline || '미설정')}</div>
+                    <div class="small text-muted">#${productNo || '-'} · ${this.escapeHtml(item.headline || '미설정')}</div>
                 </td>
                 <td>
                     <div>${this.escapeHtml(item.brandName || '-')}</div>
@@ -301,15 +321,16 @@ const ProductFrontDisplayList = {
                     <div>${item.displayConfigured ? '설정됨' : '미설정'}</div>
                     <div class="small text-muted">${item.contentReady ? '전시 문구 완성' : '보완 필요'}</div>
                 </td>
-                <td>${item.featured ? `Y / ${item.featuredRank}` : 'N'}</td>
+                <td>${item.featured ? `Y / ${featuredRank || '-'}` : 'N'}</td>
                 <td class="text-end pe-4">
                     <div class="btn-group btn-group-sm">
-                        <a class="btn btn-outline-secondary" href="/admin/products/get?no=${item.productNo}&source=product-front-display&returnTo=${returnTo}">상세</a>
-                        <a class="btn btn-outline-primary" href="/admin/products/update?no=${item.productNo}&source=product-front-display&returnTo=${returnTo}">수정</a>
+                        <a class="btn btn-outline-secondary" href="${productNo ? `/admin/products/get?no=${productNo}&source=product-front-display&returnTo=${returnTo}` : '#'}" ${productNo ? '' : 'aria-disabled="true" tabindex="-1"'}>상세</a>
+                        <a class="btn btn-outline-primary" href="${productNo ? `/admin/products/update?no=${productNo}&source=product-front-display&returnTo=${returnTo}` : '#'}" ${productNo ? '' : 'aria-disabled="true" tabindex="-1"'}>수정</a>
                     </div>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
     },
 
     renderError(message) {
@@ -459,12 +480,12 @@ const ProductFrontDisplayList = {
 
     normalizeLowStockThreshold(rawValue) {
         const parsed = Number(rawValue || this.initialLowStockThreshold);
-        return Number.isFinite(parsed) && parsed > 0 ? parsed : this.initialLowStockThreshold;
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : this.initialLowStockThreshold;
     },
 
     updateStateFromInputs() {
         this.state.keyword = CommonJS.normalizeOptionalText(document.getElementById('displayKeyword')?.value) || '';
-        this.state.status = document.getElementById('displayStatus')?.value || '';
+        this.state.status = this.normalizeStatusValue(document.getElementById('displayStatus')?.value);
         const brandNo = document.getElementById('displayBrand')?.value || '';
         const categoryNo = document.getElementById('displayCategory')?.value || '';
         const configured = document.getElementById('displayConfigured')?.value || '';
@@ -483,8 +504,12 @@ const ProductFrontDisplayList = {
     validateState() {
         const rawThreshold = document.getElementById('displayLowStockThreshold')?.value || String(this.state.lowStockThreshold);
         const parsed = Number(rawThreshold);
-        if (!Number.isFinite(parsed) || parsed <= 0) {
-            void CommonJS.alert('저재고 기준은 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+        if (!Number.isInteger(parsed) || parsed <= 0) {
+            void CommonJS.alert('저재고 기준은 1 이상의 정수만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.status && !this.normalizeStatusValue(this.state.status)) {
+            void CommonJS.alert('상품 상태 필터 값이 올바르지 않습니다.', '알림', 'warning');
             return false;
         }
         if (!this.isValidOptionalPositiveNumber(this.state.brandNo)) {
@@ -567,7 +592,7 @@ const ProductFrontDisplayList = {
     },
 
     escapeHtml(value) {
-        return String(value)
+        return String(value ?? '')
             .replaceAll('&', '&amp;')
             .replaceAll('<', '&lt;')
             .replaceAll('>', '&gt;')
@@ -580,6 +605,16 @@ const ProductFrontDisplayList = {
             return true;
         }
         return /^\d+$/.test(String(value)) && Number(value) > 0;
+    },
+
+    normalizeOptionalPositiveNumber(value) {
+        return this.isValidOptionalPositiveNumber(value) && value
+            ? Number(value)
+            : null;
+    },
+
+    normalizeStatusValue(value) {
+        return ['', 'ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(value || '') ? (value || '') : '';
     },
 
     isValidConfiguredValue(value) {

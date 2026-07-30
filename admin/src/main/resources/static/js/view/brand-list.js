@@ -13,6 +13,7 @@ const BrandList = {
     saveInFlight: false,
     exportInFlight: false,
     bulkInFlight: false,
+    listRequestId: 0,
     selectedBrandNos: new Set(),
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
@@ -156,6 +157,7 @@ const BrandList = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         try {
             this._updateStateFromInputs();
             this.validateState();
@@ -167,13 +169,21 @@ const BrandList = {
             this.setListStateMeta('loading', '브랜드 목록을 불러오는 중입니다.', 0, 0, '');
             this.renderLoadingState();
             const res = await fetch(`/api/admin/brands/list?${params.toString()}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 목록을 불러오지 못했습니다.'));
+            }
             const data = await res.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderList(data.items || []);
             this.renderStats(data.brandStats);
             this.renderMeta(data);
             this.renderPagination(data);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             console.error('브랜드 목록 로드 실패:', err);
             document.getElementById('brandMetaText').textContent = '브랜드 목록 조회 실패';
             this.setFilterMeta('브랜드 목록을 불러오지 못했습니다.');
@@ -197,7 +207,7 @@ const BrandList = {
                         <div class="product-empty-state">
                             <i class="fas fa-tags product-empty-state-icon"></i>
                             <strong>조건에 맞는 브랜드가 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -207,35 +217,42 @@ const BrandList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.map(item => {
+            const brandNo = this.normalizeOptionalPositiveNumber(item.brandNo);
+            const nameKo = this.escapeHtml(item.nameKo || '-');
+            const nameEn = this.escapeHtml(item.nameEn || '-');
+            const logoUrl = this.escapeHtml(CommonJS.normalizeImageSource(item.logoUrl));
+            const isActive = item.isActive === 'Y';
+            return `
             <tr>
                 <td class="ps-4">
-                    <input type="checkbox" data-role="select-brand" data-brand-no="${item.brandNo}" ${this.selectedBrandNos.has(item.brandNo) ? 'checked' : ''}>
+                    <input type="checkbox" data-role="select-brand" data-brand-no="${brandNo || ''}" ${this.selectedBrandNos.has(brandNo) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-muted">${item.brandNo}</td>
+                <td class="ps-4 text-muted">${brandNo || '-'}</td>
                 <td>
                     <div class="brand-logo-wrapper">
-                        <img src="${item.logoUrl || ''}" class="brand-logo-img" alt="${this.escapeHtml(item.nameKo)}"
-                             data-role="brand-logo" data-brand-name="${this.escapeHtml(item.nameKo)}">
+                        <img src="${logoUrl}" class="brand-logo-img" alt="${nameKo}"
+                             data-role="brand-logo" data-brand-name="${nameKo}">
                     </div>
                 </td>
-                <td class="fw-bold text-dark">${item.nameKo}</td>
-                <td class="text-muted">${item.nameEn || '-'}</td>
+                <td class="fw-bold text-dark">${nameKo}</td>
+                <td class="text-muted">${nameEn}</td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                        ${item.isActive === 'Y' ? '사용중' : '중지'}
+                    <span class="badge rounded-pill ${isActive ? 'badge-y' : 'badge-n'}">
+                        ${isActive ? '사용중' : '중지'}
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-brand" data-brand-no="${item.brandNo}">수정</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-brand" data-brand-no="${brandNo || ''}">수정</button>
                     <button class="btn btn-sm btn-outline-dark me-1"
                             data-role="toggle-brand-active"
-                            data-brand-no="${item.brandNo}"
-                            data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
-                    <button class="btn btn-sm btn-outline-danger" data-role="delete-brand" data-brand-no="${item.brandNo}">삭제</button>
+                            data-brand-no="${brandNo || ''}"
+                            data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-brand" data-brand-no="${brandNo || ''}">삭제</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         this.bindLogoFallbacks();
         this.setListStateMeta('ready', '', items.length, null, null);
         this.updateSelectionMeta(items);

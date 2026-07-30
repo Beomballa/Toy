@@ -5,6 +5,7 @@ const ContentEdit = {
     isSaving: false,
     isDeleting: false,
     operationPolicy: null,
+    detailRequestId: 0,
     source: '',
     initialData: {
         title: '',
@@ -85,6 +86,7 @@ const ContentEdit = {
     },
 
     async getDetail() {
+        const requestId = ++this.detailRequestId;
         if (!this.isValidContentId(this.id)) {
             await CommonJS.alert('유효하지 않은 콘텐츠 번호입니다.', '알림', 'warning');
             location.href = this.getListPath();
@@ -95,6 +97,10 @@ const ContentEdit = {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
+            if (requestId !== this.detailRequestId) return;
+            if (this.normalizeContentId(data.id) !== this.id) {
+                throw new Error('요청한 콘텐츠와 상세 응답 정보가 일치하지 않습니다.');
+            }
             document.getElementById('title').value = data.title || '';
             document.getElementById('content').value = data.content || '';
             document.getElementById('boardType').value = ContentBoardConfig.normalizeBoardType(data.boardType || 'NOTICE');
@@ -116,6 +122,7 @@ const ContentEdit = {
             this.syncVisibilitySummary();
             this.syncProductSummary();
         } catch (err) {
+            if (requestId !== this.detailRequestId) return;
             console.error('콘텐츠 로드 실패:', err);
             await CommonJS.alert('내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
@@ -175,7 +182,11 @@ const ContentEdit = {
             listBreadcrumbEl.href = this.getListPath();
         }
         if (backButton) {
-            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext?.buttonLabel || `${meta.edit.boardName}로`}`;
+            backButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-list me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            backButton.append(icon, document.createTextNode(returnContext?.buttonLabel || `${meta.edit.boardName}로`));
         }
     },
 
@@ -280,14 +291,23 @@ const ContentEdit = {
                 })
             });
 
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '콘텐츠 저장 중 오류가 발생했습니다.'));
+            }
 
             const saved = await res.json();
-            if (saved?.id) {
-                this.id = saved.id;
-                document.getElementById('contentId').value = saved.id;
+            const savedId = this.normalizeContentId(saved?.id);
+            if (!savedId) {
+                throw new Error('저장된 콘텐츠 번호를 확인할 수 없습니다.');
+            }
+            if (this.id && savedId !== this.id) {
+                throw new Error('저장 요청과 응답의 콘텐츠 번호가 일치하지 않습니다.');
+            }
+            if (savedId) {
+                this.id = savedId;
+                document.getElementById('contentId').value = String(savedId);
                 const url = new URL(window.location.href);
-                url.searchParams.set('id', saved.id);
+                url.searchParams.set('id', String(savedId));
                 url.searchParams.set('boardType', boardType);
                 window.history.replaceState({}, '', url);
             }

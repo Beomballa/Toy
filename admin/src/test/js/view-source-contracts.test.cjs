@@ -168,3 +168,18 @@ test("product create and update validate async data and partial saves", () => {
     assert.match(updateSource, /Array\.isArray\(data\.options\)/);
     assert.match(updateSource, /CommonJS\.normalizeImageSource/);
 });
+
+test("content detail and edit validate document identity and latest responses", () => {
+    const detailSource = readViewScript("content-get.js");
+    const editSource = readViewScript("content-edit.js");
+
+    for (const source of [detailSource, editSource]) {
+        assert.match(source, /requestId !== this\.detailRequestId/);
+        assert.equal(source.includes("backButton.innerHTML"), false);
+    }
+    assert.match(detailSource, /this\.normalizeContentId\(data\.id\) !== this\.state\.id/);
+    assert.match(detailSource, /this\.formatNumber\(data\.viewCnt\)/);
+    assert.match(detailSource, /this\.normalizeOptionalProductNo\(data\.productNo\)/);
+    assert.match(editSource, /this\.normalizeContentId\(saved\?\.id\)/);
+    assert.match(editSource, /savedId !== this\.id/);
+});

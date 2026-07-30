@@ -13,6 +13,7 @@ const ContentDetail = {
     operationPolicy: null,
     operateInFlight: false,
     reactionRequestId: 0,
+    detailRequestId: 0,
 
     async init() {
         if (this.initialized) return;
@@ -101,6 +102,7 @@ const ContentDetail = {
     },
 
     async loadDetail() {
+        const requestId = ++this.detailRequestId;
         try {
             const response = await fetch(`/api/admin/content/get?id=${this.state.id}`);
             if (!response.ok) {
@@ -108,6 +110,10 @@ const ContentDetail = {
             }
 
             const data = await response.json();
+            if (requestId !== this.detailRequestId) return false;
+            if (this.normalizeContentId(data.id) !== this.state.id) {
+                throw new Error('요청한 문서와 상세 응답 정보가 일치하지 않습니다.');
+            }
             this.state.data = data;
             this.state.boardType = ContentBoardConfig.normalizeBoardType(data.boardType || this.state.boardType);
             this.applyBoardMeta(this.state.boardType);
@@ -115,6 +121,7 @@ const ContentDetail = {
             this.renderDetail(data);
             return true;
         } catch (error) {
+            if (requestId !== this.detailRequestId) return false;
             console.error('콘텐츠 상세 로드 실패:', error);
             await CommonJS.alert('상세 내용을 불러오는 중 오류가 발생했습니다.', '오류', 'error');
             window.location.href = this.getListPath();
@@ -127,17 +134,18 @@ const ContentDetail = {
         this.setText('contentTitleValue', data.title || '제목 없음');
         this.renderBodyValue(data.content);
         this.setText('contentIdValue', data.id || '-');
-        this.setText('contentProductNoValue', data.productNo || '-');
+        const productNo = this.normalizeOptionalProductNo(data.productNo);
+        this.setText('contentProductNoValue', productNo || '-');
         this.setText('contentStatusValue', data.status === 'PUBLISHED' ? '게시중' : '임시저장');
         this.setText('contentPublicValue', data.publicYn === 'Y' ? '공개' : '비공개');
         this.setText('contentPinnedValue', data.pinnedYn === 'Y' ? '고정글' : '일반글');
         this.setText('contentCreatedValue', data.crtDtm || '-');
         this.setText('contentUpdatedValue', data.uptDtm || '-');
-        this.setText('contentViewsValue', `${(data.viewCnt ?? 0).toLocaleString()}회`);
+        this.setText('contentViewsValue', `${this.formatNumber(data.viewCnt)}회`);
         this.setText('contentCreatedMeta', `등록 ${data.crtDtm || '-'}`);
         this.setText('contentUpdatedMeta', `수정 ${data.uptDtm || '-'}`);
-        this.setText('contentViewsMeta', `조회 ${(data.viewCnt ?? 0).toLocaleString()}회`);
-        this.setButtonText('btnOpenContentProduct', data.productNo ? `상품 #${data.productNo}` : '연결 상품 없음');
+        this.setText('contentViewsMeta', `조회 ${this.formatNumber(data.viewCnt)}회`);
+        this.setButtonText('btnOpenContentProduct', productNo ? `상품 #${productNo}` : '연결 상품 없음');
         const nextStatusLabel = data.status === 'PUBLISHED' ? '임시저장' : '게시';
         const nextPublicLabel = data.publicYn === 'Y' ? '비공개' : '공개';
         const nextPinnedLabel = data.pinnedYn === 'Y' ? '고정 해제' : '고정';
@@ -353,7 +361,11 @@ const ContentDetail = {
             listLink.href = this.getListPath();
         }
         if (backButton) {
-            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext?.buttonLabel || `${meta.detail.listTitle}로`}`;
+            backButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-list me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            backButton.append(icon, document.createTextNode(returnContext?.buttonLabel || `${meta.detail.listTitle}로`));
         }
     },
 

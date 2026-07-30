@@ -87,3 +87,13 @@ test("product front display validates filters and keeps the latest response", ()
     assert.match(source, /\['', 'ACTIVE', 'HIDDEN', 'SOLD_OUT'\]/);
     assert.equal(source.includes("backButton.innerHTML"), false);
 });
+
+test("task workload detail rejects stale responses and unsafe identifiers", () => {
+    const source = readViewScript("task-workload-get.js");
+
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /requestId !== this\.reassignRequestId/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath\(basePath, ''\)/);
+    assert.match(source, /safeOptions\.flatMap/);
+    assert.equal(source.includes("returnButton.innerHTML"), false);
+});

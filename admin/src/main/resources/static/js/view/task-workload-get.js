@@ -4,6 +4,8 @@ const TaskWorkloadDetail = {
     operationPolicy: null,
     reassignModal: null,
     reassignDetail: null,
+    detailRequestId: 0,
+    reassignRequestId: 0,
     isOpeningReassignModal: false,
     isCompletingTask: false,
     isRaisingPriority: false,
@@ -21,6 +23,10 @@ const TaskWorkloadDetail = {
         const modalEl = document.getElementById('taskReassignModal');
         if (modalEl) {
             this.reassignModal = new bootstrap.Modal(modalEl);
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                this.reassignRequestId += 1;
+                this.reassignDetail = null;
+            });
         }
         this.bindEvents();
         this.syncReturnLinks();
@@ -181,6 +187,7 @@ const TaskWorkloadDetail = {
     },
 
     async loadDetail() {
+        const requestId = ++this.detailRequestId;
         try {
             const adminNo = this.normalizeTaskNo(this.bootstrap.adminNo);
             if (!this.isValidAdminNo(adminNo)) {
@@ -195,8 +202,14 @@ const TaskWorkloadDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '담당자 워크로드 상세를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.renderDetail(data);
         } catch (error) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             document.getElementById('taskWorkloadDetailTitle').textContent = error.message;
             document.getElementById('workloadDetailMetaText').textContent = '담당자 워크로드 상세를 확인할 수 없습니다.';
             this.renderSectionState('workloadRecentTasksBody', 'error', '최근 작업을 불러오지 못했습니다.', error.message);
@@ -236,10 +249,10 @@ const TaskWorkloadDetail = {
         document.getElementById('workloadDetailOverdueSummaryButton').href = this.buildContextualPath(data.overduePath) || '#';
         document.getElementById('workloadDetailLogButton').href = this.buildLogPathFromBase(data.activityLogPath) || '#';
 
-        this.renderRecentTasks(data.recentTasks || []);
-        this.renderOverdueTasks(data.overdueTasks || []);
-        this.renderRecentComments(data.recentComments || []);
-        this.renderRecentHistories(data.recentHistories || []);
+        this.renderRecentTasks(Array.isArray(data.recentTasks) ? data.recentTasks : []);
+        this.renderOverdueTasks(Array.isArray(data.overdueTasks) ? data.overdueTasks : []);
+        this.renderRecentComments(Array.isArray(data.recentComments) ? data.recentComments : []);
+        this.renderRecentHistories(Array.isArray(data.recentHistories) ? data.recentHistories : []);
         const metaEl = document.getElementById('taskWorkloadDetailStateMeta');
         if (metaEl) {
             metaEl.dataset.detailState = 'ready';
@@ -287,7 +300,11 @@ const TaskWorkloadDetail = {
         }
         if (returnButton) {
             returnButton.href = returnTo;
-            returnButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.label}로 돌아가기`;
+            returnButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-arrow-left me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            returnButton.append(icon, document.createTextNode(`${returnContext.label}로 돌아가기`));
         }
     },
 
@@ -313,18 +330,22 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.map((item) => `
+        body.innerHTML = items.flatMap((item) => {
+            const taskNo = this.normalizeTaskNo(item.taskNo);
+            if (!taskNo) return [];
+            return [`
             <div class="border rounded-3 p-3 mb-3">
-                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.title)}</a></div>
+                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(taskNo)}">${this.escapeHtml(item.title)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                 <div class="mt-2 d-flex gap-2 flex-wrap">
-                    <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(item.taskNo)}">이력</a>
-                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button>
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">재배정</button>
+                    <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(taskNo)}">이력</a>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${taskNo}">우선순위 높음</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${taskNo}">완료 처리</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${taskNo}">재배정</button>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
         this.syncOverdueActionState();
     },
 
@@ -341,22 +362,26 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.map((item) => `
+        body.innerHTML = items.flatMap((item) => {
+            const taskNo = this.normalizeTaskNo(item.taskNo);
+            if (!taskNo) return [];
+            return [`
             <div class="border rounded-3 p-3 mb-3 bg-light-subtle">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
-                        <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.title)}</a></div>
+                        <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(taskNo)}">${this.escapeHtml(item.title)}</a></div>
                         <div class="small text-muted">${this.escapeHtml(item.statusLabel)} · ${this.escapeHtml(item.priorityLabel)} · ${this.escapeHtml(item.dueState)}</div>
                     </div>
                     <div class="d-flex flex-column gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(item.taskNo)}">이력</a>
-                        <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-overdue-priority" data-task-no="${item.taskNo}">우선순위 높음</button>
-                        <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${item.taskNo}">완료 처리</button>
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-overdue-task" data-task-no="${item.taskNo}">재배정</button>
+                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildTaskHistoryPath(taskNo)}">이력</a>
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-overdue-priority" data-task-no="${taskNo}">우선순위 높음</button>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-overdue-task" data-task-no="${taskNo}">완료 처리</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-overdue-task" data-task-no="${taskNo}">재배정</button>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
         this.syncOverdueActionState();
     },
 
@@ -373,18 +398,22 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.map((item) => `
+        body.innerHTML = items.flatMap((item) => {
+            const taskNo = this.normalizeTaskNo(item.taskNo);
+            if (!taskNo) return [];
+            return [`
             <div class="border rounded-3 p-3 mb-3">
-                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.taskTitle)}</a></div>
+                <div class="fw-bold mb-1"><a class="text-decoration-none" href="${this.buildTaskDetailPath(taskNo)}">${this.escapeHtml(item.taskTitle)}</a></div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.commentDtm)}</div>
                 <div class="small text-dark mt-2">${this.escapeHtml(item.content)}</div>
                 <div class="mt-2 d-flex gap-2 flex-wrap">
-                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button>
-                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button>
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button>
+                    <button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${taskNo}">우선순위 높음</button>
+                    <button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${taskNo}">완료 처리</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${taskNo}">이 작업 재배정</button>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
         this.syncOverdueActionState();
     },
 
@@ -401,16 +430,19 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.map((item) => `
+        body.innerHTML = items.map((item) => {
+            const taskNo = this.normalizeTaskNo(item.taskNo);
+            return `
             <div class="border rounded-3 p-3 mb-3">
                 <div class="fw-bold mb-1">${this.escapeHtml(item.actionLabel)}</div>
                 <div class="small text-muted">${this.escapeHtml(item.adminName)} · ${this.escapeHtml(item.actionDtm)}</div>
                 <div class="small text-dark mt-2">
-                    ${item.taskNo ? `<a class="text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo)}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
+                    ${taskNo ? `<a class="text-decoration-none" href="${this.buildTaskDetailPath(taskNo)}">${this.escapeHtml(item.taskLabel || '관련 작업 보기')}</a>` : this.escapeHtml(item.taskLabel || '-')}
                 </div>
-                ${item.taskNo ? `<div class="mt-2 d-flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${item.taskNo}">우선순위 높음</button><button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${item.taskNo}">완료 처리</button><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${item.taskNo}">이 작업 재배정</button></div>` : ''}
+                ${taskNo ? `<div class="mt-2 d-flex gap-2 flex-wrap"><button type="button" class="btn btn-sm btn-outline-warning" data-role="raise-priority-from-context" data-task-no="${taskNo}">우선순위 높음</button><button type="button" class="btn btn-sm btn-outline-success" data-role="complete-task-from-context" data-task-no="${taskNo}">완료 처리</button><button type="button" class="btn btn-sm btn-outline-dark" data-role="reassign-task-from-context" data-task-no="${taskNo}">이 작업 재배정</button></div>` : ''}
             </div>
-        `).join('');
+        `;
+        }).join('');
         this.syncOverdueActionState();
     },
 
@@ -563,6 +595,7 @@ const TaskWorkloadDetail = {
             await CommonJS.alert('재배정할 작업 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
+        const requestId = ++this.reassignRequestId;
         this.reassignDetail = { sourceLabel };
         const metaEl = document.getElementById('taskReassignModalMeta');
         const listEl = document.getElementById('taskReassignRecommendationList');
@@ -585,6 +618,9 @@ const TaskWorkloadDetail = {
         try {
             this.isOpeningReassignModal = true;
             const data = await this.fetchTaskDetail(taskNo);
+            if (requestId !== this.reassignRequestId) {
+                return;
+            }
             this.reassignDetail = { ...data, sourceLabel };
             if (metaEl) {
                 metaEl.textContent = `${data.title || '-'} · 현재 담당자 ${data.assigneeAdminName || '미지정'} · ${data.dueState || '-'}`;
@@ -594,6 +630,9 @@ const TaskWorkloadDetail = {
             this.syncSelectedRecommendationState();
             this.syncOverdueActionState();
         } catch (error) {
+            if (requestId !== this.reassignRequestId) {
+                return;
+            }
             if (metaEl) metaEl.textContent = error.message;
             if (listEl) {
                 listEl.innerHTML = `
@@ -610,16 +649,21 @@ const TaskWorkloadDetail = {
     renderReassignAssigneeOptions(options, selectedAssigneeAdminNo) {
         const select = document.getElementById('taskReassignAssignee');
         if (!select) return;
+        const safeOptions = Array.isArray(options) ? options : [];
         select.innerHTML = ['<option value="">미지정</option>']
-            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .concat(safeOptions.flatMap((option) => {
+                const adminNo = this.normalizeTaskNo(option.adminNo);
+                return adminNo ? [`<option value="${adminNo}">${this.escapeHtml(option.name)}</option>`] : [];
+            }))
             .join('');
-        select.value = selectedAssigneeAdminNo || '';
+        select.value = String(this.normalizeTaskNo(selectedAssigneeAdminNo) || '');
     },
 
     renderReassignRecommendations(items) {
         const listEl = document.getElementById('taskReassignRecommendationList');
         if (!listEl) return;
-        if (!items.length) {
+        const safeItems = Array.isArray(items) ? items : [];
+        if (!safeItems.length) {
             listEl.innerHTML = `
                 <div class="col-12">
                     ${this.buildSectionStateMarkup('empty', '추천 가능한 담당자가 없습니다.', '현재 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.', 'fa-user-slash')}
@@ -627,18 +671,22 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        listEl.innerHTML = items.map((item) => `
+        listEl.innerHTML = safeItems.flatMap((item) => {
+            const adminNo = this.normalizeTaskNo(item.adminNo);
+            if (!adminNo) return [];
+            return [`
             <div class="col-md-4">
                 <div class="border rounded-3 p-3 h-100">
                     <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
                     <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
                     <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
                     <div class="mt-3">
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-reassign-recommendation" data-admin-no="${item.adminNo}">이 담당자로 선택</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-reassign-recommendation" data-admin-no="${adminNo}">이 담당자로 선택</button>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
         this.syncSelectedRecommendationState();
     },
 
@@ -815,8 +863,10 @@ const TaskWorkloadDetail = {
     },
 
     buildTaskDetailPath(taskNo) {
+        const normalizedTaskNo = this.normalizeTaskNo(taskNo);
+        if (!normalizedTaskNo) return '#';
         const params = new URLSearchParams();
-        params.set('no', String(taskNo));
+        params.set('no', String(normalizedTaskNo));
         params.set('returnTo', this.buildCurrentDetailPath());
         if (this.bootstrap.source) {
             params.set('source', this.bootstrap.source);
@@ -825,8 +875,10 @@ const TaskWorkloadDetail = {
     },
 
     buildTaskHistoryPath(taskNo) {
+        const normalizedTaskNo = this.normalizeTaskNo(taskNo);
+        if (!normalizedTaskNo) return '#';
         const params = new URLSearchParams();
-        params.set('taskNo', String(taskNo));
+        params.set('taskNo', String(normalizedTaskNo));
         params.set('returnTo', this.buildCurrentDetailPath());
         if (this.bootstrap.source) {
             params.set('source', this.bootstrap.source);
@@ -859,10 +911,11 @@ const TaskWorkloadDetail = {
     },
 
     buildContextualPath(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', this.buildCurrentDetailPath());
         if (this.bootstrap.source) {
@@ -872,10 +925,11 @@ const TaskWorkloadDetail = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', this.buildCurrentDetailPath());
         if (this.bootstrap.source) {

@@ -125,3 +125,18 @@ test("product and order histories validate rows and keep the latest response", (
     assert.match(productSource, /this\.escapeHtml\(item\.summary/);
     assert.match(orderSource, /this\.normalizeOptionalPositiveNumber\(item\.orderNo\)/);
 });
+
+test("notice and task details validate navigation and latest responses", () => {
+    const noticeSource = readViewScript("notice-get.js");
+    const taskSource = readViewScript("task-get.js");
+
+    for (const source of [noticeSource, taskSource]) {
+        assert.match(source, /requestId !== this\.detailRequestId/);
+        assert.match(source, /CommonJS\.normalizeAdminReturnPath\(basePath, ''\)/);
+        assert.match(source, /syncNavigationLink\(elementId, path\)/);
+    }
+    assert.match(taskSource, /CommonJS\.normalizeAdminReturnPath\(data\.sourcePath, ''\)/);
+    assert.match(taskSource, /options\.flatMap/);
+    assert.match(taskSource, /this\.normalizePositiveNumber\(item\.commentNo\)/);
+    assert.match(noticeSource, /this\.buildHistoryPathFromBase\(item\.historyPath\)/);
+});

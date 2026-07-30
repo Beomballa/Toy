@@ -6,6 +6,7 @@ const NoticeDetailPage = {
     isTogglingActive: false,
     isTogglingPinned: false,
     isDeletingNotice: false,
+    detailRequestId: 0,
     state: {
         noticeNo: null,
         returnTo: '/admin/settings/notices',
@@ -65,6 +66,7 @@ const NoticeDetailPage = {
     },
 
     async loadDetail() {
+        const requestId = ++this.detailRequestId;
         if (!this.isValidNoticeNo(this.state.noticeNo)) {
             this.renderError('운영 공지 번호가 없습니다.');
             return;
@@ -76,9 +78,15 @@ const NoticeDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 공지 상세를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.state.currentDetail = data;
             this.renderDetail(data);
         } catch (error) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -95,12 +103,12 @@ const NoticeDetailPage = {
         document.getElementById('noticeDetailMeta').textContent = `운영 공지 #${data.noticeNo}`;
         document.getElementById('noticeDetailSummary').textContent = `${data.displayStatus} · ${data.isPinned === 'Y' ? '고정 공지' : '일반 공지'}`;
         const historyPath = this.buildHistoryPathFromBase(data.historyPath);
-        document.getElementById('btnNoticeDetailHistory').href = historyPath;
-        document.getElementById('btnNoticeDetailHistoryMore').href = historyPath;
-        document.getElementById('btnNoticeDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
+        this.syncNavigationLink('btnNoticeDetailHistory', historyPath);
+        this.syncNavigationLink('btnNoticeDetailHistoryMore', historyPath);
+        this.syncNavigationLink('btnNoticeDetailLog', this.buildLogPathFromBase(data.activityLogPath));
         document.getElementById('btnNoticeDetailTogglePinned').textContent = data.isPinned === 'Y' ? '고정 해제' : '고정';
         document.getElementById('btnNoticeDetailToggleActive').textContent = data.isActive === 'Y' ? '비활성' : '활성';
-        this.renderRecentHistories(data.recentHistories || []);
+        this.renderRecentHistories(Array.isArray(data.recentHistories) ? data.recentHistories : []);
 
         const metaEl = document.getElementById('noticeDetailStateMeta');
         if (metaEl) {
@@ -389,7 +397,10 @@ const NoticeDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => `
+        listEl.innerHTML = items.map((item) => {
+            const logPath = this.buildLogPathFromBase(item.activityLogPath);
+            const historyPath = this.buildHistoryPathFromBase(item.historyPath);
+            return `
             <div class="list-group-item px-0">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
@@ -397,12 +408,13 @@ const NoticeDetailPage = {
                         <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-dark" href="${this.buildLogPathFromBase(item.activityLogPath)}">활동 로그</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPath(item.historyPath)}">이력</a>
+                        ${logPath ? `<a class="btn btn-sm btn-outline-dark" href="${this.escapeHtml(logPath)}">활동 로그</a>` : ''}
+                        ${historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(historyPath)}">이력</a>` : ''}
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         const historyMetaText = document.getElementById('noticeDetailHistoryMeta');
         if (historyMetaText) {
@@ -588,8 +600,9 @@ const NoticeDetailPage = {
     },
 
     buildHistoryPathFromBase(basePath) {
-        if (!basePath) return '';
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) return '';
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -599,14 +612,23 @@ const NoticeDetailPage = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) return '';
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) return '';
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    syncNavigationLink(elementId, path) {
+        const link = document.getElementById(elementId);
+        if (!link) return;
+        link.href = path || '#';
+        link.classList.toggle('d-none', !path);
+        link.setAttribute('aria-disabled', path ? 'false' : 'true');
     },
 
     escapeHtml(value) {

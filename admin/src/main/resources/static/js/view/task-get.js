@@ -11,6 +11,7 @@ const TaskDetailPage = {
     isSavingComment: false,
     isDeletingComment: false,
     isApplyingRecommendation: false,
+    detailRequestId: 0,
     state: {
         taskNo: null,
         returnTo: '/admin/settings/tasks',
@@ -110,6 +111,7 @@ const TaskDetailPage = {
     },
 
     async loadDetail() {
+        const requestId = ++this.detailRequestId;
         if (!this.isValidTaskNo(this.state.taskNo)) {
             this.renderError('운영 작업 번호가 없습니다.');
             return;
@@ -120,9 +122,15 @@ const TaskDetailPage = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '운영 작업 상세를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.state.currentDetail = data;
             this.renderDetail(data);
         } catch (error) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             this.renderError(error.message);
         }
     },
@@ -142,27 +150,29 @@ const TaskDetailPage = {
         document.getElementById('taskDetailSummary').textContent = `${data.statusLabel} · ${data.priorityLabel} · 담당자 ${data.assigneeAdminName || '미지정'}`;
         const sourceEl = document.getElementById('taskDetailSource');
         const sourceLink = document.getElementById('btnTaskDetailSource');
-        if (sourceEl && sourceLink && data.sourceLabel && data.sourcePath) {
+        const sourcePath = CommonJS.normalizeAdminReturnPath(data.sourcePath, '');
+        if (sourceEl && sourceLink && data.sourceLabel && sourcePath) {
             document.getElementById('taskDetailSourceLabel').textContent = data.sourceLabel;
-            sourceLink.href = data.sourcePath;
+            sourceLink.href = sourcePath;
             sourceEl.classList.remove('d-none');
         } else {
             sourceEl?.classList.add('d-none');
             sourceLink?.removeAttribute('href');
         }
-        this.renderAssigneeOptions(data.assigneeOptions || []);
-        this.renderAssignmentRecommendations(data.assignmentRecommendations || []);
+        this.renderAssigneeOptions(Array.isArray(data.assigneeOptions) ? data.assigneeOptions : []);
+        this.renderAssignmentRecommendations(Array.isArray(data.assignmentRecommendations) ? data.assignmentRecommendations : []);
         const historyPath = this.buildHistoryPathFromBase(data.historyPath);
-        document.getElementById('btnTaskDetailHistory').href = historyPath;
-        document.getElementById('btnTaskDetailLog').href = this.buildLogPathFromBase(data.activityLogPath);
-        document.getElementById('btnTaskDetailHistoryMore').href = historyPath;
-        document.getElementById('btnTaskDetailLogsMore').href = this.buildLogPathFromBase(data.activityLogPath);
+        const logPath = this.buildLogPathFromBase(data.activityLogPath);
+        this.syncNavigationLink('btnTaskDetailHistory', historyPath);
+        this.syncNavigationLink('btnTaskDetailLog', logPath);
+        this.syncNavigationLink('btnTaskDetailHistoryMore', historyPath);
+        this.syncNavigationLink('btnTaskDetailLogsMore', logPath);
         document.getElementById('btnTaskDetailCyclePriority').textContent = `${this.resolveNextPriorityLabel(data.priority || 'MEDIUM')}로 변경`;
         document.getElementById('btnTaskDetailClearAssignee').textContent = data.assigneeAdminNo ? '담당 해제' : '담당 없음';
         document.getElementById('btnTaskDetailTogglePinned').textContent = data.isPinned === 'Y' ? '고정 해제' : '고정';
         document.getElementById('btnTaskDetailToggleStatus').textContent = data.status === 'DONE' ? '진행중으로 변경' : '완료 처리';
-        this.renderRecentHistories(data.recentHistories || []);
-        this.renderComments(data.comments || []);
+        this.renderRecentHistories(Array.isArray(data.recentHistories) ? data.recentHistories : []);
+        this.renderComments(Array.isArray(data.comments) ? data.comments : []);
 
         const metaEl = document.getElementById('taskDetailStateMeta');
         if (metaEl) {
@@ -207,9 +217,12 @@ const TaskDetailPage = {
         if (!select) return;
         const selected = this.state.currentDetail?.assigneeAdminNo || '';
         select.innerHTML = ['<option value="">미지정</option>']
-            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .concat(options.flatMap((option) => {
+                const adminNo = this.normalizePositiveNumber(option.adminNo);
+                return adminNo ? [`<option value="${adminNo}">${this.escapeHtml(option.name)}</option>`] : [];
+            }))
             .join('');
-        select.value = selected;
+        select.value = String(this.normalizePositiveNumber(selected) || '');
     },
 
     renderAssignmentRecommendations(items) {
@@ -227,18 +240,22 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => `
+        listEl.innerHTML = items.flatMap((item) => {
+            const adminNo = this.normalizePositiveNumber(item.adminNo);
+            if (!adminNo) return [];
+            return [`
             <div class="col-md-4">
                 <div class="border rounded-3 p-3 h-100">
                     <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
                     <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
                     <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
                     <div class="mt-3">
-                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-task-recommendation" data-admin-no="${item.adminNo}">이 담당자로 배정</button>
+                        <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-task-recommendation" data-admin-no="${adminNo}">이 담당자로 배정</button>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
         metaEl.textContent = `추천 후보 ${items.length}명`;
     },
 
@@ -607,7 +624,10 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => `
+        listEl.innerHTML = items.map((item) => {
+            const historyPath = this.buildHistoryPathFromBase(item.historyPath);
+            const logPath = this.buildLogPathFromBase(item.activityLogPath);
+            return `
             <div class="list-group-item px-0">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
@@ -615,12 +635,13 @@ const TaskDetailPage = {
                         <div class="small text-muted">${this.escapeHtml(item.adminName || '-')} · ${this.escapeHtml(item.actionDtm || '-')}</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildHistoryPathFromBase(item.historyPath)}">이력</a>
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.buildLogPathFromBase(item.activityLogPath)}">활동 로그</a>
+                        ${historyPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(historyPath)}">이력</a>` : ''}
+                        ${logPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(logPath)}">활동 로그</a>` : ''}
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
 
         const historyMetaText = document.getElementById('taskDetailHistoryMeta');
         if (historyMetaText) {
@@ -659,21 +680,26 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => `
+        listEl.innerHTML = items.flatMap((item) => {
+            const commentNo = this.normalizePositiveNumber(item.commentNo);
+            if (!commentNo) return [];
+            const adminNo = this.normalizePositiveNumber(item.adminNo);
+            return [`
             <div class="list-group-item px-0">
                 <div class="d-flex justify-content-between align-items-start gap-3">
                     <div>
-                        <div class="fw-semibold">${this.escapeHtml(item.adminName || '-')} <span class="small text-muted">(#${item.adminNo || '-'})</span></div>
+                        <div class="fw-semibold">${this.escapeHtml(item.adminName || '-')} <span class="small text-muted">(#${adminNo || '-'})</span></div>
                         <div class="small text-muted mb-2">${this.escapeHtml(item.crtDtm || '-')}</div>
                         <div class="small text-dark">${this.escapeHtml(item.content || '-').replace(/\n/g, '<br>')}</div>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="edit-task-comment" data-comment-no="${item.commentNo}">수정</button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" data-role="delete-task-comment" data-comment-no="${item.commentNo}">삭제</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="edit-task-comment" data-comment-no="${commentNo}">수정</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" data-role="delete-task-comment" data-comment-no="${commentNo}">삭제</button>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
 
         if (metaEl) {
             metaEl.dataset.listState = 'ready';
@@ -1106,8 +1132,9 @@ const TaskDetailPage = {
     },
 
     buildHistoryPathFromBase(basePath) {
-        if (!basePath) return '';
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) return '';
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -1117,14 +1144,23 @@ const TaskDetailPage = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) return '';
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) return '';
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
             params.set('source', this.state.source);
         }
         return `${path}?${params.toString()}`;
+    },
+
+    syncNavigationLink(elementId, path) {
+        const link = document.getElementById(elementId);
+        if (!link) return;
+        link.href = path || '#';
+        link.classList.toggle('d-none', !path);
+        link.setAttribute('aria-disabled', path ? 'false' : 'true');
     }
 };
 

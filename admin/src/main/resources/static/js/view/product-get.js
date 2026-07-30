@@ -256,13 +256,14 @@ const ProductDetail = {
         const thumbnailUrlLink = document.getElementById('thumbnailUrlLink');
         const thumbnailUrlLinkInline = document.getElementById('thumbnailUrlLinkInline');
         if (data.hasThumbnail) {
-            if (productImage) productImage.src = data.thumbnailUrl;
+            const safeThumbnailUrl = CommonJS.normalizeImageSource(data.thumbnailUrl);
+            if (productImage) productImage.src = safeThumbnailUrl;
             if (thumbnailUrlLink) {
-                thumbnailUrlLink.href = data.thumbnailUrl;
+                thumbnailUrlLink.href = safeThumbnailUrl;
                 thumbnailUrlLink.style.display = 'inline-block';
             }
             if (thumbnailUrlLinkInline) {
-                thumbnailUrlLinkInline.href = data.thumbnailUrl;
+                thumbnailUrlLinkInline.href = safeThumbnailUrl;
                 thumbnailUrlLinkInline.style.display = 'inline-flex';
             }
         } else {
@@ -288,8 +289,8 @@ const ProductDetail = {
 
             const optHtml = data.options.map(opt => `
                 <div class="product-option-chip">
-                    <span class="product-option-name">${opt.optionName}</span>
-                    <span class="product-option-stock">재고 ${opt.stockQty.toLocaleString()}개</span>
+                    <span class="product-option-name">${CommonJS.escapeHtml(opt.optionName)}</span>
+                    <span class="product-option-stock">재고 ${Number(opt.stockQty || 0).toLocaleString()}개</span>
                 </div>
             `).join('');
 
@@ -315,7 +316,7 @@ const ProductDetail = {
         const statusBadge = document.getElementById('statusBadge');
         if (statusBadge) {
             const statusMeta = CommonJS.getProductStatusMeta(normalizedStatusCode);
-            statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${data.statusDesc || '판매중'}</span>`;
+            statusBadge.innerHTML = `<span class="badge ${statusMeta.badgeClass}">${CommonJS.escapeHtml(data.statusDesc || '판매중')}</span>`;
         }
     },
 
@@ -394,22 +395,22 @@ const ProductDetail = {
                 historyListEl.innerHTML = histories.map((history) => `
                     <div class="product-option-chip flex-column align-items-start">
                         <div class="d-flex justify-content-between w-100 gap-2">
-                            <strong>${history.actionLabel}</strong>
-                            <span class="text-muted small">${history.crtDtm || '-'}</span>
+                            <strong>${CommonJS.escapeHtml(history.actionLabel)}</strong>
+                            <span class="text-muted small">${CommonJS.escapeHtml(history.crtDtm || '-')}</span>
                         </div>
-                        <span class="small text-muted">${history.summary}</span>
-                        ${history.relatedProductNo ? `
-                            <a class="small text-decoration-none" href="/admin/products/get?no=${history.relatedProductNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">
-                                ${history.relatedProductLabel} #${history.relatedProductNo}
+                        <span class="small text-muted">${CommonJS.escapeHtml(history.summary)}</span>
+                        ${this.normalizeProductNo(history.relatedProductNo) ? `
+                            <a class="small text-decoration-none" href="/admin/products/get?no=${this.normalizeProductNo(history.relatedProductNo)}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">
+                                ${CommonJS.escapeHtml(history.relatedProductLabel)} #${this.normalizeProductNo(history.relatedProductNo)}
                             </a>
                         ` : ''}
                         ${history.activityLogPath ? `
-                            <a class="small text-decoration-none" href="${this.buildLogPathFromBase(history.activityLogPath)}">
-                                ${history.activityLogLabel || '활동 로그 보기'}
+                            <a class="small text-decoration-none" href="${CommonJS.escapeHtml(this.buildLogPathFromBase(history.activityLogPath))}">
+                                ${CommonJS.escapeHtml(history.activityLogLabel || '활동 로그 보기')}
                             </a>
                         ` : ''}
-                        <span class="small text-muted">작업자 ${history.actorName || '-'}${history.actorNo ? ` (#${history.actorNo})` : ''}</span>
-                        <span class="small text-muted">상태 ${history.statusSnapshot || '-'} · 옵션 ${history.optionCount}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
+                        <span class="small text-muted">작업자 ${CommonJS.escapeHtml(history.actorName || '-')}${history.actorNo ? ` (#${CommonJS.escapeHtml(history.actorNo)})` : ''}</span>
+                        <span class="small text-muted">상태 ${CommonJS.escapeHtml(history.statusSnapshot || '-')} · 옵션 ${Number(history.optionCount || 0).toLocaleString()}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
                     </div>
                 `).join('');
             }
@@ -420,7 +421,7 @@ const ProductDetail = {
                     <div class="product-empty-state py-4">
                         <i class="fas fa-triangle-exclamation product-empty-state-icon"></i>
                         <strong>변경 이력을 불러오지 못했습니다.</strong>
-                        <p>${this.escapeHtml(error.message || '상품 변경 이력을 불러오지 못했습니다.')}</p>
+                        <p>${CommonJS.escapeHtml(error.message || '상품 변경 이력을 불러오지 못했습니다.')}</p>
                     </div>
                 `;
             }
@@ -531,10 +532,11 @@ const ProductDetail = {
     },
 
     buildLogPathFromBase(basePath) {
-        if (!basePath) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.source) {

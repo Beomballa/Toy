@@ -232,22 +232,25 @@ const ProductUpdate = {
     addOption(name = '', qty = 0, addPrice = 0, persistedOptionNo = null) {
         this.optionCount++;
         const optionId = this.optionCount;
-        const lowStockClass = qty < 10 ? 'text-danger fw-bold' : '';
+        const normalizedQty = Number.isFinite(Number(qty)) && Number(qty) >= 0 ? Number(qty) : 0;
+        const normalizedAddPrice = Number.isFinite(Number(addPrice)) && Number(addPrice) >= 0 ? Number(addPrice) : 0;
+        const normalizedOptionNo = this.normalizeProductNo(persistedOptionNo);
+        const lowStockClass = normalizedQty < 10 ? 'text-danger fw-bold' : '';
 
         const optionHtml = `
-            <tr class="option-item" data-option-id="${optionId}" ${persistedOptionNo ? `data-option-no="${persistedOptionNo}"` : ''}>
+            <tr class="option-item" data-option-id="${optionId}">
                 <td>
-                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" value="${name}" required>
+                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" required>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-price" placeholder="0" min="0" value="${addPrice}" required>
+                        <input type="number" class="form-control option-price" placeholder="0" min="0" required>
                         <span class="input-group-text">원</span>
                     </div>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-cnt ${lowStockClass}" placeholder="0" min="0" value="${qty}" required>
+                        <input type="number" class="form-control option-cnt ${lowStockClass}" placeholder="0" min="0" required>
                         <span class="input-group-text">개</span>
                     </div>
                 </td>
@@ -266,6 +269,12 @@ const ProductUpdate = {
         tbody.insertAdjacentHTML('beforeend', optionHtml);
 
         const row = tbody.querySelector(`tr[data-option-id="${optionId}"]`);
+        if (normalizedOptionNo) {
+            row.dataset.optionNo = normalizedOptionNo;
+        }
+        row.querySelector('.option-name').value = String(name ?? '');
+        row.querySelector('.option-price').value = String(normalizedAddPrice);
+        row.querySelector('.option-cnt').value = String(normalizedQty);
         row.querySelector('.option-cnt').addEventListener('input', (e) => {
             if (parseInt(e.target.value) < 10) e.target.classList.add('text-danger', 'fw-bold');
             else e.target.classList.remove('text-danger', 'fw-bold');

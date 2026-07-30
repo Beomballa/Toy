@@ -1,6 +1,7 @@
 const DashBoardListJS = {
     initialized: false,
     charts: new Map(),
+    statsRequestId: 0,
     state: {
         section: ''
     },
@@ -96,25 +97,28 @@ const DashBoardListJS = {
     },
 
     async getStats() {
+        const requestId = ++this.statsRequestId;
         try {
             const res = await fetch('/api/admin/dashboard/stats');
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
+            if (requestId !== this.statsRequestId) return;
             this.renderSummary(data.summary);
             this.renderFrontDisplaySnapshot(data.frontDisplaySnapshot);
-            this.renderOperationNotices(data.operationNotices);
-            this.renderOperationTasks(data.operationTasks);
-            this.renderUnassignedTasks(data.unassignedTasks);
+            this.renderOperationNotices(Array.isArray(data.operationNotices) ? data.operationNotices : []);
+            this.renderOperationTasks(Array.isArray(data.operationTasks) ? data.operationTasks : []);
+            this.renderUnassignedTasks(Array.isArray(data.unassignedTasks) ? data.unassignedTasks : []);
             this.renderTaskWorkloadSummary(data.taskWorkloadSummary);
-            this.renderTaskWorkloads(data.taskWorkloads);
+            this.renderTaskWorkloads(Array.isArray(data.taskWorkloads) ? data.taskWorkloads : []);
             this.renderContentReactionSnapshot(data.contentReactionSnapshot);
-            this.renderRecentOrders(data.recentOrders);
-            this.renderLowStockProducts(data.lowStockProducts);
-            this.renderSalesChart(data.salesChart);
-            this.renderTopProductsChart(data.topProducts);
-            this.renderTopBrandsChart(data.topBrands);
+            this.renderRecentOrders(Array.isArray(data.recentOrders) ? data.recentOrders : []);
+            this.renderLowStockProducts(Array.isArray(data.lowStockProducts) ? data.lowStockProducts : []);
+            this.renderSalesChart(Array.isArray(data.salesChart) ? data.salesChart : []);
+            this.renderTopProductsChart(Array.isArray(data.topProducts) ? data.topProducts : []);
+            this.renderTopBrandsChart(Array.isArray(data.topBrands) ? data.topBrands : []);
         } catch (err) {
+            if (requestId !== this.statsRequestId) return;
             console.error('대시보드 데이터 로드 실패:', err);
             this.renderSectionState('frontDisplaySummaryBody', 'error', '프론트 전시 요약을 불러오지 못했습니다.', '전시 현황 계산에 필요한 데이터를 다시 확인해주세요.');
             this.renderSectionState('frontDisplayActionBody', 'error', '전시 우선 조치 대상을 불러오지 못했습니다.', '상품 전시 관리 메뉴에서 직접 전시 상태를 확인해주세요.');
@@ -147,6 +151,8 @@ const DashBoardListJS = {
         }
         const qualityHealthy = snapshot.dataQualityStatus === 'HEALTHY';
         const action = snapshot.priorityAction;
+        const actionPath = CommonJS.normalizeAdminReturnPath(action?.detailPath, '');
+        const analyticsPath = CommonJS.normalizeAdminReturnPath(snapshot.analyticsPath, '');
         body.innerHTML = `
             <div class="dashboard-reaction-snapshot">
                 <dl class="dashboard-reaction-snapshot__metrics">
@@ -167,14 +173,14 @@ const DashBoardListJS = {
                             <strong>${this.escapeHtml(action.title || '제목 없음')}</strong>
                             <p>${this.escapeHtml(action.boardType)} · 개선 필요 ${this.formatNumber(action.notHelpfulCount)}건 · 도움 비율 ${this.formatNumber(action.helpfulRate)}%</p>
                         </div>
-                        <a class="btn btn-sm btn-dark" href="${this.escapeHtml(action.detailPath)}">상세 확인</a>
+                        ${actionPath ? `<a class="btn btn-sm btn-dark" href="${this.escapeHtml(actionPath)}">상세 확인</a>` : ''}
                     ` : `
                         <div>
                             <span>운영 판단</span>
                             <strong>즉시 개선이 필요한 콘텐츠가 없습니다.</strong>
                             <p>최근 7일 반응 기준으로 안정적인 상태입니다.</p>
                         </div>
-                        <a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(snapshot.analyticsPath)}">분석 보기</a>
+                        ${analyticsPath ? `<a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(analyticsPath)}">분석 보기</a>` : ''}
                     `}
                 </div>
             </div>
@@ -714,10 +720,11 @@ const DashBoardListJS = {
     },
 
     buildActivityLogPathFromBase(basePath, source = 'dashboard-activity-log') {
-        if (!basePath) return '#';
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) return '#';
         let targetUrl;
         try {
-            targetUrl = new URL(basePath, window.location.origin);
+            targetUrl = new URL(safeBasePath, window.location.origin);
         } catch (error) {
             console.error('활동 로그 경로 파싱 실패:', error);
             return '#';
@@ -730,12 +737,13 @@ const DashBoardListJS = {
     },
 
     buildEntryPathWithReturnTo(basePath, source = '') {
-        if (!basePath || basePath.startsWith('javascript:')) {
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
             return '';
         }
         let targetUrl;
         try {
-            targetUrl = new URL(basePath, window.location.origin);
+            targetUrl = new URL(safeBasePath, window.location.origin);
         } catch (error) {
             console.error('대시보드 진입 경로 파싱 실패:', error);
             return '';
@@ -842,11 +850,12 @@ const DashBoardListJS = {
     },
 
     renderSummary(summary) {
-        document.getElementById('todayOrderCount').innerText = summary.todayOrderCount.toLocaleString();
-        document.getElementById('todayTotalAmount').innerText = summary.todayTotalAmount;
-        document.getElementById('preparingCount').innerText = summary.preparingCount.toLocaleString();
-        document.getElementById('shippingCount').innerText = summary.shippingCount.toLocaleString();
-        document.getElementById('cancelledCount').innerText = summary.cancelledCount.toLocaleString();
+        const safeSummary = summary || {};
+        document.getElementById('todayOrderCount').innerText = this.formatNumber(safeSummary.todayOrderCount);
+        document.getElementById('todayTotalAmount').innerText = CommonJS.normalizeOptionalText(safeSummary.todayTotalAmount) || '0원';
+        document.getElementById('preparingCount').innerText = this.formatNumber(safeSummary.preparingCount);
+        document.getElementById('shippingCount').innerText = this.formatNumber(safeSummary.shippingCount);
+        document.getElementById('cancelledCount').innerText = this.formatNumber(safeSummary.cancelledCount);
     },
 
     renderRecentOrders(orders) {
@@ -858,18 +867,27 @@ const DashBoardListJS = {
             return;
         }
 
-        tbody.innerHTML = orders.map(order => `
+        const orderMarkup = orders.flatMap((order) => {
+            const orderNo = this.normalizePositiveId(order.orderNo);
+            if (!orderNo) return [];
+            return [`
             <tr>
-                <td class="ps-4"><span class="order-id">${order.orderNum}</span></td>
-                <td><span class="fw-bold text-dark">${order.buyerName}</span></td>
-                <td><span class="fw-medium">${order.totalAmount}</span></td>
-                <td><span class="badge ${CommonJS.getOrderStatusMeta(order.statusCode).badgeClass}">${order.statusDesc}</span></td>
-                <td class="small text-muted">${order.orderDt}</td>
+                <td class="ps-4"><span class="order-id">${this.escapeHtml(order.orderNum || '-')}</span></td>
+                <td><span class="fw-bold text-dark">${this.escapeHtml(order.buyerName || '-')}</span></td>
+                <td><span class="fw-medium">${this.escapeHtml(order.totalAmount || '-')}</span></td>
+                <td><span class="badge ${CommonJS.getOrderStatusMeta(order.statusCode).badgeClass}">${this.escapeHtml(order.statusDesc || '-')}</span></td>
+                <td class="small text-muted">${this.escapeHtml(order.orderDt || '-')}</td>
                 <td class="text-end pe-4">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-order-detail" data-order-no="${order.orderNo}">상세보기</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-order-detail" data-order-no="${orderNo}">상세보기</button>
                 </td>
             </tr>
-        `).join('');
+        `];
+        }).join('');
+        if (!orderMarkup) {
+            this.renderTableState('recentOrderTableBody', 6, 'empty', '유효한 최근 주문 데이터가 없습니다.', '주문 식별자를 확인해주세요.');
+            return;
+        }
+        tbody.innerHTML = orderMarkup;
     },
 
     renderLowStockProducts(products) {
@@ -881,18 +899,27 @@ const DashBoardListJS = {
             return;
         }
 
-        body.innerHTML = products.map(product => `
+        const productMarkup = products.flatMap((product) => {
+            const productNo = this.normalizePositiveId(product.productNo);
+            if (!productNo) return [];
+            return [`
             <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-0 border-bottom">
                 <div>
-                    <div class="fw-bold small">${product.productName}</div>
-                    <div class="text-muted" style="font-size: 0.75rem;">${product.brandName}</div>
+                    <div class="fw-bold small">${this.escapeHtml(product.productName || '-')}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">${this.escapeHtml(product.brandName || '-')}</div>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge low-stock-badge rounded-pill">${product.stockCnt}개</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-product-detail" data-product-no="${product.productNo}">상세보기</button>
+                    <span class="badge low-stock-badge rounded-pill">${this.formatNumber(product.stockCnt)}개</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-role="dashboard-product-detail" data-product-no="${productNo}">상세보기</button>
                 </div>
             </div>
-        `).join('');
+        `];
+        }).join('');
+        if (!productMarkup) {
+            this.renderListState('lowStockListBody', 'empty', '유효한 저재고 상품이 없습니다.', '상품 식별자를 확인해주세요.');
+            return;
+        }
+        body.innerHTML = productMarkup;
     },
 
     goToOrderDetail(orderNo) {

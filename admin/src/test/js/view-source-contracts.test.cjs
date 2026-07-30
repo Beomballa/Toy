@@ -183,3 +183,15 @@ test("content detail and edit validate document identity and latest responses", 
     assert.match(editSource, /this\.normalizeContentId\(saved\?\.id\)/);
     assert.match(editSource, /savedId !== this\.id/);
 });
+
+test("dashboard validates stats, identifiers, output, and navigation", () => {
+    const source = readViewScript("dashboard/dashboard-list.js");
+
+    assert.match(source, /requestId !== this\.statsRequestId/);
+    assert.match(source, /Array\.isArray\(data\.recentOrders\)/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath\(action\?\.detailPath, ''\)/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath\(basePath, ''\)/);
+    assert.match(source, /this\.normalizePositiveId\(order\.orderNo\)/);
+    assert.match(source, /this\.normalizePositiveId\(product\.productNo\)/);
+    assert.match(source, /this\.escapeHtml\(order\.statusDesc/);
+});

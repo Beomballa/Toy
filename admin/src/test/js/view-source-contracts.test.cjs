@@ -140,3 +140,14 @@ test("notice and task details validate navigation and latest responses", () => {
     assert.match(taskSource, /this\.normalizePositiveNumber\(item\.commentNo\)/);
     assert.match(noticeSource, /this\.buildHistoryPathFromBase\(item\.historyPath\)/);
 });
+
+test("order detail validates the latest response, items, and histories", () => {
+    const source = readViewScript("order-get.js");
+
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /this\.normalizeOrderNo\(data\.orderNo \|\| this\.orderNo\) !== this\.orderNo/);
+    assert.match(source, /Array\.isArray\(data\.histories\)/);
+    assert.match(source, /this\.normalizeOrderNo\(item\.productNo\)/);
+    assert.match(source, /this\.normalizePositiveInteger\(item\.count\)/);
+    assert.match(source, /this\.normalizeOrderNo\(history\.historyNo\)/);
+});

@@ -1,5 +1,6 @@
 const OrderDetail = {
     initialized: false,
+    detailRequestId: 0,
     async init() {
         if (this.initialized) return;
         this.initialized = true;
@@ -81,6 +82,7 @@ const OrderDetail = {
     },
 
     async getDetail() {
+        const requestId = ++this.detailRequestId;
         try {
             const res = await fetch(`/api/admin/orders/get?no=${this.orderNo}`);
             if (!res.ok) {
@@ -94,8 +96,17 @@ const OrderDetail = {
             }
 
             const data = await res.json();
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
+            if (this.normalizeOrderNo(data.orderNo || this.orderNo) !== this.orderNo) {
+                throw new Error('요청한 주문과 상세 응답 정보가 일치하지 않습니다.');
+            }
             this.renderDetail(data);
         } catch (err) {
+            if (requestId !== this.detailRequestId) {
+                return;
+            }
             console.error('주문 상세 로드 실패:', err);
             await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
         }
@@ -108,7 +119,7 @@ const OrderDetail = {
         this.renderDeliveryInfo(data);
         this.renderOrderItems(Array.isArray(data.items) ? data.items : []);
         this.renderAdminMemo(data.adminMemo);
-        this.renderOrderHistory(data.histories || []);
+        this.renderOrderHistory(Array.isArray(data.histories) ? data.histories : []);
         void this.applyOperationPolicy(this.operationPolicy);
     },
 
@@ -161,11 +172,13 @@ const OrderDetail = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => {
+        const itemMarkup = items.flatMap((item) => {
             const productName = CommonJS.escapeHtml(item.productName || '-');
-            const productNo = CommonJS.escapeHtml(item.productNo || '');
+            const productNo = this.normalizeOrderNo(item.productNo);
+            const count = this.normalizePositiveInteger(item.count);
+            if (!productNo || !count) return [];
             const thumbnailUrl = CommonJS.escapeHtml(CommonJS.normalizeImageSource(item.thumbnailUrl));
-            return `
+            return [`
             <tr class="item-row">
                 <td class="ps-4">
                     <div style="width:64px; height:64px;">
@@ -191,11 +204,16 @@ const OrderDetail = {
                         </button>
                     </div>
                 </td>
-                <td class="text-center fw-medium">${CommonJS.escapeHtml(item.count || 0)}개</td>
+                <td class="text-center fw-medium">${count.toLocaleString()}개</td>
                 <td class="text-end pe-4 fw-bold text-primary">${CommonJS.escapeHtml(item.orderPrice || '-')}</td>
             </tr>
-        `;
+        `];
         }).join('');
+        if (!itemMarkup) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">유효한 주문 상품 정보가 없습니다.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = itemMarkup;
         tbody.querySelectorAll('img.product-img').forEach((image) => {
             image.addEventListener('error', () => CommonJS.handleImageError(image));
         });
@@ -209,7 +227,8 @@ const OrderDetail = {
         }
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
 
-        if (!histories.length) {
+        const safeHistories = histories.filter((history) => this.normalizeOrderNo(history.historyNo));
+        if (!safeHistories.length) {
             container.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-box-open product-empty-state-icon"></i>
@@ -224,10 +243,12 @@ const OrderDetail = {
         }
 
         if (metaTextEl) {
-            metaTextEl.textContent = `주문 처리 이력 ${histories.length}건`;
+            metaTextEl.textContent = `주문 처리 이력 ${safeHistories.length}건`;
         }
 
-        container.innerHTML = histories.map((history) => `
+        container.innerHTML = safeHistories.map((history) => {
+            const historyNo = this.normalizeOrderNo(history.historyNo);
+            return `
             <div class="border rounded-3 p-3">
                 <div class="d-flex justify-content-between align-items-start gap-3 mb-2">
                     <div class="fw-semibold text-dark">${CommonJS.escapeHtml(history.actionLabel || history.actionType || '-')}</div>
@@ -240,11 +261,12 @@ const OrderDetail = {
                 ${history.adminMemoSnapshot ? `<div class="small mb-1"><span class="text-muted">메모</span> ${CommonJS.escapeHtml(history.adminMemoSnapshot)}</div>` : ''}
                 ${(history.deliveryCompany || history.trackingNum) ? `<div class="small"><span class="text-muted">배송</span> ${CommonJS.escapeHtml(history.deliveryCompany || '-')} / ${CommonJS.escapeHtml(history.trackingNum || '-')}</div>` : ''}
                 <div class="d-flex flex-wrap gap-2 small mt-1">
-                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${encodeURIComponent(this.orderNo)}&historyNo=${encodeURIComponent(history.historyNo)}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
+                    <a class="text-decoration-none" href="/admin/orders/history?orderNo=${this.orderNo}&historyNo=${historyNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">이력 위치 보기</a>
                     ${this.buildActivityLogLink(history)}
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     },
 
     async completeDelivery() {
@@ -492,6 +514,11 @@ const OrderDetail = {
 
     normalizeOrderNo(orderNo) {
         return this.isValidOrderNo(orderNo) ? String(Number(orderNo)) : null;
+    },
+
+    normalizePositiveInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
     normalizeOrderStatusCode(statusCode) {

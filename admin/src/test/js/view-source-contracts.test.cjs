@@ -59,3 +59,13 @@ test("notice rows use number-based lookup, safe paths, and latest responses", ()
     assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
     assert.match(source, /requestId !== this\.listRequestId/);
 });
+
+test("task rows use the server HOLD code and number-based lookup", () => {
+    const source = readViewScript("task-list.js");
+
+    assert.equal(source.includes("ON_HOLD"), false);
+    assert.equal(source.includes("data-task='"), false);
+    assert.equal(source.includes("parseTaskDataset"), false);
+    assert.match(source, /requestId !== this\.listRequestId/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
+});

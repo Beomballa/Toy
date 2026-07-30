@@ -9,6 +9,8 @@ const TaskList = {
     isApplyingBulk: false,
     isBulkDuplicatingTask: false,
     isExportingTask: false,
+    listRequestId: 0,
+    taskItemsByNo: new Map(),
     quickOperateInFlight: new Set(),
     selectedTaskNos: new Set(),
     state: {
@@ -140,7 +142,8 @@ const TaskList = {
             }
             const editButton = event.target.closest('[data-role="edit-task"]');
             if (editButton) {
-                const task = this.parseTaskDataset(editButton.dataset.task);
+                const taskNo = this.normalizeOptionalPositiveNumber(editButton.dataset.taskNo);
+                const task = taskNo == null ? null : this.taskItemsByNo.get(taskNo);
                 if (!task) {
                     void CommonJS.alert('수정할 운영 작업 정보를 읽을 수 없습니다.', '알림', 'warning');
                     return;
@@ -299,6 +302,7 @@ const TaskList = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         try {
             this.updateStateFromInputs();
             this.validateState();
@@ -319,14 +323,20 @@ const TaskList = {
             }
 
             const data = await response.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderAssigneeOptions(data.assigneeOptions || []);
             this.renderList(data.items || []);
             this.renderStats(data.taskStats);
             this.renderMeta(data);
             this.syncStatFilterState();
             this.renderPagination(data);
-            await this.openDeepLinkedTaskIfNeeded(data.items || []);
+            await this.openDeepLinkedTaskIfNeeded(data.items || [], requestId);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             document.getElementById('taskMetaText').textContent = error.message;
             this.setFilterMeta(error.message);
             this.setResultMeta('결과 메타 확인 불가');
@@ -338,19 +348,22 @@ const TaskList = {
         }
     },
 
-    async openDeepLinkedTaskIfNeeded(items) {
-        if (!this.state.openTaskNo) {
+    async openDeepLinkedTaskIfNeeded(items, requestId) {
+        if (!this.state.openTaskNo || requestId !== this.listRequestId) {
             return;
         }
         const taskNo = Number(this.state.openTaskNo);
-        const target = items.find((item) => item.taskNo === taskNo);
+        const target = items.find((item) => this.normalizeOptionalPositiveNumber(item.taskNo) === taskNo);
         if (target) {
             this.openEditModal(target);
         } else if (taskNo > 0) {
             try {
                 const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
                 if (response.ok) {
-                    this.openEditModal(await response.json());
+                    const task = await response.json();
+                    if (requestId === this.listRequestId) {
+                        this.openEditModal(task);
+                    }
                 }
             } catch (error) {
                 console.error('딥링크 운영 작업 상세 로드 실패:', error);
@@ -370,20 +383,20 @@ const TaskList = {
         const selectedFilter = this.state.assigneeAdminNo || '';
         const selectedForm = form.value || '';
         const optionHtml = ['<option value="">전체</option>']
-            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .concat(options.map((option) => this.renderAssigneeOption(option)).filter(Boolean))
             .join('');
         filters.innerHTML = optionHtml;
         filters.value = selectedFilter;
         filters.disabled = this.state.unassignedOnly === 'Y';
 
         const formOptionHtml = ['<option value="">미지정</option>']
-            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .concat(options.map((option) => this.renderAssigneeOption(option)).filter(Boolean))
             .join('');
         form.innerHTML = formOptionHtml;
         form.value = selectedForm;
         const selectedBulk = bulkAssignee.value || '';
         bulkAssignee.innerHTML = ['<option value="">변경 안 함</option>', '<option value="__UNASSIGN__">담당 해제</option>']
-            .concat(options.map((option) => `<option value="${option.adminNo}">${this.escapeHtml(option.name)}</option>`))
+            .concat(options.map((option) => this.renderAssigneeOption(option)).filter(Boolean))
             .join('');
         bulkAssignee.value = selectedBulk;
     },
@@ -391,7 +404,11 @@ const TaskList = {
     renderList(items) {
         const tbody = document.getElementById('taskListBody');
         if (!tbody) return;
-        const currentPath = encodeURIComponent(window.location.pathname + window.location.search);
+        this.taskItemsByNo = new Map(
+            (items || [])
+                .map((item) => [this.normalizeOptionalPositiveNumber(item.taskNo), item])
+                .filter(([taskNo]) => taskNo != null)
+        );
 
         if (!items || items.length === 0) {
             this.renderTableState('empty', '등록된 운영 작업이 없습니다.', '상태, 담당자, 우선순위 조건을 조정하거나 새 운영 작업을 등록해 보세요.');
@@ -400,16 +417,21 @@ const TaskList = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => `
-            <tr data-task-row="${item.taskNo}">
+        tbody.innerHTML = items.map((item) => {
+            const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
+            const historyPath = this.buildTaskHistoryPathFromBase(item.historyPath);
+            const logPath = this.buildTaskLogPathFromBase(item.activityLogPath, taskNo);
+            const isPinned = item.isPinned === 'Y';
+            return `
+            <tr data-task-row="${taskNo || ''}">
                 <td class="ps-4">
-                    <input type="checkbox" data-role="select-task" data-task-no="${item.taskNo}" ${this.selectedTaskNos.has(item.taskNo) ? 'checked' : ''}>
+                    <input type="checkbox" data-role="select-task" data-task-no="${taskNo || ''}" ${this.selectedTaskNos.has(taskNo) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-muted small">${item.taskNo}</td>
+                <td class="ps-4 text-muted small">${taskNo || '-'}</td>
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <a class="fw-bold text-dark text-decoration-none" href="${this.buildTaskDetailPath(item.taskNo, 'task-list-row-title')}">${this.escapeHtml(item.title)}</a>
+                        ${isPinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
+                        <a class="fw-bold text-dark text-decoration-none" href="${this.escapeHtml(this.buildTaskDetailPath(taskNo, 'task-list-row-title'))}">${this.escapeHtml(item.title || '-')}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 440px;">${this.escapeHtml(item.description || '-')}</div>
                     ${Number(item.commentCount || 0) > 0 ? `
@@ -419,25 +441,25 @@ const TaskList = {
                     ` : ''}
                 </td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${this.resolveStatusBadgeClass(item.status)}">${item.statusLabel}</span>
+                    <span class="badge rounded-pill ${this.resolveStatusBadgeClass(item.status)}">${this.escapeHtml(item.statusLabel || '-')}</span>
                 </td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${this.resolvePriorityBadgeClass(item.priority)}">${item.priorityLabel}</span>
+                    <span class="badge rounded-pill ${this.resolvePriorityBadgeClass(item.priority)}">${this.escapeHtml(item.priorityLabel || '-')}</span>
                 </td>
-                <td>${this.escapeHtml(item.assigneeAdminName)}</td>
+                <td>${this.escapeHtml(item.assigneeAdminName || '미지정')}</td>
                 <td>
-                    <div class="small">${item.dueDate}</div>
-                    <div class="small text-muted">${item.dueState}</div>
+                    <div class="small">${this.escapeHtml(item.dueDate || '-')}</div>
+                    <div class="small text-muted">${this.escapeHtml(item.dueState || '-')}</div>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
-                    <button class="btn btn-sm btn-outline-secondary me-1" data-role="duplicate-task" data-task-no="${item.taskNo}">복제</button>
-                    <button class="btn btn-sm ${item.isPinned === 'Y' ? 'btn-dark' : 'btn-outline-dark'} me-1"
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-task" data-task-no="${taskNo || ''}">수정</button>
+                    <button class="btn btn-sm btn-outline-secondary me-1" data-role="duplicate-task" data-task-no="${taskNo || ''}">복제</button>
+                    <button class="btn btn-sm ${isPinned ? 'btn-dark' : 'btn-outline-dark'} me-1"
                             data-role="quick-operate-task"
-                            data-task-no="${item.taskNo}"
-                            data-is-pinned="${item.isPinned === 'Y' ? 'N' : 'Y'}">${item.isPinned === 'Y' ? '고정해제' : '고정'}</button>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskHistoryPathFromBase(item.historyPath)}">${item.historyLabel}</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildTaskLogPathFromBase(item.activityLogPath, item.taskNo)}">${item.activityLogLabel}</a>
+                            data-task-no="${taskNo || ''}"
+                            data-is-pinned="${isPinned ? 'N' : 'Y'}">${isPinned ? '고정해제' : '고정'}</button>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(historyPath || '#')}" ${historyPath ? '' : 'aria-disabled="true" tabindex="-1"'}>${this.escapeHtml(item.historyLabel || '이력')}</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(logPath || '#')}" ${logPath ? '' : 'aria-disabled="true" tabindex="-1"'}>${this.escapeHtml(item.activityLogLabel || '활동 로그')}</a>
                     <div class="btn-group">
                         <button class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown">상태</button>
                         <ul class="dropdown-menu dropdown-menu-end">
@@ -449,13 +471,14 @@ const TaskList = {
                         <ul class="dropdown-menu dropdown-menu-end">
                             ${this.renderPriorityMenu(item)}
                             <li><hr class="dropdown-divider"></li>
-                            <li><button type="button" class="dropdown-item" data-role="quick-operate-task" data-task-no="${item.taskNo}" data-assignee-mode="CLEAR">담당 해제</button></li>
+                            <li><button type="button" class="dropdown-item" data-role="quick-operate-task" data-task-no="${taskNo || ''}" data-assignee-mode="CLEAR">담당 해제</button></li>
                         </ul>
                     </div>
-                    <button class="btn btn-sm btn-outline-danger ms-1" data-role="delete-task" data-task-no="${item.taskNo}">삭제</button>
+                    <button class="btn btn-sm btn-outline-danger ms-1" data-role="delete-task" data-task-no="${taskNo || ''}">삭제</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
         this.highlightFocusedTaskRow();
@@ -463,13 +486,14 @@ const TaskList = {
     },
 
     renderStatusMenu(item) {
+        const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
         return [
             ['TODO', '대기'],
             ['IN_PROGRESS', '진행중'],
             ['DONE', '완료'],
             ['HOLD', '보류']
         ].map(([value, label]) => `
-            <li><button type="button" class="dropdown-item ${item.status === value ? 'active' : ''}" data-role="update-task-status" data-task-no="${item.taskNo}" data-status="${value}">${label}</button></li>
+            <li><button type="button" class="dropdown-item ${item.status === value ? 'active' : ''}" data-role="update-task-status" data-task-no="${taskNo || ''}" data-status="${value}">${label}</button></li>
         `).join('');
     },
 
@@ -1354,10 +1378,11 @@ const TaskList = {
     },
 
     buildTaskHistoryPathFromBase(basePath) {
-        if (!basePath) {
-            return '#';
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -1395,7 +1420,11 @@ const TaskList = {
         if (!basePath) {
             return this.buildTaskLogPath(taskNo);
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return taskNo == null ? '' : this.buildTaskLogPath(taskNo);
+        }
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -1459,21 +1488,12 @@ const TaskList = {
         return this.isPositiveNumber(number) ? number : null;
     },
 
-    parseTaskDataset(value) {
-        try {
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('운영 작업 dataset 파싱 실패:', error);
-            return null;
-        }
-    },
-
     isPositiveNumber(value) {
         return Number.isInteger(value) && value > 0;
     },
 
     isValidTaskStatus(value) {
-        return ['TODO', 'IN_PROGRESS', 'DONE', 'ON_HOLD'].includes(value);
+        return ['TODO', 'IN_PROGRESS', 'DONE', 'HOLD'].includes(value);
     },
 
     isValidTaskPriority(value) {
@@ -1555,6 +1575,7 @@ const TaskList = {
     },
 
     renderPriorityMenu(item) {
+        const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
         const options = [
             { value: 'HIGH', label: '높음' },
             { value: 'MEDIUM', label: '보통' },
@@ -1565,10 +1586,18 @@ const TaskList = {
                 <button type="button"
                         class="dropdown-item ${item.priority === option.value ? 'active' : ''}"
                         data-role="quick-operate-task"
-                        data-task-no="${item.taskNo}"
+                        data-task-no="${taskNo || ''}"
                         data-priority="${option.value}">${option.label}</button>
             </li>
         `).join('');
+    },
+
+    renderAssigneeOption(option) {
+        const adminNo = this.normalizeOptionalPositiveNumber(option?.adminNo);
+        if (adminNo == null) {
+            return '';
+        }
+        return `<option value="${adminNo}">${this.escapeHtml(option.name || '-')}</option>`;
     },
 
     escapeHtml(value) {

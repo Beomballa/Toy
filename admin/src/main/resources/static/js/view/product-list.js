@@ -367,7 +367,7 @@ const ProductList = {
                         <div class="product-empty-state">
                             <i class="fas fa-box-open product-empty-state-icon"></i>
                             <strong>조건에 맞는 상품이 없습니다.</strong>
-                            <p>${emptyMessage}</p>
+                            <p>${CommonJS.escapeHtml(emptyMessage)}</p>
                             <button type="button" class="btn btn-sm btn-outline-secondary" data-role="reset-empty-product-filters">
                                 필터 초기화
                             </button>
@@ -380,39 +380,45 @@ const ProductList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => `
+        tbody.innerHTML = items.map(item => {
+            const productNo = this._isPositiveNumber(item.productNo) ? String(Number(item.productNo)) : '';
+            const productName = CommonJS.escapeHtml(item.productName || '-');
+            const productModel = CommonJS.escapeHtml(item.productModel || '-');
+            const brandName = CommonJS.escapeHtml(item.brandName || '-');
+            const thumbnailUrl = CommonJS.escapeHtml(CommonJS.normalizeImageSource(item.thumbnailUrl));
+            const statusMeta = CommonJS.getProductStatusMeta(item.statusCode);
+            return `
             <tr>
                 <td class="ps-4">
                     <input type="checkbox"
                            data-role="select-product"
-                           data-product-no="${item.productNo}"
+                           data-product-no="${productNo}"
                            ${this.selectedProductNos.has(item.productNo) ? 'checked' : ''}>
                 </td>
                 <td class="ps-4">
                     <div class="product-info">
                         <div class="product-thumb-container" style="width:56px; height:56px;">
-                            <img src="${item.thumbnailUrl || ''}"
-                                 class="product-thumb" alt="thumb"
-                                 onerror="CommonJS.handleImageError(this)">
+                            <img src="${thumbnailUrl}"
+                                 class="product-thumb" alt="${productName}">
                         </div>
                         <div class="product-details">
-                            <div class="product-name decoration" data-id="${item.productNo}" style="cursor:pointer;">
-                                ${item.productName}
+                            <div class="product-name decoration" data-id="${productNo}" style="cursor:pointer;">
+                                ${productName}
                             </div>
-                            <div class="product-subtitle text-muted" style="font-size:0.8rem;">${item.productModel || '-'}</div>
+                            <div class="product-subtitle text-muted" style="font-size:0.8rem;">${productModel}</div>
                         </div>
                     </div>
                 </td>
-                <td><span class="badge badge-model">${item.productModel || 'N/A'}</span></td>
-                <td><strong>${item.brandName}</strong></td>
-                <td><strong>${item.releasePrice || '-'}</strong></td>
-                <td>${(item.totalStock ?? 0).toLocaleString()}개</td>
+                <td><span class="badge badge-model">${productModel}</span></td>
+                <td><strong>${brandName}</strong></td>
+                <td><strong>${CommonJS.escapeHtml(item.releasePrice || '-')}</strong></td>
+                <td>${Number(item.totalStock || 0).toLocaleString()}개</td>
                 <td>
-                    <span class="badge ${CommonJS.getProductStatusMeta(item.statusCode).badgeClass}">
-                        ${item.statusDesc}
+                    <span class="badge ${statusMeta.badgeClass}">
+                        ${CommonJS.escapeHtml(item.statusDesc || '상태 미상')}
                     </span>
                 </td>
-                <td class="small text-muted">${item.crtDtm}</td>
+                <td class="small text-muted">${CommonJS.escapeHtml(item.crtDtm || '-')}</td>
                 <td class="text-end pe-4">
                     <div class="btn-group me-1">
                         <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -424,36 +430,40 @@ const ProductList = {
                     </div>
                     <button type="button"
                             class="btn btn-icon btn-secondary me-1 btn-image-search"
-                            data-product-name="${item.productName || ''}"
-                            data-model-num="${item.productModel || ''}"
-                            data-brand-name="${item.brandName || ''}"
+                            data-product-name="${productName}"
+                            data-model-num="${productModel}"
+                            data-brand-name="${brandName}"
                             title="실제 이미지 검색">
                         <i class="fas fa-image"></i>
                     </button>
                     <button type="button"
                             class="btn btn-icon btn-secondary me-1"
                             data-role="clone-product"
-                            data-product-no="${item.productNo}"
+                            data-product-no="${productNo}"
                             ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 복제')}"` : ''}>
                         <i class="fas fa-copy"></i>
                     </button>
                     <button type="button"
                             class="btn btn-icon btn-secondary me-1"
                             data-role="edit-product"
-                            data-product-no="${item.productNo}"
+                            data-product-no="${productNo}"
                             ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 수정')}"` : ''}>
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button"
                             class="btn btn-icon btn-secondary"
                             data-role="delete-product"
-                            data-product-no="${item.productNo}"
+                            data-product-no="${productNo}"
                             ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? `disabled title="${CommonJS.getAdminWriteBlockedReason('상품 삭제')}"` : ''}>
                         <i class="fas fa-trash text-danger"></i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
+        tbody.querySelectorAll('.product-thumb').forEach((image) => {
+            image.addEventListener('error', () => CommonJS.handleImageError(image), {once: true});
+        });
         this._setListStateMeta('ready', '', items.length);
         this.updateSelectionMeta(items);
     },

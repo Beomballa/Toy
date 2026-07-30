@@ -69,3 +69,12 @@ test("task rows use the server HOLD code and number-based lookup", () => {
     assert.match(source, /requestId !== this\.listRequestId/);
     assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
 });
+
+test("task workload accepts newer filters and validates server paths", () => {
+    const source = readViewScript("task-workload-list.js");
+
+    assert.equal(source.includes("if (this.isLoading)"), false);
+    assert.match(source, /requestId !== this\.listRequestId/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
+    assert.match(source, /this\.escapeHtml\(this\.buildEmptyStateMessage\(\)\)/);
+});

@@ -1,6 +1,6 @@
 const TaskWorkloadList = {
     initialized: false,
-    isLoading: false,
+    listRequestId: 0,
     isExporting: false,
     state: {
         page: 0,
@@ -127,9 +127,7 @@ const TaskWorkloadList = {
     },
 
     async getList() {
-        if (this.isLoading) {
-            return;
-        }
+        const requestId = ++this.listRequestId;
         this.updateStateFromInputs();
         this.validateState();
         const params = this.buildParams();
@@ -151,22 +149,25 @@ const TaskWorkloadList = {
         }
 
         try {
-            this.isLoading = true;
             const response = await fetch(`/api/admin/settings/tasks/workloads/list?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '담당자별 워크로드 조회에 실패했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderSummary(data.summary);
             this.renderList(data.items || []);
             this.renderMeta(data);
             this.renderPagination(data);
             this.highlightFocusedAdminRow();
-            await this.openDeepLinkedAssigneeIfNeeded(data.items || []);
+            await this.openDeepLinkedAssigneeIfNeeded(data.items || [], requestId);
         } catch (error) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderListError(error.message);
-        } finally {
-            this.isLoading = false;
         }
     },
 
@@ -188,7 +189,7 @@ const TaskWorkloadList = {
                         <div class="product-empty-state">
                             <i class="fas fa-user-clock product-empty-state-icon"></i>
                             <strong>조건에 맞는 담당자 워크로드가 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${this.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
@@ -197,11 +198,16 @@ const TaskWorkloadList = {
             return;
         }
 
-        tbody.innerHTML = items.map((item, index) => `
-            <tr data-admin-row="${item.assigneeAdminNo}">
+        tbody.innerHTML = items.map((item, index) => {
+            const adminNo = this.normalizeOptionalPositiveNumber(item.assigneeAdminNo);
+            const detailPath = this.buildWorkloadDetailPath(adminNo);
+            const targetPath = this.buildContextualTaskPath(item.targetPath);
+            const overduePath = this.buildContextualTaskPath(item.overduePath);
+            return `
+            <tr data-admin-row="${adminNo || ''}">
                 <td class="ps-4 text-muted small">${this.state.page * this.state.size + index + 1}</td>
                 <td>
-                    <a class="fw-bold text-dark text-decoration-none" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">${this.escapeHtml(item.assigneeAdminName)}</a>
+                    <a class="fw-bold text-dark text-decoration-none" href="${this.escapeHtml(detailPath)}">${this.escapeHtml(item.assigneeAdminName || '-')}</a>
                 </td>
                 <td class="text-center fw-semibold">${Number(item.totalCount || 0).toLocaleString()}</td>
                 <td class="text-center">${Number(item.todoCount || 0).toLocaleString()}</td>
@@ -217,12 +223,13 @@ const TaskWorkloadList = {
                     ` : '<div class="small text-muted">최근 메모가 없습니다.</div>'}
                 </td>
                 <td class="text-end pe-4">
-                    <a class="btn btn-sm btn-outline-dark me-1" href="${this.buildWorkloadDetailPath(item.assigneeAdminNo)}">상세</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildContextualTaskPath(item.targetPath)}">담당 작업</a>
-                    <a class="btn btn-sm btn-outline-secondary" href="${this.buildContextualTaskPath(item.overduePath)}">기한 초과</a>
+                    <a class="btn btn-sm btn-outline-dark me-1" href="${this.escapeHtml(detailPath)}">상세</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(targetPath || '#')}" ${targetPath ? '' : 'aria-disabled="true" tabindex="-1"'}>담당 작업</a>
+                    <a class="btn btn-sm btn-outline-secondary" href="${this.escapeHtml(overduePath || '#')}" ${overduePath ? '' : 'aria-disabled="true" tabindex="-1"'}>기한 초과</a>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
     },
 
     renderMeta(data) {
@@ -357,8 +364,8 @@ const TaskWorkloadList = {
         CommonJS.renderSourceContextNotice({ noticeId: 'taskWorkloadSourceContextNotice', source: this.state.source });
     },
 
-    async openDeepLinkedAssigneeIfNeeded(items) {
-        if (!this.state.adminNo) return;
+    async openDeepLinkedAssigneeIfNeeded(items, requestId) {
+        if (!this.state.adminNo || requestId !== this.listRequestId) return;
         const adminNo = this.normalizeOptionalPositiveNumber(this.state.adminNo);
         if (adminNo == null) {
             this.state.adminNo = '';
@@ -394,10 +401,11 @@ const TaskWorkloadList = {
     },
 
     buildContextualTaskPath(basePath) {
-        if (!basePath) {
-            return '#';
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', `${window.location.pathname}?${this.buildParams().toString()}`);
         if (this.state.source) {

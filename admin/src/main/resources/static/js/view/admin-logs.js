@@ -188,7 +188,7 @@ const AdminLogPage = {
                                 <i class="fas fa-triangle-exclamation"></i>
                             </div>
                             <strong>활동 로그를 불러오지 못했습니다.</strong>
-                            <p>${this.escapeHtml(err.message || '잠시 후 다시 시도해 주세요.')}</p>
+                            <p>${CommonJS.escapeHtml(err.message || '잠시 후 다시 시도해 주세요.')}</p>
                         </div>
                     </td>
                 </tr>`;
@@ -211,30 +211,35 @@ const AdminLogPage = {
                         <div class="product-empty-state">
                             <i class="fas fa-clipboard-list product-empty-state-icon"></i>
                             <strong>조건에 맞는 활동 로그가 없습니다.</strong>
-                            <p>${this.buildEmptyStateMessage()}</p>
+                            <p>${CommonJS.escapeHtml(this.buildEmptyStateMessage())}</p>
                         </div>
                     </td>
                 </tr>
             `;
             return;
         }
-        tbody.innerHTML = items.map(item => `
-            <tr data-log-row="${item.logNo}">
-                <td class="ps-4 text-muted small">${item.logNo}</td>
-                <td><span class="badge bg-light text-dark">${this.formatAdminBadge(item.adminName, item.adminNo)}</span></td>
-                <td><span class="fw-bold text-primary">${item.actionType}</span></td>
+        tbody.innerHTML = items.map(item => {
+            const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
+            const targetPath = this.buildTargetPath(item.targetPath);
+            const targetLabel = CommonJS.escapeHtml(item.targetLabel || '-');
+            return `
+            <tr data-log-row="${logNo || ''}">
+                <td class="ps-4 text-muted small">${logNo || '-'}</td>
+                <td><span class="badge bg-light text-dark">${CommonJS.escapeHtml(this.formatAdminBadge(item.adminName, item.adminNo))}</span></td>
+                <td><span class="fw-bold text-primary">${CommonJS.escapeHtml(item.actionType || '-')}</span></td>
                 <td>
-                    ${item.targetPath
-                        ? `<a class="text-decoration-none" href="${this.buildTargetPath(item.targetPath)}">${item.targetLabel}</a>`
-                        : (item.targetLabel || '-')}
+                    ${targetPath
+                        ? `<a class="text-decoration-none" href="${CommonJS.escapeHtml(targetPath)}">${targetLabel}</a>`
+                        : targetLabel}
                 </td>
-                <td><code class="small">${item.ipAddress}</code></td>
+                <td><code class="small">${CommonJS.escapeHtml(item.ipAddress || '-')}</code></td>
                 <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-log-detail" data-log-no="${item.logNo}">상세</button>
+                    <button type="button" class="btn btn-sm btn-outline-dark" data-role="open-log-detail" data-log-no="${logNo || ''}">상세</button>
                 </td>
-                <td class="text-end pe-4 small text-muted">${item.actionDtm}</td>
+                <td class="text-end pe-4 small text-muted">${CommonJS.escapeHtml(item.actionDtm || '-')}</td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
     },
 
     renderSummary(summary) {
@@ -313,31 +318,33 @@ const AdminLogPage = {
                 throw new Error(await CommonJS.extractErrorMessage(res, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await res.json();
+            const targetPath = this.buildTargetPath(data.targetPath);
+            const targetLabel = CommonJS.escapeHtml(data.targetLabel || '-');
             document.getElementById('logDetailBody').innerHTML = `
                 <div class="admin-modal-detail-grid">
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">로그 번호</div>
-                        <div class="admin-modal-detail-value">${data.logNo}</div>
+                        <div class="admin-modal-detail-value">${this.normalizeOptionalPositiveNumber(data.logNo) || '-'}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 일시</div>
-                        <div class="admin-modal-detail-value">${data.actionDtm || '-'}</div>
+                        <div class="admin-modal-detail-value">${CommonJS.escapeHtml(data.actionDtm || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">관리자</div>
-                        <div class="admin-modal-detail-value">${this.formatAdminLabel(data.adminName, data.adminNo)}</div>
+                        <div class="admin-modal-detail-value">${CommonJS.escapeHtml(this.formatAdminLabel(data.adminName, data.adminNo))}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 종류</div>
-                        <div class="admin-modal-detail-value">${data.actionType || '-'}</div>
+                        <div class="admin-modal-detail-value">${CommonJS.escapeHtml(data.actionType || '-')}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">대상</div>
-                        <div class="admin-modal-detail-value">${data.targetPath ? `<a class="text-decoration-none" href="${this.buildTargetPath(data.targetPath)}">${data.targetLabel}</a>` : (data.targetLabel || '-')}</div>
+                        <div class="admin-modal-detail-value">${targetPath ? `<a class="text-decoration-none" href="${CommonJS.escapeHtml(targetPath)}">${targetLabel}</a>` : targetLabel}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-12">
                         <div class="admin-modal-detail-label">IP 주소</div>
-                        <div class="admin-modal-detail-value"><code>${data.ipAddress || '-'}</code></div>
+                        <div class="admin-modal-detail-value"><code>${CommonJS.escapeHtml(data.ipAddress || '-')}</code></div>
                     </div>
                 </div>
             `;
@@ -351,7 +358,7 @@ const AdminLogPage = {
                         <i class="fa-solid fa-triangle-exclamation"></i>
                     </div>
                     <strong>상세 로그를 불러오지 못했습니다.</strong>
-                    <p>${this.escapeHtml(err.message)}</p>
+                    <p>${CommonJS.escapeHtml(err.message)}</p>
                 </div>
             `;
         } finally {
@@ -557,18 +564,21 @@ const AdminLogPage = {
     },
 
     formatAdminBadge(adminName, adminNo) {
-        return adminNo ? `${adminName} (#${adminNo})` : adminName;
+        const name = adminName || '-';
+        const number = this.normalizeOptionalPositiveNumber(adminNo);
+        return number ? `${name} (#${number})` : name;
     },
 
     formatAdminLabel(adminName, adminNo) {
-        return adminNo ? `${adminName} (#${adminNo})` : adminName;
+        return this.formatAdminBadge(adminName, adminNo);
     },
 
     buildTargetPath(basePath) {
-        if (!basePath) {
-            return '#';
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {

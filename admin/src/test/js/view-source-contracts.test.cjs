@@ -151,3 +151,20 @@ test("order detail validates the latest response, items, and histories", () => {
     assert.match(source, /this\.normalizePositiveInteger\(item\.count\)/);
     assert.match(source, /this\.normalizeOrderNo\(history\.historyNo\)/);
 });
+
+test("product create and update validate async data and partial saves", () => {
+    const createSource = readViewScript("product-set.js");
+    const updateSource = readViewScript("product-update.js");
+
+    assert.match(createSource, /requestId !== this\.rankGuideRequestId/);
+    assert.match(createSource, /this\.normalizePositiveNumber\(result\.productNo\)/);
+    assert.match(createSource, /this\.navigateToDetail\(productNo\)/);
+    assert.match(createSource, /CommonJS\.normalizeImageSource\(e\.target\.value\)/);
+    assert.equal(createSource.includes("backButton.innerHTML"), false);
+
+    assert.match(updateSource, /requestId !== this\.productRequestId/);
+    assert.match(updateSource, /requestId !== this\.displayRequestId/);
+    assert.match(updateSource, /requestId !== this\.rankGuideRequestId/);
+    assert.match(updateSource, /Array\.isArray\(data\.options\)/);
+    assert.match(updateSource, /CommonJS\.normalizeImageSource/);
+});

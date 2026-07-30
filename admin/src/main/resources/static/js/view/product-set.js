@@ -8,6 +8,7 @@ const ProductCreate = {
     isSubmitting: false,
     operationPolicy: null,
     frontDisplayRankGuide: null,
+    rankGuideRequestId: 0,
 
     init(brands, categories) {
         if (this.initialized) {
@@ -16,11 +17,11 @@ const ProductCreate = {
         this.initialized = true;
 
         // Thymeleaf에서 전달받은 데이터 저장
-        this.brands = brands || [];
-        this.categories = categories || [];
+        this.brands = Array.isArray(brands) ? brands : [];
+        this.categories = Array.isArray(categories) ? categories : [];
         const params = new URLSearchParams(window.location.search);
         this.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '/admin/products');
-        this.source = params.get('source') || '';
+        this.source = CommonJS.normalizeOptionalText(params.get('source')) || '';
 
         // 선택박스 렌더링
         this.renderSelects();
@@ -53,17 +54,21 @@ const ProductCreate = {
     renderSelects() {
         const brandSelect = document.getElementById('brandNo');
         this.brands.forEach(brand => {
+            const brandNo = this.normalizePositiveNumber(brand.brandNo);
+            if (!brandNo) return;
             const option = document.createElement('option');
-            option.value = brand.brandNo;
-            option.textContent = brand.nameKo;
+            option.value = String(brandNo);
+            option.textContent = CommonJS.normalizeOptionalText(brand.nameKo) || `브랜드 #${brandNo}`;
             brandSelect.appendChild(option);
         });
 
         const categorySelect = document.getElementById('categoryNo');
         this.categories.forEach(category => {
+            const categoryNo = this.normalizePositiveNumber(category.categoryNo);
+            if (!categoryNo) return;
             const option = document.createElement('option');
-            option.value = category.categoryNo;
-            option.textContent = category.name;
+            option.value = String(categoryNo);
+            option.textContent = CommonJS.normalizeOptionalText(category.name) || `카테고리 #${categoryNo}`;
             categorySelect.appendChild(option);
         });
     },
@@ -112,7 +117,7 @@ const ProductCreate = {
         });
 
         document.getElementById('thumbnailUrl').addEventListener('input', (e) => {
-            const url = e.target.value;
+            const url = CommonJS.normalizeImageSource(e.target.value);
             document.getElementById('previewImage').src = url || 'https://via.placeholder.com/300x300?text=No+Image';
         });
 
@@ -122,15 +127,19 @@ const ProductCreate = {
     },
 
     async loadFrontDisplayRankGuide() {
+        const requestId = ++this.rankGuideRequestId;
         try {
             const response = await fetch('/api/admin/product/front-display/rank-guide');
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, 'Featured 순번 정보를 불러오지 못했습니다.'));
             }
-            this.frontDisplayRankGuide = await response.json();
+            const guide = await response.json();
+            if (requestId !== this.rankGuideRequestId) return;
+            this.frontDisplayRankGuide = guide;
             this.renderFrontDisplayRankGuide();
             this.applyFeaturedToggleBehavior();
         } catch (error) {
+            if (requestId !== this.rankGuideRequestId) return;
             console.error('Featured rank guide load failed:', error);
             this.renderFrontDisplayRankGuide(error.message || 'Featured 순번 정보를 불러오지 못했습니다.');
         }
@@ -285,11 +294,15 @@ const ProductCreate = {
 
             if (response.ok) {
                 const result = await response.json();
+                const productNo = this.normalizePositiveNumber(result.productNo);
+                if (!productNo) {
+                    throw new Error('등록된 상품 번호를 확인할 수 없습니다.');
+                }
                 const displayResponse = await fetch('/api/admin/product/front-display', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        productNo: result.productNo,
+                        productNo,
                         headline: frontDisplay.headline,
                         description: frontDisplay.description,
                         mood: frontDisplay.mood,
@@ -299,17 +312,12 @@ const ProductCreate = {
                 });
                 if (!displayResponse.ok) {
                     const displayMessage = await CommonJS.extractErrorMessage(displayResponse, '프론트 노출 정보 저장에 실패했습니다.');
-                    await CommonJS.alert(displayMessage, '오류', 'error');
+                    await CommonJS.alert(`상품은 등록되었지만 ${displayMessage}`, '부분 완료', 'warning');
+                    this.navigateToDetail(productNo);
                     return;
                 }
                 await CommonJS.alert('상품이 성공적으로 등록되었습니다.', '성공', 'success');
-                const params = new URLSearchParams();
-                params.set('no', String(result.productNo));
-                params.set('returnTo', this.returnTo);
-                if (this.source) {
-                    params.set('source', this.source);
-                }
-                window.location.href = `/admin/products/get?${params.toString()}`;
+                this.navigateToDetail(productNo);
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
                 await CommonJS.alert('등록 실패: ' + message, '오류', 'error');
@@ -468,6 +476,21 @@ const ProductCreate = {
         return CommonJS.normalizeOptionalText(value);
     },
 
+    normalizePositiveNumber(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    navigateToDetail(productNo) {
+        const normalizedProductNo = this.normalizePositiveNumber(productNo);
+        if (!normalizedProductNo) return;
+        const params = new URLSearchParams();
+        params.set('no', String(normalizedProductNo));
+        params.set('returnTo', this.returnTo);
+        if (this.source) params.set('source', this.source);
+        window.location.href = `/admin/products/get?${params.toString()}`;
+    },
+
     syncReturnLinks() {
         const returnContext = CommonJS.getReturnContext(this.returnTo, '상품 관리');
         const breadcrumb = document.getElementById('productListBreadcrumb');
@@ -481,7 +504,11 @@ const ProductCreate = {
             breadcrumb.dataset.returnLabel = returnContext.label;
         }
         if (backButton) {
-            backButton.innerHTML = `<i class="fas fa-arrow-left me-2"></i>${returnContext.buttonLabel}`;
+            backButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-arrow-left me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            backButton.append(icon, document.createTextNode(returnContext.buttonLabel));
             backButton.dataset.returnTo = this.returnTo;
             backButton.dataset.returnButtonLabel = returnContext.buttonLabel;
         }

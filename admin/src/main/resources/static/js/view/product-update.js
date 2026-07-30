@@ -9,6 +9,9 @@ const ProductUpdate = {
     operationPolicy: null,
     frontDisplayData: null,
     frontDisplayRankGuide: null,
+    productRequestId: 0,
+    displayRequestId: 0,
+    rankGuideRequestId: 0,
 
     async init(bootstrapProduct = null) {
         if (this.initialized) {
@@ -92,6 +95,7 @@ const ProductUpdate = {
     },
 
     async loadProductData() {
+        const requestId = ++this.productRequestId;
         try {
             const [productResponse, displayResponse] = await Promise.all([
                 fetch(`/api/admin/product/get?no=${this.productNo}`),
@@ -103,6 +107,10 @@ const ProductUpdate = {
             }
 
             const data = await productResponse.json();
+            if (requestId !== this.productRequestId) return;
+            if (this.normalizeProductNo(data.productNo) !== this.productNo) {
+                throw new Error('요청한 상품과 상세 응답 정보가 일치하지 않습니다.');
+            }
             this.fillForm(data);
             if (displayResponse.ok) {
                 this.fillFrontDisplayForm(await displayResponse.json());
@@ -110,6 +118,7 @@ const ProductUpdate = {
             await this.loadFrontDisplayRankGuide();
             this.updatePreview();
         } catch (error) {
+            if (requestId !== this.productRequestId) return;
             console.error('Data Load Error:', error);
             await CommonJS.alert('데이터 로드 중 오류가 발생했습니다.', '오류', 'error');
             window.location.href = this.returnTo;
@@ -129,8 +138,9 @@ const ProductUpdate = {
 
         const tbody = document.getElementById('optionTableBody');
         tbody.innerHTML = '';
-        if (data.options && data.options.length > 0) {
-            data.options.forEach(opt => {
+        const options = Array.isArray(data.options) ? data.options : [];
+        if (options.length > 0) {
+            options.forEach(opt => {
                 this.addOption(opt.optionName, opt.stockQty, opt.additionalPrice, opt.optionNo);
             });
         } else {
@@ -139,13 +149,17 @@ const ProductUpdate = {
     },
 
     async loadFrontDisplayData() {
+        const requestId = ++this.displayRequestId;
         try {
             const response = await fetch(`/api/admin/product/front-display?productNo=${this.productNo}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
             }
-            this.fillFrontDisplayForm(await response.json());
+            const data = await response.json();
+            if (requestId !== this.displayRequestId) return;
+            this.fillFrontDisplayForm(data);
         } catch (error) {
+            if (requestId !== this.displayRequestId) return;
             console.error('Front Display Load Error:', error);
             this.fillFrontDisplayForm(null);
         }
@@ -162,15 +176,19 @@ const ProductUpdate = {
     },
 
     async loadFrontDisplayRankGuide() {
+        const requestId = ++this.rankGuideRequestId;
         try {
             const response = await fetch(`/api/admin/product/front-display/rank-guide?productNo=${this.productNo}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, 'Featured 순번 정보를 불러오지 못했습니다.'));
             }
-            this.frontDisplayRankGuide = await response.json();
+            const guide = await response.json();
+            if (requestId !== this.rankGuideRequestId) return;
+            this.frontDisplayRankGuide = guide;
             this.renderFrontDisplayRankGuide();
             this.applyFeaturedToggleBehavior();
         } catch (error) {
+            if (requestId !== this.rankGuideRequestId) return;
             console.error('Featured rank guide load failed:', error);
             this.renderFrontDisplayRankGuide(error.message || 'Featured 순번 정보를 불러오지 못했습니다.');
         }
@@ -307,7 +325,7 @@ const ProductUpdate = {
         document.getElementById('previewStatus').textContent =
             document.getElementById('productStatus').options[document.getElementById('productStatus').selectedIndex]?.text || '판매중 (ACTIVE)';
 
-        const url = document.getElementById('thumbnailUrl').value;
+        const url = CommonJS.normalizeImageSource(document.getElementById('thumbnailUrl').value);
         const previewImage = document.getElementById('previewImage');
         const previewText = document.getElementById('previewText');
 

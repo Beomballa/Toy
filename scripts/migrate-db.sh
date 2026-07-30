@@ -31,6 +31,45 @@ apply_file() {
   "${MYSQL[@]}" < "$1"
 }
 
+BASELINE_TABLES=(
+  admin_activity_log
+  admin_operation_notice
+  admin_operation_task
+  admin_operation_task_comment
+  admin_system_setting
+  admin_system_setting_history
+  admin_user
+  brand
+  category
+  ct_document
+  display_banner
+  document_daily_stats
+  front_cart
+  front_cart_item
+  front_content_reaction
+  front_content_view_event
+  front_product_display
+  order_delivery
+  order_item
+  order_status_history
+  orders
+  product
+  product_change_history
+  product_option
+  sy_account
+  sy_approval_document
+)
+
+validate_tables() {
+  for required_table in "$@"; do
+    table_exists="$(query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}' AND table_name='${required_table}';")"
+    if [[ "${table_exists}" != "1" ]]; then
+      echo "Required table is missing after migration: ${required_table}" >&2
+      return 1
+    fi
+  done
+}
+
 query "
 CREATE TABLE IF NOT EXISTS schema_migration (
     version_no VARCHAR(40) NOT NULL,
@@ -50,6 +89,9 @@ if [[ "${CORE_TABLE_EXISTS}" == "0" ]]; then
   echo "Applying baseline schema"
   apply_file "${BASELINE_FILE}"
 fi
+
+# 기존 DB도 전체 기준 스키마를 갖춘 경우에만 기준 버전을 등록합니다.
+validate_tables "${BASELINE_TABLES[@]}"
 
 query "
 INSERT INTO schema_migration (version_no, description, checksum_sha256)
@@ -88,12 +130,6 @@ for migration in "${MIGRATIONS[@]}"; do
   "
 done
 
-for required_table in product product_option orders request_rate_limit_bucket; do
-  table_exists="$(query "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='${DB_NAME}' AND table_name='${required_table}';")"
-  if [[ "${table_exists}" != "1" ]]; then
-    echo "Required table is missing after migration: ${required_table}" >&2
-    exit 1
-  fi
-done
+validate_tables "${BASELINE_TABLES[@]}" request_rate_limit_bucket
 
 echo "Database schema is up to date."

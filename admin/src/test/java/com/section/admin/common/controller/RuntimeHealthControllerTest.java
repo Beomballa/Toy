@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +28,7 @@ class RuntimeHealthControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("UP", response.getBody().status());
+        verify(jdbcTemplate).queryForList(RuntimeHealthController.REQUIRED_SCHEMA_QUERY);
     }
 
     @Test
@@ -43,7 +45,7 @@ class RuntimeHealthControllerTest {
     @Test
     void readinessIsUnavailableWhenRequiredSecurityTableIsMissing() {
         when(jdbcTemplate.queryForObject("SELECT 1", Integer.class)).thenReturn(1);
-        when(jdbcTemplate.queryForList("SELECT rate_key FROM request_rate_limit_bucket WHERE 1 = 0"))
+        when(jdbcTemplate.queryForList(RuntimeHealthController.REQUIRED_SCHEMA_QUERY))
                 .thenThrow(new IllegalStateException("missing table"));
 
         var response = controller.ready();

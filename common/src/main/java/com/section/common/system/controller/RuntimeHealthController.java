@@ -11,6 +11,13 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RuntimeHealthController {
 
+    public static final String REQUIRED_SCHEMA_QUERY = """
+            SELECT migration.version_no
+            FROM schema_migration migration
+            JOIN product product ON 1 = 0
+            JOIN request_rate_limit_bucket rate_bucket ON 1 = 0
+            """;
+
     private final JdbcTemplate jdbcTemplate;
 
     @GetMapping("/health/live")
@@ -23,7 +30,7 @@ public class RuntimeHealthController {
         try {
             Integer result = jdbcTemplate.queryForObject("SELECT 1", Integer.class);
             if (Integer.valueOf(1).equals(result)) {
-                jdbcTemplate.queryForList("SELECT rate_key FROM request_rate_limit_bucket WHERE 1 = 0");
+                jdbcTemplate.queryForList(REQUIRED_SCHEMA_QUERY);
                 return ResponseEntity.ok(new RuntimeHealthResponse("UP"));
             }
         } catch (RuntimeException ignored) {

@@ -20,6 +20,7 @@ DB_PASSWORD='secret' \
 ```
 
 적용된 버전과 SHA-256 체크섬은 `schema_migration`에 기록됩니다. 이미 적용된 SQL 파일의 내용이 변경되면 실행기는 배포를 중단하므로 기존 파일을 수정하지 말고 새 버전 SQL을 추가해야 합니다.
+기존 DB는 기준 스키마의 26개 테이블이 모두 존재할 때만 기준 버전을 기록합니다. 일부 테이블이 누락된 환경에서는 자동으로 기준 SQL을 덮어쓰지 않고 배포를 중단하므로, 백업과 누락 원인을 확인한 뒤 별도 복구해야 합니다.
 
 `request_rate_limit_bucket`은 모든 애플리케이션 인스턴스가 관리자 로그인과 주문조회 제한 상태를 공유하는 운영 보안 테이블입니다.
 
@@ -119,7 +120,7 @@ export BATCH_CONTENT_VIEW_RETENTION_DAYS=180
 각 애플리케이션은 다음 엔드포인트를 제공합니다.
 
 - `/health/live`: 프로세스 생존 여부
-- `/health/ready`: DB 연결을 포함한 요청 처리 준비 여부
+- `/health/ready`: DB 연결과 `schema_migration`, 상품, 공유 요청 제한 테이블을 포함한 요청 처리 준비 여부
 
 ```bash
 FRONT_URL=https://service.example.com \

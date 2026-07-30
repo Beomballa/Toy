@@ -25,3 +25,11 @@ test("category rows use number-based lookup and reject stale list responses", ()
     assert.match(source, /requestId !== this\.depth1RequestId/);
     assert.match(source, /requestId !== this\.depth2RequestId/);
 });
+
+test("order filtering accepts a new request and ignores an older response", () => {
+    const source = readViewScript("order-list.js");
+
+    assert.equal(source.includes("if (this.isLoading)"), false);
+    assert.match(source, /const requestId = \+\+this\.listRequestId/);
+    assert.match(source, /requestId !== this\.listRequestId/);
+});

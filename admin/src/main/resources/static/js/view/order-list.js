@@ -4,7 +4,7 @@ const OrderList = {
     maxKeywordLength: 50,
     state: null,
     operationPolicy: null,
-    isLoading: false,
+    listRequestId: 0,
     isExporting: false,
 
     init() {
@@ -149,9 +149,7 @@ const OrderList = {
     },
 
     async getList() {
-        if (this.isLoading) {
-            return;
-        }
+        const requestId = ++this.listRequestId;
         this.captureFilterState();
         if (!this.validateDateRange()) {
             this.renderSummaryState('error', '상태별 집계를 불러오지 않았습니다.', '조회 기간과 검색 조건을 다시 확인해주세요.');
@@ -179,7 +177,6 @@ const OrderList = {
         this.renderSummaryState('loading', '상태별 집계를 불러오는 중입니다.', '현재 필터 기준 주문 상태별 건수를 계산하고 있습니다.');
 
         try {
-            this.isLoading = true;
             this.renderMeta({
                 totalElements: 0,
                 currentPage: this.state.page,
@@ -191,11 +188,17 @@ const OrderList = {
             }
 
             const data = await res.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderStatusSummaries(data.statusSummaries || []);
             this.renderList(data.orders);
             this.renderMeta(data);
             this.renderPagination(data);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             console.error('주문 목록 로드 실패:', err);
             this.renderSummaryState('error', '상태별 집계를 불러오지 못했습니다.', '잠시 후 다시 시도하거나 필터 조건을 조정해주세요.');
             this.renderTableState('error', '주문 내역을 불러오지 못했습니다.', '잠시 후 다시 시도하거나 주문 검색 조건을 조정해주세요.');
@@ -206,8 +209,6 @@ const OrderList = {
                 errorMessage: err.message
             });
             await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
-        } finally {
-            this.isLoading = false;
         }
     },
 
@@ -241,14 +242,15 @@ const OrderList = {
         container.innerHTML = cards.map((item) => {
             const active = (item.statusCode || '') === selectedStatus;
             const percentage = totalCount > 0 ? Math.round((Number(item.count || 0) / totalCount) * 100) : 0;
+            const statusCode = this.normalizeStatusCode(item.statusCode);
             return `
                 <button type="button"
                         class="admin-summary-card order-status-summary-card text-start ${active ? 'stat-card-active' : ''}"
                         data-role="apply-order-status-summary"
-                        data-status-code="${item.statusCode || ''}">
-                    <div class="admin-summary-card__label">${item.statusDesc}</div>
+                        data-status-code="${statusCode}">
+                    <div class="admin-summary-card__label">${CommonJS.escapeHtml(item.statusDesc || '-')}</div>
                     <div class="admin-summary-card__value">${Number(item.count || 0).toLocaleString()}건</div>
-                    <div class="admin-summary-card__hint">${item.hint} · ${percentage}%</div>
+                    <div class="admin-summary-card__hint">${CommonJS.escapeHtml(item.hint || '-')} · ${percentage}%</div>
                 </button>
             `;
         }).join('');
@@ -265,22 +267,23 @@ const OrderList = {
 
         tbody.innerHTML = items.map(item => {
             const statusMeta = CommonJS.getOrderStatusMeta(item.statusCode);
+            const orderNo = this.normalizeOptionalPositiveNumber(item.orderNo);
 
             return `
                 <tr>
-                    <td class="ps-4"><span class="order-id">${item.orderNum}</span></td>
-                    <td>${item.orderDt}</td>
+                    <td class="ps-4"><span class="order-id">${CommonJS.escapeHtml(item.orderNum || '-')}</span></td>
+                    <td>${CommonJS.escapeHtml(item.orderDt || '-')}</td>
                     <td>
                         <div class="buyer-info">
-                            <div class="fw-bold">${item.buyerName}</div>
-                            <div class="text-muted small">${item.buyerPhone}</div>
+                            <div class="fw-bold">${CommonJS.escapeHtml(item.buyerName || '-')}</div>
+                            <div class="text-muted small">${CommonJS.escapeHtml(item.buyerPhone || '-')}</div>
                         </div>
                     </td>
-                    <td>${item.productSummary}</td>
-                    <td><strong>${item.totalAmount}</strong></td>
-                    <td><span class="badge ${statusMeta.badgeClass}">${item.statusDesc}</span></td>
+                    <td>${CommonJS.escapeHtml(item.productSummary || '-')}</td>
+                    <td><strong>${CommonJS.escapeHtml(item.totalAmount || '-')}</strong></td>
+                    <td><span class="badge ${statusMeta.badgeClass}">${CommonJS.escapeHtml(item.statusDesc || '-')}</span></td>
                     <td class="text-end pe-4">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="go-order-detail" data-order-no="${item.orderNo}">상세보기</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-role="go-order-detail" data-order-no="${orderNo || ''}">상세보기</button>
                     </td>
                 </tr>
             `;
@@ -320,8 +323,8 @@ const OrderList = {
             container.innerHTML = `
                 <div class="product-loading-state py-4">
                     <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
-                    <strong>${title}</strong>
-                    <p>${description}</p>
+                    <strong>${CommonJS.escapeHtml(title)}</strong>
+                    <p>${CommonJS.escapeHtml(description)}</p>
                 </div>
             `;
             return;
@@ -333,8 +336,8 @@ const OrderList = {
                 <div class="product-empty-state__icon">
                     <i class="fa-solid ${iconClass}"></i>
                 </div>
-                <strong>${title}</strong>
-                <p>${description}</p>
+                <strong>${CommonJS.escapeHtml(title)}</strong>
+                <p>${CommonJS.escapeHtml(description)}</p>
             </div>
         `;
     },
@@ -347,8 +350,8 @@ const OrderList = {
             ? `
                 <div class="product-loading-state">
                     <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
-                    <strong>${title}</strong>
-                    <p>${description}</p>
+                    <strong>${CommonJS.escapeHtml(title)}</strong>
+                    <p>${CommonJS.escapeHtml(description)}</p>
                 </div>
             `
             : `
@@ -356,8 +359,8 @@ const OrderList = {
                     <div class="product-empty-state__icon">
                         <i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation text-danger' : 'fa-box-open text-primary'}"></i>
                     </div>
-                    <strong>${title}</strong>
-                    <p>${description}</p>
+                    <strong>${CommonJS.escapeHtml(title)}</strong>
+                    <p>${CommonJS.escapeHtml(description)}</p>
                 </div>
             `;
 

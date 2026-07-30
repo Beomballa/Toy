@@ -50,3 +50,12 @@ test("banner and activity log lists keep only the latest filter response", () =>
         assert.match(source, /requestId !== this\.listRequestId/);
     }
 });
+
+test("notice rows use number-based lookup, safe paths, and latest responses", () => {
+    const source = readViewScript("notice-list.js");
+
+    assert.equal(source.includes("data-notice='"), false);
+    assert.equal(source.includes("parseNoticeDataset"), false);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath/);
+    assert.match(source, /requestId !== this\.listRequestId/);
+});

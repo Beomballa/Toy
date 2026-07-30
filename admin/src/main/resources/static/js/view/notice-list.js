@@ -14,6 +14,8 @@ const NoticeList = {
         returnTo: ''
     },
     selectedNoticeNos: new Set(),
+    noticeItemsByNo: new Map(),
+    listRequestId: 0,
     saveInFlight: false,
     exportInFlight: false,
     bulkInFlight: false,
@@ -94,7 +96,8 @@ const NoticeList = {
             }
             const editButton = event.target.closest('[data-role="edit-notice"]');
             if (editButton) {
-                const notice = this.parseNoticeDataset(editButton.dataset.notice);
+                const noticeNo = this.normalizeOptionalPositiveNumber(editButton.dataset.noticeNo);
+                const notice = noticeNo == null ? null : this.noticeItemsByNo.get(noticeNo);
                 if (!notice) {
                     void CommonJS.alert('수정할 운영 공지 정보를 읽을 수 없습니다.', '알림', 'warning');
                     return;
@@ -180,6 +183,7 @@ const NoticeList = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         try {
             this.updateStateFromInputs();
             this.validateState();
@@ -199,13 +203,19 @@ const NoticeList = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지 목록을 불러오지 못했습니다.'));
 
             const data = await res.json();
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             this.renderList(data.items || []);
             this.renderStats(data.noticeStats);
             this.renderMeta(data);
             this.syncStatCardState();
             this.renderPagination(data);
-            await this.openDeepLinkedNoticeIfNeeded(data.items || []);
+            await this.openDeepLinkedNoticeIfNeeded(data.items || [], requestId);
         } catch (err) {
+            if (requestId !== this.listRequestId) {
+                return;
+            }
             document.getElementById('noticeMetaText').textContent = err.message;
             this.setFilterMeta(err.message);
             this.setResultMeta('결과 메타 확인 불가');
@@ -221,6 +231,11 @@ const NoticeList = {
     renderList(items) {
         const tbody = document.getElementById('noticeListBody');
         if (!tbody) return;
+        this.noticeItemsByNo = new Map(
+            (items || [])
+                .map((item) => [this.normalizeOptionalPositiveNumber(item.noticeNo), item])
+                .filter(([noticeNo]) => noticeNo != null)
+        );
 
         if (!items || items.length === 0) {
             tbody.innerHTML = `
@@ -239,57 +254,65 @@ const NoticeList = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => `
+        tbody.innerHTML = items.map((item) => {
+            const noticeNo = this.normalizeOptionalPositiveNumber(item.noticeNo);
+            const detailPath = this.escapeHtml(this.buildNoticeDetailPath(noticeNo));
+            const historyPath = this.buildNoticeHistoryPathFromBase(item.historyPath);
+            const logPath = this.buildNoticeLogPathFromBase(item.activityLogPath, noticeNo);
+            const isPinned = item.isPinned === 'Y';
+            const isActive = item.isActive === 'Y';
+            return `
             <tr>
                 <td class="ps-4">
-                    <input type="checkbox" data-role="select-notice" data-notice-no="${item.noticeNo}" ${this.selectedNoticeNos.has(item.noticeNo) ? 'checked' : ''}>
+                    <input type="checkbox" data-role="select-notice" data-notice-no="${noticeNo || ''}" ${this.selectedNoticeNos.has(noticeNo) ? 'checked' : ''}>
                 </td>
-                <td class="text-muted small">${item.noticeNo}</td>
+                <td class="text-muted small">${noticeNo || '-'}</td>
                 <td>
                     <div class="d-flex align-items-center gap-2 mb-1">
-                        ${item.isPinned === 'Y' ? '<span class="badge text-bg-danger">고정</span>' : ''}
-                        <a class="fw-bold text-dark text-decoration-none" href="${this.buildNoticeDetailPath(item.noticeNo)}">${this.escapeHtml(item.title)}</a>
+                        ${isPinned ? '<span class="badge text-bg-danger">고정</span>' : ''}
+                        <a class="fw-bold text-dark text-decoration-none" href="${detailPath}">${this.escapeHtml(item.title || '-')}</a>
                     </div>
-                    <div class="small text-muted text-truncate" style="max-width: 520px;">${this.escapeHtml(item.content)}</div>
+                    <div class="small text-muted text-truncate" style="max-width: 520px;">${this.escapeHtml(item.content || '-')}</div>
                 </td>
                 <td>
-                    <div class="small">${item.startDtm}</div>
-                    <div class="small text-muted">~ ${item.endDtm}</div>
+                    <div class="small">${this.escapeHtml(item.startDtm || '-')}</div>
+                    <div class="small text-muted">~ ${this.escapeHtml(item.endDtm || '-')}</div>
                 </td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${item.isPinned === 'Y' ? 'badge-y' : 'badge-n'}">${item.isPinned === 'Y' ? '고정' : '일반'}</span>
+                    <span class="badge rounded-pill ${isPinned ? 'badge-y' : 'badge-n'}">${isPinned ? '고정' : '일반'}</span>
                 </td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">${item.displayStatus}</span>
+                    <span class="badge rounded-pill ${isActive ? 'badge-y' : 'badge-n'}">${this.escapeHtml(item.displayStatus || '-')}</span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeHistoryPath(item.historyPath)}" ${item.historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
-                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.buildNoticeLogPathFromBase(item.activityLogPath, item.noticeNo)}" ${item.activityLogPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${item.activityLogLabel}</a>
-                    <button class="btn btn-sm btn-outline-warning me-1" data-role="toggle-notice-pinned" data-notice-no="${item.noticeNo}" data-next-pinned="${item.isPinned === 'Y' ? 'N' : 'Y'}">${item.isPinned === 'Y' ? '고정해제' : '고정'}</button>
-                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${item.noticeNo}" data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '비활성' : '활성'}</button>
-                    <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${item.noticeNo}">삭제</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice-no="${noticeNo || ''}">수정</button>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(historyPath || '#')}" ${historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
+                    <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(logPath || '#')}" ${logPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${this.escapeHtml(item.activityLogLabel || '활동 로그')}</a>
+                    <button class="btn btn-sm btn-outline-warning me-1" data-role="toggle-notice-pinned" data-notice-no="${noticeNo || ''}" data-next-pinned="${isPinned ? 'N' : 'Y'}">${isPinned ? '고정해제' : '고정'}</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${noticeNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '비활성' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${noticeNo || ''}">삭제</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
 
         this.setListStateMeta('ready', '', items.length, null, null);
         this.updateSelectionMeta(items);
     },
 
-    async openDeepLinkedNoticeIfNeeded(items) {
-        if (!this.state.noticeNo) {
+    async openDeepLinkedNoticeIfNeeded(items, requestId) {
+        if (!this.state.noticeNo || requestId !== this.listRequestId) {
             return;
         }
 
         const noticeNo = Number(this.state.noticeNo);
-        const target = items.find((item) => item.noticeNo === noticeNo);
+        const target = items.find((item) => this.normalizeOptionalPositiveNumber(item.noticeNo) === noticeNo);
         if (target) {
             this.openEditModal(target);
         } else if (noticeNo > 0) {
             try {
                 const res = await fetch(`/api/admin/settings/notices/${noticeNo}`);
-                if (res.ok) {
+                if (res.ok && requestId === this.listRequestId) {
                     this.openEditModal(await res.json());
                 }
             } catch (error) {
@@ -360,8 +383,12 @@ const NoticeList = {
     },
 
     buildNoticeDetailPath(noticeNo) {
+        const safeNoticeNo = this.normalizeOptionalPositiveNumber(noticeNo);
+        if (safeNoticeNo == null) {
+            return '#';
+        }
         const params = new URLSearchParams();
-        params.set('no', String(noticeNo));
+        params.set('no', String(safeNoticeNo));
         params.set('returnTo', this.getCurrentLocation());
         if (this.state.source) {
             params.set('source', this.state.source);
@@ -370,10 +397,11 @@ const NoticeList = {
     },
 
     buildNoticeHistoryPathFromBase(basePath) {
-        if (!basePath) {
-            return '#';
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return '';
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', this.getCurrentLocation());
         if (this.state.source) {
@@ -876,7 +904,8 @@ const NoticeList = {
 
     getCurrentPageItems() {
         return Array.from(document.querySelectorAll('[data-role="edit-notice"]'))
-            .map((button) => this.parseNoticeDataset(button.dataset.notice))
+            .map((button) => this.normalizeOptionalPositiveNumber(button.dataset.noticeNo))
+            .map((noticeNo) => noticeNo == null ? null : this.noticeItemsByNo.get(noticeNo))
             .filter(Boolean);
     },
 
@@ -1090,7 +1119,11 @@ const NoticeList = {
         if (!basePath) {
             return this.buildNoticeLogPath(noticeNo);
         }
-        const [path, rawQuery = ''] = basePath.split('?');
+        const safeBasePath = CommonJS.normalizeAdminReturnPath(basePath, '');
+        if (!safeBasePath) {
+            return noticeNo == null ? '' : this.buildNoticeLogPath(noticeNo);
+        }
+        const [path, rawQuery = ''] = safeBasePath.split('?');
         const params = new URLSearchParams(rawQuery);
         params.set('returnTo', window.location.pathname + window.location.search);
         if (this.state.source) {
@@ -1130,15 +1163,6 @@ const NoticeList = {
         }
         const number = Number(value);
         return this.isPositiveNumber(number) ? number : null;
-    },
-
-    parseNoticeDataset(value) {
-        try {
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('운영 공지 dataset 파싱 실패:', error);
-            return null;
-        }
     },
 
     normalizeStatFilter(value) {

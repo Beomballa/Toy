@@ -209,7 +209,7 @@ public class AdminProductService {
      * */
     @Transactional
     public void updateProductInfo(ProductUpdateRequest reqDto) {
-        Product product = productRepository.findById(reqDto.getProductNo())
+        Product product = productRepository.findByIdForUpdate(reqDto.getProductNo())
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
         List<ProductOption> currentOptions = productOptionRepository.findByProductIdForUpdate(product.getId());
         FrontProductDisplay currentDisplay = frontProductDisplayRepository.findByProductNo(product.getId()).orElse(null);

@@ -87,7 +87,7 @@ class AdminOrderServiceTest {
     void updateOrderStatusCreatesHistory() {
         Orders order = Orders.createOrder("ORD-1", "홍길동", "010", 1000);
         order.pay();
-        when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(order));
 
         adminOrderService.updateOrderStatus(1L, OrderStatus.PREPARING, "출고 준비");
 
@@ -150,7 +150,7 @@ class AdminOrderServiceTest {
     @DisplayName("관리 메모 저장은 현재 상태를 유지한 채 이력을 남긴다")
     void saveAdminMemoCreatesHistoryWithSnapshot() {
         Orders order = Orders.createOrder("ORD-2", "홍길동", "010", 1000);
-        when(orderRepository.findById(2L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(2L)).thenReturn(Optional.of(order));
 
         adminOrderService.saveAdminMemo(2L, "고객 요청 확인");
 
@@ -168,7 +168,7 @@ class AdminOrderServiceTest {
     void saveAdminMemoSkipsUnchangedNormalizedMemo() {
         Orders order = Orders.createOrder("ORD-3", "홍길동", "010", 1000);
         order.updateAdminMemo("고객 요청 확인");
-        when(orderRepository.findById(3L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(3L)).thenReturn(Optional.of(order));
 
         adminOrderService.saveAdminMemo(3L, "  고객   요청 확인 ");
 
@@ -179,7 +179,7 @@ class AdminOrderServiceTest {
     @Test
     @DisplayName("존재하지 않는 주문의 메모 저장은 ORDER_NOT_FOUND를 던진다")
     void saveAdminMemoThrowsWhenOrderMissing() {
-        when(orderRepository.findById(999L)).thenReturn(Optional.empty());
+        when(orderRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
                 BusinessException.class,
@@ -194,7 +194,7 @@ class AdminOrderServiceTest {
     @DisplayName("관리 메모 저장은 1000자를 초과하는 값을 거부한다")
     void saveAdminMemoRejectsTooLongMemo() {
         Orders order = Orders.createOrder("ORD-4", "홍길동", "010", 1000);
-        when(orderRepository.findById(4L)).thenReturn(Optional.of(order));
+        when(orderRepository.findByIdForUpdate(4L)).thenReturn(Optional.of(order));
 
         String tooLongMemo = "a".repeat(1001);
 

@@ -183,7 +183,7 @@ class AdminProductServiceTest {
         request.setReleasePrice(1000);
         request.setStatus("invalid-status");
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(1L)
                 .categoryNo(1L)
@@ -214,7 +214,7 @@ class AdminProductServiceTest {
         request.setStatus("ACTIVE");
         request.setOptions(List.of(option));
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(1L)
                 .categoryNo(2L)
@@ -268,7 +268,7 @@ class AdminProductServiceTest {
         option.setAdditionalPrice(3000);
         ProductUpdateRequest request = productUpdateRequest(List.of(option));
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(activeProduct()));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(activeProduct()));
         when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of(currentOption));
         when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.empty());
         stubActiveBrandAndCategory();
@@ -295,7 +295,7 @@ class AdminProductServiceTest {
                 .build();
         ProductUpdateRequest request = productUpdateRequest(List.of());
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(activeProduct()));
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(activeProduct()));
         when(productOptionRepository.findByProductIdForUpdate(1L)).thenReturn(List.of(currentOption));
         when(frontProductDisplayRepository.findByProductNo(1L)).thenReturn(Optional.empty());
         when(frontCartItemRepository.existsByOptionNo(42L)).thenReturn(true);
@@ -331,7 +331,7 @@ class AdminProductServiceTest {
                 .featuredRank(2)
                 .build();
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(2L)
                 .categoryNo(3L)
@@ -1198,7 +1198,7 @@ class AdminProductServiceTest {
         request.setReleasePrice(1000);
         request.setOptions(List.of(firstOption, duplicatedOption));
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(1L)
                 .categoryNo(2L)
@@ -1240,7 +1240,7 @@ class AdminProductServiceTest {
         request.setStatus("ACTIVE");
         request.setOptions(List.of(option));
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(1L)
                 .categoryNo(2L)
@@ -1412,7 +1412,7 @@ class AdminProductServiceTest {
         request.setReleasePrice(1000);
         request.setStatus("ACTIVE");
 
-        when(productRepository.findById(1L)).thenReturn(Optional.of(Product.builder()
+        when(productRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(Product.builder()
                 .id(1L)
                 .brandNo(1L)
                 .categoryNo(2L)

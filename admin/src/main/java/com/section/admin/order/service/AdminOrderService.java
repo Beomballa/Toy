@@ -99,7 +99,7 @@ public class AdminOrderService {
      */
     @Transactional
     public void updateOrderStatus(Long orderNo, OrderStatus status, String reason) {
-        Orders order = findOrder(orderNo);
+        Orders order = findOrderForUpdate(orderNo);
         String beforeStatus = order.getStatus();
         order.changeStatus(status);
         saveHistory(order, "STATUS_CHANGE", beforeStatus, order.getStatus(), reason);
@@ -107,7 +107,7 @@ public class AdminOrderService {
 
     @Transactional
     public void startDelivery(Long orderNo, String deliveryCompany, String trackingNum, String reason) {
-        Orders order = findOrder(orderNo);
+        Orders order = findOrderForUpdate(orderNo);
         String beforeStatus = order.getStatus();
         order.startDelivery(deliveryCompany, trackingNum);
         saveHistory(order, "DELIVERY_START", beforeStatus, order.getStatus(), reason);
@@ -115,7 +115,7 @@ public class AdminOrderService {
 
     @Transactional
     public void completeDelivery(Long orderNo, String reason) {
-        Orders order = findOrder(orderNo);
+        Orders order = findOrderForUpdate(orderNo);
         String beforeStatus = order.getStatus();
         order.completeDelivery();
         saveHistory(order, "DELIVERY_COMPLETE", beforeStatus, order.getStatus(), reason);
@@ -151,7 +151,7 @@ public class AdminOrderService {
 
     @Transactional
     public void saveAdminMemo(Long orderNo, String adminMemo) {
-        Orders order = findOrder(orderNo);
+        Orders order = findOrderForUpdate(orderNo);
         String normalizedMemo = normalizeAdminMemo(adminMemo);
         String currentMemo = normalizeAdminMemo(order.getAdminMemo());
         if (java.util.Objects.equals(currentMemo, normalizedMemo)) {
@@ -159,11 +159,6 @@ public class AdminOrderService {
         }
         order.updateAdminMemo(normalizedMemo);
         saveHistory(order, "ADMIN_MEMO", order.getStatus(), order.getStatus(), "관리 메모 저장");
-    }
-
-    private Orders findOrder(Long orderNo) {
-        return orderRepository.findById(orderNo)
-                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
     }
 
     private Orders findOrderForUpdate(Long orderNo) {

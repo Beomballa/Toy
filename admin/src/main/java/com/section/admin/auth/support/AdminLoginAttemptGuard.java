@@ -54,8 +54,9 @@ public class AdminLoginAttemptGuard {
     }
 
     public boolean isBlocked(String ipAddress, String loginId) {
-        return rateLimitStore.isBlocked(accountKey(ipAddress, loginId), clock.instant())
-                || rateLimitStore.isBlocked(ipKey(ipAddress), clock.instant());
+        var now = clock.instant();
+        return rateLimitStore.isBlocked(accountKey(ipAddress, loginId), now)
+                || rateLimitStore.isBlocked(ipKey(ipAddress), now);
     }
 
     public void recordFailure(String ipAddress, String loginId) {
@@ -65,7 +66,6 @@ public class AdminLoginAttemptGuard {
 
     public void clear(String ipAddress, String loginId) {
         rateLimitStore.clear(accountKey(ipAddress, loginId));
-        rateLimitStore.clear(ipKey(ipAddress));
     }
 
     private String accountKey(String ipAddress, String loginId) {

@@ -66,6 +66,22 @@ class AdminLoginAttemptGuardTest {
     }
 
     @Test
+    @DisplayName("로그인 성공은 동일 IP의 공격 누적을 초기화하지 않는다")
+    void successfulLoginKeepsIpFailureBucket() {
+        AdminLoginAttemptGuard guard = new AdminLoginAttemptGuard(
+                new InMemoryRateLimitStore(),
+                3, 3, Duration.ofMinutes(15), Clock.systemUTC(), 100
+        );
+        guard.recordFailure("127.0.0.1", "admin-1");
+        guard.recordFailure("127.0.0.1", "admin-2");
+        guard.recordFailure("127.0.0.1", "admin-3");
+
+        guard.clear("127.0.0.1", "admin-3");
+
+        assertTrue(guard.isBlocked("127.0.0.1", "admin-4"));
+    }
+
+    @Test
     @DisplayName("실패 시간 창이 지나면 부분 누적 횟수를 초기화한다")
     void resetsPartialFailuresAfterWindow() {
         MutableClock clock = new MutableClock(Instant.parse("2026-07-20T05:00:00Z"));

@@ -17,6 +17,10 @@ const CategoryList = {
     saveInFlight: false,
     exportInFlight: false,
     bulkInFlight: false,
+    depth1RequestId: 0,
+    depth2RequestId: 0,
+    depth1ItemsByNo: new Map(),
+    depth2ItemsByNo: new Map(),
     selectedCategoryNos: new Set(),
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
@@ -90,21 +94,11 @@ const CategoryList = {
                 return;
             }
 
-            const parentItem = event.target.closest('[data-role="select-parent"]');
-            if (parentItem) {
-                const parentNo = this.normalizeOptionalPositiveNumber(parentItem.dataset.parentNo);
-                if (parentNo == null) {
-                    void CommonJS.alert('유효하지 않은 상위 카테고리 번호입니다.', '알림', 'warning');
-                    return;
-                }
-                this.getDepth2List(parentNo, parentItem.dataset.parentName);
-                return;
-            }
-
             const editRootButton = event.target.closest('[data-role="edit-root-category"]');
             if (editRootButton) {
                 event.stopPropagation();
-                const category = this.parseCategoryDataset(editRootButton.dataset.category);
+                const categoryNo = this.normalizeOptionalPositiveNumber(editRootButton.dataset.categoryNo);
+                const category = categoryNo == null ? null : this.depth1ItemsByNo.get(categoryNo);
                 if (!category) {
                     void CommonJS.alert('수정할 카테고리 정보를 읽을 수 없습니다.', '알림', 'warning');
                     return;
@@ -123,6 +117,18 @@ const CategoryList = {
                     return;
                 }
                 this.toggleActive(categoryNo, nextActive);
+                return;
+            }
+
+            const parentItem = event.target.closest('[data-role="select-parent"]');
+            if (parentItem) {
+                const parentNo = this.normalizeOptionalPositiveNumber(parentItem.dataset.parentNo);
+                const parent = parentNo == null ? null : this.depth1ItemsByNo.get(parentNo);
+                if (!parent) {
+                    void CommonJS.alert('유효하지 않은 상위 카테고리 번호입니다.', '알림', 'warning');
+                    return;
+                }
+                this.getDepth2List(parentNo, parent.name);
             }
         });
         document.getElementById('depth2ListBody')?.addEventListener('click', (event) => {
@@ -138,7 +144,8 @@ const CategoryList = {
 
             const editSubButton = event.target.closest('[data-role="edit-sub-category"]');
             if (editSubButton) {
-                const category = this.parseCategoryDataset(editSubButton.dataset.category);
+                const categoryNo = this.normalizeOptionalPositiveNumber(editSubButton.dataset.categoryNo);
+                const category = categoryNo == null ? null : this.depth2ItemsByNo.get(categoryNo);
                 if (!category) {
                     void CommonJS.alert('수정할 카테고리 정보를 읽을 수 없습니다.', '알림', 'warning');
                     return;
@@ -205,6 +212,8 @@ const CategoryList = {
     },
 
     async getDepth1List() {
+        const requestId = ++this.depth1RequestId;
+        this.depth2RequestId++;
         try {
             this._updateStateFromInputs();
             if (!this.validateState()) {
@@ -218,13 +227,23 @@ const CategoryList = {
             this.setPageMeta('페이지 메타를 계산하는 중입니다...');
             this.setListStateMeta('loading', '카테고리 목록을 불러오는 중입니다.', 0, 0, '');
             const res = await fetch(`/api/admin/categories/list?${params.toString()}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '카테고리 목록을 불러오지 못했습니다.'));
+            }
             const data = await res.json();
+            if (requestId !== this.depth1RequestId) {
+                return;
+            }
             this.state.depth1List = data.items || [];
+            this.depth1ItemsByNo = this.buildCategoryMap(this.state.depth1List);
             this.renderDepth1();
             this.renderDepth1Meta(data);
             this.renderPagination(data);
             this.restoreSelectedParent();
         } catch (err) {
+            if (requestId !== this.depth1RequestId) {
+                return;
+            }
             console.error('1차 카테고리 로드 실패:', err);
             this.setMetaText('카테고리 목록을 불러오지 못했습니다.');
             this.setFilterMeta('카테고리 목록을 불러오지 못했습니다.');
@@ -261,14 +280,43 @@ const CategoryList = {
             '유지보수 모드에서는 하위 카테고리를 추가할 수 없습니다.'
         );
 
+        const requestId = ++this.depth2RequestId;
         try {
             const res = await fetch(`/api/admin/categories/sub?parentNo=${parentNo}`);
+            if (!res.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(res, '하위 카테고리를 불러오지 못했습니다.'));
+            }
             const data = await res.json();
-            this.state.depth2List = data;
+            if (requestId !== this.depth2RequestId || this.state.selectedParentNo !== parentNo) {
+                return;
+            }
+            this.state.depth2List = Array.isArray(data) ? data : [];
+            this.depth2ItemsByNo = this.buildCategoryMap(this.state.depth2List);
             this.renderDepth2();
-            this.setSubCategoryMeta(`선택된 대분류 ${parentName} · 하위 카테고리 ${data.length}건`);
+            this.setSubCategoryMeta(`선택된 대분류 ${parentName} · 하위 카테고리 ${this.state.depth2List.length}건`);
         } catch (err) {
+            if (requestId !== this.depth2RequestId || this.state.selectedParentNo !== parentNo) {
+                return;
+            }
             console.error('2차 카테고리 로드 실패:', err);
+            this.state.depth2List = [];
+            this.depth2ItemsByNo.clear();
+            const tbody = document.getElementById('depth2ListBody');
+            if (tbody) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-5">
+                            <div class="product-empty-state">
+                                <div class="product-empty-state__icon text-danger">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                </div>
+                                <strong>하위 카테고리를 불러오지 못했습니다.</strong>
+                                <p>${this.escapeHtml(err.message || '잠시 후 다시 시도해 주세요.')}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
             this.setSubCategoryMeta('하위 카테고리 메타 확인 불가');
         }
     },
@@ -289,38 +337,43 @@ const CategoryList = {
             return;
         }
 
-        body.innerHTML = this.state.depth1List.map(item => `
-            <div class="category-item ${this.state.selectedParentNo === item.categoryNo ? 'active' : ''}" 
-                 data-role="select-parent" data-parent-no="${item.categoryNo}" data-parent-name="${item.name.replace(/"/g, '&quot;')}">
+        body.innerHTML = this.state.depth1List.map(item => {
+            const categoryNo = this.normalizeOptionalPositiveNumber(item.categoryNo);
+            const name = this.escapeHtml(item.name || '-');
+            const isActive = item.isActive === 'Y';
+            return `
+            <div class="category-item ${this.state.selectedParentNo === categoryNo ? 'active' : ''}"
+                 data-role="select-parent" data-parent-no="${categoryNo || ''}">
                 <div class="category-item__top">
                     <div class="category-item__title-wrap">
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" data-role="select-root-category" data-category-no="${item.categoryNo}" ${this.selectedCategoryNos.has(item.categoryNo) ? 'checked' : ''}>
+                            <input class="form-check-input" type="checkbox" data-role="select-root-category" data-category-no="${categoryNo || ''}" ${this.selectedCategoryNos.has(categoryNo) ? 'checked' : ''}>
                         </div>
                         <div class="category-item__eyebrow">ROOT CATEGORY</div>
-                        <div class="category-item__title">${item.name}</div>
+                        <div class="category-item__title">${name}</div>
                     </div>
-                    <button class="btn btn-xs btn-link category-item__edit" data-role="edit-root-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}' aria-label="${item.name} 수정">
+                    <button class="btn btn-xs btn-link category-item__edit" data-role="edit-root-category" data-category-no="${categoryNo || ''}" aria-label="${name} 수정">
                         <i class="fas fa-pen"></i>
                     </button>
                 </div>
                 <div class="category-item__bottom">
                     <div class="category-item__meta">
-                        <span class="category-item__code">#${item.categoryNo}</span>
+                        <span class="category-item__code">#${categoryNo || '-'}</span>
                         <span class="category-item__hint">선택 시 중분류 목록을 오른쪽에서 확인합니다.</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                            ${item.isActive === 'Y' ? '사용중' : '중지'}
+                        <span class="badge rounded-pill ${isActive ? 'badge-y' : 'badge-n'}">
+                            ${isActive ? '사용중' : '중지'}
                         </span>
                         <button class="btn btn-sm btn-outline-dark"
                                 data-role="toggle-category-active"
-                                data-category-no="${item.categoryNo}"
-                                data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
+                                data-category-no="${categoryNo || ''}"
+                                data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
         this.setListStateMeta('ready', '', this.state.depth1List.length, null, null);
         this.updateSelectionMeta();
     },
@@ -350,28 +403,33 @@ const CategoryList = {
             return;
         }
 
-        tbody.innerHTML = this.state.depth2List.map(item => `
+        tbody.innerHTML = this.state.depth2List.map(item => {
+            const categoryNo = this.normalizeOptionalPositiveNumber(item.categoryNo);
+            const name = this.escapeHtml(item.name || '-');
+            const isActive = item.isActive === 'Y';
+            return `
             <tr>
                 <td class="ps-4">
-                    <input type="checkbox" data-role="select-sub-category" data-category-no="${item.categoryNo}" ${this.selectedCategoryNos.has(item.categoryNo) ? 'checked' : ''}>
+                    <input type="checkbox" data-role="select-sub-category" data-category-no="${categoryNo || ''}" ${this.selectedCategoryNos.has(categoryNo) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-muted small">${item.categoryNo}</td>
-                <td class="fw-bold">${item.name}</td>
+                <td class="ps-4 text-muted small">${categoryNo || '-'}</td>
+                <td class="fw-bold">${name}</td>
                 <td class="text-center">
-                    <span class="badge rounded-pill ${item.isActive === 'Y' ? 'badge-y' : 'badge-n'}">
-                        ${item.isActive === 'Y' ? '사용중' : '중지'}
+                    <span class="badge rounded-pill ${isActive ? 'badge-y' : 'badge-n'}">
+                        ${isActive ? '사용중' : '중지'}
                     </span>
                 </td>
                 <td class="text-end pe-4">
-                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-sub-category" data-category='${JSON.stringify(item).replace(/'/g, '&#39;')}'>수정</button>
+                    <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-sub-category" data-category-no="${categoryNo || ''}">수정</button>
                     <button class="btn btn-sm btn-outline-dark me-1"
                             data-role="toggle-category-active"
-                            data-category-no="${item.categoryNo}"
-                            data-next-active="${item.isActive === 'Y' ? 'N' : 'Y'}">${item.isActive === 'Y' ? '중지' : '활성'}</button>
-                    <button class="btn btn-sm btn-outline-danger" data-role="delete-sub-category" data-category-no="${item.categoryNo}">삭제</button>
+                            data-category-no="${categoryNo || ''}"
+                            data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-danger" data-role="delete-sub-category" data-category-no="${categoryNo || ''}">삭제</button>
                 </td>
             </tr>
-        `).join('');
+        `;
+        }).join('');
         this.updateSelectionMeta();
     },
 
@@ -821,7 +879,7 @@ const CategoryList = {
             this.renderDepth2Empty();
             return;
         }
-        const matchedParent = this.state.depth1List.find((item) => item.categoryNo === this.state.selectedParentNo);
+        const matchedParent = this.depth1ItemsByNo.get(this.state.selectedParentNo);
         if (!matchedParent) {
             this.state.selectedParentNo = null;
             this.state.selectedParentName = '';
@@ -871,13 +929,12 @@ const CategoryList = {
         return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
-    parseCategoryDataset(value) {
-        try {
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('카테고리 dataset 파싱 실패:', error);
-            return null;
-        }
+    buildCategoryMap(items) {
+        return new Map(
+            (items || [])
+                .map((item) => [this.normalizeOptionalPositiveNumber(item.categoryNo), item])
+                .filter(([categoryNo]) => categoryNo != null)
+        );
     },
 
     renderDepth2Empty() {
@@ -894,6 +951,7 @@ const CategoryList = {
         if (tbody) {
             tbody.innerHTML = '';
         }
+        this.depth2ItemsByNo.clear();
         if (parentName) {
             parentName.innerText = '> 대분류를 선택하세요';
         }

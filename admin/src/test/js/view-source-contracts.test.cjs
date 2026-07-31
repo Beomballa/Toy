@@ -195,3 +195,18 @@ test("dashboard validates stats, identifiers, output, and navigation", () => {
     assert.match(source, /this\.normalizePositiveId\(product\.productNo\)/);
     assert.match(source, /this\.escapeHtml\(order\.statusDesc/);
 });
+
+test("content list validates latest results, cards, and task paths", () => {
+    const source = readViewScript("content-list.js");
+
+    assert.match(source, /requestId !== this\.listRequestId/);
+    assert.match(source, /Array\.isArray\(data\.items\)/);
+    assert.match(source, /this\.normalizeNumericId\(item\.documentId\)/);
+    assert.match(source, /CommonJS\.normalizeAdminReturnPath\(item\.operationTaskPath, ''\)/);
+    assert.match(source, /this\.normalizeNumericId\(item\.id\)/);
+    assert.match(source, /ContentBoardConfig\.normalizeBoardType\(item\.boardType\)/);
+    assert.match(source, /this\.normalizeNumericId\(item\.productNo\)/);
+    assert.match(source, /this\.formatNumber\(item\.viewCnt\)/);
+    assert.match(source, /ContentBoardConfig\.escapeHtml\(item\.crtDtm/);
+    assert.match(source, /ContentBoardConfig\.escapeHtml\(this\.buildEmptyStateMessage\(\)\)/);
+});

@@ -23,6 +23,7 @@ const ContentList = {
     viewAnalyticsRequestId: 0,
     reactionAnalyticsRequestId: 0,
     performanceAnalyticsRequestId: 0,
+    listRequestId: 0,
     viewAnalyticsLoading: false,
     state: {
         page: 0,
@@ -806,24 +807,28 @@ const ContentList = {
             LOW_SIGNAL: '추가 관찰',
             HEALTHY: '안정'
         };
-        target.innerHTML = items.map((item, index) => {
+        target.innerHTML = items.flatMap((item, index) => {
+            const documentId = this.normalizeNumericId(item.documentId);
+            if (documentId == null) return [];
             const status = labels[item.status] ? item.status : 'LOW_SIGNAL';
             const actionRequired = ['IMPROVEMENT_REQUIRED', 'FEEDBACK_NEEDED'].includes(status);
-            const taskAction = item.operationTaskNo && item.operationTaskPath
+            const operationTaskNo = this.normalizeNumericId(item.operationTaskNo);
+            const operationTaskPath = CommonJS.normalizeAdminReturnPath(item.operationTaskPath, '');
+            const taskAction = operationTaskNo && operationTaskPath
                 ? `<a class="content-performance-item__task-link"
-                      href="${ContentBoardConfig.escapeHtml(item.operationTaskPath)}">
-                       작업 #${this.formatNumber(item.operationTaskNo)} 보기
+                      href="${ContentBoardConfig.escapeHtml(operationTaskPath)}">
+                       작업 #${operationTaskNo} 보기
                    </a>`
                 : actionRequired
                     ? `<button type="button"
                                class="content-performance-item__task-button"
                                data-role="create-performance-task"
-                               data-document-id="${Number(item.documentId)}"
+                               data-document-id="${documentId}"
                                data-board-type="${ContentBoardConfig.escapeHtml(item.boardType)}">
                            작업 생성
                        </button>`
                     : '';
-            const taskMeta = item.operationTaskNo
+            const taskMeta = operationTaskNo
                 ? `<span class="content-performance-item__task-meta${item.operationTaskOverdue ? ' is-overdue' : ''}${item.operationTaskRecoverable ? ' is-recoverable' : ''}">
                        ${ContentBoardConfig.escapeHtml(item.operationTaskStatusLabel || item.operationTaskStatus || '연결')}
                        ${item.operationTaskDueDate ? ` · ${ContentBoardConfig.escapeHtml(item.operationTaskDueDate)}` : ''}
@@ -832,13 +837,13 @@ const ContentList = {
                        ${item.operationTaskRecoverable ? ' · 회복 확인' : ''}
                    </span>`
                 : '';
-            return `
+            return [`
                 <article class="content-performance-item" data-status="${status}">
                     <span class="content-performance-item__rank">${index + 1}</span>
                     <div class="content-performance-item__main">
                         <div class="content-performance-item__title">
                             <span>${ContentBoardConfig.escapeHtml(item.boardType)}</span>
-                            <a href="/admin/content/get?id=${encodeURIComponent(item.documentId)}&boardType=${encodeURIComponent(item.boardType)}&source=content-performance&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
+                            <a href="/admin/content/get?id=${documentId}&boardType=${encodeURIComponent(ContentBoardConfig.normalizeBoardType(item.boardType))}&source=content-performance&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
                                 ${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}
                             </a>
                         </div>
@@ -859,7 +864,7 @@ const ContentList = {
                         ${taskAction}
                     </div>
                 </article>
-            `;
+            `];
         }).join('');
         this.applyOperationPolicy();
     },
@@ -1247,6 +1252,7 @@ const ContentList = {
     },
 
     async getList() {
+        const requestId = ++this.listRequestId;
         if (!this.validateState()) {
             return;
         }
@@ -1291,10 +1297,12 @@ const ContentList = {
 
             const data = await listResponse.json();
             const summary = await summaryResponse.json();
-            this.renderList(data.items);
+            if (requestId !== this.listRequestId) return;
+            this.renderList(Array.isArray(data.items) ? data.items : []);
             this.renderPagination(data);
             this.renderSummary(summary);
         } catch (err) {
+            if (requestId !== this.listRequestId) return;
             console.error('콘텐츠 목록 로드 실패:', err);
             this.renderListError(err.message || '목록을 불러오는 중 오류가 발생했습니다.');
             this.renderSummary(null);
@@ -1340,22 +1348,30 @@ const ContentList = {
     renderList(items) {
         const grid = document.getElementById('contentGrid');
         if (!grid) return;
-        this.state.currentPageIds = (items || []).map((item) => item.id);
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const id = this.normalizeNumericId(item.id);
+            if (id == null) return [];
+            return [{ ...item, id }];
+        });
+        this.state.currentPageIds = safeItems.map((item) => item.id);
 
-        if (!items || items.length === 0) {
+        if (!safeItems.length) {
             grid.innerHTML = `
                 <div class="col-12">
                     <div class="product-empty-state py-5">
                         <i class="fas fa-folder-open product-empty-state-icon"></i>
                         <strong>등록된 콘텐츠가 없습니다.</strong>
-                        <p>${this.buildEmptyStateMessage()}</p>
+                        <p>${ContentBoardConfig.escapeHtml(this.buildEmptyStateMessage())}</p>
                     </div>
                 </div>`;
             this.syncSelectionState();
             return;
         }
 
-        grid.innerHTML = items.map(item => `
+        grid.innerHTML = safeItems.map((item) => {
+            const boardType = ContentBoardConfig.normalizeBoardType(item.boardType);
+            const productNo = this.normalizeNumericId(item.productNo);
+            return `
             <div class="col-md-4 mb-4">
                     <div class="card h-100 content-board-card">
                     <div class="card-body content-board-card-body">
@@ -1364,23 +1380,23 @@ const ContentList = {
                                 <label class="form-check mb-0">
                                     <input class="form-check-input content-select-checkbox" type="checkbox" data-content-id="${item.id}" ${this.state.selectedIds.has(item.id) ? 'checked' : ''}>
                                 </label>
-                                <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(item.boardType))}</span>
+                                <span class="content-board-card-badge">${ContentBoardConfig.escapeHtml(this.getBoardLabel(boardType))}</span>
                                 ${item.pinnedYn === 'Y' ? '<span class="badge bg-dark">고정</span>' : ''}
                                 <span class="badge ${item.status === 'PUBLISHED' ? 'bg-success-subtle text-success-emphasis' : 'bg-secondary-subtle text-secondary-emphasis'}">${item.status === 'PUBLISHED' ? '게시중' : '임시저장'}</span>
                                 <span class="badge ${item.publicYn === 'Y' ? 'bg-primary-subtle text-primary-emphasis' : 'bg-warning-subtle text-warning-emphasis'}">${item.publicYn === 'Y' ? '공개' : '비공개'}</span>
-                                <span class="badge bg-light text-dark border">${item.productNo ? `상품 #${item.productNo}` : '미연결'}</span>
+                                <span class="badge bg-light text-dark border">${productNo ? `상품 #${productNo}` : '미연결'}</span>
                             </div>
-                            <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${item.viewCnt}</span>
+                            <span class="content-board-card-views"><i class="far fa-eye me-1"></i>${this.formatNumber(item.viewCnt)}</span>
                         </div>
-                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${item.boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
+                        <a class="content-board-card-link" href="/admin/content/get?id=${item.id}&boardType=${boardType}&source=content-list&returnTo=${encodeURIComponent(this.getCurrentLocation())}">
                             <h5 class="card-title content-board-card-title text-line-clamp-2">${ContentBoardConfig.escapeHtml(item.title || '제목 없음')}</h5>
                         </a>
                         <p class="content-board-card-copy">${ContentBoardConfig.escapeHtml(item.contentPreview || '내용 미리보기가 없습니다.')}</p>
                     </div>
                     <div class="card-footer content-board-card-footer">
-                        <span class="content-board-card-date">${item.crtDtm}</span>
+                        <span class="content-board-card-date">${ContentBoardConfig.escapeHtml(item.crtDtm || '-')}</span>
                         <div class="content-board-card-actions">
-                            <button class="btn btn-sm btn-light" data-role="content-detail" data-content-id="${item.id}" data-board-type="${item.boardType}">상세</button>
+                            <button class="btn btn-sm btn-light" data-role="content-detail" data-content-id="${item.id}" data-board-type="${boardType}">상세</button>
                             <button class="btn btn-sm btn-outline-dark"
                                     data-role="content-status-toggle"
                                     data-content-id="${item.id}"
@@ -1389,13 +1405,14 @@ const ContentList = {
                                     data-role="content-visibility-toggle"
                                     data-content-id="${item.id}"
                                     data-next-public-yn="${item.publicYn === 'Y' ? 'N' : 'Y'}">${item.publicYn === 'Y' ? '비공개' : '공개'}</button>
-                            <button class="btn btn-sm btn-outline-primary" data-role="content-edit" data-content-id="${item.id}" data-board-type="${item.boardType}">수정</button>
+                            <button class="btn btn-sm btn-outline-primary" data-role="content-edit" data-content-id="${item.id}" data-board-type="${boardType}">수정</button>
                             <button class="btn btn-sm btn-outline-danger" data-role="content-delete" data-content-id="${item.id}">삭제</button>
                         </div>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
         this.bindSelectionEvents();
         this.syncSelectionState();
         this.bindRowActions();
@@ -1892,7 +1909,7 @@ const ContentList = {
         this.state.endDate = params.get('endDate') || '';
         this.state.pinnedOnly = params.get('pinnedOnly') === 'true';
         const productLinked = this.normalizeYnFilterValue(params.get('productLinked'));
-        this.state.source = params.get('source') || '';
+        this.state.source = CommonJS.normalizeOptionalText(params.get('source')) || '';
         this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '');
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));

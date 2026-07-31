@@ -8,6 +8,9 @@ const ProductDetail = {
     isCloning: false,
     isDeleting: false,
     isQuickOperating: false,
+    detailRequestId: 0,
+    displayRequestId: 0,
+    historyRequestId: 0,
 
     async init(bootstrapProduct = null) {
         if (this.initialized) {
@@ -187,9 +190,13 @@ const ProductDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상품 복제에 실패했습니다.'));
             }
             const data = await response.json();
+            const clonedProductNo = this.normalizeProductNo(data.productNo);
+            if (!clonedProductNo) {
+                throw new Error('복제된 상품 번호를 확인할 수 없습니다.');
+            }
             await CommonJS.alert('상품이 복제되었습니다.', '성공', 'success');
             const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
-            window.location.href = `/admin/products/get?no=${data.productNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}${sourceQuery}`;
+            window.location.href = `/admin/products/get?no=${clonedProductNo}&returnTo=${encodeURIComponent(window.location.pathname + window.location.search)}${sourceQuery}`;
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
@@ -200,6 +207,7 @@ const ProductDetail = {
     },
 
     async loadProductDetail() {
+        const requestId = ++this.detailRequestId;
         try {
             const response = await fetch(`/api/admin/product/get?no=${this.productNo}`);
 
@@ -214,11 +222,16 @@ const ProductDetail = {
             }
 
             const data = await response.json();
+            if (requestId !== this.detailRequestId) return;
+            if (this.normalizeProductNo(data.productNo) !== this.productNo) {
+                throw new Error('요청한 상품과 상세 응답 정보가 일치하지 않습니다.');
+            }
             this.renderProduct(data);
             await this.loadFrontDisplay();
             await this.loadProductHistory();
 
         } catch (error) {
+            if (requestId !== this.detailRequestId) return;
             console.error('Error:', error);
             await CommonJS.alert('데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
             window.location.href = this.returnTo;
@@ -255,8 +268,8 @@ const ProductDetail = {
         const productImage = document.getElementById('productImage');
         const thumbnailUrlLink = document.getElementById('thumbnailUrlLink');
         const thumbnailUrlLinkInline = document.getElementById('thumbnailUrlLinkInline');
-        if (data.hasThumbnail) {
-            const safeThumbnailUrl = CommonJS.normalizeImageSource(data.thumbnailUrl);
+        const safeThumbnailUrl = CommonJS.normalizeImageSource(data.thumbnailUrl);
+        if (data.hasThumbnail && safeThumbnailUrl) {
             if (productImage) productImage.src = safeThumbnailUrl;
             if (thumbnailUrlLink) {
                 thumbnailUrlLink.href = safeThumbnailUrl;
@@ -283,20 +296,21 @@ const ProductDetail = {
         const optionMetaText = document.getElementById('productOptionMetaText');
         const totalStockValueEl = document.getElementById('totalStockValue');
 
-        if (data.options && data.options.length > 0) {
-            if (optionCount) optionCount.textContent = data.optionCount ?? data.options.length;
-            if (optionMetaText) optionMetaText.textContent = `옵션 ${data.optionCount ?? data.options.length}개`;
+        const options = Array.isArray(data.options) ? data.options : [];
+        if (options.length > 0) {
+            if (optionCount) optionCount.textContent = String(options.length);
+            if (optionMetaText) optionMetaText.textContent = `옵션 ${options.length}개`;
 
-            const optHtml = data.options.map(opt => `
+            const optHtml = options.map(opt => `
                 <div class="product-option-chip">
-                    <span class="product-option-name">${CommonJS.escapeHtml(opt.optionName)}</span>
-                    <span class="product-option-stock">재고 ${Number(opt.stockQty || 0).toLocaleString()}개</span>
+                    <span class="product-option-name">${CommonJS.escapeHtml(opt.optionName || '-')}</span>
+                    <span class="product-option-stock">재고 ${this.formatCount(opt.stockQty)}개</span>
                 </div>
             `).join('');
 
             if (optionList) optionList.innerHTML = optHtml;
 
-            if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
+            if (totalStockValueEl) totalStockValueEl.textContent = `${this.formatCount(data.totalStock)} 개`;
 
         } else {
             if (optionList) {
@@ -308,9 +322,9 @@ const ProductDetail = {
                     </div>
                 `;
             }
-            if (optionCount) optionCount.textContent = String(data.optionCount ?? 0);
-            if (optionMetaText) optionMetaText.textContent = `옵션 ${data.optionCount ?? 0}개`;
-            if (totalStockValueEl) totalStockValueEl.textContent = `${(data.totalStock ?? 0).toLocaleString()} 개`;
+            if (optionCount) optionCount.textContent = '0';
+            if (optionMetaText) optionMetaText.textContent = '옵션 0개';
+            if (totalStockValueEl) totalStockValueEl.textContent = `${this.formatCount(data.totalStock)} 개`;
         }
 
         const statusBadge = document.getElementById('statusBadge');
@@ -321,14 +335,17 @@ const ProductDetail = {
     },
 
     async loadFrontDisplay() {
+        const requestId = ++this.displayRequestId;
         try {
             const response = await fetch(`/api/admin/product/front-display?productNo=${this.productNo}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
             }
             const data = await response.json();
+            if (requestId !== this.displayRequestId) return;
             this.renderFrontDisplay(data);
         } catch (error) {
+            if (requestId !== this.displayRequestId) return;
             console.error('Front Display Load Error:', error);
             this.renderFrontDisplay(null);
         }
@@ -358,6 +375,7 @@ const ProductDetail = {
     },
 
     async loadProductHistory() {
+        const requestId = ++this.historyRequestId;
         const historyListEl = document.getElementById('productHistoryList');
         const historyCountEl = document.getElementById('historyCount');
         const historyMetaTextEl = document.getElementById('productHistoryMetaText');
@@ -368,7 +386,9 @@ const ProductDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상품 변경 이력을 불러오지 못했습니다.'));
             }
 
-            const histories = await response.json();
+            const payload = await response.json();
+            if (requestId !== this.historyRequestId) return;
+            const histories = Array.isArray(payload) ? payload : [];
             if (historyCountEl) {
                 historyCountEl.textContent = String(histories.length);
             }
@@ -392,29 +412,35 @@ const ProductDetail = {
             if (historyListEl) {
                 const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
                 // 상세 화면 검증에서 텍스트만 보는 것보다 action/status/count가 같이 드러나는 구조가 추적하기 쉽습니다.
-                historyListEl.innerHTML = histories.map((history) => `
+                historyListEl.innerHTML = histories.map((history) => {
+                    const relatedProductNo = this.normalizeProductNo(history.relatedProductNo);
+                    const actorNo = this.normalizeProductNo(history.actorNo);
+                    const logPath = this.buildLogPathFromBase(history.activityLogPath);
+                    return `
                     <div class="product-option-chip flex-column align-items-start">
                         <div class="d-flex justify-content-between w-100 gap-2">
                             <strong>${CommonJS.escapeHtml(history.actionLabel)}</strong>
                             <span class="text-muted small">${CommonJS.escapeHtml(history.crtDtm || '-')}</span>
                         </div>
                         <span class="small text-muted">${CommonJS.escapeHtml(history.summary)}</span>
-                        ${this.normalizeProductNo(history.relatedProductNo) ? `
-                            <a class="small text-decoration-none" href="/admin/products/get?no=${this.normalizeProductNo(history.relatedProductNo)}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">
-                                ${CommonJS.escapeHtml(history.relatedProductLabel)} #${this.normalizeProductNo(history.relatedProductNo)}
+                        ${relatedProductNo ? `
+                            <a class="small text-decoration-none" href="/admin/products/get?no=${relatedProductNo}&returnTo=${returnTo}${this.source ? `&source=${encodeURIComponent(this.source)}` : ''}">
+                                ${CommonJS.escapeHtml(history.relatedProductLabel || '-')} #${relatedProductNo}
                             </a>
                         ` : ''}
-                        ${history.activityLogPath ? `
-                            <a class="small text-decoration-none" href="${CommonJS.escapeHtml(this.buildLogPathFromBase(history.activityLogPath))}">
+                        ${logPath ? `
+                            <a class="small text-decoration-none" href="${CommonJS.escapeHtml(logPath)}">
                                 ${CommonJS.escapeHtml(history.activityLogLabel || '활동 로그 보기')}
                             </a>
                         ` : ''}
-                        <span class="small text-muted">작업자 ${CommonJS.escapeHtml(history.actorName || '-')}${history.actorNo ? ` (#${CommonJS.escapeHtml(history.actorNo)})` : ''}</span>
-                        <span class="small text-muted">상태 ${CommonJS.escapeHtml(history.statusSnapshot || '-')} · 옵션 ${Number(history.optionCount || 0).toLocaleString()}개 · 재고 ${Number(history.totalStock || 0).toLocaleString()}개</span>
+                        <span class="small text-muted">작업자 ${CommonJS.escapeHtml(history.actorName || '-')}${actorNo ? ` (#${actorNo})` : ''}</span>
+                        <span class="small text-muted">상태 ${CommonJS.escapeHtml(history.statusSnapshot || '-')} · 옵션 ${this.formatCount(history.optionCount)}개 · 재고 ${this.formatCount(history.totalStock)}개</span>
                     </div>
-                `).join('');
+                `;
+                }).join('');
             }
         } catch (error) {
+            if (requestId !== this.historyRequestId) return;
             console.error('History Load Error:', error);
             if (historyListEl) {
                 historyListEl.innerHTML = `
@@ -474,8 +500,13 @@ const ProductDetail = {
     },
 
     formatPrice(price) {
-        if (!price) return '0원';
-        return price.toLocaleString() + '원';
+        const parsed = Number(price);
+        return `${Number.isFinite(parsed) && parsed >= 0 ? parsed.toLocaleString() : '0'}원`;
+    },
+
+    formatCount(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed.toLocaleString() : '0';
     },
 
     syncReturnLinks() {
@@ -490,7 +521,11 @@ const ProductDetail = {
         }
         const backButton = document.getElementById('btnBackToProductList');
         if (backButton) {
-            backButton.innerHTML = `<i class="fas fa-list me-2"></i>${returnContext.buttonLabel}`;
+            backButton.replaceChildren();
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-list me-2';
+            icon.setAttribute('aria-hidden', 'true');
+            backButton.append(icon, document.createTextNode(returnContext.buttonLabel));
             backButton.dataset.returnTo = this.returnTo;
             backButton.dataset.returnButtonLabel = returnContext.buttonLabel;
         }

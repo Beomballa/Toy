@@ -210,3 +210,18 @@ test("content list validates latest results, cards, and task paths", () => {
     assert.match(source, /ContentBoardConfig\.escapeHtml\(item\.crtDtm/);
     assert.match(source, /ContentBoardConfig\.escapeHtml\(this\.buildEmptyStateMessage\(\)\)/);
 });
+
+test("product detail validates async sections, identifiers, and output", () => {
+    const source = readViewScript("product-get.js");
+
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /requestId !== this\.displayRequestId/);
+    assert.match(source, /requestId !== this\.historyRequestId/);
+    assert.match(source, /this\.normalizeProductNo\(data\.productNo\) !== this\.productNo/);
+    assert.match(source, /this\.normalizeProductNo\(data\.productNo\)/);
+    assert.match(source, /Array\.isArray\(data\.options\)/);
+    assert.match(source, /Array\.isArray\(payload\)/);
+    assert.match(source, /this\.normalizeProductNo\(history\.actorNo\)/);
+    assert.match(source, /this\.formatCount\(history\.optionCount\)/);
+    assert.equal(source.includes("backButton.innerHTML"), false);
+});

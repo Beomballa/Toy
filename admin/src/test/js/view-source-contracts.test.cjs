@@ -225,3 +225,19 @@ test("product detail validates async sections, identifiers, and output", () => {
     assert.match(source, /this\.formatCount\(history\.optionCount\)/);
     assert.equal(source.includes("backButton.innerHTML"), false);
 });
+
+test("product list validates rows, metadata, output, and reset navigation", () => {
+    const source = readViewScript("product-list.js");
+
+    assert.match(source, /Array\.isArray\(data\.products\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\._normalizeOptionalPositiveNumber\(item\?\.productNo\)/);
+    assert.match(source, /this\._normalizeNonNegativeInteger\(data\?\.totalPages\)/);
+    assert.match(source, /this\._formatCurrency\(item\.releasePrice\)/);
+    assert.match(source, /this\._formatCount\(item\.totalStock\)/);
+    assert.match(source, /CommonJS\.escapeHtml\(message\)/);
+    assert.match(source, /source: this\.state\.source/);
+    assert.match(source, /returnTo: this\.state\.returnTo/);
+    assert.match(source, /const clonedProductNo = this\._normalizeOptionalPositiveNumber/);
+    assert.match(source, /const safeLabel = CommonJS\.escapeHtml/);
+});

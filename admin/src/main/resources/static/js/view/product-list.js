@@ -97,13 +97,15 @@ const ProductList = {
 
     _fillSelect(selectId, items, valueKey, labelKey) {
         const select = document.getElementById(selectId);
-        if (!select || !items?.length) return;
+        if (!select || !Array.isArray(items) || items.length === 0) return;
 
         const fragment = document.createDocumentFragment();
         items.forEach(item => {
+            const value = this._normalizeOptionalPositiveNumber(item?.[valueKey]);
+            if (!value) return;
             const opt = document.createElement('option');
-            opt.value = item[valueKey];
-            opt.textContent = item[labelKey];
+            opt.value = value;
+            opt.textContent = CommonJS.normalizeOptionalText(item?.[labelKey]) || `#${value}`;
             fragment.appendChild(opt);
         });
         select.appendChild(fragment);
@@ -335,9 +337,10 @@ const ProductList = {
 
             this.lastErrorMessage = '';
             this._applyServerAppliedQuery(data.appliedQuery);
-            this.lastResultMeta = data.resultMeta || null;
-            this.lastTotalElements = Number(data.totalElements || 0);
-            this._renderList(data.products);
+            const products = Array.isArray(data.products) ? data.products : [];
+            this.lastResultMeta = data.resultMeta && typeof data.resultMeta === 'object' ? data.resultMeta : null;
+            this.lastTotalElements = this._normalizeNonNegativeInteger(data.totalElements);
+            this._renderList(products);
             this._renderPagination(data);
             this._updateStats(data.productStats);
             this._renderFilterSummary();
@@ -359,7 +362,12 @@ const ProductList = {
 
     _renderList(items) {
         const tbody = document.getElementById('productListTableBody');
-        if (!items?.length) {
+        if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const productNo = this._normalizeOptionalPositiveNumber(item?.productNo);
+            return productNo ? [{...item, productNo}] : [];
+        });
+        if (safeItems.length === 0) {
             const emptyMessage = this._buildEmptyStateMessage();
             tbody.innerHTML = `
                 <tr>
@@ -380,8 +388,8 @@ const ProductList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => {
-            const productNo = this._isPositiveNumber(item.productNo) ? String(Number(item.productNo)) : '';
+        tbody.innerHTML = safeItems.map(item => {
+            const productNo = item.productNo;
             const productName = CommonJS.escapeHtml(item.productName || '-');
             const productModel = CommonJS.escapeHtml(item.productModel || '-');
             const brandName = CommonJS.escapeHtml(item.brandName || '-');
@@ -411,8 +419,8 @@ const ProductList = {
                 </td>
                 <td><span class="badge badge-model">${productModel}</span></td>
                 <td><strong>${brandName}</strong></td>
-                <td><strong>${CommonJS.escapeHtml(item.releasePrice || '-')}</strong></td>
-                <td>${Number(item.totalStock || 0).toLocaleString()}개</td>
+                <td><strong>${this._formatCurrency(item.releasePrice)}</strong></td>
+                <td>${this._formatCount(item.totalStock)}개</td>
                 <td>
                     <span class="badge ${statusMeta.badgeClass}">
                         ${CommonJS.escapeHtml(item.statusDesc || '상태 미상')}
@@ -464,11 +472,13 @@ const ProductList = {
         tbody.querySelectorAll('.product-thumb').forEach((image) => {
             image.addEventListener('error', () => CommonJS.handleImageError(image), {once: true});
         });
-        this._setListStateMeta('ready', '', items.length);
-        this.updateSelectionMeta(items);
+        this._setListStateMeta('ready', '', safeItems.length);
+        this.updateSelectionMeta(safeItems);
     },
 
     renderQuickStatusMenu(item) {
+        const productNo = this._normalizeOptionalPositiveNumber(item?.productNo);
+        if (!productNo) return '';
         const options = [
             {code: 'ACTIVE', label: '판매중'},
             {code: 'HIDDEN', label: '숨김'},
@@ -479,7 +489,7 @@ const ProductList = {
                 <button type="button"
                         class="dropdown-item ${item.statusCode === option.code ? 'active' : ''}"
                         data-role="quick-operate-product"
-                        data-product-no="${item.productNo}"
+                        data-product-no="${productNo}"
                         data-status="${option.code}">
                     ${option.label}${item.statusCode === option.code ? ' 적용중' : ''}
                 </button>
@@ -488,7 +498,10 @@ const ProductList = {
     },
 
     _renderPagination(data) {
-        const { totalPages, currentPage: curr, totalElements, resultMeta } = data;
+        const totalPages = this._normalizeNonNegativeInteger(data?.totalPages);
+        const curr = Math.min(this._normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
+        const totalElements = this._normalizeNonNegativeInteger(data?.totalElements);
+        const resultMeta = data?.resultMeta && typeof data.resultMeta === 'object' ? data.resultMeta : null;
         const pagination = document.getElementById('pagination');
         const pageMetaText = document.getElementById('pageMetaText');
         let html = '';
@@ -501,8 +514,8 @@ const ProductList = {
         pagination.innerHTML = html;
         const listCountLabel = resultMeta?.resultLabel || (
             this._hasActiveFilters()
-                ? `검색 결과 ${totalElements.toLocaleString()}개`
-                : `전체 ${totalElements.toLocaleString()}개`
+                ? `검색 결과 ${this._formatCount(totalElements)}개`
+                : `전체 ${this._formatCount(totalElements)}개`
         );
         const pageInfoLabel = resultMeta?.pageInfoLabel || (
             totalElements === 0
@@ -514,7 +527,7 @@ const ProductList = {
         document.getElementById('pageInfoText').textContent = pageInfoLabel;
         if (pageMetaText) {
             const pageMetaLabel = resultMeta
-                ? `페이지 크기 ${resultMeta.pageSize} · ${resultMeta.rangeStart}-${resultMeta.rangeEnd}`
+                ? `페이지 크기 ${this._formatCount(resultMeta.pageSize)} · ${this._formatCount(resultMeta.rangeStart)}-${this._formatCount(resultMeta.rangeEnd)}`
                 : `페이지 크기 ${this.state.size} · 0-0`;
             pageMetaText.textContent = pageMetaLabel;
         }
@@ -533,12 +546,12 @@ const ProductList = {
 
         Object.entries(map).forEach(([id, val]) => {
             const el = document.getElementById(id);
-            if (el) el.textContent = (val || 0).toLocaleString();
+            if (el) el.textContent = this._formatCount(val);
         });
 
         const lowStockThresholdEl = document.getElementById('stat-low-stock-threshold');
         if (lowStockThresholdEl) {
-            lowStockThresholdEl.textContent = `${stats.lowStockThreshold || this.defaultLowStockThreshold}개 미만`;
+            lowStockThresholdEl.textContent = `${this._formatCount(stats.lowStockThreshold || this.defaultLowStockThreshold)}개 미만`;
         }
 
         const contextLabel = stats.contextLabel || '현재 목록 기준';
@@ -608,7 +621,7 @@ const ProductList = {
                             <i class="fas fa-triangle-exclamation"></i>
                         </div>
                         <strong>상품 목록을 불러오지 못했습니다.</strong>
-                        <p>${message}</p>
+                        <p>${CommonJS.escapeHtml(message)}</p>
                     </div>
                 </td>
             </tr>`;
@@ -679,6 +692,8 @@ const ProductList = {
             createdTodayOnly: false,
             searchKeyword: '',
             orderType: 'r',
+            source: this.state.source,
+            returnTo: this.state.returnTo,
         };
         this._syncFilterInputs();
         this._renderFilterSummary();
@@ -753,7 +768,7 @@ const ProductList = {
             });
 
             if (response.ok) {
-                this.selectedProductNos.delete(Number(no));
+                this.selectedProductNos.delete(this._normalizeOptionalPositiveNumber(no));
                 await this.getList();
                 await CommonJS.alert('삭제되었습니다.', '성공', 'success');
             } else {
@@ -807,8 +822,12 @@ const ProductList = {
             }
 
             const result = await response.json();
+            const clonedProductNo = this._normalizeOptionalPositiveNumber(result?.productNo);
+            if (!clonedProductNo) {
+                throw new Error('복제된 상품 번호를 확인할 수 없습니다.');
+            }
             await this.getList();
-            await CommonJS.alert(`상품이 복제되었습니다. 생성 번호: ${result.productNo}`, '성공', 'success');
+            await CommonJS.alert(`상품이 복제되었습니다. 생성 번호: ${clonedProductNo}`, '성공', 'success');
         } catch (error) {
             console.error('Clone Error:', error);
             await CommonJS.alert('복제 처리 중 오류가 발생했습니다.', '오류', 'error');
@@ -1262,11 +1281,12 @@ const ProductList = {
     },
 
     _createFilterChip(filterKey, iconClass, label) {
+        const safeLabel = CommonJS.escapeHtml(label || '-');
         return `
             <span class="product-filter-chip">
                 <i class="fas ${iconClass}"></i>
-                <span>${label}</span>
-                <button type="button" class="product-filter-chip-remove" data-filter-remove="${filterKey}" aria-label="${label} 필터 해제">
+                <span>${safeLabel}</span>
+                <button type="button" class="product-filter-chip-remove" data-filter-remove="${filterKey}" aria-label="${safeLabel} 필터 해제">
                     <i class="fas fa-xmark"></i>
                 </button>
             </span>
@@ -1274,7 +1294,7 @@ const ProductList = {
     },
 
     _createStaticFilterChip(iconClass, label) {
-        return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i><span>${label}</span></span>`;
+        return `<span class="product-filter-chip"><i class="fas ${iconClass}"></i><span>${CommonJS.escapeHtml(label || '-')}</span></span>`;
     },
 
     _buildEmptyStateMessage() {
@@ -1400,6 +1420,19 @@ const ProductList = {
     _normalizePageSize(size) {
         const parsed = Number(size);
         return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+    },
+
+    _normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    _formatCount(value) {
+        return this._normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    _formatCurrency(value) {
+        return `${this._formatCount(value)}원`;
     },
 
     _normalizeProductStatus(value) {

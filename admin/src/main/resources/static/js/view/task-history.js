@@ -34,7 +34,7 @@ const TaskHistoryPage = {
         document.getElementById('btnExportTaskHistoryCsv')?.addEventListener('click', () => this.exportCsv());
         document.getElementById('taskHistoryPageSize')?.addEventListener('change', () => {
             this.state.page = 0;
-            this.state.size = Number(document.getElementById('taskHistoryPageSize')?.value || 20);
+            this.state.size = this.normalizePageSize(document.getElementById('taskHistoryPageSize')?.value);
             this.loadHistory();
         });
         ['taskHistoryTaskNo', 'taskHistoryAdminNo', 'taskHistoryAdminKeyword', 'taskHistoryStartDate', 'taskHistoryEndDate'].forEach((id) => {
@@ -82,12 +82,12 @@ const TaskHistoryPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('taskHistoryTaskNo').value = params.get('taskNo') || '';
-        document.getElementById('taskHistoryActionType').value = params.get('actionType') || 'TASK_';
-        document.getElementById('taskHistoryAdminNo').value = params.get('adminNo') || '';
-        document.getElementById('taskHistoryAdminKeyword').value = params.get('adminKeyword') || '';
-        document.getElementById('taskHistoryStartDate').value = params.get('startDate') || '';
-        document.getElementById('taskHistoryEndDate').value = params.get('endDate') || '';
+        document.getElementById('taskHistoryTaskNo').value = this.normalizeOptionalPositiveNumber(params.get('taskNo'));
+        document.getElementById('taskHistoryActionType').value = this.normalizeActionType(params.get('actionType'));
+        document.getElementById('taskHistoryAdminNo').value = this.normalizeOptionalPositiveNumber(params.get('adminNo'));
+        document.getElementById('taskHistoryAdminKeyword').value = (params.get('adminKeyword') || '').slice(0, 100);
+        document.getElementById('taskHistoryStartDate').value = this.normalizeDateInput(params.get('startDate'));
+        document.getElementById('taskHistoryEndDate').value = this.normalizeDateInput(params.get('endDate'));
         this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
@@ -151,12 +151,13 @@ const TaskHistoryPage = {
                 return;
             }
             const items = Array.isArray(data.items) ? data.items : [];
-            this.renderList(items);
+            const validItems = this.normalizeHistoryItems(items);
+            this.renderList(validItems);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
-            this.setListStateMeta('ready', '', items.length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
-            await this.openDeepLinkedLogIfNeeded(items);
+            this.setListStateMeta('ready', '', validItems.length, this.normalizeNonNegativeInteger(data.totalElements), this.normalizeNonNegativeInteger(data.resultMeta?.filterCount), data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
+            await this.openDeepLinkedLogIfNeeded(validItems);
         } catch (error) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -167,7 +168,8 @@ const TaskHistoryPage = {
 
     renderList(items) {
         const tbody = document.getElementById('taskHistoryBody');
-        if (!items.length) {
+        const validItems = this.normalizeHistoryItems(items);
+        if (!validItems.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -183,7 +185,7 @@ const TaskHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.flatMap((item) => {
+        tbody.innerHTML = validItems.flatMap((item) => {
             const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
             const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
             const taskPath = this.buildTaskDetailPath(item.taskPath);
@@ -214,8 +216,8 @@ const TaskHistoryPage = {
             filterMetaId: 'taskHistoryFilterMeta',
             resultMetaId: 'taskHistoryResultMeta',
             pageMetaId: 'taskHistoryPageMeta',
-            resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
-            filterCount: data.resultMeta?.filterCount ?? 0,
+            resultLabel: data.pageInfoLabel || `${this.formatCount(data.rangeStart)}-${this.formatCount(data.rangeEnd)} / ${this.formatCount(data.totalElements)}건`,
+            filterCount: this.normalizeNonNegativeInteger(data.resultMeta?.filterCount),
             querySignature: data.resultMeta?.querySignature || '',
             pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
             filterPrefix: '적용 필터',
@@ -224,7 +226,7 @@ const TaskHistoryPage = {
         });
         const metaEl = document.getElementById('taskHistoryStateMeta');
         if (metaEl) {
-            metaEl.dataset.filterCount = String(data.resultMeta?.filterCount ?? 0);
+            metaEl.dataset.filterCount = String(this.normalizeNonNegativeInteger(data.resultMeta?.filterCount));
             metaEl.dataset.querySignature = data.resultMeta?.querySignature || '';
             metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '';
             metaEl.dataset.sourceContext = this.state.source || '';
@@ -235,20 +237,20 @@ const TaskHistoryPage = {
     renderPagination(data) {
         const pagination = document.getElementById('taskHistoryPagination');
         if (!pagination) return;
-        if (!data.totalPages) {
+        const totalPages = this.normalizeNonNegativeInteger(data.totalPages);
+        const currentPage = Math.min(this.normalizePage(data.currentPage), Math.max(totalPages - 1, 0));
+        if (totalPages <= 1) {
             pagination.innerHTML = '';
             return;
         }
 
-        let html = '';
-        for (let i = 0; i < data.totalPages; i += 1) {
-            html += `
-                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <button type="button" class="page-link" data-role="go-task-history-page" data-page="${i}">${i + 1}</button>
+        pagination.innerHTML = this.buildPaginationPages(currentPage, totalPages).map((page) => page == null
+            ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+            : `
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-task-history-page" data-page="${page}">${page + 1}</button>
                 </li>
-            `;
-        }
-        pagination.innerHTML = html;
+            `).join('');
         pagination.querySelectorAll('[data-role="go-task-history-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
@@ -271,6 +273,9 @@ const TaskHistoryPage = {
             const data = await response.json();
             if (requestId !== this.detailRequestId) {
                 return;
+            }
+            if (this.normalizeOptionalPositiveNumber(data?.logNo) !== String(logNo)) {
+                throw new Error('요청한 작업 이력과 상세 응답이 일치하지 않습니다.');
             }
             const detailLogPath = this.buildTaskLogPath(data.targetId || '');
             const targetPath = this.buildTaskDetailPath(data.targetPath || '');
@@ -439,6 +444,9 @@ const TaskHistoryPage = {
         }
         const button = document.getElementById('btnExportTaskHistoryCsv');
         try {
+            if (!this.validateState()) {
+                return;
+            }
             this.isExporting = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             const startDate = document.getElementById('taskHistoryStartDate')?.value || '';
@@ -613,7 +621,7 @@ const TaskHistoryPage = {
             return;
         }
         const target = items.find((item) => this.normalizeOptionalPositiveNumber(item.logNo) === logNo);
-        if (target) await this.openDetail(logNo);
+        if (target || logNo) await this.openDetail(logNo);
         this.state.logNo = '';
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
     },
@@ -689,6 +697,7 @@ const TaskHistoryPage = {
         const taskNo = document.getElementById('taskHistoryTaskNo')?.value.trim() || '';
         const adminNo = document.getElementById('taskHistoryAdminNo')?.value.trim() || '';
         const actionType = document.getElementById('taskHistoryActionType')?.value || 'TASK_';
+        const adminKeyword = document.getElementById('taskHistoryAdminKeyword')?.value.trim() || '';
         if (taskNo && !this.isPositiveNumber(taskNo)) {
             void CommonJS.alert('작업 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
@@ -697,8 +706,12 @@ const TaskHistoryPage = {
             void CommonJS.alert('관리자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
         }
-        if (!(actionType === 'TASK_' || actionType.startsWith('TASK_'))) {
+        if (!this.isValidActionType(actionType)) {
             void CommonJS.alert('작업 종류 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (adminKeyword.length > 100) {
+            void CommonJS.alert('관리자 검색어는 100자 이하로 입력하세요.', '알림', 'warning');
             return false;
         }
         return true;
@@ -711,7 +724,7 @@ const TaskHistoryPage = {
 
     normalizePageSize(size) {
         const parsed = Number(size);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+        return [20, 50, 100].includes(parsed) ? parsed : 20;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -723,7 +736,61 @@ const TaskHistoryPage = {
     },
 
     normalizeActionType(value) {
-        return value === 'TASK_' || String(value || '').startsWith('TASK_') ? String(value || 'TASK_') : 'TASK_';
+        return this.isValidActionType(value) ? String(value) : 'TASK_';
+    },
+
+    isValidActionType(value) {
+        return [
+            'TASK_',
+            'TASK_CREATE',
+            'TASK_UPDATE',
+            'TASK_STATUS_UPDATE',
+            'TASK_BULK_UPDATE',
+            'TASK_COMMENT_CREATE',
+            'TASK_COMMENT_UPDATE',
+            'TASK_COMMENT_DELETE',
+            'TASK_BULK_DELETE',
+            'TASK_DELETE'
+        ].includes(String(value || ''));
+    },
+
+    normalizeDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const date = new Date(`${text}T00:00:00`);
+        return Number.isFinite(date.getTime()) && this.formatLocalDate(date) === text ? text : '';
+    },
+
+    formatLocalDate(value) {
+        const year = value.getFullYear();
+        const month = String(value.getMonth() + 1).padStart(2, '0');
+        const day = String(value.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    normalizeHistoryItems(items) {
+        return Array.isArray(items)
+            ? items.filter((item) => this.normalizeOptionalPositiveNumber(item?.logNo))
+            : [];
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right).flatMap((page, index, sorted) => (
+            index > 0 && page - sorted[index - 1] > 1 ? [null, page] : [page]
+        ));
     },
 
     isPositiveNumber(value) {

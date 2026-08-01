@@ -85,12 +85,12 @@ const NoticeHistoryPage = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        document.getElementById('noticeHistoryNoticeNo').value = params.get('noticeNo') || '';
+        document.getElementById('noticeHistoryNoticeNo').value = this.normalizeOptionalPositiveNumber(params.get('noticeNo'));
         document.getElementById('noticeHistoryActionType').value = this.normalizeActionType(params.get('actionType'));
-        document.getElementById('noticeHistoryAdminNo').value = params.get('adminNo') || '';
-        document.getElementById('noticeHistoryAdminKeyword').value = params.get('adminKeyword') || '';
-        document.getElementById('noticeHistoryStartDate').value = params.get('startDate') || '';
-        document.getElementById('noticeHistoryEndDate').value = params.get('endDate') || '';
+        document.getElementById('noticeHistoryAdminNo').value = this.normalizeOptionalPositiveNumber(params.get('adminNo'));
+        document.getElementById('noticeHistoryAdminKeyword').value = (params.get('adminKeyword') || '').slice(0, 100);
+        document.getElementById('noticeHistoryStartDate').value = this.normalizeDateInput(params.get('startDate'));
+        document.getElementById('noticeHistoryEndDate').value = this.normalizeDateInput(params.get('endDate'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
         this.state.returnTo = CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '/admin/settings/notices');
@@ -155,11 +155,12 @@ const NoticeHistoryPage = {
                 return;
             }
             const items = Array.isArray(data.items) ? data.items : [];
-            this.renderList(items);
+            const validItems = this.normalizeHistoryItems(items);
+            this.renderList(validItems);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
-            await this.openDeepLinkedLogIfNeeded(items);
+            await this.openDeepLinkedLogIfNeeded(validItems);
         } catch (error) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -170,7 +171,8 @@ const NoticeHistoryPage = {
 
     renderList(items) {
         const tbody = document.getElementById('noticeHistoryBody');
-        if (!items.length) {
+        const validItems = this.normalizeHistoryItems(items);
+        if (!validItems.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -186,7 +188,7 @@ const NoticeHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.flatMap((item) => {
+        tbody.innerHTML = validItems.flatMap((item) => {
             const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
             const noticePath = this.buildNoticeDetailPath(item.noticePath);
             if (!logNo) return [];
@@ -212,35 +214,36 @@ const NoticeHistoryPage = {
             filterMetaId: 'noticeHistoryFilterMeta',
             resultMetaId: 'noticeHistoryResultMeta',
             pageMetaId: 'noticeHistoryPageMeta',
-            resultLabel: data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`,
-            filterCount: data.resultMeta?.filterCount ?? 0,
+            resultLabel: data.pageInfoLabel || `${this.formatCount(data.rangeStart)}-${this.formatCount(data.rangeEnd)} / ${this.formatCount(data.totalElements)}건`,
+            filterCount: this.normalizeNonNegativeInteger(data.resultMeta?.filterCount),
             querySignature: data.resultMeta?.querySignature || '',
             pageInfoLabel: data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '',
             filterPrefix: '적용 필터',
             defaultResultText: '결과 메타 없음',
             defaultPageText: '페이지 메타 없음'
         });
-        this.setListStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
+        const visibleCount = this.normalizeHistoryItems(data.items).length;
+        this.setListStateMeta('ready', '', visibleCount, this.normalizeNonNegativeInteger(data.totalElements), this.normalizeNonNegativeInteger(data.resultMeta?.filterCount), data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '');
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeHistorySourceContextNotice', source: this.state.source });
     },
 
     renderPagination(data) {
         const pagination = document.getElementById('noticeHistoryPagination');
         if (!pagination) return;
-        if (!data.totalPages) {
+        const totalPages = this.normalizeNonNegativeInteger(data.totalPages);
+        const currentPage = Math.min(this.normalizePage(data.currentPage), Math.max(totalPages - 1, 0));
+        if (totalPages <= 1) {
             pagination.innerHTML = '';
             return;
         }
 
-        let html = '';
-        for (let i = 0; i < data.totalPages; i += 1) {
-            html += `
-                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <button type="button" class="page-link" data-role="go-notice-history-page" data-page="${i}">${i + 1}</button>
+        pagination.innerHTML = this.buildPaginationPages(currentPage, totalPages).map((page) => page == null
+            ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+            : `
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-notice-history-page" data-page="${page}">${page + 1}</button>
                 </li>
-            `;
-        }
-        pagination.innerHTML = html;
+            `).join('');
         pagination.querySelectorAll('[data-role="go-notice-history-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
@@ -264,6 +267,9 @@ const NoticeHistoryPage = {
             const data = await response.json();
             if (requestId !== this.detailRequestId) {
                 return;
+            }
+            if (this.normalizeOptionalPositiveNumber(data?.logNo) !== String(logNo)) {
+                throw new Error('요청한 공지 이력과 상세 응답이 일치하지 않습니다.');
             }
             const targetPath = this.buildNoticeDetailPath(data.targetPath || '');
             const safeTargetPath = targetPath === '#' ? '' : targetPath;
@@ -592,10 +598,6 @@ const NoticeHistoryPage = {
             this.state.logNo = '';
             return;
         }
-        const hasLog = items.some((item) => this.normalizeOptionalPositiveNumber(item.logNo) === logNo);
-        if (!hasLog) {
-            return;
-        }
         await this.openDetail(logNo);
         this.state.logNo = '';
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
@@ -639,6 +641,7 @@ const NoticeHistoryPage = {
         const noticeNo = document.getElementById('noticeHistoryNoticeNo')?.value.trim() || '';
         const adminNo = document.getElementById('noticeHistoryAdminNo')?.value.trim() || '';
         const actionType = document.getElementById('noticeHistoryActionType')?.value || 'NOTICE_';
+        const adminKeyword = document.getElementById('noticeHistoryAdminKeyword')?.value.trim() || '';
         if (noticeNo && !this.isPositiveNumber(noticeNo)) {
             void CommonJS.alert('공지 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
@@ -647,8 +650,12 @@ const NoticeHistoryPage = {
             void CommonJS.alert('관리자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
             return false;
         }
-        if (!(actionType === 'NOTICE_' || actionType.startsWith('NOTICE_'))) {
+        if (!this.isValidActionType(actionType)) {
             void CommonJS.alert('작업 종류 필터 값이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (adminKeyword.length > 100) {
+            void CommonJS.alert('관리자 검색어는 100자 이하로 입력하세요.', '알림', 'warning');
             return false;
         }
         return true;
@@ -661,7 +668,7 @@ const NoticeHistoryPage = {
 
     normalizePageSize(size) {
         const parsed = Number(size);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+        return [20, 50, 100].includes(parsed) ? parsed : 20;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -669,7 +676,52 @@ const NoticeHistoryPage = {
     },
 
     normalizeActionType(value) {
-        return value === 'NOTICE_' || String(value || '').startsWith('NOTICE_') ? String(value || 'NOTICE_') : 'NOTICE_';
+        return this.isValidActionType(value) ? String(value) : 'NOTICE_';
+    },
+
+    isValidActionType(value) {
+        return [
+            'NOTICE_',
+            'NOTICE_CREATE',
+            'NOTICE_UPDATE',
+            'NOTICE_ACTIVE_UPDATE',
+            'NOTICE_DELETE',
+            'NOTICE_BULK_UPDATE'
+        ].includes(String(value || ''));
+    },
+
+    normalizeDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const date = new Date(`${text}T00:00:00`);
+        if (!Number.isFinite(date.getTime())) return '';
+        const normalized = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return normalized === text ? text : '';
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    normalizeHistoryItems(items) {
+        return Array.isArray(items)
+            ? items.filter((item) => this.normalizeOptionalPositiveNumber(item?.logNo))
+            : [];
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right).flatMap((page, index, sorted) => (
+            index > 0 && page - sorted[index - 1] > 1 ? [null, page] : [page]
+        ));
     },
 
     normalizeDatePreset(value) {

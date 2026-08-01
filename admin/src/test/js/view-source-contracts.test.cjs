@@ -437,3 +437,18 @@ test("task history validates filters, rows, detail identity, and pagination", ()
     assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
     assert.match(source, /this\.formatCount\(data\.totalElements\)/);
 });
+
+test("notice history validates filters, rows, detail identity, and pagination", () => {
+    const source = readViewScript("notice-history.js");
+
+    assert.match(source, /this\.normalizeHistoryItems\(items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.logNo\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(data\?\.logNo\) !== String\(logNo\)/);
+    assert.match(source, /this\.normalizeDateInput\(params\.get\('startDate'\)\)/);
+    assert.match(source, /adminKeyword\.length > 100/);
+    assert.match(source, /this\.isValidActionType\(actionType\)/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
+    assert.match(source, /this\.formatCount\(data\.totalElements\)/);
+});

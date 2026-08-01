@@ -191,8 +191,8 @@ const OrderList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderStatusSummaries(data.statusSummaries || []);
-            this.renderList(data.orders);
+            this.renderStatusSummaries(Array.isArray(data.statusSummaries) ? data.statusSummaries : []);
+            this.renderList(Array.isArray(data.orders) ? data.orders : []);
             this.renderMeta(data);
             this.renderPagination(data);
         } catch (err) {
@@ -216,10 +216,14 @@ const OrderList = {
         const container = document.getElementById('orderStatusSummaryRow');
         if (!container) return;
 
-        const totalCount = (items || []).reduce((sum, item) => sum + Number(item.count || 0), 0);
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const statusCode = this.normalizeStatusCode(item?.statusCode);
+            return statusCode ? [{...item, statusCode, count: this.normalizeNonNegativeInteger(item?.count)}] : [];
+        });
+        const totalCount = safeItems.reduce((sum, item) => sum + item.count, 0);
         const selectedStatus = this.state.status || '';
 
-        if (!items.length) {
+        if (safeItems.length === 0) {
             this.renderSummaryState('empty', '현재 필터에 해당하는 상태별 집계가 없습니다.', '기간이나 검색 조건을 조정하면 다른 주문 상태를 확인할 수 있습니다.');
             return;
         }
@@ -231,10 +235,10 @@ const OrderList = {
                 count: totalCount,
                 hint: '현재 조건 기준 전체 주문'
             },
-            ...items.map((item) => ({
-                statusCode: item.statusCode || '',
+            ...safeItems.map((item) => ({
+                statusCode: item.statusCode,
                 statusDesc: item.statusDesc,
-                count: Number(item.count || 0),
+                count: item.count,
                 hint: `${item.statusDesc} 상태 주문`
             }))
         ];
@@ -249,7 +253,7 @@ const OrderList = {
                         data-role="apply-order-status-summary"
                         data-status-code="${statusCode}">
                     <div class="admin-summary-card__label">${CommonJS.escapeHtml(item.statusDesc || '-')}</div>
-                    <div class="admin-summary-card__value">${Number(item.count || 0).toLocaleString()}건</div>
+                    <div class="admin-summary-card__value">${this.formatCount(item.count)}건</div>
                     <div class="admin-summary-card__hint">${CommonJS.escapeHtml(item.hint || '-')} · ${percentage}%</div>
                 </button>
             `;
@@ -259,15 +263,19 @@ const OrderList = {
     renderList(items) {
         const tbody = document.getElementById('orderListTableBody');
         if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const orderNo = this.normalizeOptionalPositiveNumber(item?.orderNo);
+            return orderNo == null ? [] : [{...item, orderNo}];
+        });
 
-        if (!items || items.length === 0) {
+        if (safeItems.length === 0) {
             this.renderTableState('empty', '주문 내역이 없습니다.', '기간, 상태, 검색어 조건을 조정하거나 빠른 상태 카드를 눌러 다른 주문 문맥을 확인하세요.');
             return;
         }
 
-        tbody.innerHTML = items.map(item => {
+        tbody.innerHTML = safeItems.map(item => {
             const statusMeta = CommonJS.getOrderStatusMeta(item.statusCode);
-            const orderNo = this.normalizeOptionalPositiveNumber(item.orderNo);
+            const orderNo = item.orderNo;
 
             return `
                 <tr>
@@ -291,18 +299,25 @@ const OrderList = {
     },
 
     renderPagination(data) {
-        const { totalPages, currentPage: curr, totalElements } = data;
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const curr = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
         const pagination = document.getElementById('pagination');
         if (!pagination) return;
 
-        let html = '';
-        for (let i = 0; i < totalPages; i++) {
-            html += `
-                <li class="page-item ${i === curr ? 'active' : ''}">
-                    <button type="button" class="page-link" data-role="go-order-page" data-page="${i}">${i + 1}</button>
-                </li>`;
-        }
-        pagination.innerHTML = html;
+        const items = [];
+        let previousPage = -1;
+        this.buildPaginationPages(curr, totalPages).forEach((page) => {
+            if (previousPage >= 0 && page - previousPage > 1) {
+                items.push('<li class="page-item disabled" aria-hidden="true"><span class="page-link">...</span></li>');
+            }
+            items.push(`
+                <li class="page-item ${page === curr ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-order-page" data-page="${page}">${page + 1}</button>
+                </li>`);
+            previousPage = page;
+        });
+        pagination.innerHTML = items.join('');
 
         const infoEl = document.getElementById('pageInfoText');
         if (infoEl) {
@@ -311,7 +326,7 @@ const OrderList = {
 
         const totalCountEl = document.getElementById('totalElementsCount');
         if (totalCountEl) {
-            totalCountEl.textContent = `전체 ${Number(totalElements || 0).toLocaleString()}건`;
+            totalCountEl.textContent = `전체 ${this.formatCount(totalElements)}건`;
         }
     },
 
@@ -385,8 +400,8 @@ const OrderList = {
 
     captureFilterState() {
         this.state.status = this.normalizeStatusCode(document.getElementById('orderStatus')?.value);
-        this.state.startDate = document.getElementById('startDate')?.value || '';
-        this.state.endDate = document.getElementById('endDate')?.value || '';
+        this.state.startDate = this.normalizeDateInput(document.getElementById('startDate')?.value);
+        this.state.endDate = this.normalizeDateInput(document.getElementById('endDate')?.value);
         const rawKeyword = document.getElementById('searchKeyword')?.value || '';
         this.state.searchKeyword = rawKeyword.trim().replace(/\s+/g, ' ');
     },
@@ -438,10 +453,10 @@ const OrderList = {
     },
 
     renderMeta(data = {}) {
-        const totalElements = Number(data.totalElements || 0);
+        const totalElements = this.normalizeNonNegativeInteger(data.totalElements);
         const resultLabel = data.errorMessage
             ? data.errorMessage
-            : (totalElements === 0 ? '조회 결과 없음' : `검색 결과 ${totalElements.toLocaleString()}건`);
+            : (totalElements === 0 ? '조회 결과 없음' : `검색 결과 ${this.formatCount(totalElements)}건`);
         const pageInfoLabel = data.errorMessage
             ? '페이지 메타 확인 불가'
             : this.buildPageInfoLabel(data);
@@ -493,18 +508,18 @@ const OrderList = {
     },
 
     buildPageInfoLabel(data = {}) {
-        const totalElements = Number(data.totalElements || 0);
+        const totalElements = this.normalizeNonNegativeInteger(data.totalElements);
         if (totalElements === 0) {
             return '조건에 맞는 주문이 없습니다.';
         }
 
-        const size = Number(this.state.size || data.size || 10);
-        const currentPage = Number(data.currentPage ?? this.state.page ?? 0);
-        const totalPages = Math.max(Number(data.totalPages || 0), 1);
+        const size = this.normalizePageSize(this.state.size || data.size || 10);
+        const currentPage = this.normalizePage(data.currentPage ?? this.state.page ?? 0);
+        const totalPages = Math.max(this.normalizeNonNegativeInteger(data.totalPages), 1);
         const rangeStart = currentPage * size + 1;
         const visibleCount = Array.isArray(data.orders) ? data.orders.length : Math.min(size, totalElements - currentPage * size);
         const rangeEnd = Math.min(totalElements, rangeStart + Math.max(visibleCount, 0) - 1);
-        return `${rangeStart}-${rangeEnd} / ${totalElements.toLocaleString()}건 · ${totalPages}페이지`;
+        return `${rangeStart}-${rangeEnd} / ${this.formatCount(totalElements)}건 · ${this.formatCount(totalPages)}페이지`;
     },
 
     resolveStatusLabel(statusCode) {
@@ -568,6 +583,12 @@ const OrderList = {
             return false;
         }
 
+        const rawStartDate = document.getElementById('startDate')?.value || '';
+        const rawEndDate = document.getElementById('endDate')?.value || '';
+        if ((rawStartDate && !this.normalizeDateInput(rawStartDate)) || (rawEndDate && !this.normalizeDateInput(rawEndDate))) {
+            void CommonJS.alert('조회 기간은 올바른 날짜 형식이어야 합니다.', '알림', 'warning');
+            return false;
+        }
         if (!this.state.startDate || !this.state.endDate) {
             return true;
         }
@@ -620,8 +641,8 @@ const OrderList = {
             page: this.normalizePage(params.get('page')),
             size: this.normalizePageSize(params.get('size')),
             status: this.normalizeStatusCode(params.get('status')),
-            startDate: params.get('startDate') || '',
-            endDate: params.get('endDate') || '',
+            startDate: this.normalizeDateInput(params.get('startDate')),
+            endDate: this.normalizeDateInput(params.get('endDate')),
             searchKeyword: (params.get('searchKeyword') || '').trim().replace(/\s+/g, ' '),
             source: params.get('source') || '',
             returnTo: CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '')
@@ -660,7 +681,7 @@ const OrderList = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 10;
+        return [10, 20, 50].includes(size) ? size : 10;
     },
 
     normalizeDatePreset(value) {
@@ -682,6 +703,31 @@ const OrderList = {
 
     isPositiveNumber(value) {
         return Number.isInteger(value) && value > 0;
+    },
+
+    normalizeDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const date = new Date(`${text}T00:00:00`);
+        return Number.isFinite(date.getTime()) && this.formatDate(date) === text ? text : '';
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        if (totalPages <= 0) return [];
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right);
     }
 };
 

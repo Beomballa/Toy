@@ -332,3 +332,18 @@ test("product front display validates rows, summary values, booleans, and filter
     assert.match(source, /this\.state\.keyword\.length > 100/);
     assert.match(source, /this\.normalizeSummaryFilterType\(type\)/);
 });
+
+test("order list validates rows, summaries, dates, counts, and pagination", () => {
+    const source = readViewScript("order-list.js");
+
+    assert.match(source, /Array\.isArray\(data\.statusSummaries\)/);
+    assert.match(source, /Array\.isArray\(data\.orders\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.orderNo\)/);
+    assert.match(source, /this\.normalizeNonNegativeInteger\(item\?\.count\)/);
+    assert.match(source, /this\.normalizeDateInput\(params\.get\('startDate'\)\)/);
+    assert.match(source, /this\.normalizeDateInput\(rawStartDate\)/);
+    assert.match(source, /this\.buildPaginationPages\(curr, totalPages\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
+    assert.match(source, /this\.formatCount\(totalElements\)/);
+    assert.match(source, /Number\.isFinite\(date\.getTime\(\)\)/);
+});

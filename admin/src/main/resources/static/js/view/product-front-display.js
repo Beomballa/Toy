@@ -24,7 +24,7 @@ const ProductFrontDisplayList = {
         }
         this.initialized = true;
         const thresholdInput = document.getElementById('displayLowStockThreshold');
-        this.initialLowStockThreshold = Number(thresholdInput?.value || 20);
+        this.initialLowStockThreshold = this.normalizePositiveInteger(thresholdInput?.value, 20);
         this.state.lowStockThreshold = this.initialLowStockThreshold;
         this.readStateFromUrl();
         this.syncFilterInputs();
@@ -94,7 +94,10 @@ const ProductFrontDisplayList = {
 
     readStateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        const lowStockThreshold = Number(params.get('lowStockThreshold') || this.initialLowStockThreshold);
+        const lowStockThreshold = this.normalizePositiveInteger(
+            params.get('lowStockThreshold'),
+            this.initialLowStockThreshold
+        );
         const sort = params.get('sort') || 'FEATURED';
         const configured = params.get('configured') || '';
         const contentStatus = params.get('contentStatus') || '';
@@ -110,9 +113,7 @@ const ProductFrontDisplayList = {
             contentStatus: this.isValidContentStatusValue(contentStatus) ? contentStatus : '',
             featuredOnly: params.get('featuredOnly') === 'true',
             lowStockOnly: params.get('lowStockOnly') === 'true',
-            lowStockThreshold: Number.isFinite(lowStockThreshold) && lowStockThreshold > 0
-                ? lowStockThreshold
-                : this.initialLowStockThreshold,
+            lowStockThreshold,
             sort: this.isValidSortValue(sort) ? sort : 'FEATURED',
             source: params.get('source') || '',
             returnTo: CommonJS.normalizeAdminReturnPath(params.get('returnTo'), '')
@@ -269,8 +270,11 @@ const ProductFrontDisplayList = {
             return;
         }
 
-        const items = Array.isArray(payload?.items) ? payload.items : [];
-        const summary = payload?.summary || {
+        const items = (Array.isArray(payload?.items) ? payload.items : []).flatMap((item) => {
+            const productNo = this.normalizeOptionalPositiveNumber(item?.productNo);
+            return productNo == null ? [] : [{...item, productNo}];
+        });
+        const summary = payload?.summary && typeof payload.summary === 'object' ? payload.summary : {
             totalCount: items.length,
             configuredCount: 0,
             unconfiguredCount: 0,
@@ -278,9 +282,9 @@ const ProductFrontDisplayList = {
             lowStockCount: 0,
             lowStockThreshold: this.state.lowStockThreshold
         };
-        const resultMeta = payload?.resultMeta || null;
+        const resultMeta = payload?.resultMeta && typeof payload.resultMeta === 'object' ? payload.resultMeta : null;
 
-        resultCount.textContent = resultMeta?.resultLabel || `전체 ${summary.totalCount}건`;
+        resultCount.textContent = resultMeta?.resultLabel || `전체 ${this.formatCount(summary.totalCount)}건`;
         filterSummary.textContent = resultMeta?.querySignature || this.buildSummary();
         this.renderSummary(summary);
         this.renderMeta(payload);
@@ -303,7 +307,7 @@ const ProductFrontDisplayList = {
 
         const returnTo = encodeURIComponent(this.getReturnTo());
         tbody.innerHTML = items.map((item) => {
-            const productNo = this.normalizeOptionalPositiveNumber(item.productNo);
+            const productNo = item.productNo;
             const featuredRank = this.normalizeOptionalPositiveNumber(item.featuredRank);
             return `
             <tr>
@@ -315,13 +319,13 @@ const ProductFrontDisplayList = {
                     <div>${this.escapeHtml(item.brandName || '-')}</div>
                     <div class="small text-muted">${this.escapeHtml(item.categoryName || '-')}</div>
                 </td>
-                <td>${Number(item.totalStock || 0).toLocaleString()}개</td>
+                <td>${this.formatCount(item.totalStock)}개</td>
                 <td>${this.escapeHtml(item.statusDescription || item.status || '-')}</td>
                 <td>
-                    <div>${item.displayConfigured ? '설정됨' : '미설정'}</div>
-                    <div class="small text-muted">${item.contentReady ? '전시 문구 완성' : '보완 필요'}</div>
+                    <div>${item.displayConfigured === true ? '설정됨' : '미설정'}</div>
+                    <div class="small text-muted">${item.contentReady === true ? '전시 문구 완성' : '보완 필요'}</div>
                 </td>
-                <td>${item.featured ? `Y / ${featuredRank || '-'}` : 'N'}</td>
+                <td>${item.featured === true ? `Y / ${featuredRank || '-'}` : 'N'}</td>
                 <td class="text-end pe-4">
                     <div class="btn-group btn-group-sm">
                         <a class="btn btn-outline-secondary" href="${productNo ? `/admin/products/get?no=${productNo}&source=product-front-display&returnTo=${returnTo}` : '#'}" ${productNo ? '' : 'aria-disabled="true" tabindex="-1"'}>상세</a>
@@ -387,27 +391,28 @@ const ProductFrontDisplayList = {
                 target.textContent = value;
             }
         };
-        setText('displaySummaryTotal', Number(summary.totalCount || 0).toLocaleString());
-        setText('displaySummaryConfigured', Number(summary.configuredCount || 0).toLocaleString());
-        setText('displaySummaryUnconfigured', `미설정 ${Number(summary.unconfiguredCount || 0).toLocaleString()}건`);
+        const safeSummary = summary && typeof summary === 'object' ? summary : {};
+        setText('displaySummaryTotal', this.formatCount(safeSummary.totalCount));
+        setText('displaySummaryConfigured', this.formatCount(safeSummary.configuredCount));
+        setText('displaySummaryUnconfigured', `미설정 ${this.formatCount(safeSummary.unconfiguredCount)}건`);
         setText(
             'displaySummaryContentQuality',
-            `전시 문구 완성 ${Number(summary.readyContentCount || 0).toLocaleString()}건 · 보완 ${Number(summary.incompleteContentCount || 0).toLocaleString()}건`
+            `전시 문구 완성 ${this.formatCount(safeSummary.readyContentCount)}건 · 보완 ${this.formatCount(safeSummary.incompleteContentCount)}건`
         );
-        setText('displaySummaryFeatured', Number(summary.featuredCount || 0).toLocaleString());
-        setText('displaySummaryLowStock', Number(summary.lowStockCount || 0).toLocaleString());
-        setText('displaySummaryThreshold', `기준 ${Number(summary.lowStockThreshold || this.state.lowStockThreshold).toLocaleString()}개 미만`);
+        setText('displaySummaryFeatured', this.formatCount(safeSummary.featuredCount));
+        setText('displaySummaryLowStock', this.formatCount(safeSummary.lowStockCount));
+        setText('displaySummaryThreshold', `기준 ${this.formatCount(safeSummary.lowStockThreshold || this.state.lowStockThreshold)}개 미만`);
     },
 
     renderMeta(payload = {}) {
-        const resultMeta = payload?.resultMeta || null;
-        const totalCount = Number(payload?.summary?.totalCount || 0);
+        const resultMeta = payload?.resultMeta && typeof payload.resultMeta === 'object' ? payload.resultMeta : null;
+        const totalCount = this.normalizeNonNegativeInteger(payload?.summary?.totalCount);
         const resultLabel = payload?.errorMessage
             ? payload.errorMessage
-            : (resultMeta?.resultLabel || `전체 ${totalCount.toLocaleString()}건`);
+            : (resultMeta?.resultLabel || `전체 ${this.formatCount(totalCount)}건`);
         const querySignature = resultMeta?.querySignature || this.buildSummary();
         const pageInfoLabel = resultMeta?.pageInfoLabel || '전시 대상은 단일 목록으로 조회합니다.';
-        const filterCount = Number(resultMeta?.filterCount || this.countActiveFilters());
+        const filterCount = this.normalizeNonNegativeInteger(resultMeta?.filterCount ?? this.countActiveFilters());
 
         CommonJS.renderListMeta({
             metaTextId: 'displayFilterSummary',
@@ -479,8 +484,7 @@ const ProductFrontDisplayList = {
     },
 
     normalizeLowStockThreshold(rawValue) {
-        const parsed = Number(rawValue || this.initialLowStockThreshold);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : this.initialLowStockThreshold;
+        return this.normalizePositiveInteger(rawValue, this.initialLowStockThreshold);
     },
 
     updateStateFromInputs() {
@@ -506,6 +510,10 @@ const ProductFrontDisplayList = {
         const parsed = Number(rawThreshold);
         if (!Number.isInteger(parsed) || parsed <= 0) {
             void CommonJS.alert('저재고 기준은 1 이상의 정수만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (this.state.keyword.length > 100) {
+            void CommonJS.alert('검색어는 100자 이하로 입력하세요.', '알림', 'warning');
             return false;
         }
         if (this.state.status && !this.normalizeStatusValue(this.state.status)) {
@@ -536,15 +544,16 @@ const ProductFrontDisplayList = {
     },
 
     applySummaryFilter(type) {
-        if (type === 'ALL') {
+        const normalizedType = this.normalizeSummaryFilterType(type);
+        if (normalizedType === 'ALL') {
             this.state.configured = '';
             this.state.featuredOnly = false;
             this.state.lowStockOnly = false;
-        } else if (type === 'CONFIGURED') {
+        } else if (normalizedType === 'CONFIGURED') {
             this.state.configured = this.state.configured === 'CONFIGURED' ? '' : 'CONFIGURED';
-        } else if (type === 'FEATURED') {
+        } else if (normalizedType === 'FEATURED') {
             this.state.featuredOnly = !this.state.featuredOnly;
-        } else if (type === 'LOW_STOCK') {
+        } else if (normalizedType === 'LOW_STOCK') {
             this.state.lowStockOnly = !this.state.lowStockOnly;
         }
 
@@ -611,6 +620,24 @@ const ProductFrontDisplayList = {
         return this.isValidOptionalPositiveNumber(value) && value
             ? Number(value)
             : null;
+    },
+
+    normalizePositiveInteger(value, fallback = 1) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    normalizeSummaryFilterType(value) {
+        return ['ALL', 'CONFIGURED', 'FEATURED', 'LOW_STOCK'].includes(value) ? value : 'ALL';
     },
 
     normalizeStatusValue(value) {

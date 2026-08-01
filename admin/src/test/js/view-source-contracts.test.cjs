@@ -317,3 +317,18 @@ test("activity logs validate rows, detail identity, dates, counts, and paginatio
     assert.match(source, /\[20, 50, 100\]\.includes\(size\)/);
     assert.match(source, /this\.formatCount\(value\)/);
 });
+
+test("product front display validates rows, summary values, booleans, and filters", () => {
+    const source = readViewScript("product-front-display.js");
+
+    assert.match(source, /Array\.isArray\(payload\?\.items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.productNo\)/);
+    assert.match(source, /typeof payload\.summary === 'object'/);
+    assert.match(source, /typeof payload\.resultMeta === 'object'/);
+    assert.match(source, /item\.displayConfigured === true/);
+    assert.match(source, /item\.contentReady === true/);
+    assert.match(source, /item\.featured === true/);
+    assert.match(source, /this\.formatCount\(item\.totalStock\)/);
+    assert.match(source, /this\.state\.keyword\.length > 100/);
+    assert.match(source, /this\.normalizeSummaryFilterType\(type\)/);
+});

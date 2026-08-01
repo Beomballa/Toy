@@ -219,19 +219,19 @@ const TaskList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
-        this.state.status = params.get('status') || '';
-        this.state.priority = params.get('priority') || '';
+        this.state.keyword = (params.get('keyword') || '').slice(0, 100);
+        this.state.status = this.isValidTaskStatus(params.get('status')) ? params.get('status') : '';
+        this.state.priority = this.isValidTaskPriority(params.get('priority')) ? params.get('priority') : '';
         this.state.assigneeAdminNo = this.normalizeOptionalPositiveNumber(params.get('assigneeAdminNo'))?.toString() || '';
-        this.state.isPinned = params.get('isPinned') || '';
-        this.state.commentedOnly = params.get('commentedOnly') || '';
+        this.state.isPinned = this.normalizeYnFilterValue(params.get('isPinned'));
+        this.state.commentedOnly = this.normalizeYnFilterValue(params.get('commentedOnly'));
         this.state.dueWithinDays = this.normalizeOptionalPositiveNumber(params.get('dueWithinDays'))?.toString() || '';
-        this.state.dueState = params.get('dueState') || '';
-        this.state.sortBy = params.get('sortBy') || 'PINNED_DUE';
+        this.state.dueState = this.normalizeDueState(params.get('dueState'));
+        this.state.sortBy = this.normalizeSortBy(params.get('sortBy'));
         this.state.dueDateFrom = params.get('dueDateFrom') || '';
         this.state.dueDateTo = params.get('dueDateTo') || '';
-        this.state.overdueOnly = params.get('overdueOnly') || '';
-        this.state.unassignedOnly = params.get('unassignedOnly') || '';
+        this.state.overdueOnly = params.get('overdueOnly') === 'Y' ? 'Y' : '';
+        this.state.unassignedOnly = params.get('unassignedOnly') === 'Y' ? 'Y' : '';
         this.state.taskNo = this.normalizeOptionalPositiveNumber(params.get('taskNo'))?.toString() || '';
         this.state.openTaskNo = this.normalizeOptionalPositiveNumber(params.get('openTaskNo'))?.toString() || '';
         this.state.focusTaskNo = this.normalizeOptionalPositiveNumber(params.get('focusTaskNo'))?.toString() || '';
@@ -326,13 +326,15 @@ const TaskList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderAssigneeOptions(data.assigneeOptions || []);
-            this.renderList(data.items || []);
+            const items = Array.isArray(data.items) ? data.items : [];
+            const assigneeOptions = Array.isArray(data.assigneeOptions) ? data.assigneeOptions : [];
+            this.renderAssigneeOptions(assigneeOptions);
+            this.renderList(items);
             this.renderStats(data.taskStats);
             this.renderMeta(data);
             this.syncStatFilterState();
             this.renderPagination(data);
-            await this.openDeepLinkedTaskIfNeeded(data.items || [], requestId);
+            await this.openDeepLinkedTaskIfNeeded(items, requestId);
         } catch (error) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -361,7 +363,8 @@ const TaskList = {
                 const response = await fetch(`/api/admin/settings/tasks/${taskNo}`);
                 if (response.ok) {
                     const task = await response.json();
-                    if (requestId === this.listRequestId) {
+                    if (requestId === this.listRequestId
+                        && this.normalizeOptionalPositiveNumber(task?.taskNo) === taskNo) {
                         this.openEditModal(task);
                     }
                 }
@@ -404,20 +407,22 @@ const TaskList = {
     renderList(items) {
         const tbody = document.getElementById('taskListBody');
         if (!tbody) return;
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizeOptionalPositiveNumber(item?.taskNo) != null)
+            : [];
         this.taskItemsByNo = new Map(
-            (items || [])
+            validItems
                 .map((item) => [this.normalizeOptionalPositiveNumber(item.taskNo), item])
-                .filter(([taskNo]) => taskNo != null)
         );
 
-        if (!items || items.length === 0) {
+        if (validItems.length === 0) {
             this.renderTableState('empty', '등록된 운영 작업이 없습니다.', '상태, 담당자, 우선순위 조건을 조정하거나 새 운영 작업을 등록해 보세요.');
             this.setListStateMeta('empty', '등록된 운영 작업이 없습니다.', 0, 0, '');
             this.updateSelectionMeta([]);
             return;
         }
 
-        tbody.innerHTML = items.map((item) => {
+        tbody.innerHTML = validItems.map((item) => {
             const taskNo = this.normalizeOptionalPositiveNumber(item.taskNo);
             const historyPath = this.buildTaskHistoryPathFromBase(item.historyPath);
             const logPath = this.buildTaskLogPathFromBase(item.activityLogPath, taskNo);
@@ -434,8 +439,8 @@ const TaskList = {
                         <a class="fw-bold text-dark text-decoration-none" href="${this.escapeHtml(this.buildTaskDetailPath(taskNo, 'task-list-row-title'))}">${this.escapeHtml(item.title || '-')}</a>
                     </div>
                     <div class="small text-muted text-truncate" style="max-width: 440px;">${this.escapeHtml(item.description || '-')}</div>
-                    ${Number(item.commentCount || 0) > 0 ? `
-                        <div class="small text-muted mt-2">최근 메모 ${Number(item.commentCount || 0).toLocaleString()}건</div>
+                    ${this.normalizeNonNegativeInteger(item.commentCount) > 0 ? `
+                        <div class="small text-muted mt-2">최근 메모 ${this.formatCount(item.commentCount)}건</div>
                         <div class="small text-dark text-truncate" style="max-width: 440px;">${this.escapeHtml(item.latestCommentPreview || '-')}</div>
                         <div class="small text-muted">${this.escapeHtml(item.latestCommentMeta || '-')}</div>
                     ` : ''}
@@ -480,9 +485,10 @@ const TaskList = {
         `;
         }).join('');
 
-        this.setListStateMeta('ready', '', items.length, null, null);
+        this.setListStateMeta('ready', '', validItems.length, null, null);
         this.highlightFocusedTaskRow();
-        this.updateSelectionMeta(items);
+        this.updateSelectionMeta(validItems);
+        void this.applyOperationPolicy(this.operationPolicy);
     },
 
     renderStatusMenu(item) {
@@ -549,12 +555,12 @@ const TaskList = {
             return;
         }
 
-        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
-        todoCountEl.innerText = Number(stats.todoCount || 0).toLocaleString();
-        inProgressCountEl.innerText = Number(stats.inProgressCount || 0).toLocaleString();
-        overdueCountEl.innerText = Number(stats.overdueCount || 0).toLocaleString();
-        unassignedCountEl.innerText = Number(stats.unassignedCount || 0).toLocaleString();
-        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        totalCountEl.innerText = this.formatCount(stats.totalCount);
+        todoCountEl.innerText = this.formatCount(stats.todoCount);
+        inProgressCountEl.innerText = this.formatCount(stats.inProgressCount);
+        overdueCountEl.innerText = this.formatCount(stats.overdueCount);
+        unassignedCountEl.innerText = this.formatCount(stats.unassignedCount);
+        contextTextEl.innerText = `${stats.contextLabel || '현재 조건'} · ${stats.querySignature || '기본 정렬'}`;
         const usingQuickFilter = !!this.state.status
             || !!this.state.priority
             || !!this.state.isPinned
@@ -593,18 +599,20 @@ const TaskList = {
     renderPagination(data) {
         const paginationEl = document.getElementById('taskPagination');
         if (!paginationEl) return;
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data.totalPages);
+        const currentPage = Math.min(this.normalizePage(data.currentPage), Math.max(totalPages - 1, 0));
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
             return;
         }
 
-        paginationEl.innerHTML = Array.from({length: totalPages}, (_, index) => `
-            <li class="page-item ${index === currentPage ? 'active' : ''}">
-                <button type="button" class="page-link" data-role="go-task-page" data-page="${index}">${index + 1}</button>
-            </li>
-        `).join('');
+        paginationEl.innerHTML = this.buildPaginationPages(currentPage, totalPages).map((page) => page == null
+            ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+            : `
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-task-page" data-page="${page}">${page + 1}</button>
+                </li>
+            `).join('');
 
         paginationEl.querySelectorAll('[data-role="go-task-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
@@ -1031,11 +1039,15 @@ const TaskList = {
     updateSelectionMeta(items) {
         const selectionMeta = document.getElementById('taskSelectionMeta');
         const selectedCount = this.selectedTaskNos.size;
-        const currentPageSelectedCount = (items || []).filter((item) => this.selectedTaskNos.has(item.taskNo)).length;
+        const normalizedItems = Array.isArray(items) ? items : [];
+        const currentPageSelectedCount = normalizedItems.filter((item) => {
+            const taskNo = this.normalizeOptionalPositiveNumber(item?.taskNo);
+            return taskNo != null && this.selectedTaskNos.has(taskNo);
+        }).length;
         const selectPage = document.getElementById('taskSelectPage');
         if (selectPage && items && items.length > 0) {
-            selectPage.checked = currentPageSelectedCount === items.length;
-            selectPage.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < items.length;
+            selectPage.checked = currentPageSelectedCount === normalizedItems.length;
+            selectPage.indeterminate = currentPageSelectedCount > 0 && currentPageSelectedCount < normalizedItems.length;
         } else if (selectPage) {
             selectPage.checked = false;
             selectPage.indeterminate = false;
@@ -1456,10 +1468,10 @@ const TaskList = {
         if (this.state.commentedOnly && !['Y', 'N'].includes(this.state.commentedOnly)) {
             throw new Error('댓글 여부 필터 값이 올바르지 않습니다.');
         }
-        if (this.state.dueState && !['OVERDUE', 'TODAY', 'UPCOMING', 'NONE'].includes(this.state.dueState)) {
+        if (this.state.dueState && !['OVERDUE', 'TODAY', 'UPCOMING', 'NO_DUE'].includes(this.state.dueState)) {
             throw new Error('기한 상태 필터 값이 올바르지 않습니다.');
         }
-        if (this.state.sortBy && !['PINNED_DUE', 'DUE_ASC', 'DUE_DESC', 'PRIORITY_DESC', 'LATEST'].includes(this.state.sortBy)) {
+        if (this.state.sortBy && !['PINNED_DUE', 'DUE_DATE_DESC', 'PRIORITY_DESC', 'COMMENT_COUNT_DESC', 'LATEST_COMMENT_DESC', 'CREATED_DESC'].includes(this.state.sortBy)) {
             throw new Error('정렬 조건 값이 올바르지 않습니다.');
         }
         if (this.state.overdueOnly && this.state.overdueOnly !== 'Y') {
@@ -1477,7 +1489,40 @@ const TaskList = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 10;
+        return [10, 20, 50].includes(size) ? size : 10;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    normalizeYnFilterValue(value) {
+        return this.isValidYn(value) ? value : '';
+    },
+
+    normalizeDueState(value) {
+        return ['OVERDUE', 'TODAY', 'UPCOMING', 'NO_DUE'].includes(value) ? value : '';
+    },
+
+    normalizeSortBy(value) {
+        return ['PINNED_DUE', 'DUE_DATE_DESC', 'PRIORITY_DESC', 'COMMENT_COUNT_DESC', 'LATEST_COMMENT_DESC', 'CREATED_DESC'].includes(value)
+            ? value
+            : 'PINNED_DUE';
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right).flatMap((page, index, sorted) => (
+            index > 0 && page - sorted[index - 1] > 1 ? [null, page] : [page]
+        ));
     },
 
     normalizeOptionalPositiveNumber(value) {

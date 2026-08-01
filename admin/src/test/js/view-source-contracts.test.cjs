@@ -362,3 +362,18 @@ test("notice list validates rows, deep links, modal values, counts, and paginati
     assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
     assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
 });
+
+test("task list validates filters, rows, deep links, counts, and pagination", () => {
+    const source = readViewScript("task-list.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(data\.assigneeOptions\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(task\?\.taskNo\) === taskNo/);
+    assert.match(source, /this\.normalizeDueState\(params\.get\('dueState'\)\)/);
+    assert.match(source, /'NO_DUE'/);
+    assert.match(source, /'COMMENT_COUNT_DESC'/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
+    assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
+});

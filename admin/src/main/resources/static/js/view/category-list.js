@@ -234,7 +234,7 @@ const CategoryList = {
             if (requestId !== this.depth1RequestId) {
                 return;
             }
-            this.state.depth1List = data.items || [];
+            this.state.depth1List = this.normalizeCategoryItems(data.items, 1);
             this.depth1ItemsByNo = this.buildCategoryMap(this.state.depth1List);
             this.renderDepth1();
             this.renderDepth1Meta(data);
@@ -269,10 +269,10 @@ const CategoryList = {
             return;
         }
         this.state.selectedParentNo = parentNo;
-        this.state.selectedParentName = parentName;
+        this.state.selectedParentName = CommonJS.normalizeOptionalText(parentName) || `#${parentNo}`;
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         
-        document.getElementById('parentCategoryName').innerText = `> ${parentName}`;
+        document.getElementById('parentCategoryName').innerText = `> ${this.state.selectedParentName}`;
         const disabled = !!(this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy));
         CommonJS.setButtonDisabled(
             document.getElementById('btnNewSubCategory'),
@@ -290,10 +290,10 @@ const CategoryList = {
             if (requestId !== this.depth2RequestId || this.state.selectedParentNo !== parentNo) {
                 return;
             }
-            this.state.depth2List = Array.isArray(data) ? data : [];
+            this.state.depth2List = this.normalizeCategoryItems(data, 2, parentNo);
             this.depth2ItemsByNo = this.buildCategoryMap(this.state.depth2List);
             this.renderDepth2();
-            this.setSubCategoryMeta(`선택된 대분류 ${parentName} · 하위 카테고리 ${this.state.depth2List.length}건`);
+            this.setSubCategoryMeta(`선택된 대분류 ${this.state.selectedParentName} · 하위 카테고리 ${this.formatCount(this.state.depth2List.length)}건`);
         } catch (err) {
             if (requestId !== this.depth2RequestId || this.state.selectedParentNo !== parentNo) {
                 return;
@@ -323,6 +323,7 @@ const CategoryList = {
 
     renderDepth1() {
         const body = document.getElementById('depth1Body');
+        if (!body) return;
         if (!this.state.depth1List || this.state.depth1List.length === 0) {
             body.innerHTML = `
                 <div class="product-empty-state py-5">
@@ -338,7 +339,7 @@ const CategoryList = {
         }
 
         body.innerHTML = this.state.depth1List.map(item => {
-            const categoryNo = this.normalizeOptionalPositiveNumber(item.categoryNo);
+            const categoryNo = item.categoryNo;
             const name = this.escapeHtml(item.name || '-');
             const isActive = item.isActive === 'Y';
             return `
@@ -368,7 +369,8 @@ const CategoryList = {
                         <button class="btn btn-sm btn-outline-dark"
                                 data-role="toggle-category-active"
                                 data-category-no="${categoryNo || ''}"
-                                data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                                data-next-active="${isActive ? 'N' : 'Y'}"
+                                ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상태를 변경할 수 없습니다."' : ''}>${isActive ? '중지' : '활성'}</button>
                     </div>
                 </div>
             </div>
@@ -383,6 +385,7 @@ const CategoryList = {
         const emptyMsg = document.getElementById('depth2EmptyMessage');
         const tbody = document.getElementById('depth2ListBody');
 
+        if (!wrapper || !emptyMsg || !tbody) return;
         emptyMsg.classList.add('d-none');
         wrapper.classList.remove('d-none');
 
@@ -404,7 +407,7 @@ const CategoryList = {
         }
 
         tbody.innerHTML = this.state.depth2List.map(item => {
-            const categoryNo = this.normalizeOptionalPositiveNumber(item.categoryNo);
+            const categoryNo = item.categoryNo;
             const name = this.escapeHtml(item.name || '-');
             const isActive = item.isActive === 'Y';
             return `
@@ -424,7 +427,8 @@ const CategoryList = {
                     <button class="btn btn-sm btn-outline-dark me-1"
                             data-role="toggle-category-active"
                             data-category-no="${categoryNo || ''}"
-                            data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                            data-next-active="${isActive ? 'N' : 'Y'}"
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상태를 변경할 수 없습니다."' : ''}>${isActive ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-sub-category" data-category-no="${categoryNo || ''}">삭제</button>
                 </td>
             </tr>
@@ -442,7 +446,7 @@ const CategoryList = {
             'ready',
             '',
             this.state.depth1List.length,
-            data.totalElements || 0,
+            this.normalizeNonNegativeInteger(data?.totalElements),
             data.resultMeta?.querySignature || ''
         );
         const metaEl = document.getElementById('categoryListStateMeta');
@@ -457,8 +461,8 @@ const CategoryList = {
             return;
         }
 
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const currentPage = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
 
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
@@ -646,15 +650,21 @@ const CategoryList = {
         }
 
         if (item) {
-            document.getElementById('categoryNo').value = item.categoryNo;
-            document.getElementById('categoryName').value = item.name;
-            document.getElementById('isCategoryActive').value = item.isActive;
+            const categoryNo = this.normalizeOptionalPositiveNumber(item.categoryNo);
+            const itemDepth = Number(item.depth);
+            if (categoryNo == null || itemDepth !== depth) {
+                await CommonJS.alert('수정할 카테고리 정보가 현재 분류 단계와 일치하지 않습니다.', '알림', 'warning');
+                return;
+            }
+            document.getElementById('categoryNo').value = categoryNo;
+            document.getElementById('categoryName').value = item.name || '';
+            document.getElementById('isCategoryActive').value = this.normalizeYnFilterValue(item.isActive) || 'Y';
             document.getElementById('categoryModalTitle').innerText = '카테고리 수정';
         } else {
             document.getElementById('categoryModalTitle').innerText = depth === 1 ? '대분류 등록' : '중분류 등록';
         }
 
-        this.modal.show();
+        this.modal?.show();
     },
 
     async saveCategory() {
@@ -691,8 +701,12 @@ const CategoryList = {
             parentNo: parentNo ? Number(parentNo) : null,
             name: name,
             depth: depth,
-            isActive: document.getElementById('isCategoryActive').value
+            isActive: this.normalizeYnFilterValue(document.getElementById('isCategoryActive').value)
         };
+        if (!data.isActive) {
+            await CommonJS.alert('카테고리 활성 상태 값이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
 
         try {
             this.saveInFlight = true;
@@ -741,6 +755,7 @@ const CategoryList = {
             this.deleteInFlight.add(no);
             const res = await fetch(`/api/admin/categories/delete?no=${no}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다.'));
+            this.selectedCategoryNos.delete(no);
             await this.getDepth1List();
             if (this.state.selectedParentNo) {
                 await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
@@ -797,7 +812,7 @@ const CategoryList = {
             await CommonJS.alert('일괄 적용할 카테고리를 선택하세요.', '알림', 'warning');
             return;
         }
-        const isActive = document.getElementById('bulkCategoryIsActive').value;
+        const isActive = this.normalizeYnFilterValue(document.getElementById('bulkCategoryIsActive').value);
         if (!isActive) {
             await CommonJS.alert('변경할 상태를 선택하세요.', '알림', 'warning');
             return;
@@ -819,7 +834,7 @@ const CategoryList = {
             if (this.state.selectedParentNo) {
                 await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
             }
-            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 동일 상태입니다.`, '성공', 'success');
+            await CommonJS.alert(`요청 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.updatedCount)}건 변경, ${this.formatCount(result.unchangedCount)}건 동일 상태입니다.`, '성공', 'success');
         } catch (err) {
             await CommonJS.alert(err.message || '카테고리 일괄 상태 변경에 실패했습니다.', '오류', 'error');
         } finally {
@@ -860,7 +875,7 @@ const CategoryList = {
             if (this.state.selectedParentNo) {
                 await this.getDepth2List(this.state.selectedParentNo, this.state.selectedParentName);
             }
-            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.blockedCount}건 하위/상품 연관으로 유지, ${result.missingCount}건 미존재입니다.`, '성공', 'success');
+            await CommonJS.alert(`요청 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.deletedCount)}건 삭제, ${this.formatCount(result.blockedCount)}건 하위/상품 연관으로 유지, ${this.formatCount(result.missingCount)}건 미존재입니다.`, '성공', 'success');
         } catch (err) {
             await CommonJS.alert(err.message || '카테고리 일괄 삭제에 실패했습니다.', '오류', 'error');
         } finally {
@@ -921,7 +936,7 @@ const CategoryList = {
 
     normalizePageSize(size) {
         const parsed = Number(size);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+        return [10, 20, 50].includes(parsed) ? parsed : 10;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -935,6 +950,27 @@ const CategoryList = {
                 .map((item) => [this.normalizeOptionalPositiveNumber(item.categoryNo), item])
                 .filter(([categoryNo]) => categoryNo != null)
         );
+    },
+
+    normalizeCategoryItems(items, depth, parentNo = null) {
+        if (!Array.isArray(items) || !this.isValidCategoryDepth(depth)) return [];
+        return items.flatMap((item) => {
+            const categoryNo = this.normalizeOptionalPositiveNumber(item?.categoryNo);
+            const itemDepth = Number(item?.depth);
+            const itemParentNo = this.normalizeOptionalPositiveNumber(item?.parentNo);
+            if (categoryNo == null || itemDepth !== depth) return [];
+            if (depth === 2 && itemParentNo !== parentNo) return [];
+            return [{...item, categoryNo, parentNo: itemParentNo, depth: itemDepth}];
+        });
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
     },
 
     renderDepth2Empty() {

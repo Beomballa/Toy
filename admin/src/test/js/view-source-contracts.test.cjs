@@ -271,3 +271,18 @@ test("banner list validates detail identity, rows, dates, and image input", () =
     assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
     assert.match(source, /Number\.isFinite\(startTime\)/);
 });
+
+test("category hierarchy validates rows, parent relation, state, and counts", () => {
+    const source = readViewScript("category-list.js");
+
+    assert.match(source, /this\.normalizeCategoryItems\(data\.items, 1\)/);
+    assert.match(source, /this\.normalizeCategoryItems\(data, 2, parentNo\)/);
+    assert.match(source, /depth === 2 && itemParentNo !== parentNo/);
+    assert.match(source, /itemDepth !== depth/);
+    assert.match(source, /this\.normalizeYnFilterValue\(item\.isActive\)/);
+    assert.match(source, /this\.normalizeYnFilterValue\(document\.getElementById\('bulkCategoryIsActive'\)\.value\)/);
+    assert.match(source, /this\.selectedCategoryNos\.delete\(no\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(parsed\)/);
+    assert.match(source, /this\.normalizeNonNegativeInteger\(data\?\.totalPages\)/);
+    assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
+});

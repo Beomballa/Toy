@@ -21,7 +21,8 @@ const MemberListPage = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
-        this.modal = new bootstrap.Modal(document.getElementById('memberDetailModal'));
+        const modalEl = document.getElementById('memberDetailModal');
+        if (modalEl) this.modal = new bootstrap.Modal(modalEl);
         this.bindEvents();
         this.readStateFromUrl();
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/members');
@@ -49,7 +50,7 @@ const MemberListPage = {
         document.getElementById('btnApplyMemberBulk')?.addEventListener('click', () => this.applyBulkStatus());
         document.getElementById('btnClearMemberSelection')?.addEventListener('click', () => this.clearSelection());
         document.getElementById('memberPageSize')?.addEventListener('change', (event) => {
-            this.state.size = Number(event.target.value || 20);
+            this.state.size = this.normalizePageSize(event.target.value);
             this.state.page = 0;
             this.getList();
         });
@@ -130,16 +131,16 @@ const MemberListPage = {
 
     async getList() {
         const requestId = ++this.listRequestId;
-        this.validateState();
-        const params = this.buildParams();
-        history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-        this.setMetaText('회원 목록을 불러오는 중입니다...');
-        this.setFilterMetaText('적용 필터를 계산하는 중입니다...');
-        this.setResultMetaText('결과 메타를 계산하는 중입니다...');
-        this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
-        this.renderPagination(0, 0);
-        this.renderLoadingState();
         try {
+            this.validateState();
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setMetaText('회원 목록을 불러오는 중입니다...');
+            this.setFilterMetaText('적용 필터를 계산하는 중입니다...');
+            this.setResultMetaText('결과 메타를 계산하는 중입니다...');
+            this.setPageMetaText('페이지 메타를 계산하는 중입니다...');
+            this.renderPagination(0, 0);
+            this.renderLoadingState();
             const [listRes, summaryRes] = await Promise.all([
                 fetch(`/api/admin/members/list?${params.toString()}`),
                 fetch(`/api/admin/members/summary?${params.toString()}`)
@@ -152,7 +153,7 @@ const MemberListPage = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderList(data.items || []);
+            this.renderList(Array.isArray(data.items) ? data.items : []);
             this.renderMeta(data);
             this.renderSummary(summary);
             this.renderPagination(data.currentPage ?? 0, data.totalPages ?? 0);
@@ -202,7 +203,12 @@ const MemberListPage = {
 
     renderList(items) {
         const tbody = document.getElementById('memberListBody');
-        if (!items.length) {
+        if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const memberId = this.normalizeOptionalPositiveNumber(item?.id);
+            return memberId == null ? [] : [{...item, id: memberId}];
+        });
+        if (safeItems.length === 0) {
             this.currentPageMemberIds = [];
             tbody.innerHTML = `
                 <tr>
@@ -218,8 +224,8 @@ const MemberListPage = {
             this.syncSelectionUi();
             return;
         }
-        tbody.innerHTML = items.map(item => {
-            const memberId = this.normalizeOptionalPositiveNumber(item.id);
+        tbody.innerHTML = safeItems.map(item => {
+            const memberId = item.id;
             return `
             <tr>
                 <td class="ps-4">
@@ -248,7 +254,7 @@ const MemberListPage = {
             </tr>
         `;
         }).join('');
-        this.currentPageMemberIds = items.map((item) => item.id).filter((id) => this.isPositiveNumber(id));
+        this.currentPageMemberIds = safeItems.map((item) => item.id);
         tbody.querySelectorAll('[data-role="select-member"]').forEach((checkbox) => {
             checkbox.addEventListener('change', () => {
                 const memberId = this.normalizeOptionalPositiveNumber(checkbox.dataset.memberId);
@@ -278,16 +284,19 @@ const MemberListPage = {
     },
 
     renderMeta(data) {
-        const resultMeta = data.resultMeta || null;
-        this.setMetaText(resultMeta?.resultLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
+        const resultMeta = data?.resultMeta && typeof data.resultMeta === 'object' ? data.resultMeta : null;
+        const rangeStart = this.normalizeNonNegativeInteger(data?.rangeStart);
+        const rangeEnd = this.normalizeNonNegativeInteger(data?.rangeEnd);
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
+        this.setMetaText(resultMeta?.resultLabel || `${this.formatCount(rangeStart)}-${this.formatCount(rangeEnd)} / ${this.formatCount(totalElements)}명`);
         this.setFilterMetaText(
             resultMeta
                 ? `필터 ${resultMeta.appliedFilterCount}개`
                 : '필터 0개'
         );
         this.setResultMetaText(this.resolveQuerySignature(resultMeta?.querySignature));
-        this.setPageMetaText(resultMeta?.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}명`);
-        this.setPaginationSummary(`페이지 크기 ${data.pageSize ?? this.state.size} · ${resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
+        this.setPageMetaText(resultMeta?.pageInfoLabel || `${this.formatCount(rangeStart)}-${this.formatCount(rangeEnd)} / ${this.formatCount(totalElements)}명`);
+        this.setPaginationSummary(`페이지 크기 ${this.formatCount(data?.pageSize ?? this.state.size)} · ${resultMeta?.pageInfoLabel || '페이지 정보 없음'}`);
     },
 
     renderPagination(currentPage, totalPages) {
@@ -295,16 +304,21 @@ const MemberListPage = {
         if (!pagination) {
             return;
         }
-        if (!totalPages || totalPages <= 1) {
+        const safeTotalPages = this.normalizeNonNegativeInteger(totalPages);
+        const safeCurrentPage = Math.min(this.normalizePage(currentPage), Math.max(safeTotalPages - 1, 0));
+        if (safeTotalPages <= 1) {
             pagination.innerHTML = '';
             return;
         }
         const items = [];
-        items.push(this.paginationItem('이전', currentPage - 1, currentPage <= 0));
-        for (let page = 0; page < totalPages; page += 1) {
-            items.push(this.paginationItem(String(page + 1), page, false, page === currentPage));
-        }
-        items.push(this.paginationItem('다음', currentPage + 1, currentPage >= totalPages - 1));
+        items.push(this.paginationItem('이전', safeCurrentPage - 1, safeCurrentPage <= 0));
+        let previousPage = -1;
+        this.buildPaginationPages(safeCurrentPage, safeTotalPages).forEach((page) => {
+            if (previousPage >= 0 && page - previousPage > 1) items.push(this.paginationGap());
+            items.push(this.paginationItem(String(page + 1), page, false, page === safeCurrentPage));
+            previousPage = page;
+        });
+        items.push(this.paginationItem('다음', safeCurrentPage + 1, safeCurrentPage >= safeTotalPages - 1));
         pagination.innerHTML = items.join('');
         pagination.querySelectorAll('[data-page]').forEach((link) => {
             link.addEventListener('click', (event) => {
@@ -324,6 +338,18 @@ const MemberListPage = {
                 <a class="page-link" href="#" data-page="${page}">${label}</a>
             </li>
         `;
+    },
+
+    paginationGap() {
+        return '<li class="page-item disabled" aria-hidden="true"><span class="page-link">...</span></li>';
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right);
     },
 
     resetFilters() {
@@ -503,8 +529,8 @@ const MemberListPage = {
             return;
         }
 
-        const masterYn = document.getElementById('bulkMemberMasterYn')?.value || '';
-        const delYn = document.getElementById('bulkMemberDelYn')?.value || '';
+        const masterYn = this.normalizeYnFilterValue(document.getElementById('bulkMemberMasterYn')?.value);
+        const delYn = this.normalizeYnFilterValue(document.getElementById('bulkMemberDelYn')?.value);
         if (!masterYn && !delYn) {
             await CommonJS.alert('변경할 항목을 하나 이상 선택하세요.', '알림', 'warning');
             return;
@@ -534,7 +560,7 @@ const MemberListPage = {
             }
             const result = await response.json();
             await CommonJS.alert(
-                `요청 ${Number(result.requestedCount || 0).toLocaleString()}명 · 변경 ${Number(result.updatedCount || 0).toLocaleString()}명 · 유지 ${Number(result.unchangedCount || 0).toLocaleString()}명`,
+                `요청 ${this.formatCount(result.requestedCount)}명 · 변경 ${this.formatCount(result.updatedCount)}명 · 유지 ${this.formatCount(result.unchangedCount)}명`,
                 '회원 일괄 변경 결과',
                 'success'
             );
@@ -557,15 +583,16 @@ const MemberListPage = {
         }
         const requestId = ++this.detailRequestId;
         this.setDetailLoadingState('회원 상세를 불러오는 중입니다.', '프로필, 권한, 상태 정보를 정리하고 있습니다.');
-        this.modal.show();
+        this.modal?.show();
         try {
             this.detailLoadInFlight = true;
             const data = await this.fetchMemberDetail(memberId);
             if (requestId !== this.detailRequestId) {
                 return;
             }
-            this.selectedMember = data;
-            this.renderDetail(data);
+            const validatedMember = this.validateMemberDetail(data, memberId);
+            this.selectedMember = validatedMember;
+            this.renderDetail(validatedMember);
         } catch (err) {
             if (requestId !== this.detailRequestId) {
                 return;
@@ -745,6 +772,10 @@ const MemberListPage = {
         if (!this.selectedMember || this.detailActionInFlight) {
             return;
         }
+        if (!['master', 'deleted'].includes(type)) {
+            await CommonJS.alert('변경할 회원 상태 유형이 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
         if (!this.isPositiveNumber(Number(this.selectedMember.id))) {
             await CommonJS.alert('유효한 회원 번호를 확인할 수 없습니다.', '알림', 'warning');
             return;
@@ -766,11 +797,15 @@ const MemberListPage = {
                 body: JSON.stringify(payload)
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '회원 상태를 변경하지 못했습니다.'));
-            const refreshed = await this.fetchMemberDetail(this.selectedMember.id);
+            const refreshed = this.validateMemberDetail(
+                await this.fetchMemberDetail(this.selectedMember.id),
+                this.selectedMember.id
+            );
+            this.selectedMember = refreshed;
             this.renderDetail(refreshed);
             await this.getList();
             await CommonJS.alert('회원 상태가 변경되었습니다.', '성공', 'success');
-            this.modal.hide();
+            this.modal?.hide();
         } catch (err) {
             await CommonJS.alert(err.message, '오류', 'error');
             if (this.selectedMember) {
@@ -844,7 +879,7 @@ const MemberListPage = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 20;
+        return [20, 50, 100].includes(size) ? size : 20;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -876,7 +911,20 @@ const MemberListPage = {
     },
 
     formatCount(value) {
-        return Number(value || 0).toLocaleString('ko-KR');
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    validateMemberDetail(data, expectedMemberId) {
+        const memberId = this.normalizeOptionalPositiveNumber(data?.id);
+        if (memberId !== expectedMemberId) {
+            throw new Error('요청한 회원과 상세 응답 정보가 일치하지 않습니다.');
+        }
+        return {...data, id: memberId};
     },
 
     resolveQuerySignature(signature) {

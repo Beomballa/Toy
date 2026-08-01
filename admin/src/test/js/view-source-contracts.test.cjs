@@ -286,3 +286,18 @@ test("category hierarchy validates rows, parent relation, state, and counts", ()
     assert.match(source, /this\.normalizeNonNegativeInteger\(data\?\.totalPages\)/);
     assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
 });
+
+test("member management validates rows, detail identity, bulk state, and pagination", () => {
+    const source = readViewScript("member-list.js");
+
+    assert.match(source, /Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\.validateMemberDetail\(data, memberId\)/);
+    assert.match(source, /memberId !== expectedMemberId/);
+    assert.match(source, /this\.selectedMember = refreshed/);
+    assert.match(source, /\['master', 'deleted'\]\.includes\(type\)/);
+    assert.match(source, /this\.normalizeYnFilterValue\(document\.getElementById\('bulkMemberMasterYn'\)/);
+    assert.match(source, /this\.buildPaginationPages\(safeCurrentPage, safeTotalPages\)/);
+    assert.match(source, /\[20, 50, 100\]\.includes\(size\)/);
+    assert.match(source, /this\.normalizeNonNegativeInteger\(value\)/);
+});

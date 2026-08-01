@@ -98,6 +98,21 @@ test("task workload detail rejects stale responses and unsafe identifiers", () =
     assert.equal(source.includes("returnButton.innerHTML"), false);
 });
 
+test("task workload detail validates identity, collections, counts, and save payload", () => {
+    const source = readViewScript("task-workload-get.js");
+
+    assert.match(source, /this\.normalizeTaskNo\(data\?\.assigneeAdminNo\) !== adminNo/);
+    assert.match(source, /this\.normalizeTaskItems\(items\)/);
+    assert.match(source, /Array\.isArray\(data\.recentTasks\)/);
+    assert.match(source, /Array\.isArray\(data\.assigneeOptions\)/);
+    assert.match(source, /Array\.isArray\(data\.assignmentRecommendations\)/);
+    assert.match(source, /this\.normalizeTaskNo\(data\?\.taskNo\) !== Number\(taskNo\)/);
+    assert.match(source, /this\.formatCount\(data\.summary\?\.totalCount\)/);
+    assert.match(source, /this\.formatCount\(item\.overdueCount\)/);
+    assert.match(source, /title\.length > 200/);
+    assert.match(source, /description\.length > 5000/);
+});
+
 test("task and notice histories keep latest responses and escape log fields", () => {
     const taskSource = readViewScript("task-history.js");
     const noticeSource = readViewScript("notice-history.js");

@@ -205,6 +205,9 @@ const TaskWorkloadDetail = {
             if (requestId !== this.detailRequestId) {
                 return;
             }
+            if (this.normalizeTaskNo(data?.assigneeAdminNo) !== adminNo) {
+                throw new Error('요청한 담당자와 워크로드 상세 응답이 일치하지 않습니다.');
+            }
             this.renderDetail(data);
         } catch (error) {
             if (requestId !== this.detailRequestId) {
@@ -232,14 +235,16 @@ const TaskWorkloadDetail = {
     },
 
     renderDetail(data) {
-        document.getElementById('taskWorkloadDetailTitle').textContent = `${data.assigneeAdminName} 워크로드 상세`;
-        document.getElementById('workloadDetailAssigneeName').textContent = `${data.assigneeAdminName} · 관리자 #${data.assigneeAdminNo}`;
-        document.getElementById('workloadDetailMetaText').textContent = `최근 작업 ${Number(data.summary?.totalCount || 0).toLocaleString()}건 기준`;
+        const adminNo = this.normalizeTaskNo(data?.assigneeAdminNo);
+        const assigneeName = CommonJS.normalizeOptionalText(data?.assigneeAdminName) || `관리자 #${adminNo}`;
+        document.getElementById('taskWorkloadDetailTitle').textContent = `${assigneeName} 워크로드 상세`;
+        document.getElementById('workloadDetailAssigneeName').textContent = `${assigneeName} · 관리자 #${adminNo}`;
+        document.getElementById('workloadDetailMetaText').textContent = `최근 작업 ${this.formatCount(data.summary?.totalCount)}건 기준`;
 
-        document.getElementById('workloadDetailTotalCount').textContent = Number(data.summary?.totalCount || 0).toLocaleString();
-        document.getElementById('workloadDetailTodoCount').textContent = Number(data.summary?.todoCount || 0).toLocaleString();
-        document.getElementById('workloadDetailInProgressCount').textContent = Number(data.summary?.inProgressCount || 0).toLocaleString();
-        document.getElementById('workloadDetailOverdueCount').textContent = Number(data.summary?.overdueCount || 0).toLocaleString();
+        document.getElementById('workloadDetailTotalCount').textContent = this.formatCount(data.summary?.totalCount);
+        document.getElementById('workloadDetailTodoCount').textContent = this.formatCount(data.summary?.todoCount);
+        document.getElementById('workloadDetailInProgressCount').textContent = this.formatCount(data.summary?.inProgressCount);
+        document.getElementById('workloadDetailOverdueCount').textContent = this.formatCount(data.summary?.overdueCount);
 
         document.getElementById('workloadDetailTaskListButton').href = this.buildContextualPath(data.targetPath) || '#';
         document.getElementById('workloadDetailTotalButton').href = this.buildContextualPath(data.targetPath) || '#';
@@ -257,8 +262,8 @@ const TaskWorkloadDetail = {
         if (metaEl) {
             metaEl.dataset.detailState = 'ready';
             metaEl.dataset.stateMessage = '';
-            metaEl.dataset.assigneeAdminNo = String(data.assigneeAdminNo || '');
-            metaEl.dataset.overdueCount = String(data.summary?.overdueCount || 0);
+            metaEl.dataset.assigneeAdminNo = String(adminNo || '');
+            metaEl.dataset.overdueCount = String(this.normalizeNonNegativeInteger(data.summary?.overdueCount));
             metaEl.dataset.returnTo = this.bootstrap.returnTo || '/admin/settings/tasks/workloads';
             metaEl.dataset.returnContext = this.resolveReturnContext();
             metaEl.dataset.sourceContext = this.bootstrap.source || '';
@@ -320,7 +325,8 @@ const TaskWorkloadDetail = {
     renderRecentTasks(items) {
         const body = document.getElementById('workloadRecentTasksBody');
         if (!body) return;
-        if (!items.length) {
+        const validItems = this.normalizeTaskItems(items);
+        if (!validItems.length) {
             body.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-list-check product-empty-state-icon"></i>
@@ -330,7 +336,7 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.flatMap((item) => {
+        body.innerHTML = validItems.flatMap((item) => {
             const taskNo = this.normalizeTaskNo(item.taskNo);
             if (!taskNo) return [];
             return [`
@@ -352,7 +358,8 @@ const TaskWorkloadDetail = {
     renderOverdueTasks(items) {
         const body = document.getElementById('workloadOverdueTasksBody');
         if (!body) return;
-        if (!items.length) {
+        const validItems = this.normalizeTaskItems(items);
+        if (!validItems.length) {
             body.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-calendar-check product-empty-state-icon"></i>
@@ -362,7 +369,7 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.flatMap((item) => {
+        body.innerHTML = validItems.flatMap((item) => {
             const taskNo = this.normalizeTaskNo(item.taskNo);
             if (!taskNo) return [];
             return [`
@@ -388,7 +395,8 @@ const TaskWorkloadDetail = {
     renderRecentComments(items) {
         const body = document.getElementById('workloadRecentCommentsBody');
         if (!body) return;
-        if (!items.length) {
+        const validItems = this.normalizeTaskItems(items);
+        if (!validItems.length) {
             body.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-note-sticky product-empty-state-icon"></i>
@@ -398,7 +406,7 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.flatMap((item) => {
+        body.innerHTML = validItems.flatMap((item) => {
             const taskNo = this.normalizeTaskNo(item.taskNo);
             if (!taskNo) return [];
             return [`
@@ -420,7 +428,10 @@ const TaskWorkloadDetail = {
     renderRecentHistories(items) {
         const body = document.getElementById('workloadRecentHistoriesBody');
         if (!body) return;
-        if (!items.length) {
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizeTaskNo(item?.logNo))
+            : [];
+        if (!validItems.length) {
             body.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
@@ -430,7 +441,7 @@ const TaskWorkloadDetail = {
             `;
             return;
         }
-        body.innerHTML = items.map((item) => {
+        body.innerHTML = validItems.map((item) => {
             const taskNo = this.normalizeTaskNo(item.taskNo);
             return `
             <div class="border rounded-3 p-3 mb-3">
@@ -625,8 +636,8 @@ const TaskWorkloadDetail = {
             if (metaEl) {
                 metaEl.textContent = `${data.title || '-'} · 현재 담당자 ${data.assigneeAdminName || '미지정'} · ${data.dueState || '-'}`;
             }
-            this.renderReassignAssigneeOptions(data.assigneeOptions || [], data.assigneeAdminNo);
-            this.renderReassignRecommendations(data.assignmentRecommendations || []);
+            this.renderReassignAssigneeOptions(Array.isArray(data.assigneeOptions) ? data.assigneeOptions : [], data.assigneeAdminNo);
+            this.renderReassignRecommendations(Array.isArray(data.assignmentRecommendations) ? data.assignmentRecommendations : []);
             this.syncSelectedRecommendationState();
             this.syncOverdueActionState();
         } catch (error) {
@@ -679,7 +690,7 @@ const TaskWorkloadDetail = {
                 <div class="border rounded-3 p-3 h-100">
                     <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
                     <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
-                    <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
+                    <div class="small text-dark">전체 ${this.formatCount(item.totalCount)}건 · 진행중 ${this.formatCount(item.inProgressCount)}건 · 기한 초과 ${this.formatCount(item.overdueCount)}건</div>
                     <div class="mt-3">
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-reassign-recommendation" data-admin-no="${adminNo}">이 담당자로 선택</button>
                     </div>
@@ -946,7 +957,11 @@ const TaskWorkloadDetail = {
         if (!response.ok) {
             throw new Error(await CommonJS.extractErrorMessage(response, '작업 상세를 불러오지 못했습니다.'));
         }
-        return response.json();
+        const data = await response.json();
+        if (this.normalizeTaskNo(data?.taskNo) !== Number(taskNo)) {
+            throw new Error('요청한 작업과 상세 응답이 일치하지 않습니다.');
+        }
+        return data;
     },
 
     async saveTaskDetail(payload, fallbackMessage) {
@@ -975,6 +990,11 @@ const TaskWorkloadDetail = {
         if (!this.isValidTaskNo(payload.taskNo)) {
             return false;
         }
+        const title = CommonJS.normalizeRequiredText(payload.title || '');
+        const description = CommonJS.normalizeOptionalText(payload.description || '') || '';
+        if (!title || title.length > 200 || description.length > 5000) {
+            return false;
+        }
         if (!this.isValidTaskStatus(payload.status)) {
             return false;
         }
@@ -987,10 +1007,34 @@ const TaskWorkloadDetail = {
         if (payload.assigneeAdminNo != null && !this.isValidAdminNo(payload.assigneeAdminNo)) {
             return false;
         }
-        if (payload.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(payload.dueDate)) {
+        if (payload.dueDate && !this.isValidDateInput(payload.dueDate)) {
             return false;
         }
         return true;
+    },
+
+    normalizeTaskItems(items) {
+        return Array.isArray(items)
+            ? items.filter((item) => this.normalizeTaskNo(item?.taskNo))
+            : [];
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    isValidDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+        const date = new Date(`${text}T00:00:00`);
+        if (!Number.isFinite(date.getTime())) return false;
+        const normalized = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return normalized === text;
     },
 
     isValidTaskNo(taskNo) {

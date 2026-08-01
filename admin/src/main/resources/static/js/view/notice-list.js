@@ -206,12 +206,13 @@ const NoticeList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderList(data.items || []);
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderStats(data.noticeStats);
             this.renderMeta(data);
             this.syncStatCardState();
             this.renderPagination(data);
-            await this.openDeepLinkedNoticeIfNeeded(data.items || [], requestId);
+            await this.openDeepLinkedNoticeIfNeeded(items, requestId);
         } catch (err) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -231,13 +232,15 @@ const NoticeList = {
     renderList(items) {
         const tbody = document.getElementById('noticeListBody');
         if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const noticeNo = this.normalizeOptionalPositiveNumber(item?.noticeNo);
+            return noticeNo == null ? [] : [{...item, noticeNo}];
+        });
         this.noticeItemsByNo = new Map(
-            (items || [])
-                .map((item) => [this.normalizeOptionalPositiveNumber(item.noticeNo), item])
-                .filter(([noticeNo]) => noticeNo != null)
+            safeItems.map((item) => [item.noticeNo, item])
         );
 
-        if (!items || items.length === 0) {
+        if (safeItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="text-center py-5">
@@ -254,8 +257,8 @@ const NoticeList = {
             return;
         }
 
-        tbody.innerHTML = items.map((item) => {
-            const noticeNo = this.normalizeOptionalPositiveNumber(item.noticeNo);
+        tbody.innerHTML = safeItems.map((item) => {
+            const noticeNo = item.noticeNo;
             const detailPath = this.escapeHtml(this.buildNoticeDetailPath(noticeNo));
             const historyPath = this.buildNoticeHistoryPathFromBase(item.historyPath);
             const logPath = this.buildNoticeLogPathFromBase(item.activityLogPath, noticeNo);
@@ -288,16 +291,16 @@ const NoticeList = {
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-notice" data-notice-no="${noticeNo || ''}">수정</button>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(historyPath || '#')}" ${historyPath ? '' : 'tabindex="-1" aria-disabled="true"'}>이력</a>
                     <a class="btn btn-sm btn-outline-secondary me-1" href="${this.escapeHtml(logPath || '#')}" ${logPath ? '' : 'tabindex="-1" aria-disabled="true"'}>${this.escapeHtml(item.activityLogLabel || '활동 로그')}</a>
-                    <button class="btn btn-sm btn-outline-warning me-1" data-role="toggle-notice-pinned" data-notice-no="${noticeNo || ''}" data-next-pinned="${isPinned ? 'N' : 'Y'}">${isPinned ? '고정해제' : '고정'}</button>
-                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${noticeNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '비활성' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-warning me-1" data-role="toggle-notice-pinned" data-notice-no="${noticeNo || ''}" data-next-pinned="${isPinned ? 'N' : 'Y'}" ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 고정 상태를 변경할 수 없습니다."' : ''}>${isPinned ? '고정해제' : '고정'}</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-notice" data-notice-no="${noticeNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}" ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상태를 변경할 수 없습니다."' : ''}>${isActive ? '비활성' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-notice" data-notice-no="${noticeNo || ''}">삭제</button>
                 </td>
             </tr>
         `;
         }).join('');
 
-        this.setListStateMeta('ready', '', items.length, null, null);
-        this.updateSelectionMeta(items);
+        this.setListStateMeta('ready', '', safeItems.length, null, null);
+        this.updateSelectionMeta(safeItems);
     },
 
     async openDeepLinkedNoticeIfNeeded(items, requestId) {
@@ -313,7 +316,11 @@ const NoticeList = {
             try {
                 const res = await fetch(`/api/admin/settings/notices/${noticeNo}`);
                 if (res.ok && requestId === this.listRequestId) {
-                    this.openEditModal(await res.json());
+                    const data = await res.json();
+                    if (this.normalizeOptionalPositiveNumber(data?.noticeNo) !== noticeNo) {
+                        throw new Error('요청한 공지와 상세 응답 정보가 일치하지 않습니다.');
+                    }
+                    this.openEditModal(data);
                 }
             } catch (error) {
                 console.error('딥링크 공지 상세 로드 실패:', error);
@@ -325,15 +332,18 @@ const NoticeList = {
     },
 
     renderMeta(data) {
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
+        const resultMeta = data?.resultMeta && typeof data.resultMeta === 'object' ? data.resultMeta : null;
         CommonJS.renderListMeta({
             metaTextId: 'noticeMetaText',
             filterMetaId: 'noticeFilterMeta',
             resultMetaId: 'noticeResultMeta',
             pageMetaId: 'noticePageMeta',
-            resultLabel: data.resultMeta?.resultLabel || `${data.totalElements || 0}건 조회`,
-            filterCount: data.resultMeta?.appliedFilterCount ?? 0,
-            querySignature: data.resultMeta?.querySignature || '고정 우선 최신순',
-            pageInfoLabel: data.resultMeta?.pageInfoLabel || '',
+            resultLabel: resultMeta?.resultLabel || `${this.formatCount(totalElements)}건 조회`,
+            filterCount: this.normalizeNonNegativeInteger(resultMeta?.appliedFilterCount),
+            querySignature: resultMeta?.querySignature || '고정 우선 최신순',
+            pageInfoLabel: resultMeta?.pageInfoLabel || '',
             filterPrefix: '필터',
             defaultResultText: '결과 메타 없음',
             defaultPageText: '페이지 메타 없음'
@@ -341,13 +351,13 @@ const NoticeList = {
         this.setListStateMeta(
             'ready',
             '',
-            (data.items || []).length,
-            data.totalElements || 0,
-            data.resultMeta?.querySignature || ''
+            items.length,
+            totalElements,
+            resultMeta?.querySignature || ''
         );
         const metaEl = document.getElementById('noticeListStateMeta');
         if (metaEl) {
-            metaEl.dataset.pageInfoLabel = data.resultMeta?.pageInfoLabel || '';
+            metaEl.dataset.pageInfoLabel = resultMeta?.pageInfoLabel || '';
             metaEl.dataset.sourceContext = this.state.source || '';
         }
         CommonJS.renderSourceContextNotice({ noticeId: 'noticeSourceContextNotice', source: this.state.source });
@@ -443,19 +453,21 @@ const NoticeList = {
             return;
         }
 
-        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
-        liveCountEl.innerText = Number(stats.liveCount || 0).toLocaleString();
-        scheduledCountEl.innerText = Number(stats.scheduledCount || 0).toLocaleString();
-        endedCountEl.innerText = Number(stats.endedCount || 0).toLocaleString();
-        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
-        pinnedCountEl.innerText = Number(stats.pinnedCount || 0).toLocaleString();
+        if (totalCountEl) totalCountEl.innerText = this.formatCount(stats.totalCount);
+        if (liveCountEl) liveCountEl.innerText = this.formatCount(stats.liveCount);
+        if (scheduledCountEl) scheduledCountEl.innerText = this.formatCount(stats.scheduledCount);
+        if (endedCountEl) endedCountEl.innerText = this.formatCount(stats.endedCount);
+        if (inactiveCountEl) inactiveCountEl.innerText = this.formatCount(stats.inactiveCount);
+        if (pinnedCountEl) pinnedCountEl.innerText = this.formatCount(stats.pinnedCount);
 
-        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        if (contextTextEl) contextTextEl.innerText = `${stats.contextLabel || '현재 탐색 문맥'} · ${stats.querySignature || '고정 우선 최신순'}`;
         const usingQuickFilter = !!this.state.visibilityStatus || !!this.state.isPinned;
-        noticeEl.innerText = usingQuickFilter
-            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
-            : '카드 수치는 현재 탐색 문맥 기준입니다.';
-        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        if (noticeEl) {
+            noticeEl.innerText = usingQuickFilter
+                ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+                : '카드 수치는 현재 탐색 문맥 기준입니다.';
+            noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        }
         const guideTextEl = document.getElementById('noticeSummaryGuideText');
         if (guideTextEl) {
             guideTextEl.textContent = this.resolveSummaryGuideText();
@@ -466,18 +478,27 @@ const NoticeList = {
         const paginationEl = document.getElementById('noticePagination');
         if (!paginationEl) return;
 
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const currentPage = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
             return;
         }
 
-        paginationEl.innerHTML = Array.from({ length: totalPages }, (_, index) => `
-            <li class="page-item ${index === currentPage ? 'active' : ''}">
-                <button type="button" class="page-link" data-role="go-notice-page" data-page="${index}">${index + 1}</button>
-            </li>
-        `).join('');
+        const pageItems = [];
+        let previousPage = -1;
+        this.buildPaginationPages(currentPage, totalPages).forEach((page) => {
+            if (previousPage >= 0 && page - previousPage > 1) {
+                pageItems.push('<li class="page-item disabled" aria-hidden="true"><span class="page-link">...</span></li>');
+            }
+            pageItems.push(`
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-notice-page" data-page="${page}">${page + 1}</button>
+                </li>
+            `);
+            previousPage = page;
+        });
+        paginationEl.innerHTML = pageItems.join('');
 
         paginationEl.querySelectorAll('[data-role="go-notice-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
@@ -607,7 +628,7 @@ const NoticeList = {
         document.getElementById('noticeIsActive').value = 'Y';
         document.getElementById('noticeIsPinned').value = 'N';
         document.getElementById('noticeModalTitle').innerText = '운영 공지 등록';
-        this.modal.show();
+        this.modal?.show();
     },
 
     async openEditModal(item) {
@@ -615,15 +636,20 @@ const NoticeList = {
             await CommonJS.alert(CommonJS.getAdminWriteBlockedReason('운영 공지 등록 및 수정'), '알림', 'warning');
             return;
         }
-        document.getElementById('noticeNo').value = item.noticeNo;
-        document.getElementById('noticeTitle').value = item.title;
-        document.getElementById('noticeContent').value = item.content;
-        document.getElementById('noticeIsActive').value = item.isActive;
-        document.getElementById('noticeIsPinned').value = item.isPinned;
+        const noticeNo = this.normalizeOptionalPositiveNumber(item?.noticeNo);
+        if (noticeNo == null) {
+            await CommonJS.alert('수정할 운영 공지 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        document.getElementById('noticeNo').value = noticeNo;
+        document.getElementById('noticeTitle').value = item.title || '';
+        document.getElementById('noticeContent').value = item.content || '';
+        document.getElementById('noticeIsActive').value = this.normalizeYnFilterValue(item.isActive) || 'Y';
+        document.getElementById('noticeIsPinned').value = this.normalizeYnFilterValue(item.isPinned) || 'N';
         document.getElementById('noticeStartDtm').value = this.toDateTimeLocalValue(item.startDtm);
         document.getElementById('noticeEndDtm').value = this.toDateTimeLocalValue(item.endDtm);
         document.getElementById('noticeModalTitle').innerText = '운영 공지 수정';
-        this.modal.show();
+        this.modal?.show();
     },
 
     async saveNotice() {
@@ -636,17 +662,21 @@ const NoticeList = {
         }
 
         const formData = {
-            noticeNo: document.getElementById('noticeNo').value || null,
-            title: document.getElementById('noticeTitle').value.trim(),
-            content: document.getElementById('noticeContent').value.trim(),
-            isActive: document.getElementById('noticeIsActive').value,
-            isPinned: document.getElementById('noticeIsPinned').value,
+            noticeNo: this.normalizeOptionalPositiveNumber(document.getElementById('noticeNo').value),
+            title: CommonJS.normalizeOptionalText(document.getElementById('noticeTitle').value),
+            content: CommonJS.normalizeOptionalText(document.getElementById('noticeContent').value),
+            isActive: this.normalizeYnFilterValue(document.getElementById('noticeIsActive').value),
+            isPinned: this.normalizeYnFilterValue(document.getElementById('noticeIsPinned').value),
             startDtm: this.toNullableDateTime(document.getElementById('noticeStartDtm').value),
             endDtm: this.toNullableDateTime(document.getElementById('noticeEndDtm').value)
         };
 
         if (!formData.title || !formData.content) {
             await CommonJS.alert('공지 제목과 내용을 입력하세요.', '알림', 'warning');
+            return;
+        }
+        if (!formData.isActive || !formData.isPinned) {
+            await CommonJS.alert('공지 활성 및 고정 상태 값이 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         if (!this.validateNoticePeriod(formData.startDtm, formData.endDtm)) {
@@ -665,10 +695,13 @@ const NoticeList = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지를 저장하지 못했습니다.'));
 
             const savedNotice = await res.json();
-            const savedNoticeNo = Number(savedNotice.noticeNo || formData.noticeNo || 0) || null;
+            const savedNoticeNo = this.normalizeOptionalPositiveNumber(savedNotice?.noticeNo || formData.noticeNo);
+            if (savedNoticeNo == null) {
+                throw new Error('저장된 공지 번호를 확인할 수 없습니다.');
+            }
             this.setLastActionMeta('save-notice', 'success', formData.noticeNo ? '목록 수정' : '목록 등록', savedNoticeNo);
 
-            this.modal.hide();
+            this.modal?.hide();
             await this.getList();
             await CommonJS.alert('운영 공지가 저장되었습니다.', '성공', 'success');
         } catch (err) {
@@ -765,6 +798,7 @@ const NoticeList = {
                 method: 'DELETE'
             });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '운영 공지를 삭제하지 못했습니다.'));
+            this.selectedNoticeNos.delete(noticeNo);
             this.setLastActionMeta('delete-notice', 'success', '목록 삭제', noticeNo);
             await this.getList();
             await CommonJS.alert('운영 공지가 삭제되었습니다.', '성공', 'success');
@@ -777,7 +811,8 @@ const NoticeList = {
     },
 
     toNullableDateTime(value) {
-        return value ? `${value}:00` : null;
+        const normalized = this.normalizeDateTimeLocal(value);
+        return normalized ? `${normalized}:00` : null;
     },
 
     validateNoticePeriod(startDtm, endDtm) {
@@ -788,10 +823,7 @@ const NoticeList = {
     },
 
     toDateTimeLocalValue(value) {
-        if (!value || value === '-') {
-            return '';
-        }
-        return value.substring(0, 16);
+        return this.normalizeDateTimeLocal(value);
     },
 
     applyStatFilter(type) {
@@ -949,7 +981,7 @@ const NoticeList = {
             document.getElementById('bulkNoticeIsActive').value = '';
             document.getElementById('bulkNoticeIsPinned').value = '';
             await this.getList();
-            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 유지되었습니다.`, '성공', 'success');
+            await CommonJS.alert(`총 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.updatedCount)}건 변경, ${this.formatCount(result.unchangedCount)}건 유지되었습니다.`, '성공', 'success');
         } catch (err) {
             this.setLastActionMeta('bulk-operate', 'error', '목록 일괄 변경');
             await CommonJS.alert(err.message, '오류', 'error');
@@ -989,7 +1021,7 @@ const NoticeList = {
             this.setLastActionMeta('bulk-delete', 'success', '목록 일괄 삭제');
             this.clearSelection();
             await this.getList();
-            await CommonJS.alert(`총 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.missingCount}건은 이미 없었습니다.`, '성공', 'success');
+            await CommonJS.alert(`총 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.deletedCount)}건 삭제, ${this.formatCount(result.missingCount)}건은 이미 없었습니다.`, '성공', 'success');
         } catch (err) {
             this.setLastActionMeta('bulk-delete', 'error', '목록 일괄 삭제');
             await CommonJS.alert(err.message, '오류', 'error');
@@ -1154,7 +1186,7 @@ const NoticeList = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 10;
+        return [10, 20, 50].includes(size) ? size : 10;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -1179,6 +1211,29 @@ const NoticeList = {
 
     normalizeBulkYnActionValue(value) {
         return this.isValidYn(value) ? value : null;
+    },
+
+    normalizeDateTimeLocal(value) {
+        const text = String(value || '');
+        return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text) ? text.slice(0, 16) : '';
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        if (totalPages <= 0) return [];
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right);
     },
 
     isPositiveNumber(value) {

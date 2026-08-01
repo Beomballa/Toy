@@ -347,3 +347,18 @@ test("order list validates rows, summaries, dates, counts, and pagination", () =
     assert.match(source, /this\.formatCount\(totalElements\)/);
     assert.match(source, /Number\.isFinite\(date\.getTime\(\)\)/);
 });
+
+test("notice list validates rows, deep links, modal values, counts, and pagination", () => {
+    const source = readViewScript("notice-list.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(data\?\.noticeNo\) !== noticeNo/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.noticeNo\)/);
+    assert.match(source, /this\.normalizeYnFilterValue\(item\.isActive\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(savedNotice\?\.noticeNo/);
+    assert.match(source, /this\.selectedNoticeNos\.delete\(noticeNo\)/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
+    assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
+});

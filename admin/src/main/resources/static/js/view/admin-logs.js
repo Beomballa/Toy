@@ -2,6 +2,7 @@ const AdminLogPage = {
     initialized: false,
     modal: null,
     listRequestId: 0,
+    detailRequestId: 0,
     isOpeningDetail: false,
     isExporting: false,
     state: {
@@ -15,7 +16,8 @@ const AdminLogPage = {
     init() {
         if (this.initialized) return;
         this.initialized = true;
-        this.modal = new bootstrap.Modal(document.getElementById('logDetailModal'));
+        const modalEl = document.getElementById('logDetailModal');
+        if (modalEl) this.modal = new bootstrap.Modal(modalEl);
         this.bindEvents();
         this.readStateFromUrl();
         CommonJS.bindMainLogoNavigation(this.state.returnTo || '/admin/settings/logs');
@@ -61,6 +63,10 @@ const AdminLogPage = {
                 this.openDetail(logNo);
             }
         });
+        document.getElementById('logDetailModal')?.addEventListener('hidden.bs.modal', () => {
+            this.detailRequestId++;
+            this.isOpeningDetail = false;
+        });
         ['logAdminNo', 'logAdminKeyword', 'logActionType', 'logTargetId', 'logStartDate', 'logEndDate'].forEach((id) => {
             document.getElementById(id)?.addEventListener('keydown', (event) => {
                 if (event.key === 'Enter') {
@@ -84,8 +90,8 @@ const AdminLogPage = {
         document.getElementById('logAdminKeyword').value = CommonJS.normalizeOptionalText(params.get('adminKeyword')) || '';
         document.getElementById('logActionType').value = this.normalizeActionType(params.get('actionType'));
         document.getElementById('logTargetId').value = this.normalizeOptionalPositiveNumber(params.get('targetId'))?.toString() || '';
-        document.getElementById('logStartDate').value = params.get('startDate') || '';
-        document.getElementById('logEndDate').value = params.get('endDate') || '';
+        document.getElementById('logStartDate').value = this.normalizeDateInput(params.get('startDate'));
+        document.getElementById('logEndDate').value = this.normalizeDateInput(params.get('endDate'));
         this.state.logNo = this.normalizeOptionalPositiveNumber(params.get('logNo'))?.toString() || '';
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
@@ -174,11 +180,12 @@ const AdminLogPage = {
             if (requestId !== this.listRequestId) {
                 return;
             }
+            const items = Array.isArray(data.items) ? data.items : [];
             this.renderSummary(data.summary);
-            this.renderList(data.items || []);
+            this.renderList(items);
             this.renderMeta(data);
             this.renderPagination(data);
-            await this.openDeepLinkedLogIfNeeded(data.items || []);
+            await this.openDeepLinkedLogIfNeeded(items);
         } catch (err) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -205,7 +212,12 @@ const AdminLogPage = {
 
     renderList(items) {
         const tbody = document.getElementById('logListBody');
-        if (!items.length) {
+        if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const logNo = this.normalizeOptionalPositiveNumber(item?.logNo);
+            return logNo == null ? [] : [{...item, logNo}];
+        });
+        if (safeItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -219,8 +231,8 @@ const AdminLogPage = {
             `;
             return;
         }
-        tbody.innerHTML = items.map(item => {
-            const logNo = this.normalizeOptionalPositiveNumber(item.logNo);
+        tbody.innerHTML = safeItems.map(item => {
+            const logNo = item.logNo;
             const targetPath = this.buildTargetPath(item.targetPath);
             const targetLabel = CommonJS.escapeHtml(item.targetLabel || '-');
             return `
@@ -261,7 +273,10 @@ const AdminLogPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+        const rangeStart = this.normalizeNonNegativeInteger(data?.rangeStart);
+        const rangeEnd = this.normalizeNonNegativeInteger(data?.rangeEnd);
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
+        this.setMetaText(data?.pageInfoLabel || `${this.formatCount(rangeStart)}-${this.formatCount(rangeEnd)} / ${this.formatCount(totalElements)}건`);
         const filterMeta = document.getElementById('logFilterMeta');
         if (filterMeta) {
             filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
@@ -277,30 +292,35 @@ const AdminLogPage = {
         if (!pagination) {
             return;
         }
-        if (!data.totalPages) {
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const currentPage = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
+        if (totalPages <= 1) {
             pagination.innerHTML = '';
             return;
         }
 
-        let html = '';
-        for (let i = 0; i < data.totalPages; i += 1) {
-            html += `
-                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <button type="button" class="page-link" data-role="go-log-page" data-page="${i}">${i + 1}</button>
+        const items = [];
+        let previousPage = -1;
+        this.buildPaginationPages(currentPage, totalPages).forEach((page) => {
+            if (previousPage >= 0 && page - previousPage > 1) {
+                items.push('<li class="page-item disabled" aria-hidden="true"><span class="page-link">...</span></li>');
+            }
+            items.push(`
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-log-page" data-page="${page}">${page + 1}</button>
                 </li>
-            `;
-        }
-        pagination.innerHTML = html;
+            `);
+            previousPage = page;
+        });
+        pagination.innerHTML = items.join('');
         pagination.querySelectorAll('[data-role="go-log-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
     },
 
     async openDetail(logNo) {
-        if (this.isOpeningDetail) {
-            return;
-        }
-        if (this.normalizeOptionalPositiveNumber(logNo) == null) {
+        const normalizedLogNo = this.normalizeOptionalPositiveNumber(logNo);
+        if (normalizedLogNo == null) {
             await CommonJS.alert('상세 로그 번호가 올바르지 않습니다.', '알림', 'warning');
             return;
         }
@@ -311,21 +331,27 @@ const AdminLogPage = {
                 <p>선택한 활동 로그의 상세 정보와 이동 경로를 정리하고 있습니다.</p>
             </div>
         `;
-        this.modal.show();
+        const requestId = ++this.detailRequestId;
+        this.modal?.show();
         try {
             this.isOpeningDetail = true;
-            const res = await fetch(`/api/admin/logs/get?no=${logNo}`);
+            const res = await fetch(`/api/admin/logs/get?no=${normalizedLogNo}`);
             if (!res.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(res, '상세 로그를 불러오지 못했습니다.'));
             }
             const data = await res.json();
+            if (requestId !== this.detailRequestId) return;
+            const responseLogNo = this.normalizeOptionalPositiveNumber(data?.logNo);
+            if (responseLogNo !== normalizedLogNo) {
+                throw new Error('요청한 로그와 상세 응답 정보가 일치하지 않습니다.');
+            }
             const targetPath = this.buildTargetPath(data.targetPath);
             const targetLabel = CommonJS.escapeHtml(data.targetLabel || '-');
             document.getElementById('logDetailBody').innerHTML = `
                 <div class="admin-modal-detail-grid">
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">로그 번호</div>
-                        <div class="admin-modal-detail-value">${this.normalizeOptionalPositiveNumber(data.logNo) || '-'}</div>
+                        <div class="admin-modal-detail-value">${responseLogNo}</div>
                     </div>
                     <div class="admin-modal-detail-item admin-modal-detail-item--span-6">
                         <div class="admin-modal-detail-label">작업 일시</div>
@@ -349,10 +375,11 @@ const AdminLogPage = {
                     </div>
                 </div>
             `;
-            this.state.logNo = String(logNo);
-            this.highlightLogRow(logNo);
+            this.state.logNo = String(normalizedLogNo);
+            this.highlightLogRow(normalizedLogNo);
             history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
         } catch (err) {
+            if (requestId !== this.detailRequestId) return;
             document.getElementById('logDetailBody').innerHTML = `
                 <div class="product-empty-state py-4">
                     <div class="product-empty-state__icon text-danger">
@@ -363,7 +390,7 @@ const AdminLogPage = {
                 </div>
             `;
         } finally {
-            this.isOpeningDetail = false;
+            if (requestId === this.detailRequestId) this.isOpeningDetail = false;
         }
     },
 
@@ -390,7 +417,7 @@ const AdminLogPage = {
         if (!el) {
             return;
         }
-        el.textContent = Number(value || 0).toLocaleString();
+        el.textContent = this.formatCount(value);
     },
 
     goPage(page) {
@@ -548,7 +575,8 @@ const AdminLogPage = {
             this.state.logNo = '';
             return;
         }
-        const hasLog = items.some((item) => item.logNo === logNo);
+        const hasLog = (Array.isArray(items) ? items : [])
+            .some((item) => this.normalizeOptionalPositiveNumber(item?.logNo) === logNo);
         if (!hasLog || this.isOpeningDetail) {
             return;
         }
@@ -647,6 +675,8 @@ const AdminLogPage = {
         const targetId = document.getElementById('logTargetId')?.value.trim() || '';
         const startDate = document.getElementById('logStartDate')?.value || '';
         const endDate = document.getElementById('logEndDate')?.value || '';
+        const adminKeyword = CommonJS.normalizeOptionalText(document.getElementById('logAdminKeyword')?.value) || '';
+        const actionType = CommonJS.normalizeOptionalText(document.getElementById('logActionType')?.value) || '';
         this.state.size = this.normalizePageSize(document.getElementById('logPageSize')?.value);
 
         if (adminNo && this.normalizeOptionalPositiveNumber(adminNo) == null) {
@@ -655,6 +685,18 @@ const AdminLogPage = {
         }
         if (targetId && this.normalizeOptionalPositiveNumber(targetId) == null) {
             void CommonJS.alert('대상 ID는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (adminKeyword.length > 100) {
+            void CommonJS.alert('관리자 검색어는 100자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
+        if (actionType.length > 60) {
+            void CommonJS.alert('작업 종류는 60자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
+        if ((startDate && !this.normalizeDateInput(startDate)) || (endDate && !this.normalizeDateInput(endDate))) {
+            void CommonJS.alert('조회 기간은 올바른 날짜 형식이어야 합니다.', '알림', 'warning');
             return false;
         }
         if (startDate && endDate && startDate > endDate) {
@@ -671,7 +713,7 @@ const AdminLogPage = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 20;
+        return [20, 50, 100].includes(size) ? size : 20;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -688,6 +730,30 @@ const AdminLogPage = {
 
     normalizeDatePreset(value) {
         return ['today', '7days', '30days', 'clear'].includes(value) ? value : 'today';
+    },
+
+    normalizeDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const date = new Date(`${text}T00:00:00`);
+        return Number.isFinite(date.getTime()) && this.resolveDateLabel(date) === text ? text : '';
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right);
     }
 };
 

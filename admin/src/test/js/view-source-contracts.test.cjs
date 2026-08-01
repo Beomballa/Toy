@@ -301,3 +301,19 @@ test("member management validates rows, detail identity, bulk state, and paginat
     assert.match(source, /\[20, 50, 100\]\.includes\(size\)/);
     assert.match(source, /this\.normalizeNonNegativeInteger\(value\)/);
 });
+
+test("activity logs validate rows, detail identity, dates, counts, and pagination", () => {
+    const source = readViewScript("admin-logs.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /responseLogNo !== normalizedLogNo/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.logNo\) === logNo/);
+    assert.match(source, /this\.normalizeDateInput\(params\.get\('startDate'\)\)/);
+    assert.match(source, /adminKeyword\.length > 100/);
+    assert.match(source, /actionType\.length > 60/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[20, 50, 100\]\.includes\(size\)/);
+    assert.match(source, /this\.formatCount\(value\)/);
+});

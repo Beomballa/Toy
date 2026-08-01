@@ -125,8 +125,15 @@ const TaskDetailPage = {
             if (requestId !== this.detailRequestId) {
                 return;
             }
-            this.state.currentDetail = data;
-            this.renderDetail(data);
+            if (this.normalizePositiveNumber(data?.taskNo) !== this.state.taskNo) {
+                throw new Error('요청한 운영 작업과 상세 응답이 일치하지 않습니다.');
+            }
+            if (!this.isValidTaskStatus(data.status) || !this.isValidTaskPriority(data.priority) || !this.isValidYn(data.isPinned)) {
+                throw new Error('운영 작업 상세의 상태 정보가 올바르지 않습니다.');
+            }
+            const detail = this.normalizeTaskDetail(data);
+            this.state.currentDetail = detail;
+            this.renderDetail(detail);
         } catch (error) {
             if (requestId !== this.detailRequestId) {
                 return;
@@ -230,7 +237,10 @@ const TaskDetailPage = {
         const metaEl = document.getElementById('taskAssignmentRecommendationMeta');
         if (!listEl || !metaEl) return;
 
-        if (!items.length) {
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizePositiveNumber(item?.adminNo))
+            : [];
+        if (!validItems.length) {
             listEl.innerHTML = `
                 <div class="col-12">
                     ${this.buildStateMarkup('empty', '추천 가능한 담당자가 없습니다.', '현재 작업 조건으로는 추천할 담당자 후보를 계산하지 못했습니다.', 'fa-user-slash')}
@@ -240,7 +250,7 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.flatMap((item) => {
+        listEl.innerHTML = validItems.flatMap((item) => {
             const adminNo = this.normalizePositiveNumber(item.adminNo);
             if (!adminNo) return [];
             return [`
@@ -248,7 +258,7 @@ const TaskDetailPage = {
                 <div class="border rounded-3 p-3 h-100">
                     <div class="fw-bold mb-1">${this.escapeHtml(item.adminName)}</div>
                     <div class="small text-muted mb-2">${this.escapeHtml(item.reasonLabel)}</div>
-                    <div class="small text-dark">전체 ${Number(item.totalCount || 0).toLocaleString()}건 · 진행중 ${Number(item.inProgressCount || 0).toLocaleString()}건 · 기한 초과 ${Number(item.overdueCount || 0).toLocaleString()}건</div>
+                    <div class="small text-dark">전체 ${this.formatCount(item.totalCount)}건 · 진행중 ${this.formatCount(item.inProgressCount)}건 · 기한 초과 ${this.formatCount(item.overdueCount)}건</div>
                     <div class="mt-3">
                         <button type="button" class="btn btn-sm btn-outline-dark" data-role="apply-task-recommendation" data-admin-no="${adminNo}">이 담당자로 배정</button>
                     </div>
@@ -256,7 +266,7 @@ const TaskDetailPage = {
             </div>
         `];
         }).join('');
-        metaEl.textContent = `추천 후보 ${items.length}명`;
+        metaEl.textContent = `추천 후보 ${validItems.length}명`;
     },
 
     async saveDetail() {
@@ -604,7 +614,10 @@ const TaskDetailPage = {
         const metaEl = document.getElementById('taskDetailHistoryStateMeta');
         if (!listEl) return;
 
-        if (!items.length) {
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizePositiveNumber(item?.logNo))
+            : [];
+        if (!validItems.length) {
             listEl.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
@@ -624,7 +637,7 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => {
+        listEl.innerHTML = validItems.map((item) => {
             const historyPath = this.buildHistoryPathFromBase(item.historyPath);
             const logPath = this.buildLogPathFromBase(item.activityLogPath);
             return `
@@ -645,13 +658,13 @@ const TaskDetailPage = {
 
         const historyMetaText = document.getElementById('taskDetailHistoryMeta');
         if (historyMetaText) {
-            historyMetaText.textContent = `최근 로그 ${items.length}건`;
+            historyMetaText.textContent = `최근 로그 ${validItems.length}건`;
         }
 
         if (metaEl) {
             metaEl.dataset.listState = 'ready';
             metaEl.dataset.stateMessage = '';
-            metaEl.dataset.visibleCount = String(items.length);
+            metaEl.dataset.visibleCount = String(validItems.length);
         }
     },
 
@@ -661,7 +674,10 @@ const TaskDetailPage = {
         const metaTextEl = document.getElementById('taskCommentMeta');
         if (!listEl) return;
 
-        if (!items.length) {
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizePositiveNumber(item?.commentNo))
+            : [];
+        if (!validItems.length) {
             listEl.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-note-sticky product-empty-state-icon"></i>
@@ -680,7 +696,7 @@ const TaskDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.flatMap((item) => {
+        listEl.innerHTML = validItems.flatMap((item) => {
             const commentNo = this.normalizePositiveNumber(item.commentNo);
             if (!commentNo) return [];
             const adminNo = this.normalizePositiveNumber(item.adminNo);
@@ -704,10 +720,10 @@ const TaskDetailPage = {
         if (metaEl) {
             metaEl.dataset.listState = 'ready';
             metaEl.dataset.stateMessage = '';
-            metaEl.dataset.visibleCount = String(items.length);
+            metaEl.dataset.visibleCount = String(validItems.length);
         }
         if (metaTextEl) {
-            metaTextEl.textContent = `최근 메모 ${items.length}건`;
+            metaTextEl.textContent = `최근 메모 ${validItems.length}건`;
         }
     },
 
@@ -836,6 +852,33 @@ const TaskDetailPage = {
         return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
     },
 
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    normalizeTaskDetail(data) {
+        return {
+            ...data,
+            assigneeOptions: Array.isArray(data.assigneeOptions)
+                ? data.assigneeOptions.filter((item) => this.normalizePositiveNumber(item?.adminNo))
+                : [],
+            assignmentRecommendations: Array.isArray(data.assignmentRecommendations)
+                ? data.assignmentRecommendations.filter((item) => this.normalizePositiveNumber(item?.adminNo))
+                : [],
+            recentHistories: Array.isArray(data.recentHistories)
+                ? data.recentHistories.filter((item) => this.normalizePositiveNumber(item?.logNo))
+                : [],
+            comments: Array.isArray(data.comments)
+                ? data.comments.filter((item) => this.normalizePositiveNumber(item?.commentNo))
+                : []
+        };
+    },
+
     escapeHtml(value) {
         return String(value ?? '')
             .replaceAll('&', '&amp;')
@@ -869,19 +912,23 @@ const TaskDetailPage = {
             this.isApplyingRecommendation = true;
             this.setBusyButton(button, true, '배정 중...');
             this.setCollectionButtonsDisabled('[data-role="apply-task-recommendation"]', true);
+            const payload = {
+                taskNo: detail.taskNo,
+                title: detail.title,
+                description: detail.description,
+                status: detail.status,
+                priority: detail.priority,
+                assigneeAdminNo: adminNo,
+                dueDate: detail.dueDate || null,
+                isPinned: detail.isPinned
+            };
+            if (!this.validateTaskPayload(payload)) {
+                throw new Error('추천 담당자 배정 요청값이 올바르지 않습니다.');
+            }
             const response = await fetch('/api/admin/settings/tasks/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    taskNo: detail.taskNo,
-                    title: detail.title,
-                    description: detail.description,
-                    status: detail.status,
-                    priority: detail.priority,
-                    assigneeAdminNo: adminNo,
-                    dueDate: detail.dueDate || null,
-                    isPinned: detail.isPinned
-                })
+                body: JSON.stringify(payload)
             });
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '추천 담당자 배정에 실패했습니다.'));
@@ -907,6 +954,11 @@ const TaskDetailPage = {
         if (!this.isValidTaskNo(payload.taskNo)) {
             return false;
         }
+        const title = CommonJS.normalizeRequiredText(payload.title || '');
+        const description = CommonJS.normalizeOptionalText(payload.description || '') || '';
+        if (!title || title.length > 200 || description.length > 5000) {
+            return false;
+        }
         if (!this.isValidTaskStatus(payload.status)) {
             return false;
         }
@@ -919,10 +971,19 @@ const TaskDetailPage = {
         if (payload.assigneeAdminNo != null && (!Number.isFinite(payload.assigneeAdminNo) || payload.assigneeAdminNo <= 0)) {
             return false;
         }
-        if (payload.dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(payload.dueDate)) {
+        if (payload.dueDate && !this.isValidDateInput(payload.dueDate)) {
             return false;
         }
         return true;
+    },
+
+    isValidDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+        const date = new Date(`${text}T00:00:00`);
+        if (!Number.isFinite(date.getTime())) return false;
+        const normalized = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return normalized === text;
     },
 
     isValidTaskNo(taskNo) {

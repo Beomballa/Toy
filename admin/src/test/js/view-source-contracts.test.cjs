@@ -156,6 +156,21 @@ test("notice and task details validate navigation and latest responses", () => {
     assert.match(noticeSource, /this\.buildHistoryPathFromBase\(item\.historyPath\)/);
 });
 
+test("task detail validates identity, state, collections, counts, and save payload", () => {
+    const source = readViewScript("task-get.js");
+
+    assert.match(source, /this\.normalizePositiveNumber\(data\?\.taskNo\) !== this\.state\.taskNo/);
+    assert.match(source, /!this\.isValidTaskStatus\(data\.status\)/);
+    assert.match(source, /this\.normalizeTaskDetail\(data\)/);
+    assert.match(source, /Array\.isArray\(data\.assignmentRecommendations\)/);
+    assert.match(source, /this\.normalizePositiveNumber\(item\?\.logNo\)/);
+    assert.match(source, /this\.normalizePositiveNumber\(item\?\.commentNo\)/);
+    assert.match(source, /this\.formatCount\(item\.totalCount\)/);
+    assert.match(source, /title\.length > 200/);
+    assert.match(source, /description\.length > 5000/);
+    assert.match(source, /this\.validateTaskPayload\(payload\)/);
+});
+
 test("order detail validates the latest response, items, and histories", () => {
     const source = readViewScript("order-get.js");
 

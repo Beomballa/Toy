@@ -17,6 +17,7 @@ const BannerList = {
     exportInFlight: false,
     bulkInFlight: false,
     listRequestId: 0,
+    detailRequestId: 0,
     selectedBannerNos: new Set(),
     bannerItemsByNo: new Map(),
     toggleInFlight: new Set(),
@@ -193,11 +194,12 @@ const BannerList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderList(data.items || []);
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderStats(data.bannerStats);
             this.renderMeta(data);
             this.renderPagination(data);
-            await this.openDeepLinkedBannerIfNeeded(data.items || []);
+            await this.openDeepLinkedBannerIfNeeded(items);
         } catch (err) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -216,13 +218,15 @@ const BannerList = {
     renderList(items) {
         const tbody = document.getElementById('bannerListBody');
         if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const bannerNo = this.normalizeOptionalPositiveNumber(item?.bannerNo);
+            return bannerNo == null ? [] : [{...item, bannerNo}];
+        });
         this.bannerItemsByNo = new Map(
-            (items || [])
-                .map((item) => [this.normalizeOptionalPositiveNumber(item.bannerNo), item])
-                .filter(([bannerNo]) => bannerNo != null)
+            safeItems.map((item) => [item.bannerNo, item])
         );
 
-        if (!items || items.length === 0) {
+        if (safeItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -239,8 +243,8 @@ const BannerList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => {
-            const bannerNo = this.normalizeOptionalPositiveNumber(item.bannerNo);
+        tbody.innerHTML = safeItems.map(item => {
+            const bannerNo = item.bannerNo;
             const imageUrl = CommonJS.escapeHtml(CommonJS.normalizeImageSource(item.imageUrl));
             const title = this.escapeHtml(item.title || '-');
             const targetUrl = this.escapeHtml(item.targetUrl || '이동 링크 없음');
@@ -252,7 +256,7 @@ const BannerList = {
                 <td class="ps-4">
                     <input type="checkbox" data-role="select-banner" data-banner-no="${bannerNo || ''}" ${this.selectedBannerNos.has(bannerNo) ? 'checked' : ''}>
                 </td>
-                <td class="ps-4 text-center fw-bold">${Number(item.sortOrder || 0).toLocaleString()}</td>
+                <td class="ps-4 text-center fw-bold">${this.formatCount(item.sortOrder)}</td>
                 <td>
                     <img src="${imageUrl}" class="banner-preview-img" alt="${title}">
                 </td>
@@ -271,7 +275,7 @@ const BannerList = {
                 </td>
                 <td class="text-end pe-4">
                     <button class="btn btn-sm btn-outline-primary me-1" data-role="edit-banner" data-banner-no="${bannerNo || ''}">수정</button>
-                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-banner" data-banner-no="${bannerNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                    <button class="btn btn-sm btn-outline-dark me-1" data-role="toggle-banner" data-banner-no="${bannerNo || ''}" data-next-active="${isActive ? 'N' : 'Y'}" ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상태를 변경할 수 없습니다."' : ''}>${isActive ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-banner" data-banner-no="${bannerNo || ''}">삭제</button>
                 </td>
             </tr>
@@ -280,20 +284,22 @@ const BannerList = {
         tbody.querySelectorAll('.banner-preview-img').forEach((image) => {
             image.addEventListener('error', () => CommonJS.handleImageError(image), {once: true});
         });
-        this.setListStateMeta('ready', '', items.length, null, null);
-        this.updateSelectionMeta(items);
+        this.setListStateMeta('ready', '', safeItems.length, null, null);
+        this.updateSelectionMeta(safeItems);
     },
 
     renderMeta(data) {
-        document.getElementById('bannerMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || (data.items || []).length}건 조회`;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
+        document.getElementById('bannerMetaText').textContent = data?.resultMeta?.resultLabel || `${this.formatCount(totalElements || items.length)}건 조회`;
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '정렬 순서 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
         this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
         this.setListStateMeta(
             'ready',
             '',
-            (data.items || []).length,
-            data.totalElements || 0,
+            items.length,
+            totalElements,
             data.resultMeta?.querySignature || ''
         );
         const metaEl = document.getElementById('bannerListStateMeta');
@@ -325,18 +331,20 @@ const BannerList = {
             return;
         }
 
-        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
-        liveCountEl.innerText = Number(stats.liveCount || 0).toLocaleString();
-        scheduledCountEl.innerText = Number(stats.scheduledCount || 0).toLocaleString();
-        endedCountEl.innerText = Number(stats.endedCount || 0).toLocaleString();
-        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
+        if (totalCountEl) totalCountEl.innerText = this.formatCount(stats.totalCount);
+        if (liveCountEl) liveCountEl.innerText = this.formatCount(stats.liveCount);
+        if (scheduledCountEl) scheduledCountEl.innerText = this.formatCount(stats.scheduledCount);
+        if (endedCountEl) endedCountEl.innerText = this.formatCount(stats.endedCount);
+        if (inactiveCountEl) inactiveCountEl.innerText = this.formatCount(stats.inactiveCount);
 
-        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        if (contextTextEl) contextTextEl.innerText = `${stats.contextLabel || '현재 탐색 문맥'} · ${stats.querySignature || '정렬 순서 기준'}`;
         const usingQuickFilter = !!this.state.exposureStatus;
-        noticeEl.innerText = usingQuickFilter
-            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
-            : '카드 수치는 현재 탐색 문맥 기준입니다.';
-        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        if (noticeEl) {
+            noticeEl.innerText = usingQuickFilter
+                ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+                : '카드 수치는 현재 탐색 문맥 기준입니다.';
+            noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        }
     },
 
     renderPagination(data) {
@@ -345,8 +353,8 @@ const BannerList = {
             return;
         }
 
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const currentPage = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
 
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
@@ -584,7 +592,7 @@ const BannerList = {
             await CommonJS.alert('일괄 변경할 배너를 선택하세요.', '알림', 'warning');
             return;
         }
-        const isActive = document.getElementById('bulkBannerIsActive').value;
+        const isActive = this.normalizeActiveFilterValue(document.getElementById('bulkBannerIsActive').value);
         if (!isActive) {
             await CommonJS.alert('적용할 상태를 선택하세요.', '알림', 'warning');
             return;
@@ -602,7 +610,7 @@ const BannerList = {
             if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, '배너 일괄 변경에 실패했습니다.'));
             const result = await response.json();
             await this.getList();
-            await CommonJS.alert(`일괄 상태 변경이 완료되었습니다. 변경 ${result.updatedCount}건 / 유지 ${result.unchangedCount}건`, '성공', 'success');
+            await CommonJS.alert(`일괄 상태 변경이 완료되었습니다. 변경 ${this.formatCount(result.updatedCount)}건 / 유지 ${this.formatCount(result.unchangedCount)}건`, '성공', 'success');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
@@ -639,7 +647,7 @@ const BannerList = {
             const result = await response.json();
             this.clearSelection();
             await this.getList();
-            await CommonJS.alert(`일괄 삭제가 완료되었습니다. 삭제 ${result.deletedCount}건`, '성공', 'success');
+            await CommonJS.alert(`일괄 삭제가 완료되었습니다. 삭제 ${this.formatCount(result.deletedCount)}건`, '성공', 'success');
         } catch (error) {
             await CommonJS.alert(error.message, '오류', 'error');
         } finally {
@@ -684,6 +692,7 @@ const BannerList = {
             await CommonJS.alert('유효하지 않은 배너 번호입니다.', '알림', 'warning');
             return;
         }
+        const requestId = ++this.detailRequestId;
         try {
             this.state.bannerNo = String(bannerNo);
             this.state.source = source;
@@ -692,8 +701,14 @@ const BannerList = {
 
             const res = await fetch(`/api/admin/banners/${bannerNo}`);
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '배너 상세를 불러오지 못했습니다.'));
-            await this.openEditModal(await res.json());
+            const data = await res.json();
+            if (requestId !== this.detailRequestId) return;
+            if (this.normalizeOptionalPositiveNumber(data?.bannerNo) !== bannerNo) {
+                throw new Error('요청한 배너와 상세 응답 정보가 일치하지 않습니다.');
+            }
+            await this.openEditModal(data);
         } catch (err) {
+            if (requestId !== this.detailRequestId) return;
             await CommonJS.alert(err.message, '오류', 'error');
         }
     },
@@ -703,10 +718,11 @@ const BannerList = {
             await CommonJS.alert('유지보수 모드에서는 배너 등록이 불가능합니다.', '알림', 'warning');
             return;
         }
+        ++this.detailRequestId;
         document.getElementById('bannerForm').reset();
         document.getElementById('bannerNo').value = '';
         document.getElementById('bannerModalTitle').innerText = '신규 배너 등록';
-        this.modal.show();
+        this.modal?.show();
     },
 
     async openEditModal(item) {
@@ -718,16 +734,18 @@ const BannerList = {
             await CommonJS.alert('유효하지 않은 배너 정보입니다.', '알림', 'warning');
             return;
         }
-        document.getElementById('bannerNo').value = item.bannerNo;
-        document.getElementById('title').value = item.title;
-        document.getElementById('imageUrl').value = item.imageUrl;
+        ++this.detailRequestId;
+        const bannerNo = this.normalizeOptionalPositiveNumber(item.bannerNo);
+        document.getElementById('bannerNo').value = bannerNo;
+        document.getElementById('title').value = item.title || '';
+        document.getElementById('imageUrl').value = item.imageUrl || '';
         document.getElementById('targetUrl').value = item.targetUrl || '';
-        document.getElementById('startDtm').value = item.startDtm.substring(0, 16);
-        document.getElementById('endDtm').value = item.endDtm.substring(0, 16);
-        document.getElementById('sortOrder').value = item.sortOrder;
-        document.getElementById('isActive').value = item.isActive;
+        document.getElementById('startDtm').value = this.normalizeDateTimeLocal(item.startDtm);
+        document.getElementById('endDtm').value = this.normalizeDateTimeLocal(item.endDtm);
+        document.getElementById('sortOrder').value = this.normalizeNonNegativeInteger(item.sortOrder);
+        document.getElementById('isActive').value = this.normalizeActiveFilterValue(item.isActive) || 'Y';
         document.getElementById('bannerModalTitle').innerText = '배너 수정';
-        this.modal.show();
+        this.modal?.show();
     },
 
     async saveBanner() {
@@ -746,13 +764,23 @@ const BannerList = {
             startDtm: document.getElementById('startDtm').value,
             endDtm: document.getElementById('endDtm').value,
             sortOrder: document.getElementById('sortOrder').value,
-            isActive: document.getElementById('isActive').value
+            isActive: this.normalizeActiveFilterValue(document.getElementById('isActive').value)
         };
         const parsedBannerNo = formData.bannerNo ? Number(formData.bannerNo) : null;
         const parsedSortOrder = Number(formData.sortOrder);
 
         if (!formData.title || !formData.imageUrl || !formData.startDtm || !formData.endDtm) {
             await CommonJS.alert('필수 항목을 모두 입력하세요.', '알림', 'warning');
+            return;
+        }
+        const normalizedImageUrl = CommonJS.normalizeImageSource(formData.imageUrl, '');
+        if (!normalizedImageUrl) {
+            await CommonJS.alert('이미지 URL은 HTTP 또는 HTTPS 주소여야 합니다.', '알림', 'warning');
+            document.getElementById('imageUrl')?.focus();
+            return;
+        }
+        if (!this.isValidActiveValue(formData.isActive)) {
+            await CommonJS.alert('배너 활성 상태 값이 올바르지 않습니다.', '알림', 'warning');
             return;
         }
         if (parsedBannerNo != null && !this.isValidBannerNo(parsedBannerNo)) {
@@ -771,6 +799,7 @@ const BannerList = {
         }
         formData.bannerNo = parsedBannerNo;
         formData.sortOrder = parsedSortOrder;
+        formData.imageUrl = normalizedImageUrl;
 
         try {
             this.saveInFlight = true;
@@ -895,7 +924,9 @@ const BannerList = {
         if (!startDtm || !endDtm) {
             return true;
         }
-        return new Date(startDtm).getTime() <= new Date(endDtm).getTime();
+        const startTime = new Date(startDtm).getTime();
+        const endTime = new Date(endDtm).getTime();
+        return Number.isFinite(startTime) && Number.isFinite(endTime) && startTime <= endTime;
     },
 
     validateState() {
@@ -921,7 +952,21 @@ const BannerList = {
 
     normalizePageSize(size) {
         const parsed = Number(size);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+        return [10, 20, 50].includes(parsed) ? parsed : 10;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
+    },
+
+    normalizeDateTimeLocal(value) {
+        const text = String(value || '');
+        return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text) ? text.slice(0, 16) : '';
     },
 
     normalizeOptionalPositiveNumber(value) {

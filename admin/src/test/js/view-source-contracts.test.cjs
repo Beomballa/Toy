@@ -256,3 +256,18 @@ test("brand list validates detail identity, rows, counts, and state values", () 
     assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
     assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
 });
+
+test("banner list validates detail identity, rows, dates, and image input", () => {
+    const source = readViewScript("banner-list.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(data\?\.bannerNo\) !== bannerNo/);
+    assert.match(source, /this\.normalizeDateTimeLocal\(item\.startDtm\)/);
+    assert.match(source, /CommonJS\.normalizeImageSource\(formData\.imageUrl, ''\)/);
+    assert.match(source, /this\.normalizeActiveFilterValue\(document\.getElementById\('bulkBannerIsActive'\)\.value\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(parsed\)/);
+    assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
+    assert.match(source, /Number\.isFinite\(startTime\)/);
+});

@@ -241,3 +241,18 @@ test("product list validates rows, metadata, output, and reset navigation", () =
     assert.match(source, /const clonedProductNo = this\._normalizeOptionalPositiveNumber/);
     assert.match(source, /const safeLabel = CommonJS\.escapeHtml/);
 });
+
+test("brand list validates detail identity, rows, counts, and state values", () => {
+    const source = readViewScript("brand-list.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /requestId !== this\.detailRequestId/);
+    assert.match(source, /responseBrandNo !== brandNo/);
+    assert.match(source, /this\.normalizeActiveFilterValue\(data\.isActive\)/);
+    assert.match(source, /this\.normalizeActiveFilterValue\(document\.getElementById\('bulkBrandIsActive'\)\.value\)/);
+    assert.match(source, /this\.selectedBrandNos\.delete\(brandNo\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
+    assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
+    assert.match(source, /this\.formatCount\(result\.requestedCount\)/);
+});

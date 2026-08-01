@@ -14,6 +14,7 @@ const BrandList = {
     exportInFlight: false,
     bulkInFlight: false,
     listRequestId: 0,
+    detailRequestId: 0,
     selectedBrandNos: new Set(),
     toggleInFlight: new Set(),
     deleteInFlight: new Set(),
@@ -176,7 +177,8 @@ const BrandList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
-            this.renderList(data.items || []);
+            const items = Array.isArray(data.items) ? data.items : [];
+            this.renderList(items);
             this.renderStats(data.brandStats);
             this.renderMeta(data);
             this.renderPagination(data);
@@ -199,8 +201,12 @@ const BrandList = {
     renderList(items) {
         const tbody = document.getElementById('brandListBody');
         if (!tbody) return;
+        const safeItems = (Array.isArray(items) ? items : []).flatMap((item) => {
+            const brandNo = this.normalizeOptionalPositiveNumber(item?.brandNo);
+            return brandNo == null ? [] : [{...item, brandNo}];
+        });
 
-        if (!items || items.length === 0) {
+        if (safeItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7" class="py-5">
@@ -217,8 +223,8 @@ const BrandList = {
             return;
         }
 
-        tbody.innerHTML = items.map(item => {
-            const brandNo = this.normalizeOptionalPositiveNumber(item.brandNo);
+        tbody.innerHTML = safeItems.map(item => {
+            const brandNo = item.brandNo;
             const nameKo = this.escapeHtml(item.nameKo || '-');
             const nameEn = this.escapeHtml(item.nameEn || '-');
             const logoUrl = this.escapeHtml(CommonJS.normalizeImageSource(item.logoUrl));
@@ -247,27 +253,30 @@ const BrandList = {
                     <button class="btn btn-sm btn-outline-dark me-1"
                             data-role="toggle-brand-active"
                             data-brand-no="${brandNo || ''}"
-                            data-next-active="${isActive ? 'N' : 'Y'}">${isActive ? '중지' : '활성'}</button>
+                            data-next-active="${isActive ? 'N' : 'Y'}"
+                            ${this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy) ? 'disabled title="유지보수 모드에서는 상태를 변경할 수 없습니다."' : ''}>${isActive ? '중지' : '활성'}</button>
                     <button class="btn btn-sm btn-outline-danger" data-role="delete-brand" data-brand-no="${brandNo || ''}">삭제</button>
                 </td>
             </tr>
         `;
         }).join('');
         this.bindLogoFallbacks();
-        this.setListStateMeta('ready', '', items.length, null, null);
-        this.updateSelectionMeta(items);
+        this.setListStateMeta('ready', '', safeItems.length, null, null);
+        this.updateSelectionMeta(safeItems);
     },
 
     renderMeta(data) {
-        document.getElementById('brandMetaText').textContent = data.resultMeta?.resultLabel || `${data.totalElements || (data.items || []).length}건 조회`;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        const totalElements = this.normalizeNonNegativeInteger(data?.totalElements);
+        document.getElementById('brandMetaText').textContent = data?.resultMeta?.resultLabel || `${this.formatCount(totalElements || items.length)}건 조회`;
         this.setFilterMeta(`필터 ${data.resultMeta?.appliedFilterCount ?? 0}개 · ${data.resultMeta?.querySignature || '브랜드명 기준'}`);
         this.setResultMeta(data.resultMeta?.resultLabel || '결과 메타 없음');
         this.setPageMeta(data.resultMeta?.pageInfoLabel || '페이지 메타 없음');
         this.setListStateMeta(
             'ready',
             '',
-            (data.items || []).length,
-            data.totalElements || 0,
+            items.length,
+            totalElements,
             data.resultMeta?.querySignature || ''
         );
         const metaEl = document.getElementById('brandListStateMeta');
@@ -295,15 +304,17 @@ const BrandList = {
             return;
         }
 
-        totalCountEl.innerText = Number(stats.totalCount || 0).toLocaleString();
-        activeCountEl.innerText = Number(stats.activeCount || 0).toLocaleString();
-        inactiveCountEl.innerText = Number(stats.inactiveCount || 0).toLocaleString();
-        contextTextEl.innerText = `${stats.contextLabel} · ${stats.querySignature}`;
+        if (totalCountEl) totalCountEl.innerText = this.formatCount(stats.totalCount);
+        if (activeCountEl) activeCountEl.innerText = this.formatCount(stats.activeCount);
+        if (inactiveCountEl) inactiveCountEl.innerText = this.formatCount(stats.inactiveCount);
+        if (contextTextEl) contextTextEl.innerText = `${stats.contextLabel || '현재 탐색 문맥'} · ${stats.querySignature || '브랜드명 기준'}`;
         const usingQuickFilter = !!this.state.isActive;
-        noticeEl.innerText = usingQuickFilter
-            ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
-            : '카드 수치는 현재 탐색 문맥 기준입니다.';
-        noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        if (noticeEl) {
+            noticeEl.innerText = usingQuickFilter
+                ? '카드 수치는 기본 탐색 문맥 기준이며, 선택한 빠른 필터는 목록에만 적용됩니다.'
+                : '카드 수치는 현재 탐색 문맥 기준입니다.';
+            noticeEl.dataset.statsContext = usingQuickFilter ? 'base-query' : 'current-query';
+        }
     },
 
     renderPagination(data) {
@@ -312,8 +323,8 @@ const BrandList = {
             return;
         }
 
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data?.totalPages);
+        const currentPage = Math.min(this.normalizePage(data?.currentPage), Math.max(totalPages - 1, 0));
 
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
@@ -549,6 +560,7 @@ const BrandList = {
             await CommonJS.alert('유지보수 모드에서는 브랜드 등록 및 수정이 불가능합니다.', '알림', 'warning');
             return;
         }
+        const requestId = ++this.detailRequestId;
         document.getElementById('brandForm').reset();
         document.getElementById('brandNo').value = '';
         document.getElementById('brandModalTitle').innerText = '신규 브랜드 등록';
@@ -562,18 +574,24 @@ const BrandList = {
                 const res = await fetch(`/api/admin/brands/get?no=${brandNo}`);
                 if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 정보를 불러오지 못했습니다.'));
                 const data = await res.json();
-                document.getElementById('brandNo').value = data.brandNo;
-                document.getElementById('nameKo').value = data.nameKo;
+                if (requestId !== this.detailRequestId) return;
+                const responseBrandNo = this.normalizeOptionalPositiveNumber(data?.brandNo);
+                if (responseBrandNo !== brandNo) {
+                    throw new Error('요청한 브랜드와 상세 응답 정보가 일치하지 않습니다.');
+                }
+                document.getElementById('brandNo').value = responseBrandNo;
+                document.getElementById('nameKo').value = data.nameKo || '';
                 document.getElementById('nameEn').value = data.nameEn || '';
                 document.getElementById('logoUrl').value = data.logoUrl || '';
-                document.getElementById('isActive').value = data.isActive || 'Y';
+                document.getElementById('isActive').value = this.normalizeActiveFilterValue(data.isActive) || 'Y';
                 document.getElementById('brandModalTitle').innerText = '브랜드 정보 수정';
             } catch (err) {
+                if (requestId !== this.detailRequestId) return;
                 await CommonJS.alert(err.message || '브랜드 정보를 불러오지 못했습니다.', '오류', 'error');
                 return;
             }
         }
-        this.modal.show();
+        this.modal?.show();
     },
 
     async saveBrand() {
@@ -601,7 +619,7 @@ const BrandList = {
             nameKo: nameKo,
             nameEn: CommonJS.normalizeOptionalText(document.getElementById('nameEn').value) || '',
             logoUrl: CommonJS.normalizeOptionalText(document.getElementById('logoUrl').value) || '',
-            isActive: document.getElementById('isActive').value
+            isActive: this.normalizeActiveFilterValue(document.getElementById('isActive').value) || 'Y'
         };
 
         try {
@@ -645,6 +663,7 @@ const BrandList = {
             this.deleteInFlight.add(brandNo);
             const res = await fetch(`/api/admin/brands/delete?no=${brandNo}`, { method: 'DELETE' });
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '삭제 중 오류가 발생했습니다. (연관된 상품이 있을 수 있습니다)'));
+            this.selectedBrandNos.delete(brandNo);
             await this.getList();
             await CommonJS.alert('삭제되었습니다.', '성공', 'success');
         } catch (err) {
@@ -698,7 +717,7 @@ const BrandList = {
             await CommonJS.alert('일괄 적용할 브랜드를 선택하세요.', '알림', 'warning');
             return;
         }
-        const isActive = document.getElementById('bulkBrandIsActive').value;
+        const isActive = this.normalizeActiveFilterValue(document.getElementById('bulkBrandIsActive').value);
         if (!isActive) {
             await CommonJS.alert('변경할 상태를 선택하세요.', '알림', 'warning');
             return;
@@ -717,7 +736,7 @@ const BrandList = {
             if (!res.ok) throw new Error(await CommonJS.extractErrorMessage(res, '브랜드 일괄 상태 변경에 실패했습니다.'));
             const result = await res.json();
             await this.getList();
-            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.updatedCount}건 변경, ${result.unchangedCount}건 동일 상태입니다.`, '성공', 'success');
+            await CommonJS.alert(`요청 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.updatedCount)}건 변경, ${this.formatCount(result.unchangedCount)}건 동일 상태입니다.`, '성공', 'success');
         } catch (err) {
             await CommonJS.alert(err.message || '브랜드 일괄 상태 변경에 실패했습니다.', '오류', 'error');
         } finally {
@@ -755,7 +774,7 @@ const BrandList = {
             const result = await res.json();
             this.clearSelection();
             await this.getList();
-            await CommonJS.alert(`요청 ${result.requestedCount}건 중 ${result.deletedCount}건 삭제, ${result.blockedCount}건 상품 연관으로 유지, ${result.missingCount}건 미존재입니다.`, '성공', 'success');
+            await CommonJS.alert(`요청 ${this.formatCount(result.requestedCount)}건 중 ${this.formatCount(result.deletedCount)}건 삭제, ${this.formatCount(result.blockedCount)}건 상품 연관으로 유지, ${this.formatCount(result.missingCount)}건 미존재입니다.`, '성공', 'success');
         } catch (err) {
             await CommonJS.alert(err.message || '브랜드 일괄 삭제에 실패했습니다.', '오류', 'error');
         } finally {
@@ -802,7 +821,16 @@ const BrandList = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 10;
+        return [10, 20, 50].includes(size) ? size : 10;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString('ko-KR');
     },
 
     normalizeOptionalPositiveNumber(value) {

@@ -52,7 +52,7 @@ const TaskWorkloadList = {
         const params = new URLSearchParams(window.location.search);
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
-        this.state.keyword = params.get('keyword') || '';
+        this.state.keyword = (params.get('keyword') || '').slice(0, 100);
         const priority = params.get('priority') || '';
         const overdueOnly = params.get('overdueOnly') || '';
         const sortBy = params.get('sortBy') || 'OVERDUE_DESC';
@@ -108,13 +108,13 @@ const TaskWorkloadList = {
         if (this.isExporting) {
             return;
         }
-        this.updateStateFromInputs();
-        this.validateState();
-        const params = this.buildParams();
-        params.delete('page');
-        params.delete('size');
         const button = document.getElementById('btnExportTaskWorkloadCsv');
         try {
+            this.updateStateFromInputs();
+            this.validateState();
+            const params = this.buildParams();
+            params.delete('page');
+            params.delete('size');
             this.isExporting = true;
             CommonJS.setButtonDisabled(button, true, '내보내는 중입니다.');
             await CommonJS.downloadFile(`/api/admin/settings/tasks/workloads/export?${params.toString()}`, 'task-workloads.csv');
@@ -128,27 +128,13 @@ const TaskWorkloadList = {
 
     async getList() {
         const requestId = ++this.listRequestId;
-        this.updateStateFromInputs();
-        this.validateState();
-        const params = this.buildParams();
-        history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
-        this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
-        const tbody = document.getElementById('taskWorkloadListBody');
-        if (tbody) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="8" class="py-5">
-                        <div class="product-loading-state">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
-                            <strong>담당자별 워크로드를 불러오는 중입니다.</strong>
-                            <p>현재 조건에 맞는 담당자 작업 분배 현황을 조회하고 있습니다.</p>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }
-
         try {
+            this.updateStateFromInputs();
+            this.validateState();
+            const params = this.buildParams();
+            history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`);
+            this.setStateMeta('loading', '담당자별 워크로드를 불러오는 중입니다...', 0, 0, 0, '', '');
+            this.renderLoadingState();
             const response = await fetch(`/api/admin/settings/tasks/workloads/list?${params.toString()}`);
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '담당자별 워크로드 조회에 실패했습니다.'));
@@ -157,12 +143,13 @@ const TaskWorkloadList = {
             if (requestId !== this.listRequestId) {
                 return;
             }
+            const items = Array.isArray(data.items) ? data.items : [];
             this.renderSummary(data.summary);
-            this.renderList(data.items || []);
+            this.renderList(items);
             this.renderMeta(data);
             this.renderPagination(data);
             this.highlightFocusedAdminRow();
-            await this.openDeepLinkedAssigneeIfNeeded(data.items || [], requestId);
+            await this.openDeepLinkedAssigneeIfNeeded(items, requestId);
         } catch (error) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -172,17 +159,20 @@ const TaskWorkloadList = {
     },
 
     renderSummary(summary) {
-        document.getElementById('taskWorkloadAssigneeCount').innerText = Number(summary?.assigneeCount || 0).toLocaleString();
-        document.getElementById('taskWorkloadAssignedTaskCount').innerText = Number(summary?.assignedTaskCount || 0).toLocaleString();
-        document.getElementById('taskWorkloadOverdueTaskCount').innerText = Number(summary?.overdueTaskCount || 0).toLocaleString();
-        document.getElementById('taskWorkloadUnassignedTaskCount').innerText = Number(summary?.unassignedTaskCount || 0).toLocaleString();
+        document.getElementById('taskWorkloadAssigneeCount').innerText = this.formatCount(summary?.assigneeCount);
+        document.getElementById('taskWorkloadAssignedTaskCount').innerText = this.formatCount(summary?.assignedTaskCount);
+        document.getElementById('taskWorkloadOverdueTaskCount').innerText = this.formatCount(summary?.overdueTaskCount);
+        document.getElementById('taskWorkloadUnassignedTaskCount').innerText = this.formatCount(summary?.unassignedTaskCount);
     },
 
     renderList(items) {
         const tbody = document.getElementById('taskWorkloadListBody');
         if (!tbody) return;
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizeOptionalPositiveNumber(item?.assigneeAdminNo) != null)
+            : [];
 
-        if (!items || items.length === 0) {
+        if (validItems.length === 0) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="py-5">
@@ -198,7 +188,7 @@ const TaskWorkloadList = {
             return;
         }
 
-        tbody.innerHTML = items.map((item, index) => {
+        tbody.innerHTML = validItems.map((item, index) => {
             const adminNo = this.normalizeOptionalPositiveNumber(item.assigneeAdminNo);
             const detailPath = this.buildWorkloadDetailPath(adminNo);
             const targetPath = this.buildContextualTaskPath(item.targetPath);
@@ -209,11 +199,11 @@ const TaskWorkloadList = {
                 <td>
                     <a class="fw-bold text-dark text-decoration-none" href="${this.escapeHtml(detailPath)}">${this.escapeHtml(item.assigneeAdminName || '-')}</a>
                 </td>
-                <td class="text-center fw-semibold">${Number(item.totalCount || 0).toLocaleString()}</td>
-                <td class="text-center">${Number(item.todoCount || 0).toLocaleString()}</td>
-                <td class="text-center">${Number(item.inProgressCount || 0).toLocaleString()}</td>
+                <td class="text-center fw-semibold">${this.formatCount(item.totalCount)}</td>
+                <td class="text-center">${this.formatCount(item.todoCount)}</td>
+                <td class="text-center">${this.formatCount(item.inProgressCount)}</td>
                 <td class="text-center">
-                    <span class="badge ${Number(item.overdueCount || 0) > 0 ? 'text-bg-danger' : 'text-bg-light'}">${Number(item.overdueCount || 0).toLocaleString()}</span>
+                    <span class="badge ${this.normalizeNonNegativeInteger(item.overdueCount) > 0 ? 'text-bg-danger' : 'text-bg-light'}">${this.formatCount(item.overdueCount)}</span>
                 </td>
                 <td>
                     ${item.latestCommentContent ? `
@@ -230,6 +220,7 @@ const TaskWorkloadList = {
             </tr>
         `;
         }).join('');
+        this.setStateMeta('ready', '', validItems.length, null, null, '', '');
     },
 
     renderMeta(data) {
@@ -246,25 +237,30 @@ const TaskWorkloadList = {
             defaultResultText: '결과 메타 없음',
             defaultPageText: '페이지 메타 없음'
         });
-        this.setStateMeta('ready', '', (data.items || []).length, data.totalElements || 0, data.resultMeta?.filterCount || 0, data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || '');
+        const visibleCount = Array.isArray(data.items)
+            ? data.items.filter((item) => this.normalizeOptionalPositiveNumber(item?.assigneeAdminNo) != null).length
+            : 0;
+        this.setStateMeta('ready', '', visibleCount, this.normalizeNonNegativeInteger(data.totalElements), this.normalizeNonNegativeInteger(data.resultMeta?.filterCount), data.resultMeta?.querySignature || '', data.resultMeta?.pageInfoLabel || '');
     },
 
     renderPagination(data) {
         const paginationEl = document.getElementById('taskWorkloadPagination');
         if (!paginationEl) return;
-        const totalPages = Number(data.totalPages || 0);
-        const currentPage = Number(data.currentPage || 0);
+        const totalPages = this.normalizeNonNegativeInteger(data.totalPages);
+        const currentPage = Math.min(this.normalizePage(data.currentPage), Math.max(totalPages - 1, 0));
 
         if (totalPages <= 1) {
             paginationEl.innerHTML = '';
             return;
         }
 
-        paginationEl.innerHTML = Array.from({ length: totalPages }, (_, index) => `
-            <li class="page-item ${index === currentPage ? 'active' : ''}">
-                <button type="button" class="page-link" data-role="go-page" data-page="${index}">${index + 1}</button>
-            </li>
-        `).join('');
+        paginationEl.innerHTML = this.buildPaginationPages(currentPage, totalPages).map((page) => page == null
+            ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+            : `
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-page" data-page="${page}">${page + 1}</button>
+                </li>
+            `).join('');
 
         paginationEl.querySelectorAll('[data-role="go-page"]').forEach((button) => {
             button.addEventListener('click', () => {
@@ -343,6 +339,8 @@ const TaskWorkloadList = {
             `;
         }
         this.setStateMeta('error', message, 0, 0, 0, '', '');
+        this.renderSummary(null);
+        document.getElementById('taskWorkloadPagination').innerHTML = '';
         document.getElementById('taskWorkloadMetaText').textContent = '조회 실패';
         document.getElementById('taskWorkloadFilterMeta').textContent = '필터 메타 확인 불가';
         document.getElementById('taskWorkloadResultMeta').textContent = '결과 메타 확인 불가';
@@ -481,7 +479,42 @@ const TaskWorkloadList = {
 
     normalizePageSize(value) {
         const size = Number(value);
-        return Number.isInteger(size) && size > 0 ? size : 10;
+        return [10, 20, 50].includes(size) ? size : 10;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const number = Number(value);
+        return Number.isInteger(number) && number >= 0 ? number : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right).flatMap((page, index, sorted) => (
+            index > 0 && page - sorted[index - 1] > 1 ? [null, page] : [page]
+        ));
+    },
+
+    renderLoadingState() {
+        const tbody = document.getElementById('taskWorkloadListBody');
+        if (!tbody) return;
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" class="py-5">
+                    <div class="product-loading-state">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                        <strong>담당자별 워크로드를 불러오는 중입니다.</strong>
+                        <p>현재 조건에 맞는 담당자 작업 분배 현황을 조회하고 있습니다.</p>
+                    </div>
+                </td>
+            </tr>
+        `;
     },
 
     normalizeOptionalPositiveNumber(value) {

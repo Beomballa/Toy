@@ -377,3 +377,18 @@ test("task list validates filters, rows, deep links, counts, and pagination", ()
     assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
     assert.match(source, /this\.formatCount\(stats\.totalCount\)/);
 });
+
+test("task workload validates rows, counts, failures, and pagination", () => {
+    const source = readViewScript("task-workload-list.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /Array\.isArray\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.assigneeAdminNo\)/);
+    assert.match(source, /this\.formatCount\(summary\?\.assigneeCount\)/);
+    assert.match(source, /this\.formatCount\(item\.totalCount\)/);
+    assert.match(source, /this\.renderSummary\(null\)/);
+    assert.match(source, /taskWorkloadPagination'\)\.innerHTML = ''/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[10, 20, 50\]\.includes\(size\)/);
+    assert.match(source, /this\.normalizeNonNegativeInteger\(data\.totalElements\)/);
+});

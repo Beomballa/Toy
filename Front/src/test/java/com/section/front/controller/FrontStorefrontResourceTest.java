@@ -52,6 +52,7 @@ class FrontStorefrontResourceTest {
                 .contains("front-bookmark-products")
                 .contains("front-compare-products")
                 .contains("front-recent-viewed-products")
+                .contains("front-hidden-products")
                 .contains("function normalizeItems(")
                 .contains("const allowedKeys = new Set(")
                 .contains("Number.isSafeInteger(id)")

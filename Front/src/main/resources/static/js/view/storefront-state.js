@@ -4,12 +4,14 @@
     const keys = Object.freeze({
         bookmark: "front-bookmark-products",
         compare: "front-compare-products",
-        recent: "front-recent-viewed-products"
+        recent: "front-recent-viewed-products",
+        hidden: "front-hidden-products"
     });
     const limits = Object.freeze({
         [keys.bookmark]: 24,
         [keys.compare]: 3,
-        [keys.recent]: 12
+        [keys.recent]: 12,
+        [keys.hidden]: 12
     });
     const allowedKeys = new Set(Object.values(keys));
 

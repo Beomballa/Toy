@@ -99,11 +99,11 @@ const OrderHistoryPage = {
         const params = new URLSearchParams(window.location.search);
         document.getElementById('historyOrderNo').value = this.normalizeOptionalPositiveNumber(params.get('orderNo'));
         document.getElementById('historyActionType').value = this.normalizeActionType(params.get('actionType'));
-        document.getElementById('historyStartDate').value = params.get('startDate') || '';
-        document.getElementById('historyEndDate').value = params.get('endDate') || '';
-        document.getElementById('historyKeyword').value = CommonJS.normalizeOptionalText(params.get('keyword')) || '';
+        document.getElementById('historyStartDate').value = this.normalizeDateInput(params.get('startDate'));
+        document.getElementById('historyEndDate').value = this.normalizeDateInput(params.get('endDate'));
+        document.getElementById('historyKeyword').value = (CommonJS.normalizeOptionalText(params.get('keyword')) || '').slice(0, 50);
         document.getElementById('historyActorNo').value = this.normalizeOptionalPositiveNumber(params.get('actorNo'));
-        document.getElementById('historyActorKeyword').value = CommonJS.normalizeOptionalText(params.get('actorKeyword')) || '';
+        document.getElementById('historyActorKeyword').value = (CommonJS.normalizeOptionalText(params.get('actorKeyword')) || '').slice(0, 50);
         document.getElementById('historyOrderType').value = this.normalizeOrderType(params.get('orderType'));
         this.state.page = this.normalizePage(params.get('page'));
         this.state.size = this.normalizePageSize(params.get('size'));
@@ -181,12 +181,13 @@ const OrderHistoryPage = {
                 return;
             }
             const items = Array.isArray(data.items) ? data.items : [];
-            this.renderList(items);
+            const validItems = this.normalizeHistoryItems(items);
+            this.renderList(validItems);
             this.renderMeta(data);
             this.renderPagination(data);
             this.renderResultSummary(data);
             this.highlightHistoryRow(this.state.historyNo);
-            this.consumeDeepLinkHistoryNo(items);
+            this.consumeDeepLinkHistoryNo(validItems);
         } catch (error) {
             if (requestId !== this.listRequestId) {
                 return;
@@ -198,7 +199,8 @@ const OrderHistoryPage = {
     renderList(items) {
         const tbody = document.getElementById('orderHistoryBody');
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
-        if (!items.length) {
+        const validItems = this.normalizeHistoryItems(items);
+        if (!validItems.length) {
             tbody.innerHTML = `
                 <tr>
                     <td colspan="6" class="py-5">
@@ -213,7 +215,7 @@ const OrderHistoryPage = {
             return;
         }
 
-        tbody.innerHTML = items.flatMap((item) => {
+        tbody.innerHTML = validItems.flatMap((item) => {
             const historyNo = this.normalizeOptionalPositiveNumber(item.historyNo);
             const orderNo = this.normalizeOptionalPositiveNumber(item.orderNo);
             if (!historyNo || !orderNo) return [];
@@ -237,10 +239,10 @@ const OrderHistoryPage = {
     },
 
     renderMeta(data) {
-        this.setMetaText(data.pageInfoLabel || `${data.rangeStart}-${data.rangeEnd} / ${data.totalElements}건`);
+        this.setMetaText(data.pageInfoLabel || `${this.formatCount(data.rangeStart)}-${this.formatCount(data.rangeEnd)} / ${this.formatCount(data.totalElements)}건`);
         const filterMeta = document.getElementById('orderHistoryFilterMeta');
         if (filterMeta) {
-            filterMeta.textContent = `적용 필터 ${data.resultMeta?.filterCount ?? 0}개`;
+            filterMeta.textContent = `적용 필터 ${this.normalizeNonNegativeInteger(data.resultMeta?.filterCount)}개`;
         }
         this.setResultMetaText(data.resultMeta?.querySignature || '최신순');
         this.setPageMetaText(data.resultMeta?.pageInfoLabel || data.pageInfoLabel || '페이지 메타 없음');
@@ -271,20 +273,20 @@ const OrderHistoryPage = {
     renderPagination(data) {
         const pagination = document.getElementById('historyPagination');
         if (!pagination) return;
-        if (!data.totalPages) {
+        const totalPages = this.normalizeNonNegativeInteger(data.totalPages);
+        const currentPage = Math.min(this.normalizePage(data.currentPage), Math.max(totalPages - 1, 0));
+        if (totalPages <= 1) {
             pagination.innerHTML = '';
             return;
         }
 
-        let html = '';
-        for (let i = 0; i < data.totalPages; i += 1) {
-            html += `
-                <li class="page-item ${i === data.currentPage ? 'active' : ''}">
-                    <button type="button" class="page-link" data-role="go-order-history-page" data-page="${i}">${i + 1}</button>
+        pagination.innerHTML = this.buildPaginationPages(currentPage, totalPages).map((page) => page == null
+            ? '<li class="page-item disabled"><span class="page-link">…</span></li>'
+            : `
+                <li class="page-item ${page === currentPage ? 'active' : ''}">
+                    <button type="button" class="page-link" data-role="go-order-history-page" data-page="${page}">${page + 1}</button>
                 </li>
-            `;
-        }
-        pagination.innerHTML = html;
+            `).join('');
         pagination.querySelectorAll('[data-role="go-order-history-page"]').forEach((button) => {
             button.addEventListener('click', () => this.goPage(this.normalizePage(button.dataset.page)));
         });
@@ -530,10 +532,8 @@ const OrderHistoryPage = {
         const historyNo = this.normalizeOptionalPositiveNumber(this.state.historyNo);
         if (!historyNo) {
             this.state.historyNo = '';
-        } else if (items.some((item) => this.normalizeOptionalPositiveNumber(item.historyNo) === historyNo)) {
-            this.state.historyNo = '';
         } else {
-            return;
+            this.state.historyNo = '';
         }
         history.replaceState(null, '', `${window.location.pathname}?${this.buildParams().toString()}`);
     },
@@ -541,6 +541,11 @@ const OrderHistoryPage = {
     validateState() {
         const orderNo = document.getElementById('historyOrderNo')?.value.trim() || '';
         const actorNo = document.getElementById('historyActorNo')?.value.trim() || '';
+        const actionType = document.getElementById('historyActionType')?.value || '';
+        const keyword = CommonJS.normalizeOptionalText(document.getElementById('historyKeyword')?.value) || '';
+        const actorKeyword = CommonJS.normalizeOptionalText(document.getElementById('historyActorKeyword')?.value) || '';
+        const startDate = document.getElementById('historyStartDate')?.value || '';
+        const endDate = document.getElementById('historyEndDate')?.value || '';
         const orderType = this.normalizeOrderType(document.getElementById('historyOrderType')?.value);
         if (orderNo && !this.isPositiveNumber(orderNo)) {
             void CommonJS.alert('주문 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
@@ -548,6 +553,18 @@ const OrderHistoryPage = {
         }
         if (actorNo && !this.isPositiveNumber(actorNo)) {
             void CommonJS.alert('작업자 번호는 1 이상의 숫자만 입력할 수 있습니다.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidActionType(actionType)) {
+            void CommonJS.alert('작업 유형이 올바르지 않습니다.', '알림', 'warning');
+            return false;
+        }
+        if (keyword.length > 50 || actorKeyword.length > 50) {
+            void CommonJS.alert('검색어는 50자 이하로 입력하세요.', '알림', 'warning');
+            return false;
+        }
+        if (!this.isValidDateRange(startDate, endDate)) {
+            void CommonJS.alert('조회 기간은 최대 92일까지 선택할 수 있습니다.', '알림', 'warning');
             return false;
         }
         if (!['latest', 'oldest'].includes(orderType)) {
@@ -564,7 +581,7 @@ const OrderHistoryPage = {
 
     normalizePageSize(size) {
         const parsed = Number(size);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : 20;
+        return [20, 50, 100].includes(parsed) ? parsed : 20;
     },
 
     normalizeOptionalPositiveNumber(value) {
@@ -572,7 +589,12 @@ const OrderHistoryPage = {
     },
 
     normalizeActionType(value) {
-        return CommonJS.normalizeOptionalText(value) || '';
+        const normalized = CommonJS.normalizeOptionalText(value) || '';
+        return this.isValidActionType(normalized) ? normalized : '';
+    },
+
+    isValidActionType(value) {
+        return ['', 'STATUS_CHANGE', 'DELIVERY_START', 'DELIVERY_COMPLETE', 'CANCEL', 'ADMIN_MEMO'].includes(String(value || ''));
     },
 
     normalizeDatePreset(value) {
@@ -585,6 +607,49 @@ const OrderHistoryPage = {
 
     isPositiveNumber(value) {
         return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const parsed = Number(value);
+        return Number.isInteger(parsed) && parsed >= 0 ? parsed : 0;
+    },
+
+    formatCount(value) {
+        return this.normalizeNonNegativeInteger(value).toLocaleString();
+    },
+
+    normalizeDateInput(value) {
+        const text = String(value || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const date = new Date(`${text}T00:00:00`);
+        if (!Number.isFinite(date.getTime())) return '';
+        const normalized = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        return normalized === text ? text : '';
+    },
+
+    isValidDateRange(startDate, endDate) {
+        if (!startDate || !endDate) return true;
+        const start = new Date(`${startDate}T00:00:00`);
+        const end = new Date(`${endDate}T00:00:00`);
+        const rangeDays = Math.floor((end.getTime() - start.getTime()) / 86400000);
+        return Number.isFinite(rangeDays) && rangeDays <= 92;
+    },
+
+    normalizeHistoryItems(items) {
+        return Array.isArray(items)
+            ? items.filter((item) => this.normalizeOptionalPositiveNumber(item?.historyNo)
+                && this.normalizeOptionalPositiveNumber(item?.orderNo))
+            : [];
+    },
+
+    buildPaginationPages(currentPage, totalPages) {
+        const pages = new Set([0, totalPages - 1]);
+        for (let page = Math.max(0, currentPage - 2); page <= Math.min(totalPages - 1, currentPage + 2); page += 1) {
+            pages.add(page);
+        }
+        return Array.from(pages).sort((left, right) => left - right).flatMap((page, index, sorted) => (
+            index > 0 && page - sorted[index - 1] > 1 ? [null, page] : [page]
+        ));
     }
 };
 

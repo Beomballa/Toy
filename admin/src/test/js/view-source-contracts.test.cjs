@@ -467,3 +467,18 @@ test("product history validates filters, rows, counts, export, and pagination", 
     assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
     assert.match(source, /params\.delete\('page'\)/);
 });
+
+test("order history validates filters, rows, dates, counts, and pagination", () => {
+    const source = readViewScript("order-history.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /this\.normalizeHistoryItems\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.historyNo\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.orderNo\)/);
+    assert.match(source, /this\.normalizeDateInput\(params\.get\('startDate'\)\)/);
+    assert.match(source, /keyword\.length > 50/);
+    assert.match(source, /rangeDays <= 92/);
+    assert.match(source, /this\.isValidActionType\(actionType\)/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
+});

@@ -81,8 +81,15 @@ const NoticeDetailPage = {
             if (requestId !== this.detailRequestId) {
                 return;
             }
-            this.state.currentDetail = data;
-            this.renderDetail(data);
+            if (this.normalizeNoticeNo(data?.noticeNo) !== this.state.noticeNo) {
+                throw new Error('요청한 운영 공지와 상세 응답이 일치하지 않습니다.');
+            }
+            if (!this.isValidYn(data.isActive) || !this.isValidYn(data.isPinned)) {
+                throw new Error('운영 공지 상세의 상태 정보가 올바르지 않습니다.');
+            }
+            const detail = this.normalizeNoticeDetail(data);
+            this.state.currentDetail = detail;
+            this.renderDetail(detail);
         } catch (error) {
             if (requestId !== this.detailRequestId) {
                 return;
@@ -172,12 +179,8 @@ const NoticeDetailPage = {
             endDtm: this.toNullableDateTime(document.getElementById('noticeDetailEditEndDtm').value)
         };
 
-        if (!payload.title || !payload.content) {
-            await CommonJS.alert('공지 제목과 내용을 입력하세요.', '알림', 'warning');
-            return;
-        }
-        if (!this.isValidYn(payload.isActive) || !this.isValidYn(payload.isPinned)) {
-            await CommonJS.alert('유효하지 않은 공지 상태 값입니다.', '알림', 'warning');
+        if (!this.validateNoticePayload(payload)) {
+            await CommonJS.alert('공지 제목, 내용, 상태와 일시 입력값을 다시 확인하세요.', '알림', 'warning');
             return;
         }
         if (!this.validateNoticePeriod(payload.startDtm, payload.endDtm)) {
@@ -335,6 +338,7 @@ const NoticeDetailPage = {
     },
 
     renderError(message) {
+        this.state.currentDetail = null;
         document.getElementById('noticeDetailTitle').textContent = message;
         document.getElementById('noticeDetailMeta').textContent = '상세 확인 불가';
         document.getElementById('noticeDetailSummary').textContent = '운영 공지 상세 조회에 실패했습니다.';
@@ -377,7 +381,10 @@ const NoticeDetailPage = {
             return;
         }
 
-        if (!items.length) {
+        const validItems = Array.isArray(items)
+            ? items.filter((item) => this.normalizeNoticeNo(item?.logNo))
+            : [];
+        if (!validItems.length) {
             listEl.innerHTML = `
                 <div class="product-empty-state py-4">
                     <i class="fas fa-clock-rotate-left product-empty-state-icon"></i>
@@ -397,7 +404,7 @@ const NoticeDetailPage = {
             return;
         }
 
-        listEl.innerHTML = items.map((item) => {
+        listEl.innerHTML = validItems.map((item) => {
             const logPath = this.buildLogPathFromBase(item.activityLogPath);
             const historyPath = this.buildHistoryPathFromBase(item.historyPath);
             return `
@@ -418,13 +425,13 @@ const NoticeDetailPage = {
 
         const historyMetaText = document.getElementById('noticeDetailHistoryMeta');
         if (historyMetaText) {
-            historyMetaText.textContent = `최근 이력 ${items.length}건`;
+            historyMetaText.textContent = `최근 이력 ${validItems.length}건`;
         }
 
         if (metaEl) {
             metaEl.dataset.listState = 'ready';
             metaEl.dataset.stateMessage = '';
-            metaEl.dataset.visibleCount = String(items.length);
+            metaEl.dataset.visibleCount = String(validItems.length);
         }
     },
 
@@ -468,14 +475,13 @@ const NoticeDetailPage = {
     },
 
     toNullableDateTime(value) {
-        return value ? `${value}:00` : null;
+        const normalized = this.normalizeDateTimeComparable(value);
+        return normalized || null;
     },
 
     toDateTimeLocalValue(value) {
-        if (!value || value === '-') {
-            return '';
-        }
-        return value.substring(0, 16);
+        const normalized = this.normalizeDateTimeComparable(value);
+        return normalized ? normalized.substring(0, 16) : '';
     },
 
     validateNoticePeriod(startDtm, endDtm) {
@@ -501,13 +507,54 @@ const NoticeDetailPage = {
         return this.isValidYn(value) ? value : fallback;
     },
 
+    normalizeNoticeDetail(data) {
+        return {
+            ...data,
+            noticeNo: this.normalizeNoticeNo(data.noticeNo),
+            isActive: this.normalizeYnValue(data.isActive, 'N'),
+            isPinned: this.normalizeYnValue(data.isPinned, 'N'),
+            recentHistories: Array.isArray(data.recentHistories)
+                ? data.recentHistories.filter((item) => this.normalizeNoticeNo(item?.logNo))
+                : []
+        };
+    },
+
+    validateNoticePayload(payload) {
+        if (!payload || !this.isValidNoticeNo(payload.noticeNo)) return false;
+        const title = CommonJS.normalizeRequiredText(payload.title || '');
+        const content = CommonJS.normalizeRequiredText(payload.content || '');
+        if (!title || title.length > 200 || !content || content.length > 5000) return false;
+        if (!this.isValidYn(payload.isActive) || !this.isValidYn(payload.isPinned)) return false;
+        if (payload.startDtm && !this.normalizeDateTimeComparable(payload.startDtm)) return false;
+        if (payload.endDtm && !this.normalizeDateTimeComparable(payload.endDtm)) return false;
+        return true;
+    },
+
+    normalizeDateTimeComparable(value) {
+        const text = String(value || '').trim().replace(' ', 'T');
+        if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(text)) return '';
+        const withSeconds = text.length === 16 ? `${text}:00` : text;
+        const [dateText, timeText] = withSeconds.split('T');
+        const [year, month, day] = dateText.split('-').map(Number);
+        const [hour, minute, second] = timeText.split(':').map(Number);
+        const date = new Date(year, month - 1, day, hour, minute, second);
+        const isExactDate = Number.isFinite(date.getTime())
+            && date.getFullYear() === year
+            && date.getMonth() === month - 1
+            && date.getDate() === day
+            && date.getHours() === hour
+            && date.getMinutes() === minute
+            && date.getSeconds() === second;
+        return isExactDate ? withSeconds : '';
+    },
+
     isSameAsCurrentDetail(payload, detail) {
         return payload.title === (detail.title || '').trim()
             && payload.content === (detail.content || '').trim()
             && payload.isActive === (detail.isActive || 'Y')
             && payload.isPinned === (detail.isPinned || 'N')
-            && (payload.startDtm || null) === (detail.startDtm || null)
-            && (payload.endDtm || null) === (detail.endDtm || null);
+            && (this.normalizeDateTimeComparable(payload.startDtm) || null) === (this.normalizeDateTimeComparable(detail.startDtm) || null)
+            && (this.normalizeDateTimeComparable(payload.endDtm) || null) === (this.normalizeDateTimeComparable(detail.endDtm) || null);
     },
 
     setLastActionMeta(action, status, sourceLabel = '운영 공지 상세') {

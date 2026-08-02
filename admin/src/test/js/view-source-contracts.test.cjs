@@ -482,3 +482,19 @@ test("order history validates filters, rows, dates, counts, and pagination", () 
     assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
     assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
 });
+
+test("notice detail validates identity, state, histories, payload, and dates", () => {
+    const source = readViewScript("notice-get.js");
+
+    assert.match(source, /this\.normalizeNoticeNo\(data\?\.noticeNo\) !== this\.state\.noticeNo/);
+    assert.match(source, /!this\.isValidYn\(data\.isActive\)/);
+    assert.match(source, /this\.normalizeNoticeDetail\(data\)/);
+    assert.match(source, /Array\.isArray\(data\.recentHistories\)/);
+    assert.match(source, /this\.normalizeNoticeNo\(item\?\.logNo\)/);
+    assert.match(source, /this\.state\.currentDetail = null/);
+    assert.match(source, /this\.validateNoticePayload\(payload\)/);
+    assert.match(source, /title\.length > 200/);
+    assert.match(source, /content\.length > 5000/);
+    assert.match(source, /date\.getDate\(\) === day/);
+    assert.match(source, /this\.normalizeDateTimeComparable\(detail\.startDtm\)/);
+});

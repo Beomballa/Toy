@@ -26,31 +26,31 @@ const orderResponse = (orderNumber, recipientName) => ({
     lineAmount: 75000,
     thumbnailUrl: null
   }],
-  statusHistory: [{ statusLabel: "주문 접수", changedAt: "2026.07.27 10:00" }]
+  statusHistory: [{ status: "ORDERED", statusLabel: "주문 접수", changedAt: "2026.07.27 10:00" }]
 });
 
 test("주문조회는 최신 응답만 표시하고 초기화 시 개인정보 DOM을 제거한다", async ({ page }) => {
   await page.route("**/api/front/orders/lookup", async (route) => {
     const body = route.request().postDataJSON();
-    if (body.orderNumber === "GSSLOW") {
+    if (body.orderNumber === "GSSLOW000000") {
       await new Promise((resolve) => setTimeout(resolve, 250));
-      await route.fulfill({ json: orderResponse("GSSLOW", "느린수령인") });
+      await route.fulfill({ json: orderResponse("GSSLOW000000", "느린수령인") });
       return;
     }
-    await route.fulfill({ json: orderResponse("GSFAST", "최신수령인") });
+    await route.fulfill({ json: orderResponse("GSFAST000000", "최신수령인") });
   });
 
   await page.goto("/front/orders");
   const orderNumber = page.locator('[name="orderNumber"]');
   const phone = page.locator('[name="phone"]');
 
-  await orderNumber.fill("GSSLOW");
+  await orderNumber.fill("GSSLOW000000");
   await phone.fill("010-1234-5678");
   await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
-  await orderNumber.fill("GSFAST");
+  await orderNumber.fill("GSFAST000000");
   await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
 
-  await expect(page.locator("#orderResultNumber")).toHaveText("GSFAST");
+  await expect(page.locator("#orderResultNumber")).toHaveText("GSFAST000000");
   await expect(page.locator("#orderDelivery")).toContainText("최신수령인");
   await expect(page.locator("body")).not.toContainText("느린수령인");
 
@@ -59,4 +59,21 @@ test("주문조회는 최신 응답만 표시하고 초기화 시 개인정보 D
   await expect(page.locator("#orderDelivery")).toBeEmpty();
   await expect(page.locator("body")).not.toContainText("최신수령인");
   await expect(page).toHaveURL(/\/front\/orders$/);
+});
+
+test("주문조회는 주문번호와 금액이 불일치한 응답을 표시하지 않는다", async ({ page }) => {
+  await page.route("**/api/front/orders/lookup", async (route) => {
+    const response = orderResponse("GSOTHER00000", "노출금지");
+    response.totalAmount = 1;
+    await route.fulfill({ json: response });
+  });
+
+  await page.goto("/front/orders");
+  await page.locator('[name="orderNumber"]').fill("GSCHECK000000");
+  await page.locator('[name="phone"]').fill("010-1234-5678");
+  await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
+
+  await expect(page.locator("#orderLookupError")).toContainText("일치하지 않습니다");
+  await expect(page.locator("#orderResult")).toBeHidden();
+  await expect(page.locator("body")).not.toContainText("노출금지");
 });

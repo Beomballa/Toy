@@ -11,6 +11,24 @@
     let lookupController = null;
     let lookupSequence = 0;
 
+    const ORDER_NUMBER_PATTERN = /^GS[A-Z0-9]{10,40}$/;
+    const STATUS_STEPS = Object.freeze({
+        ORDERED: 1,
+        PAID: 2,
+        PREPARING: 3,
+        SHIPPED: 4,
+        DELIVERED: 5,
+        CANCELLED: 0
+    });
+    const STATUS_LABELS = Object.freeze({
+        ORDERED: "주문 접수",
+        PAID: "결제 확인",
+        PREPARING: "배송 준비",
+        SHIPPED: "배송 중",
+        DELIVERED: "배송 완료",
+        CANCELLED: "주문 취소"
+    });
+
     function escapeMarkup(value) {
         return String(value ?? "")
             .replaceAll("&", "&amp;")
@@ -21,11 +39,40 @@
     }
 
     function formatPrice(value) {
-        return `${Number(value || 0).toLocaleString("ko-KR")}원`;
+        return `${value.toLocaleString("ko-KR")}원`;
     }
 
     function fallbackImage() {
         return "/images/product-placeholder.svg";
+    }
+
+    function requiredText(value, maxLength, fieldName) {
+        const normalized = String(value ?? "").trim();
+        if (!normalized || normalized.length > maxLength) {
+            throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        }
+        return normalized;
+    }
+
+    function optionalText(value, maxLength) {
+        const normalized = String(value ?? "").trim();
+        return normalized && normalized.length <= maxLength ? normalized : "";
+    }
+
+    function safeInteger(value, fieldName, minimum = 0) {
+        const normalized = Number(value);
+        if (!Number.isSafeInteger(normalized) || normalized < minimum) {
+            throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        }
+        return normalized;
+    }
+
+    function normalizeImageSource(value) {
+        const normalized = optionalText(value, 500);
+        if (/^\/(?!\/)/.test(normalized) || /^https?:\/\//i.test(normalized)) {
+            return normalized;
+        }
+        return fallbackImage();
     }
 
     function showToast(message) {
@@ -46,10 +93,109 @@
 
     function readRecentOrder() {
         try {
-            return JSON.parse(window.sessionStorage.getItem("grade-stock-last-order") || "{}");
+            const stored = JSON.parse(window.sessionStorage.getItem("grade-stock-last-order") || "{}");
+            return normalizeLookupInput(stored.orderNumber, stored.phone);
         } catch (ignored) {
+            try {
+                window.sessionStorage.removeItem("grade-stock-last-order");
+            } catch (storageError) {
+                // 저장소 접근이 제한돼도 주문 조회 화면은 계속 사용할 수 있다.
+            }
             return {};
         }
+    }
+
+    function normalizeLookupInput(orderNumberValue, phoneValue) {
+        const orderNumber = String(orderNumberValue ?? "").trim().toUpperCase();
+        const rawPhone = String(phoneValue ?? "").trim();
+        const phone = rawPhone.replace(/\D/g, "");
+        if (!ORDER_NUMBER_PATTERN.test(orderNumber)) {
+            throw new Error("주문번호 형식을 확인해주세요.");
+        }
+        if (!/^[0-9() -]+$/.test(rawPhone) || !/^\d{10,11}$/.test(phone)) {
+            throw new Error("주문자 연락처 형식을 확인해주세요.");
+        }
+        return { orderNumber, phone };
+    }
+
+    function normalizeDelivery(value) {
+        if (value == null) return null;
+        if (typeof value !== "object" || Array.isArray(value)) {
+            throw new Error("배송지 정보가 올바르지 않습니다.");
+        }
+        return {
+            recipientName: requiredText(value.recipientName, 50, "받는 분"),
+            recipientPhone: requiredText(value.recipientPhone, 30, "연락처"),
+            postalCode: requiredText(value.postalCode, 12, "우편번호"),
+            address1: requiredText(value.address1, 200, "주소"),
+            address2: optionalText(value.address2, 200),
+            deliveryRequest: optionalText(value.deliveryRequest, 200)
+        };
+    }
+
+    function normalizeOrderResponse(value, expectedOrderNumber) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+            throw new Error("주문 조회 응답이 올바르지 않습니다.");
+        }
+        const orderNumber = requiredText(value.orderNumber, 42, "주문번호").toUpperCase();
+        if (!ORDER_NUMBER_PATTERN.test(orderNumber) || orderNumber !== expectedOrderNumber) {
+            throw new Error("조회한 주문과 응답 정보가 일치하지 않습니다.");
+        }
+        const status = requiredText(value.status, 20, "주문 상태").toUpperCase();
+        if (!Object.hasOwn(STATUS_STEPS, status)) {
+            throw new Error("지원하지 않는 주문 상태입니다.");
+        }
+        if (!Array.isArray(value.items) || value.items.length === 0 || value.items.length > 100) {
+            throw new Error("주문 상품 정보가 올바르지 않습니다.");
+        }
+        const items = value.items.map((item) => {
+            const unitPrice = safeInteger(item?.unitPrice, "상품 가격");
+            const quantity = safeInteger(item?.quantity, "상품 수량", 1);
+            const lineAmount = safeInteger(item?.lineAmount, "상품 합계");
+            if (quantity > 100 || unitPrice * quantity !== lineAmount) {
+                throw new Error("주문 상품 합계가 올바르지 않습니다.");
+            }
+            return {
+                productId: safeInteger(item?.productId, "상품 번호", 1),
+                productName: requiredText(item?.productName, 200, "상품명"),
+                thumbnailUrl: normalizeImageSource(item?.thumbnailUrl),
+                unitPrice,
+                quantity,
+                lineAmount
+            };
+        });
+        const totalAmount = safeInteger(value.totalAmount, "총 주문 금액");
+        if (items.reduce((sum, item) => sum + item.lineAmount, 0) !== totalAmount) {
+            throw new Error("총 주문 금액이 상품 합계와 일치하지 않습니다.");
+        }
+        const rawHistory = Array.isArray(value.statusHistory) ? value.statusHistory : [];
+        if (rawHistory.length > 20) {
+            throw new Error("주문 처리 이력이 올바르지 않습니다.");
+        }
+        const statusHistory = rawHistory.map((event) => {
+            const eventStatus = requiredText(event?.status, 20, "처리 상태").toUpperCase();
+            if (!Object.hasOwn(STATUS_LABELS, eventStatus)) {
+                throw new Error("주문 처리 이력이 올바르지 않습니다.");
+            }
+            return {
+                statusLabel: STATUS_LABELS[eventStatus],
+                changedAt: requiredText(event?.changedAt, 30, "처리 일시")
+            };
+        });
+        return {
+            orderNumber,
+            buyerName: requiredText(value.buyerName, 50, "주문자"),
+            totalAmount,
+            status,
+            statusLabel: STATUS_LABELS[status],
+            statusStep: STATUS_STEPS[status],
+            orderedAt: requiredText(value.orderedAt, 30, "주문 일시"),
+            deliveryCompany: optionalText(value.deliveryCompany, 50),
+            trackingNumber: optionalText(value.trackingNumber, 80),
+            delivery: normalizeDelivery(value.delivery),
+            items,
+            statusHistory
+        };
     }
 
     async function copyText(value, successMessage) {
@@ -84,9 +230,10 @@
                 throw new Error(payload.message || fallback);
             }
             if (activeRequest !== lookupSequence) return;
-            render(payload);
+            const order = normalizeOrderResponse(payload, orderNumber);
+            render(order);
             try {
-                window.history.replaceState(null, "", `/front/orders/${encodeURIComponent(payload.orderNumber)}`);
+                window.history.replaceState(null, "", `/front/orders/${encodeURIComponent(order.orderNumber)}`);
             } catch (ignored) {
                 // URL 갱신이 제한된 환경에서도 조회 결과는 유지한다.
             }
@@ -166,9 +313,16 @@
         event.preventDefault();
         if (!form.reportValidity()) return;
         const values = new FormData(form);
-        const orderNumber = String(values.get("orderNumber") || "").trim().toUpperCase();
-        form.elements.orderNumber.value = orderNumber;
-        lookup(orderNumber, String(values.get("phone") || "").trim());
+        try {
+            const input = normalizeLookupInput(values.get("orderNumber"), values.get("phone"));
+            form.elements.orderNumber.value = input.orderNumber;
+            form.elements.phone.value = formatPhone(input.phone);
+            lookup(input.orderNumber, input.phone);
+        } catch (inputError) {
+            clearOrderResult();
+            error.textContent = inputError.message;
+            error.hidden = false;
+        }
     });
 
     form.elements.orderNumber.addEventListener("input", (event) => {
@@ -207,7 +361,13 @@
     document.getElementById("copyTrackingButton").addEventListener("click", () => {
         copyText(currentOrder?.trackingNumber, "송장번호를 복사했습니다.");
     });
-    document.getElementById("printOrderButton").addEventListener("click", () => window.print());
+    document.getElementById("printOrderButton").addEventListener("click", () => {
+        if (!currentOrder) {
+            showToast("먼저 주문을 조회해주세요.");
+            return;
+        }
+        window.print();
+    });
 
     if (initialOrderNumber) {
         const recent = readRecentOrder();

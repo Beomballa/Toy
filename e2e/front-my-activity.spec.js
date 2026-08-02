@@ -43,3 +43,19 @@ test("MY 활동은 변조된 저장 항목을 제외하고 전체 활동을 안�
   ].filter(key => localStorage.getItem(key) !== null));
   expect(remaining).toEqual([]);
 });
+
+test("MY 활동은 중복 상품과 위험한 이미지·금액 값을 정규화한다", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("front-bookmark-products", JSON.stringify([
+      { id: 21, name: "안전 확인", brand: "GS", price: -5000, stock: "invalid", thumbnailUrl: "javascript:alert(1)" },
+      { id: "21", name: "중복 상품", price: 999999 }
+    ]));
+  });
+
+  await page.goto("/front/my?tab=wishlist");
+  await expect(page.locator(".my-card")).toHaveCount(1);
+  await expect(page.locator(".my-card h2")).toHaveText("안전 확인");
+  await expect(page.locator(".my-card__visual img")).toHaveAttribute("src", "/images/product-placeholder.svg");
+  await expect(page.locator(".my-card__price strong")).toHaveText("0원");
+  await expect(page.locator("body")).not.toContainText("중복 상품");
+});

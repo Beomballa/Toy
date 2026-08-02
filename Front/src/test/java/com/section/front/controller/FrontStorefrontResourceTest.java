@@ -312,7 +312,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
                 .contains("/css/my-activity.css?v=20260726.2")
-                .contains("/js/view/my-activity.js?v=20260727.1");
+                .contains("/js/view/my-activity.js?v=20260802.1");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -321,7 +321,11 @@ class FrontStorefrontResourceTest {
                 .contains("downloadCsv")
                 .contains("navigator.clipboard.writeText")
                 .contains("addEventListener(\"storage\"")
-                .contains("Number.isSafeInteger(Number(item?.id))")
+                .contains("Number.isSafeInteger(id)")
+                .contains("function normalizeProducts(")
+                .contains("window.StorefrontState.read(KEYS[tab])")
+                .contains("function safeImage(")
+                .contains("function csvCell(")
                 .contains("\"/images/product-placeholder.svg\"")
                 .contains("function bindImageFallbacks()")
                 .contains("function resetAllActivity()")

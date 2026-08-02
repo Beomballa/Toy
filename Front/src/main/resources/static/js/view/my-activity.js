@@ -8,6 +8,8 @@
         hidden: "front-hidden-products"
     };
     const labels = { recent: "최근 본 상품", wishlist: "관심 상품", compare: "비교 상품", hidden: "숨긴 상품" };
+    const LIMITS = { recent: 12, wishlist: 24, compare: 3, hidden: 12 };
+    const PLACEHOLDER = "/images/product-placeholder.svg";
     const state = { tab: new URLSearchParams(location.search).get("tab") || "recent", keyword: "", stock: "ALL", sort: "RECENT", view: "grid", selected: new Set() };
     if (!KEYS[state.tab]) state.tab = "recent";
     const el = {
@@ -20,13 +22,47 @@
 
     function read(tab = state.tab) {
         try {
-            const parsed = JSON.parse(localStorage.getItem(KEYS[tab]) || "[]");
-            return Array.isArray(parsed)
-                ? parsed
-                    .filter(item => Number.isSafeInteger(Number(item?.id)) && Number(item.id) > 0)
-                    .map(item => ({ ...item, id: Number(item.id) }))
-                : [];
+            const parsed = window.StorefrontState
+                ? window.StorefrontState.read(KEYS[tab])
+                : JSON.parse(localStorage.getItem(KEYS[tab]) || "[]");
+            return normalizeProducts(parsed, LIMITS[tab]);
         } catch (_) { return []; }
+    }
+
+    function normalizeProducts(value, limit) {
+        if (!Array.isArray(value)) return [];
+        const ids = new Set();
+        return value.flatMap(item => {
+            const id = Number(item?.id);
+            if (!Number.isSafeInteger(id) || id <= 0 || ids.has(id)) return [];
+            ids.add(id);
+            const name = cleanText(item.name || item.headline, 200);
+            return [{
+                id,
+                brand: cleanText(item.brand, 100),
+                name,
+                headline: cleanText(item.headline, 200),
+                model: cleanText(item.model, 100),
+                category: cleanText(item.category, 100),
+                price: nonNegativeInteger(item.price),
+                stock: nonNegativeInteger(item.stock),
+                thumbnailUrl: safeImage(item.thumbnailUrl)
+            }];
+        }).slice(0, limit);
+    }
+
+    function cleanText(value, maxLength) {
+        return String(value ?? "").trim().replace(/\s+/g, " ").slice(0, maxLength);
+    }
+
+    function nonNegativeInteger(value) {
+        const number = Number(value ?? 0);
+        return Number.isSafeInteger(number) && number >= 0 ? number : 0;
+    }
+
+    function safeImage(value) {
+        const image = cleanText(value, 500);
+        return /^\/(?!\/)/.test(image) || /^https?:\/\//i.test(image) ? image : PLACEHOLDER;
     }
     function write(tab, items) {
         if (window.StorefrontState) {
@@ -48,7 +84,7 @@
         return String(value ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll("\"","&quot;").replaceAll("'","&#39;");
     }
     function price(value) { return `${Number(value || 0).toLocaleString("ko-KR")}원`; }
-    function image(item) { return item.thumbnailUrl || "/images/product-placeholder.svg"; }
+    function image(item) { return item.thumbnailUrl || PLACEHOLDER; }
     function toast(message) {
         el.toast.textContent = message; el.toast.hidden = false; clearTimeout(toastTimer);
         toastTimer = setTimeout(() => { el.toast.hidden = true; }, 2400);
@@ -118,7 +154,7 @@
     }
     function move(target) {
         const source = read().filter(item=>state.selected.has(Number(item.id)));
-        const limit = target==="compare" ? 3 : 50;
+        const limit = LIMITS[target];
         const merged = source.concat(read(target)).filter((item,index,all)=>all.findIndex(x=>Number(x.id)===Number(item.id))===index).slice(0,limit);
         if (write(target,merged)) {
             toast(`${source.length}개 상품을 ${labels[target]}에 반영했습니다.`);
@@ -147,13 +183,19 @@
     }
     function downloadCsv() {
         const rows = [["상품번호","브랜드","상품명","모델","가격","재고"],...filtered().map(i=>[i.id,i.brand,i.name||i.headline,i.model,i.price,i.stock])];
-        const csv = "\ufeff"+rows.map(row=>row.map(v=>`\"${String(v??"").replaceAll("\"","\"\"")}\"`).join(",")).join("\n");
+        const csv = "\ufeff"+rows.map(row=>row.map(csvCell).join(",")).join("\n");
         const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=`grade-stock-${state.tab}.csv`; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function csvCell(value) {
+        const text = String(value ?? "");
+        const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text;
+        return `\"${safeText.replaceAll("\"", "\"\"")}\"`;
     }
 
     document.querySelectorAll("[data-tab]").forEach(button=>button.addEventListener("click",()=>{state.tab=button.dataset.tab;state.selected.clear();render();}));
     document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{state.view=button.dataset.view;document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));render();}));
-    el.search.addEventListener("input",()=>{state.keyword=el.search.value.trim();render();});
+    el.search.addEventListener("input",()=>{state.keyword=cleanText(el.search.value, 100).toLocaleLowerCase("ko-KR");render();});
     el.stock.addEventListener("change",()=>{state.stock=el.stock.value;render();});
     el.sort.addEventListener("change",()=>{state.sort=el.sort.value;render();});
     document.getElementById("mySearchClearButton").addEventListener("click",()=>{el.search.value="";state.keyword="";render();el.search.focus();});

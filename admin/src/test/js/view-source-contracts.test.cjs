@@ -452,3 +452,18 @@ test("notice history validates filters, rows, detail identity, and pagination", 
     assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
     assert.match(source, /this\.formatCount\(data\.totalElements\)/);
 });
+
+test("product history validates filters, rows, counts, export, and pagination", () => {
+    const source = readViewScript("product-history.js");
+
+    assert.match(source, /const items = Array\.isArray\(data\.items\)/);
+    assert.match(source, /this\.normalizeHistoryItems\(items\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.historyNo\)/);
+    assert.match(source, /this\.normalizeOptionalPositiveNumber\(item\?\.productNo\)/);
+    assert.match(source, /this\.normalizeDateInput\(params\.get\('startDate'\)\)/);
+    assert.match(source, /keyword\.length > 100/);
+    assert.match(source, /this\.isValidActionType\(actionType\)/);
+    assert.match(source, /this\.buildPaginationPages\(currentPage, totalPages\)/);
+    assert.match(source, /\[20, 50, 100\]\.includes\(parsed\)/);
+    assert.match(source, /params\.delete\('page'\)/);
+});

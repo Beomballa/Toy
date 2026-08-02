@@ -190,6 +190,13 @@ test("product create and update validate async data and partial saves", () => {
     assert.match(createSource, /this\.normalizePositiveNumber\(result\.productNo\)/);
     assert.match(createSource, /this\.navigateToDetail\(productNo\)/);
     assert.match(createSource, /CommonJS\.normalizeImageSource\(e\.target\.value\)/);
+    assert.match(createSource, /this\.isKnownLookupId\(this\.categories/);
+    assert.match(createSource, /this\.normalizeNonNegativeInteger\(releasePriceEl\.value\)/);
+    assert.match(createSource, /this\.normalizeLocalDate\(releaseDtEl\.value\)/);
+    assert.match(createSource, /optionName\.toLocaleLowerCase/);
+    assert.match(createSource, /parsed <= 2147483647/);
+    assert.match(createSource, /this\.normalizeRankGuide\(guide\)/);
+    assert.match(createSource, /await this\.applyOperationPolicy\(this\.operationPolicy\)/);
     assert.equal(createSource.includes("backButton.innerHTML"), false);
 
     assert.match(updateSource, /requestId !== this\.productRequestId/);

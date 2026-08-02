@@ -80,7 +80,7 @@
               <div class="col-12">
                 <label class="form-label">상품명 <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="nameKo" name="nameKo"
-                       placeholder="예: Nike Air Force 1 '07 Low White" required>
+                       placeholder="예: Nike Air Force 1 '07 Low White" maxlength="200" required>
                 <small class="text-muted">브랜드명과 상품 설명을 포함하여 입력해주세요</small>
               </div>
 
@@ -88,7 +88,7 @@
               <div class="col-md-6">
                 <label class="form-label">모델번호</label>
                 <input type="text" class="form-control" id="modelNum" name="modelNum"
-                       placeholder="예: CW2288-111">
+                       placeholder="예: CW2288-111" maxlength="200">
                 <small class="text-muted">선택사항</small>
               </div>
 
@@ -96,7 +96,7 @@
               <div class="col-md-6">
                 <label class="form-label">발매가 (원) <span class="text-danger">*</span></label>
                 <input type="number" class="form-control" id="releasePrice" name="releasePrice"
-                       placeholder="139000" min="0" required>
+                       placeholder="139000" min="0" max="2147483647" step="1" required>
               </div>
 
               <!-- 발매일 -->
@@ -109,7 +109,7 @@
               <div class="col-12">
                 <label class="form-label">썸네일 이미지 URL</label>
                 <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl"
-                       placeholder="https://example.com/image.jpg">
+                       placeholder="https://example.com/image.jpg" maxlength="500">
                 <small class="text-muted">이미지 URL을 입력하거나 비워두세요</small>
               </div>
             </div>
@@ -235,7 +235,7 @@
 <script src="/js/common.js"></script>
 
 <!-- 상품 등록 스크립트 (바닐라 JS) -->
-<script src="/js/view/product-set.js?v=20260730-1"></script>
+<script src="/js/view/product-set.js?v=20260802-1"></script>
 
 <!-- Thymeleaf에서 데이터 전달 & 초기화 -->
 <script th:inline="javascript">

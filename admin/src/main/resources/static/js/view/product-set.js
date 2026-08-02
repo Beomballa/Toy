@@ -53,9 +53,11 @@ const ProductCreate = {
     // 브랜드 & 카테고리 선택박스 렌더링
     renderSelects() {
         const brandSelect = document.getElementById('brandNo');
+        const seenBrandNos = new Set();
         this.brands.forEach(brand => {
             const brandNo = this.normalizePositiveNumber(brand.brandNo);
-            if (!brandNo) return;
+            if (!brandSelect || !brandNo || seenBrandNos.has(brandNo)) return;
+            seenBrandNos.add(brandNo);
             const option = document.createElement('option');
             option.value = String(brandNo);
             option.textContent = CommonJS.normalizeOptionalText(brand.nameKo) || `브랜드 #${brandNo}`;
@@ -63,9 +65,11 @@ const ProductCreate = {
         });
 
         const categorySelect = document.getElementById('categoryNo');
+        const seenCategoryNos = new Set();
         this.categories.forEach(category => {
             const categoryNo = this.normalizePositiveNumber(category.categoryNo);
-            if (!categoryNo) return;
+            if (!categorySelect || !categoryNo || seenCategoryNos.has(categoryNo)) return;
+            seenCategoryNos.add(categoryNo);
             const option = document.createElement('option');
             option.value = String(categoryNo);
             option.textContent = CommonJS.normalizeOptionalText(category.name) || `카테고리 #${categoryNo}`;
@@ -110,9 +114,8 @@ const ProductCreate = {
         });
 
         document.getElementById('releasePrice').addEventListener('input', (e) => {
-            const price = e.target.value
-                ? parseInt(e.target.value).toLocaleString() + '원'
-                : '-';
+            const parsedPrice = this.normalizeNonNegativeInteger(e.target.value);
+            const price = parsedPrice == null ? '-' : `${parsedPrice.toLocaleString()}원`;
             document.getElementById('previewPrice').textContent = price;
         });
 
@@ -135,7 +138,10 @@ const ProductCreate = {
             }
             const guide = await response.json();
             if (requestId !== this.rankGuideRequestId) return;
-            this.frontDisplayRankGuide = guide;
+            this.frontDisplayRankGuide = this.normalizeRankGuide(guide);
+            if (!this.frontDisplayRankGuide) {
+                throw new Error('Featured 순번 응답이 올바르지 않습니다.');
+            }
             this.renderFrontDisplayRankGuide();
             this.applyFeaturedToggleBehavior();
         } catch (error) {
@@ -161,8 +167,8 @@ const ProductCreate = {
             return;
         }
 
-        const currentRank = Number(rankInput.value);
-        if (Number.isNaN(currentRank) || currentRank === 999 || currentRank < 1) {
+        const currentRank = this.normalizeFeaturedRank(rankInput.value);
+        if (!currentRank || currentRank === 999) {
             rankInput.value = String(this.frontDisplayRankGuide?.recommendedRank || 1);
         }
     },
@@ -206,22 +212,22 @@ const ProductCreate = {
         const optionHtml = `
             <tr class="option-item" data-option-id="${optionId}">
                 <td>
-                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" required>
+                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" maxlength="100" required>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-price" placeholder="0" min="0" value="0" required>
+                        <input type="number" class="form-control option-price" placeholder="0" min="0" max="2147483647" step="1" value="0" required>
                         <span class="input-group-text">원</span>
                     </div>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-cnt" placeholder="0" min="0" value="0" required>
+                        <input type="number" class="form-control option-cnt" placeholder="0" min="0" max="2147483647" step="1" value="0" required>
                         <span class="input-group-text">개</span>
                     </div>
                 </td>
                 <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-option" data-option-id="${optionId}">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-option" data-option-id="${optionId}" aria-label="옵션 삭제">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -271,7 +277,7 @@ const ProductCreate = {
             nameKo: validationResult.nameKo,
             modelNum: validationResult.modelNum,
             releasePrice: validationResult.releasePrice,
-            releaseDt: document.getElementById('releaseDt').value || null,
+            releaseDt: validationResult.releaseDt || null,
             thumbnailUrl: validationResult.thumbnailUrl,
             options: validationResult.options
         };
@@ -329,6 +335,7 @@ const ProductCreate = {
             this.isSubmitting = false;
             this.setSubmitDisabled(false);
             this.setBusySubmitText(false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -365,6 +372,7 @@ const ProductCreate = {
         const frontDisplayDescriptionEl = document.getElementById('frontDisplayDescription');
         const frontDisplayMoodEl = document.getElementById('frontDisplayMood');
         const frontDisplayRankEl = document.getElementById('frontDisplayRank');
+        const releaseDtEl = document.getElementById('releaseDt');
 
         const categoryNo = categoryNoEl.value;
         const brandNo = brandNoEl.value;
@@ -374,17 +382,21 @@ const ProductCreate = {
         const frontDisplayHeadline = this.normalizeRequiredText(frontDisplayHeadlineEl.value);
         const frontDisplayDescription = this.normalizeRequiredText(frontDisplayDescriptionEl.value);
         const frontDisplayMood = this.normalizeRequiredText(frontDisplayMoodEl.value);
-        const frontDisplayRank = Number(frontDisplayRankEl.value);
-        const releasePrice = Number(releasePriceEl.value);
+        const frontDisplayRank = this.normalizeFeaturedRank(frontDisplayRankEl.value);
+        const releasePrice = this.normalizeNonNegativeInteger(releasePriceEl.value);
+        const releaseDt = this.normalizeLocalDate(releaseDtEl.value);
 
         if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
         if (!brandNo) return this.invalidResult('브랜드를 선택해주세요.', brandNoEl);
+        if (!this.isKnownLookupId(this.categories, 'categoryNo', categoryNo)) return this.invalidResult('카테고리 값이 올바르지 않습니다.', categoryNoEl);
+        if (!this.isKnownLookupId(this.brands, 'brandNo', brandNo)) return this.invalidResult('브랜드 값이 올바르지 않습니다.', brandNoEl);
         if (!nameKo) return this.invalidResult('상품명을 입력해주세요.', nameKoEl);
         if (nameKo.length > 200) return this.invalidResult('상품명은 200자 이내로 입력해주세요.', nameKoEl);
         if (modelNum && modelNum.length > 200) return this.invalidResult('모델 번호는 200자 이내로 입력해주세요.', modelNumEl);
-        if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
-        if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
+        if (releasePrice == null) return this.invalidResult('발매가는 0 이상의 정수로 입력해주세요.', releasePriceEl);
+        if (releaseDtEl.value && !releaseDt) return this.invalidResult('발매일이 올바르지 않습니다.', releaseDtEl);
         if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+        if (thumbnailUrl && !CommonJS.normalizeImageSource(thumbnailUrl)) return this.invalidResult('썸네일 URL 형식이 올바르지 않습니다.', thumbnailUrlEl);
         if (!frontDisplayHeadline) return this.invalidResult('프론트 헤드라인을 입력해주세요.', frontDisplayHeadlineEl);
         if (frontDisplayHeadline.length > 120) return this.invalidResult('프론트 헤드라인은 120자 이내로 입력해주세요.', frontDisplayHeadlineEl);
         if (!frontDisplayDescription) return this.invalidResult('프론트 설명 문구를 입력해주세요.', frontDisplayDescriptionEl);
@@ -393,8 +405,7 @@ const ProductCreate = {
         if (frontDisplayMood.length > 120) return this.invalidResult('프론트 무드 키워드는 120자 이내로 입력해주세요.', frontDisplayMoodEl);
 
         const isFeatured = document.getElementById('frontDisplayFeatured').value === 'true';
-        if (isFeatured && Number.isNaN(frontDisplayRank)) return this.invalidResult('프론트 노출 순서를 입력해주세요.', frontDisplayRankEl);
-        if (isFeatured && (frontDisplayRank < 1 || frontDisplayRank > 999)) {
+        if (isFeatured && !frontDisplayRank) {
             return this.invalidResult('프론트 노출 순서는 1~999 사이여야 합니다.', frontDisplayRankEl);
         }
 
@@ -410,6 +421,7 @@ const ProductCreate = {
             nameKo,
             modelNum,
             releasePrice,
+            releaseDt,
             thumbnailUrl,
             options: optionValidation.options,
             frontDisplay: {
@@ -431,19 +443,18 @@ const ProductCreate = {
             const stockCntEl = item.querySelector('.option-cnt');
             const additionalPriceEl = item.querySelector('.option-price');
             const optionName = this.normalizeRequiredText(optionNameEl.value);
-            const stockCnt = Number(stockCntEl.value);
-            const additionalPrice = Number(additionalPriceEl.value || 0);
+            const stockCnt = this.normalizeNonNegativeInteger(stockCntEl.value);
+            const additionalPrice = this.normalizeNonNegativeInteger(additionalPriceEl.value);
+            const optionNameKey = optionName.toLocaleLowerCase('ko-KR');
 
             // 옵션 row는 동적 추가/삭제가 잦아서 정규화와 중복 체크를 한 흐름에서 끝내야 검증 포인트가 분산되지 않습니다.
             if (!optionName) return this.invalidResult('옵션명을 입력해주세요.', optionNameEl);
             if (optionName.length > 100) return this.invalidResult('옵션명은 100자 이내로 입력해주세요.', optionNameEl);
-            if (Number.isNaN(stockCnt)) return this.invalidResult('수량을 입력해주세요.', stockCntEl);
-            if (stockCnt < 0) return this.invalidResult('수량은 0개 이상이어야 합니다.', stockCntEl);
-            if (Number.isNaN(additionalPrice)) return this.invalidResult('추가 금액을 입력해주세요.', additionalPriceEl);
-            if (additionalPrice < 0) return this.invalidResult('추가 금액은 0원 이상이어야 합니다.', additionalPriceEl);
-            if (seenOptionNames.has(optionName)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
+            if (stockCnt == null) return this.invalidResult('수량은 0 이상의 정수로 입력해주세요.', stockCntEl);
+            if (additionalPrice == null) return this.invalidResult('추가 금액은 0 이상의 정수로 입력해주세요.', additionalPriceEl);
+            if (seenOptionNames.has(optionNameKey)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
 
-            seenOptionNames.add(optionName);
+            seenOptionNames.add(optionNameKey);
             options.push({
                 optionName,
                 stockCnt,
@@ -465,7 +476,7 @@ const ProductCreate = {
         if (!frontDisplay.featured) {
             return frontDisplay.featuredRank === 999;
         }
-        return Number.isFinite(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
+        return Number.isInteger(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
     },
 
     normalizeRequiredText(value) {
@@ -478,7 +489,45 @@ const ProductCreate = {
 
     normalizePositiveNumber(value) {
         const parsed = Number(value);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const text = String(value ?? '').trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed <= 2147483647 ? parsed : null;
+    },
+
+    normalizeFeaturedRank(value) {
+        const parsed = this.normalizeNonNegativeInteger(value);
+        return parsed != null && parsed >= 1 && parsed <= 999 ? parsed : null;
+    },
+
+    normalizeLocalDate(value) {
+        const text = String(value || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const [year, month, day] = text.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? text : '';
+    },
+
+    isKnownLookupId(items, key, value) {
+        const target = this.normalizePositiveNumber(value);
+        return !!target && items.some((item) => this.normalizePositiveNumber(item?.[key]) === target);
+    },
+
+    normalizeRankGuide(guide) {
+        const recommendedRank = this.normalizeFeaturedRank(guide?.recommendedRank);
+        if (!recommendedRank) return null;
+        const normalizeRanks = (values) => Array.isArray(values)
+            ? [...new Set(values.map((value) => this.normalizeFeaturedRank(value)).filter(Boolean))]
+            : [];
+        return {
+            recommendedRank,
+            occupiedRanks: normalizeRanks(guide.occupiedRanks),
+            availableRanks: normalizeRanks(guide.availableRanks)
+        };
     },
 
     navigateToDetail(productNo) {

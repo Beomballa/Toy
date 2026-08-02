@@ -621,12 +621,28 @@
         if (!currentProduct || !option) {
             return "";
         }
-        return `${currentProduct.name} · ${option.name} · 재고 ${option.stock}개 · ${currentProduct.priceLabel || formatPrice(currentProduct.price)}`;
+        return `${currentProduct.name} · ${option.name} · 재고 ${option.stock}개 · ${formatPrice(optionUnitPrice(option))}`;
+    }
+
+    function optionUnitPrice(option) {
+        return Number(currentProduct?.price || 0) + Number(option?.additionalPrice || 0);
+    }
+
+    function readQuantityMemory() {
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(DETAIL_QUANTITY_KEY) || "{}");
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+            return Object.fromEntries(Object.entries(parsed).filter(([key, value]) =>
+                /^\d+:.{1,100}$/.test(key) && Number.isSafeInteger(value) && value >= 1 && value <= 20
+            ).slice(-100));
+        } catch (error) {
+            return {};
+        }
     }
 
     function readSelectedQuantity() {
         try {
-            const quantities = JSON.parse(window.localStorage.getItem(DETAIL_QUANTITY_KEY) || "{}");
+            const quantities = readQuantityMemory();
             return Math.max(1, Number(quantities?.[`${productId}:${selectedOptionName}`]) || 1);
         } catch (error) {
             return 1;
@@ -638,10 +654,10 @@
         if (!option) {
             return;
         }
-        const maxQuantity = Math.max(1, Number(option.stock || 0));
+        const maxQuantity = Math.min(20, Math.max(1, Number(option.stock || 0)));
         selectedQuantity = Math.min(maxQuantity, Math.max(1, Math.trunc(Number(nextQuantity) || 1)));
         try {
-            const quantities = JSON.parse(window.localStorage.getItem(DETAIL_QUANTITY_KEY) || "{}");
+            const quantities = readQuantityMemory();
             quantities[`${productId}:${selectedOptionName}`] = selectedQuantity;
             window.localStorage.setItem(DETAIL_QUANTITY_KEY, JSON.stringify(quantities));
         } catch (error) {
@@ -649,7 +665,7 @@
         }
         syncPurchaseEstimate(option);
         if (announce) {
-            setElementText(elements.detailStatus, `수량 ${selectedQuantity}개, 예상 상품 금액 ${formatPrice(Number(currentProduct.price || 0) * selectedQuantity)}`);
+            setElementText(elements.detailStatus, `수량 ${selectedQuantity}개, 예상 상품 금액 ${formatPrice(optionUnitPrice(option) * selectedQuantity)}`);
         }
     }
 
@@ -661,7 +677,7 @@
         if (!selected) {
             return;
         }
-        const maxQuantity = Math.max(1, Number(option.stock || 0));
+        const maxQuantity = Math.min(20, Math.max(1, Number(option.stock || 0)));
         selectedQuantity = Math.min(maxQuantity, Math.max(1, selectedQuantity));
         if (elements.detailQuantityInput) {
             elements.detailQuantityInput.max = String(maxQuantity);
@@ -673,8 +689,8 @@
         if (elements.detailQuantityIncreaseButton) {
             elements.detailQuantityIncreaseButton.disabled = selectedQuantity >= maxQuantity;
         }
-        setElementText(elements.detailEstimatedTotal, formatPrice(Number(currentProduct.price || 0) * selectedQuantity));
-        setElementText(elements.detailUnitPrice, currentProduct.priceLabel || formatPrice(currentProduct.price));
+        setElementText(elements.detailEstimatedTotal, formatPrice(optionUnitPrice(option) * selectedQuantity));
+        setElementText(elements.detailUnitPrice, formatPrice(optionUnitPrice(option)));
         setElementText(elements.detailRemainingStock, `${Math.max(0, maxQuantity - selectedQuantity)}개`);
         const stockUsageRate = Math.min(100, Math.round((selectedQuantity / maxQuantity) * 100));
         const remainingRate = Math.max(0, 100 - stockUsageRate);
@@ -720,7 +736,8 @@
         if (!optionSummary) {
             return;
         }
-        const total = formatPrice(Number(currentProduct.price || 0) * selectedQuantity);
+        const option = currentProduct?.options?.find((item) => item.name === selectedOptionName);
+        const total = formatPrice(optionUnitPrice(option) * selectedQuantity);
         await copyText(`${optionSummary}\n수량 ${selectedQuantity}개 · 예상 상품 금액 ${total}`, "주문 요약을 복사했습니다.");
     }
 
@@ -728,7 +745,7 @@
         const key = "grade-stock-cart-token";
         try {
             let token = window.localStorage.getItem(key);
-            if (!token) {
+            if (!/^[A-Za-z0-9-]{16,80}$/.test(String(token || ""))) {
                 token = createCartToken();
                 window.localStorage.setItem(key, token);
             }
@@ -741,6 +758,35 @@
 
     function createCartToken() {
         return window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function cartInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+
+    function normalizeCartResponse(payload, option) {
+        if (!payload || !Array.isArray(payload.items) || payload.items.length === 0) throw new Error("장바구니 응답이 올바르지 않습니다.");
+        const items = payload.items.map((item) => {
+            const quantity = cartInteger(item?.quantity, "장바구니 수량", 1);
+            const unitPrice = cartInteger(item?.unitPrice, "장바구니 단가");
+            const lineAmount = cartInteger(item?.lineAmount, "장바구니 합계");
+            if (quantity > 20 || lineAmount !== unitPrice * quantity) throw new Error("장바구니 상품 합계가 올바르지 않습니다.");
+            return {
+                productId: cartInteger(item.productId, "상품 번호", 1),
+                optionId: cartInteger(item.optionId, "옵션 번호", 1),
+                quantity, unitPrice, lineAmount
+            };
+        });
+        const totalQuantity = cartInteger(payload.totalQuantity, "장바구니 총수량");
+        const totalAmount = cartInteger(payload.totalAmount, "장바구니 총액");
+        const target = items.find((item) => item.productId === currentProduct.id && item.optionId === option.id);
+        if (!target || target.quantity < selectedQuantity || target.unitPrice !== optionUnitPrice(option)
+            || totalQuantity !== items.reduce((sum, item) => sum + item.quantity, 0)
+            || totalAmount !== items.reduce((sum, item) => sum + item.lineAmount, 0)) {
+            throw new Error("장바구니 합계가 요청한 상품과 일치하지 않습니다.");
+        }
+        return { totalQuantity, totalAmount };
     }
 
     function setCartSubmitting(submitting, targetButton) {
@@ -781,12 +827,13 @@
             if (!response.ok) {
                 throw new Error(payload.message || "장바구니에 담지 못했습니다.");
             }
+            const cart = normalizeCartResponse(payload, option);
             if (moveToCheckout) {
                 window.location.href = "/front/checkout";
                 return;
             }
             showToast("장바구니에 담았습니다.", `${selectedOptionName} · ${selectedQuantity}개`);
-            setElementText(elements.detailStatus, `장바구니 ${payload.totalQuantity || selectedQuantity}개, 총 ${formatPrice(payload.totalAmount || 0)}`);
+            setElementText(elements.detailStatus, `장바구니 ${cart.totalQuantity}개, 총 ${formatPrice(cart.totalAmount)}`);
         } catch (error) {
             showToast("장바구니 요청을 처리하지 못했습니다.", error.message, true);
         } finally {
@@ -1097,7 +1144,11 @@
         } else {
             delete remembered[currentProductId];
         }
-        window.localStorage.setItem(SELECTED_OPTION_KEY, JSON.stringify(remembered));
+        try {
+            window.localStorage.setItem(SELECTED_OPTION_KEY, JSON.stringify(remembered));
+        } catch (error) {
+            // 저장소가 제한돼도 현재 선택 상태는 유지한다.
+        }
     }
 
     function restoreRememberedOption(product) {
@@ -1174,12 +1225,22 @@
             stockStatus: product.stockStatus
         };
         const next = [current].concat(previous).slice(0, RECENT_VIEWED_LIMIT);
-        window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+        if (window.StorefrontState) {
+            window.StorefrontState.write("recent", next);
+            return;
+        }
+        try {
+            window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+        } catch (error) {
+            // 저장소가 제한돼도 상세 화면 렌더링은 유지한다.
+        }
     }
 
     function readRecentProducts() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(RECENT_VIEWED_KEY) || "[]");
+            const parsed = window.StorefrontState
+                ? window.StorefrontState.read("recent")
+                : JSON.parse(window.localStorage.getItem(RECENT_VIEWED_KEY) || "[]");
             return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
             return [];
@@ -1270,7 +1331,16 @@
 
     function removeRecentProduct(productIdValue) {
         const next = readRecentProducts().filter((item) => Number(item.id) !== Number(productIdValue));
-        window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+        if (window.StorefrontState) {
+            window.StorefrontState.write("recent", next);
+        } else {
+            try {
+                window.localStorage.setItem(RECENT_VIEWED_KEY, JSON.stringify(next));
+            } catch (error) {
+                showToast("최근 본 상품을 수정하지 못했습니다.", "브라우저 저장소를 확인해주세요.", true);
+                return;
+            }
+        }
         renderRecentProducts(productId);
         showToast("최근 본 상품에서 삭제했습니다.", "선택한 상품만 최근 흐름에서 제외했습니다.");
     }
@@ -2246,7 +2316,16 @@
             }
         });
         elements.clearDetailRecentButton?.addEventListener("click", () => {
-            window.localStorage.removeItem(RECENT_VIEWED_KEY);
+            if (window.StorefrontState) {
+                window.StorefrontState.remove("recent");
+            } else {
+                try {
+                    window.localStorage.removeItem(RECENT_VIEWED_KEY);
+                } catch (error) {
+                    showToast("최근 본 상품을 비우지 못했습니다.", "브라우저 저장소를 확인해주세요.", true);
+                    return;
+                }
+            }
             renderRecentProducts(productId);
             showToast("최근 본 상품을 비웠습니다.", "상세 최근 흐름 보드가 초기화되었습니다.");
         });
@@ -2284,7 +2363,7 @@
             if (!response.ok) {
                 throw new Error("상품 상세를 불러오지 못했습니다.");
             }
-            const product = await response.json();
+            const product = normalizeDetailProduct(await response.json());
             currentProduct = product;
             restoreRememberedOption(product);
             if (elements.detailRetryButton) {
@@ -2327,6 +2406,98 @@
                 elements.detailRetryButton.hidden = false;
             }
         }
+    }
+
+    function detailText(value, maxLength, required = false) {
+        const text = String(value ?? "").trim().replace(/\s+/g, " ");
+        if ((required && !text) || text.length > maxLength) throw new Error("상품 문자 정보가 올바르지 않습니다.");
+        return text;
+    }
+
+    function detailInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+
+    function detailImage(value) {
+        const image = detailText(value, 500);
+        return /^\/(?!\/)/.test(image) || /^https?:\/\//i.test(image) ? image : PRODUCT_IMAGE_FALLBACK_URL;
+    }
+
+    function normalizeDetailOptions(value) {
+        if (!Array.isArray(value) || value.length > 100) throw new Error("상품 옵션 정보가 올바르지 않습니다.");
+        const ids = new Set();
+        const names = new Set();
+        return value.map((option) => {
+            const id = detailInteger(option?.id, "옵션 번호", 1);
+            const name = detailText(option?.name, 100, true);
+            if (ids.has(id) || names.has(name)) throw new Error("상품 옵션 정보가 중복되었습니다.");
+            ids.add(id);
+            names.add(name);
+            return {
+                id,
+                name,
+                stock: detailInteger(option.stock, "옵션 재고"),
+                additionalPrice: detailInteger(option.additionalPrice, "옵션 추가 금액")
+            };
+        });
+    }
+
+    function normalizeRelatedProducts(value, currentId) {
+        if (!Array.isArray(value) || value.length > 6) throw new Error("연관 상품 정보가 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const id = detailInteger(item?.id, "연관 상품 번호", 1);
+            if (id === currentId || ids.has(id)) throw new Error("연관 상품 정보가 중복되었습니다.");
+            ids.add(id);
+            const price = detailInteger(item.price, "연관 상품 가격");
+            const stock = detailInteger(item.stock, "연관 상품 재고");
+            return {
+                id,
+                brand: detailText(item.brand, 100, true),
+                category: detailText(item.category, 100, true),
+                name: detailText(item.name, 200, true),
+                reason: detailText(item.reason, 500),
+                model: detailText(item.model, 100),
+                price,
+                stock,
+                stockStatus: detailText(item.stockStatus, 40) || stockLabel(stock),
+                priceLabel: formatPrice(price),
+                thumbnailUrl: detailImage(item.thumbnailUrl)
+            };
+        });
+    }
+
+    function normalizeDetailProduct(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("상품 상세 응답이 올바르지 않습니다.");
+        const id = detailInteger(value.id, "상품 번호", 1);
+        if (id !== productId) throw new Error("조회한 상품과 응답 정보가 일치하지 않습니다.");
+        const price = detailInteger(value.price, "상품 가격");
+        const stock = detailInteger(value.stock, "상품 재고");
+        const options = normalizeDetailOptions(value.options);
+        if (options.length && options.reduce((sum, option) => sum + option.stock, 0) !== stock) {
+            throw new Error("상품 재고가 옵션 합계와 일치하지 않습니다.");
+        }
+        return {
+            id,
+            brand: detailText(value.brand, 100, true),
+            category: detailText(value.category, 100, true),
+            name: detailText(value.name, 200, true),
+            headline: detailText(value.headline, 200),
+            model: detailText(value.model, 100),
+            price,
+            stock,
+            createdDate: detailText(value.createdDate, 30),
+            description: detailText(value.description, 2000),
+            mood: detailText(value.mood, 100),
+            featured: value.featured === true,
+            featuredRank: Number.isSafeInteger(value.featuredRank) && value.featuredRank > 0 ? value.featuredRank : null,
+            stockStatus: detailText(value.stockStatus, 40) || stockLabel(stock),
+            priceLabel: formatPrice(price),
+            options,
+            relatedProducts: normalizeRelatedProducts(value.relatedProducts, id),
+            thumbnailUrl: detailImage(value.thumbnailUrl)
+        };
     }
 
     init();

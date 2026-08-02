@@ -204,7 +204,14 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260727.1");
+                .contains("/js/view/detail.js?v=20260802.1");
+        assertThat(readResource("static/js/view/detail.js"))
+                .contains("function normalizeDetailProduct(")
+                .contains("function normalizeDetailOptions(")
+                .contains("function normalizeCartResponse(")
+                .contains("function readQuantityMemory(")
+                .contains("optionUnitPrice(option) * selectedQuantity")
+                .contains("window.StorefrontState.write(\"recent\", next)");
     }
 
     @Test

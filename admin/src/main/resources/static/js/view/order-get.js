@@ -18,10 +18,10 @@ const OrderDetail = {
 
         this.syncReturnLinks();
         CommonJS.renderSourceContextNotice({ noticeId: 'orderDetailSourceContextNotice', source: this.source });
-        this.bindEvents();
-        this.applyOperationPolicy();
+        await this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        await this.getDetail();
+        if (!await this.getDetail()) return;
+        this.bindEvents();
     },
 
     bindEvents() {
@@ -47,7 +47,7 @@ const OrderDetail = {
                 const productNo = this.normalizeOrderNo(detailButton.dataset.productNo);
                 if (!productNo) {
                     void CommonJS.alert('유효한 상품 번호를 확인할 수 없습니다.', '알림', 'warning');
-                    return;
+                    return false;
                 }
                 const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
                 const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
@@ -95,20 +95,24 @@ const OrderDetail = {
                 throw new Error(error.message || '데이터를 불러오는 중 오류가 발생했습니다.');
             }
 
-            const data = await res.json();
+            const data = this.normalizeOrderDetail(await res.json());
             if (requestId !== this.detailRequestId) {
-                return;
+                return false;
             }
-            if (this.normalizeOrderNo(data.orderNo || this.orderNo) !== this.orderNo) {
+            if (!data) {
                 throw new Error('요청한 주문과 상세 응답 정보가 일치하지 않습니다.');
             }
             this.renderDetail(data);
+            return true;
         } catch (err) {
             if (requestId !== this.detailRequestId) {
                 return;
             }
             console.error('주문 상세 로드 실패:', err);
+            this.currentDetail = null;
             await CommonJS.alert(err.message || '데이터를 불러오는 중 오류가 발생했습니다.', '오류', 'error');
+            location.href = this.returnTo;
+            return false;
         }
     },
 
@@ -117,9 +121,9 @@ const OrderDetail = {
         this.renderSummary(data);
         this.renderActionVisibility(data);
         this.renderDeliveryInfo(data);
-        this.renderOrderItems(Array.isArray(data.items) ? data.items : []);
+        this.renderOrderItems(data.items);
         this.renderAdminMemo(data.adminMemo);
-        this.renderOrderHistory(Array.isArray(data.histories) ? data.histories : []);
+        this.renderOrderHistory(data.histories);
         void this.applyOperationPolicy(this.operationPolicy);
     },
 
@@ -227,7 +231,7 @@ const OrderDetail = {
         }
         const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
 
-        const safeHistories = histories.filter((history) => this.normalizeOrderNo(history.historyNo));
+        const safeHistories = histories;
         if (!safeHistories.length) {
             container.innerHTML = `
                 <div class="product-empty-state py-4">
@@ -399,8 +403,8 @@ const OrderDetail = {
         if (memoInput) {
             memoInput.value = adminMemo;
         }
-        if (adminMemo.length > 500) {
-            await CommonJS.alert('관리 메모는 500자 이하로 입력하세요.', '알림', 'warning');
+        if (adminMemo.length > 1000) {
+            await CommonJS.alert('관리 메모는 1,000자 이하로 입력하세요.', '알림', 'warning');
             return;
         }
         if ((this.currentDetail?.adminMemo || '') === adminMemo) {
@@ -443,7 +447,7 @@ const OrderDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(res, fallbackErrorMessage));
             }
 
-            await this.getDetail();
+            if (!await this.getDetail()) return;
             await CommonJS.alert(successMessage, '성공', 'success');
         } catch (err) {
             console.error(`${logLabel} 실패:`, err);
@@ -451,7 +455,7 @@ const OrderDetail = {
         } finally {
             this.isSubmitting = false;
             this.setActionButtonsDisabled(false);
-            void this.applyOperationPolicy(this.operationPolicy);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -509,7 +513,9 @@ const OrderDetail = {
     },
 
     isValidOrderNo(orderNo) {
-        return /^\d+$/.test(String(orderNo || '')) && Number(orderNo) > 0;
+        const text = String(orderNo || '');
+        const parsed = Number(text);
+        return /^\d+$/.test(text) && Number.isSafeInteger(parsed) && parsed > 0;
     },
 
     normalizeOrderNo(orderNo) {
@@ -517,14 +523,16 @@ const OrderDetail = {
     },
 
     normalizePositiveInteger(value) {
-        const parsed = Number(value);
-        return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+        const text = String(value ?? '').trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : null;
     },
 
     normalizeOrderStatusCode(statusCode) {
         return ['ORDERED', 'PAID', 'PREPARING', 'SHIPPED', 'DELIVERED', 'CANCELLED'].includes(statusCode)
             ? statusCode
-            : 'ORDERED';
+            : '';
     },
 
     isValidCurrentOrderAction() {
@@ -538,13 +546,80 @@ const OrderDetail = {
         if (payload.reason != null && String(payload.reason).length > 200) {
             return false;
         }
-        if ('adminMemo' in payload && String(payload.adminMemo || '').length > 500) {
+        if ('adminMemo' in payload && String(payload.adminMemo || '').length > 1000) {
             return false;
         }
         if ('deliveryCompany' in payload || 'trackingNum' in payload) {
             return this.validateDeliveryPayload(payload.deliveryCompany, payload.trackingNum);
         }
         return true;
+    },
+
+    normalizeFormattedAmount(value) {
+        const text = String(value ?? '').trim();
+        if (!/^\d{1,3}(?:,\d{3})*원$|^\d+원$/.test(text)) return null;
+        const parsed = Number(text.replaceAll(',', '').replace('원', ''));
+        return Number.isSafeInteger(parsed) && parsed >= 0 ? `${parsed.toLocaleString()}원` : null;
+    },
+
+    normalizeOrderDetail(data) {
+        if (!data || this.normalizeOrderNo(data.orderNo) !== this.orderNo) return null;
+        const statusCode = this.normalizeOrderStatusCode(data.statusCode);
+        const totalAmount = this.normalizeFormattedAmount(data.totalAmount);
+        const orderNum = CommonJS.normalizeRequiredText(data.orderNum);
+        const buyerName = CommonJS.normalizeRequiredText(data.buyerName);
+        const buyerPhone = CommonJS.normalizeRequiredText(data.buyerPhone);
+        const adminMemo = this.normalizeAdminMemo(data.adminMemo);
+        if (!statusCode || !totalAmount || !orderNum || !buyerName || !buyerPhone || adminMemo.length > 1000) return null;
+        if (!Array.isArray(data.items) || !Array.isArray(data.histories)) return null;
+        const seenItemNos = new Set();
+        const items = data.items.map((item) => {
+            const orderItemNo = this.normalizeOrderNo(item?.orderItemNo);
+            const productNo = this.normalizeOrderNo(item?.productNo);
+            const productName = CommonJS.normalizeRequiredText(item?.productName);
+            const orderPrice = this.normalizeFormattedAmount(item?.orderPrice);
+            const count = this.normalizePositiveInteger(item?.count);
+            const thumbnailUrl = CommonJS.normalizeImageSource(item?.thumbnailUrl) || '/images/product-placeholder.svg';
+            if (!orderItemNo || !productNo || !productName || !orderPrice || !count || seenItemNos.has(orderItemNo)) return null;
+            seenItemNos.add(orderItemNo);
+            return { orderItemNo, productNo, productName, orderPrice, count, thumbnailUrl };
+        });
+        if (items.some((item) => !item)) return null;
+        const seenHistoryNos = new Set();
+        const histories = data.histories.map((history) => {
+            const historyNo = this.normalizeOrderNo(history?.historyNo);
+            const actionType = ['STATUS_CHANGE', 'DELIVERY_START', 'DELIVERY_COMPLETE', 'CANCEL', 'ADMIN_MEMO'].includes(history?.actionType)
+                ? history.actionType
+                : '';
+            if (!historyNo || !actionType || seenHistoryNos.has(historyNo)) return null;
+            seenHistoryNos.add(historyNo);
+            return { ...history, historyNo, actionType };
+        });
+        if (histories.some((history) => !history)) return null;
+        const actionState = this.resolveOrderActionState(statusCode);
+        return {
+            ...data,
+            orderNo: this.orderNo,
+            orderNum,
+            buyerName,
+            buyerPhone,
+            totalAmount,
+            statusCode,
+            adminMemo,
+            items,
+            histories,
+            ...actionState
+        };
+    },
+
+    resolveOrderActionState(statusCode) {
+        return {
+            canCancel: statusCode === 'ORDERED' || statusCode === 'PAID',
+            canStartDelivery: statusCode === 'PAID',
+            canCompleteDelivery: statusCode === 'SHIPPED',
+            showDeliveryInput: statusCode === 'PAID',
+            showDeliveryInfo: statusCode === 'SHIPPED' || statusCode === 'DELIVERED'
+        };
     }
 };
 

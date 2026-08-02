@@ -175,11 +175,17 @@ test("order detail validates the latest response, items, and histories", () => {
     const source = readViewScript("order-get.js");
 
     assert.match(source, /requestId !== this\.detailRequestId/);
-    assert.match(source, /this\.normalizeOrderNo\(data\.orderNo \|\| this\.orderNo\) !== this\.orderNo/);
+    assert.match(source, /this\.normalizeOrderDetail\(await res\.json\(\)\)/);
     assert.match(source, /Array\.isArray\(data\.histories\)/);
     assert.match(source, /this\.normalizeOrderNo\(item\.productNo\)/);
     assert.match(source, /this\.normalizePositiveInteger\(item\.count\)/);
     assert.match(source, /this\.normalizeOrderNo\(history\.historyNo\)/);
+    assert.match(source, /this\.normalizeFormattedAmount\(data\.totalAmount\)/);
+    assert.match(source, /seenItemNos\.has\(orderItemNo\)/);
+    assert.match(source, /seenHistoryNos\.has\(historyNo\)/);
+    assert.match(source, /this\.resolveOrderActionState\(statusCode\)/);
+    assert.match(source, /adminMemo\.length > 1000/);
+    assert.match(source, /if \(!await this\.getDetail\(\)\) return/);
 });
 
 test("product create and update validate async data and partial saves", () => {

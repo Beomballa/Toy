@@ -34,10 +34,11 @@ const ProductUpdate = {
         CommonJS.renderSourceContextNotice({ noticeId: 'productUpdateSourceContextNotice', source: this.source });
         this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        if (this.hasBootstrapProduct(bootstrapProduct)) {
+        const normalizedBootstrapProduct = this.normalizeProductDetail(bootstrapProduct);
+        if (normalizedBootstrapProduct) {
             // 수정 화면도 서버가 이미 가진 상세 모델을 먼저 써서 초기 로딩 왕복을 줄입니다.
-            this.fillForm(bootstrapProduct);
-            await this.loadFrontDisplayData();
+            this.fillForm(normalizedBootstrapProduct);
+            if (!await this.loadFrontDisplayData()) return;
             await this.loadFrontDisplayRankGuide();
             this.updatePreview();
         } else {
@@ -63,7 +64,7 @@ const ProductUpdate = {
     },
 
     hasBootstrapProduct(bootstrapProduct) {
-        return !!bootstrapProduct && String(bootstrapProduct.productNo) === String(this.productNo);
+        return !!this.normalizeProductDetail(bootstrapProduct);
     },
 
     bindEvents() {
@@ -106,15 +107,18 @@ const ProductUpdate = {
                 throw new Error(error.message || '상품 정보를 불러오는데 실패했습니다.');
             }
 
-            const data = await productResponse.json();
+            const data = this.normalizeProductDetail(await productResponse.json());
             if (requestId !== this.productRequestId) return;
-            if (this.normalizeProductNo(data.productNo) !== this.productNo) {
+            if (!data) {
                 throw new Error('요청한 상품과 상세 응답 정보가 일치하지 않습니다.');
             }
             this.fillForm(data);
-            if (displayResponse.ok) {
-                this.fillFrontDisplayForm(await displayResponse.json());
+            if (!displayResponse.ok) {
+                throw new Error(await CommonJS.extractErrorMessage(displayResponse, '프론트 노출 정보를 불러오지 못했습니다.'));
             }
+            const display = this.normalizeFrontDisplayData(await displayResponse.json());
+            if (!display) throw new Error('프론트 노출 응답 정보가 올바르지 않습니다.');
+            this.fillFrontDisplayForm(display);
             await this.loadFrontDisplayRankGuide();
             this.updatePreview();
         } catch (error) {
@@ -155,13 +159,17 @@ const ProductUpdate = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
             }
-            const data = await response.json();
+            const data = this.normalizeFrontDisplayData(await response.json());
             if (requestId !== this.displayRequestId) return;
+            if (!data) throw new Error('프론트 노출 응답 정보가 올바르지 않습니다.');
             this.fillFrontDisplayForm(data);
+            return true;
         } catch (error) {
             if (requestId !== this.displayRequestId) return;
             console.error('Front Display Load Error:', error);
-            this.fillFrontDisplayForm(null);
+            await CommonJS.alert(error.message || '프론트 노출 정보를 불러오지 못했습니다.', '오류', 'error');
+            window.location.href = this.returnTo;
+            return false;
         }
     },
 
@@ -184,7 +192,8 @@ const ProductUpdate = {
             }
             const guide = await response.json();
             if (requestId !== this.rankGuideRequestId) return;
-            this.frontDisplayRankGuide = guide;
+            this.frontDisplayRankGuide = this.normalizeRankGuide(guide);
+            if (!this.frontDisplayRankGuide) throw new Error('Featured 순번 응답이 올바르지 않습니다.');
             this.renderFrontDisplayRankGuide();
             this.applyFeaturedToggleBehavior();
         } catch (error) {
@@ -210,8 +219,8 @@ const ProductUpdate = {
             return;
         }
 
-        const currentRank = Number(rankInput.value);
-        if (Number.isNaN(currentRank) || currentRank === 999 || currentRank < 1) {
+        const currentRank = this.normalizeFeaturedRank(rankInput.value);
+        if (!currentRank || currentRank === 999) {
             rankInput.value = String(this.frontDisplayRankGuide?.recommendedRank || 1);
         }
     },
@@ -258,22 +267,22 @@ const ProductUpdate = {
         const optionHtml = `
             <tr class="option-item" data-option-id="${optionId}">
                 <td>
-                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" required>
+                    <input type="text" class="form-control form-control-sm option-name" placeholder="예: 250" maxlength="100" required>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-price" placeholder="0" min="0" required>
+                        <input type="number" class="form-control option-price" placeholder="0" min="0" max="2147483647" step="1" required>
                         <span class="input-group-text">원</span>
                     </div>
                 </td>
                 <td>
                     <div class="input-group input-group-sm">
-                        <input type="number" class="form-control option-cnt ${lowStockClass}" placeholder="0" min="0" required>
+                        <input type="number" class="form-control option-cnt ${lowStockClass}" placeholder="0" min="0" max="2147483647" step="1" required>
                         <span class="input-group-text">개</span>
                     </div>
                 </td>
                 <td class="text-end">
-                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-option" data-option-id="${optionId}">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-option" data-option-id="${optionId}" aria-label="옵션 삭제">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -316,8 +325,8 @@ const ProductUpdate = {
     updatePreview() {
         const categorySelect = document.getElementById('categoryNo');
         const brandSelect = document.getElementById('brandNo');
-        const price = document.getElementById('releasePrice').value;
-        document.getElementById('previewPrice').textContent = price ? parseInt(price).toLocaleString() + '원' : '-';
+        const price = this.normalizeNonNegativeInteger(document.getElementById('releasePrice').value);
+        document.getElementById('previewPrice').textContent = price == null ? '-' : `${price.toLocaleString()}원`;
         document.getElementById('previewCategory').textContent = categorySelect.options[categorySelect.selectedIndex]?.text || '-';
         document.getElementById('previewBrand').textContent = brandSelect.options[brandSelect.selectedIndex]?.text || '-';
         document.getElementById('previewName').textContent = document.getElementById('nameKo').value || '-';
@@ -370,7 +379,7 @@ const ProductUpdate = {
             nameKo: validationResult.nameKo,
             modelNum: validationResult.modelNum,
             releasePrice: validationResult.releasePrice,
-            releaseDt: document.getElementById('releaseDt').value || null,
+            releaseDt: validationResult.releaseDt || null,
             thumbnailUrl: validationResult.thumbnailUrl,
             status: this.normalizeProductStatus(document.getElementById('productStatus').value),
             options: validationResult.options
@@ -404,12 +413,12 @@ const ProductUpdate = {
                 });
                 if (!displayResponse.ok) {
                     const displayMessage = await CommonJS.extractErrorMessage(displayResponse, '프론트 노출 정보 저장에 실패했습니다.');
-                    await CommonJS.alert(displayMessage, '오류', 'error');
+                    await CommonJS.alert(`상품 정보는 수정되었지만 ${displayMessage}`, '부분 완료', 'warning');
+                    this.navigateToDetail();
                     return;
                 }
                 await CommonJS.alert('상품 정보가 성공적으로 수정되었습니다.', '성공', 'success');
-                const sourceQuery = this.source ? `&source=${encodeURIComponent(this.source)}` : '';
-                window.location.href = `/admin/products/get?no=${this.productNo}&returnTo=${encodeURIComponent(this.returnTo)}${sourceQuery}`;
+                this.navigateToDetail();
             } else {
                 const message = await CommonJS.extractErrorMessage(response, '알 수 없는 오류');
                 await CommonJS.alert('수정 실패: ' + message, '오류', 'error');
@@ -420,6 +429,7 @@ const ProductUpdate = {
         } finally {
             this.isSubmitting = false;
             this.setSubmitDisabled(false);
+            await this.applyOperationPolicy(this.operationPolicy);
         }
     },
 
@@ -481,6 +491,7 @@ const ProductUpdate = {
         const frontDisplayDescriptionEl = document.getElementById('frontDisplayDescription');
         const frontDisplayMoodEl = document.getElementById('frontDisplayMood');
         const frontDisplayRankEl = document.getElementById('frontDisplayRank');
+        const releaseDtEl = document.getElementById('releaseDt');
 
         const categoryNo = categoryNoEl.value;
         const brandNo = brandNoEl.value;
@@ -490,19 +501,21 @@ const ProductUpdate = {
         const frontDisplayHeadline = this.normalizeRequiredText(frontDisplayHeadlineEl.value);
         const frontDisplayDescription = this.normalizeRequiredText(frontDisplayDescriptionEl.value);
         const frontDisplayMood = this.normalizeRequiredText(frontDisplayMoodEl.value);
-        const frontDisplayRank = Number(frontDisplayRankEl.value);
-        const releasePrice = Number(releasePriceEl.value);
+        const frontDisplayRank = this.normalizeFeaturedRank(frontDisplayRankEl.value);
+        const releasePrice = this.normalizeNonNegativeInteger(releasePriceEl.value);
+        const releaseDt = this.normalizeLocalDate(releaseDtEl.value);
 
         if (!categoryNo) return this.invalidResult('카테고리를 선택해주세요.', categoryNoEl);
         if (!brandNo) return this.invalidResult('브랜드를 선택해주세요.', brandNoEl);
-        if (!this.isValidProductLookupId(categoryNo)) return this.invalidResult('카테고리 값이 올바르지 않습니다.', categoryNoEl);
-        if (!this.isValidProductLookupId(brandNo)) return this.invalidResult('브랜드 값이 올바르지 않습니다.', brandNoEl);
+        if (!this.isKnownSelectValue(categoryNoEl, categoryNo)) return this.invalidResult('카테고리 값이 올바르지 않습니다.', categoryNoEl);
+        if (!this.isKnownSelectValue(brandNoEl, brandNo)) return this.invalidResult('브랜드 값이 올바르지 않습니다.', brandNoEl);
         if (!nameKo) return this.invalidResult('상품명을 입력해주세요.', nameKoEl);
         if (nameKo.length > 200) return this.invalidResult('상품명은 200자 이내로 입력해주세요.', nameKoEl);
         if (modelNum && modelNum.length > 200) return this.invalidResult('모델 번호는 200자 이내로 입력해주세요.', modelNumEl);
-        if (Number.isNaN(releasePrice)) return this.invalidResult('발매가를 입력해주세요.', releasePriceEl);
-        if (releasePrice < 0) return this.invalidResult('발매가는 0원 이상이어야 합니다.', releasePriceEl);
+        if (releasePrice == null) return this.invalidResult('발매가는 0 이상의 정수로 입력해주세요.', releasePriceEl);
+        if (releaseDtEl.value && !releaseDt) return this.invalidResult('발매일이 올바르지 않습니다.', releaseDtEl);
         if (thumbnailUrl && thumbnailUrl.length > 500) return this.invalidResult('썸네일 URL은 500자 이내로 입력해주세요.', thumbnailUrlEl);
+        if (thumbnailUrl && !CommonJS.normalizeImageSource(thumbnailUrl)) return this.invalidResult('썸네일 URL 형식이 올바르지 않습니다.', thumbnailUrlEl);
         const productStatus = this.normalizeProductStatus(document.getElementById('productStatus').value);
         if (!productStatus) return this.invalidResult('상품 상태 값이 올바르지 않습니다.', document.getElementById('productStatus'));
         if (!frontDisplayHeadline) return this.invalidResult('프론트 헤드라인을 입력해주세요.', frontDisplayHeadlineEl);
@@ -512,8 +525,7 @@ const ProductUpdate = {
         if (!frontDisplayMood) return this.invalidResult('프론트 무드 키워드를 입력해주세요.', frontDisplayMoodEl);
         if (frontDisplayMood.length > 120) return this.invalidResult('프론트 무드 키워드는 120자 이내로 입력해주세요.', frontDisplayMoodEl);
         const isFeatured = document.getElementById('frontDisplayFeatured').value === 'true';
-        if (isFeatured && Number.isNaN(frontDisplayRank)) return this.invalidResult('프론트 노출 순서를 입력해주세요.', frontDisplayRankEl);
-        if (isFeatured && (frontDisplayRank < 1 || frontDisplayRank > 999)) {
+        if (isFeatured && !frontDisplayRank) {
             return this.invalidResult('프론트 노출 순서는 1~999 사이여야 합니다.', frontDisplayRankEl);
         }
 
@@ -529,6 +541,7 @@ const ProductUpdate = {
             nameKo,
             modelNum,
             releasePrice,
+            releaseDt,
             thumbnailUrl,
             options: optionValidation.options,
             frontDisplay: {
@@ -552,19 +565,18 @@ const ProductUpdate = {
             const stockCntEl = item.querySelector('.option-cnt');
             const additionalPriceEl = item.querySelector('.option-price');
             const optionName = this.normalizeRequiredText(optionNameEl.value);
-            const stockCnt = Number(stockCntEl.value);
-            const additionalPrice = Number(additionalPriceEl.value || 0);
+            const stockCnt = this.normalizeNonNegativeInteger(stockCntEl.value);
+            const additionalPrice = this.normalizeNonNegativeInteger(additionalPriceEl.value);
+            const optionNameKey = optionName.toLocaleLowerCase('ko-KR');
 
             // 옵션 row는 동적 추가/삭제가 자주 일어나서 여기서 정규화와 중복 체크를 같이 묶어야 흐름을 따라가기 쉽습니다.
             if (!optionName) return this.invalidResult('옵션명을 입력해주세요.', optionNameEl);
             if (optionName.length > 100) return this.invalidResult('옵션명은 100자 이내로 입력해주세요.', optionNameEl);
-            if (Number.isNaN(stockCnt)) return this.invalidResult('수량을 입력해주세요.', stockCntEl);
-            if (stockCnt < 0) return this.invalidResult('수량은 0개 이상이어야 합니다.', stockCntEl);
-            if (Number.isNaN(additionalPrice)) return this.invalidResult('추가 금액을 입력해주세요.', additionalPriceEl);
-            if (additionalPrice < 0) return this.invalidResult('추가 금액은 0원 이상이어야 합니다.', additionalPriceEl);
-            if (seenOptionNames.has(optionName)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
+            if (stockCnt == null) return this.invalidResult('수량은 0 이상의 정수로 입력해주세요.', stockCntEl);
+            if (additionalPrice == null) return this.invalidResult('추가 금액은 0 이상의 정수로 입력해주세요.', additionalPriceEl);
+            if (seenOptionNames.has(optionNameKey)) return this.invalidResult('중복된 옵션명은 저장할 수 없습니다.', optionNameEl);
 
-            seenOptionNames.add(optionName);
+            seenOptionNames.add(optionNameKey);
             const optionNo = Number(item.dataset.optionNo);
             options.push({
                 optionNo: Number.isSafeInteger(optionNo) && optionNo > 0 ? optionNo : null,
@@ -596,11 +608,13 @@ const ProductUpdate = {
         if (!frontDisplay.featured) {
             return frontDisplay.featuredRank === 999;
         }
-        return Number.isFinite(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
+        return Number.isInteger(frontDisplay.featuredRank) && frontDisplay.featuredRank >= 1 && frontDisplay.featuredRank <= 999;
     },
 
     isValidProductNo(productNo) {
-        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
+        const text = String(productNo || '');
+        const parsed = Number(text);
+        return /^\d+$/.test(text) && Number.isSafeInteger(parsed) && parsed > 0;
     },
 
     normalizeProductNo(productNo) {
@@ -608,7 +622,7 @@ const ProductUpdate = {
     },
 
     isValidProductLookupId(value) {
-        return /^\d+$/.test(String(value || '')) && Number(value) > 0;
+        return !!this.normalizeProductNo(value);
     },
 
     normalizeProductStatus(status) {
@@ -616,11 +630,10 @@ const ProductUpdate = {
     },
 
     normalizeFeaturedRankValue(rank, featured) {
-        const parsed = Number(rank);
         if (!featured) {
             return 999;
         }
-        return Number.isInteger(parsed) && parsed >= 1 && parsed <= 999 ? parsed : (this.frontDisplayRankGuide?.recommendedRank || 1);
+        return this.normalizeFeaturedRank(rank) || this.frontDisplayRankGuide?.recommendedRank || 1;
     },
 
     isValidFrontDisplayPayload(frontDisplay) {
@@ -637,6 +650,88 @@ const ProductUpdate = {
             return false;
         }
         return this.validateFrontDisplayRank(frontDisplay);
+    },
+
+    normalizeNonNegativeInteger(value) {
+        const text = String(value ?? '').trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed <= 2147483647 ? parsed : null;
+    },
+
+    normalizeFeaturedRank(value) {
+        const parsed = this.normalizeNonNegativeInteger(value);
+        return parsed != null && parsed >= 1 && parsed <= 999 ? parsed : null;
+    },
+
+    normalizeLocalDate(value) {
+        const text = String(value || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const [year, month, day] = text.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? text : '';
+    },
+
+    isKnownSelectValue(select, value) {
+        const target = this.normalizeProductNo(value);
+        return !!target && Array.from(select?.options || []).some((option) => this.normalizeProductNo(option.value) === target);
+    },
+
+    normalizeProductDetail(data) {
+        if (!data || this.normalizeProductNo(data.productNo) !== this.productNo) return null;
+        const categoryNo = this.normalizeProductNo(data.categoryNo);
+        const brandNo = this.normalizeProductNo(data.brandNo);
+        const productName = this.normalizeRequiredText(data.productName);
+        const productModel = this.normalizeOptionalText(data.productModel);
+        const releasePrice = this.normalizeNonNegativeInteger(data.releasePrice);
+        const releaseDt = data.releaseDt ? this.normalizeLocalDate(data.releaseDt) : '';
+        const thumbnailUrl = this.normalizeOptionalText(data.thumbnailUrl);
+        const statusCode = this.normalizeProductStatus(data.statusCode);
+        if (!categoryNo || !brandNo || !productName || productName.length > 200 || (productModel && productModel.length > 200)) return null;
+        if (releasePrice == null || (data.releaseDt && !releaseDt) || (thumbnailUrl && (thumbnailUrl.length > 500 || !CommonJS.normalizeImageSource(thumbnailUrl)))) return null;
+        if (!statusCode || !Array.isArray(data.options)) return null;
+        const seenOptionNos = new Set();
+        const seenOptionNames = new Set();
+        const options = data.options.map((option) => {
+            const optionNo = this.normalizeProductNo(option?.optionNo);
+            const optionName = this.normalizeRequiredText(option?.optionName);
+            const stockQty = this.normalizeNonNegativeInteger(option?.stockQty);
+            const additionalPrice = this.normalizeNonNegativeInteger(option?.additionalPrice);
+            const optionNameKey = optionName.toLocaleLowerCase('ko-KR');
+            if (!optionNo || !optionName || optionName.length > 100 || stockQty == null || additionalPrice == null) return null;
+            if (seenOptionNos.has(optionNo) || seenOptionNames.has(optionNameKey)) return null;
+            seenOptionNos.add(optionNo);
+            seenOptionNames.add(optionNameKey);
+            return { optionNo, optionName, stockQty, additionalPrice };
+        });
+        if (options.some((option) => !option)) return null;
+        return { ...data, productNo: this.productNo, categoryNo, brandNo, productName, productModel, releasePrice, releaseDt, thumbnailUrl, statusCode, options };
+    },
+
+    normalizeFrontDisplayData(data) {
+        if (!data || this.normalizeProductNo(data.productNo) !== this.productNo || typeof data.featured !== 'boolean') return null;
+        const headline = this.normalizeOptionalText(data.headline) || '';
+        const description = this.normalizeOptionalText(data.description) || '';
+        const mood = this.normalizeOptionalText(data.mood) || '';
+        const featuredRank = this.normalizeFeaturedRankValue(data.featuredRank, data.featured);
+        if (headline.length > 120 || description.length > 1000 || mood.length > 120) return null;
+        return { productNo: this.productNo, headline, description, mood, featured: data.featured, featuredRank };
+    },
+
+    normalizeRankGuide(guide) {
+        const recommendedRank = this.normalizeFeaturedRank(guide?.recommendedRank);
+        if (!recommendedRank) return null;
+        const normalizeRanks = (values) => Array.isArray(values)
+            ? [...new Set(values.map((value) => this.normalizeFeaturedRank(value)).filter(Boolean))]
+            : [];
+        return { recommendedRank, occupiedRanks: normalizeRanks(guide.occupiedRanks), availableRanks: normalizeRanks(guide.availableRanks) };
+    },
+
+    navigateToDetail() {
+        if (!this.isValidProductNo(this.productNo)) return;
+        const params = new URLSearchParams({ no: this.productNo, returnTo: this.returnTo });
+        if (this.source) params.set('source', this.source);
+        window.location.href = `/admin/products/get?${params.toString()}`;
     },
 
     syncReturnLinks() {

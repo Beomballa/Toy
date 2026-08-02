@@ -63,12 +63,12 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">상품명 (한글)</label>
-                                <input type="text" class="form-control" id="nameKo" name="nameKo" required>
+                                <input type="text" class="form-control" id="nameKo" name="nameKo" maxlength="200" required>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">모델 번호</label>
-                                    <input type="text" class="form-control" id="modelNum" name="modelNum">
+                                    <input type="text" class="form-control" id="modelNum" name="modelNum" maxlength="200">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">판매 상태</label>
@@ -83,7 +83,7 @@
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">발매가</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control" id="releasePrice" name="releasePrice">
+                                        <input type="number" class="form-control" id="releasePrice" name="releasePrice" min="0" max="2147483647" step="1" required>
                                         <span class="input-group-text">원</span>
                                     </div>
                                 </div>
@@ -124,7 +124,7 @@
                         <div class="card-body">
                             <div class="mb-3">
                                 <label class="form-label fw-bold">이미지 URL</label>
-                                <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl">
+                                <input type="text" class="form-control" id="thumbnailUrl" name="thumbnailUrl" maxlength="500">
                             </div>
                             <div id="imagePreview" class="bg-light rounded d-flex align-items-center justify-content-center border preview-frame-300">
                                 <img src="" id="previewImage" class="img-fluid d-none preview-image-contain preview-image-contain-300" alt="상품 미리보기">
@@ -201,7 +201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script src="/js/common.js"></script>
-<script src="/js/view/product-update.js?v=20260730-2"></script>
+<script src="/js/view/product-update.js?v=20260802-1"></script>
 <script th:inline="javascript">
     const productDetailData = /*[[${product}]]*/ null;
     document.addEventListener('DOMContentLoaded', () => ProductUpdate.init(productDetailData));

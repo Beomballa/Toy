@@ -204,6 +204,14 @@ test("product create and update validate async data and partial saves", () => {
     assert.match(updateSource, /requestId !== this\.rankGuideRequestId/);
     assert.match(updateSource, /Array\.isArray\(data\.options\)/);
     assert.match(updateSource, /CommonJS\.normalizeImageSource/);
+    assert.match(updateSource, /this\.normalizeProductDetail\(bootstrapProduct\)/);
+    assert.match(updateSource, /this\.normalizeFrontDisplayData\(await displayResponse\.json\(\)\)/);
+    assert.match(updateSource, /typeof data\.featured !== 'boolean'/);
+    assert.match(updateSource, /this\.normalizeNonNegativeInteger\(releasePriceEl\.value\)/);
+    assert.match(updateSource, /this\.normalizeLocalDate\(releaseDtEl\.value\)/);
+    assert.match(updateSource, /seenOptionNos\.has\(optionNo\)/);
+    assert.match(updateSource, /'부분 완료', 'warning'/);
+    assert.match(updateSource, /this\.navigateToDetail\(\)/);
 });
 
 test("content detail and edit validate document identity and latest responses", () => {

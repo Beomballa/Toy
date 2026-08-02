@@ -228,9 +228,17 @@ test("content detail and edit validate document identity and latest responses", 
         assert.match(source, /requestId !== this\.detailRequestId/);
         assert.equal(source.includes("backButton.innerHTML"), false);
     }
-    assert.match(detailSource, /this\.normalizeContentId\(data\.id\) !== this\.state\.id/);
+    assert.match(detailSource, /this\.normalizeContentDetail\(await response\.json\(\)\)/);
     assert.match(detailSource, /this\.formatNumber\(data\.viewCnt\)/);
     assert.match(detailSource, /this\.normalizeOptionalProductNo\(data\.productNo\)/);
+    assert.match(detailSource, /this\.normalizeReactionInsight\(await response\.json\(\)\)/);
+    assert.match(detailSource, /rangeDays !== this\.state\.reactionRangeDays/);
+    assert.match(detailSource, /totalCount !== helpfulCount \+ notHelpfulCount/);
+    assert.match(detailSource, /seenDates\.has\(date\)/);
+    assert.match(detailSource, /itemTotal !== itemHelpful \+ itemNotHelpful/);
+    assert.match(detailSource, /helpfulRate !== expectedRate \|\| status !== expectedStatus/);
+    assert.match(detailSource, /this\.isValidOperatePayload\(payload\)/);
+    assert.match(detailSource, /this\.isOperationBusy\(\)/);
     assert.match(editSource, /this\.normalizeContentId\(saved\?\.id\)/);
     assert.match(editSource, /savedId !== this\.id/);
     assert.match(editSource, /rawContentId && !this\.id/);

@@ -38,11 +38,11 @@ const ContentDetail = {
         this.applyBoardMeta(this.state.boardType);
         CommonJS.renderSourceContextNotice({ noticeId: 'contentDetailSourceContextNotice', source: this.state.source });
         CommonJS.bindMainLogoNavigation(this.getListPath());
-        this.bindEvents();
-        this.applyOperationPolicy();
+        await this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
         const detailLoaded = await this.loadDetail();
         if (detailLoaded) {
+            this.bindEvents();
             await this.loadReactionInsight();
         }
     },
@@ -109,13 +109,13 @@ const ContentDetail = {
                 throw new Error(await CommonJS.extractErrorMessage(response, '상세 내용을 불러오는 중 오류가 발생했습니다.'));
             }
 
-            const data = await response.json();
+            const data = this.normalizeContentDetail(await response.json());
             if (requestId !== this.detailRequestId) return false;
-            if (this.normalizeContentId(data.id) !== this.state.id) {
+            if (!data) {
                 throw new Error('요청한 문서와 상세 응답 정보가 일치하지 않습니다.');
             }
             this.state.data = data;
-            this.state.boardType = ContentBoardConfig.normalizeBoardType(data.boardType || this.state.boardType);
+            this.state.boardType = data.boardType;
             this.applyBoardMeta(this.state.boardType);
             CommonJS.bindMainLogoNavigation(this.getListPath());
             this.renderDetail(data);
@@ -169,8 +169,9 @@ const ContentDetail = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '반응 인사이트를 불러오지 못했습니다.'));
             }
-            const insight = await response.json();
+            const insight = this.normalizeReactionInsight(await response.json());
             if (requestId !== this.reactionRequestId) return;
+            if (!insight) throw new Error('반응 인사이트 응답 정보가 올바르지 않습니다.');
             this.state.reactionInsight = insight;
             this.renderReactionInsight();
         } catch (error) {
@@ -205,7 +206,7 @@ const ContentDetail = {
         this.setText('contentReactionDetailRate', `${this.formatNumber(insight.helpfulRate)}%`);
         this.setText('contentReactionDetailRecent', `${this.formatNumber(insight.recentActivityCount)}건`);
         this.setText('contentReactionDetailRangeLabel', `최근 ${insight.rangeDays || this.state.reactionRangeDays}일`);
-        this.renderReactionInsightTrend(Array.isArray(insight.trend) ? insight.trend : []);
+        this.renderReactionInsightTrend(insight.trend);
         this.renderReactionDecision(insight);
         this.syncReactionRangeButtons();
     },
@@ -275,8 +276,8 @@ const ContentDetail = {
     },
 
     formatNumber(value) {
-        const number = Number(value);
-        return Number.isFinite(number) ? number.toLocaleString('ko-KR') : '0';
+        const number = this.normalizeNonNegativeInteger(value);
+        return number == null ? '0' : number.toLocaleString('ko-KR');
     },
 
     formatShortDate(value) {
@@ -311,13 +312,17 @@ const ContentDetail = {
     },
 
     async operateContent(payload, label) {
-        if (this.operateInFlight) return;
+        if (this.isOperationBusy()) return;
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, `${label} 변경`), '알림', 'warning');
             return;
         }
         if (!this.isValidContentId(this.state.id)) {
             await CommonJS.alert('문서 번호가 올바르지 않습니다.', '알림', 'warning');
+            return;
+        }
+        if (!this.isValidOperatePayload(payload)) {
+            await CommonJS.alert('변경할 콘텐츠 상태 값이 올바르지 않습니다.', '알림', 'warning');
             return;
         }
 
@@ -332,7 +337,7 @@ const ContentDetail = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, `${label} 변경 중 오류가 발생했습니다.`));
             }
-            await this.loadDetail();
+            if (!await this.loadDetail()) return;
             await CommonJS.alert(`${label}가 변경되었습니다.`, '성공', 'success');
         } catch (error) {
             console.error('콘텐츠 빠른 변경 실패:', error);
@@ -370,7 +375,7 @@ const ContentDetail = {
     },
 
     async deleteContent() {
-        if (this.isDeleting) return;
+        if (this.isOperationBusy()) return;
         if (this.operationPolicy && CommonJS.isCommunityWriteBlocked(this.operationPolicy)) {
             await CommonJS.alert(CommonJS.getCommunityWriteBlockedReason(this.operationPolicy, '커뮤니티 삭제'), '알림', 'warning');
             return;
@@ -465,7 +470,9 @@ const ContentDetail = {
     },
 
     isValidContentId(id) {
-        return /^\d+$/.test(String(id || '')) && Number(id) > 0;
+        const text = String(id || '');
+        const parsed = Number(text);
+        return /^\d+$/.test(text) && Number.isSafeInteger(parsed) && parsed > 0;
     },
 
     normalizeContentId(id) {
@@ -473,8 +480,102 @@ const ContentDetail = {
     },
 
     normalizeOptionalProductNo(productNo) {
-        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0
-            ? String(Number(productNo))
-            : null;
+        return this.normalizeContentId(productNo);
+    },
+
+    isValidBoardType(boardType) {
+        return Object.prototype.hasOwnProperty.call(ContentBoardConfig.BOARD_META, boardType);
+    },
+
+    isValidStatus(status) {
+        return status === 'DRAFT' || status === 'PUBLISHED';
+    },
+
+    isValidYn(value) {
+        return value === 'Y' || value === 'N';
+    },
+
+    normalizeNonNegativeInteger(value, max = Number.MAX_SAFE_INTEGER) {
+        const text = String(value ?? '').trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed <= max ? parsed : null;
+    },
+
+    normalizeDate(value) {
+        const text = String(value || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const [year, month, day] = text.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? text : '';
+    },
+
+    normalizeDateTime(value) {
+        const text = String(value || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(text)) return '';
+        const [dateText, timeText] = text.split(' ');
+        const [hour, minute] = timeText.split(':').map(Number);
+        return this.normalizeDate(dateText) && hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59 ? text : '';
+    },
+
+    normalizeContentDetail(data) {
+        if (!data || this.normalizeContentId(data.id) !== this.state.id) return null;
+        const title = CommonJS.normalizeRequiredText(data.title);
+        const content = CommonJS.normalizeRequiredText(data.content);
+        const viewCnt = this.normalizeNonNegativeInteger(data.viewCnt);
+        const productNo = data.productNo == null ? null : this.normalizeOptionalProductNo(data.productNo);
+        const crtDtm = data.crtDtm ? this.normalizeDateTime(data.crtDtm) : '';
+        const uptDtm = data.uptDtm ? this.normalizeDateTime(data.uptDtm) : '';
+        if (!title || title.length > 200 || !content || content.length > 10000 || viewCnt == null) return null;
+        if (!this.isValidBoardType(data.boardType) || !this.isValidStatus(data.status)) return null;
+        if (!this.isValidYn(data.publicYn) || !this.isValidYn(data.pinnedYn)) return null;
+        if ((data.productNo != null && !productNo) || (data.crtDtm && !crtDtm) || (data.uptDtm && !uptDtm)) return null;
+        return { ...data, id: this.state.id, title, content, viewCnt, productNo, crtDtm, uptDtm };
+    },
+
+    normalizeReactionInsight(insight) {
+        if (!insight || this.normalizeContentId(insight.documentId) !== this.state.id) return null;
+        const rangeDays = this.normalizeNonNegativeInteger(insight.rangeDays, 90);
+        const totalCount = this.normalizeNonNegativeInteger(insight.totalCount);
+        const helpfulCount = this.normalizeNonNegativeInteger(insight.helpfulCount);
+        const notHelpfulCount = this.normalizeNonNegativeInteger(insight.notHelpfulCount);
+        const helpfulRate = this.normalizeNonNegativeInteger(insight.helpfulRate, 100);
+        const recentActivityCount = this.normalizeNonNegativeInteger(insight.recentActivityCount);
+        const startDate = this.normalizeDate(insight.startDate);
+        const endDate = this.normalizeDate(insight.endDate);
+        const status = ['HEALTHY', 'IMPROVEMENT_REQUIRED', 'NO_FEEDBACK'].includes(insight.status) ? insight.status : '';
+        if (rangeDays !== this.state.reactionRangeDays || !startDate || !endDate || !status) return null;
+        if ([totalCount, helpfulCount, notHelpfulCount, helpfulRate, recentActivityCount].some((value) => value == null)) return null;
+        if (totalCount !== helpfulCount + notHelpfulCount || !Array.isArray(insight.trend) || insight.trend.length !== rangeDays) return null;
+        const expectedRate = totalCount === 0 ? 0 : Math.round(helpfulCount / totalCount * 100);
+        const expectedStatus = totalCount === 0
+            ? 'NO_FEEDBACK'
+            : (totalCount >= 3 && expectedRate < 60 ? 'IMPROVEMENT_REQUIRED' : 'HEALTHY');
+        if (helpfulRate !== expectedRate || status !== expectedStatus) return null;
+        const seenDates = new Set();
+        const trend = insight.trend.map((item) => {
+            const date = this.normalizeDate(item?.date);
+            const itemHelpful = this.normalizeNonNegativeInteger(item?.helpfulCount);
+            const itemNotHelpful = this.normalizeNonNegativeInteger(item?.notHelpfulCount);
+            const itemTotal = this.normalizeNonNegativeInteger(item?.totalCount);
+            if (!date || seenDates.has(date) || itemHelpful == null || itemNotHelpful == null || itemTotal !== itemHelpful + itemNotHelpful) return null;
+            seenDates.add(date);
+            return { date, helpfulCount: itemHelpful, notHelpfulCount: itemNotHelpful, totalCount: itemTotal };
+        });
+        if (trend.some((item) => !item) || trend.reduce((sum, item) => sum + item.totalCount, 0) !== recentActivityCount) return null;
+        if (trend[0]?.date !== startDate || trend.at(-1)?.date !== endDate) return null;
+        return { ...insight, rangeDays, startDate, endDate, totalCount, helpfulCount, notHelpfulCount, helpfulRate, recentActivityCount, status, trend };
+    },
+
+    isValidOperatePayload(payload) {
+        if (!payload || Object.keys(payload).length !== 1) return false;
+        if ('status' in payload) return this.isValidStatus(payload.status);
+        if ('publicYn' in payload) return this.isValidYn(payload.publicYn);
+        if ('pinnedYn' in payload) return this.isValidYn(payload.pinnedYn);
+        return false;
+    },
+
+    isOperationBusy() {
+        return this.operateInFlight || this.isDeleting;
     }
 };

@@ -33,8 +33,11 @@
             query: { priceBand: "OVER_300", sort: "PRICE_HIGH" }
         }
     };
-    const collectionType = document.body.dataset.collectionType;
-    const collection = COLLECTIONS[collectionType] || COLLECTIONS.recommended;
+    const requestedCollectionType = document.body.dataset.collectionType;
+    const collectionType = Object.prototype.hasOwnProperty.call(COLLECTIONS, requestedCollectionType)
+        ? requestedCollectionType
+        : "recommended";
+    const collection = COLLECTIONS[collectionType];
     const state = {
         page: 0,
         size: 20,
@@ -108,7 +111,8 @@
     }
 
     function applySearch() {
-        state.keyword = elements.searchInput.value.trim();
+        state.keyword = normalizeKeyword(elements.searchInput.value);
+        elements.searchInput.value = state.keyword;
         state.page = 0;
         loadProducts();
     }
@@ -144,13 +148,19 @@
             if (!response.ok) {
                 throw new Error("상품을 불러오지 못했습니다.");
             }
-            const payload = await response.json();
+            const payload = normalizeProductPage(await response.json());
             if (activeRequest !== requestSequence) {
                 return;
             }
-            pagination = payload.pagination || pagination;
-            state.page = Number(pagination.page || 0);
-            renderProducts(Array.isArray(payload.products) ? payload.products : []);
+            if (!payload) throw new Error("상품 목록 응답이 올바르지 않습니다.");
+            if (payload.redirectPage != null) {
+                state.page = payload.redirectPage;
+                await loadProducts();
+                return;
+            }
+            pagination = payload.pagination;
+            state.page = pagination.page;
+            renderProducts(payload.products);
         } catch (error) {
             if (error.name === "AbortError" || activeRequest !== requestSequence) {
                 return;
@@ -164,6 +174,7 @@
                     </div>
                 </div>`;
             elements.resultText.textContent = error.message;
+            currentProducts = [];
         } finally {
             if (activeRequest === requestSequence) {
                 elements.grid.setAttribute("aria-busy", "false");
@@ -177,8 +188,8 @@
 
     function renderProducts(products) {
         currentProducts = products.slice();
-        const total = Number(pagination.totalElements || 0);
-        const totalPages = Number(pagination.totalPages || 0);
+        const total = pagination.totalElements;
+        const totalPages = pagination.totalPages;
         const start = total ? state.page * state.size + 1 : 0;
         const end = Math.min(total, start + products.length - 1);
         elements.totalCount.textContent = total.toLocaleString("ko-KR");
@@ -195,11 +206,11 @@
     }
 
     function productCard(product) {
-        const bookmarked = bookmarkIds().has(Number(product.id));
-        const imageUrl = product.thumbnailUrl || PLACEHOLDER_IMAGE;
+        const bookmarked = bookmarkIds().has(product.id);
+        const imageUrl = product.thumbnailUrl;
         const stockSignal = collectionType === "fast-delivery"
-            ? `재고 확보 ${Number(product.stock || 0).toLocaleString("ko-KR")}개`
-            : `${product.stockStatus || "재고 확인"} · 재고 ${Number(product.stock || 0).toLocaleString("ko-KR")}개`;
+            ? `재고 확보 ${product.stock.toLocaleString("ko-KR")}개`
+            : `${product.stockStatus || "재고 확인"} · 재고 ${product.stock.toLocaleString("ko-KR")}개`;
         const detailUrl = productDetailUrl(product.id);
         return `
             <article class="collection-product">
@@ -213,7 +224,7 @@
                 <div class="collection-product__body">
                     <span class="collection-product__brand">${escapeHtml(product.brand || "Unknown")}</span>
                     <h2>${escapeHtml(product.name || "이름 없는 상품")}</h2>
-                    <strong class="collection-product__price">${escapeHtml(product.priceLabel || formatPrice(product.price))}</strong>
+                    <strong class="collection-product__price">${escapeHtml(formatPrice(product.price))}</strong>
                     <div class="collection-product__meta">
                         <span>${escapeHtml(stockSignal)}</span>
                         <span>${escapeHtml(product.category || "미분류")}</span>
@@ -238,6 +249,7 @@
             return;
         }
         const productId = Number(button.dataset.bookmarkId);
+        if (!Number.isSafeInteger(productId) || productId <= 0) return;
         const bookmarks = readBookmarks();
         const existingIndex = bookmarks.findIndex((product) => Number(product.id) === productId);
         if (existingIndex >= 0) {
@@ -248,14 +260,19 @@
                 bookmarks.unshift(product);
             }
         }
-        if (window.StorefrontState) {
-            window.StorefrontState.write(BOOKMARK_PRODUCTS_KEY, bookmarks.slice(0, 24));
-        } else {
-            window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarks.slice(0, 24)));
+        try {
+            if (window.StorefrontState) {
+                window.StorefrontState.write(BOOKMARK_PRODUCTS_KEY, bookmarks.slice(0, 24));
+            } else {
+                window.localStorage.setItem(BOOKMARK_PRODUCTS_KEY, JSON.stringify(bookmarks.slice(0, 24)));
+            }
+        } catch (ignored) {
+            return;
         }
         button.classList.toggle("is-active", existingIndex < 0);
         button.setAttribute("aria-pressed", String(existingIndex < 0));
         button.querySelector("span").textContent = existingIndex < 0 ? "♥" : "♡";
+        button.setAttribute("aria-label", `${button.closest(".collection-product")?.querySelector("h2")?.textContent || "상품"} 관심 상품 ${existingIndex < 0 ? "해제" : "추가"}`);
     }
 
     function handleStorageChange(event) {
@@ -289,8 +306,9 @@
 
     function hydrateState() {
         const params = new URLSearchParams(window.location.search);
-        state.page = Math.max(0, Number(params.get("page") || 1) - 1);
-        state.keyword = (params.get("keyword") || "").trim();
+        const requestedPage = Number(params.get("page") || 1);
+        state.page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0;
+        state.keyword = normalizeKeyword(params.get("keyword"));
         const requestedSort = params.get("sort");
         if (["DEFAULT", "PRICE_LOW", "PRICE_HIGH", "STOCK_DESC", "LATEST"].includes(requestedSort)) {
             state.sort = requestedSort;
@@ -309,7 +327,14 @@
     function readBookmarks() {
         try {
             const value = JSON.parse(window.localStorage.getItem(BOOKMARK_PRODUCTS_KEY) || "[]");
-            return Array.isArray(value) ? value : [];
+            if (!Array.isArray(value)) return [];
+            const seen = new Set();
+            return value.flatMap((item) => {
+                const normalized = normalizeProduct(item);
+                if (!normalized || seen.has(normalized.id)) return [];
+                seen.add(normalized.id);
+                return [normalized];
+            }).slice(0, 24);
         } catch (error) {
             return [];
         }
@@ -320,7 +345,78 @@
     }
 
     function formatPrice(price) {
-        return Number(price || 0).toLocaleString("ko-KR") + "원";
+        const normalized = normalizeNonNegativeInteger(price);
+        return `${normalized == null ? 0 : normalized.toLocaleString("ko-KR")}원`;
+    }
+
+    function normalizeKeyword(value) {
+        return String(value || "").trim().replace(/\s+/g, " ").slice(0, 100);
+    }
+
+    function normalizePositiveInteger(value) {
+        const text = String(value ?? "").trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
+    }
+
+    function normalizeNonNegativeInteger(value) {
+        const text = String(value ?? "").trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) ? parsed : null;
+    }
+
+    function normalizeImageSource(value) {
+        const text = String(value || "").trim();
+        if (!text) return PLACEHOLDER_IMAGE;
+        if (text.startsWith("/") && !text.startsWith("//")) return text;
+        try {
+            const url = new URL(text, window.location.origin);
+            return ["http:", "https:"].includes(url.protocol) ? url.href : PLACEHOLDER_IMAGE;
+        } catch (ignored) {
+            return PLACEHOLDER_IMAGE;
+        }
+    }
+
+    function normalizeProduct(product) {
+        const id = normalizePositiveInteger(product?.id);
+        const name = String(product?.name || "").trim();
+        const price = normalizeNonNegativeInteger(product?.price);
+        const stock = normalizeNonNegativeInteger(product?.stock);
+        if (!id || !name || name.length > 200 || price == null || stock == null) return null;
+        return {
+            ...product,
+            id,
+            name,
+            brand: String(product.brand || "").trim().slice(0, 100),
+            category: String(product.category || "").trim().slice(0, 100),
+            stockStatus: String(product.stockStatus || "").trim().slice(0, 50),
+            price,
+            stock,
+            thumbnailUrl: normalizeImageSource(product.thumbnailUrl)
+        };
+    }
+
+    function normalizeProductPage(payload) {
+        const meta = payload?.pagination;
+        if (!payload || !Array.isArray(payload.products) || !meta) return null;
+        const page = normalizeNonNegativeInteger(meta.page);
+        const size = normalizePositiveInteger(meta.size);
+        const totalElements = normalizeNonNegativeInteger(meta.totalElements);
+        const totalPages = normalizeNonNegativeInteger(meta.totalPages);
+        if (page == null || size !== state.size || totalElements == null || totalPages == null) return null;
+        const expectedPages = totalElements === 0 ? 0 : Math.ceil(totalElements / size);
+        if (totalPages !== expectedPages || typeof meta.first !== "boolean" || typeof meta.last !== "boolean") return null;
+        if (totalPages > 0 && state.page >= totalPages) {
+            return { redirectPage: totalPages - 1 };
+        }
+        if (page !== state.page || meta.first !== (page === 0) || meta.last !== (totalPages === 0 || page === totalPages - 1)) return null;
+        const seen = new Set();
+        const products = payload.products.map(normalizeProduct);
+        if (products.some((product) => !product) || products.some((product) => seen.has(product.id) || !seen.add(product.id))) return null;
+        if (products.length > size || (totalElements === 0 && products.length) || (totalElements > 0 && !products.length)) return null;
+        return { products, pagination: { page, size, totalElements, totalPages, first: meta.first, last: meta.last } };
     }
 
     function escapeHtml(value) {

@@ -41,6 +41,9 @@ class FrontStorefrontResourceTest {
                 .contains("front-compare-products")
                 .contains("function toggleMenu()")
                 .contains("function openSearch()")
+                .contains("function trapSearchFocus(")
+                .contains("aria-expanded", "true")
+                .contains("event.key === null")
                 .contains("encodeURIComponent(keyword)")
                 .contains("window.addEventListener(\"storage\"")
                 .contains("document.addEventListener(\"storefront:storage-change\"");
@@ -49,6 +52,9 @@ class FrontStorefrontResourceTest {
                 .contains("front-bookmark-products")
                 .contains("front-compare-products")
                 .contains("front-recent-viewed-products")
+                .contains("function normalizeItems(")
+                .contains("const allowedKeys = new Set(")
+                .contains("Number.isSafeInteger(id)")
                 .contains("new CustomEvent(\"storefront:storage-change\"")
                 .contains("Object.freeze({ keys, read, write, remove, count, notify })");
         assertThat(css)
@@ -66,8 +72,8 @@ class FrontStorefrontResourceTest {
                     .contains("/css/storefront-shell.css?v=20260726.2")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
-                    .contains("/js/view/storefront-state.js?v=20260726.1")
-                    .contains("/js/view/storefront-shell.js?v=20260726.2");
+                    .contains("/js/view/storefront-state.js?v=20260802.1")
+                    .contains("/js/view/storefront-shell.js?v=20260802.1");
         }
     }
 
@@ -124,7 +130,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/storefront-state.js?v=20260726.1")
+                .contains("/js/view/storefront-state.js?v=20260802.1")
                 .contains("/js/view/app.js?v=20260726.2");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")

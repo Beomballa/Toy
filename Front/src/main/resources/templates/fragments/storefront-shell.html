@@ -27,7 +27,8 @@
                 <a href="/front/collections/recommended" th:classappend="${activeSection == 'SHOP'} ? 'is-current'">SHOP</a>
             </nav>
             <div class="store-shell__actions">
-                <button type="button" data-store-shell-search-open aria-haspopup="dialog">
+                <button type="button" data-store-shell-search-open aria-haspopup="dialog"
+                        aria-controls="storeShellSearchDialog" aria-expanded="false">
                     <span>검색</span>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
                 </button>
@@ -51,7 +52,7 @@
         </nav>
     </div>
 
-    <div class="store-shell__search" data-store-shell-search role="dialog" aria-modal="true"
+    <div class="store-shell__search" id="storeShellSearchDialog" data-store-shell-search role="dialog" aria-modal="true"
          aria-labelledby="storeShellSearchTitle" hidden>
         <div class="store-shell__search-panel">
             <div class="store-shell__search-head">
@@ -62,7 +63,7 @@
                 <label for="storeShellSearchInput">찾고 있는 상품을 입력하세요.</label>
                 <div>
                     <input id="storeShellSearchInput" data-store-shell-search-input type="search"
-                           placeholder="브랜드, 상품명, 모델번호" autocomplete="off">
+                           placeholder="브랜드, 상품명, 모델번호" autocomplete="off" maxlength="100">
                     <button type="submit">검색</button>
                 </div>
             </form>

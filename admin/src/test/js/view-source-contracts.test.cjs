@@ -227,6 +227,14 @@ test("content detail and edit validate document identity and latest responses", 
     assert.match(detailSource, /this\.normalizeOptionalProductNo\(data\.productNo\)/);
     assert.match(editSource, /this\.normalizeContentId\(saved\?\.id\)/);
     assert.match(editSource, /savedId !== this\.id/);
+    assert.match(editSource, /rawContentId && !this\.id/);
+    assert.match(editSource, /this\.normalizeContentDetail\(await res\.json\(\)\)/);
+    assert.match(editSource, /this\.isValidBoardType\(data\.boardType\)/);
+    assert.match(editSource, /normalizedTitle\.length > 200/);
+    assert.match(editSource, /normalizedContent\.length > 10000/);
+    assert.match(editSource, /this\.isDeleting \|\| this\.isSaving/);
+    assert.match(editSource, /clearTimeout\(this\.debounceTimer\)/);
+    assert.match(editSource, /this\.hasUnsavedFormChanges\(\)/);
 });
 
 test("dashboard validates stats, identifiers, output, and navigation", () => {

@@ -26,12 +26,13 @@
     let memoryCartToken = null;
     let submitting = false;
     let cartMutating = false;
+    let cartRequestSequence = 0;
 
     function cartToken() {
         const key = "grade-stock-cart-token";
         try {
             let token = window.localStorage.getItem(key);
-            if (!token) {
+            if (!isValidCartToken(token)) {
                 token = createCartToken();
                 window.localStorage.setItem(key, token);
             }
@@ -46,8 +47,13 @@
         return window.crypto?.randomUUID?.() || `cart-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 
+    function isValidCartToken(value) {
+        return /^[A-Za-z0-9-]{16,80}$/.test(String(value || ""));
+    }
+
     function formatPrice(value) {
-        return `${Number(value || 0).toLocaleString("ko-KR")}원`;
+        const normalized = normalizeNonNegativeInteger(value);
+        return `${normalized == null ? 0 : normalized.toLocaleString("ko-KR")}원`;
     }
 
     function escapeMarkup(value) {
@@ -90,16 +96,22 @@
     }
 
     async function loadCart() {
+        const activeRequest = ++cartRequestSequence;
         setListBusy(true);
         syncCheckoutAvailability(false);
         try {
-            cart = await request("/api/front/cart");
+            const nextCart = normalizeCart(await request("/api/front/cart"));
+            if (activeRequest !== cartRequestSequence) return;
+            if (!nextCart) throw new Error("장바구니 응답이 올바르지 않습니다.");
+            cart = nextCart;
             renderCart();
         } catch (error) {
+            if (activeRequest !== cartRequestSequence) return;
+            cart = emptyCart();
             showToast(error.message);
             renderUnavailable();
         } finally {
-            setListBusy(false);
+            if (activeRequest === cartRequestSequence) setListBusy(false);
         }
     }
 
@@ -173,17 +185,25 @@
 
     async function changeItem(itemId, nextQuantity) {
         if (cartMutating) return;
+        const normalizedItemId = normalizePositiveInteger(itemId);
+        const normalizedQuantity = normalizePositiveInteger(nextQuantity);
+        if (!normalizedItemId || !normalizedQuantity || normalizedQuantity > 20) return;
         cartMutating = true;
+        const activeRequest = ++cartRequestSequence;
         syncCheckoutAvailability(false);
         setListBusy(true);
         try {
-            cart = await request(`/api/front/cart/items/${itemId}`, {
+            const nextCart = normalizeCart(await request(`/api/front/cart/items/${normalizedItemId}`, {
                 method: "PATCH",
-                body: JSON.stringify({ quantity: nextQuantity })
-            });
+                body: JSON.stringify({ quantity: normalizedQuantity })
+            }));
+            if (activeRequest !== cartRequestSequence) return;
+            if (!nextCart) throw new Error("장바구니 변경 응답이 올바르지 않습니다.");
+            cart = nextCart;
             renderCart();
         } catch (error) {
             showToast(error.message);
+            await loadCart();
         } finally {
             cartMutating = false;
             setListBusy(false);
@@ -193,15 +213,22 @@
 
     async function removeItem(itemId) {
         if (cartMutating) return;
+        const normalizedItemId = normalizePositiveInteger(itemId);
+        if (!normalizedItemId) return;
         cartMutating = true;
+        const activeRequest = ++cartRequestSequence;
         syncCheckoutAvailability(false);
         setListBusy(true);
         try {
-            cart = await request(`/api/front/cart/items/${itemId}`, { method: "DELETE" });
+            const nextCart = normalizeCart(await request(`/api/front/cart/items/${normalizedItemId}`, { method: "DELETE" }));
+            if (activeRequest !== cartRequestSequence) return;
+            if (!nextCart) throw new Error("장바구니 삭제 응답이 올바르지 않습니다.");
+            cart = nextCart;
             renderCart();
             showToast("상품을 장바구니에서 삭제했습니다.");
         } catch (error) {
             showToast(error.message);
+            await loadCart();
         } finally {
             cartMutating = false;
             setListBusy(false);
@@ -212,14 +239,19 @@
     async function clearCart() {
         if (cartMutating || !cart.items.length || !window.confirm("장바구니의 모든 상품을 삭제할까요?")) return;
         cartMutating = true;
+        const activeRequest = ++cartRequestSequence;
         syncCheckoutAvailability(false);
         setListBusy(true);
         try {
-            cart = await request("/api/front/cart/items", { method: "DELETE" });
+            const nextCart = normalizeCart(await request("/api/front/cart/items", { method: "DELETE" }));
+            if (activeRequest !== cartRequestSequence) return;
+            if (!nextCart || nextCart.items.length) throw new Error("장바구니 초기화 응답이 올바르지 않습니다.");
+            cart = nextCart;
             renderCart();
             showToast("장바구니를 비웠습니다.");
         } catch (error) {
             showToast(error.message);
+            await loadCart();
         } finally {
             cartMutating = false;
             setListBusy(false);
@@ -275,7 +307,7 @@
 
         // 완료된 주문서의 개인정보와 이전 장바구니 상태를 브라우저에 남기지 않는다.
         elements.form.reset();
-        cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
+        cart = emptyCart();
         renderCart();
         elements.complete.hidden = false;
         document.getElementById("completedOrderTitle")?.focus();
@@ -319,17 +351,24 @@
     elements.form?.addEventListener("submit", async (event) => {
         event.preventDefault();
         if (submitting || !cart.items.length || !elements.form.reportValidity()) return;
+        const body = Object.fromEntries(new FormData(elements.form).entries());
+        const normalizedBody = normalizeCheckoutPayload(body);
+        if (!normalizedBody) {
+            showToast("주문자와 배송지 입력값을 다시 확인해주세요.");
+            return;
+        }
         submitting = true;
         elements.submit.disabled = true;
         elements.submit.setAttribute("aria-busy", "true");
         elements.submit.querySelector("span").textContent = "주문 접수 중";
-        const body = Object.fromEntries(new FormData(elements.form).entries());
+        const expectedTotalAmount = cart.totalAmount;
         try {
-            const order = await request("/api/front/orders", {
+            const order = normalizeOrderCreateResponse(await request("/api/front/orders", {
                 method: "POST",
-                body: JSON.stringify(body)
-            });
-            const buyerPhone = String(body.buyerPhone || "");
+                body: JSON.stringify(normalizedBody)
+            }), expectedTotalAmount);
+            if (!order) throw new Error("주문 완료 응답이 올바르지 않습니다.");
+            const buyerPhone = normalizedBody.buyerPhone;
             showCompletedOrder(order, buyerPhone);
         } catch (error) {
             showToast(error.message);
@@ -342,6 +381,100 @@
             syncCheckoutAvailability(cart.items.length > 0);
         }
     });
+
+    function emptyCart() {
+        return { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
+    }
+
+    function normalizePositiveInteger(value) {
+        const text = String(value ?? "").trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed > 0 && parsed <= 2147483647 ? parsed : null;
+    }
+
+    function normalizeNonNegativeInteger(value) {
+        const text = String(value ?? "").trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed <= 2147483647 ? parsed : null;
+    }
+
+    function normalizeImageSource(value) {
+        const text = String(value || "").trim();
+        if (!text) return fallbackImage();
+        if (text.startsWith("/") && !text.startsWith("//")) return text;
+        try {
+            const url = new URL(text, window.location.origin);
+            return ["http:", "https:"].includes(url.protocol) ? url.href : fallbackImage();
+        } catch (ignored) {
+            return fallbackImage();
+        }
+    }
+
+    function normalizeCart(payload) {
+        if (!payload || !Array.isArray(payload.items)) return null;
+        const seenItemIds = new Set();
+        const seenOptionIds = new Set();
+        const items = payload.items.map((item) => {
+            const itemId = normalizePositiveInteger(item?.itemId);
+            const productId = normalizePositiveInteger(item?.productId);
+            const optionId = normalizePositiveInteger(item?.optionId);
+            const unitPrice = normalizeNonNegativeInteger(item?.unitPrice);
+            const quantity = normalizePositiveInteger(item?.quantity);
+            const stock = normalizeNonNegativeInteger(item?.stock);
+            const lineAmount = normalizeNonNegativeInteger(item?.lineAmount);
+            const productName = String(item?.productName || "").trim();
+            const optionName = String(item?.optionName || "").trim();
+            if (!itemId || !productId || !optionId || unitPrice == null || !quantity || stock == null || lineAmount == null) return null;
+            if (!productName || !optionName || quantity > 20 || quantity > stock || lineAmount !== unitPrice * quantity) return null;
+            if (seenItemIds.has(itemId) || seenOptionIds.has(optionId)) return null;
+            seenItemIds.add(itemId);
+            seenOptionIds.add(optionId);
+            return { ...item, itemId, productId, optionId, unitPrice, quantity, stock, lineAmount, productName, optionName, thumbnailUrl: normalizeImageSource(item.thumbnailUrl) };
+        });
+        if (items.some((item) => !item)) return null;
+        const itemCount = normalizeNonNegativeInteger(payload.itemCount);
+        const totalQuantity = normalizeNonNegativeInteger(payload.totalQuantity);
+        const totalAmount = normalizeNonNegativeInteger(payload.totalAmount);
+        const calculatedQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        const calculatedAmount = items.reduce((sum, item) => sum + item.lineAmount, 0);
+        if (itemCount !== items.length || totalQuantity !== calculatedQuantity || totalAmount !== calculatedAmount) return null;
+        return { items, itemCount, totalQuantity, totalAmount };
+    }
+
+    function normalizeCheckoutPayload(payload) {
+        const normalizeRequired = (value, max) => {
+            const text = String(value || "").trim().replace(/\s+/g, " ");
+            return text && text.length <= max ? text : null;
+        };
+        const normalizeOptional = (value, max) => {
+            const text = String(value || "").trim().replace(/\s+/g, " ");
+            return text.length <= max ? text : null;
+        };
+        const buyerName = normalizeRequired(payload?.buyerName, 50);
+        const recipientName = normalizeRequired(payload?.recipientName, 50);
+        const buyerPhone = String(payload?.buyerPhone || "").trim();
+        const recipientPhone = String(payload?.recipientPhone || "").trim();
+        const postalCode = normalizeRequired(payload?.postalCode, 10);
+        const address1 = normalizeRequired(payload?.address1, 200);
+        const address2 = normalizeOptional(payload?.address2, 200);
+        const deliveryRequest = normalizeOptional(payload?.deliveryRequest, 200);
+        const phonePattern = /^[0-9()\-\s]{10,20}$/;
+        const normalizedPhoneLength = (value) => value.replace(/\D/g, "").length;
+        if (!buyerName || !recipientName || !postalCode || !address1 || address2 == null || deliveryRequest == null) return null;
+        if (!phonePattern.test(buyerPhone) || !phonePattern.test(recipientPhone)) return null;
+        if (![10, 11].includes(normalizedPhoneLength(buyerPhone)) || ![10, 11].includes(normalizedPhoneLength(recipientPhone))) return null;
+        return { buyerName, buyerPhone, recipientName, recipientPhone, postalCode, address1, address2, deliveryRequest };
+    }
+
+    function normalizeOrderCreateResponse(order, expectedTotalAmount) {
+        const orderId = normalizePositiveInteger(order?.orderId);
+        const totalAmount = normalizeNonNegativeInteger(order?.totalAmount);
+        const orderNumber = String(order?.orderNumber || "").trim();
+        if (!orderId || !/^GS[A-Z0-9]{10,40}$/.test(orderNumber) || totalAmount !== expectedTotalAmount || order?.status !== "ORDERED") return null;
+        return { orderId, orderNumber, totalAmount, status: "ORDERED" };
+    }
 
     loadCart();
 })();

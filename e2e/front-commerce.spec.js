@@ -4,6 +4,7 @@ const cartResponse = (quantity = 1) => ({
   items: [{
     itemId: 7,
     productId: 12,
+    optionId: 31,
     productName: "반스 올드스쿨 블랙",
     optionName: "260",
     unitPrice: 75000,
@@ -103,4 +104,14 @@ test("주문 접수는 중복 요청을 차단하고 완료 후 개인정보와 
     orderNumber: "GS202607270001",
     phone: "010-1234-5678"
   });
+});
+
+test("장바구니 합계가 응답 품목과 다르면 주문 진입을 차단한다", async ({ page }) => {
+  await page.route("**/api/front/cart", async (route) => {
+    await route.fulfill({ json: { ...cartResponse(), totalAmount: 1 } });
+  });
+
+  await page.goto("/front/cart");
+  await expect(page.locator("[data-cart-retry]")).toBeVisible();
+  await expect(page.locator("#commerceCheckoutLink")).toHaveAttribute("aria-disabled", "true");
 });

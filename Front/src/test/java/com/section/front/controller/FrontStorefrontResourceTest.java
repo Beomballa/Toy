@@ -245,7 +245,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
                 .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260727.2")
+                .contains("/js/view/commerce.js?v=20260802.1")
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("id=\"completedOrderTitle\"");
@@ -253,7 +253,7 @@ class FrontStorefrontResourceTest {
                 .contains("window.sessionStorage.setItem(\"grade-stock-last-order\"")
                 .contains("저장소 접근이 제한돼도 서버에서 완료된 주문 결과는 그대로 표시한다.")
                 .contains("elements.form.reset()")
-                .contains("cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 }")
+                .contains("cart = emptyCart()")
                 .contains("document.getElementById(\"completedOrderTitle\")?.focus()")
                 .contains("formatPhoneInput")
                 .contains("syncBuyerToRecipient")
@@ -271,7 +271,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"commerceStockSummary\"")
                 .contains("id=\"commerceTotalQuantity\"")
                 .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260727.2");
+                .contains("/js/view/commerce.js?v=20260802.1");
         assertThat(script)
                 .contains("request(\"/api/front/cart/items\", { method: \"DELETE\" })")
                 .contains("commerce-stock-badge")
@@ -279,6 +279,10 @@ class FrontStorefrontResourceTest {
                 .contains("data-cart-retry")
                 .contains("if (cartMutating) return")
                 .contains("syncCheckoutAvailability(false)")
+                .contains("function normalizeCart(payload)")
+                .contains("lineAmount !== unitPrice * quantity")
+                .contains("totalAmount !== calculatedAmount")
+                .contains("function normalizeOrderCreateResponse(order, expectedTotalAmount)")
                 .contains("\"/images/product-placeholder.svg\"")
                 .doesNotContain("placehold.co");
     }

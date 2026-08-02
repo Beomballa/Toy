@@ -276,6 +276,13 @@ test("product detail validates async sections, identifiers, and output", () => {
     assert.match(source, /Array\.isArray\(payload\)/);
     assert.match(source, /this\.normalizeProductNo\(history\.actorNo\)/);
     assert.match(source, /this\.formatCount\(history\.optionCount\)/);
+    assert.match(source, /this\.normalizeProductDetail\(bootstrapProduct\)/);
+    assert.match(source, /this\.normalizeFrontDisplay\(await response\.json\(\)\)/);
+    assert.match(source, /this\.normalizeProductHistory\(history\)/);
+    assert.match(source, /seenOptionNos\.has\(optionNo\)/);
+    assert.match(source, /options\.reduce\(\(sum, option\) => sum \+ option\.stockQty, 0\)/);
+    assert.match(source, /typeof data\.featured !== 'boolean'/);
+    assert.match(source, /this\.isOperationBusy\(\)/);
     assert.equal(source.includes("backButton.innerHTML"), false);
 });
 

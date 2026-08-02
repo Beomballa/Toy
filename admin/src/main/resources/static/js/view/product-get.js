@@ -31,11 +31,12 @@ const ProductDetail = {
 
         this.syncReturnLinks();
         CommonJS.renderSourceContextNotice({ noticeId: 'productDetailSourceContextNotice', source: this.source });
-        this.applyOperationPolicy();
+        await this.applyOperationPolicy();
         window.addEventListener(CommonJS.systemSettingsEventName, (event) => this.applyOperationPolicy(event.detail));
-        if (this.hasBootstrapProduct(bootstrapProduct)) {
+        const normalizedBootstrapProduct = this.normalizeProductDetail(bootstrapProduct);
+        if (normalizedBootstrapProduct) {
             // 서버가 이미 조회한 상세 모델을 우선 사용해서 초기 빈 화면과 추가 왕복을 줄입니다.
-            this.renderProduct(bootstrapProduct);
+            this.renderProduct(normalizedBootstrapProduct);
             await this.loadFrontDisplay();
             await this.loadProductHistory();
         } else {
@@ -47,7 +48,7 @@ const ProductDetail = {
     },
 
     hasBootstrapProduct(bootstrapProduct) {
-        return !!bootstrapProduct && String(bootstrapProduct.productNo) === String(this.productNo);
+        return !!this.normalizeProductDetail(bootstrapProduct);
     },
 
     bindEvents() {
@@ -122,7 +123,7 @@ const ProductDetail = {
     },
 
     async quickOperateStatus(status) {
-        if (this.isQuickOperating) {
+        if (this.isOperationBusy()) {
             return;
         }
         const normalizedStatus = this.normalizeProductStatusCode(status);
@@ -166,7 +167,7 @@ const ProductDetail = {
     },
 
     async cloneProduct() {
-        if (this.isCloning) {
+        if (this.isOperationBusy()) {
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -221,9 +222,9 @@ const ProductDetail = {
                 throw new Error(error.message || '상품 정보를 가져오는데 실패했습니다.');
             }
 
-            const data = await response.json();
+            const data = this.normalizeProductDetail(await response.json());
             if (requestId !== this.detailRequestId) return;
-            if (this.normalizeProductNo(data.productNo) !== this.productNo) {
+            if (!data) {
                 throw new Error('요청한 상품과 상세 응답 정보가 일치하지 않습니다.');
             }
             this.renderProduct(data);
@@ -296,7 +297,7 @@ const ProductDetail = {
         const optionMetaText = document.getElementById('productOptionMetaText');
         const totalStockValueEl = document.getElementById('totalStockValue');
 
-        const options = Array.isArray(data.options) ? data.options : [];
+        const options = data.options;
         if (options.length > 0) {
             if (optionCount) optionCount.textContent = String(options.length);
             if (optionMetaText) optionMetaText.textContent = `옵션 ${options.length}개`;
@@ -341,8 +342,9 @@ const ProductDetail = {
             if (!response.ok) {
                 throw new Error(await CommonJS.extractErrorMessage(response, '프론트 노출 정보를 불러오지 못했습니다.'));
             }
-            const data = await response.json();
+            const data = this.normalizeFrontDisplay(await response.json());
             if (requestId !== this.displayRequestId) return;
+            if (!data) throw new Error('프론트 노출 응답 정보가 올바르지 않습니다.');
             this.renderFrontDisplay(data);
         } catch (error) {
             if (requestId !== this.displayRequestId) return;
@@ -388,7 +390,9 @@ const ProductDetail = {
 
             const payload = await response.json();
             if (requestId !== this.historyRequestId) return;
-            const histories = Array.isArray(payload) ? payload : [];
+            const histories = Array.isArray(payload)
+                ? payload.map((history) => this.normalizeProductHistory(history)).filter(Boolean)
+                : [];
             if (historyCountEl) {
                 historyCountEl.textContent = String(histories.length);
             }
@@ -461,7 +465,7 @@ const ProductDetail = {
     },
 
     async deleteProduct() {
-        if (this.isDeleting) {
+        if (this.isOperationBusy()) {
             return;
         }
         if (this.operationPolicy && CommonJS.isAdminWriteBlocked(this.operationPolicy)) {
@@ -500,13 +504,13 @@ const ProductDetail = {
     },
 
     formatPrice(price) {
-        const parsed = Number(price);
-        return `${Number.isFinite(parsed) && parsed >= 0 ? parsed.toLocaleString() : '0'}원`;
+        const parsed = this.normalizeNonNegativeInteger(price);
+        return `${parsed == null ? '0' : parsed.toLocaleString()}원`;
     },
 
     formatCount(value) {
-        const parsed = Number(value);
-        return Number.isInteger(parsed) && parsed >= 0 ? parsed.toLocaleString() : '0';
+        const parsed = this.normalizeNonNegativeInteger(value, Number.MAX_SAFE_INTEGER);
+        return parsed == null ? '0' : parsed.toLocaleString();
     },
 
     syncReturnLinks() {
@@ -555,7 +559,9 @@ const ProductDetail = {
     },
 
     isValidProductNo(productNo) {
-        return /^\d+$/.test(String(productNo || '')) && Number(productNo) > 0;
+        const text = String(productNo || '');
+        const parsed = Number(text);
+        return /^\d+$/.test(text) && Number.isSafeInteger(parsed) && parsed > 0;
     },
 
     normalizeProductNo(productNo) {
@@ -563,7 +569,88 @@ const ProductDetail = {
     },
 
     normalizeProductStatusCode(statusCode) {
-        return ['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(statusCode) ? statusCode : 'ACTIVE';
+        return ['ACTIVE', 'HIDDEN', 'SOLD_OUT'].includes(statusCode) ? statusCode : '';
+    },
+
+    normalizeNonNegativeInteger(value, max = 2147483647) {
+        const text = String(value ?? '').trim();
+        if (!/^\d+$/.test(text)) return null;
+        const parsed = Number(text);
+        return Number.isSafeInteger(parsed) && parsed <= max ? parsed : null;
+    },
+
+    normalizeLocalDate(value) {
+        const text = String(value || '').trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '';
+        const [year, month, day] = text.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? text : '';
+    },
+
+    normalizeProductDetail(data) {
+        if (!data || this.normalizeProductNo(data.productNo) !== this.productNo) return null;
+        const productName = CommonJS.normalizeRequiredText(data.productName);
+        const productModel = CommonJS.normalizeOptionalText(data.productModel);
+        const releasePrice = this.normalizeNonNegativeInteger(data.releasePrice);
+        const releaseDt = data.releaseDt ? this.normalizeLocalDate(data.releaseDt) : '';
+        const statusCode = this.normalizeProductStatusCode(data.statusCode);
+        const thumbnailUrl = CommonJS.normalizeOptionalText(data.thumbnailUrl);
+        if (!productName || productName.length > 200 || (productModel && productModel.length > 200)) return null;
+        if (releasePrice == null || (data.releaseDt && !releaseDt) || !statusCode || !Array.isArray(data.options)) return null;
+        if (thumbnailUrl && (thumbnailUrl.length > 500 || !CommonJS.normalizeImageSource(thumbnailUrl))) return null;
+        const seenOptionNos = new Set();
+        const seenOptionNames = new Set();
+        const options = data.options.map((option) => {
+            const optionNo = this.normalizeProductNo(option?.optionNo);
+            const optionName = CommonJS.normalizeRequiredText(option?.optionName);
+            const stockQty = this.normalizeNonNegativeInteger(option?.stockQty);
+            const additionalPrice = this.normalizeNonNegativeInteger(option?.additionalPrice);
+            const nameKey = optionName.toLocaleLowerCase('ko-KR');
+            if (!optionNo || !optionName || optionName.length > 100 || stockQty == null || additionalPrice == null) return null;
+            if (seenOptionNos.has(optionNo) || seenOptionNames.has(nameKey)) return null;
+            seenOptionNos.add(optionNo);
+            seenOptionNames.add(nameKey);
+            return { optionNo, optionName, stockQty, additionalPrice };
+        });
+        if (options.some((option) => !option)) return null;
+        const totalStock = options.reduce((sum, option) => sum + option.stockQty, 0);
+        return {
+            ...data,
+            productNo: this.productNo,
+            productName,
+            productModel,
+            releasePrice,
+            releaseDt,
+            statusCode,
+            thumbnailUrl,
+            hasThumbnail: Boolean(thumbnailUrl),
+            options,
+            optionCount: options.length,
+            totalStock
+        };
+    },
+
+    normalizeFrontDisplay(data) {
+        if (!data || this.normalizeProductNo(data.productNo) !== this.productNo || typeof data.featured !== 'boolean') return null;
+        const headline = CommonJS.normalizeOptionalText(data.headline) || '';
+        const description = CommonJS.normalizeOptionalText(data.description) || '';
+        const mood = CommonJS.normalizeOptionalText(data.mood) || '';
+        const featuredRank = this.normalizeNonNegativeInteger(data.featuredRank);
+        if (headline.length > 120 || description.length > 1000 || mood.length > 120) return null;
+        if (data.featured && (featuredRank == null || featuredRank < 1 || featuredRank > 999)) return null;
+        return { productNo: this.productNo, headline, description, mood, featured: data.featured, featuredRank: data.featured ? featuredRank : 999 };
+    },
+
+    normalizeProductHistory(history) {
+        const historyNo = this.normalizeProductNo(history?.historyNo);
+        const optionCount = this.normalizeNonNegativeInteger(history?.optionCount);
+        const totalStock = this.normalizeNonNegativeInteger(history?.totalStock, Number.MAX_SAFE_INTEGER);
+        if (!historyNo || !['CREATED', 'UPDATED', 'DELETED'].includes(history?.actionType) || optionCount == null || totalStock == null) return null;
+        return { ...history, historyNo, optionCount, totalStock };
+    },
+
+    isOperationBusy() {
+        return this.isCloning || this.isDeleting || this.isQuickOperating;
     },
 
     buildLogPathFromBase(basePath) {

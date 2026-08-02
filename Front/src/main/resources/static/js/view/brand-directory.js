@@ -103,9 +103,9 @@
                 signal: directoryController.signal
             });
             if (!response.ok) throw new Error("브랜드 데이터를 불러오지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeDirectoryResponse(await response.json());
             directoryBrands = normalizeFacets(payload.brandFacets);
-            directoryMetrics = payload.metrics || null;
+            directoryMetrics = payload.metrics;
             renderDirectorySummary();
             renderBrandCards();
             if (state.brand && directoryBrands.some((item) => item.value === state.brand)) {
@@ -237,9 +237,9 @@
                 signal: productController.signal
             });
             if (!response.ok) throw new Error("브랜드 상품을 불러오지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeProductResponse(await response.json(), true);
             if (sequence !== productRequestSequence) return;
-            selectedBrandMetrics = payload.metrics || null;
+            selectedBrandMetrics = payload.metrics;
             selectedBrandCategories = normalizeFacets(payload.categoryFacets);
             renderBrandProfile();
             renderCategoryOptions();
@@ -264,7 +264,7 @@
                 signal: productController.signal
             });
             if (!response.ok) throw new Error("브랜드 상품을 불러오지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeProductResponse(await response.json(), false);
             if (sequence !== productRequestSequence) return;
             renderProducts(payload);
         } catch (error) {
@@ -338,8 +338,8 @@
     }
 
     function renderProducts(payload) {
-        currentProducts = Array.isArray(payload?.products) ? payload.products.slice() : [];
-        pagination = normalizePagination(payload?.pagination);
+        currentProducts = payload.products.slice();
+        pagination = payload.pagination;
         state.page = pagination.page;
         if (state.page !== Number(new URLSearchParams(window.location.search).get("page") || 1) - 1) {
             updateUrl("replace");
@@ -395,7 +395,7 @@
         link.href = productDetailUrl(product.id);
         link.setAttribute("aria-label", `${product.name} 상세 보기`);
         const image = document.createElement("img");
-        image.src = product.thumbnailUrl || PLACEHOLDER_IMAGE;
+        image.src = product.thumbnailUrl;
         image.alt = product.name || "상품 이미지";
         image.loading = "lazy";
         image.addEventListener("error", () => {
@@ -411,7 +411,7 @@
         const model = document.createElement("span");
         model.textContent = product.model || "모델 정보 없음";
         const price = document.createElement("strong");
-        price.textContent = product.priceLabel || formatPrice(product.price);
+        price.textContent = formatPrice(product.price);
         const stock = document.createElement("em");
         stock.textContent = `재고 ${Number(product.stock || 0).toLocaleString("ko-KR")}개`;
         body.append(meta, title, model, price, stock);
@@ -833,22 +833,114 @@
     }
 
     function normalizeFacets(facets) {
-        return Array.isArray(facets)
-            ? facets
-                .filter((item) => item && typeof item.value === "string" && item.value.trim())
-                .map((item) => ({ value: item.value.trim(), count: Math.max(0, Number(item.count || 0)) }))
-            : [];
+        if (!Array.isArray(facets) || facets.length > 500) throw new Error("브랜드 분류 정보가 올바르지 않습니다.");
+        const values = new Set();
+        return facets.map((item) => {
+            const value = requiredText(item?.value, 100, "분류명");
+            const count = safeInteger(item?.count, "분류 상품 수");
+            if (values.has(value)) throw new Error("브랜드 분류 정보가 중복되었습니다.");
+            values.add(value);
+            return { value, count };
+        });
     }
 
-    function normalizePagination(source) {
+    function normalizePagination(source, productCount) {
+        const page = safeInteger(source?.page, "현재 페이지");
+        const size = safeInteger(source?.size, "페이지 크기", 1);
+        const totalElements = safeInteger(source?.totalElements, "전체 상품 수");
+        const totalPages = safeInteger(source?.totalPages, "전체 페이지 수");
+        const expectedPages = totalElements === 0 ? 0 : Math.ceil(totalElements / size);
+        if (!VALID_SIZES.includes(size) || totalPages !== expectedPages || productCount > size
+            || (totalPages === 0 ? page !== 0 : page >= totalPages)
+            || Boolean(source?.first) !== (page === 0)
+            || Boolean(source?.last) !== (totalPages === 0 || page === totalPages - 1)) {
+            throw new Error("상품 페이지 정보가 올바르지 않습니다.");
+        }
+        return { page, size, totalElements, totalPages, first: page === 0, last: totalPages === 0 || page === totalPages - 1 };
+    }
+
+    function requiredText(value, maxLength, fieldName) {
+        const normalized = String(value ?? "").trim();
+        if (!normalized || normalized.length > maxLength) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return normalized;
+    }
+
+    function optionalText(value, maxLength) {
+        const normalized = String(value ?? "").trim();
+        return normalized.length <= maxLength ? normalized : "";
+    }
+
+    function safeInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+
+    function normalizeImageSource(value) {
+        const normalized = optionalText(value, 500);
+        return /^\/(?!\/)/.test(normalized) || /^https?:\/\//i.test(normalized) ? normalized : PLACEHOLDER_IMAGE;
+    }
+
+    function normalizeMetrics(source) {
+        const metrics = {};
+        ["totalCount", "lowStockCount", "latestDropCount", "featuredCount", "totalStock", "averagePrice",
+            "minimumPrice", "maximumPrice", "brandCount", "under200Count", "between200And300Count", "over300Count"]
+            .forEach((key) => { metrics[key] = safeInteger(source?.[key], key); });
+        if (metrics.lowStockCount > metrics.totalCount || metrics.featuredCount > metrics.totalCount
+            || (metrics.totalCount > 0 && (metrics.minimumPrice > metrics.averagePrice || metrics.averagePrice > metrics.maximumPrice))) {
+            throw new Error("브랜드 집계 정보가 올바르지 않습니다.");
+        }
+        return metrics;
+    }
+
+    function normalizeProduct(item) {
+        const id = safeInteger(item?.id, "상품 번호", 1);
+        const price = safeInteger(item?.price, "상품 가격");
+        const stock = safeInteger(item?.stock, "상품 재고");
         return {
-            page: Math.max(0, Number(source?.page || 0)),
-            size: Math.max(1, Number(source?.size || state.size)),
-            totalElements: Math.max(0, Number(source?.totalElements || 0)),
-            totalPages: Math.max(0, Number(source?.totalPages || 0)),
-            first: Boolean(source?.first),
-            last: Boolean(source?.last)
+            id,
+            brand: requiredText(item?.brand, 100, "브랜드"),
+            category: requiredText(item?.category, 100, "카테고리"),
+            name: requiredText(item?.name, 200, "상품명"),
+            model: optionalText(item?.model, 100),
+            price,
+            stock,
+            stockStatus: optionalText(item?.stockStatus, 40) || (stock <= 10 ? "품절 임박" : "재고 안정"),
+            thumbnailUrl: normalizeImageSource(item?.thumbnailUrl)
         };
+    }
+
+    function normalizeProducts(items) {
+        if (!Array.isArray(items)) throw new Error("브랜드 상품 정보가 올바르지 않습니다.");
+        const ids = new Set();
+        return items.map((item) => {
+            const product = normalizeProduct(item);
+            if (ids.has(product.id)) throw new Error("중복된 상품 정보가 포함되었습니다.");
+            ids.add(product.id);
+            if (product.brand !== state.brand) throw new Error("선택한 브랜드와 상품 정보가 일치하지 않습니다.");
+            return product;
+        });
+    }
+
+    function normalizeDirectoryResponse(source) {
+        if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("브랜드 응답이 올바르지 않습니다.");
+        const brandFacets = normalizeFacets(source.brandFacets);
+        const metrics = normalizeMetrics(source.metrics);
+        if (metrics.brandCount !== brandFacets.length) throw new Error("브랜드 집계가 분류 정보와 일치하지 않습니다.");
+        return { brandFacets, metrics };
+    }
+
+    function normalizeProductResponse(source, includeSummary) {
+        if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("상품 응답이 올바르지 않습니다.");
+        const products = normalizeProducts(source.products);
+        const pagination = normalizePagination(source.pagination, products.length);
+        if (pagination.size !== state.size) throw new Error("요청한 페이지 크기와 응답이 일치하지 않습니다.");
+        const result = { products, pagination };
+        if (includeSummary) {
+            result.metrics = normalizeMetrics(source.metrics);
+            result.categoryFacets = normalizeFacets(source.categoryFacets);
+            if (result.metrics.totalCount !== pagination.totalElements) throw new Error("브랜드 상품 집계가 페이지 정보와 일치하지 않습니다.");
+        }
+        return result;
     }
 
     function emptyPagination() {
@@ -863,7 +955,10 @@
     function readStringList(key) {
         try {
             const value = JSON.parse(window.localStorage.getItem(key) || "[]");
-            return Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
+            return Array.isArray(value) ? Array.from(new Set(value
+                .filter((item) => typeof item === "string")
+                .map((item) => item.trim())
+                .filter((item) => item && item.length <= 100))).slice(0, 30) : [];
         } catch (error) {
             return [];
         }
@@ -872,7 +967,18 @@
     function readObjectList(key) {
         try {
             const value = JSON.parse(window.localStorage.getItem(key) || "[]");
-            return Array.isArray(value) ? value.filter((item) => item && typeof item === "object") : [];
+            if (!Array.isArray(value)) return [];
+            const ids = new Set();
+            return value.flatMap((item) => {
+                try {
+                    const product = normalizeProduct(item);
+                    if (ids.has(product.id)) return [];
+                    ids.add(product.id);
+                    return [product];
+                } catch (error) {
+                    return [];
+                }
+            }).slice(0, key === COMPARE_PRODUCTS_KEY ? 3 : 24);
         } catch (error) {
             return [];
         }

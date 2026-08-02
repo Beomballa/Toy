@@ -64,7 +64,7 @@
                 signal: loadController.signal
             });
             if (!response.ok) throw new Error("상품 조회 실패");
-            return response.json();
+            return normalizeProductResponse(await response.json(), Number(item.id));
         }));
         if (sequence !== requestSequence) return;
         state.failedCount = results.filter((result) => result.status === "rejected").length;
@@ -79,6 +79,7 @@
         }
         render();
         announce(state.failedCount ? `${state.failedCount}개 상품의 최신 정보를 불러오지 못했습니다.` : "비교 상품의 최신 정보를 반영했습니다.");
+        loadController = null;
     }
 
     function showLoading() {
@@ -176,7 +177,7 @@
         article.className = "comparison-product-head";
         article.setAttribute("role", "columnheader");
         const image = document.createElement("img");
-        image.src = product.thumbnailUrl || PLACEHOLDER;
+        image.src = product.thumbnailUrl;
         image.alt = product.name || "상품 이미지";
         image.addEventListener("error", () => { image.src = PLACEHOLDER; }, { once: true });
         const brand = document.createElement("span");
@@ -269,7 +270,8 @@
     }
 
     function requestedProducts() {
-        const ids = String(new URLSearchParams(location.search).get("ids") || "").split(",").map(Number).filter((id) => id > 0).slice(0, 3);
+        const ids = Array.from(new Set(String(new URLSearchParams(location.search).get("ids") || "")
+            .split(",").map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))).slice(0, 3);
         const stored = readProducts(KEYS.compare);
         if (!ids.length) return stored.slice(0, 3);
         return ids.map((id) => stored.find((item) => Number(item.id) === id) || { id });
@@ -353,13 +355,19 @@
         elements.candidateButton.addEventListener("click", openCandidates);
         elements.emptyCandidate.addEventListener("click", openCandidates);
         elements.candidateClose.addEventListener("click", closeCandidates);
-        elements.candidateSearch.addEventListener("input", () => { state.candidateKeyword = elements.candidateSearch.value; renderCandidates(); });
+        elements.candidateSearch.addEventListener("input", () => { state.candidateKeyword = cleanText(elements.candidateSearch.value, 100); renderCandidates(); });
         elements.refresh.addEventListener("click", loadProducts);
         elements.emptyRetry.addEventListener("click", loadProducts);
         elements.copy.addEventListener("click", copySummary);
         elements.csv.addEventListener("click", exportCsv);
         elements.link.addEventListener("click", () => copyText(location.href, "공유 링크를 복사했습니다."));
-        elements.print.addEventListener("click", () => window.print());
+        elements.print.addEventListener("click", () => {
+            if (state.products.length < 2) {
+                showToast("비교할 상품을 2개 이상 추가해주세요.");
+                return;
+            }
+            window.print();
+        });
         elements.clear.addEventListener("click", clearAll);
         window.addEventListener("storage", (event) => { if (event.key === KEYS.compare) void loadProducts(); });
         window.addEventListener("popstate", loadProducts);
@@ -399,12 +407,21 @@
 
     function readProducts(key) {
         try {
-            const value = JSON.parse(localStorage.getItem(key) || "[]");
-            return Array.isArray(value)
-                ? value
-                    .filter((item) => Number.isSafeInteger(Number(item?.id)) && Number(item.id) > 0)
-                    .map((item) => ({ ...item, id: Number(item.id) }))
-                : [];
+            const value = window.StorefrontState
+                ? window.StorefrontState.read(key)
+                : JSON.parse(localStorage.getItem(key) || "[]");
+            if (!Array.isArray(value)) return [];
+            const ids = new Set();
+            return value.flatMap((item) => {
+                try {
+                    const snapshot = normalizeStoredSnapshot(item);
+                    if (ids.has(snapshot.id)) return [];
+                    ids.add(snapshot.id);
+                    return [snapshot];
+                } catch (error) {
+                    return [];
+                }
+            });
         } catch (error) {
             return [];
         }
@@ -424,7 +441,77 @@
         return items.filter((item, index) => items.findIndex((source) => Number(source.id) === Number(item.id)) === index);
     }
 
-    function hasStoredSnapshot(product) { return Boolean(product?.name || product?.brand || product?.priceLabel); }
+    function cleanText(value, maxLength) { return String(value ?? "").trim().replace(/\s+/g, " ").slice(0, maxLength); }
+    function safeInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+    function safeImage(value) {
+        const image = cleanText(value, 500);
+        return /^\/(?!\/)/.test(image) || /^https?:\/\//i.test(image) ? image : PLACEHOLDER;
+    }
+    function normalizeOptions(value) {
+        if (!Array.isArray(value) || value.length > 100) throw new Error("상품 옵션 정보가 올바르지 않습니다.");
+        const ids = new Set();
+        const names = new Set();
+        return value.map((option) => {
+            const id = safeInteger(option?.id, "옵션 번호", 1);
+            const name = cleanText(option?.name, 100);
+            if (!name || ids.has(id) || names.has(name)) throw new Error("상품 옵션 정보가 중복되었습니다.");
+            ids.add(id);
+            names.add(name);
+            return {
+                id,
+                name,
+                stock: safeInteger(option.stock, "옵션 재고"),
+                additionalPrice: safeInteger(option.additionalPrice, "옵션 추가 금액")
+            };
+        });
+    }
+    function normalizeStoredSnapshot(item) {
+        const id = Number(item?.id);
+        if (!Number.isSafeInteger(id) || id <= 0) throw new Error("상품 번호가 올바르지 않습니다.");
+        return {
+            ...item,
+            id,
+            brand: cleanText(item.brand, 100),
+            name: cleanText(item.name || item.headline, 200),
+            model: cleanText(item.model, 100),
+            category: cleanText(item.category, 100),
+            price: Number.isSafeInteger(Number(item.price)) && Number(item.price) >= 0 ? Number(item.price) : 0,
+            stock: Number.isSafeInteger(Number(item.stock)) && Number(item.stock) >= 0 ? Number(item.stock) : 0,
+            thumbnailUrl: safeImage(item.thumbnailUrl),
+            options: []
+        };
+    }
+    function normalizeProductResponse(item, expectedId) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) throw new Error("상품 응답이 올바르지 않습니다.");
+        const id = safeInteger(item.id, "상품 번호", 1);
+        const brand = cleanText(item.brand, 100);
+        const name = cleanText(item.name, 200);
+        const category = cleanText(item.category, 100);
+        if (id !== expectedId || !brand || !name || !category) throw new Error("조회한 상품과 응답 정보가 일치하지 않습니다.");
+        const price = safeInteger(item.price, "상품 가격");
+        const stock = safeInteger(item.stock, "상품 재고");
+        const options = normalizeOptions(item.options);
+        if (options.length && options.reduce((sum, option) => sum + option.stock, 0) !== stock) {
+            throw new Error("상품 재고가 옵션 합계와 일치하지 않습니다.");
+        }
+        return {
+            id, brand, name, category, price, stock, options,
+            model: cleanText(item.model, 100),
+            headline: cleanText(item.headline, 200),
+            description: cleanText(item.description, 1000),
+            mood: cleanText(item.mood, 100),
+            createdDate: cleanText(item.createdDate, 30),
+            featured: item.featured === true,
+            featuredRank: Number.isSafeInteger(item.featuredRank) && item.featuredRank > 0 ? item.featuredRank : null,
+            stockStatus: cleanText(item.stockStatus, 40) || (stock <= 10 ? "품절 임박" : "재고 안정"),
+            priceLabel: formatPrice(price),
+            thumbnailUrl: safeImage(item.thumbnailUrl)
+        };
+    }
+    function hasStoredSnapshot(product) { return Boolean(product?.name && product?.brand && Number.isSafeInteger(product?.price)); }
     function safeOptions(product) { return Array.isArray(product?.options) ? product.options : []; }
     function range(values) { return values.length ? Math.max(...values) - Math.min(...values) : 0; }
     function normalized(value, values) { const min = Math.min(...values); const gap = Math.max(...values) - min; return gap ? (value - min) / gap * 100 : 100; }

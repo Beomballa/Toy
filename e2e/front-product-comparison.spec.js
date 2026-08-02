@@ -10,7 +10,25 @@ const detail = (id) => ({
   priceLabel: `${100 + id},000원`,
   stock: 10 + id,
   stockStatus: "재고 안정",
-  options: [{ id: id * 10, name: "260", stock: 5, additionalPrice: 0 }]
+  options: [{ id: id * 10, name: "260", stock: 10 + id, additionalPrice: 0 }]
+});
+
+test("비교 화면은 상품 ID와 옵션 재고가 불일치한 응답을 표시하지 않는다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/products/*", async (route) => {
+    const requestedId = Number(new URL(route.request().url()).pathname.split("/").pop());
+    const response = detail(attempts++ < 2 ? requestedId + 100 : requestedId);
+    if (attempts > 2) response.thumbnailUrl = "javascript:alert(1)";
+    await route.fulfill({ json: response });
+  });
+
+  await page.goto("/front/compare?ids=1,2");
+  await expect(page.locator("#comparisonEmptyDescription")).toContainText("2개 상품 정보를 불러오지 못했습니다");
+  await expect(page.locator(".comparison-product-head")).toHaveCount(0);
+
+  await page.locator("#comparisonEmptyRetryButton").click();
+  await expect(page.locator(".comparison-product-head")).toHaveCount(2);
+  await expect(page.locator(".comparison-product-head img").first()).toHaveAttribute("src", "/images/product-placeholder.svg");
 });
 
 test("비교 상품 조회 실패를 가짜 0원 상품으로 표시하지 않고 재시도한다", async ({ page }) => {

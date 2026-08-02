@@ -163,7 +163,7 @@
         const page = Number(params.get("page") || 0);
         state.view = VALID_VIEWS.includes(view) ? view : "faq";
         state.topic = VALID_TOPICS.includes(topic) ? topic : "ALL";
-        state.keyword = String(params.get("keyword") || "").trim().slice(0, 100);
+        state.keyword = normalizeSearchKeyword(params.get("keyword"));
         state.noticeSort = VALID_SORTS.includes(sort) ? sort : "LATEST";
         state.noticeSize = VALID_SIZES.includes(size) ? size : 10;
         state.noticePage = Number.isInteger(page) && page >= 0 ? page : 0;
@@ -307,9 +307,9 @@
         try {
             const response = await fetch(`/api/front/content?${params}`, { signal: noticeController.signal });
             if (!response.ok) throw new Error("공지사항을 불러오지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeNoticeResponse(await response.json());
             if (sequence !== noticeSequence) return;
-            const totalPages = Number(payload.totalPages || 0);
+            const totalPages = payload.totalPages;
             if (totalPages > 0 && state.noticePage >= totalPages) {
                 state.noticePage = totalPages - 1;
                 void loadNotices({ historyMode: "replace" });
@@ -319,11 +319,13 @@
         } catch (error) {
             if (error?.name === "AbortError" || sequence !== noticeSequence) return;
             showNoticeState("ERROR");
+        } finally {
+            if (sequence === noticeSequence) noticeController = null;
         }
     }
 
     function renderNotices(payload) {
-        const items = Array.isArray(payload?.items) ? payload.items : [];
+        const items = payload.items;
         elements.noticeList.replaceChildren();
         elements.noticeList.classList.remove("is-loading", "is-error");
         elements.noticeList.setAttribute("aria-busy", "false");
@@ -335,15 +337,15 @@
         } else {
             items.forEach((item, index) => elements.noticeList.appendChild(createNotice(item, index, payload.page)));
         }
-        const totalElements = Number(payload.totalElements || 0);
-        const totalPages = Math.max(1, Number(payload.totalPages || 0));
-        const currentPage = Number(payload.page || 0);
+        const totalElements = payload.totalElements;
+        const totalPages = Math.max(1, payload.totalPages);
+        const currentPage = payload.page;
         elements.noticeCount.textContent = totalElements.toLocaleString("ko-KR");
         elements.noticeResult.textContent = `${totalElements.toLocaleString("ko-KR")}개의 공개 공지가 있습니다.`;
         elements.noticePageText.textContent = `${currentPage + 1} / ${totalPages} 페이지`;
         elements.noticePrevious.disabled = Boolean(payload.first);
-        elements.noticeNext.disabled = Boolean(payload.last) || Number(payload.totalPages || 0) === 0;
-        elements.noticePagination.hidden = Number(payload.totalPages || 0) <= 1;
+        elements.noticeNext.disabled = payload.last || payload.totalPages === 0;
+        elements.noticePagination.hidden = payload.totalPages <= 1;
         renderNoticePageOptions(totalPages, currentPage);
         announce(`${items.length}개의 공지사항을 표시했습니다.`);
     }
@@ -352,15 +354,15 @@
         const article = document.createElement("article");
         article.className = "support-notice";
         const link = document.createElement("a");
-        link.href = `/front/content/${Number(item.id)}`;
+        link.href = `/front/content/${item.id}`;
         const number = document.createElement("span");
-        number.textContent = item.pinned ? "PIN" : String(Number(page || 0) * state.noticeSize + index + 1).padStart(2, "0");
+        number.textContent = item.pinned ? "PIN" : String(page * state.noticeSize + index + 1).padStart(2, "0");
         if (item.pinned) number.className = "is-pinned";
         const body = document.createElement("div");
         const meta = document.createElement("p");
-        meta.textContent = `${item.createdDate || "최근 게시"} · 조회 ${Number(item.viewCount || 0).toLocaleString("ko-KR")}`;
+        meta.textContent = `${item.createdDate} · 조회 ${item.viewCount.toLocaleString("ko-KR")}`;
         const title = document.createElement("h3");
-        title.textContent = item.title || "제목 없는 공지";
+        title.textContent = item.title;
         const summary = document.createElement("p");
         summary.textContent = item.summary || "내용을 확인해 주세요.";
         body.append(meta, title, summary);
@@ -421,6 +423,68 @@
         return Array.from(indexes).sort((left, right) => left - right);
     }
 
+    function requiredText(value, maxLength, fieldName) {
+        const normalized = String(value ?? "").trim();
+        if (!normalized || normalized.length > maxLength) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return normalized;
+    }
+
+    function optionalText(value, maxLength) {
+        const normalized = String(value ?? "").trim();
+        return normalized.length <= maxLength ? normalized : "";
+    }
+
+    function safeInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+
+    function normalizeNoticeResponse(source) {
+        if (!source || typeof source !== "object" || Array.isArray(source) || !Array.isArray(source.items)) {
+            throw new Error("공지사항 응답이 올바르지 않습니다.");
+        }
+        const page = safeInteger(source.page, "현재 페이지");
+        const size = safeInteger(source.size, "페이지 크기", 1);
+        const totalElements = safeInteger(source.totalElements, "전체 공지 수");
+        const totalPages = safeInteger(source.totalPages, "전체 페이지 수");
+        if (page !== state.noticePage || size !== state.noticeSize || source.sort !== state.noticeSort
+            || totalPages !== (totalElements === 0 ? 0 : Math.ceil(totalElements / size))
+            || source.items.length > size || Boolean(source.first) !== (page === 0)
+            || Boolean(source.last) !== (totalPages === 0 || page >= totalPages - 1)) {
+            throw new Error("공지사항 페이지 정보가 올바르지 않습니다.");
+        }
+        const ids = new Set();
+        const items = source.items.map((item) => {
+            const id = safeInteger(item?.id, "공지 번호", 1);
+            if (ids.has(id) || item?.boardType !== "NOTICE" || typeof item.pinned !== "boolean") {
+                throw new Error("공지사항 항목이 올바르지 않습니다.");
+            }
+            ids.add(id);
+            return {
+                id,
+                title: requiredText(item.title, 200, "공지 제목"),
+                summary: optionalText(item.summary, 500),
+                viewCount: safeInteger(item.viewCount, "조회 수"),
+                pinned: item.pinned,
+                createdDate: requiredText(item.createdDate, 30, "등록일")
+            };
+        });
+        const pageViewCount = items.reduce((sum, item) => sum + item.viewCount, 0);
+        const pagePinnedCount = items.filter((item) => item.pinned).length;
+        if (safeInteger(source.pageViewCount, "페이지 조회 수") !== pageViewCount
+            || safeInteger(source.pagePinnedCount, "고정 공지 수") !== pagePinnedCount
+            || safeInteger(source.pageNoticeCount, "공지 수") !== items.length
+            || safeInteger(source.pageStyleCount, "스타일 수") !== 0) {
+            throw new Error("공지사항 집계 정보가 올바르지 않습니다.");
+        }
+        return {
+            items, page, size, totalElements, totalPages,
+            first: page === 0,
+            last: totalPages === 0 || page >= totalPages - 1,
+            sort: source.sort
+        };
+    }
+
     function renderAppliedFilters() {
         elements.appliedFilters.replaceChildren();
         if (state.topic !== "ALL") elements.appliedFilters.appendChild(createFilterChip(topicLabel(state.topic), () => setTopic("ALL")));
@@ -461,7 +525,7 @@
     }
 
     function submitSearch(keyword) {
-        state.keyword = String(keyword ?? elements.keyword.value).trim().slice(0, 100);
+        state.keyword = normalizeSearchKeyword(keyword ?? elements.keyword.value);
         state.noticePage = 0;
         elements.keyword.value = state.keyword;
         if (state.keyword) rememberSearch(state.keyword);
@@ -503,7 +567,10 @@
     function readRecentSearches() {
         try {
             const parsed = JSON.parse(window.localStorage.getItem(RECENT_SEARCH_KEY) || "[]");
-            return Array.isArray(parsed) ? parsed.filter((item) => typeof item === "string" && item.trim()).slice(0, 6) : [];
+            return Array.isArray(parsed) ? Array.from(new Set(parsed
+                .filter((item) => typeof item === "string")
+                .map(normalizeSearchKeyword)
+                .filter(Boolean))).slice(0, 6) : [];
         } catch (error) {
             return [];
         }
@@ -511,7 +578,11 @@
 
     function writeRecentSearches(searches) {
         try {
-            window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(searches));
+            const normalized = Array.from(new Set((Array.isArray(searches) ? searches : [])
+                .filter((item) => typeof item === "string")
+                .map(normalizeSearchKeyword)
+                .filter(Boolean))).slice(0, 6);
+            window.localStorage.setItem(RECENT_SEARCH_KEY, JSON.stringify(normalized));
         } catch (error) {
             // 저장소가 제한되어도 현재 검색 기능은 유지한다.
         }
@@ -687,6 +758,10 @@
 
     function normalize(value) {
         return String(value || "").trim().toLocaleLowerCase("ko-KR").replace(/\s+/g, " ");
+    }
+
+    function normalizeSearchKeyword(value) {
+        return String(value ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().replace(/\s+/g, " ").slice(0, 100);
     }
 
     function announce(message) {

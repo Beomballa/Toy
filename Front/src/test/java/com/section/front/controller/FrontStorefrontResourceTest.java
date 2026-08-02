@@ -348,13 +348,17 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportNoticePagination\"")
                 .contains("id=\"supportCopySummaryButton\"")
                 .contains("/css/support-center.css?v=20260726.1")
-                .contains("/js/view/support-center.js?v=20260726.1");
+                .contains("/js/view/support-center.js?v=20260802.1");
         assertThat(script)
                 .contains("grade-stock-support-searches")
                 .contains("boardType: \"NOTICE\"")
                 .contains("/api/front/content?${params}")
                 .contains("noticeController?.abort()")
                 .contains("compactPageIndexes(totalPages, currentPage)")
+                .contains("function normalizeNoticeResponse(")
+                .contains("item?.boardType !== \"NOTICE\"")
+                .contains("source.pageViewCount")
+                .contains("function normalizeSearchKeyword(")
                 .contains("state.expandedFaqIds")
                 .contains("navigator.clipboard?.writeText")
                 .contains("window.addEventListener(\"popstate\"")

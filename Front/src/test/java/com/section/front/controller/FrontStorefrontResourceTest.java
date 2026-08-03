@@ -10,6 +10,26 @@ import org.springframework.core.io.ClassPathResource;
 class FrontStorefrontResourceTest {
 
     @Test
+    void categoryProductImagesArePackagedAsVisibleLocalAssets() {
+        String[] images = {
+                "sneakers.jpg",
+                "running.jpg",
+                "tshirt.jpg",
+                "cap.jpg",
+                "outerwear.jpg",
+                "sandals.jpg",
+                "hoodie.jpg",
+                "shirt.jpg",
+                "slippers.jpg"
+        };
+
+        for (String image : images) {
+            ClassPathResource resource = new ClassPathResource("static/images/product/category/" + image);
+            assertThat(resource.exists()).as(image).isTrue();
+        }
+    }
+
+    @Test
     void summerEditKeepsMotionProductAndResponsiveContracts() throws IOException {
         String html = readResource("templates/views/summer-edit.html");
         String script = readResource("static/js/view/summer-edit.js");

@@ -66,7 +66,18 @@ SELECT category.category_no,
        CONCAT('TOY-BULK-20260725-', LPAD(numbers.sequence_no, 5, '0')),
        39000 + MOD(numbers.sequence_no, 42) * 10000,
        CURRENT_DATE - INTERVAL MOD(numbers.sequence_no, 180) DAY,
-       '/images/product-placeholder.svg',
+       CASE category.name
+           WHEN '스니커즈' THEN '/images/product/category/sneakers.jpg'
+           WHEN '러닝화' THEN '/images/product/category/running.jpg'
+           WHEN '반팔 티셔츠' THEN '/images/product/category/tshirt.jpg'
+           WHEN '모자' THEN '/images/product/category/cap.jpg'
+           WHEN '아우터' THEN '/images/product/category/outerwear.jpg'
+           WHEN '샌들/슬리퍼' THEN '/images/product/category/sandals.jpg'
+           WHEN '후드/맨투맨' THEN '/images/product/category/hoodie.jpg'
+           WHEN '셔츠' THEN '/images/product/category/shirt.jpg'
+           WHEN '슬리퍼' THEN '/images/product/category/slippers.jpg'
+           ELSE '/images/product-placeholder.svg'
+       END,
        CASE
            WHEN MOD(numbers.sequence_no, 37) = 0 THEN 'SOLD_OUT'
            WHEN MOD(numbers.sequence_no, 53) = 0 THEN 'HIDDEN'

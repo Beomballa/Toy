@@ -36,6 +36,20 @@ import java.util.stream.Collectors;
 public class FrontLocalCatalogSeeder implements ApplicationRunner {
 
     static final String DEFAULT_PRODUCT_THUMBNAIL_URL = "/images/product-placeholder.svg";
+    static final Map<String, String> CATEGORY_THUMBNAIL_URLS = Map.ofEntries(
+            Map.entry("스니커즈", "/images/product/category/sneakers.jpg"),
+            Map.entry("러닝화", "/images/product/category/running.jpg"),
+            Map.entry("반팔 티셔츠", "/images/product/category/tshirt.jpg"),
+            Map.entry("모자", "/images/product/category/cap.jpg"),
+            Map.entry("아우터", "/images/product/category/outerwear.jpg"),
+            Map.entry("샌들/슬리퍼", "/images/product/category/sandals.jpg"),
+            Map.entry("후드/맨투맨", "/images/product/category/hoodie.jpg"),
+            Map.entry("셔츠", "/images/product/category/shirt.jpg"),
+            Map.entry("슬리퍼", "/images/product/category/slippers.jpg"),
+            Map.entry("라이프스타일", "/images/product/category/sneakers.jpg"),
+            Map.entry("아웃도어", "/images/product/category/running.jpg"),
+            Map.entry("축구화", "/images/product/category/sneakers.jpg")
+    );
     private static final int TARGET_ACTIVE_PRODUCT_COUNT = 100;
     private static final int TARGET_FEATURED_COUNT = 12;
     private static final int OPTIONS_PER_PRODUCT = 3;
@@ -104,8 +118,13 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     }
 
     private void repairLegacyProductThumbnails() {
+        Map<Long, String> categoryNamesByNo = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(Category::getCategoryNo, Category::getName, (left, right) -> left));
         List<Product> repairedProducts = productRepository.findAll().stream()
-                .filter(this::repairThumbnailIfNecessary)
+                .filter(product -> repairThumbnailIfNecessary(
+                        product,
+                        categoryNamesByNo.get(product.getCategoryNo())
+                ))
                 .toList();
         if (repairedProducts.isEmpty()) {
             return;
@@ -115,8 +134,15 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
     }
 
     boolean repairThumbnailIfNecessary(Product product) {
+        return repairThumbnailIfNecessary(product, null);
+    }
+
+    boolean repairThumbnailIfNecessary(Product product, String categoryName) {
         String thumbnailUrl = product.getThumbnailUrl();
-        if (thumbnailUrl != null && !thumbnailUrl.isBlank() && !isLegacyGeneratedThumbnail(product, thumbnailUrl)) {
+        if (thumbnailUrl != null
+                && !thumbnailUrl.isBlank()
+                && !DEFAULT_PRODUCT_THUMBNAIL_URL.equals(thumbnailUrl)
+                && !isLegacyGeneratedThumbnail(product, thumbnailUrl)) {
             return false;
         }
         product.updateBasicInfo(
@@ -124,9 +150,16 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
                 product.getModelNum(),
                 product.getReleasePrice(),
                 product.getReleaseDt(),
-                DEFAULT_PRODUCT_THUMBNAIL_URL
+                thumbnailForCategory(categoryName)
         );
         return true;
+    }
+
+    static String thumbnailForCategory(String categoryName) {
+        if (categoryName == null || categoryName.isBlank()) {
+            return DEFAULT_PRODUCT_THUMBNAIL_URL;
+        }
+        return CATEGORY_THUMBNAIL_URLS.getOrDefault(categoryName, DEFAULT_PRODUCT_THUMBNAIL_URL);
     }
 
     private boolean isLegacyGeneratedThumbnail(Product product, String thumbnailUrl) {
@@ -285,7 +318,7 @@ public class FrontLocalCatalogSeeder implements ApplicationRunner {
                 .modelNum(model)
                 .releasePrice(price)
                 .releaseDt(releaseDate)
-                .thumbnailUrl(DEFAULT_PRODUCT_THUMBNAIL_URL)
+                .thumbnailUrl(thumbnailForCategory(category.getName()))
                 .status(ProductStatus.ACTIVE.name())
                 .build());
 

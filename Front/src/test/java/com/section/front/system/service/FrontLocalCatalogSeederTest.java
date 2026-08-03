@@ -99,7 +99,7 @@ class FrontLocalCatalogSeederTest {
         assertThat(displays).hasSize(100);
         assertThat(products.subList(98, 100))
                 .allSatisfy(product -> assertThat(product.getThumbnailUrl())
-                        .isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL));
+                        .isEqualTo("/images/product/category/sneakers.jpg"));
         verify(productRepository, times(2)).save(any(Product.class));
         verify(productOptionRepository, times(2)).saveAll(any());
         verify(frontProductDisplayRepository, times(2)).save(any(FrontProductDisplay.class));
@@ -109,14 +109,23 @@ class FrontLocalCatalogSeederTest {
     void repairsOnlyMissingAndLegacyGeneratedThumbnailPaths() {
         Product missingThumbnail = product(1L, "MISSING-001", null);
         Product legacyThumbnail = product(2L, "LEGACY-002", "/images/product/legacy-002.png");
-        Product customThumbnail = product(3L, "CUSTOM-003", "https://cdn.example.com/custom-003.png");
+        Product placeholderThumbnail = product(3L, "PLACEHOLDER-003", FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
+        Product customThumbnail = product(4L, "CUSTOM-004", "https://cdn.example.com/custom-004.png");
 
-        assertThat(seeder.repairThumbnailIfNecessary(missingThumbnail)).isTrue();
-        assertThat(seeder.repairThumbnailIfNecessary(legacyThumbnail)).isTrue();
-        assertThat(seeder.repairThumbnailIfNecessary(customThumbnail)).isFalse();
-        assertThat(missingThumbnail.getThumbnailUrl()).isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
-        assertThat(legacyThumbnail.getThumbnailUrl()).isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
-        assertThat(customThumbnail.getThumbnailUrl()).isEqualTo("https://cdn.example.com/custom-003.png");
+        assertThat(seeder.repairThumbnailIfNecessary(missingThumbnail, "스니커즈")).isTrue();
+        assertThat(seeder.repairThumbnailIfNecessary(legacyThumbnail, "스니커즈")).isTrue();
+        assertThat(seeder.repairThumbnailIfNecessary(placeholderThumbnail, "러닝화")).isTrue();
+        assertThat(seeder.repairThumbnailIfNecessary(customThumbnail, "러닝화")).isFalse();
+        assertThat(missingThumbnail.getThumbnailUrl()).isEqualTo("/images/product/category/sneakers.jpg");
+        assertThat(legacyThumbnail.getThumbnailUrl()).isEqualTo("/images/product/category/sneakers.jpg");
+        assertThat(placeholderThumbnail.getThumbnailUrl()).isEqualTo("/images/product/category/running.jpg");
+        assertThat(customThumbnail.getThumbnailUrl()).isEqualTo("https://cdn.example.com/custom-004.png");
+    }
+
+    @Test
+    void fallsBackToDefaultThumbnailForUnknownCategory() {
+        assertThat(FrontLocalCatalogSeeder.thumbnailForCategory("미등록 카테고리"))
+                .isEqualTo(FrontLocalCatalogSeeder.DEFAULT_PRODUCT_THUMBNAIL_URL);
     }
 
     private Product product(long id, String model, Brand brand, Category category) {

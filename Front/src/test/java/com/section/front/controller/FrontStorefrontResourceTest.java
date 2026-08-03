@@ -135,7 +135,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.3");
+                .contains("/js/view/app.js?v=20260803.4");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -2595,6 +2595,22 @@ class FrontStorefrontResourceTest {
                 .contains("collections.ranking.some((product, index, list)")
                 .contains("collections.latestDrops.some((product, index, list)")
                 .contains("products.filter((product) => product.featured).slice(0, 8)");
+    }
+
+    @Test
+    void homePersonalizationNormalizesStoredStateBeforeRenderingOrRestoringIt() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("function normalizeStoredCatalogState(value)")
+                .contains("function storedText(value, limit)")
+                .contains("function safeStorageWrite(storage, key, value)")
+                .contains("Array.from(new Set(parsed.map((keyword) => storedText(keyword, 100)).filter(Boolean))).slice(0, 8)")
+                .contains("return normalizeCatalogPayload(payload, true)")
+                .contains("savedIds.slice(0, 48)")
+                .contains("savedPosition <= 1000000")
+                .contains("escapeMarkup(item.summary)")
+                .contains("escapeMarkup(keyword)");
     }
 
     private String readResource(String path) throws IOException {

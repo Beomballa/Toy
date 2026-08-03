@@ -66,3 +66,21 @@ test("홈 컬렉션은 레일 조건이 다른 응답 대신 검증된 카탈로
   await expect(page.locator("#latestDropGrid")).toContainText("에어포스 1");
   await expect(page.locator("#lowStockGrid")).not.toContainText("잘못된 저재고 상품");
 });
+
+test("홈 개인화는 손상된 저장 상태와 마크업을 안전하게 정규화한다", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("front-catalog-display-preferences", JSON.stringify({ layout: "BROKEN", hideMetrics: "true" }));
+    localStorage.setItem("front-saved-views", JSON.stringify([{ summary: "<img src=x onerror=alert(1)>", snapshot: { sort: "BROKEN", stock: "BROKEN" } }]));
+    localStorage.setItem("front-search-history", JSON.stringify(["<img src=x onerror=alert(2)>", "신발", "신발", null]));
+    localStorage.setItem("front-last-catalog-state", JSON.stringify({ search: "\u0000나이키", sort: "DROP TABLE", priceBand: "FREE" }));
+    sessionStorage.setItem("front-selected-product-ids", JSON.stringify([101, 101, -1, "invalid"]));
+    sessionStorage.setItem("front-catalog-scroll-position", "Infinity");
+  });
+  await page.route("**/api/front/catalog/bootstrap?**", (route) => route.fulfill({ json: catalogPayload() }));
+
+  await page.goto("/front");
+  await expect(page.locator("#catalogGrid")).toContainText("에어포스 1");
+  await expect(page.locator("#savedViewList img, #searchHistoryList img")).toHaveCount(0);
+  await expect(page.locator("#searchHistoryCount")).toHaveText("2");
+  await expect(page.locator("#catalogGrid")).toHaveClass(/is-layout-standard/);
+});

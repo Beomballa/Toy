@@ -32,8 +32,8 @@
     const uiState = {
         todayOnly: false,
         showHiddenProducts: false,
-        viewMode: window.localStorage.getItem(VIEW_MODE_KEY) || "DEFAULT",
-        layout: savedDisplayPreferences.layout || (window.localStorage.getItem(VIEW_MODE_KEY) === "COMPACT" ? "COMFORT" : "STANDARD"),
+        viewMode: readStorageValue(window.localStorage, VIEW_MODE_KEY) === "COMPACT" ? "COMPACT" : "DEFAULT",
+        layout: savedDisplayPreferences.layout || (readStorageValue(window.localStorage, VIEW_MODE_KEY) === "COMPACT" ? "COMFORT" : "STANDARD"),
         hideDescriptions: Boolean(savedDisplayPreferences.hideDescriptions),
         hideSignals: Boolean(savedDisplayPreferences.hideSignals),
         hideActions: Boolean(savedDisplayPreferences.hideActions),
@@ -120,8 +120,8 @@
     const selectionFuture = [];
     const paginationState = {
         page: 1,
-        size: ["6", "12", "24", "48"].includes(window.localStorage.getItem(PAGE_SIZE_KEY))
-            ? window.localStorage.getItem(PAGE_SIZE_KEY)
+        size: ["6", "12", "24", "48"].includes(readStorageValue(window.localStorage, PAGE_SIZE_KEY))
+            ? readStorageValue(window.localStorage, PAGE_SIZE_KEY)
             : "12",
         extra: 0
     };
@@ -3280,9 +3280,9 @@
         try {
             const savedIds = JSON.parse(window.sessionStorage.getItem(SELECTED_PRODUCTS_SESSION_KEY) || "[]");
             const validIds = new Set(products.map((product) => Number(product.id)));
-            (Array.isArray(savedIds) ? savedIds : []).forEach((id) => {
+            (Array.isArray(savedIds) ? savedIds.slice(0, 48) : []).forEach((id) => {
                 const productId = Number(id);
-                if (validIds.has(productId)) {
+                if (Number.isSafeInteger(productId) && productId > 0 && validIds.has(productId)) {
                     selectedProductIds.add(productId);
                 }
             });
@@ -3774,15 +3774,21 @@
 
     function readDisplayPreferences() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(DISPLAY_PREFERENCES_KEY) || "{}");
-            return parsed && typeof parsed === "object" ? parsed : {};
+            const parsed = JSON.parse(readStorageValue(window.localStorage, DISPLAY_PREFERENCES_KEY) || "{}");
+            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+            const layout = ["SHOP", "STANDARD", "COMFORT", "LIST"].includes(parsed.layout) ? parsed.layout : "";
+            return Object.fromEntries([
+                ["layout", layout],
+                ...["hideDescriptions", "hideSignals", "hideActions", "hideMetrics", "hideDistribution", "hideDecision", "reducedMotion"]
+                    .map((key) => [key, parsed[key] === true])
+            ]);
         } catch (error) {
             return {};
         }
     }
 
     function persistDisplayPreferences() {
-        window.localStorage.setItem(DISPLAY_PREFERENCES_KEY, JSON.stringify({
+        safeStorageWrite(window.localStorage, DISPLAY_PREFERENCES_KEY, JSON.stringify({
             layout: uiState.layout,
             hideDescriptions: uiState.hideDescriptions,
             hideSignals: uiState.hideSignals,
@@ -3792,7 +3798,7 @@
             hideDecision: uiState.hideDecision,
             reducedMotion: uiState.reducedMotion
         }));
-        window.localStorage.setItem(VIEW_MODE_KEY, uiState.layout === "COMFORT" ? "COMPACT" : "DEFAULT");
+        safeStorageWrite(window.localStorage, VIEW_MODE_KEY, uiState.layout === "COMFORT" ? "COMPACT" : "DEFAULT");
     }
 
     function setCatalogLayout(layout) {
@@ -3858,7 +3864,7 @@
         }
         elements.savedViewList.innerHTML = visibleViews.map(({ item, originalIndex }) => `
             <div class="catalog-memory-item">
-                <button class="catalog-memory-item__primary" type="button" data-saved-view-index="${originalIndex}">${item.summary}</button>
+                <button class="catalog-memory-item__primary" type="button" data-saved-view-index="${originalIndex}">${escapeMarkup(item.summary)}</button>
                 <button type="button" data-copy-saved-view-index="${originalIndex}" aria-label="저장 탐색 링크 복사">링크</button>
                 <button type="button" data-remove-saved-view-index="${originalIndex}" aria-label="저장 탐색 삭제">×</button>
             </div>
@@ -3932,8 +3938,8 @@
         const visibleHistory = memoryState.searchAlphabetical ? history.slice().sort((left, right) => left.localeCompare(right, "ko")) : history;
         elements.searchHistoryList.innerHTML = visibleHistory.map((keyword) => `
             <div class="catalog-memory-item">
-                <button class="catalog-memory-item__primary" type="button" data-history-keyword="${keyword}">${keyword}</button>
-                <button type="button" data-remove-history-keyword="${keyword}" aria-label="검색 기록 삭제">×</button>
+                <button class="catalog-memory-item__primary" type="button" data-history-keyword="${escapeMarkup(keyword)}">${escapeMarkup(keyword)}</button>
+                <button type="button" data-remove-history-keyword="${escapeMarkup(keyword)}" aria-label="검색 기록 삭제">×</button>
             </div>
         `).join("");
         elements.searchHistoryList.querySelectorAll("[data-history-keyword]").forEach((button) => {
@@ -4161,9 +4167,8 @@
 
     function restoreLastCatalogState() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(LAST_CATALOG_STATE_KEY) || "{}");
-            const merged = { ...DEFAULT_STATE, ...parsed };
-            Object.assign(state, merged);
+            const parsed = JSON.parse(readStorageValue(window.localStorage, LAST_CATALOG_STATE_KEY) || "{}");
+            Object.assign(state, normalizeStoredCatalogState(parsed));
             return true;
         } catch (error) {
             return false;
@@ -4181,8 +4186,15 @@
 
     function readSavedViews() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(SAVED_VIEWS_KEY) || "[]");
-            return Array.isArray(parsed) ? parsed : [];
+            const parsed = JSON.parse(readStorageValue(window.localStorage, SAVED_VIEWS_KEY) || "[]");
+            if (!Array.isArray(parsed)) return [];
+            const summaries = new Set();
+            return parsed.slice(0, 24).flatMap((item) => {
+                const summary = storedText(item?.summary, 120);
+                if (!summary || summaries.has(summary) || !item?.snapshot || typeof item.snapshot !== "object") return [];
+                summaries.add(summary);
+                return [{ summary, snapshot: normalizeStoredCatalogState(item.snapshot) }];
+            }).slice(0, 6);
         } catch (error) {
             return [];
         }
@@ -4190,8 +4202,9 @@
 
     function readSearchHistory() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(SEARCH_HISTORY_KEY) || "[]");
-            return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
+            const parsed = JSON.parse(readStorageValue(window.localStorage, SEARCH_HISTORY_KEY) || "[]");
+            if (!Array.isArray(parsed)) return [];
+            return Array.from(new Set(parsed.map((keyword) => storedText(keyword, 100)).filter(Boolean))).slice(0, 8);
         } catch (error) {
             return [];
         }
@@ -4199,11 +4212,56 @@
 
     function readHiddenProducts() {
         try {
-            const parsed = JSON.parse(window.localStorage.getItem(HIDDEN_PRODUCTS_KEY) || "[]");
-            return Array.isArray(parsed) ? parsed.filter((item) => item?.id) : [];
+            const parsed = JSON.parse(readStorageValue(window.localStorage, HIDDEN_PRODUCTS_KEY) || "[]");
+            if (!Array.isArray(parsed)) return [];
+            const ids = new Set();
+            return parsed.slice(0, 48).flatMap((item) => {
+                const id = Number(item?.id);
+                if (!Number.isSafeInteger(id) || id <= 0 || ids.has(id)) return [];
+                ids.add(id);
+                return [{ id, name: storedText(item.name, 200), headline: storedText(item.headline, 200), brand: storedText(item.brand, 100) }];
+            }).slice(0, 12);
         } catch (error) {
             return [];
         }
+    }
+
+    function readStorageValue(storage, key) {
+        try {
+            return storage.getItem(key);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function safeStorageWrite(storage, key, value) {
+        try {
+            storage.setItem(key, value);
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    function storedText(value, limit) {
+        if (typeof value !== "string") return "";
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+        return normalized.slice(0, limit);
+    }
+
+    function normalizeStoredCatalogState(value) {
+        const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        const pick = (candidate, allowed, fallback) => allowed.includes(candidate) ? candidate : fallback;
+        return {
+            search: storedText(source.search, 100),
+            brand: storedText(source.brand, 100) || DEFAULT_STATE.brand,
+            category: storedText(source.category, 100) || DEFAULT_STATE.category,
+            stock: pick(source.stock, ["ALL", "LOW", "STABLE"], DEFAULT_STATE.stock),
+            sort: pick(source.sort, ["LATEST", "NAME_ASC", "PRICE_HIGH", "PRICE_LOW", "STOCK_ASC", "STOCK_DESC", "FEATURED"], DEFAULT_STATE.sort),
+            lowStockThreshold: pick(String(source.lowStockThreshold || ""), ["10", "20", "30", "50"], DEFAULT_STATE.lowStockThreshold),
+            featuredOnly: pick(source.featuredOnly, ["ALL", "FEATURED"], DEFAULT_STATE.featuredOnly),
+            priceBand: pick(source.priceBand, ["ALL", "UNDER_200", "BETWEEN_200_300", "OVER_300"], DEFAULT_STATE.priceBand)
+        };
     }
 
     function viewSummaryLabel() {
@@ -5533,10 +5591,7 @@
     function readCatalogSessionCache() {
         try {
             const payload = JSON.parse(window.sessionStorage.getItem(CATALOG_CACHE_KEY) || "null");
-            if (!Array.isArray(payload?.products) || !Array.isArray(payload?.brandFacets) || !Array.isArray(payload?.categoryFacets)) {
-                return null;
-            }
-            return payload;
+            return normalizeCatalogPayload(payload, true);
         } catch (error) {
             return null;
         }
@@ -5553,7 +5608,7 @@
     function restoreCatalogScrollPosition() {
         try {
             const savedPosition = Number(window.sessionStorage.getItem(SCROLL_POSITION_KEY));
-            if (savedPosition > 0) {
+            if (Number.isSafeInteger(savedPosition) && savedPosition > 0 && savedPosition <= 1000000) {
                 window.requestAnimationFrame(() => window.scrollTo({ top: savedPosition, behavior: "instant" }));
             }
         } catch (error) {

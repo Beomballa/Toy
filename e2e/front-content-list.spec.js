@@ -17,6 +17,8 @@ test("콘텐츠 목록은 유효한 저장 항목만 표시하고 최근 읽기�
     json: {
       items: [],
       page: 0,
+      size: 8,
+      sort: "LATEST",
       totalElements: 0,
       totalPages: 0,
       first: true,
@@ -40,4 +42,31 @@ test("콘텐츠 목록은 유효한 저장 항목만 표시하고 최근 읽기�
   await expect(page.locator("#contentRecentBoard")).toBeHidden();
   await expect(page.locator("#contentListLiveStatus")).toContainText("최근 읽은 콘텐츠를 비웠습니다");
   expect(await page.evaluate(() => localStorage.getItem("front-recent-content"))).toBeNull();
+});
+
+test("콘텐츠 목록은 불일치한 페이지 집계를 거부하고 재시도 후 렌더링한다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/content?**", async (route) => {
+    const item = { id: 91, boardType: "NOTICE", title: "정상 공지", summary: "검증된 공지입니다.", viewCount: 7, pinned: true, createdDate: "2026.08.03" };
+    await route.fulfill({ json: {
+      items: [item],
+      page: 0,
+      size: 8,
+      sort: "LATEST",
+      totalElements: 1,
+      totalPages: 1,
+      first: true,
+      last: true,
+      pageViewCount: attempts++ === 0 ? 999 : 7,
+      pagePinnedCount: 1,
+      pageNoticeCount: 1,
+      pageStyleCount: 0
+    } });
+  });
+
+  await page.goto("/front/content");
+  await expect(page.locator("#contentListGrid")).toContainText("콘텐츠를 불러오지 못했습니다.");
+  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await expect(page.locator("#contentListGrid")).toContainText("정상 공지");
+  await expect(page.locator("#contentListPageViews")).toHaveText("7");
 });

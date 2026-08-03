@@ -55,7 +55,7 @@
         const params = new URLSearchParams(window.location.search);
         const boardType = String(params.get("boardType") || "ALL").toUpperCase();
         state.boardType = ["NOTICE", "STYLE"].includes(boardType) ? boardType : "ALL";
-        state.keyword = String(params.get("keyword") || "").trim().slice(0, 100);
+        state.keyword = normalizeListText(params.get("keyword"), 100);
         const page = Number(params.get("page") || 0);
         state.page = Number.isInteger(page) && page >= 0 ? page : 0;
         const size = Number(params.get("size") || DEFAULT_STATE.size);
@@ -81,7 +81,7 @@
             if (state.keyword) params.set("keyword", state.keyword);
             const response = await fetch(`/api/front/content?${params}`, { signal: requestController.signal });
             if (!response.ok) throw new Error("콘텐츠를 불러오지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeContentPage(await response.json());
             if (sequence !== requestSequence) return;
             if (correctOutOfRangePage(payload)) return;
             renderPage(payload);
@@ -89,6 +89,69 @@
             if (error?.name === "AbortError" || sequence !== requestSequence) return;
             showState("ERROR");
         }
+    }
+
+    function normalizeListText(value, limit, required = false) {
+        if (typeof value !== "string") {
+            if (required) throw new Error("콘텐츠 문구가 올바르지 않습니다.");
+            return "";
+        }
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+        if ((required && !normalized) || normalized.length > limit) throw new Error("콘텐츠 문구가 올바르지 않습니다.");
+        return normalized;
+    }
+
+    function normalizeListInteger(value, maximum = Number.MAX_SAFE_INTEGER) {
+        if (!Number.isSafeInteger(value) || value < 0 || value > maximum) throw new Error("콘텐츠 숫자 응답이 올바르지 않습니다.");
+        return value;
+    }
+
+    function normalizeContentItems(value) {
+        if (!Array.isArray(value) || value.length > state.size) throw new Error("콘텐츠 목록이 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const id = normalizeListInteger(item?.id);
+            const boardType = ["NOTICE", "STYLE"].includes(item?.boardType) ? item.boardType : "";
+            if (id <= 0 || ids.has(id) || !boardType || (state.boardType !== "ALL" && boardType !== state.boardType)) {
+                throw new Error("콘텐츠 목록 항목이 올바르지 않습니다.");
+            }
+            ids.add(id);
+            return {
+                id,
+                boardType,
+                title: normalizeListText(item.title, 200, true),
+                summary: normalizeListText(item.summary, 500),
+                viewCount: normalizeListInteger(item.viewCount),
+                pinned: item.pinned === true,
+                createdDate: normalizeListText(item.createdDate, 30)
+            };
+        });
+    }
+
+    function normalizeContentPage(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("콘텐츠 페이지 응답이 올바르지 않습니다.");
+        const items = normalizeContentItems(value.items);
+        const page = normalizeListInteger(value.page, 1000000);
+        const size = normalizeListInteger(value.size, 20);
+        const totalElements = normalizeListInteger(value.totalElements, 1000000);
+        const totalPages = normalizeListInteger(value.totalPages, 250000);
+        const pageViewCount = normalizeListInteger(value.pageViewCount);
+        const pagePinnedCount = normalizeListInteger(value.pagePinnedCount);
+        const pageNoticeCount = normalizeListInteger(value.pageNoticeCount);
+        const pageStyleCount = normalizeListInteger(value.pageStyleCount);
+        const expectedPages = totalElements ? Math.ceil(totalElements / state.size) : 0;
+        if (page !== state.page || size !== state.size || value.sort !== state.sort || totalPages !== expectedPages
+            || items.length > totalElements || pageViewCount !== items.reduce((sum, item) => sum + item.viewCount, 0)
+            || pagePinnedCount !== items.filter((item) => item.pinned).length
+            || pageNoticeCount !== items.filter((item) => item.boardType === "NOTICE").length
+            || pageStyleCount !== items.filter((item) => item.boardType === "STYLE").length
+            || pageNoticeCount + pageStyleCount !== items.length
+            || value.first !== (page === 0)
+            || value.last !== (totalPages === 0 || page >= totalPages - 1)) {
+            throw new Error("콘텐츠 페이지 집계가 올바르지 않습니다.");
+        }
+        return { items, page, size, totalElements, totalPages, first: value.first, last: value.last, sort: value.sort,
+            pageViewCount, pagePinnedCount, pageNoticeCount, pageStyleCount };
     }
 
     function renderPage(payload) {
@@ -268,7 +331,7 @@
         elements.tabs.forEach((tab) => tab.addEventListener("keydown", handleTabKeydown));
         elements.searchForm.addEventListener("submit", (event) => {
             event.preventDefault();
-            state.keyword = elements.keyword.value.trim().slice(0, 100);
+            state.keyword = normalizeListText(elements.keyword.value, 100);
             state.page = 0;
             void loadContents();
         });
@@ -374,21 +437,33 @@
     function normalizeStoredContentItems(value, limit) {
         if (!Array.isArray(value)) return [];
         const seen = new Set();
-        return value
-            .filter((item) => {
+        return value.slice(0, limit * 3)
+            .flatMap((item) => {
                 const id = Number(item?.id);
-                if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id)) return false;
+                if (!Number.isSafeInteger(id) || id <= 0 || seen.has(id) || !["NOTICE", "STYLE"].includes(item?.boardType)) return [];
                 seen.add(id);
-                return true;
+                return [{
+                    id,
+                    boardType: item.boardType,
+                    title: normalizeListText(item.title, 200),
+                    createdDate: normalizeListText(item.createdDate, 30),
+                    viewedAt: normalizeListText(item.viewedAt, 40),
+                    savedAt: normalizeListText(item.savedAt, 40)
+                }];
             })
-            .map((item) => ({ ...item, id: Number(item.id) }))
             .slice(0, limit);
     }
 
     function readReadingProgress() {
         try {
             const value = JSON.parse(window.localStorage.getItem(READING_PROGRESS_KEY) || "{}");
-            return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+            if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+            return Object.fromEntries(Object.entries(value).flatMap(([id, item]) => {
+                const numericId = Number(id);
+                const progress = Number(item?.progress);
+                if (!Number.isSafeInteger(numericId) || numericId <= 0 || !Number.isInteger(progress) || progress < 0 || progress > 100) return [];
+                return [[String(numericId), { progress, updatedAt: normalizeListText(item.updatedAt, 40) }]];
+            }).slice(0, 30));
         } catch (error) {
             return {};
         }

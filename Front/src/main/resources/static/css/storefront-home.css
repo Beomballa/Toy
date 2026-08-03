@@ -1,7 +1,7 @@
 :root {
     --home-content-width: 1200px;
     --home-gutter: clamp(20px, 3.15vw, 40px);
-    --home-section-gap: 72px;
+    --home-section-gap: 64px;
     --home-ink: #222;
     --home-muted: #6d6d6d;
     --home-line: #ebebeb;
@@ -148,9 +148,9 @@ body.storefront-home.is-header-search-open {
     position: relative;
     display: grid;
     grid-template-columns: minmax(330px, .72fr) minmax(0, 1.55fr);
-    min-height: 520px;
+    min-height: 480px;
     overflow: hidden;
-    margin: 0 0 48px;
+    margin: 0 0 32px;
     padding: 0;
     border-radius: 0;
     background: var(--home-accent-soft);
@@ -296,7 +296,7 @@ body.storefront-home.is-header-search-open {
     position: relative;
     display: block;
     min-width: 0;
-    min-height: 520px;
+    min-height: 480px;
     overflow: hidden;
 }
 
@@ -333,14 +333,14 @@ body.storefront-home.is-header-search-open {
     grid-template-columns: repeat(8, minmax(0, 1fr));
     gap: 16px;
     overflow: visible;
-    margin: 0 0 var(--home-section-gap);
+    margin: 0 0 48px;
 }
 
 .storefront-home .home-category-rail a,
 .storefront-home .home-category-rail button {
     display: grid;
     min-width: 0;
-    gap: 10px;
+    gap: 8px;
     justify-items: center;
     padding: 0;
     border: 0;
@@ -351,7 +351,7 @@ body.storefront-home.is-header-search-open {
 .storefront-home .home-category-rail button > span {
     display: grid;
     width: 100%;
-    aspect-ratio: 1.15;
+    aspect-ratio: 1.55;
     place-items: center;
     border-radius: 0;
     background: #f3f3f1;

@@ -47,7 +47,8 @@
     }
 
     function requiredText(value, maxLength, fieldName) {
-        const normalized = String(value ?? "").trim();
+        if (typeof value !== "string") throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         if (!normalized || normalized.length > maxLength) {
             throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         }
@@ -55,16 +56,17 @@
     }
 
     function optionalText(value, maxLength) {
-        const normalized = String(value ?? "").trim();
+        if (value == null) return "";
+        if (typeof value !== "string") throw new Error("주문 문구가 올바르지 않습니다.");
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         return normalized && normalized.length <= maxLength ? normalized : "";
     }
 
-    function safeInteger(value, fieldName, minimum = 0) {
-        const normalized = Number(value);
-        if (!Number.isSafeInteger(normalized) || normalized < minimum) {
+    function safeInteger(value, fieldName, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
+        if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
             throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         }
-        return normalized;
+        return value;
     }
 
     function normalizeImageSource(value) {
@@ -106,8 +108,9 @@
     }
 
     function normalizeLookupInput(orderNumberValue, phoneValue) {
-        const orderNumber = String(orderNumberValue ?? "").trim().toUpperCase();
-        const rawPhone = String(phoneValue ?? "").trim();
+        if (typeof orderNumberValue !== "string" || typeof phoneValue !== "string") throw new Error("주문 조회 정보가 올바르지 않습니다.");
+        const orderNumber = orderNumberValue.trim().toUpperCase();
+        const rawPhone = phoneValue.trim();
         const phone = rawPhone.replace(/\D/g, "");
         if (!ORDER_NUMBER_PATTERN.test(orderNumber)) {
             throw new Error("주문번호 형식을 확인해주세요.");
@@ -145,14 +148,17 @@
         if (!Object.hasOwn(STATUS_STEPS, status)) {
             throw new Error("지원하지 않는 주문 상태입니다.");
         }
+        if (value.statusLabel !== STATUS_LABELS[status] || value.statusStep !== STATUS_STEPS[status]) {
+            throw new Error("주문 상태 표시 정보가 일치하지 않습니다.");
+        }
         if (!Array.isArray(value.items) || value.items.length === 0 || value.items.length > 100) {
             throw new Error("주문 상품 정보가 올바르지 않습니다.");
         }
         const items = value.items.map((item) => {
-            const unitPrice = safeInteger(item?.unitPrice, "상품 가격");
-            const quantity = safeInteger(item?.quantity, "상품 수량", 1);
-            const lineAmount = safeInteger(item?.lineAmount, "상품 합계");
-            if (quantity > 100 || unitPrice * quantity !== lineAmount) {
+            const unitPrice = safeInteger(item?.unitPrice, "상품 가격", 0, 1000000000);
+            const quantity = safeInteger(item?.quantity, "상품 수량", 1, 20);
+            const lineAmount = safeInteger(item?.lineAmount, "상품 합계", 0, 2000000000);
+            if (unitPrice * quantity !== lineAmount) {
                 throw new Error("주문 상품 합계가 올바르지 않습니다.");
             }
             return {
@@ -164,12 +170,12 @@
                 lineAmount
             };
         });
-        const totalAmount = safeInteger(value.totalAmount, "총 주문 금액");
+        const totalAmount = safeInteger(value.totalAmount, "총 주문 금액", 0, 2000000000);
         if (items.reduce((sum, item) => sum + item.lineAmount, 0) !== totalAmount) {
             throw new Error("총 주문 금액이 상품 합계와 일치하지 않습니다.");
         }
         const rawHistory = Array.isArray(value.statusHistory) ? value.statusHistory : [];
-        if (rawHistory.length > 20) {
+        if (rawHistory.length === 0 || rawHistory.length > 20) {
             throw new Error("주문 처리 이력이 올바르지 않습니다.");
         }
         const statusHistory = rawHistory.map((event) => {
@@ -177,11 +183,24 @@
             if (!Object.hasOwn(STATUS_LABELS, eventStatus)) {
                 throw new Error("주문 처리 이력이 올바르지 않습니다.");
             }
+            const changedAt = requiredText(event?.changedAt, 30, "처리 일시");
+            if (!/^\d{4}[.-]\d{2}[.-]\d{2} \d{2}:\d{2}$/.test(changedAt)
+                || event.statusLabel !== STATUS_LABELS[eventStatus]) throw new Error("주문 처리 이력이 올바르지 않습니다.");
             return {
+                status: eventStatus,
                 statusLabel: STATUS_LABELS[eventStatus],
-                changedAt: requiredText(event?.changedAt, 30, "처리 일시")
+                changedAt
             };
         });
+        if (statusHistory[0].status !== status
+            || statusHistory.some((event, index) => index > 0 && statusHistory[index - 1].changedAt < event.changedAt)) {
+            throw new Error("주문 처리 이력 순서가 올바르지 않습니다.");
+        }
+        const orderedAt = requiredText(value.orderedAt, 30, "주문 일시");
+        if (!/^\d{4}[.-]\d{2}[.-]\d{2} \d{2}:\d{2}$/.test(orderedAt)) throw new Error("주문 일시가 올바르지 않습니다.");
+        const deliveryCompany = optionalText(value.deliveryCompany, 50);
+        const trackingNumber = optionalText(value.trackingNumber, 80);
+        if (Boolean(deliveryCompany) !== Boolean(trackingNumber)) throw new Error("배송 추적 정보가 올바르지 않습니다.");
         return {
             orderNumber,
             buyerName: requiredText(value.buyerName, 50, "주문자"),
@@ -189,9 +208,9 @@
             status,
             statusLabel: STATUS_LABELS[status],
             statusStep: STATUS_STEPS[status],
-            orderedAt: requiredText(value.orderedAt, 30, "주문 일시"),
-            deliveryCompany: optionalText(value.deliveryCompany, 50),
-            trackingNumber: optionalText(value.trackingNumber, 80),
+            orderedAt,
+            deliveryCompany,
+            trackingNumber,
             delivery: normalizeDelivery(value.delivery),
             items,
             statusHistory
@@ -227,7 +246,7 @@
                 const fallback = response.status === 429
                     ? "조회 요청이 많습니다. 5분 후 다시 시도해주세요."
                     : "주문 정보를 확인할 수 없습니다.";
-                throw new Error(payload.message || fallback);
+                throw new Error(typeof payload.message === "string" && payload.message.trim() ? payload.message.slice(0, 200) : fallback);
             }
             if (activeRequest !== lookupSequence) return;
             const order = normalizeOrderResponse(payload, orderNumber);
@@ -285,7 +304,7 @@
         });
         document.getElementById("orderItems").innerHTML = order.items.map((item) => `
             <article class="order-item">
-                <a href="/front/products/${item.productId}"><img src="${escapeMarkup(item.thumbnailUrl || fallbackImage(item.productName))}" alt="${escapeMarkup(item.productName)}"></a>
+                <a href="/front/products/${item.productId}"><img src="${escapeMarkup(item.thumbnailUrl || fallbackImage())}" alt="${escapeMarkup(item.productName)}" data-order-product-image></a>
                 <div><strong>${escapeMarkup(item.productName)}</strong><span>${formatPrice(item.unitPrice)} · ${item.quantity}개</span></div>
                 <b>${formatPrice(item.lineAmount)}</b>
             </article>
@@ -305,6 +324,13 @@
         document.getElementById("orderHistory").innerHTML = order.statusHistory.map((event) => `
             <li><strong>${escapeMarkup(event.statusLabel)}</strong><span>${escapeMarkup(event.changedAt)}</span></li>
         `).join("");
+        document.querySelectorAll("[data-order-product-image]").forEach((image) => {
+            image.addEventListener("error", () => {
+                if (image.dataset.fallbackApplied === "true") return;
+                image.dataset.fallbackApplied = "true";
+                image.src = fallbackImage();
+            }, { once: true });
+        });
         result.hidden = false;
         result.scrollIntoView({ behavior: "smooth", block: "start" });
     }

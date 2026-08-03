@@ -77,3 +77,24 @@ test("주문조회는 주문번호와 금액이 불일치한 응답을 표시하
   await expect(page.locator("#orderResult")).toBeHidden();
   await expect(page.locator("body")).not.toContainText("노출금지");
 });
+
+test("주문조회는 현재 상태와 최신 이력이 다른 응답을 거부하고 재조회한다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/orders/lookup", async (route) => {
+    const body = route.request().postDataJSON();
+    const response = orderResponse(body.orderNumber, "정상수령인");
+    if (attempts++ === 0) response.statusHistory[0].status = "SHIPPED";
+    await route.fulfill({ json: response });
+  });
+
+  await page.goto("/front/orders");
+  await page.locator('[name="orderNumber"]').fill("GSHISTORY0000");
+  await page.locator('[name="phone"]').fill("010-1234-5678");
+  await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
+  await expect(page.locator("#orderLookupError")).toContainText("처리 이력");
+  await expect(page.locator("#orderResult")).toBeHidden();
+
+  await page.locator("#orderLookupForm").evaluate((form) => form.requestSubmit());
+  await expect(page.locator("#orderResultNumber")).toHaveText("GSHISTORY0000");
+  await expect(page.locator("#orderDelivery")).toContainText("정상수령인");
+});

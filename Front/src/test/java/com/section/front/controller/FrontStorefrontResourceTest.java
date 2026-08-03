@@ -232,7 +232,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"copyTrackingButton\"")
                 .contains("id=\"printOrderButton\"")
                 .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/order-lookup.js?v=20260802.1");
+                .contains("/js/view/order-lookup.js?v=20260803.1");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
                 .contains("JSON.stringify({ orderNumber, phone })")
@@ -243,6 +243,11 @@ class FrontStorefrontResourceTest {
                 .contains("function normalizeOrderResponse(")
                 .contains("items.reduce((sum, item) => sum + item.lineAmount, 0) !== totalAmount")
                 .contains("STATUS_STEPS[status]")
+                .contains("value.statusLabel !== STATUS_LABELS[status]")
+                .contains("statusHistory[0].status !== status")
+                .contains("statusHistory[index - 1].changedAt < event.changedAt")
+                .contains("Boolean(deliveryCompany) !== Boolean(trackingNumber)")
+                .contains("data-order-product-image")
                 .contains("function normalizeImageSource(")
                 .contains("lookupController?.abort()")
                 .contains("signal: lookupController.signal")

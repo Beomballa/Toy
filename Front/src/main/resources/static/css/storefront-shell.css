@@ -9,6 +9,7 @@
     --store-shell-white: #fff;
     --store-shell-width: 1200px;
     --store-shell-gutter: 40px;
+    --store-shell-accent: #65705d;
 }
 
 .storefront-page {
@@ -111,22 +112,13 @@
 .store-shell__logo {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
     min-width: 220px;
 }
 
-.store-shell__logo strong {
-    font-size: 24px;
-    font-style: italic;
-    font-weight: 900;
-    letter-spacing: -2px;
-    line-height: 1;
-}
-
-.store-shell__logo span {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: -.4px;
+.store-shell__logo img {
+    display: block;
+    width: 126px;
+    height: auto;
 }
 
 .store-shell__main-nav {
@@ -429,11 +421,10 @@
         margin-right: auto;
     }
 
-    .store-shell__logo strong {
-        font-size: 22px;
+    .store-shell__logo img {
+        width: 108px;
     }
 
-    .store-shell__logo span,
     .store-shell__main-nav,
     .store-shell__actions button[data-store-shell-search-open] > span {
         display: none;

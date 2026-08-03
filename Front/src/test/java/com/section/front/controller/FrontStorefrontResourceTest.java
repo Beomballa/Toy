@@ -70,7 +70,7 @@ class FrontStorefrontResourceTest {
             assertThat(readResource("templates/views/" + page))
                     .as(page)
                     .contains("storefront-page")
-                    .contains("/css/storefront-shell.css?v=20260726.2")
+                    .contains("/css/storefront-shell.css?v=20260803.1")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
                     .contains("/js/view/storefront-state.js?v=20260802.1")
@@ -119,7 +119,9 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
-                .contains("/css/storefront-home.css?v=20260726.2")
+                .contains("/css/storefront-home.css?v=20260803.1")
+                .contains("/images/brand/noren-wordmark.png")
+                .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")
                 .contains("id=\"headerSearchPanel\"")
                 .contains("id=\"headerSearchPanel\" role=\"dialog\" aria-modal=\"true\"")
@@ -135,7 +137,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.5");
+                .contains("/js/view/app.js?v=20260803.6");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -207,7 +209,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260802.1");
+                .contains("/js/view/detail.js?v=20260803.1");
         assertThat(readResource("static/js/view/detail.js"))
                 .contains("function normalizeDetailProduct(")
                 .contains("function normalizeDetailOptions(")
@@ -327,7 +329,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
                 .contains("/css/my-activity.css?v=20260726.2")
-                .contains("/js/view/my-activity.js?v=20260802.1");
+                .contains("/js/view/my-activity.js?v=20260803.1");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -374,7 +376,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportNoticePagination\"")
                 .contains("id=\"supportCopySummaryButton\"")
                 .contains("/css/support-center.css?v=20260726.1")
-                .contains("/js/view/support-center.js?v=20260803.1");
+                .contains("/js/view/support-center.js?v=20260803.2");
         assertThat(script)
                 .contains("grade-stock-support-searches")
                 .contains("boardType: \"NOTICE\"")
@@ -426,7 +428,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"brandPageSelect\"")
                 .contains("id=\"brandSelectionBar\"")
                 .contains("/css/brand-directory.css?v=20260726.1")
-                .contains("/js/view/brand-directory.js?v=20260803.1");
+                .contains("/js/view/brand-directory.js?v=20260803.2");
         assertThat(script)
                 .contains("/api/front/catalog/bootstrap?page=0&size=1")
                 .contains("fetch(`/api/front/catalog/bootstrap?${productParams()}`")
@@ -624,7 +626,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
                 .contains("/css/product-collection.css?v=20260727.1")
-                .contains("/js/view/product-collection.js?v=20260802.1")
+                .contains("/js/view/product-collection.js?v=20260803.1")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)
                 .contains("/front/collections/recommended")
@@ -2421,7 +2423,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentDetailSavedListLink\"")
                 .contains("/front/content#contentSavedBoard")
                 .contains("data-content-return-link")
-                .contains("/js/view/content-detail.js?v=20260803.1")
+                .contains("/js/view/content-detail.js?v=20260803.2")
                 .contains("/css/storefront.css?v=20260724.1");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`, { signal: requestController.signal })")
@@ -2502,7 +2504,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"contentSavedClearButton\"")
                 .contains("id=\"contentSavedExpandButton\"")
                 .contains("id=\"contentSavedUtilityCount\"")
-                .contains("/js/view/content-list.js?v=20260803.1")
+                .contains("/js/view/content-list.js?v=20260803.2")
                 .contains("/css/storefront.css?v=20260723.4");
         assertThat(script)
                 .contains("fetch(`/api/front/content?${params}`")
@@ -2575,7 +2577,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"comparisonOptionTable\"")
                 .contains("id=\"comparisonCsvButton\"")
                 .contains("id=\"comparisonPrintButton\"")
-                .contains("/js/view/product-comparison.js?v=20260802.1")
+                .contains("/js/view/product-comparison.js?v=20260803.1")
                 .contains("/css/product-comparison.css?v=20260726.1");
         assertThat(script)
                 .contains("front-compare-products")

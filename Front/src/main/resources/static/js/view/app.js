@@ -1140,7 +1140,7 @@
             const shareUrl = `${window.location.origin}${window.location.pathname}${window.location.search}`;
             try {
                 if (navigator.share) {
-                    await navigator.share({ title: "Grade Stock 상품 탐색", text: buildSummaryText(filteredProducts().length), url: shareUrl });
+                    await navigator.share({ title: "NOREN 상품 탐색", text: buildSummaryText(filteredProducts().length), url: shareUrl });
                     showToast("탐색 조건을 공유했습니다.", "현재 상품 조건과 URL을 전달했습니다.");
                     return;
                 }
@@ -5560,7 +5560,7 @@
 
     function syncCatalogDocumentTitle(resultCount) {
         const context = state.search ? `“${state.search}” 검색` : state.brand !== "ALL" ? state.brand : "상품 탐색";
-        document.title = `${context} ${resultCount}개 | Grade Stock`;
+        document.title = `${context} ${resultCount}개 | NOREN`;
     }
 
     async function copyFocusedCatalogProductLink(productId) {

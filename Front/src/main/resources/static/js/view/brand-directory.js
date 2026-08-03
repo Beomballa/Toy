@@ -302,7 +302,7 @@
         elements.metricFeatured.textContent = Number(metrics.featuredCount || 0).toLocaleString("ko-KR");
         syncSavedBrandButton();
         renderCategoryBars();
-        document.title = `${state.brand} 브랜드 상품 | Grade Stock`;
+        document.title = `${state.brand} 브랜드 상품 | NOREN`;
     }
 
     function renderCategoryBars() {
@@ -784,7 +784,7 @@
         elements.products.hidden = true;
         elements.emptyProfile.hidden = false;
         elements.selectionBar.hidden = true;
-        document.title = "브랜드 탐색 | Grade Stock";
+        document.title = "브랜드 탐색 | NOREN";
         announce("전체 브랜드 디렉터리로 돌아왔습니다.");
     }
 

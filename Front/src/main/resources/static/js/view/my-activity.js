@@ -127,7 +127,7 @@
           <article class="my-card" data-product-id="${item.id}">
             <label class="my-card__check"><input type="checkbox" data-select-id="${item.id}" ${state.selected.has(Number(item.id))?"checked":""} aria-label="${safe(item.name||item.headline)} 선택"></label>
             <a class="my-card__visual" href="/front/products/${item.id}"><img src="${safe(image(item))}" alt="${safe(item.name||item.headline)}"></a>
-            <div class="my-card__copy"><div class="my-card__brand"><span>${safe(item.brand||"Grade Stock")}</span><span>${Number(item.stock||0)<=0?"품절":Number(item.stock||0)<=20?"재고주의":"재고안정"}</span></div><h2>${safe(item.name||item.headline||`상품 ${item.id}`)}</h2><p>${safe(item.model||item.category||"상품 정보 확인")}</p><div class="my-card__price"><strong>${price(item.price)}</strong><span>재고 ${Number(item.stock||0)}개</span></div></div>
+            <div class="my-card__copy"><div class="my-card__brand"><span>${safe(item.brand||"NOREN")}</span><span>${Number(item.stock||0)<=0?"품절":Number(item.stock||0)<=20?"재고주의":"재고안정"}</span></div><h2>${safe(item.name||item.headline||`상품 ${item.id}`)}</h2><p>${safe(item.model||item.category||"상품 정보 확인")}</p><div class="my-card__price"><strong>${price(item.price)}</strong><span>재고 ${Number(item.stock||0)}개</span></div></div>
             <div class="my-card__actions"><a href="/front/products/${item.id}">상세 보기</a><button type="button" data-remove-id="${item.id}">목록에서 삭제</button></div>
           </article>`).join("") : `<div class="my-empty"><strong>${labels[state.tab]}이 없습니다.</strong><p>검색 조건을 바꾸거나 상품을 둘러보고 활동을 시작해보세요.</p><a href="/front#catalog">상품 둘러보기</a></div>`;
         bindImageFallbacks();

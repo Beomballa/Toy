@@ -175,7 +175,7 @@
         elements.article.hidden = false;
         elements.article.setAttribute("aria-busy", "false");
         elements.error.hidden = true;
-        document.title = `${content.title || "콘텐츠"} | Grade Stock`;
+        document.title = `${content.title || "콘텐츠"} | NOREN`;
         renderNavigation(content.newerContent, content.olderContent);
         renderRelated(Array.isArray(content.relatedContents) ? content.relatedContents : []);
         syncBookmarkButton();

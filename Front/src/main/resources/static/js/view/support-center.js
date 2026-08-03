@@ -58,7 +58,7 @@
             id: "order-demo",
             topic: "ORDER",
             question: "실제 결제와 배송이 진행되는 서비스인가요?",
-            answer: "현재 Grade Stock은 상품 탐색과 주문 흐름을 검증하는 데모 서비스입니다. 실제 결제 승인, 판매 계약, 택배 배송은 제공하지 않습니다.",
+            answer: "현재 NOREN은 상품 탐색과 주문 흐름을 검증하는 데모 서비스입니다. 실제 결제 승인, 판매 계약, 택배 배송은 제공하지 않습니다.",
             keywords: ["결제", "배송", "데모", "거래"]
         },
         {
@@ -622,7 +622,7 @@
     function copyCurrentSummary() {
         const topic = state.topic === "ALL" ? "전체" : topicLabel(state.topic);
         const keyword = state.keyword || "없음";
-        const text = `Grade Stock 고객지원 문의\n화면: ${state.view === "faq" ? "자주 묻는 질문" : "공지사항"}\n주제: ${topic}\n검색어: ${keyword}\n경로: ${window.location.href}`;
+        const text = `NOREN 고객지원 문의\n화면: ${state.view === "faq" ? "자주 묻는 질문" : "공지사항"}\n주제: ${topic}\n검색어: ${keyword}\n경로: ${window.location.href}`;
         copyText(text, "현재 문의 내용을 복사했습니다.");
     }
 
@@ -762,7 +762,7 @@
 
     function updateDocumentTitle() {
         const label = state.view === "faq" ? "자주 묻는 질문" : "공지사항";
-        document.title = `${label} | Grade Stock 고객지원`;
+        document.title = `${label} | NOREN 고객지원`;
     }
 
     function topicLabel(topic) {

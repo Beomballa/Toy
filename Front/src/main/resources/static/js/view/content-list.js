@@ -183,7 +183,7 @@
         elements.previousButton.disabled = Boolean(payload.first);
         elements.nextButton.disabled = Boolean(payload.last) || Number(payload.totalPages || 0) === 0;
         elements.pagination.hidden = Number(payload.totalPages || 0) <= 1;
-        document.title = `${boardLabel} ${totalElements.toLocaleString("ko-KR")}개 | Grade Stock`;
+        document.title = `${boardLabel} ${totalElements.toLocaleString("ko-KR")}개 | NOREN`;
         announce(`${items.length}개의 콘텐츠를 ${sortLabel(state.sort)}으로 표시했습니다.`);
     }
 

@@ -119,7 +119,7 @@
         elements.table.setAttribute("aria-busy", "false");
         elements.refresh.disabled = false;
         elements.refresh.removeAttribute("aria-busy");
-        document.title = `${products.length}개 상품 비교 | Grade Stock`;
+        document.title = `${products.length}개 상품 비교 | NOREN`;
     }
 
     function syncMetrics(products) {
@@ -304,7 +304,7 @@
     function copySummary() {
         const products = sortedProducts();
         const lines = products.map((item, index) => `${index + 1}. ${item.brand} ${item.name} · ${item.priceLabel || formatPrice(item.price)} · 재고 ${item.stock}개 · ${Math.round(productScore(item, products))}점`);
-        copyText(`Grade Stock 상품 비교\n${modeLabel(state.mode)}\n${lines.join("\n")}`, "비교 요약을 복사했습니다.");
+        copyText(`NOREN 상품 비교\n${modeLabel(state.mode)}\n${lines.join("\n")}`, "비교 요약을 복사했습니다.");
     }
 
     function exportCsv() {

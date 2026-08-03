@@ -260,7 +260,7 @@
                 <img class="product-visual__image" src="${escapeAttribute(imageSource)}" alt="${escapeAttribute(imageLabel)}" loading="lazy" decoding="async" data-product-image${usesFallback ? " data-image-fallback=\"true\"" : ""}>
                 <span class="${className}__badge">${brandInitials(product.brand)}</span>
                 <div class="${className}__copy">
-                    <strong>${product.brand || "Grade Stock"}</strong>
+                    <strong>${product.brand || "NOREN"}</strong>
                     <span>${product.category || product.model || product.reason || "Curated pick"}</span>
                 </div>
             </div>
@@ -2078,7 +2078,7 @@
             try {
                 if (navigator.share) {
                     await navigator.share({
-                        title: currentProduct?.name || "Grade Stock 상품",
+                        title: currentProduct?.name || "NOREN 상품",
                         text: currentProduct ? summaryText(currentProduct) : "상품 상세",
                         url: shareUrl
                     });
@@ -2369,7 +2369,7 @@
             if (elements.detailRetryButton) {
                 elements.detailRetryButton.hidden = true;
             }
-            document.title = `${product.name} | Grade Stock`;
+            document.title = `${product.name} | NOREN`;
             if (elements.detailTitle) {
                 elements.detailTitle.textContent = product.headline || product.name;
             }

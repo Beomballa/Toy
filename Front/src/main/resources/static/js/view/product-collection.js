@@ -77,7 +77,7 @@
         elements.eyebrow.textContent = collection.eyebrow;
         elements.title.textContent = collection.title;
         elements.description.textContent = collection.description;
-        document.title = `${collection.title} | Grade Stock`;
+        document.title = `${collection.title} | NOREN`;
         document.querySelector(`.store-shell__category a[href$="/${collectionType}"]`)?.classList.add("is-current");
         elements.searchInput.value = state.keyword;
         elements.sortSelect.value = state.sort;

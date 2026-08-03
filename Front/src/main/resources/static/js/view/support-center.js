@@ -424,18 +424,21 @@
     }
 
     function requiredText(value, maxLength, fieldName) {
-        const normalized = String(value ?? "").trim();
+        if (typeof value !== "string") throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         if (!normalized || normalized.length > maxLength) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         return normalized;
     }
 
     function optionalText(value, maxLength) {
-        const normalized = String(value ?? "").trim();
+        if (value == null) return "";
+        if (typeof value !== "string") throw new Error("공지 문구가 올바르지 않습니다.");
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         return normalized.length <= maxLength ? normalized : "";
     }
 
-    function safeInteger(value, fieldName, minimum = 0) {
-        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+    function safeInteger(value, fieldName, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
+        if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         return value;
     }
 
@@ -443,14 +446,15 @@
         if (!source || typeof source !== "object" || Array.isArray(source) || !Array.isArray(source.items)) {
             throw new Error("공지사항 응답이 올바르지 않습니다.");
         }
-        const page = safeInteger(source.page, "현재 페이지");
-        const size = safeInteger(source.size, "페이지 크기", 1);
-        const totalElements = safeInteger(source.totalElements, "전체 공지 수");
-        const totalPages = safeInteger(source.totalPages, "전체 페이지 수");
+        const page = safeInteger(source.page, "현재 페이지", 0, 200000);
+        const size = safeInteger(source.size, "페이지 크기", 1, 20);
+        const totalElements = safeInteger(source.totalElements, "전체 공지 수", 0, 1000000);
+        const totalPages = safeInteger(source.totalPages, "전체 페이지 수", 0, 200000);
+        const expectedItemCount = page < totalPages ? Math.min(size, totalElements - page * size) : 0;
         if (page !== state.noticePage || size !== state.noticeSize || source.sort !== state.noticeSort
             || totalPages !== (totalElements === 0 ? 0 : Math.ceil(totalElements / size))
-            || source.items.length > size || Boolean(source.first) !== (page === 0)
-            || Boolean(source.last) !== (totalPages === 0 || page >= totalPages - 1)) {
+            || source.items.length !== expectedItemCount || typeof source.first !== "boolean" || typeof source.last !== "boolean"
+            || source.first !== (page === 0) || source.last !== (totalPages === 0 || page >= totalPages - 1)) {
             throw new Error("공지사항 페이지 정보가 올바르지 않습니다.");
         }
         const ids = new Set();
@@ -460,13 +464,15 @@
                 throw new Error("공지사항 항목이 올바르지 않습니다.");
             }
             ids.add(id);
+            const createdDate = requiredText(item.createdDate, 30, "등록일");
+            if (!/^\d{4}[.-]\d{2}[.-]\d{2}$/.test(createdDate)) throw new Error("공지 등록일이 올바르지 않습니다.");
             return {
                 id,
                 title: requiredText(item.title, 200, "공지 제목"),
                 summary: optionalText(item.summary, 500),
                 viewCount: safeInteger(item.viewCount, "조회 수"),
                 pinned: item.pinned,
-                createdDate: requiredText(item.createdDate, 30, "등록일")
+                createdDate
             };
         });
         const pageViewCount = items.reduce((sum, item) => sum + item.viewCount, 0);
@@ -508,6 +514,11 @@
         if (!VALID_VIEWS.includes(view)) return;
         state.view = view;
         state.noticePage = 0;
+        if (view !== "notice") {
+            noticeController?.abort();
+            noticeController = null;
+            noticeSequence += 1;
+        }
         syncControls();
         if (options.updateUrl !== false) updateUrl();
         if (view === "notice") void loadNotices({ updateUrl: false });
@@ -626,7 +637,7 @@
                 textarea.style.opacity = "0";
                 document.body.appendChild(textarea);
                 textarea.select();
-                document.execCommand("copy");
+                if (!document.execCommand("copy")) throw new Error("복사를 지원하지 않습니다.");
                 textarea.remove();
             }
             showToast(successMessage);
@@ -705,7 +716,9 @@
         elements.noticePrevious.addEventListener("click", () => changeNoticePage(-1));
         elements.noticeNext.addEventListener("click", () => changeNoticePage(1));
         elements.noticePageSelect.addEventListener("change", () => {
-            state.noticePage = Math.max(0, Number(elements.noticePageSelect.value) || 0);
+            const page = Number(elements.noticePageSelect.value);
+            if (!Number.isSafeInteger(page) || page < 0 || page > 200000) return;
+            state.noticePage = page;
             void loadNotices();
         });
         elements.copySummary.addEventListener("click", copyCurrentSummary);

@@ -51,3 +51,22 @@ test("고객지원은 변조된 최근 검색어를 정리해 중복 없이 표�
   await expect(page.locator("#supportRecentSearchList button").first()).toHaveText("주문 조회");
   await expect(page.locator("#supportRecentSearchList button").nth(1)).toHaveText("x".repeat(100));
 });
+
+test("고객지원은 전체 건수와 맞지 않는 공지 페이지를 거부한다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/content?**", async (route) => {
+    const payload = noticePage();
+    if (attempts++ === 0) {
+      payload.totalElements = 11;
+      payload.totalPages = 2;
+      payload.last = false;
+    }
+    await route.fulfill({ json: payload });
+  });
+
+  await page.goto("/front/support?view=notice");
+  await expect(page.locator("#supportNoticeList")).toContainText("공지사항을 불러오지 못했습니다");
+  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await expect(page.locator("#supportNoticeList")).toContainText("서비스 점검 안내");
+  await expect(page.locator("#supportNoticeCount")).toHaveText("1");
+});

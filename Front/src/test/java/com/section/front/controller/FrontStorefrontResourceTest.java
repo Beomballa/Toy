@@ -369,7 +369,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportNoticePagination\"")
                 .contains("id=\"supportCopySummaryButton\"")
                 .contains("/css/support-center.css?v=20260726.1")
-                .contains("/js/view/support-center.js?v=20260802.1");
+                .contains("/js/view/support-center.js?v=20260803.1");
         assertThat(script)
                 .contains("grade-stock-support-searches")
                 .contains("boardType: \"NOTICE\"")
@@ -379,6 +379,10 @@ class FrontStorefrontResourceTest {
                 .contains("function normalizeNoticeResponse(")
                 .contains("item?.boardType !== \"NOTICE\"")
                 .contains("source.pageViewCount")
+                .contains("source.items.length !== expectedItemCount")
+                .contains("typeof source.first !== \"boolean\"")
+                .contains("/^\\d{4}[.-]\\d{2}[.-]\\d{2}$/")
+                .contains("page > 200000")
                 .contains("function normalizeSearchKeyword(")
                 .contains("state.expandedFaqIds")
                 .contains("navigator.clipboard?.writeText")

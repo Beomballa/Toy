@@ -10,6 +10,34 @@ import org.springframework.core.io.ClassPathResource;
 class FrontStorefrontResourceTest {
 
     @Test
+    void summerEditKeepsMotionProductAndResponsiveContracts() throws IOException {
+        String html = readResource("templates/views/summer-edit.html");
+        String script = readResource("static/js/view/summer-edit.js");
+        String css = readResource("static/css/summer-edit.css");
+
+        assertThat(html)
+                .contains("id=\"summerHeroMedia\"")
+                .contains("frame-01.jpg")
+                .contains("frame-02.jpg")
+                .contains("frame-03.jpg")
+                .contains("id=\"summerMediaToggle\"")
+                .contains("id=\"summerProductGrid\"")
+                .contains("/js/view/summer-edit.js?v=20260803.1");
+        assertThat(script)
+                .contains("prefers-reduced-motion: reduce")
+                .contains("productController?.abort()")
+                .contains("activeRequest !== productRequestSequence")
+                .contains("/api/front/products?page=0&size=8&sort=LATEST")
+                .contains("function normalizePage(")
+                .contains("image.addEventListener(\"error\"");
+        assertThat(css)
+                .contains("grid-template-columns: minmax(0, 1.9fr) minmax(320px, .9fr)")
+                .contains("@media (max-width: 600px)")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains("@media (prefers-reduced-motion: reduce)");
+    }
+
+    @Test
     void secondaryFrontPagesShareNavigationSearchAndFooterContract() throws IOException {
         String fragment = readResource("templates/fragments/storefront-shell.html");
         String stateScript = readResource("static/js/view/storefront-state.js");

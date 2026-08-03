@@ -49,6 +49,14 @@ class FrontViewControllerTest {
     }
 
     @Test
+    @DisplayName("여름 이벤트 경로는 독립 에디토리얼 뷰를 반환한다")
+    void summerEditReturnsEventView() throws Exception {
+        mockMvc.perform(get("/front/events/summer-edit"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/summer-edit"));
+    }
+
+    @Test
     @DisplayName("장바구니와 주문서 경로는 각각의 거래 뷰를 반환한다")
     void commerceViewsReturnExpectedViews() throws Exception {
         mockMvc.perform(get("/front/cart"))

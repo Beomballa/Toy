@@ -25,6 +25,11 @@ public class FrontViewController {
         return "views/product-collection";
     }
 
+    @GetMapping("/front/events/summer-edit")
+    public String summerEdit() {
+        return "views/summer-edit";
+    }
+
     @GetMapping("/front/cart")
     public String cart() {
         return "views/cart";

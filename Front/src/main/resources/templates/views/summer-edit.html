@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Summer Edit | NOREN</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260725.2">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260803.1">
+    <link rel="stylesheet" href="/css/summer-edit.css?v=20260803.1">
+</head>
+<body class="summer-edit-page storefront-page">
+<a class="skip-link" href="#summerEditMain">이벤트 본문 바로가기</a>
+<header th:replace="~{fragments/storefront-shell :: header('HOME', '2026 Summer Edit')}"></header>
+
+<main id="summerEditMain">
+    <section class="summer-hero" aria-labelledby="summerEditTitle">
+        <div class="summer-hero__media" id="summerHeroMedia" aria-roledescription="carousel" aria-label="NOREN 여름 캠페인">
+            <img class="is-active" src="/images/campaign/summer-edit/frame-01.jpg" alt="여름 의상을 입은 세 명의 모델이 건축 공간을 걷는 모습" width="1600" height="787">
+            <img src="/images/campaign/summer-edit/frame-02.jpg" alt="동일한 세 모델이 바람을 맞으며 포즈를 바꾸는 모습" width="1600" height="787" loading="lazy">
+            <img src="/images/campaign/summer-edit/frame-03.jpg" alt="동일한 세 모델이 카메라 방향으로 걸어오는 모습" width="1600" height="787" loading="lazy">
+            <button type="button" id="summerMediaToggle" aria-pressed="false" aria-label="캠페인 미디어 일시정지">Pause</button>
+        </div>
+        <div class="summer-hero__copy">
+            <p>2026 SUMMER EDIT · 08.03 - 08.16</p>
+            <h1 id="summerEditTitle">한여름,<br>태도가 되다</h1>
+            <span>빛이 강할수록 스타일은 선명해집니다. NOREN이 고른 여름의 마지막 장면을 만나보세요.</span>
+            <a href="#summerProducts">에디트 쇼핑하기</a>
+            <div class="summer-hero__controls" aria-label="캠페인 장면 이동">
+                <button type="button" id="summerPreviousFrame" aria-label="이전 장면">이전</button>
+                <strong id="summerFrameStatus" role="status" aria-live="polite">01 / 03</strong>
+                <button type="button" id="summerNextFrame" aria-label="다음 장면">다음</button>
+            </div>
+        </div>
+    </section>
+
+    <nav class="summer-anchor-nav" aria-label="이벤트 빠른 이동">
+        <a class="is-current" href="#summerEditMain">에디트</a>
+        <a href="#summerBenefits">혜택</a>
+        <a href="#summerProducts">상품</a>
+        <a href="/front/collections/new">신규 드롭</a>
+    </nav>
+
+    <section class="summer-benefits" id="summerBenefits" aria-labelledby="summerBenefitsTitle">
+        <div>
+            <p>LIMITED BENEFIT</p>
+            <h2 id="summerBenefitsTitle">여름의 마지막 선택을 위한 혜택</h2>
+            <span>데모 서비스에서는 쿠폰 다운로드 대신 적용 조건을 미리 확인할 수 있습니다.</span>
+        </div>
+        <div class="summer-benefits__list">
+            <article><span>01</span><strong>패션 셀렉션 15%</strong><p>신규 회원 대상 · 최대 3만원</p></article>
+            <article><span>02</span><strong>빠른배송 10%</strong><p>안정 재고 상품 대상 · 최대 2만원</p></article>
+        </div>
+    </section>
+
+    <section class="summer-products" id="summerProducts" aria-labelledby="summerProductsTitle">
+        <header>
+            <div><p>CURATED FOR AUGUST</p><h2 id="summerProductsTitle">지금 입기 좋은 아이템</h2></div>
+            <a href="/front/collections/new">전체 보기</a>
+        </header>
+        <p class="summer-products__status" id="summerProductStatus" role="status" aria-live="polite">상품을 불러오고 있습니다.</p>
+        <div class="summer-products__grid" id="summerProductGrid" aria-busy="true"></div>
+        <button class="summer-products__retry" type="button" id="summerProductRetry" hidden>다시 불러오기</button>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-state.js?v=20260802.1"></script>
+<script src="/js/view/storefront-shell.js?v=20260802.1"></script>
+<script src="/js/view/summer-edit.js?v=20260803.1"></script>
+</body>
+</html>

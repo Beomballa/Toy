@@ -827,21 +827,14 @@
             if (!response.ok) {
                 throw new Error("홈 컬렉션을 불러오지 못했습니다.");
             }
-            const payload = await response.json();
-            homeCollections = {
-                recommended: Array.isArray(payload?.recommended) ? payload.recommended : [],
-                ranking: Array.isArray(payload?.ranking) ? payload.ranking : [],
-                fastDelivery: Array.isArray(payload?.fastDelivery) ? payload.fastDelivery : [],
-                latestDrops: Array.isArray(payload?.latestDrops) ? payload.latestDrops : [],
-                lowStock: Array.isArray(payload?.lowStock) ? payload.lowStock : []
-            };
+            homeCollections = normalizeHomeCollections(await response.json());
         } catch (error) {
             homeCollections = {
-                recommended: products.filter((product) => product.featured),
-                ranking: products.slice().sort((left, right) => Number(right.stock || 0) - Number(left.stock || 0)),
-                fastDelivery: products.filter((product) => product.stock >= lowStockThresholdValue()),
-                latestDrops: products.slice(),
-                lowStock: products.filter((product) => product.stock < lowStockThresholdValue())
+                recommended: products.filter((product) => product.featured).slice(0, 8),
+                ranking: products.slice().sort((left, right) => right.stock - left.stock).slice(0, 8),
+                fastDelivery: products.filter((product) => product.stock >= lowStockThresholdValue()).slice(0, 8),
+                latestDrops: products.slice().sort((left, right) => right.createdDate.localeCompare(left.createdDate)).slice(0, 8),
+                lowStock: products.filter((product) => product.stock < lowStockThresholdValue()).slice(0, 8)
             };
         }
     }
@@ -2941,6 +2934,26 @@
             ids.add(product.id);
             return product;
         });
+    }
+
+    function normalizeHomeCollections(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("홈 컬렉션 응답이 올바르지 않습니다.");
+        const collections = {
+            recommended: normalizeHomeProducts(value.recommended, 8),
+            ranking: normalizeHomeProducts(value.ranking, 8),
+            fastDelivery: normalizeHomeProducts(value.fastDelivery, 8),
+            latestDrops: normalizeHomeProducts(value.latestDrops, 8),
+            lowStock: normalizeHomeProducts(value.lowStock, 8)
+        };
+        const threshold = lowStockThresholdValue();
+        if (collections.recommended.some((product) => !product.featured)
+            || collections.fastDelivery.some((product) => product.stock < threshold)
+            || collections.lowStock.some((product) => product.stock >= threshold)
+            || collections.ranking.some((product, index, list) => index > 0 && list[index - 1].stock < product.stock)
+            || collections.latestDrops.some((product, index, list) => index > 0 && list[index - 1].createdDate < product.createdDate)) {
+            throw new Error("홈 컬렉션 조건이 올바르지 않습니다.");
+        }
+        return collections;
     }
 
     function normalizeHomeFacets(value) {

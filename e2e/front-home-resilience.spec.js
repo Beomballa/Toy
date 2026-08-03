@@ -16,6 +16,16 @@ const catalogPayload = (totalElements = 1) => ({
   categoryFacets: [{ value: "스니커즈", count: 1 }]
 });
 
+const homeProduct = (overrides = {}) => ({ ...catalogPayload().products[0], ...overrides });
+
+const collectionPayload = () => ({
+  recommended: [homeProduct()],
+  ranking: [homeProduct()],
+  fastDelivery: [],
+  latestDrops: [homeProduct()],
+  lowStock: [homeProduct({ featured: false })]
+});
+
 test("홈 콘텐츠는 게시판 유형이 잘못된 응답을 거부하고 재시도한다", async ({ page }) => {
   let attempts = 0;
   await page.route("**/api/front/content/highlights?limit=4", async (route) => {
@@ -42,4 +52,17 @@ test("홈 카탈로그는 전체 합계가 다른 응답을 캐시하거나 표�
   await expect(page.locator("#catalogGrid")).toContainText("카탈로그를 불러오지 못했습니다");
   await page.reload();
   await expect(page.locator("#catalogGrid")).toContainText("에어포스 1");
+});
+
+test("홈 컬렉션은 레일 조건이 다른 응답 대신 검증된 카탈로그를 사용한다", async ({ page }) => {
+  await page.route("**/api/front/catalog/bootstrap?**", (route) => route.fulfill({ json: catalogPayload() }));
+  await page.route("**/api/front/catalog/home-collections", async (route) => {
+    const payload = collectionPayload();
+    payload.lowStock = [homeProduct({ id: 999, name: "잘못된 저재고 상품", stock: 100, options: [{ id: 9991, name: "260", stock: 100, additionalPrice: 0 }] })];
+    await route.fulfill({ json: payload });
+  });
+
+  await page.goto("/front");
+  await expect(page.locator("#latestDropGrid")).toContainText("에어포스 1");
+  await expect(page.locator("#lowStockGrid")).not.toContainText("잘못된 저재고 상품");
 });

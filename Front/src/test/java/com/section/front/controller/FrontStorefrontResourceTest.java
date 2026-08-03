@@ -135,7 +135,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.2");
+                .contains("/js/view/app.js?v=20260803.3");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -2580,6 +2580,21 @@ class FrontStorefrontResourceTest {
                 .contains(".comparison-candidate")
                 .contains("@media (max-width: 520px)")
                 .contains("@media print");
+    }
+
+    @Test
+    void homeCollectionsRejectMismatchedRailContractsAndUseValidatedFallbacks() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("function normalizeHomeCollections(value)")
+                .contains("recommended: normalizeHomeProducts(value.recommended, 8)")
+                .contains("collections.recommended.some((product) => !product.featured)")
+                .contains("collections.fastDelivery.some((product) => product.stock < threshold)")
+                .contains("collections.lowStock.some((product) => product.stock >= threshold)")
+                .contains("collections.ranking.some((product, index, list)")
+                .contains("collections.latestDrops.some((product, index, list)")
+                .contains("products.filter((product) => product.featured).slice(0, 8)");
     }
 
     private String readResource(String path) throws IOException {

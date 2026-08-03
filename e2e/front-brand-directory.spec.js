@@ -63,3 +63,26 @@ test("브랜드 디렉터리는 다른 브랜드 응답을 거부하고 재시�
   await expect(page.locator("#brandProductGrid")).toContainText("나이키 테스트 상품");
   await expect(page.locator("#brandProductGrid img")).toHaveAttribute("src", "/images/product-placeholder.svg");
 });
+
+test("브랜드 디렉터리는 facet 합계가 전체 상품 수와 다른 응답을 거부한다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/catalog/bootstrap?**", async (route) => {
+    const invalid = attempts++ === 0;
+    await route.fulfill({ json: {
+      products: [],
+      pagination: { page: 0, size: 1, totalElements: 0, totalPages: 0, first: true, last: true },
+      metrics: metrics(2, 2),
+      brandFacets: [
+        { value: "나이키", count: invalid ? 99 : 1 },
+        { value: "아디다스", count: 1 }
+      ],
+      categoryFacets: []
+    } });
+  });
+
+  await page.goto("/front/brands");
+  await expect(page.locator("#brandCardGrid")).toContainText("브랜드 데이터를 불러오지 못했습니다");
+  await page.getByRole("button", { name: "다시 불러오기" }).click();
+  await expect(page.locator(".brand-card")).toHaveCount(2);
+  await expect(page.locator("#brandDirectoryProducts")).toHaveText("2");
+});

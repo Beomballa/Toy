@@ -29,6 +29,7 @@
     let pagination = emptyPagination();
     let selectedProductIds = new Set();
     let directoryController = null;
+    let directoryRequestSequence = 0;
     let productController = null;
     let productRequestSequence = 0;
     let toastTimer = null;
@@ -95,6 +96,7 @@
     }
 
     async function loadDirectory() {
+        const sequence = ++directoryRequestSequence;
         directoryController?.abort();
         directoryController = new AbortController();
         showDirectoryState("LOADING");
@@ -104,6 +106,7 @@
             });
             if (!response.ok) throw new Error("브랜드 데이터를 불러오지 못했습니다.");
             const payload = normalizeDirectoryResponse(await response.json());
+            if (sequence !== directoryRequestSequence) return;
             directoryBrands = normalizeFacets(payload.brandFacets);
             directoryMetrics = payload.metrics;
             renderDirectorySummary();
@@ -115,10 +118,10 @@
                 updateUrl("replace");
             }
         } catch (error) {
-            if (error?.name === "AbortError") return;
+            if (error?.name === "AbortError" || sequence !== directoryRequestSequence) return;
             showDirectoryState("ERROR");
         } finally {
-            directoryController = null;
+            if (sequence === directoryRequestSequence) directoryController = null;
         }
     }
 
@@ -787,8 +790,8 @@
 
     function hydrateFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        state.brand = String(params.get("brand") || "").trim().slice(0, 80);
-        state.category = String(params.get("category") || "ALL").trim().slice(0, 80) || "ALL";
+        state.brand = optionalText(params.get("brand"), 80);
+        state.category = optionalText(params.get("category") || "ALL", 80) || "ALL";
         const stock = String(params.get("stock") || "ALL").toUpperCase();
         const price = String(params.get("priceBand") || "ALL").toUpperCase();
         const sort = String(params.get("sort") || "LATEST").toUpperCase();
@@ -845,33 +848,37 @@
     }
 
     function normalizePagination(source, productCount) {
-        const page = safeInteger(source?.page, "현재 페이지");
-        const size = safeInteger(source?.size, "페이지 크기", 1);
-        const totalElements = safeInteger(source?.totalElements, "전체 상품 수");
-        const totalPages = safeInteger(source?.totalPages, "전체 페이지 수");
+        const page = safeInteger(source?.page, "현재 페이지", 0, 100000);
+        const size = safeInteger(source?.size, "페이지 크기", 1, 48);
+        const totalElements = safeInteger(source?.totalElements, "전체 상품 수", 0, 1000000);
+        const totalPages = safeInteger(source?.totalPages, "전체 페이지 수", 0, 125000);
         const expectedPages = totalElements === 0 ? 0 : Math.ceil(totalElements / size);
-        if (!VALID_SIZES.includes(size) || totalPages !== expectedPages || productCount > size
+        const expectedProductCount = page < totalPages ? Math.min(size, totalElements - page * size) : 0;
+        if (!VALID_SIZES.includes(size) || page !== state.page || totalPages !== expectedPages || productCount !== expectedProductCount
             || (totalPages === 0 ? page !== 0 : page >= totalPages)
-            || Boolean(source?.first) !== (page === 0)
-            || Boolean(source?.last) !== (totalPages === 0 || page === totalPages - 1)) {
+            || typeof source?.first !== "boolean" || typeof source?.last !== "boolean"
+            || source.first !== (page === 0) || source.last !== (totalPages === 0 || page === totalPages - 1)) {
             throw new Error("상품 페이지 정보가 올바르지 않습니다.");
         }
         return { page, size, totalElements, totalPages, first: page === 0, last: totalPages === 0 || page === totalPages - 1 };
     }
 
     function requiredText(value, maxLength, fieldName) {
-        const normalized = String(value ?? "").trim();
+        if (typeof value !== "string") throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         if (!normalized || normalized.length > maxLength) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         return normalized;
     }
 
     function optionalText(value, maxLength) {
-        const normalized = String(value ?? "").trim();
+        if (value == null) return "";
+        if (typeof value !== "string") throw new Error("상품 문구가 올바르지 않습니다.");
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
         return normalized.length <= maxLength ? normalized : "";
     }
 
-    function safeInteger(value, fieldName, minimum = 0) {
-        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+    function safeInteger(value, fieldName, minimum = 0, maximum = Number.MAX_SAFE_INTEGER) {
+        if (!Number.isSafeInteger(value) || value < minimum || value > maximum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
         return value;
     }
 
@@ -886,6 +893,7 @@
             "minimumPrice", "maximumPrice", "brandCount", "under200Count", "between200And300Count", "over300Count"]
             .forEach((key) => { metrics[key] = safeInteger(source?.[key], key); });
         if (metrics.lowStockCount > metrics.totalCount || metrics.featuredCount > metrics.totalCount
+            || metrics.under200Count + metrics.between200And300Count + metrics.over300Count !== metrics.totalCount
             || (metrics.totalCount > 0 && (metrics.minimumPrice > metrics.averagePrice || metrics.averagePrice > metrics.maximumPrice))) {
             throw new Error("브랜드 집계 정보가 올바르지 않습니다.");
         }
@@ -917,6 +925,11 @@
             if (ids.has(product.id)) throw new Error("중복된 상품 정보가 포함되었습니다.");
             ids.add(product.id);
             if (product.brand !== state.brand) throw new Error("선택한 브랜드와 상품 정보가 일치하지 않습니다.");
+            if (state.category !== "ALL" && product.category !== state.category) throw new Error("선택한 카테고리와 상품 정보가 일치하지 않습니다.");
+            if (state.stock === "LOW" && product.stock >= 20 || state.stock === "STABLE" && product.stock < 20) throw new Error("재고 필터와 상품 정보가 일치하지 않습니다.");
+            if (state.priceBand === "UNDER_200" && product.price >= 200000
+                || state.priceBand === "BETWEEN_200_300" && (product.price < 200000 || product.price > 300000)
+                || state.priceBand === "OVER_300" && product.price <= 300000) throw new Error("가격 필터와 상품 정보가 일치하지 않습니다.");
             return product;
         });
     }
@@ -925,7 +938,8 @@
         if (!source || typeof source !== "object" || Array.isArray(source)) throw new Error("브랜드 응답이 올바르지 않습니다.");
         const brandFacets = normalizeFacets(source.brandFacets);
         const metrics = normalizeMetrics(source.metrics);
-        if (metrics.brandCount !== brandFacets.length) throw new Error("브랜드 집계가 분류 정보와 일치하지 않습니다.");
+        if (metrics.brandCount !== brandFacets.length
+            || brandFacets.reduce((sum, item) => sum + item.count, 0) !== metrics.totalCount) throw new Error("브랜드 집계가 분류 정보와 일치하지 않습니다.");
         return { brandFacets, metrics };
     }
 
@@ -938,7 +952,10 @@
         if (includeSummary) {
             result.metrics = normalizeMetrics(source.metrics);
             result.categoryFacets = normalizeFacets(source.categoryFacets);
-            if (result.metrics.totalCount !== pagination.totalElements) throw new Error("브랜드 상품 집계가 페이지 정보와 일치하지 않습니다.");
+            if (result.metrics.totalCount !== pagination.totalElements || result.metrics.brandCount !== (result.metrics.totalCount ? 1 : 0)
+                || result.categoryFacets.reduce((sum, item) => sum + item.count, 0) !== result.metrics.totalCount) {
+                throw new Error("브랜드 상품 집계가 페이지 정보와 일치하지 않습니다.");
+            }
         }
         return result;
     }

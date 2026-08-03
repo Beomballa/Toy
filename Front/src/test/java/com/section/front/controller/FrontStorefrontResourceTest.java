@@ -421,7 +421,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"brandPageSelect\"")
                 .contains("id=\"brandSelectionBar\"")
                 .contains("/css/brand-directory.css?v=20260726.1")
-                .contains("/js/view/brand-directory.js?v=20260802.1");
+                .contains("/js/view/brand-directory.js?v=20260803.1");
         assertThat(script)
                 .contains("/api/front/catalog/bootstrap?page=0&size=1")
                 .contains("fetch(`/api/front/catalog/bootstrap?${productParams()}`")
@@ -436,6 +436,13 @@ class FrontStorefrontResourceTest {
                 .contains("function normalizeProductResponse(")
                 .contains("function normalizeImageSource(")
                 .contains("product.brand !== state.brand")
+                .contains("page !== state.page")
+                .contains("productCount !== expectedProductCount")
+                .contains("product.category !== state.category")
+                .contains("product.stock >= 20")
+                .contains("brandFacets.reduce((sum, item) => sum + item.count, 0) !== metrics.totalCount")
+                .contains("result.categoryFacets.reduce((sum, item) => sum + item.count, 0)")
+                .contains("directoryRequestSequence")
                 .contains("metrics.totalCount !== pagination.totalElements")
                 .contains("window.addEventListener(\"popstate\"")
                 .contains("clearBrandWorkspace()")

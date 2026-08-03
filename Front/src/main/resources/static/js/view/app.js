@@ -127,27 +127,31 @@
     };
     const heroSlides = [
         {
-            eyebrow: "New & Notable",
-            title: "가장 주목받는 신상",
-            description: "이번 주 새롭게 등록된 상품과 빠르게 움직이는 재고를 한 번에 확인하세요.",
+            eyebrow: "2026 Summer Edit",
+            title: "Still<br>in motion",
+            description: "멈추지 않는 여름의 마지막 장면과 지금 입기 좋은 셀렉션을 만나보세요.",
+            image: "/images/campaign/summer-edit/frame-01.jpg",
             tone: "LIGHT"
         },
         {
-            eyebrow: "Fast Delivery",
-            title: "고민은 배송을 늦출 뿐",
-            description: "구매 가능한 재고가 있는 상품을 먼저 확인하고 탐색 시간을 줄여보세요.",
-            tone: "DARK"
+            eyebrow: "Everyday Form",
+            title: "가볍게<br>이어지는 태도",
+            description: "차분한 색과 자연스러운 실루엣으로 완성한 NOREN의 데일리 에디트입니다.",
+            image: "/images/campaign/summer-edit/frame-02.jpg",
+            tone: "LIGHT"
         },
         {
-            eyebrow: "Brand Focus",
-            title: "이번 주 급상승 브랜드",
-            description: "등록 상품과 재고 흐름을 기준으로 지금 주목할 브랜드를 모았습니다.",
-            tone: "TEAL"
+            eyebrow: "Last Summer Scene",
+            title: "선명하게<br>남는 선택",
+            description: "신규 드롭과 안정 재고 상품을 한 흐름에서 빠르게 비교해보세요.",
+            image: "/images/campaign/summer-edit/frame-03.jpg",
+            tone: "LIGHT"
         }
     ];
     let activeHeroSlide = 0;
     let heroCarouselTimer = null;
     let heroPointerStartX = null;
+    let heroCarouselPaused = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const productRailSwipers = new Map();
     let drawerReturnFocus = null;
     let activeDrawerProductId = 0;
@@ -462,6 +466,8 @@
         heroNextButton: document.getElementById("heroNextButton"),
         heroSlideStatus: document.getElementById("heroSlideStatus"),
         heroDots: document.getElementById("heroDots"),
+        heroPauseButton: document.getElementById("heroPauseButton"),
+        heroCampaignImage: document.getElementById("heroCampaignImage"),
         resetFiltersButton: document.getElementById("resetFiltersButton"),
         scrollTopButton: document.getElementById("scrollTopButton"),
         scrollProgress: document.getElementById("storefrontScrollProgress"),
@@ -1106,6 +1112,11 @@
         elements.mobileStoreNav?.addEventListener("click", handleMobileStoreNavigation);
         elements.heroPreviousButton?.addEventListener("click", () => moveHeroSlide(-1, true));
         elements.heroNextButton?.addEventListener("click", () => moveHeroSlide(1, true));
+        elements.heroPauseButton?.addEventListener("click", () => {
+            heroCarouselPaused = !heroCarouselPaused;
+            syncHeroPlaybackControl();
+            heroCarouselPaused ? stopHeroCarousel() : startHeroCarousel();
+        });
         elements.heroDots?.addEventListener("click", (event) => {
             const dot = event.target.closest("[data-hero-slide]");
             if (!dot) {
@@ -2178,6 +2189,7 @@
             return;
         }
         renderHeroDots();
+        syncHeroPlaybackControl();
         hero.addEventListener("mouseenter", stopHeroCarousel);
         hero.addEventListener("mouseleave", startHeroCarousel);
         hero.addEventListener("focusin", stopHeroCarousel);
@@ -2213,7 +2225,7 @@
     }
 
     function startHeroCarousel() {
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.navigator.connection?.saveData || document.hidden) {
+        if (heroCarouselPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.navigator.connection?.saveData || document.hidden) {
             return;
         }
         stopHeroCarousel();
@@ -2225,6 +2237,15 @@
             window.clearInterval(heroCarouselTimer);
             heroCarouselTimer = null;
         }
+    }
+
+    function syncHeroPlaybackControl() {
+        if (!elements.heroPauseButton) {
+            return;
+        }
+        elements.heroPauseButton.textContent = heroCarouselPaused ? "Play" : "Pause";
+        elements.heroPauseButton.setAttribute("aria-pressed", String(heroCarouselPaused));
+        elements.heroPauseButton.setAttribute("aria-label", heroCarouselPaused ? "배너 자동 전환 재생" : "배너 자동 전환 일시정지");
     }
 
     function restartHeroCarousel() {
@@ -2244,6 +2265,9 @@
             title.innerHTML = slide.title;
         }
         setText(hero.querySelector(".hero-description"), slide.description);
+        if (elements.heroCampaignImage) {
+            elements.heroCampaignImage.src = slide.image;
+        }
         hero.dataset.tone = slide.tone;
         setText(elements.heroSlideStatus, `${activeHeroSlide + 1} / ${heroSlides.length}`);
         renderHeroDots();

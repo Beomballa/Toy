@@ -147,7 +147,7 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
-                .contains("/css/storefront-home.css?v=20260803.1")
+                .contains("/css/storefront-home.css?v=20260803.2")
                 .contains("/images/brand/noren-wordmark.png")
                 .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")
@@ -160,12 +160,14 @@ class FrontStorefrontResourceTest {
                 .contains("data-storefront-count=\"compare\"")
                 .contains("id=\"homeCategoryRail\"")
                 .contains("id=\"heroNextButton\"")
+                .contains("id=\"heroPauseButton\"")
+                .contains("id=\"heroCampaignImage\"")
                 .contains("id=\"catalogMemoryTools\"")
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.6");
+                .contains("/js/view/app.js?v=20260803.7");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -173,6 +175,10 @@ class FrontStorefrontResourceTest {
                 .contains("headerSearchPanel?.querySelector(\"form\")?.addEventListener(\"submit\"")
                 .contains("document.body.classList.add(\"is-header-search-open\")")
                 .contains("document.body.classList.remove(\"is-header-search-open\")");
+        assertThat(script)
+                .contains("heroCarouselPaused")
+                .contains("syncHeroPlaybackControl()")
+                .contains("elements.heroCampaignImage.src = slide.image");
         assertThat(homeCss)
                 .contains("body.storefront-home.is-header-search-open")
                 .contains("overflow: hidden");

@@ -15,6 +15,9 @@
     let scrollFrame = null;
     let reactionRequestInFlight = false;
     let memoryVisitorKey = null;
+    let detailRequestController = null;
+    let detailRequestSequence = 0;
+    let reactionRequestSequence = 0;
 
     const elements = {
         article: document.getElementById("contentDetailArticle"),
@@ -66,22 +69,96 @@
     };
 
     async function loadContentDetail() {
+        detailRequestController?.abort();
+        detailRequestController = new AbortController();
+        const requestController = detailRequestController;
+        const requestSequence = ++detailRequestSequence;
         showLoading();
         try {
             if (!Number.isInteger(documentId) || documentId <= 0) {
                 throw new Error("올바르지 않은 콘텐츠 주소입니다.");
             }
-            const response = await fetch(`/api/front/content/${documentId}`);
+            const response = await fetch(`/api/front/content/${documentId}`, { signal: requestController.signal });
             if (!response.ok) {
                 throw new Error(response.status === 404
                     ? "공개가 종료되었거나 존재하지 않는 콘텐츠입니다."
                     : "콘텐츠를 불러오지 못했습니다.");
             }
-            currentContent = await response.json();
+            const content = normalizeContentDetail(await response.json());
+            if (requestSequence !== detailRequestSequence) return;
+            currentContent = content;
             renderContent(currentContent);
         } catch (error) {
+            if (error?.name === "AbortError" || requestSequence !== detailRequestSequence) return;
             showError(error instanceof Error ? error.message : "콘텐츠를 불러오지 못했습니다.");
+        } finally {
+            if (detailRequestController === requestController) detailRequestController = null;
         }
+    }
+
+    function detailText(value, label, limit, required = false) {
+        if (typeof value !== "string") {
+            if (required) throw new Error(`${label}이 올바르지 않습니다.`);
+            return "";
+        }
+        const normalized = value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
+        if ((required && !normalized) || normalized.length > limit) throw new Error(`${label}이 올바르지 않습니다.`);
+        return normalized;
+    }
+
+    function detailInteger(value, label, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${label}이 올바르지 않습니다.`);
+        return value;
+    }
+
+    function normalizeNavigation(value, boardType) {
+        if (value == null) return null;
+        const id = detailInteger(value.id, "인접 콘텐츠 번호", 1);
+        if (id === documentId || value.boardType !== boardType) throw new Error("인접 콘텐츠가 올바르지 않습니다.");
+        return { id, boardType, title: detailText(value.title, "인접 콘텐츠 제목", 200, true), createdDate: detailText(value.createdDate, "인접 콘텐츠 날짜", 30) };
+    }
+
+    function normalizeRelatedContents(value, boardType) {
+        if (!Array.isArray(value) || value.length > 4) throw new Error("연관 콘텐츠 목록이 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const id = detailInteger(item?.id, "연관 콘텐츠 번호", 1);
+            if (id === documentId || ids.has(id) || item.boardType !== boardType) throw new Error("연관 콘텐츠가 중복되었거나 올바르지 않습니다.");
+            ids.add(id);
+            return {
+                id,
+                boardType,
+                title: detailText(item.title, "연관 콘텐츠 제목", 200, true),
+                summary: detailText(item.summary, "연관 콘텐츠 요약", 500),
+                viewCount: detailInteger(item.viewCount, "연관 콘텐츠 조회수"),
+                pinned: item.pinned === true,
+                createdDate: detailText(item.createdDate, "연관 콘텐츠 날짜", 30)
+            };
+        });
+    }
+
+    function normalizeContentDetail(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("콘텐츠 응답이 올바르지 않습니다.");
+        const id = detailInteger(value.id, "콘텐츠 번호", 1);
+        const boardType = ["NOTICE", "STYLE"].includes(value.boardType) ? value.boardType : "";
+        if (id !== documentId || !boardType) throw new Error("요청한 콘텐츠와 응답이 일치하지 않습니다.");
+        const content = detailText(value.content, "콘텐츠 본문", 50000);
+        const characterCount = detailInteger(value.characterCount, "콘텐츠 글자 수");
+        if (characterCount !== Array.from(content).length) throw new Error("콘텐츠 글자 수가 본문과 일치하지 않습니다.");
+        return {
+            id,
+            boardType,
+            title: detailText(value.title, "콘텐츠 제목", 200, true),
+            content,
+            viewCount: detailInteger(value.viewCount, "콘텐츠 조회수"),
+            pinned: value.pinned === true,
+            createdDate: detailText(value.createdDate, "콘텐츠 날짜", 30),
+            estimatedReadMinutes: detailInteger(value.estimatedReadMinutes, "예상 읽기 시간", 1),
+            characterCount,
+            newerContent: normalizeNavigation(value.newerContent, boardType),
+            olderContent: normalizeNavigation(value.olderContent, boardType),
+            relatedContents: normalizeRelatedContents(value.relatedContents, boardType)
+        };
     }
 
     function renderContent(content) {
@@ -143,7 +220,9 @@
             });
             if (!response.ok) return;
             const payload = await response.json();
-            currentContent.viewCount = Number(payload.viewCount || currentContent.viewCount || 0);
+            if (typeof payload?.counted !== "boolean" || !Number.isSafeInteger(payload.viewCount)
+                || payload.viewCount < currentContent.viewCount) return;
+            currentContent.viewCount = payload.viewCount;
             setText(elements.views, `조회 ${currentContent.viewCount.toLocaleString("ko-KR")}`);
         } catch (error) {
             // Reading remains available even when engagement recording is temporarily unavailable.
@@ -151,6 +230,7 @@
     }
 
     async function loadReactionSummary() {
+        const requestSequence = ++reactionRequestSequence;
         setReactionLoading(true);
         elements.reaction.hidden = false;
         elements.reactionRetryButton.hidden = true;
@@ -160,16 +240,20 @@
                 headers: { "X-Content-Visitor-Key": resolveVisitorKey() }
             });
             if (!response.ok) throw new Error("반응을 불러오지 못했습니다.");
-            renderReaction(await response.json());
+            const payload = normalizeReaction(await response.json());
+            if (requestSequence !== reactionRequestSequence) return;
+            renderReaction(payload);
         } catch (error) {
+            if (requestSequence !== reactionRequestSequence) return;
             showReactionError("반응 정보를 불러오지 못했습니다.");
         } finally {
-            setReactionLoading(false);
+            if (requestSequence === reactionRequestSequence) setReactionLoading(false);
         }
     }
 
     async function submitReaction(reaction) {
         if (!currentContent || reactionRequestInFlight) return;
+        const requestSequence = ++reactionRequestSequence;
         setReactionLoading(true);
         setText(elements.reactionStatus, "반응을 저장하는 중입니다.");
         try {
@@ -182,15 +266,33 @@
                 })
             });
             if (!response.ok) throw new Error("반응을 저장하지 못했습니다.");
-            const payload = await response.json();
+            const payload = normalizeReaction(await response.json(), reaction);
+            if (requestSequence !== reactionRequestSequence) return;
             renderReaction(payload);
             announce(payload.changed ? "콘텐츠 반응을 저장했습니다." : "이미 선택한 반응입니다.");
         } catch (error) {
+            if (requestSequence !== reactionRequestSequence) return;
             showReactionError("반응을 저장하지 못했습니다. 다시 시도해 주세요.");
             announce("콘텐츠 반응을 저장하지 못했습니다.");
         } finally {
-            setReactionLoading(false);
+            if (requestSequence === reactionRequestSequence) setReactionLoading(false);
         }
+    }
+
+    function normalizeReaction(value, expectedReaction = null) {
+        const helpfulCount = detailInteger(value?.helpfulCount, "도움 반응 수");
+        const notHelpfulCount = detailInteger(value?.notHelpfulCount, "아쉬움 반응 수");
+        const totalCount = detailInteger(value?.totalCount, "전체 반응 수");
+        const helpfulRate = detailInteger(value?.helpfulRate, "도움 반응 비율");
+        const selectedReaction = value?.selectedReaction == null ? "" : value.selectedReaction;
+        if (totalCount !== helpfulCount + notHelpfulCount || helpfulRate > 100
+            || (totalCount ? helpfulRate !== Math.round(helpfulCount * 100 / totalCount) : helpfulRate !== 0)
+            || !["", "HELPFUL", "NOT_HELPFUL"].includes(selectedReaction)
+            || typeof value?.changed !== "boolean"
+            || (expectedReaction && selectedReaction !== expectedReaction)) {
+            throw new Error("콘텐츠 반응 응답이 올바르지 않습니다.");
+        }
+        return { helpfulCount, notHelpfulCount, totalCount, helpfulRate, selectedReaction, changed: value.changed };
     }
 
     function renderReaction(payload) {
@@ -274,7 +376,14 @@
     function readBookmarks() {
         try {
             const value = JSON.parse(window.localStorage.getItem(BOOKMARKED_CONTENT_KEY) || "[]");
-            return Array.isArray(value) ? value : [];
+            if (!Array.isArray(value)) return [];
+            const ids = new Set();
+            return value.slice(0, 100).flatMap((item) => {
+                const id = Number(item?.id);
+                if (!Number.isSafeInteger(id) || id <= 0 || ids.has(id) || !["NOTICE", "STYLE"].includes(item.boardType)) return [];
+                ids.add(id);
+                return [{ id, boardType: item.boardType, title: detailText(item.title, "저장 콘텐츠 제목", 200), createdDate: detailText(item.createdDate, "저장 콘텐츠 날짜", 30), savedAt: detailText(item.savedAt, "저장 시각", 40) }];
+            }).slice(0, 50);
         } catch (error) {
             return [];
         }
@@ -355,7 +464,13 @@
     function readProgressEntries() {
         try {
             const value = JSON.parse(window.localStorage.getItem(READING_PROGRESS_KEY) || "{}");
-            return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+            if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+            return Object.fromEntries(Object.entries(value).flatMap(([id, item]) => {
+                const numericId = Number(id);
+                const progress = Number(item?.progress);
+                if (!Number.isSafeInteger(numericId) || numericId <= 0 || !Number.isInteger(progress) || progress < 0 || progress > 100) return [];
+                return [[String(numericId), { progress, updatedAt: detailText(item.updatedAt, "읽기 기록 시각", 40) }]];
+            }).slice(0, 30));
         } catch (error) {
             return {};
         }

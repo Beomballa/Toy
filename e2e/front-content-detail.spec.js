@@ -44,7 +44,7 @@ test("저장소가 차단돼도 콘텐츠 조회와 반응은 같은 방문자 �
         createdDate: "2026.07.27",
         viewCount: 10,
         estimatedReadMinutes: 1,
-        characterCount: 40,
+        characterCount: 38,
         pinned: false,
         newerContent: null,
         olderContent: null,
@@ -62,4 +62,47 @@ test("저장소가 차단돼도 콘텐츠 조회와 반응은 같은 방문자 �
   expect(visitorKeys).toHaveLength(3);
   expect(new Set(visitorKeys).size).toBe(1);
   expect(visitorKeys[0]).toMatch(/^[A-Za-z0-9-]{16,64}$/);
+});
+
+test("콘텐츠 상세는 다른 문서 응답과 불일치한 반응 집계를 거부하고 재시도한다", async ({ page }) => {
+  const body = "요청한 콘텐츠만 안전하게 표시합니다.";
+  let detailAttempts = 0;
+  let reactionAttempts = 0;
+  await page.route("**/api/front/content/88**", async (route) => {
+    const request = route.request();
+    const pathname = new URL(request.url()).pathname;
+    if (pathname.endsWith("/views")) {
+      await route.fulfill({ json: { counted: true, viewCount: 4 } });
+      return;
+    }
+    if (pathname.endsWith("/reactions")) {
+      const valid = reactionAttempts++ > 0;
+      await route.fulfill({ json: valid
+        ? { helpfulCount: 2, notHelpfulCount: 1, totalCount: 3, helpfulRate: 67, selectedReaction: null, changed: false }
+        : { helpfulCount: 2, notHelpfulCount: 1, totalCount: 99, helpfulRate: 100, selectedReaction: null, changed: false } });
+      return;
+    }
+    await route.fulfill({ json: {
+      id: detailAttempts++ === 0 ? 999 : 88,
+      boardType: "NOTICE",
+      title: "응답 계약 안내",
+      content: body,
+      createdDate: "2026.08.03",
+      viewCount: 3,
+      estimatedReadMinutes: 1,
+      characterCount: Array.from(body).length,
+      pinned: false,
+      newerContent: null,
+      olderContent: null,
+      relatedContents: []
+    } });
+  });
+
+  await page.goto("/front/content/88");
+  await expect(page.locator("#contentDetailError")).toBeVisible();
+  await page.locator("#contentDetailRetryButton").click();
+  await expect(page.locator("#contentDetailTitle")).toHaveText("응답 계약 안내");
+  await expect(page.locator("#contentDetailReactionRetryButton")).toBeVisible();
+  await page.locator("#contentDetailReactionRetryButton").click();
+  await expect(page.locator("#contentDetailReactionSummary")).toContainText("3명 중 67%");
 });

@@ -26,6 +26,8 @@ const collectionPayload = () => ({
   lowStock: [homeProduct({ featured: false })]
 });
 
+const detailPayload = (id = 101) => ({ ...homeProduct({ id }), relatedProducts: [] });
+
 test("홈 콘텐츠는 게시판 유형이 잘못된 응답을 거부하고 재시도한다", async ({ page }) => {
   let attempts = 0;
   await page.route("**/api/front/content/highlights?limit=4", async (route) => {
@@ -83,4 +85,17 @@ test("홈 개인화는 손상된 저장 상태와 마크업을 안전하게 정�
   await expect(page.locator("#savedViewList img, #searchHistoryList img")).toHaveCount(0);
   await expect(page.locator("#searchHistoryCount")).toHaveText("2");
   await expect(page.locator("#catalogGrid")).toHaveClass(/is-layout-standard/);
+});
+
+test("상품 드로어는 다른 상품 상세 응답을 거부하고 재시도한다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/catalog/bootstrap?**", (route) => route.fulfill({ json: catalogPayload() }));
+  await page.route("**/api/front/products/101", (route) => route.fulfill({ json: detailPayload(attempts++ === 0 ? 999 : 101) }));
+
+  await page.goto("/front");
+  await page.locator('[data-product-id="101"]').first().evaluate((element) => element.click());
+  await expect(page.locator("#drawerTitle")).toHaveText("상품 상세를 불러오지 못했습니다.");
+  await page.locator('[data-drawer-retry-id="101"]').click();
+  await expect(page.locator("#drawerTitle")).toHaveText("화이트 스니커즈");
+  await expect(page.locator("#productDrawer")).toHaveAttribute("aria-busy", "false");
 });

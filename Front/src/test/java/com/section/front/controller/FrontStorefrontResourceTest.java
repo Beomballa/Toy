@@ -135,7 +135,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.4");
+                .contains("/js/view/app.js?v=20260803.5");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -2611,6 +2611,23 @@ class FrontStorefrontResourceTest {
                 .contains("savedPosition <= 1000000")
                 .contains("escapeMarkup(item.summary)")
                 .contains("escapeMarkup(keyword)");
+    }
+
+    @Test
+    void homeProductDrawerValidatesResponsesCancelsStaleRequestsAndBoundsItsCache() throws IOException {
+        String script = readResource("static/js/view/app.js");
+
+        assertThat(script)
+                .contains("function normalizeHomeProductDetail(value, expectedId)")
+                .contains("function normalizeRelatedProducts(value, productId)")
+                .contains("product.id !== expectedId")
+                .contains("id === productId || ids.has(id)")
+                .contains("value.length > 8")
+                .contains("detailCache.size >= 20")
+                .contains("drawerRequestController?.abort()")
+                .contains("fetch(`/api/front/products/${productId}`, { signal })")
+                .contains("markupSafeObject(await loadProductDetail")
+                .contains("data-drawer-retry-id");
     }
 
     private String readResource(String path) throws IOException {

@@ -154,6 +154,7 @@
     let previousDrawerProductId = 0;
     let nextDrawerProductId = 0;
     let drawerRequestSequence = 0;
+    let drawerRequestController = null;
 
     const elements = {
         brandFilter: document.getElementById("brandFilter"),
@@ -5735,6 +5736,11 @@
         if (!elements.productDrawer || !elements.drawerBody) {
             return;
         }
+        productId = Number(productId);
+        if (!Number.isSafeInteger(productId) || productId <= 0) {
+            showToast("상품을 열 수 없습니다.", "올바른 상품 번호를 다시 선택해주세요.", true);
+            return;
+        }
 
         closeShortcutHelp();
         closeHeaderSearch();
@@ -5745,7 +5751,10 @@
             drawerReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         }
         const requestSequence = ++drawerRequestSequence;
-        window.localStorage.setItem(LAST_DRAWER_PRODUCT_KEY, String(productId));
+        drawerRequestController?.abort();
+        drawerRequestController = new AbortController();
+        const requestController = drawerRequestController;
+        safeStorageWrite(window.localStorage, LAST_DRAWER_PRODUCT_KEY, String(productId));
         const list = filteredProducts();
         const currentIndex = list.findIndex((item) => Number(item.id) === Number(productId));
         const previousProduct = currentIndex > 0 ? list[currentIndex - 1] : null;
@@ -5765,7 +5774,7 @@
         `;
 
         try {
-            const product = await loadProductDetail(productId);
+            const product = markupSafeObject(await loadProductDetail(productId, requestController.signal));
             if (requestSequence !== drawerRequestSequence || !elements.productDrawer.classList.contains("is-open")) {
                 return;
             }
@@ -6055,6 +6064,9 @@
                 elements.productDrawer.querySelector(".product-drawer__panel")?.focus();
             }
         } catch (error) {
+            if (error?.name === "AbortError") {
+                return;
+            }
             if (requestSequence !== drawerRequestSequence || !elements.productDrawer.classList.contains("is-open")) {
                 return;
             }
@@ -6062,8 +6074,15 @@
                 <p class="eyebrow">Detail</p>
                 <h3 id="drawerTitle">상품 상세를 불러오지 못했습니다.</h3>
                 <p class="product-drawer__description" id="drawerStatus">잠시 후 다시 시도해주세요.</p>
+                <button class="catalog-reset-button" type="button" data-drawer-retry-id="${productId}">다시 시도</button>
             `;
+            elements.drawerBody.querySelector("[data-drawer-retry-id]")?.addEventListener("click", () => openDrawer(productId));
             elements.productDrawer.setAttribute("aria-busy", "false");
+            elements.drawerBody.querySelector("[data-drawer-retry-id]")?.focus();
+        } finally {
+            if (drawerRequestController === requestController) {
+                drawerRequestController = null;
+            }
         }
     }
 
@@ -6075,15 +6094,49 @@
             });
     }
 
-    async function loadProductDetail(productId) {
+    function normalizeRelatedProducts(value, productId) {
+        if (!Array.isArray(value) || value.length > 8) throw new Error("연관 상품 목록이 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const id = homeInteger(item?.id, "연관 상품 번호", 1);
+            if (id === productId || ids.has(id)) throw new Error("연관 상품이 중복되었거나 자기 자신을 참조합니다.");
+            ids.add(id);
+            const stock = homeInteger(item.stock, "연관 상품 재고");
+            const price = homeInteger(item.price, "연관 상품 가격");
+            return {
+                id,
+                brand: homeText(item.brand, 100, true),
+                category: homeText(item.category, 100, true),
+                name: homeText(item.name, 200, true),
+                reason: homeText(item.reason, 300, true),
+                model: homeText(item.model, 100),
+                price,
+                stock,
+                stockStatus: homeText(item.stockStatus, 40) || stockLabel(stock),
+                priceLabel: formatPrice(price),
+                thumbnailUrl: homeImage(item.thumbnailUrl)
+            };
+        });
+    }
+
+    function normalizeHomeProductDetail(value, expectedId) {
+        const product = normalizeHomeProduct(value);
+        if (product.id !== expectedId) throw new Error("요청 상품과 상세 응답이 일치하지 않습니다.");
+        return { ...product, relatedProducts: normalizeRelatedProducts(value.relatedProducts, expectedId) };
+    }
+
+    async function loadProductDetail(productId, signal) {
         if (detailCache.has(productId)) {
             return detailCache.get(productId);
         }
-        const response = await fetch(`/api/front/products/${productId}`);
+        const response = await fetch(`/api/front/products/${productId}`, { signal });
         if (!response.ok) {
             throw new Error("상품 상세를 불러오지 못했습니다.");
         }
-        const product = await response.json();
+        const product = normalizeHomeProductDetail(await response.json(), productId);
+        if (detailCache.size >= 20) {
+            detailCache.delete(detailCache.keys().next().value);
+        }
         detailCache.set(productId, product);
         return product;
     }
@@ -6093,6 +6146,8 @@
             return;
         }
         drawerRequestSequence += 1;
+        drawerRequestController?.abort();
+        drawerRequestController = null;
         elements.productDrawer.classList.remove("is-open");
         elements.productDrawer.setAttribute("aria-hidden", "true");
         elements.productDrawer.setAttribute("aria-busy", "false");

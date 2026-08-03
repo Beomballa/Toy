@@ -750,20 +750,20 @@
             if (!response.ok) {
                 throw new Error("상품 데이터를 불러오지 못했습니다.");
             }
-            const payload = await response.json();
+            const payload = normalizeCatalogPayload(await response.json(), includeSummary);
             if (requestSequence !== catalogRequestSequence) {
                 return false;
             }
-            products = Array.isArray(payload?.products) ? payload.products.slice() : [];
-            catalogPagination = normalizeCatalogPagination(payload?.pagination);
+            products = payload.products.slice();
+            catalogPagination = payload.pagination;
             paginationState.page = catalogPagination.page + 1;
             syncUrlState();
             if (!searchIndexProducts.length || !state.search) {
                 searchIndexProducts = products.slice();
             }
-            metrics = payload?.metrics || metrics;
-            brandFacets = Array.isArray(payload?.brandFacets) ? payload.brandFacets.slice() : brandFacets;
-            categoryFacets = Array.isArray(payload?.categoryFacets) ? payload.categoryFacets.slice() : categoryFacets;
+            metrics = payload.metrics || metrics;
+            brandFacets = payload.brandFacets || brandFacets;
+            categoryFacets = payload.categoryFacets || categoryFacets;
             writeCatalogSessionCache({ ...payload, metrics, brandFacets, categoryFacets });
         } catch (error) {
             if (error?.name === "AbortError" || requestSequence !== catalogRequestSequence) {
@@ -2884,6 +2884,108 @@
             first: value?.first !== false && page === 0,
             last: value?.last !== false && (totalPages === 0 || page >= totalPages - 1)
         };
+    }
+
+    function homeImage(value) {
+        const image = homeText(value, 500);
+        return /^\/(?!\/)/.test(image) || /^https?:\/\//i.test(image) ? image : PRODUCT_IMAGE_FALLBACK_URL;
+    }
+
+    function normalizeHomeOptions(value) {
+        if (!Array.isArray(value) || value.length > 100) throw new Error("홈 상품 옵션이 올바르지 않습니다.");
+        const ids = new Set();
+        const names = new Set();
+        return value.map((option) => {
+            const id = homeInteger(option?.id, "옵션 번호", 1);
+            const name = homeText(option?.name, 100, true);
+            if (ids.has(id) || names.has(name)) throw new Error("홈 상품 옵션이 중복되었습니다.");
+            ids.add(id);
+            names.add(name);
+            return { id, name, stock: homeInteger(option.stock, "옵션 재고"), additionalPrice: homeInteger(option.additionalPrice, "옵션 추가 금액") };
+        });
+    }
+
+    function normalizeHomeProduct(value) {
+        const id = homeInteger(value?.id, "상품 번호", 1);
+        const price = homeInteger(value.price, "상품 가격");
+        const stock = homeInteger(value.stock, "상품 재고");
+        const options = normalizeHomeOptions(value.options);
+        if (options.length && options.reduce((sum, option) => sum + option.stock, 0) !== stock) throw new Error("상품 재고가 옵션 합계와 일치하지 않습니다.");
+        return {
+            id,
+            brand: homeText(value.brand, 100, true),
+            category: homeText(value.category, 100, true),
+            name: homeText(value.name, 200, true),
+            headline: homeText(value.headline, 200),
+            model: homeText(value.model, 100),
+            price,
+            stock,
+            createdDate: homeText(value.createdDate, 30),
+            description: homeText(value.description, 2000),
+            mood: homeText(value.mood, 100),
+            featured: value.featured === true,
+            featuredRank: Number.isSafeInteger(value.featuredRank) && value.featuredRank > 0 ? value.featuredRank : null,
+            stockStatus: homeText(value.stockStatus, 40) || stockLabel(stock),
+            priceLabel: formatPrice(price),
+            options,
+            thumbnailUrl: homeImage(value.thumbnailUrl)
+        };
+    }
+
+    function normalizeHomeProducts(value, limit = 48) {
+        if (!Array.isArray(value) || value.length > limit) throw new Error("홈 상품 목록이 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const product = normalizeHomeProduct(item);
+            if (ids.has(product.id)) throw new Error("홈 상품이 중복되었습니다.");
+            ids.add(product.id);
+            return product;
+        });
+    }
+
+    function normalizeHomeFacets(value) {
+        if (!Array.isArray(value) || value.length > 500) throw new Error("홈 상품 분류가 올바르지 않습니다.");
+        const names = new Set();
+        return value.map((item) => {
+            const name = homeText(item?.value, 100, true);
+            if (names.has(name)) throw new Error("홈 상품 분류가 중복되었습니다.");
+            names.add(name);
+            return { value: name, count: homeInteger(item.count, "분류 상품 수") };
+        });
+    }
+
+    function normalizeHomeMetrics(value) {
+        const normalized = {};
+        ["totalCount", "lowStockCount", "latestDropCount", "featuredCount", "totalStock", "averagePrice", "minimumPrice",
+            "maximumPrice", "brandCount", "under200Count", "between200And300Count", "over300Count"]
+            .forEach((key) => { normalized[key] = homeInteger(value?.[key], key); });
+        normalized.latestCreatedDate = homeText(value?.latestCreatedDate, 30);
+        if (normalized.lowStockCount > normalized.totalCount || normalized.featuredCount > normalized.totalCount
+            || (normalized.totalCount > 0 && (normalized.minimumPrice > normalized.averagePrice || normalized.averagePrice > normalized.maximumPrice))) {
+            throw new Error("홈 상품 집계가 올바르지 않습니다.");
+        }
+        return normalized;
+    }
+
+    function normalizeCatalogPayload(value, includeSummary) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("홈 카탈로그 응답이 올바르지 않습니다.");
+        const productsValue = normalizeHomeProducts(value.products, requestedCatalogPageSize());
+        const page = homeInteger(value.pagination?.page, "현재 페이지");
+        const size = homeInteger(value.pagination?.size, "페이지 크기", 1);
+        const totalElements = homeInteger(value.pagination?.totalElements, "전체 상품 수");
+        const totalPages = homeInteger(value.pagination?.totalPages, "전체 페이지 수");
+        if (size !== requestedCatalogPageSize() || totalPages !== (totalElements ? Math.ceil(totalElements / size) : 0)
+            || productsValue.length > size || (totalPages ? page >= totalPages : page !== 0)
+            || Boolean(value.pagination?.first) !== (page === 0)
+            || Boolean(value.pagination?.last) !== (totalPages === 0 || page === totalPages - 1)) throw new Error("홈 상품 페이지가 올바르지 않습니다.");
+        const result = { products: productsValue, pagination: { page, size, totalElements, totalPages, first: page === 0, last: totalPages === 0 || page === totalPages - 1 } };
+        if (includeSummary) {
+            result.metrics = normalizeHomeMetrics(value.metrics);
+            result.brandFacets = normalizeHomeFacets(value.brandFacets);
+            result.categoryFacets = normalizeHomeFacets(value.categoryFacets);
+            if (result.metrics.totalCount !== totalElements || result.metrics.brandCount !== result.brandFacets.length) throw new Error("홈 상품 요약이 페이지와 일치하지 않습니다.");
+        }
+        return result;
     }
 
     async function reloadCatalogPage() {

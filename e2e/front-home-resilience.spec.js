@@ -8,6 +8,14 @@ const highlightPayload = (boardType = "NOTICE") => ({
   popularEndDate: "2026.08.03"
 });
 
+const catalogPayload = (totalElements = 1) => ({
+  products: [{ id: 101, brand: "나이키", category: "스니커즈", name: "에어포스 1", headline: "화이트 스니커즈", model: "AF1", price: 139000, stock: 12, createdDate: "2026-08-03", description: "상품 설명", mood: "daily", featured: true, featuredRank: 1, stockStatus: "재고 안정", priceLabel: "139,000원", options: [{ id: 1001, name: "260", stock: 12, additionalPrice: 0 }], thumbnailUrl: null }],
+  pagination: { page: 0, size: 12, totalElements, totalPages: totalElements ? 1 : 0, first: true, last: true },
+  metrics: { totalCount: totalElements, lowStockCount: 0, latestCreatedDate: "2026-08-03", latestDropCount: 1, featuredCount: 1, totalStock: 12, averagePrice: 139000, minimumPrice: 139000, maximumPrice: 139000, brandCount: 1, under200Count: 1, between200And300Count: 0, over300Count: 0 },
+  brandFacets: [{ value: "나이키", count: 1 }],
+  categoryFacets: [{ value: "스니커즈", count: 1 }]
+});
+
 test("홈 콘텐츠는 게시판 유형이 잘못된 응답을 거부하고 재시도한다", async ({ page }) => {
   let attempts = 0;
   await page.route("**/api/front/content/highlights?limit=4", async (route) => {
@@ -20,4 +28,18 @@ test("홈 콘텐츠는 게시판 유형이 잘못된 응답을 거부하고 재�
   await page.locator("#contentHighlightRetryButton").click();
   await expect(page.locator("#noticeHighlightList")).toContainText("서비스 안내");
   await expect(page.locator("#contentHighlightRetryButton")).toBeHidden();
+});
+
+test("홈 카탈로그는 전체 합계가 다른 응답을 캐시하거나 표시하지 않는다", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/front/catalog/bootstrap?**", async (route) => {
+    const payload = catalogPayload(1);
+    if (attempts++ === 0) payload.metrics.totalCount = 2;
+    await route.fulfill({ json: payload });
+  });
+
+  await page.goto("/front");
+  await expect(page.locator("#catalogGrid")).toContainText("카탈로그를 불러오지 못했습니다");
+  await page.reload();
+  await expect(page.locator("#catalogGrid")).toContainText("에어포스 1");
 });

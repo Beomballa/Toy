@@ -135,7 +135,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260803.1");
+                .contains("/js/view/app.js?v=20260803.2");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -1528,6 +1528,9 @@ class FrontStorefrontResourceTest {
                 .doesNotContain("<option value=\"ALL\">전체</option>");
         assertThat(script)
                 .contains("const endpoint = includeSummary ? \"/api/front/catalog/bootstrap\" : \"/api/front/products\"")
+                .contains("function normalizeCatalogPayload(")
+                .contains("function normalizeHomeProduct(")
+                .contains("result.metrics.totalCount !== totalElements")
                 .contains("page: Math.max(0, paginationState.page - 1)")
                 .contains("totalElements")
                 .contains("await loadProducts(false)")

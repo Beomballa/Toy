@@ -525,7 +525,7 @@
             if (!response.ok) {
                 throw new Error("콘텐츠를 불러오지 못했습니다.");
             }
-            const payload = await response.json();
+            const payload = normalizeContentHighlights(await response.json());
             if (requestSequence !== contentHighlightRequestSequence) {
                 return;
             }
@@ -539,9 +539,9 @@
     }
 
     function renderContentHighlights(payload) {
-        const notices = Array.isArray(payload?.notices) ? payload.notices : [];
-        const styles = Array.isArray(payload?.styles) ? payload.styles : [];
-        const popular = Array.isArray(payload?.popular) ? payload.popular : [];
+        const notices = payload.notices;
+        const styles = payload.styles;
+        const popular = payload.popular;
         renderPopularContentHighlights(popular);
         renderContentHighlightList(elements.noticeHighlightList, notices, "현재 공개된 공지가 없습니다.");
         renderContentHighlightList(elements.styleHighlightList, styles, "현재 공개된 스타일 콘텐츠가 없습니다.");
@@ -625,6 +625,60 @@
         });
         elements.contentHighlightRetryButton.hidden = !isError;
         setText(elements.contentHighlightStatus, message);
+    }
+
+    function homeText(value, maxLength, required = false) {
+        const text = String(value ?? "").trim().replace(/\s+/g, " ");
+        if ((required && !text) || text.length > maxLength) throw new Error("홈 응답 문자 정보가 올바르지 않습니다.");
+        return text;
+    }
+
+    function homeInteger(value, fieldName, minimum = 0) {
+        if (!Number.isSafeInteger(value) || value < minimum) throw new Error(`${fieldName} 정보가 올바르지 않습니다.`);
+        return value;
+    }
+
+    function normalizeHighlightItems(value, boardType, popular = false) {
+        if (!Array.isArray(value) || value.length > 4) throw new Error("콘텐츠 하이라이트 목록이 올바르지 않습니다.");
+        const ids = new Set();
+        return value.map((item) => {
+            const id = homeInteger(item?.id, "콘텐츠 번호", 1);
+            if (ids.has(id) || !["NOTICE", "STYLE"].includes(item?.boardType)
+                || (!popular && item.boardType !== boardType) || typeof item.pinned !== "boolean") {
+                throw new Error("콘텐츠 하이라이트 항목이 올바르지 않습니다.");
+            }
+            ids.add(id);
+            const normalized = {
+                id,
+                boardType: item.boardType,
+                title: homeText(item.title, 200, true),
+                summary: homeText(item.summary, 500),
+                pinned: item.pinned,
+                createdDate: homeText(item.createdDate, 30, true)
+            };
+            if (popular) {
+                normalized.recentViewCount = homeInteger(item.recentViewCount, "최근 조회 수");
+                normalized.uniqueVisitors = homeInteger(item.uniqueVisitors, "방문자 수");
+                if (normalized.uniqueVisitors > normalized.recentViewCount) throw new Error("콘텐츠 방문자 집계가 올바르지 않습니다.");
+            } else {
+                normalized.viewCount = homeInteger(item.viewCount, "조회 수");
+            }
+            return normalized;
+        });
+    }
+
+    function normalizeContentHighlights(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("콘텐츠 하이라이트 응답이 올바르지 않습니다.");
+        const popularStartDate = homeText(value.popularStartDate, 30, true);
+        const popularEndDate = homeText(value.popularEndDate, 30, true);
+        if (popularStartDate > popularEndDate) throw new Error("콘텐츠 집계 기간이 올바르지 않습니다.");
+        return {
+            notices: normalizeHighlightItems(value.notices, "NOTICE"),
+            styles: normalizeHighlightItems(value.styles, "STYLE"),
+            popular: normalizeHighlightItems(value.popular, null, true),
+            popularStartDate,
+            popularEndDate
+        };
     }
 
     function initActionMenuBehavior() {

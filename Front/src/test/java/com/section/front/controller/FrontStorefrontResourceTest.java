@@ -98,6 +98,9 @@ class FrontStorefrontResourceTest {
                 .contains("renderPopularContentHighlights(popular)")
                 .contains("markupSafeObject(rawItem)")
                 .contains("renderContentHighlightState(\"ERROR\")")
+                .contains("function normalizeContentHighlights(")
+                .contains("function normalizeHighlightItems(")
+                .contains("normalized.uniqueVisitors > normalized.recentViewCount")
                 .contains("contentHighlightRetryButton?.addEventListener");
         assertThat(css)
                 .contains(".content-highlights__grid")
@@ -132,7 +135,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260802.1")
-                .contains("/js/view/app.js?v=20260726.2");
+                .contains("/js/view/app.js?v=20260803.1");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")

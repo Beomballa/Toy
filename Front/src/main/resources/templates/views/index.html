@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,7 +28,8 @@
             <a href="/front/compare">비교 <span class="utility-count" id="utilityCompareCount" data-storefront-count="compare">0</span></a>
             <a href="/front/cart">장바구니</a>
             <a href="/front/orders">주문 조회</a>
-            <a href="#catalog">로그인</a>
+            <a href="/front/login" th:if="${session.frontMemberNo == null}">로그인</a>
+            <a href="/front/my" th:if="${session.frontMemberNo != null}" th:text="${session.frontMemberNickname != null && !session.frontMemberNickname.isBlank() ? session.frontMemberNickname : session.frontMemberName}">MY</a>
             <button class="utility-help-button" type="button" id="keyboardHelpButton" aria-haspopup="dialog">단축키</button>
         </div>
         <div class="utility-bar__meta">

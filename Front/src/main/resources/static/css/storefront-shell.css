@@ -27,6 +27,7 @@
 }
 
 .store-shell *,
+.store-footer,
 .store-footer * {
     box-sizing: border-box;
 }

@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,6 +19,7 @@ public class FrontGlobalExceptionHandler {
 
     @ExceptionHandler({
             BindException.class,
+            MethodArgumentNotValidException.class,
             MethodArgumentTypeMismatchException.class,
             HttpMessageNotReadableException.class,
             IllegalArgumentException.class
@@ -41,6 +43,9 @@ public class FrontGlobalExceptionHandler {
         }
         if (status == HttpStatus.CONFLICT) {
             return response(HttpStatus.CONFLICT, "F004", reasonOrDefault(exception, "현재 재고로 요청을 처리할 수 없습니다."));
+        }
+        if (status == HttpStatus.UNAUTHORIZED) {
+            return response(HttpStatus.UNAUTHORIZED, "F006", reasonOrDefault(exception, "로그인이 필요합니다."));
         }
         if (status == HttpStatus.TOO_MANY_REQUESTS) {
             return response(

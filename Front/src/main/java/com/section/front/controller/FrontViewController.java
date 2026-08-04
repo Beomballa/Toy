@@ -30,6 +30,11 @@ public class FrontViewController {
         return "views/summer-edit";
     }
 
+    @GetMapping("/front/login")
+    public String login() {
+        return "views/member-auth";
+    }
+
     @GetMapping("/front/cart")
     public String cart() {
         return "views/cart";

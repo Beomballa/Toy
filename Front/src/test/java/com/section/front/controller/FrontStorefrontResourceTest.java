@@ -10,6 +10,36 @@ import org.springframework.core.io.ClassPathResource;
 class FrontStorefrontResourceTest {
 
     @Test
+    void memberAuthPageKeepsAccessibleSessionAndValidationContracts() throws IOException {
+        String html = readResource("templates/views/member-auth.html");
+        String script = readResource("static/js/view/member-auth.js");
+        String css = readResource("static/css/member-auth.css");
+
+        assertThat(html)
+                .contains("id=\"memberLoginForm\"")
+                .contains("id=\"memberSignUpForm\"")
+                .contains("role=\"tablist\"")
+                .contains("id=\"memberAuthStatus\" role=\"alert\"")
+                .contains("autocomplete=\"current-password\"")
+                .contains("autocomplete=\"new-password\"")
+                .contains("/js/view/member-auth.js?v=20260804.1")
+                .contains("/css/member-auth.css?v=20260804.2");
+        assertThat(script)
+                .contains("/api/front/auth/me")
+                .contains("/api/front/auth/login")
+                .contains("/api/front/auth/signup")
+                .contains("/api/front/auth/logout")
+                .contains("next.startsWith(\"/front\")")
+                .contains("loginForm.reportValidity()")
+                .contains("passwordConfirm");
+        assertThat(css)
+                .contains(".member-auth *")
+                .contains("box-sizing: border-box")
+                .contains("grid-template-columns: minmax(0, 1.1fr) minmax(420px, .9fr)")
+                .contains("@media (max-width: 560px)");
+    }
+
+    @Test
     void categoryProductImagesArePackagedAsVisibleLocalAssets() {
         String[] images = {
                 "sneakers.jpg",
@@ -108,6 +138,7 @@ class FrontStorefrontResourceTest {
                 .contains("Object.freeze({ keys, read, write, remove, count, notify })");
         assertThat(css)
                 .contains("--store-shell-width: 1200px")
+                .contains(".store-footer,\n.store-footer *")
                 .contains(".store-shell__primary")
                 .contains(".store-shell__category")
                 .contains(".store-shell__search")
@@ -118,7 +149,7 @@ class FrontStorefrontResourceTest {
             assertThat(readResource("templates/views/" + page))
                     .as(page)
                     .contains("storefront-page")
-                    .contains("/css/storefront-shell.css?v=20260803.1")
+                    .contains("/css/storefront-shell.css?v=20260804.1")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
                     .contains("/js/view/storefront-state.js?v=20260802.1")

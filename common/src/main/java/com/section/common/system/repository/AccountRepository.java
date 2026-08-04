@@ -10,4 +10,8 @@ public interface AccountRepository extends JpaRepository<Account,Long>, CustomAc
 
     @Query("SELECT a FROM Account a where a.email =:email and a.password =:password")
     Optional<Account> findByAdminInfo(String email, String password);
+
+    Optional<Account> findByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCase(String email);
 }

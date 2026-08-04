@@ -11,6 +11,8 @@
                 <a href="/front/my">관심 <span class="store-shell__count" data-store-shell-count="bookmark">0</span></a>
                 <a href="/front/compare">비교 <span class="store-shell__count" data-store-shell-count="compare">0</span></a>
                 <a href="/front/cart">장바구니</a>
+                <a href="/front/login" th:if="${session.frontMemberNo == null}">로그인</a>
+                <a href="/front/my" th:if="${session.frontMemberNo != null}" th:text="${session.frontMemberNickname != null && !session.frontMemberNickname.isBlank() ? session.frontMemberNickname : session.frontMemberName}">MY</a>
             </nav>
         </div>
     </div>

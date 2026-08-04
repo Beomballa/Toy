@@ -57,6 +57,14 @@ class FrontViewControllerTest {
     }
 
     @Test
+    @DisplayName("회원 로그인 경로는 고객 인증 화면을 반환한다")
+    void loginReturnsMemberAuthView() throws Exception {
+        mockMvc.perform(get("/front/login"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("views/member-auth"));
+    }
+
+    @Test
     @DisplayName("장바구니와 주문서 경로는 각각의 거래 뷰를 반환한다")
     void commerceViewsReturnExpectedViews() throws Exception {
         mockMvc.perform(get("/front/cart"))

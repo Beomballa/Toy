@@ -27,6 +27,12 @@ class FrontProductionConfigurationTest {
                 .contains("min-response-size: ${SERVER_COMPRESSION_MIN_SIZE:1024}")
                 .contains("max-age: ${STATIC_CACHE_MAX_AGE:365d}")
                 .contains("cache-public: true")
+                .contains("timeout: ${FRONT_SESSION_TIMEOUT:30m}")
+                .contains("secure: ${FRONT_SESSION_COOKIE_SECURE:true}")
+                .contains("same-site: lax")
+                .contains("max-login-failures: ${FRONT_MAX_LOGIN_FAILURES:5}")
+                .contains("max-ip-login-failures: ${FRONT_MAX_IP_LOGIN_FAILURES:25}")
+                .contains("login-lock-duration: ${FRONT_LOGIN_LOCK_DURATION:15m}")
                 .contains("include-stacktrace: never");
     }
 }

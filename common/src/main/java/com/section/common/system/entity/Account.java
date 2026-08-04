@@ -53,4 +53,26 @@ public class Account extends BaseEntity {
 
     @Column(name = "TMP_PW_ISSUE_DT")
     private LocalDateTime tmpPwIssueDt;
+
+    public static Account createCustomer(String email, String password, String name, String nickname) {
+        Account account = new Account();
+        account.email = email;
+        account.password = password;
+        account.name = name;
+        account.nickname = nickname;
+        account.masterYn = YN.N;
+        account.initYn = YN.N;
+        account.delYn = YN.N;
+        return account;
+    }
+
+    public boolean isAvailableCustomer() {
+        return delYn != YN.Y;
+    }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+        this.initYn = YN.N;
+        this.tmpPwIssueDt = null;
+    }
 }

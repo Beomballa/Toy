@@ -33,7 +33,7 @@ class AccountRepositorySearchIntegrationTest {
     @DisplayName("회원 목록 검색은 공백으로 구분한 여러 키워드를 모두 만족하는 회원만 조회한다")
     void getAccountListMatchesAllKeywordTokens() {
         accountRepository.save(account("member@test.com", "배송 담당", "재고 점검", YN.N, YN.N, YN.N));
-        accountRepository.save(account("member@test.com", "배송팀", "일반 회원", YN.N, YN.N, YN.N));
+        accountRepository.save(account("member-secondary@test.com", "배송팀", "일반 회원", YN.N, YN.N, YN.N));
         accountRepository.save(account("guest@test.com", "재고 담당", "점검 요원", YN.N, YN.N, YN.N));
         entityManager.flush();
         entityManager.clear();

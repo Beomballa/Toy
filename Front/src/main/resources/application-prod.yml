@@ -2,6 +2,13 @@ server:
   shutdown: graceful
   max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}
   forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: ${FRONT_SESSION_TIMEOUT:30m}
+      cookie:
+        http-only: true
+        secure: ${FRONT_SESSION_COOKIE_SECURE:true}
+        same-site: lax
   compression:
     enabled: true
     min-response-size: ${SERVER_COMPRESSION_MIN_SIZE:1024}
@@ -33,6 +40,12 @@ spring:
         cachecontrol:
           max-age: ${STATIC_CACHE_MAX_AGE:365d}
           cache-public: true
+
+front:
+  auth:
+    max-login-failures: ${FRONT_MAX_LOGIN_FAILURES:5}
+    max-ip-login-failures: ${FRONT_MAX_IP_LOGIN_FAILURES:25}
+    login-lock-duration: ${FRONT_LOGIN_LOCK_DURATION:15m}
 
 logging:
   pattern:

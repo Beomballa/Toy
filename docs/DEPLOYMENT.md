@@ -24,6 +24,10 @@ DB_PASSWORD='secret' \
 
 `request_rate_limit_bucket`은 모든 애플리케이션 인스턴스가 관리자 로그인과 주문조회 제한 상태를 공유하는 운영 보안 테이블입니다.
 
+`front_auth.sql`은 고객 이메일을 로그인 식별자로 고정하고 필수 계정 필드와 이메일 유일키를 적용합니다. 적용 전 공백·중복 이메일을 정리해야 하며 기존 평문 비밀번호는 고객이 로그인할 때 PBKDF2로 전환됩니다.
+
+`front_member_product_activity`는 로그인 회원의 관심·비교·최근 본·숨김 상품을 저장합니다. 회원·종류·상품 유일키와 회원·종류·최신순 인덱스를 사용하며, 로컬 브라우저 활동은 최초 로그인 시 종류별 저장 한도 안에서 서버 데이터와 병합됩니다.
+
 `admin_system_setting_history`는 설정 변경 감사 이력 테이블만 생성하며 운영 데이터는 삽입하지 않습니다. 로컬 화면용 예시는 `local` 프로파일의 시더가 담당합니다.
 
 `document_daily_stats`는 테이블 생성 후 현재 문서 데이터 기준 초기 스냅샷을 멱등 반영합니다.
@@ -120,7 +124,7 @@ export BATCH_CONTENT_VIEW_RETENTION_DAYS=180
 각 애플리케이션은 다음 엔드포인트를 제공합니다.
 
 - `/health/live`: 프로세스 생존 여부
-- `/health/ready`: DB 연결과 `schema_migration`, 상품, 공유 요청 제한 테이블을 포함한 요청 처리 준비 여부
+- `/health/ready`: DB 연결과 `schema_migration`, 상품, 공유 요청 제한, 회원 활동 테이블을 포함한 요청 처리 준비 여부
 
 ```bash
 FRONT_URL=https://service.example.com \

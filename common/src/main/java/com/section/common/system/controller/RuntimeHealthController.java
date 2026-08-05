@@ -16,6 +16,7 @@ public class RuntimeHealthController {
             FROM schema_migration migration
             JOIN product product ON 1 = 0
             JOIN request_rate_limit_bucket rate_bucket ON 1 = 0
+            JOIN front_member_product_activity member_activity ON 1 = 0
             """;
 
     private final JdbcTemplate jdbcTemplate;

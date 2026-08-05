@@ -106,6 +106,8 @@ fi
 
 MIGRATIONS=(
   "2026072801|shared request rate limit|db/request_rate_limit_bucket.sql"
+  "2026080401|customer authentication constraints|db/front_auth.sql"
+  "2026080501|customer product activity|db/front_member_product_activity.sql"
 )
 
 for migration in "${MIGRATIONS[@]}"; do
@@ -130,6 +132,6 @@ for migration in "${MIGRATIONS[@]}"; do
   "
 done
 
-validate_tables "${BASELINE_TABLES[@]}" request_rate_limit_bucket
+validate_tables "${BASELINE_TABLES[@]}" request_rate_limit_bucket front_member_product_activity
 
 echo "Database schema is up to date."

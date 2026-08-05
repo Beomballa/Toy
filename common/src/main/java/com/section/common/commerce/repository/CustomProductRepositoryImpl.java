@@ -298,6 +298,32 @@ public class CustomProductRepositoryImpl implements CustomProductRepository {
     }
 
     @Override
+    public List<FrontCatalogProductRow> getFrontCatalogProductsByIds(Collection<Long> productNos) {
+        if (productNos == null || productNos.isEmpty()) {
+            return List.of();
+        }
+        return frontCatalogBaseQuery()
+                .where(product.id.in(productNos), product.status.eq(ProductStatus.ACTIVE.name()))
+                .groupBy(
+                        product.id,
+                        product.brandNo,
+                        product.categoryNo,
+                        brand.nameKo,
+                        category.name,
+                        product.nameKo,
+                        frontProductDisplay.headline,
+                        product.modelNum,
+                        product.releasePrice,
+                        product.crtDtm,
+                        frontProductDisplay.description,
+                        frontProductDisplay.mood,
+                        frontProductDisplay.featuredYn,
+                        frontProductDisplay.featuredRank
+                )
+                .fetch();
+    }
+
+    @Override
     public List<FrontCatalogProductRow> getRelatedFrontCatalogProducts(Long productNo, Long brandNo, Long categoryNo, int limit) {
         return frontCatalogBaseQuery()
                 .where(

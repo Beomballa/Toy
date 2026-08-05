@@ -370,6 +370,7 @@
         });
         elements.clear.addEventListener("click", clearAll);
         window.addEventListener("storage", (event) => { if (event.key === KEYS.compare) void loadProducts(); });
+        document.addEventListener("storefront:state-ready", () => void loadProducts());
         window.addEventListener("popstate", loadProducts);
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" && !elements.candidates.hidden) closeCandidates();

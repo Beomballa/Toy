@@ -81,8 +81,8 @@
         event.preventDefault();
         if (pending || !loginForm.reportValidity()) return;
         clearStatus();
-        setPending(loginForm, true);
         const form = new FormData(loginForm);
+        setPending(loginForm, true);
         try {
             await request("/api/front/auth/login", {
                 email: String(form.get("email") || "").trim(),
@@ -134,6 +134,7 @@
         logoutButton.disabled = true;
         try {
             await request("/api/front/auth/logout", {});
+            window.StorefrontState?.forgetSession();
             renderMember(null);
             switchMode("LOGIN", false);
             showStatus("로그아웃되었습니다.", true);

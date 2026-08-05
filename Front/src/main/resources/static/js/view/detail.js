@@ -1941,6 +1941,10 @@
         initSectionNavigation();
         window.addEventListener("scroll", syncDetailScrollProgress, { passive: true });
         window.addEventListener("storage", syncDetailStateFromStorage);
+        document.addEventListener("storefront:state-ready", () => {
+            [BOOKMARK_PRODUCTS_KEY, COMPARE_PRODUCTS_KEY, RECENT_VIEWED_KEY]
+                .forEach((key) => syncDetailStateFromStorage({ key }));
+        });
         syncDetailScrollProgress();
         elements.detailZoomButton?.addEventListener("click", openDetailImageModal);
         elements.detailImageModalCloseButton?.addEventListener("click", closeDetailImageModal);

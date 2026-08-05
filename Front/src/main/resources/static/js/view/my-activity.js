@@ -211,6 +211,7 @@
     document.getElementById("myExportButton").addEventListener("click",downloadCsv);
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
+    document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{if(event.key==="/"&&document.activeElement!==el.search){event.preventDefault();el.search.focus();}if(event.key==="Escape"&&state.keyword){el.search.value="";state.keyword="";render();}});
     render();
 })();

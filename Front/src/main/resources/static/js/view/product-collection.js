@@ -107,6 +107,7 @@
         elements.nextButton.addEventListener("click", () => movePage(state.page + 1));
         elements.grid.addEventListener("click", handleGridClick);
         document.addEventListener("storefront:storage-change", handleStorageChange);
+        document.addEventListener("storefront:state-ready", syncBookmarkButtons);
         window.addEventListener("storage", handleStorageChange);
     }
 

@@ -130,6 +130,18 @@ public class FrontProductCatalogService {
                 ));
     }
 
+    public Map<Long, FrontProductResponse> findProducts(Set<Long> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return Map.of();
+        }
+        List<FrontCatalogProductRow> rows = productRepository.getFrontCatalogProductsByIds(productIds);
+        Map<Long, List<FrontProductOptionResponse>> optionMap = loadOptionMap(
+                rows.stream().map(FrontCatalogProductRow::productNo).toList()
+        );
+        return toProductResponses(rows, optionMap, 20).stream()
+                .collect(Collectors.toMap(FrontProductResponse::id, Function.identity()));
+    }
+
     public Optional<FrontProductDetailResponse> findProductDetail(long productId) {
         Optional<FrontCatalogProductRow> detailRow = productRepository.getFrontCatalogProduct(productId);
         if (detailRow.isEmpty()) {

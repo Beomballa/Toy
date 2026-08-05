@@ -725,6 +725,9 @@
                 syncSavedBrandButton();
             }
         });
+        document.addEventListener("storefront:state-ready", () => {
+            if (currentProducts.length) renderProducts({ products: currentProducts, pagination });
+        });
         document.addEventListener("keydown", (event) => {
             if (event.key === "/" && !isTypingTarget(event.target)) {
                 event.preventDefault();

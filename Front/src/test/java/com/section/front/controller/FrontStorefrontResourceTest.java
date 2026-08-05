@@ -22,7 +22,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"memberAuthStatus\" role=\"alert\"")
                 .contains("autocomplete=\"current-password\"")
                 .contains("autocomplete=\"new-password\"")
-                .contains("/js/view/member-auth.js?v=20260804.1")
+                .contains("/js/view/member-auth.js?v=20260805.2")
                 .contains("/css/member-auth.css?v=20260804.2");
         assertThat(script)
                 .contains("/api/front/auth/me")
@@ -31,6 +31,7 @@ class FrontStorefrontResourceTest {
                 .contains("/api/front/auth/logout")
                 .contains("next.startsWith(\"/front\")")
                 .contains("loginForm.reportValidity()")
+                .containsSubsequence("const form = new FormData(loginForm);", "setPending(loginForm, true);")
                 .contains("passwordConfirm");
         assertThat(css)
                 .contains(".member-auth *")
@@ -135,7 +136,14 @@ class FrontStorefrontResourceTest {
                 .contains("const allowedKeys = new Set(")
                 .contains("Number.isSafeInteger(id)")
                 .contains("new CustomEvent(\"storefront:storage-change\"")
-                .contains("Object.freeze({ keys, read, write, remove, count, notify })");
+                .contains("/api/front/member-activities/sync")
+                .contains("queueReplace(key)")
+                .contains("revisions[key] === revision")
+                .contains("storefront:state-ready")
+                .contains("front-member-activity-owner")
+                .contains("function forgetSession()")
+                .contains("비로그인 및 일시적인 통신 실패")
+                .contains("Object.freeze({ keys, read, write, remove, count, notify, forgetSession, ready })");
         assertThat(css)
                 .contains("--store-shell-width: 1200px")
                 .contains(".store-footer,\n.store-footer *")
@@ -152,7 +160,7 @@ class FrontStorefrontResourceTest {
                     .contains("/css/storefront-shell.css?v=20260804.1")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
-                    .contains("/js/view/storefront-state.js?v=20260802.1")
+                    .contains("/js/view/storefront-state.js?v=20260805.2")
                     .contains("/js/view/storefront-shell.js?v=20260802.1");
         }
     }
@@ -217,7 +225,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
-                .contains("/js/view/storefront-state.js?v=20260802.1")
+                .contains("/js/view/storefront-state.js?v=20260805.2")
                 .contains("/js/view/app.js?v=20260803.7");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")

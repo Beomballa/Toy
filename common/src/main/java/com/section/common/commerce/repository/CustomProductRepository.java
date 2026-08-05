@@ -38,6 +38,8 @@ public interface CustomProductRepository {
 
     Optional<FrontCatalogProductRow> getFrontCatalogProduct(Long productNo);
 
+    List<FrontCatalogProductRow> getFrontCatalogProductsByIds(Collection<Long> productNos);
+
     List<FrontCatalogProductRow> getRelatedFrontCatalogProducts(Long productNo, Long brandNo, Long categoryNo, int limit);
 
     List<AdminFrontDisplayProductRow> getAdminFrontDisplayProducts(AdminFrontDisplayProductQuery query);

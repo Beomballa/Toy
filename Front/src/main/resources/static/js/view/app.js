@@ -1926,6 +1926,7 @@
         });
         elements.resetPersonalDataButton?.addEventListener("click", resetPersonalData);
         window.addEventListener("storage", syncPersonalStateFromStorage);
+        document.addEventListener("storefront:state-ready", () => syncPersonalStateFromStorage({ key: null }));
         window.addEventListener("pagehide", persistCatalogScrollPosition);
         window.addEventListener("online", handleNetworkReconnect);
         window.addEventListener("offline", handleNetworkOffline);

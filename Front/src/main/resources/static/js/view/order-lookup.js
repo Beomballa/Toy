@@ -322,6 +322,28 @@
         }
     }
 
+    async function reorderMemberOrder() {
+        if (!currentOrder || !isMemberOrder) return;
+        const button = document.getElementById("memberOrderReorderButton");
+        button.disabled = true;
+        try {
+            const key = "grade-stock-cart-token";
+            let cartToken = localStorage.getItem(key);
+            if (!/^[A-Za-z0-9-]{16,80}$/.test(String(cartToken || ""))) {
+                cartToken = crypto.randomUUID();
+                localStorage.setItem(key, cartToken);
+            }
+            const response = await fetch(`/api/front/member/orders/${encodeURIComponent(currentOrder.orderNumber)}/reorder`, {
+                method: "POST", headers: { "X-Cart-Token": cartToken, Accept: "application/json" }
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.message || "상품을 다시 담지 못했습니다.");
+            const unavailable = Array.isArray(payload.unavailableProducts) ? payload.unavailableProducts.length : 0;
+            showToast(unavailable ? `${payload.addedCount}개 상품을 담았습니다. ${unavailable}개는 재고를 확인해주세요.` : `${payload.addedCount}개 상품을 장바구니에 담았습니다.`);
+        } catch (error) { showToast(error.message || "상품을 다시 담지 못했습니다."); }
+        finally { button.disabled = false; }
+    }
+
     function setLookupBusy(busy) {
         const button = form.querySelector("button");
         button.disabled = busy;
@@ -351,6 +373,7 @@
         document.getElementById("orderResultStatus").textContent = order.statusLabel;
         document.getElementById("memberOrderCancelButton").hidden = !isMemberOrder
             || !["ORDERED", "PAID", "PREPARING"].includes(order.status);
+        document.getElementById("memberOrderReorderButton").hidden = !isMemberOrder || !order.items.length;
         document.getElementById("orderTotalAmount").textContent = formatPrice(order.totalAmount);
         const totalQuantity = order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
         document.getElementById("orderItemSummary").textContent = `${order.items.length}개 상품 · 총 ${totalQuantity}개`;
@@ -455,6 +478,7 @@
         cancelDialog.showModal();
         document.getElementById("memberOrderCancelReason").focus();
     });
+    document.getElementById("memberOrderReorderButton").addEventListener("click", reorderMemberOrder);
     document.getElementById("memberOrderCancelCloseButton").addEventListener("click", () => cancelDialog.close());
     cancelForm.addEventListener("submit", (event) => { event.preventDefault(); cancelMemberOrder(); });
 

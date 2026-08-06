@@ -31,6 +31,7 @@ import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
 import com.section.front.commerce.dto.FrontMemberOrderStatusSummary;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
+import com.section.front.commerce.dto.FrontOrderReorderResponse;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -304,6 +305,47 @@ public class FrontCommerceService {
                 normalizeCancelReason(request == null ? null : request.reason()), null, null, null
         ));
         return toOrderDetail(order);
+    }
+
+    @Transactional
+    public FrontOrderReorderResponse reorderMemberOrder(long memberNo, String orderNumber, String cartToken) {
+        requireAvailableMember(memberNo);
+        validateToken(cartToken);
+        Orders order = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        FrontCart cart = cartRepository.findByCartTokenForUpdate(cartToken)
+                .map(this::reopenCart)
+                .orElseGet(() -> cartRepository.save(FrontCart.create(cartToken)));
+        List<OrderItem> orderItems = orderItemRepository.findByOrderNo(order.getId());
+        Map<Long, Product> products = productRepository.findAllById(orderItems.stream().map(OrderItem::getProductNo).distinct().toList()).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        List<Long> optionIds = orderItems.stream()
+                .map(OrderItem::getOptionNo).filter(java.util.Objects::nonNull).distinct().sorted().toList();
+        Map<Long, ProductOption> options = (optionIds.isEmpty() ? List.<ProductOption>of()
+                : productOptionRepository.findAllByIdForUpdate(optionIds)).stream()
+                .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
+        Map<String, FrontCartItem> cartItems = cartItemRepository.findAllByCartNoOrderByIdDesc(cart.getId()).stream()
+                .collect(Collectors.toMap(item -> item.getProductNo() + ":" + item.getOptionNo(), Function.identity(), (first, ignored) -> first));
+        List<String> unavailable = new java.util.ArrayList<>();
+        int added = 0;
+        for (OrderItem item : orderItems) {
+            Product product = products.get(item.getProductNo());
+            ProductOption option = options.get(item.getOptionNo());
+            FrontCartItem existing = cartItems.get(item.getProductNo() + ":" + item.getOptionNo());
+            int nextQuantity = (existing == null ? 0 : existing.getQuantity()) + item.getCount();
+            if (product == null || !product.isActive() || option == null || !product.getId().equals(option.getProductNo())
+                    || nextQuantity > MAX_ITEM_QUANTITY || nextQuantity > option.getStockCnt()) {
+                unavailable.add(item.getProductName());
+                continue;
+            }
+            if (existing == null) {
+                cartItemRepository.save(FrontCartItem.create(cart.getId(), product.getId(), option.getId(), item.getCount()));
+            } else {
+                existing.changeQuantity(nextQuantity);
+            }
+            added++;
+        }
+        return new FrontOrderReorderResponse(toCartResponse(cart), added, List.copyOf(unavailable));
     }
 
     private FrontOrderDetailResponse toOrderDetail(Orders order) {

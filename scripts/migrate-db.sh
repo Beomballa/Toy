@@ -109,6 +109,7 @@ MIGRATIONS=(
   "2026080401|customer authentication constraints|db/front_auth.sql"
   "2026080501|customer product activity|db/front_member_product_activity.sql"
   "2026080601|customer order history|db/front_member_order.sql"
+  "2026080602|customer delivery addresses|db/front_member_delivery_address.sql"
 )
 
 for migration in "${MIGRATIONS[@]}"; do

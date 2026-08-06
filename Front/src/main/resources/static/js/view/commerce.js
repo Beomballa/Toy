@@ -19,6 +19,7 @@
         orderAmount: document.getElementById("completedOrderAmount"),
         orderLink: document.getElementById("completedOrderLink"),
         deliveryPreset: document.getElementById("deliveryRequestPreset"),
+        savedAddress: document.getElementById("savedDeliveryAddress"),
         toast: document.getElementById("commerceToast")
     };
     let cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
@@ -27,6 +28,7 @@
     let submitting = false;
     let cartMutating = false;
     let cartRequestSequence = 0;
+    let savedAddresses = [];
 
     function cartToken() {
         const key = "grade-stock-cart-token";
@@ -321,6 +323,19 @@
                 ? `${digits.slice(0, 3)}-${digits.slice(3)}`
                 : `${digits.slice(0, 3)}-${digits.slice(3, digits.length - 4)}-${digits.slice(-4)}`;
     }
+    async function loadSavedAddresses() {
+        if (!elements.savedAddress) return;
+        try {
+            const response = await fetch("/api/front/member/delivery-addresses", { headers: { Accept: "application/json" } });
+            if (!response.ok) return;
+            savedAddresses = await response.json();
+            if (!Array.isArray(savedAddresses)) return;
+            elements.savedAddress.insertAdjacentHTML("beforeend", savedAddresses.map(address => `<option value="${Number(address.id)}">${escapeMarkup(address.addressName)}${address.defaultAddress ? " · 기본" : ""}</option>`).join(""));
+            const primary = savedAddresses.find(address => address.defaultAddress);
+            if (primary) { elements.savedAddress.value = String(primary.id); applySavedAddress(primary); }
+        } catch (_) { /* 비회원과 네트워크 실패는 직접 입력을 유지한다. */ }
+    }
+    function applySavedAddress(address) { ["recipientName","recipientPhone","postalCode","address1","address2"].forEach(name => { const input=elements.form?.elements[name]; if (input) input.value=address[name] || ""; }); }
 
     elements.form?.querySelectorAll('input[inputmode="tel"]').forEach((input) => {
         input.addEventListener("input", () => {
@@ -347,6 +362,7 @@
         input.dispatchEvent(new Event("input"));
         input.focus();
     });
+    elements.savedAddress?.addEventListener("change", () => { const address=savedAddresses.find(item=>String(item.id)===elements.savedAddress.value); if(address) applySavedAddress(address); });
 
     elements.form?.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -381,6 +397,7 @@
             syncCheckoutAvailability(cart.items.length > 0);
         }
     });
+    loadSavedAddresses();
 
     function emptyCart() {
         return { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };

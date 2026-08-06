@@ -4,6 +4,7 @@ import com.section.common.commerce.entity.FrontCart;
 import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.OrderDelivery;
 import com.section.common.commerce.entity.OrderItem;
+import com.section.common.commerce.entity.OrderStatusHistory;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductOption;
@@ -27,6 +28,7 @@ import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
+import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -39,6 +41,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
@@ -263,6 +266,31 @@ public class FrontCommerceService {
         return toOrderDetail(order);
     }
 
+    @Transactional
+    public FrontOrderDetailResponse cancelMemberOrder(
+            long memberNo,
+            String orderNumber,
+            FrontMemberOrderCancelRequest request
+    ) {
+        requireAvailableMember(memberNo);
+        if (orderNumber == null || !orderNumber.matches("GS[A-Z0-9]{10,40}")) {
+            throw new IllegalArgumentException("주문 조회 정보가 올바르지 않습니다.");
+        }
+        Orders requestedOrder = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        Orders order = orderRepository.findByIdForUpdate(requestedOrder.getId())
+                .filter(candidate -> Long.valueOf(memberNo).equals(candidate.getMemberNo()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        String beforeStatus = order.getStatus();
+        order.cancel();
+        restoreOrderStock(order.getId());
+        orderStatusHistoryRepository.save(OrderStatusHistory.create(
+                order.getId(), "CUSTOMER_CANCEL", beforeStatus, order.getStatus(),
+                normalizeCancelReason(request == null ? null : request.reason()), null, null, null
+        ));
+        return toOrderDetail(order);
+    }
+
     private FrontOrderDetailResponse toOrderDetail(Orders order) {
         List<OrderItem> orderItems = orderItemRepository.findByOrderNo(order.getId());
         Map<Long, Product> orderProducts = productRepository.findAllById(
@@ -328,6 +356,38 @@ public class FrontCommerceService {
         if (!account.isAvailableCustomer()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다.");
         }
+    }
+
+    private void restoreOrderStock(long orderNo) {
+        Map<Long, Integer> quantities = orderItemRepository.findByOrderNo(orderNo).stream()
+                .filter(item -> item.getOptionNo() != null)
+                .collect(Collectors.toMap(
+                        OrderItem::getOptionNo,
+                        OrderItem::getCount,
+                        Integer::sum,
+                        LinkedHashMap::new
+                ));
+        if (quantities.isEmpty()) {
+            return;
+        }
+        List<Long> optionIds = quantities.keySet().stream().sorted().toList();
+        Map<Long, ProductOption> options = productOptionRepository.findAllByIdForUpdate(optionIds).stream()
+                .collect(Collectors.toMap(ProductOption::getId, Function.identity()));
+        if (options.size() != optionIds.size()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "주문 옵션 정보를 확인할 수 없습니다.");
+        }
+        quantities.forEach((optionId, quantity) -> options.get(optionId).addStock(quantity));
+    }
+
+    private String normalizeCancelReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return "고객 요청 취소";
+        }
+        String normalized = reason.trim().replaceAll("\\s+", " ");
+        if (normalized.length() > 200) {
+            throw new IllegalArgumentException("취소 사유는 200자 이하여야 합니다.");
+        }
+        return normalized;
     }
 
     private FrontCartResponse toCartResponse(FrontCart cart) {

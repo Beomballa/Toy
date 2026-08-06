@@ -7,6 +7,8 @@
     const toast = document.getElementById("commerceToast");
     const initialOrderNumber = document.body.dataset.orderNumber || "";
     const isMemberOrder = new URLSearchParams(location.search).get("member") === "true";
+    const cancelDialog = document.getElementById("memberOrderCancelDialog");
+    const cancelForm = document.getElementById("memberOrderCancelForm");
     let currentOrder = null;
     let toastTimer = null;
     let lookupController = null;
@@ -297,6 +299,29 @@
         }
     }
 
+    async function cancelMemberOrder() {
+        if (!currentOrder || !isMemberOrder) return;
+        const submitButton = document.getElementById("memberOrderCancelSubmitButton");
+        submitButton.disabled = true;
+        try {
+            const reason = document.getElementById("memberOrderCancelReason").value.trim().slice(0, 200);
+            const response = await fetch(`/api/front/member/orders/${encodeURIComponent(currentOrder.orderNumber)}/cancel`, {
+                method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ reason })
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(typeof payload.message === "string" ? payload.message : "주문을 취소하지 못했습니다.");
+            const order = normalizeOrderResponse(payload, currentOrder.orderNumber);
+            cancelDialog.close();
+            render(order);
+            showToast("주문을 취소하고 재고를 복구했습니다.");
+        } catch (requestError) {
+            showToast(requestError.message || "주문을 취소하지 못했습니다.");
+        } finally {
+            submitButton.disabled = false;
+        }
+    }
+
     function setLookupBusy(busy) {
         const button = form.querySelector("button");
         button.disabled = busy;
@@ -324,6 +349,8 @@
         document.getElementById("orderResultNumber").textContent = order.orderNumber;
         document.getElementById("orderResultDate").textContent = `${order.orderedAt} · 주문자 ${order.buyerName}`;
         document.getElementById("orderResultStatus").textContent = order.statusLabel;
+        document.getElementById("memberOrderCancelButton").hidden = !isMemberOrder
+            || !["ORDERED", "PAID", "PREPARING"].includes(order.status);
         document.getElementById("orderTotalAmount").textContent = formatPrice(order.totalAmount);
         const totalQuantity = order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
         document.getElementById("orderItemSummary").textContent = `${order.items.length}개 상품 · 총 ${totalQuantity}개`;
@@ -423,6 +450,13 @@
         }
         window.print();
     });
+    document.getElementById("memberOrderCancelButton").addEventListener("click", () => {
+        document.getElementById("memberOrderCancelReason").value = "";
+        cancelDialog.showModal();
+        document.getElementById("memberOrderCancelReason").focus();
+    });
+    document.getElementById("memberOrderCancelCloseButton").addEventListener("click", () => cancelDialog.close());
+    cancelForm.addEventListener("submit", (event) => { event.preventDefault(); cancelMemberOrder(); });
 
     if (initialOrderNumber) {
         if (isMemberOrder) {

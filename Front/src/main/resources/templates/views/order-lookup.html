@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문 조회 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/commerce.css?v=20260727.1">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260806.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260804.1">
 </head>
 <body class="order-lookup-body storefront-page" th:attr="data-order-number=${orderNumber}">
@@ -27,7 +27,7 @@
     <section class="order-result" id="orderResult" hidden aria-live="polite">
         <div class="order-result__head">
             <div><p>Order Detail</p><h2 id="orderResultNumber"></h2><span id="orderResultDate"></span></div>
-            <div class="order-result__actions"><strong id="orderResultStatus"></strong><button type="button" id="copyOrderNumberButton">주문번호 복사</button><button type="button" id="printOrderButton">인쇄</button></div>
+            <div class="order-result__actions"><strong id="orderResultStatus"></strong><button type="button" id="copyOrderNumberButton">주문번호 복사</button><button type="button" id="printOrderButton">인쇄</button><button type="button" id="memberOrderCancelButton" class="order-cancel-button" hidden>주문 취소</button></div>
         </div>
         <ol class="order-progress" id="orderProgress" aria-label="주문 처리 단계">
             <li>주문 접수</li><li>결제 확인</li><li>배송 준비</li><li>배송 중</li><li>배송 완료</li>
@@ -45,10 +45,17 @@
         <section class="order-history"><h3>처리 이력</h3><ol id="orderHistory"></ol></section>
     </section>
 </main>
+<dialog class="order-cancel-dialog" id="memberOrderCancelDialog" aria-labelledby="memberOrderCancelTitle">
+    <form id="memberOrderCancelForm" method="dialog">
+        <p>Order Cancellation</p><h2 id="memberOrderCancelTitle">주문을 취소할까요?</h2><span>출고 전 주문만 취소할 수 있으며, 취소 후 재고가 복구됩니다.</span>
+        <label>취소 사유 <textarea id="memberOrderCancelReason" maxlength="200" placeholder="사유를 입력하면 주문 이력에 남습니다."></textarea></label>
+        <div><button type="button" id="memberOrderCancelCloseButton">돌아가기</button><button type="submit" id="memberOrderCancelSubmitButton">주문 취소하기</button></div>
+    </form>
+</dialog>
 <div class="commerce-toast" id="commerceToast" role="status" aria-live="polite" hidden></div>
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-    <script src="/js/view/order-lookup.js?v=20260806.1"></script>
+    <script src="/js/view/order-lookup.js?v=20260806.2"></script>
 </body>
 </html>

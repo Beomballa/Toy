@@ -209,6 +209,19 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .order-result__actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
 .order-result__actions > strong { padding: 9px 13px; border-radius: 999px; color: #176b45; background: #eaf7f0; font-size: 12px; }
 .order-result__actions button { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: #555; background: #fff; font-size: 11px; cursor: pointer; }
+.order-result__actions .order-cancel-button { border-color:#efc9c3; color:#b93e32; }
+.order-cancel-dialog { width:min(420px,calc(100% - 32px)); padding:0; border:0; border-radius:14px; box-shadow:0 24px 80px rgba(0,0,0,.22); }
+.order-cancel-dialog::backdrop { background:rgba(0,0,0,.34); }
+.order-cancel-dialog form { display:grid; gap:14px; padding:26px; }
+.order-cancel-dialog p { margin:0; color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.order-cancel-dialog h2 { margin:0; font-size:20px; letter-spacing:-.04em; }
+.order-cancel-dialog form > span { color:var(--muted); font-size:12px; line-height:1.55; }
+.order-cancel-dialog label { display:grid; gap:7px; margin-top:5px; color:#555; font-size:12px; font-weight:700; }
+.order-cancel-dialog textarea { min-height:88px; resize:vertical; padding:10px; border:1px solid #ddd; border-radius:8px; font:inherit; font-size:12px; outline:none; }
+.order-cancel-dialog textarea:focus { border-color:var(--ink); }
+.order-cancel-dialog form > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+.order-cancel-dialog form > div button { min-height:42px; border:1px solid #ddd; border-radius:8px; background:#fff; font-weight:800; cursor:pointer; }
+.order-cancel-dialog form > div button[type="submit"] { border-color:#c64a3e; color:#fff; background:#c64a3e; }
 .order-progress { display: grid; grid-template-columns: repeat(5, 1fr); margin: 34px 0 50px; padding: 0; list-style: none; counter-reset: order-step; }
 .order-progress li { position: relative; padding-top: 30px; color: #aaa; text-align: center; font-size: 11px; }
 .order-progress li::before { position: absolute; z-index: 2; top: 0; left: 50%; width: 18px; height: 18px; border: 2px solid #ddd; border-radius: 50%; background: #fff; content: ""; transform: translateX(-50%); }

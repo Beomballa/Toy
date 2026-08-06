@@ -8,6 +8,7 @@ import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderLookupRequest;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
+import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.front.commerce.service.FrontCommerceService;
 import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
 import com.section.front.auth.support.FrontMemberSession;
@@ -108,6 +109,15 @@ public class FrontCommerceRestController {
             HttpServletRequest request
     ) {
         return commerceService.getMemberOrder(memberNo(request), orderNumber);
+    }
+
+    @PostMapping("/member/orders/{orderNumber}/cancel")
+    public FrontOrderDetailResponse cancelMemberOrder(
+            @PathVariable String orderNumber,
+            @RequestBody(required = false) FrontMemberOrderCancelRequest cancelRequest,
+            HttpServletRequest request
+    ) {
+        return commerceService.cancelMemberOrder(memberNo(request), orderNumber, cancelRequest);
     }
 
     private long memberNo(HttpServletRequest request) {

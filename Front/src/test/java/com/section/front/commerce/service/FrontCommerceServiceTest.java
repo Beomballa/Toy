@@ -8,6 +8,8 @@ import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductOption;
 import com.section.common.system.entity.Account;
+import com.section.common.base.exception.BusinessException;
+import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -282,6 +285,26 @@ class FrontCommerceServiceTest {
         assertThat(response.totalElements()).isEqualTo(2);
         assertThat(response.items()).extracting("productName").containsExactly("첫 번째 상품", "두 번째 상품");
         verify(orderItemRepository).findAllByOrderNoInOrderByOrderNoAscIdAsc(List.of(22L, 21L));
+    }
+
+    @Test
+    void rejectsMemberCancellationAfterDeliveryHasStarted() {
+        Account account = mock(Account.class);
+        Orders order = Orders.createOrder(ORDER_NUMBER, "테스트", "01000000000", 10000, 7L);
+        order.pay();
+        order.startDelivery("택배사", "12345678");
+        ReflectionTestUtils.setField(order, "id", 42L);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdForUpdate(42L)).willReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> commerceService.cancelMemberOrder(
+                7L, ORDER_NUMBER, new FrontMemberOrderCancelRequest("일정 변경")
+        )).isInstanceOf(BusinessException.class);
+
+        verify(productOptionRepository, never()).findAllByIdForUpdate(any());
+        verify(orderStatusHistoryRepository, never()).save(any());
     }
 
     @Test

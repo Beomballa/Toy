@@ -32,6 +32,9 @@ public class Orders extends BaseEntity {
     @Column(name = "buyer_phone", nullable = false, length = 20)
     private String buyerPhone;
 
+    @Column(name = "member_no")
+    private Long memberNo;
+
     @Column(name = "total_amount", nullable = false)
     private Integer totalAmount;
 
@@ -51,11 +54,22 @@ public class Orders extends BaseEntity {
      * 주문 생성 (정적 팩토리 메서드)
      */
     public static Orders createOrder(String orderNum, String buyerName, String buyerPhone, Integer totalAmount) {
+        return createOrder(orderNum, buyerName, buyerPhone, totalAmount, null);
+    }
+
+    public static Orders createOrder(
+            String orderNum,
+            String buyerName,
+            String buyerPhone,
+            Integer totalAmount,
+            Long memberNo
+    ) {
         return Orders.builder()
                 .orderNum(orderNum)
                 .buyerName(buyerName)
                 .buyerPhone(buyerPhone)
                 .totalAmount(totalAmount)
+                .memberNo(memberNo)
                 .status(OrderStatus.ORDERED.name())
                 .build();
     }

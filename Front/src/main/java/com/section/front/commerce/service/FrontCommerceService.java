@@ -15,6 +15,8 @@ import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.OrderStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.entity.Account;
+import com.section.common.system.repository.AccountRepository;
 import com.section.front.commerce.dto.FrontCartItemRequest;
 import com.section.front.commerce.dto.FrontCartItemResponse;
 import com.section.front.commerce.dto.FrontCartResponse;
@@ -23,8 +25,12 @@ import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDeliveryResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderItemResponse;
+import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
+import com.section.front.commerce.dto.FrontMemberOrderListResponse;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +54,7 @@ public class FrontCommerceService {
     private static final int MAX_PHONE_LENGTH = 20;
     private static final int MAX_POSTAL_CODE_LENGTH = 10;
     private static final int MAX_ADDRESS_LENGTH = 200;
+    private static final int MEMBER_ORDER_PAGE_SIZE = 10;
 
     private final FrontCartRepository cartRepository;
     private final FrontCartItemRepository cartItemRepository;
@@ -57,6 +64,7 @@ public class FrontCommerceService {
     private final OrderItemRepository orderItemRepository;
     private final OrderDeliveryRepository orderDeliveryRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
+    private final AccountRepository accountRepository;
 
     @Transactional(readOnly = true)
     public FrontCartResponse getCart(String cartToken) {
@@ -120,8 +128,16 @@ public class FrontCommerceService {
 
     @Transactional
     public FrontOrderCreateResponse createOrder(String cartToken, FrontOrderCreateRequest request) {
+        return createOrder(cartToken, request, null);
+    }
+
+    @Transactional
+    public FrontOrderCreateResponse createOrder(String cartToken, FrontOrderCreateRequest request, Long memberNo) {
         validateToken(cartToken);
         validateOrderRequest(request);
+        if (memberNo != null) {
+            requireAvailableMember(memberNo);
+        }
         FrontCart cart = requireCartForCheckout(cartToken);
         List<FrontCartItem> cartItems = cartItemRepository.findAllByCartNoOrderByIdDesc(cart.getId());
         if (cartItems.isEmpty()) {
@@ -166,7 +182,8 @@ public class FrontCommerceService {
                 orderNumber,
                 request.buyerName().trim(),
                 request.buyerPhone().trim(),
-                totalAmount
+                totalAmount,
+                memberNo
         ));
 
         for (CheckoutLine line : lines) {
@@ -203,6 +220,50 @@ public class FrontCommerceService {
         Orders order = orderRepository.findByOrderNum(orderNumber)
                 .filter(candidate -> normalizePhone(candidate.getBuyerPhone()).equals(normalizePhone(buyerPhone)))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        return toOrderDetail(order);
+    }
+
+    @Transactional(readOnly = true)
+    public FrontMemberOrderListResponse getMemberOrders(long memberNo, int page) {
+        requireAvailableMember(memberNo);
+        if (page < 0) {
+            throw new IllegalArgumentException("페이지 정보가 올바르지 않습니다.");
+        }
+        Page<Orders> orders = orderRepository.findByMemberNoOrderByIdDesc(memberNo, PageRequest.of(page, MEMBER_ORDER_PAGE_SIZE));
+        List<OrderItem> orderItems = orders.isEmpty()
+                ? List.of()
+                : orderItemRepository.findAllByOrderNoInOrderByOrderNoAscIdAsc(
+                        orders.getContent().stream().map(Orders::getId).toList()
+                );
+        Map<Long, List<OrderItem>> itemsByOrder = orderItems.stream()
+                .collect(Collectors.groupingBy(OrderItem::getOrderNo));
+        List<FrontMemberOrderItemResponse> items = orders.getContent().stream()
+                .map(order -> {
+                    List<OrderItem> itemsForOrder = itemsByOrder.getOrDefault(order.getId(), List.of());
+                    String productName = itemsForOrder.isEmpty() ? "주문 상품" : itemsForOrder.get(0).getProductName();
+                    return new FrontMemberOrderItemResponse(
+                            order.getOrderNum(), productName, itemsForOrder.size(), order.getTotalAmount(),
+                            order.getStatus(), statusLabel(order.getStatus()), formatDateTime(order.getCrtDtm())
+                    );
+                })
+                .toList();
+        return new FrontMemberOrderListResponse(
+                items, orders.getNumber(), orders.getSize(), orders.getTotalPages(), orders.getTotalElements(), orders.hasNext()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public FrontOrderDetailResponse getMemberOrder(long memberNo, String orderNumber) {
+        requireAvailableMember(memberNo);
+        if (orderNumber == null || !orderNumber.matches("GS[A-Z0-9]{10,40}")) {
+            throw new IllegalArgumentException("주문 조회 정보가 올바르지 않습니다.");
+        }
+        Orders order = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        return toOrderDetail(order);
+    }
+
+    private FrontOrderDetailResponse toOrderDetail(Orders order) {
         List<OrderItem> orderItems = orderItemRepository.findByOrderNo(order.getId());
         Map<Long, Product> orderProducts = productRepository.findAllById(
                         orderItems.stream().map(OrderItem::getProductNo).distinct().toList()
@@ -259,6 +320,14 @@ public class FrontCommerceService {
                 items,
                 history
         );
+    }
+
+    private void requireAvailableMember(long memberNo) {
+        Account account = accountRepository.findById(memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 정보를 확인할 수 없습니다."));
+        if (!account.isAvailableCustomer()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다.");
+        }
     }
 
     private FrontCartResponse toCartResponse(FrontCart cart) {

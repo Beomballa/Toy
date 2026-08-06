@@ -6,6 +6,7 @@
     const error = document.getElementById("orderLookupError");
     const toast = document.getElementById("commerceToast");
     const initialOrderNumber = document.body.dataset.orderNumber || "";
+    const isMemberOrder = new URLSearchParams(location.search).get("member") === "true";
     let currentOrder = null;
     let toastTimer = null;
     let lookupController = null;
@@ -268,6 +269,34 @@
         }
     }
 
+    async function lookupMemberOrder(orderNumber) {
+        lookupController?.abort();
+        lookupController = new AbortController();
+        const activeRequest = ++lookupSequence;
+        clearOrderResult();
+        error.hidden = true;
+        setLookupBusy(true);
+        try {
+            const response = await fetch(`/api/front/member/orders/${encodeURIComponent(orderNumber)}`, {
+                headers: { Accept: "application/json" }, signal: lookupController.signal
+            });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                const fallback = response.status === 401 ? "로그인 후 주문 내역을 확인할 수 있습니다." : "주문 정보를 확인할 수 없습니다.";
+                throw new Error(typeof payload.message === "string" && payload.message.trim() ? payload.message.slice(0, 200) : fallback);
+            }
+            if (activeRequest !== lookupSequence) return;
+            render(normalizeOrderResponse(payload, orderNumber));
+        } catch (requestError) {
+            if (requestError.name === "AbortError" || activeRequest !== lookupSequence) return;
+            clearOrderResult();
+            error.textContent = requestError.message;
+            error.hidden = false;
+        } finally {
+            if (activeRequest === lookupSequence) setLookupBusy(false);
+        }
+    }
+
     function setLookupBusy(busy) {
         const button = form.querySelector("button");
         button.disabled = busy;
@@ -396,6 +425,10 @@
     });
 
     if (initialOrderNumber) {
+        if (isMemberOrder) {
+            lookupMemberOrder(initialOrderNumber);
+            return;
+        }
         const recent = readRecentOrder();
         if (recent.orderNumber === initialOrderNumber && recent.phone) {
             form.elements.phone.value = formatPhone(recent.phone);

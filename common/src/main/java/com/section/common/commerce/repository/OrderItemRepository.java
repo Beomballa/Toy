@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrderNo(Long orderNo);
+    List<OrderItem> findAllByOrderNoInOrderByOrderNoAscIdAsc(List<Long> orderNos);
     boolean existsByOptionNo(Long optionNo);
 }

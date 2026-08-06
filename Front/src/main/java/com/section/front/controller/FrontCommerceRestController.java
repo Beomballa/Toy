@@ -7,10 +7,14 @@ import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderLookupRequest;
+import com.section.front.commerce.dto.FrontMemberOrderListResponse;
 import com.section.front.commerce.service.FrontCommerceService;
 import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
+import com.section.front.auth.support.FrontMemberSession;
+import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -19,7 +23,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequiredArgsConstructor
@@ -69,9 +75,11 @@ public class FrontCommerceRestController {
     @PostMapping("/orders")
     public FrontOrderCreateResponse createOrder(
             @RequestHeader(CART_TOKEN_HEADER) String cartToken,
-            @RequestBody FrontOrderCreateRequest request
+            @RequestBody FrontOrderCreateRequest request,
+            HttpServletRequest httpRequest
     ) {
-        return commerceService.createOrder(cartToken, request);
+        AuthenticatedFrontMember member = FrontMemberSession.read(httpRequest.getSession(false));
+        return commerceService.createOrder(cartToken, request, member == null ? null : member.memberId());
     }
 
     @PostMapping("/orders/lookup")
@@ -84,5 +92,29 @@ public class FrontCommerceRestController {
             throw new IllegalArgumentException("주문 조회 정보가 올바르지 않습니다.");
         }
         return commerceService.getOrder(request.orderNumber(), request.phone());
+    }
+
+    @GetMapping("/member/orders")
+    public FrontMemberOrderListResponse getMemberOrders(
+            @RequestParam(defaultValue = "0") int page,
+            HttpServletRequest request
+    ) {
+        return commerceService.getMemberOrders(memberNo(request), page);
+    }
+
+    @GetMapping("/member/orders/{orderNumber}")
+    public FrontOrderDetailResponse getMemberOrder(
+            @PathVariable String orderNumber,
+            HttpServletRequest request
+    ) {
+        return commerceService.getMemberOrder(memberNo(request), orderNumber);
+    }
+
+    private long memberNo(HttpServletRequest request) {
+        AuthenticatedFrontMember member = FrontMemberSession.read(request.getSession(false));
+        if (member == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        return member.memberId();
     }
 }

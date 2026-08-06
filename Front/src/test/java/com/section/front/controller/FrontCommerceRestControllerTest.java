@@ -4,12 +4,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
+import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
+import com.section.front.commerce.dto.FrontMemberOrderListResponse;
 import com.section.front.commerce.service.FrontCommerceService;
 import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.mock.web.MockHttpSession;
 
 import java.util.Map;
 
@@ -53,7 +56,7 @@ class FrontCommerceRestControllerTest {
 
     @Test
     void createsOrderFromCart() throws Exception {
-        given(commerceService.createOrder(eq("1234567890abcdef"), any()))
+        given(commerceService.createOrder(eq("1234567890abcdef"), any(), any()))
                 .willReturn(new FrontOrderCreateResponse(7L, "GS202607250001", 139000, "ORDERED"));
         Map<String, String> request = Map.of(
                 "buyerName", "홍길동",
@@ -109,5 +112,24 @@ class FrontCommerceRestControllerTest {
                 .andExpect(jsonPath("$.statusLabel").value("주문 접수"));
 
         verify(orderLookupRateLimiter).checkAndRecord("192.0.2.10");
+    }
+
+    @Test
+    void returnsOnlyTheAuthenticatedMembersOrderPage() throws Exception {
+        given(commerceService.getMemberOrders(7L, 0)).willReturn(new FrontMemberOrderListResponse(
+                java.util.List.of(new FrontMemberOrderItemResponse(
+                        "GS20260806120000001A", "테스트 상품", 1, 99000, "PAID", "결제 확인", "2026.08.06 12:00"
+                )), 0, 10, 1, 1, false
+        ));
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("frontMemberNo", 7L);
+        session.setAttribute("frontMemberEmail", "member@example.com");
+
+        mockMvc.perform(get("/api/front/member/orders").session(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].orderNumber").value("GS20260806120000001A"))
+                .andExpect(jsonPath("$.items[0].statusLabel").value("결제 확인"));
+
+        verify(commerceService).getMemberOrders(7L, 0);
     }
 }

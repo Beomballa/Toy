@@ -108,6 +108,7 @@ MIGRATIONS=(
   "2026072801|shared request rate limit|db/request_rate_limit_bucket.sql"
   "2026080401|customer authentication constraints|db/front_auth.sql"
   "2026080501|customer product activity|db/front_member_product_activity.sql"
+  "2026080601|customer order history|db/front_member_order.sql"
 )
 
 for migration in "${MIGRATIONS[@]}"; do

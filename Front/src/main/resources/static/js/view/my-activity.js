@@ -19,6 +19,8 @@
         toast: document.getElementById("myToast")
     };
     let toastTimer;
+    let memberOrderPage = 0;
+    let memberOrdersLoaded = false;
 
     function read(tab = state.tab) {
         try {
@@ -88,6 +90,38 @@
     function toast(message) {
         el.toast.textContent = message; el.toast.hidden = false; clearTimeout(toastTimer);
         toastTimer = setTimeout(() => { el.toast.hidden = true; }, 2400);
+    }
+    async function loadMemberOrders(reset = false) {
+        const target = document.getElementById("memberOrdersList");
+        const moreButton = document.getElementById("memberOrdersMoreButton");
+        if (reset) { memberOrderPage = 0; memberOrdersLoaded = false; target.replaceChildren(); }
+        if (memberOrdersLoaded && !reset) return;
+        moreButton.disabled = true;
+        try {
+            const response = await fetch(`/api/front/member/orders?page=${memberOrderPage}`, { headers: { Accept: "application/json" } });
+            if (response.status === 401) {
+                target.innerHTML = '<p class="my-order__empty">로그인 후 주문 내역을 확인할 수 있습니다. <a href="/front/login">로그인</a></p>';
+                moreButton.hidden = true;
+                memberOrdersLoaded = true;
+                return;
+            }
+            if (!response.ok) throw new Error("주문 내역을 불러오지 못했습니다.");
+            const payload = await response.json();
+            const orders = Array.isArray(payload.items) ? payload.items : [];
+            if (!orders.length && memberOrderPage === 0) {
+                target.innerHTML = '<p class="my-order__empty">최근 주문이 없습니다. 상품을 둘러보고 첫 주문을 시작해보세요.</p>';
+            } else {
+                target.insertAdjacentHTML("beforeend", orders.map(order => `<a class="my-order" href="/front/orders/${encodeURIComponent(order.orderNumber)}?member=true"><span class="my-order__copy"><strong>${safe(order.productName)}</strong><span>${safe(order.orderedAt)} · ${Math.max(0, Number(order.itemCount) || 0)}개 상품</span></span><b class="my-order__amount">${price(order.totalAmount)}</b><em class="my-order__status">${safe(order.statusLabel)}</em></a>`).join(""));
+            }
+            memberOrderPage += 1;
+            memberOrdersLoaded = !payload.hasNext;
+            moreButton.hidden = memberOrdersLoaded;
+        } catch (_) {
+            if (!target.children.length) target.innerHTML = '<p class="my-order__empty">주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
+            toast("주문 내역을 불러오지 못했습니다.");
+        } finally {
+            moreButton.disabled = false;
+        }
     }
     function filtered() {
         const keyword = state.keyword.toLowerCase();
@@ -210,8 +244,10 @@
     document.getElementById("myResetAllButton").addEventListener("click",()=>{if(confirm("모든 쇼핑 활동을 초기화할까요?"))resetAllActivity();});
     document.getElementById("myExportButton").addEventListener("click",downloadCsv);
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
+    document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{if(event.key==="/"&&document.activeElement!==el.search){event.preventDefault();el.search.focus();}if(event.key==="Escape"&&state.keyword){el.search.value="";state.keyword="";render();}});
     render();
+    loadMemberOrders();
 })();

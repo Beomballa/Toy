@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY 쇼핑 활동 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/my-activity.css?v=20260726.2">
+    <link rel="stylesheet" href="/css/my-activity.css?v=20260806.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260804.1">
 </head>
 <body class="storefront-page">
@@ -15,6 +15,11 @@
     <section class="my-hero">
         <div><p>Personal Shopping Desk</p><h1>MY 쇼핑 활동</h1><span>최근 확인하고 저장한 상품을 한곳에서 정리하고 비교하세요.</span></div>
         <dl aria-label="쇼핑 활동 요약"><div><dt>전체</dt><dd id="myTotalCount">0</dd></div><div><dt>평균가</dt><dd id="myAveragePrice">0원</dd></div><div><dt>재고주의</dt><dd id="myLowStockCount">0</dd></div><div><dt>총재고</dt><dd id="myTotalStock">0</dd></div></dl>
+    </section>
+    <section class="my-orders" id="memberOrders" aria-labelledby="memberOrdersTitle">
+        <div class="my-orders__head"><div><p>Order History</p><h2 id="memberOrdersTitle">최근 주문</h2></div><a href="/front/orders">주문 조회</a></div>
+        <div class="my-orders__list" id="memberOrdersList" aria-live="polite"></div>
+        <button class="my-orders__more" id="memberOrdersMoreButton" type="button" hidden>주문 더보기</button>
     </section>
     <nav class="my-tabs" aria-label="쇼핑 활동 분류">
         <button type="button" data-tab="recent">최근 본 상품 <span id="myRecentCount">0</span></button>
@@ -40,6 +45,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-    <script src="/js/view/my-activity.js?v=20260803.1"></script>
+    <script src="/js/view/my-activity.js?v=20260806.1"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import com.section.common.commerce.entity.OrderItem;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.entity.ProductOption;
+import com.section.common.system.entity.Account;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
@@ -15,12 +16,15 @@ import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.OrderStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.repository.AccountRepository;
 import com.section.front.commerce.dto.FrontCartItemRequest;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -47,6 +51,7 @@ class FrontCommerceServiceTest {
     private final OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
     private final OrderDeliveryRepository orderDeliveryRepository = mock(OrderDeliveryRepository.class);
     private final OrderStatusHistoryRepository orderStatusHistoryRepository = mock(OrderStatusHistoryRepository.class);
+    private final AccountRepository accountRepository = mock(AccountRepository.class);
 
     private FrontCommerceService commerceService;
 
@@ -60,7 +65,8 @@ class FrontCommerceServiceTest {
                 orderRepository,
                 orderItemRepository,
                 orderDeliveryRepository,
-                orderStatusHistoryRepository
+                orderStatusHistoryRepository,
+                accountRepository
         );
     }
 
@@ -241,6 +247,41 @@ class FrontCommerceServiceTest {
                 .hasMessageContaining("연락처");
 
         verify(orderRepository, never()).findByOrderNum(any());
+    }
+
+    @Test
+    void returnsMemberOrdersWithOneBatchItemQuery() {
+        Account account = mock(Account.class);
+        Orders firstOrder = mock(Orders.class);
+        Orders secondOrder = mock(Orders.class);
+        OrderItem firstItem = mock(OrderItem.class);
+        OrderItem secondItem = mock(OrderItem.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(firstOrder.getId()).willReturn(22L);
+        given(firstOrder.getOrderNum()).willReturn("GS20260806120000001A");
+        given(firstOrder.getStatus()).willReturn("PAID");
+        given(firstOrder.getTotalAmount()).willReturn(120000);
+        given(firstOrder.getCrtDtm()).willReturn(LocalDateTime.of(2026, 8, 6, 12, 0));
+        given(secondOrder.getId()).willReturn(21L);
+        given(secondOrder.getOrderNum()).willReturn("GS20260806110000001A");
+        given(secondOrder.getStatus()).willReturn("ORDERED");
+        given(secondOrder.getTotalAmount()).willReturn(70000);
+        given(secondOrder.getCrtDtm()).willReturn(LocalDateTime.of(2026, 8, 6, 11, 0));
+        given(orderRepository.findByMemberNoOrderByIdDesc(7L, PageRequest.of(0, 10)))
+                .willReturn(new PageImpl<>(List.of(firstOrder, secondOrder), PageRequest.of(0, 10), 2));
+        given(firstItem.getOrderNo()).willReturn(22L);
+        given(firstItem.getProductName()).willReturn("첫 번째 상품");
+        given(secondItem.getOrderNo()).willReturn(21L);
+        given(secondItem.getProductName()).willReturn("두 번째 상품");
+        given(orderItemRepository.findAllByOrderNoInOrderByOrderNoAscIdAsc(List.of(22L, 21L)))
+                .willReturn(List.of(firstItem, secondItem));
+
+        var response = commerceService.getMemberOrders(7L, 0);
+
+        assertThat(response.totalElements()).isEqualTo(2);
+        assertThat(response.items()).extracting("productName").containsExactly("첫 번째 상품", "두 번째 상품");
+        verify(orderItemRepository).findAllByOrderNoInOrderByOrderNoAscIdAsc(List.of(22L, 21L));
     }
 
     @Test

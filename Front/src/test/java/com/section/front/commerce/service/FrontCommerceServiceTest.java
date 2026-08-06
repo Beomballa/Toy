@@ -309,6 +309,47 @@ class FrontCommerceServiceTest {
     }
 
     @Test
+    void reordersOnlyPurchasableItemsIntoTheCurrentCart() {
+        Account account = mock(Account.class);
+        Orders order = mock(Orders.class);
+        FrontCart cart = mock(FrontCart.class);
+        OrderItem purchasable = mock(OrderItem.class);
+        OrderItem soldOut = mock(OrderItem.class);
+        Product product = mock(Product.class);
+        ProductOption option = mock(ProductOption.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(order.getId()).willReturn(9L);
+        given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(cart.getId()).willReturn(15L);
+        given(cart.getStatus()).willReturn("ACTIVE");
+        given(cartRepository.findByCartTokenForUpdate("1234567890abcdef")).willReturn(Optional.of(cart));
+        given(purchasable.getProductNo()).willReturn(2L);
+        given(purchasable.getOptionNo()).willReturn(20L);
+        given(purchasable.getCount()).willReturn(1);
+        given(purchasable.getProductName()).willReturn("구매 가능 상품");
+        given(soldOut.getProductNo()).willReturn(3L);
+        given(soldOut.getOptionNo()).willReturn(30L);
+        given(soldOut.getCount()).willReturn(2);
+        given(soldOut.getProductName()).willReturn("품절 상품");
+        given(orderItemRepository.findByOrderNo(9L)).willReturn(List.of(purchasable, soldOut));
+        given(product.getId()).willReturn(2L);
+        given(product.isActive()).willReturn(true);
+        given(productRepository.findAllById(List.of(2L, 3L))).willReturn(List.of(product));
+        given(option.getId()).willReturn(20L);
+        given(option.getProductNo()).willReturn(2L);
+        given(option.getStockCnt()).willReturn(5);
+        given(productOptionRepository.findAllByIdForUpdate(List.of(20L, 30L))).willReturn(List.of(option));
+        given(cartItemRepository.findAllByCartNoOrderByIdDesc(15L)).willReturn(List.of());
+
+        var response = commerceService.reorderMemberOrder(7L, ORDER_NUMBER, "1234567890abcdef");
+
+        assertThat(response.addedCount()).isEqualTo(1);
+        assertThat(response.unavailableProducts()).containsExactly("품절 상품");
+        verify(cartItemRepository).save(any(FrontCartItem.class));
+    }
+
+    @Test
     void clearsCartWhileHoldingTheCartLock() {
         FrontCart cart = mock(FrontCart.class);
         given(cart.getId()).willReturn(72L);

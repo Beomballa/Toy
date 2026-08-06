@@ -14,6 +14,7 @@ import com.section.common.commerce.repository.OrderDeliveryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.OrderStatusHistoryRepository;
+import com.section.common.commerce.repository.MemberOrderStatusCount;
 import com.section.common.commerce.repository.ProductOptionRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.Account;
@@ -28,6 +29,7 @@ import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
+import com.section.front.commerce.dto.FrontMemberOrderStatusSummary;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +60,9 @@ public class FrontCommerceService {
     private static final int MAX_POSTAL_CODE_LENGTH = 10;
     private static final int MAX_ADDRESS_LENGTH = 200;
     private static final int MEMBER_ORDER_PAGE_SIZE = 10;
+    private static final List<String> MEMBER_ORDER_STATUSES = List.of(
+            "ORDERED", "PAID", "PREPARING", "SHIPPED", "DELIVERED", "CANCELLED"
+    );
 
     private final FrontCartRepository cartRepository;
     private final FrontCartItemRepository cartItemRepository;
@@ -228,11 +233,20 @@ public class FrontCommerceService {
 
     @Transactional(readOnly = true)
     public FrontMemberOrderListResponse getMemberOrders(long memberNo, int page) {
+        return getMemberOrders(memberNo, page, "ALL");
+    }
+
+    @Transactional(readOnly = true)
+    public FrontMemberOrderListResponse getMemberOrders(long memberNo, int page, String rawStatus) {
         requireAvailableMember(memberNo);
         if (page < 0) {
             throw new IllegalArgumentException("페이지 정보가 올바르지 않습니다.");
         }
-        Page<Orders> orders = orderRepository.findByMemberNoOrderByIdDesc(memberNo, PageRequest.of(page, MEMBER_ORDER_PAGE_SIZE));
+        String status = normalizeMemberOrderStatus(rawStatus);
+        PageRequest pageable = PageRequest.of(page, MEMBER_ORDER_PAGE_SIZE);
+        Page<Orders> orders = "ALL".equals(status)
+                ? orderRepository.findByMemberNoOrderByIdDesc(memberNo, pageable)
+                : orderRepository.findByMemberNoAndStatusOrderByIdDesc(memberNo, status, pageable);
         List<OrderItem> orderItems = orders.isEmpty()
                 ? List.of()
                 : orderItemRepository.findAllByOrderNoInOrderByOrderNoAscIdAsc(
@@ -251,7 +265,8 @@ public class FrontCommerceService {
                 })
                 .toList();
         return new FrontMemberOrderListResponse(
-                items, orders.getNumber(), orders.getSize(), orders.getTotalPages(), orders.getTotalElements(), orders.hasNext()
+                items, orders.getNumber(), orders.getSize(), orders.getTotalPages(), orders.getTotalElements(), orders.hasNext(),
+                status, statusSummaries(memberNo)
         );
     }
 
@@ -388,6 +403,22 @@ public class FrontCommerceService {
             throw new IllegalArgumentException("취소 사유는 200자 이하여야 합니다.");
         }
         return normalized;
+    }
+
+    private String normalizeMemberOrderStatus(String rawStatus) {
+        String status = rawStatus == null || rawStatus.isBlank() ? "ALL" : rawStatus.trim().toUpperCase();
+        if (!"ALL".equals(status) && !MEMBER_ORDER_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("주문 상태 조건이 올바르지 않습니다.");
+        }
+        return status;
+    }
+
+    private List<FrontMemberOrderStatusSummary> statusSummaries(long memberNo) {
+        Map<String, Long> counts = orderRepository.countByMemberNoGroupByStatus(memberNo).stream()
+                .collect(Collectors.toMap(MemberOrderStatusCount::getStatus, MemberOrderStatusCount::getCount));
+        return MEMBER_ORDER_STATUSES.stream()
+                .map(status -> new FrontMemberOrderStatusSummary(status, statusLabel(status), counts.getOrDefault(status, 0L)))
+                .toList();
     }
 
     private FrontCartResponse toCartResponse(FrontCart cart) {

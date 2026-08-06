@@ -116,10 +116,10 @@ class FrontCommerceRestControllerTest {
 
     @Test
     void returnsOnlyTheAuthenticatedMembersOrderPage() throws Exception {
-        given(commerceService.getMemberOrders(7L, 0)).willReturn(new FrontMemberOrderListResponse(
+        given(commerceService.getMemberOrders(7L, 0, "ALL")).willReturn(new FrontMemberOrderListResponse(
                 java.util.List.of(new FrontMemberOrderItemResponse(
                         "GS20260806120000001A", "테스트 상품", 1, 99000, "PAID", "결제 확인", "2026.08.06 12:00"
-                )), 0, 10, 1, 1, false
+                )), 0, 10, 1, 1, false, "ALL", java.util.List.of()
         ));
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("frontMemberNo", 7L);
@@ -130,6 +130,6 @@ class FrontCommerceRestControllerTest {
                 .andExpect(jsonPath("$.items[0].orderNumber").value("GS20260806120000001A"))
                 .andExpect(jsonPath("$.items[0].statusLabel").value("결제 확인"));
 
-        verify(commerceService).getMemberOrders(7L, 0);
+        verify(commerceService).getMemberOrders(7L, 0, "ALL");
     }
 }

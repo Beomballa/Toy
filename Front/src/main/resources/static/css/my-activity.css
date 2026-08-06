@@ -28,6 +28,12 @@ button:disabled { cursor:not-allowed; opacity:.35; }
 .my-orders__head h2 { margin:0; font-size:18px; letter-spacing:-.04em; }
 .my-orders__head a,.my-orders__more { min-height:34px; padding:0 12px; border:1px solid #ddd; border-radius:7px; background:#fff; font-size:11px; }
 .my-orders__head a { display:inline-flex; align-items:center; }
+.my-orders__tools { display:flex; align-items:center; gap:7px; }
+.my-orders__tools label { color:var(--muted); font-size:10px; font-weight:700; }
+.my-orders__tools select { height:34px; padding:0 8px; border:1px solid #ddd; border-radius:7px; background:#fff; font-size:11px; }
+.my-orders__summary { display:flex; gap:7px; margin-top:18px; overflow-x:auto; scrollbar-width:none; }
+.my-orders__summary button { flex:none; min-height:28px; padding:0 9px; border:1px solid var(--line); border-radius:999px; color:var(--muted); background:#fff; font-size:10px; cursor:pointer; }
+.my-orders__summary button.is-active { border-color:#222; color:#fff; background:#222; }
 .my-orders__list { margin-top:17px; border-top:1px solid var(--line); }
 .my-order { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:18px; align-items:center; padding:15px 0; border-bottom:1px solid var(--line); }
 .my-order__copy { min-width:0; }
@@ -94,6 +100,8 @@ button:disabled { cursor:not-allowed; opacity:.35; }
   .my-hero dl { grid-template-columns:repeat(2,1fr); gap:18px 0; margin-top:28px; }
   .my-tabs { overflow-x:auto; gap:20px; }
   .my-orders { margin-top:24px; padding:18px; }
+  .my-orders__head { align-items:flex-start; }
+  .my-orders__tools { align-items:flex-end; flex-direction:column; }
   .my-order { grid-template-columns:minmax(0,1fr) auto; gap:10px; }
   .my-order__status { grid-column:2; grid-row:1; }
   .my-order__amount { grid-column:1; grid-row:2; }

@@ -98,9 +98,10 @@ public class FrontCommerceRestController {
     @GetMapping("/member/orders")
     public FrontMemberOrderListResponse getMemberOrders(
             @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "ALL") String status,
             HttpServletRequest request
     ) {
-        return commerceService.getMemberOrders(memberNo(request), page);
+        return commerceService.getMemberOrders(memberNo(request), page, status);
     }
 
     @GetMapping("/member/orders/{orderNumber}")

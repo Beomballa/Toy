@@ -279,6 +279,7 @@ class FrontCommerceServiceTest {
         given(secondItem.getProductName()).willReturn("두 번째 상품");
         given(orderItemRepository.findAllByOrderNoInOrderByOrderNoAscIdAsc(List.of(22L, 21L)))
                 .willReturn(List.of(firstItem, secondItem));
+        given(orderRepository.countByMemberNoGroupByStatus(7L)).willReturn(List.of());
 
         var response = commerceService.getMemberOrders(7L, 0);
 

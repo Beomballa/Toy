@@ -8,6 +8,8 @@ public record FrontMemberOrderListResponse(
         int size,
         int totalPages,
         long totalElements,
-        boolean hasNext
+        boolean hasNext,
+        String selectedStatus,
+        java.util.List<FrontMemberOrderStatusSummary> statusSummaries
 ) {
 }

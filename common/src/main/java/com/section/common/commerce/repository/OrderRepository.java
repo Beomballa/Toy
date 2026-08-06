@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Orders, Long>, CustomOrderRepository {
     Optional<Orders> findByOrderNum(String orderNum);
@@ -17,6 +18,12 @@ public interface OrderRepository extends JpaRepository<Orders, Long>, CustomOrde
     Optional<Orders> findByOrderNumAndMemberNo(String orderNum, Long memberNo);
 
     Page<Orders> findByMemberNoOrderByIdDesc(Long memberNo, Pageable pageable);
+
+    Page<Orders> findByMemberNoAndStatusOrderByIdDesc(Long memberNo, String status, Pageable pageable);
+
+    @Query("SELECT orders.status AS status, COUNT(orders) AS count FROM Orders orders "
+            + "WHERE orders.memberNo = :memberNo GROUP BY orders.status")
+    List<MemberOrderStatusCount> countByMemberNoGroupByStatus(@Param("memberNo") Long memberNo);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Orders o WHERE o.id = :orderNo")

@@ -21,6 +21,8 @@
     let toastTimer;
     let memberOrderPage = 0;
     let memberOrdersLoaded = false;
+    let memberOrderStatus = "ALL";
+    let memberOrderSequence = 0;
 
     function read(tab = state.tab) {
         try {
@@ -94,11 +96,12 @@
     async function loadMemberOrders(reset = false) {
         const target = document.getElementById("memberOrdersList");
         const moreButton = document.getElementById("memberOrdersMoreButton");
-        if (reset) { memberOrderPage = 0; memberOrdersLoaded = false; target.replaceChildren(); }
+        if (reset) { memberOrderPage = 0; memberOrdersLoaded = false; memberOrderSequence += 1; target.replaceChildren(); }
         if (memberOrdersLoaded && !reset) return;
+        const requestSequence = memberOrderSequence;
         moreButton.disabled = true;
         try {
-            const response = await fetch(`/api/front/member/orders?page=${memberOrderPage}`, { headers: { Accept: "application/json" } });
+            const response = await fetch(`/api/front/member/orders?page=${memberOrderPage}&status=${encodeURIComponent(memberOrderStatus)}`, { headers: { Accept: "application/json" } });
             if (response.status === 401) {
                 target.innerHTML = '<p class="my-order__empty">로그인 후 주문 내역을 확인할 수 있습니다. <a href="/front/login">로그인</a></p>';
                 moreButton.hidden = true;
@@ -107,6 +110,8 @@
             }
             if (!response.ok) throw new Error("주문 내역을 불러오지 못했습니다.");
             const payload = await response.json();
+            if (requestSequence !== memberOrderSequence) return;
+            renderMemberOrderSummary(payload.statusSummaries);
             const orders = Array.isArray(payload.items) ? payload.items : [];
             if (!orders.length && memberOrderPage === 0) {
                 target.innerHTML = '<p class="my-order__empty">최근 주문이 없습니다. 상품을 둘러보고 첫 주문을 시작해보세요.</p>';
@@ -117,11 +122,18 @@
             memberOrdersLoaded = !payload.hasNext;
             moreButton.hidden = memberOrdersLoaded;
         } catch (_) {
+            if (requestSequence !== memberOrderSequence) return;
             if (!target.children.length) target.innerHTML = '<p class="my-order__empty">주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
             toast("주문 내역을 불러오지 못했습니다.");
         } finally {
             moreButton.disabled = false;
         }
+    }
+    function renderMemberOrderSummary(summaries) {
+        const target = document.getElementById("memberOrdersSummary");
+        const rows = Array.isArray(summaries) ? summaries : [];
+        const total = rows.reduce((sum, item) => sum + Math.max(0, Number(item?.count) || 0), 0);
+        target.innerHTML = [`<button type="button" data-member-order-status="ALL" class="${memberOrderStatus === "ALL" ? "is-active" : ""}">전체 ${total}</button>`, ...rows.map(item => `<button type="button" data-member-order-status="${safe(item.status)}" class="${memberOrderStatus === item.status ? "is-active" : ""}">${safe(item.label)} ${Math.max(0, Number(item.count) || 0)}</button>`)].join("");
     }
     function filtered() {
         const keyword = state.keyword.toLowerCase();
@@ -245,6 +257,17 @@
     document.getElementById("myExportButton").addEventListener("click",downloadCsv);
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
+    document.getElementById("memberOrderStatusFilter").addEventListener("change", event => {
+        memberOrderStatus = event.target.value;
+        loadMemberOrders(true);
+    });
+    document.getElementById("memberOrdersSummary").addEventListener("click", event => {
+        const button = event.target.closest("[data-member-order-status]");
+        if (!button) return;
+        memberOrderStatus = button.dataset.memberOrderStatus;
+        document.getElementById("memberOrderStatusFilter").value = memberOrderStatus;
+        loadMemberOrders(true);
+    });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{if(event.key==="/"&&document.activeElement!==el.search){event.preventDefault();el.search.focus();}if(event.key==="Escape"&&state.keyword){el.search.value="";state.keyword="";render();}});

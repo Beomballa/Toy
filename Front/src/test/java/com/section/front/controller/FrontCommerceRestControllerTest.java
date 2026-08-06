@@ -6,6 +6,7 @@ import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
+import com.section.front.commerce.dto.FrontOrderReorderResponse;
 import com.section.front.commerce.service.FrontCommerceService;
 import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
 import org.junit.jupiter.api.Test;
@@ -131,5 +132,21 @@ class FrontCommerceRestControllerTest {
                 .andExpect(jsonPath("$.items[0].statusLabel").value("결제 확인"));
 
         verify(commerceService).getMemberOrders(7L, 0, "ALL");
+    }
+
+    @Test
+    void reordersAnAuthenticatedMembersOrder() throws Exception {
+        given(commerceService.reorderMemberOrder(7L, "GS20260806120000001A", "1234567890abcdef"))
+                .willReturn(new FrontOrderReorderResponse(FrontCartResponse.empty(), 1, java.util.List.of()));
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("frontMemberNo", 7L);
+
+        mockMvc.perform(post("/api/front/member/orders/GS20260806120000001A/reorder")
+                        .session(session)
+                        .header("X-Cart-Token", "1234567890abcdef"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addedCount").value(1));
+
+        verify(commerceService).reorderMemberOrder(7L, "GS20260806120000001A", "1234567890abcdef");
     }
 }

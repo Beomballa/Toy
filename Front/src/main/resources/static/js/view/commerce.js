@@ -20,6 +20,9 @@
         orderLink: document.getElementById("completedOrderLink"),
         deliveryPreset: document.getElementById("deliveryRequestPreset"),
         savedAddress: document.getElementById("savedDeliveryAddress"),
+        saveAddress: document.getElementById("saveDeliveryAddressCheck"),
+        addressName: document.getElementById("deliveryAddressName"),
+        addressNameLabel: document.getElementById("deliveryAddressNameLabel"),
         toast: document.getElementById("commerceToast")
     };
     let cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
@@ -336,6 +339,10 @@
         } catch (_) { /* 비회원과 네트워크 실패는 직접 입력을 유지한다. */ }
     }
     function applySavedAddress(address) { ["recipientName","recipientPhone","postalCode","address1","address2"].forEach(name => { const input=elements.form?.elements[name]; if (input) input.value=address[name] || ""; }); }
+    async function saveDeliveryAddress(body) {
+        if (!elements.saveAddress?.checked || !elements.addressName?.value.trim()) return;
+        await fetch("/api/front/member/delivery-addresses", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({addressName:elements.addressName.value.trim(),recipientName:body.recipientName,recipientPhone:body.recipientPhone,postalCode:body.postalCode,address1:body.address1,address2:body.address2,defaultAddress:!savedAddresses.length}) });
+    }
 
     elements.form?.querySelectorAll('input[inputmode="tel"]').forEach((input) => {
         input.addEventListener("input", () => {
@@ -363,6 +370,7 @@
         input.focus();
     });
     elements.savedAddress?.addEventListener("change", () => { const address=savedAddresses.find(item=>String(item.id)===elements.savedAddress.value); if(address) applySavedAddress(address); });
+    elements.saveAddress?.addEventListener("change", () => { elements.addressNameLabel.hidden=!elements.saveAddress.checked; if(elements.saveAddress.checked) elements.addressName.focus(); });
 
     elements.form?.addEventListener("submit", async (event) => {
         event.preventDefault();
@@ -385,7 +393,9 @@
             }), expectedTotalAmount);
             if (!order) throw new Error("주문 완료 응답이 올바르지 않습니다.");
             const buyerPhone = normalizedBody.buyerPhone;
+            const saveAddressPromise = saveDeliveryAddress(normalizedBody);
             showCompletedOrder(order, buyerPhone);
+            saveAddressPromise.catch(() => showToast("주문은 완료됐지만 배송지를 저장하지 못했습니다."));
         } catch (error) {
             showToast(error.message);
             elements.submit.disabled = false;

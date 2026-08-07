@@ -160,6 +160,9 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .same-buyer { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 18px; font-size: 12px; }
 .saved-address { display:grid; gap:7px; max-width:300px; margin-bottom:14px; color:#555; font-size:12px; font-weight:700; }
 .saved-address select { height:42px; padding:0 10px; border:1px solid #ddd; border-radius:8px; background:#fff; font:inherit; }
+.save-address { display:flex; align-items:center; gap:7px; margin:2px 0; font-size:12px; }
+.delivery-address-name { display:grid; gap:7px; max-width:300px; color:#555; font-size:12px; font-weight:700; }
+.delivery-address-name input { height:42px; padding:0 10px; border:1px solid #ddd; border-radius:8px; font:inherit; }
 .checkout-privacy { margin: -16px 0 0; padding: 14px; border-radius: 8px; color: var(--muted); background: var(--soft); font-size: 11px; line-height: 1.5; }
 
 .order-complete { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(255, 255, 255, .96); }

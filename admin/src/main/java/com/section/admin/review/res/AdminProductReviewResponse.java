@@ -16,7 +16,14 @@ public record AdminProductReviewResponse(
         java.util.List<StatusHistoryDetail> statusHistories,
         String createdAt
 ) {
-    public record ReportDetail(String reason, String detail, String statusLabel, String createdAt) {
+    public record ReportDetail(
+            String reason,
+            String detail,
+            String statusLabel,
+            String resolvedBy,
+            String resolvedAt,
+            String createdAt
+    ) {
     }
 
     public record StatusHistoryDetail(String actionLabel, String beforeStatusLabel, String afterStatusLabel, String actorName, String createdAt) {

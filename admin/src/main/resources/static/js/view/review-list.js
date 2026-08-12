@@ -30,7 +30,7 @@
             if (!reviews.length && state.page === 0) {
                 body.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">조건에 맞는 후기가 없습니다.</td></tr>';
             } else {
-                body.insertAdjacentHTML("beforeend", reviews.map(review => `<tr><td class="ps-4"><strong>${escapeHtml(review.brandName)}</strong><div class="small text-muted text-truncate admin-review-product-name">${escapeHtml(review.productName)}</div></td><td>${escapeHtml(review.reviewerName)}</td><td>${"★".repeat(Math.min(5, Math.max(1, Number(review.rating) || 1)))}</td><td class="admin-review-content">${escapeHtml(review.content)}</td><td>${Number(review.reportCount) > 0 ? `<button class="btn btn-sm ${Number(review.pendingReportCount) > 0 ? "btn-outline-danger" : "btn-outline-secondary"}" type="button" data-review-reports="${Number(review.reviewId)}">${Number(review.pendingReportCount) > 0 ? `대기 ${Number(review.pendingReportCount)} · ` : ""}${Number(review.reportCount)}건</button>${detailsTemplate("report", review)}` : '<span class="text-muted small">-</span>'}</td><td>${Array.isArray(review.statusHistories) && review.statusHistories.length > 0 ? `<button class="btn btn-sm btn-outline-primary" type="button" data-review-histories="${Number(review.reviewId)}">${Number(review.statusHistories.length)}건</button>${detailsTemplate("history", review)}` : '<span class="text-muted small">-</span>'}</td><td class="small text-muted">${escapeHtml(review.createdAt)}</td><td><span class="badge ${review.status === "HIDDEN" ? "text-bg-secondary" : "text-bg-success"}">${statusLabel(review.status)}</span></td><td class="text-end pe-4"><button class="btn btn-sm ${review.status === "HIDDEN" ? "btn-outline-success" : "btn-outline-secondary"}" type="button" data-review-id="${Number(review.reviewId)}" data-next-status="${review.status === "HIDDEN" ? "VISIBLE" : "HIDDEN"}">${review.status === "HIDDEN" ? "복구" : "숨김"}</button></td></tr>`).join(""));
+                body.insertAdjacentHTML("beforeend", reviews.map(review => `<tr><td class="ps-4"><strong>${escapeHtml(review.brandName)}</strong><div class="small text-muted text-truncate admin-review-product-name">${escapeHtml(review.productName)}</div></td><td>${escapeHtml(review.reviewerName)}</td><td>${"★".repeat(Math.min(5, Math.max(1, Number(review.rating) || 1)))}</td><td class="admin-review-content">${escapeHtml(review.content)}</td><td>${Number(review.reportCount) > 0 ? `<button class="btn btn-sm ${Number(review.pendingReportCount) > 0 ? "btn-outline-danger" : "btn-outline-secondary"}" type="button" data-review-reports="${Number(review.reviewId)}">${Number(review.pendingReportCount) > 0 ? `대기 ${Number(review.pendingReportCount)} · ` : ""}${Number(review.reportCount)}건</button>${detailsTemplate("report", review)}` : '<span class="text-muted small">-</span>'}</td><td>${Array.isArray(review.statusHistories) && review.statusHistories.length > 0 ? `<button class="btn btn-sm btn-outline-primary" type="button" data-review-histories="${Number(review.reviewId)}">${Number(review.statusHistories.length)}건</button>${detailsTemplate("history", review)}` : '<span class="text-muted small">-</span>'}</td><td class="small text-muted">${escapeHtml(review.createdAt)}</td><td><span class="badge ${review.status === "HIDDEN" ? "text-bg-secondary" : "text-bg-success"}">${statusLabel(review.status)}</span></td><td class="text-end pe-4"><div class="d-inline-flex flex-wrap justify-content-end gap-1">${Number(review.pendingReportCount) > 0 ? `<button class="btn btn-sm btn-outline-warning" type="button" data-resolve-review-reports="${Number(review.reviewId)}">신고 완료</button>` : ""}<button class="btn btn-sm ${review.status === "HIDDEN" ? "btn-outline-success" : "btn-outline-secondary"}" type="button" data-review-id="${Number(review.reviewId)}" data-next-status="${review.status === "HIDDEN" ? "VISIBLE" : "HIDDEN"}">${review.status === "HIDDEN" ? "복구" : "숨김"}</button></div></td></tr>`).join(""));
             }
             state.page += 1;
             state.hasNext = payload.hasNext === true;
@@ -84,10 +84,24 @@
             const raw = body.querySelector(`[data-review-report-detail="${reportButton.dataset.reviewReports}"]`)?.textContent || "[]";
             try {
                 const reports = JSON.parse(raw);
-                const detail = reports.map((report, index) => `${index + 1}. [${report.statusLabel}] ${report.reason}${report.detail ? ` - ${report.detail}` : ""} (${report.createdAt})`).join("\n") || "신고 상세가 없습니다.";
+                const detail = reports.map((report, index) => `${index + 1}. [${report.statusLabel}] ${report.reason}${report.detail ? ` - ${report.detail}` : ""} (${report.createdAt})${report.resolvedAt !== "-" ? ` · ${report.resolvedBy} 처리 ${report.resolvedAt}` : ""}`).join("\n") || "신고 상세가 없습니다.";
                 await CommonJS.alert(detail, "신고 사유", "info");
             } catch (_) {
                 await CommonJS.alert("신고 사유를 읽지 못했습니다.", "오류", "error");
+            }
+            return;
+        }
+        const resolveButton = event.target.closest("[data-resolve-review-reports]");
+        if (resolveButton) {
+            if (!await CommonJS.confirm("후기를 유지한 채 대기 신고를 완료 처리할까요?", "신고 완료 처리")) return;
+            resolveButton.disabled = true;
+            try {
+                const response = await fetch(`/api/admin/reviews/${encodeURIComponent(resolveButton.dataset.resolveReviewReports)}/reports/resolve`, { method: "PATCH" });
+                if (!response.ok) throw new Error("신고 완료 처리를 하지 못했습니다.");
+                load(true);
+            } catch (error) {
+                resolveButton.disabled = false;
+                await CommonJS.alert(error.message, "오류", "error");
             }
             return;
         }

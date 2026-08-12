@@ -75,9 +75,12 @@ public class AdminProductReviewService {
         Map<Long, List<FrontProductReviewStatusHistory>> statusHistories = reviewIds.isEmpty() ? Map.of()
                 : statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(reviewIds).stream()
                 .collect(Collectors.groupingBy(FrontProductReviewStatusHistory::getReviewNo));
-        List<Long> actorIds = statusHistories.values().stream()
-                .flatMap(List::stream)
-                .map(FrontProductReviewStatusHistory::getCrtNo)
+        List<Long> actorIds = java.util.stream.Stream.concat(
+                        statusHistories.values().stream().flatMap(List::stream).map(FrontProductReviewStatusHistory::getCrtNo),
+                        reports.values().stream().flatMap(List::stream)
+                                .filter(FrontProductReviewReport::isResolved)
+                                .map(FrontProductReviewReport::getUptNo)
+                )
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
@@ -118,13 +121,19 @@ public class AdminProductReviewService {
             return;
         }
         String beforeStatus = review.getStatus();
-        List<FrontProductReviewReport> pendingReports = reportRepository.findAllByReviewNoAndStatus(
-                reviewId,
-                FrontProductReviewReportStatus.PENDING.name()
-        );
         review.changeStatus(status);
-        pendingReports.forEach(FrontProductReviewReport::resolve);
+        resolvePendingReports(reviewId);
         statusHistoryRepository.save(FrontProductReviewStatusHistory.create(reviewId, beforeStatus, status.name()));
+    }
+
+    @Transactional
+    public int resolveReports(long reviewId) {
+        if (reviewId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후기 번호가 올바르지 않습니다.");
+        }
+        reviewRepository.findByIdForUpdate(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        return resolvePendingReports(reviewId);
     }
 
     private FrontProductReviewStatus parseStatus(String rawStatus) {
@@ -163,6 +172,8 @@ public class AdminProductReviewService {
                 pendingReportCount,
                 reports.stream().map(report -> new AdminProductReviewResponse.ReportDetail(
                         report.getReason(), report.getDetail(), reportStatusLabel(report.getStatus()),
+                        report.isResolved() ? adminNames.getOrDefault(report.getUptNo(), report.getUptNo() == null ? "-" : "관리자#" + report.getUptNo()) : "-",
+                        report.isResolved() && report.getUptDtm() != null ? report.getUptDtm().format(DATE_TIME_FORMATTER) : "-",
                         report.getCrtDtm() == null ? "-" : report.getCrtDtm().format(DATE_TIME_FORMATTER)
                 )).toList(),
                 statusHistories.stream().map(history -> new AdminProductReviewResponse.StatusHistoryDetail(
@@ -182,5 +193,14 @@ public class AdminProductReviewService {
 
     private String reportStatusLabel(String status) {
         return FrontProductReviewReportStatus.RESOLVED.name().equals(status) ? "처리 완료" : "처리 대기";
+    }
+
+    private int resolvePendingReports(long reviewId) {
+        List<FrontProductReviewReport> pendingReports = reportRepository.findAllByReviewNoAndStatus(
+                reviewId,
+                FrontProductReviewReportStatus.PENDING.name()
+        );
+        pendingReports.forEach(FrontProductReviewReport::resolve);
+        return pendingReports.size();
     }
 }

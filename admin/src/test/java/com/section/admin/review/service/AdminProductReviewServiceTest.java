@@ -21,6 +21,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -60,6 +61,7 @@ class AdminProductReviewServiceTest {
     @Test
     void includesStatusHistoryWithTheProcessingAdminInTheReviewList() {
         FrontProductReview review = mock(FrontProductReview.class);
+        FrontProductReviewReport report = mock(FrontProductReviewReport.class);
         FrontProductReviewStatusHistory history = mock(FrontProductReviewStatusHistory.class);
         Product product = mock(Product.class);
         Brand brand = mock(Brand.class);
@@ -75,7 +77,15 @@ class AdminProductReviewServiceTest {
         given(reportRepository.countByReviewNoIn(List.of(12L))).willReturn(List.of());
         given(reportRepository.countByReviewNoInAndStatus(List.of(12L), FrontProductReviewReportStatus.PENDING.name()))
                 .willReturn(List.of());
-        given(reportRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of());
+        given(reportRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of(report));
+        given(report.getReviewNo()).willReturn(12L);
+        given(report.getStatus()).willReturn(FrontProductReviewReportStatus.RESOLVED.name());
+        given(report.isResolved()).willReturn(true);
+        given(report.getUptNo()).willReturn(3L);
+        given(report.getUptDtm()).willReturn(LocalDateTime.of(2026, 8, 12, 12, 30));
+        given(report.getReason()).willReturn("광고");
+        given(report.getDetail()).willReturn(null);
+        given(report.getCrtDtm()).willReturn(LocalDateTime.of(2026, 8, 12, 12, 0));
         given(statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of(history));
         given(history.getReviewNo()).willReturn(12L);
         given(history.getCrtNo()).willReturn(3L);
@@ -100,6 +110,11 @@ class AdminProductReviewServiceTest {
             assertThat(item.beforeStatusLabel()).isEqualTo("노출");
             assertThat(item.afterStatusLabel()).isEqualTo("숨김");
             assertThat(item.actorName()).isEqualTo("운영자");
+        });
+        assertThat(response.reviews().get(0).reports()).singleElement().satisfies(item -> {
+            assertThat(item.statusLabel()).isEqualTo("처리 완료");
+            assertThat(item.resolvedBy()).isEqualTo("운영자");
+            assertThat(item.resolvedAt()).isEqualTo("2026-08-12 12:30");
         });
     }
 
@@ -164,5 +179,35 @@ class AdminProductReviewServiceTest {
         verify(statusHistoryRepository, never()).save(any());
         verify(review, never()).changeStatus(any());
         verify(reportRepository, never()).findAllByReviewNoAndStatus(any(Long.class), any(String.class));
+    }
+
+    @Test
+    void resolvesPendingReportsWithoutChangingReviewVisibility() {
+        FrontProductReview review = mock(FrontProductReview.class);
+        FrontProductReviewReport pendingReport = mock(FrontProductReviewReport.class);
+        given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));
+        given(reportRepository.findAllByReviewNoAndStatus(12L, FrontProductReviewReportStatus.PENDING.name()))
+                .willReturn(List.of(pendingReport));
+
+        int resolvedCount = service.resolveReports(12L);
+
+        assertThat(resolvedCount).isEqualTo(1);
+        verify(pendingReport).resolve();
+        verify(review, never()).changeStatus(any());
+        verify(statusHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    void resolvingAlreadyCompletedReportsDoesNotWriteAgain() {
+        FrontProductReview review = mock(FrontProductReview.class);
+        given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));
+        given(reportRepository.findAllByReviewNoAndStatus(12L, FrontProductReviewReportStatus.PENDING.name()))
+                .willReturn(List.of());
+
+        int resolvedCount = service.resolveReports(12L);
+
+        assertThat(resolvedCount).isZero();
+        verify(review, never()).changeStatus(any());
+        verify(statusHistoryRepository, never()).save(any());
     }
 }

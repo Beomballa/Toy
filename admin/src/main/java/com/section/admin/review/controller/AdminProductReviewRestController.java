@@ -43,4 +43,11 @@ public class AdminProductReviewRestController {
         reviewService.changeStatus(reviewId, request.status());
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{reviewId}/reports/resolve")
+    public ResponseEntity<Void> resolveReports(@PathVariable long reviewId) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        reviewService.resolveReports(reviewId);
+        return ResponseEntity.noContent().build();
+    }
 }

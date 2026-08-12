@@ -59,4 +59,8 @@ public class FrontProductReviewReport extends BaseEntity {
     public void resolve() {
         this.status = FrontProductReviewReportStatus.RESOLVED.name();
     }
+
+    public boolean isResolved() {
+        return FrontProductReviewReportStatus.RESOLVED.name().equals(status);
+    }
 }

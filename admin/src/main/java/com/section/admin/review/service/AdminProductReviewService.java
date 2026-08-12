@@ -4,6 +4,7 @@ import com.section.admin.review.res.AdminProductReviewListResponse;
 import com.section.admin.review.res.AdminProductReviewResponse;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewReport;
+import com.section.common.commerce.entity.FrontProductReviewReportStatus;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.entity.FrontProductReviewStatusHistory;
 import com.section.common.commerce.entity.Brand;
@@ -63,6 +64,10 @@ public class AdminProductReviewService {
         Map<Long, List<FrontProductReviewReport>> reports = reviewIds.isEmpty() ? Map.of()
                 : reportRepository.findAllByReviewNoInOrderByIdDesc(reviewIds).stream()
                 .collect(Collectors.groupingBy(FrontProductReviewReport::getReviewNo));
+        Map<Long, Long> pendingReportCounts = reviewIds.isEmpty() ? Map.of() : reportRepository
+                .countByReviewNoInAndStatus(reviewIds, FrontProductReviewReportStatus.PENDING.name()).stream()
+                .collect(Collectors.toMap(FrontProductReviewReportRepository.ReviewReportCount::getReviewNo,
+                        FrontProductReviewReportRepository.ReviewReportCount::getCount));
         Map<Long, List<FrontProductReviewStatusHistory>> statusHistories = reviewIds.isEmpty() ? Map.of()
                 : statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(reviewIds).stream()
                 .collect(Collectors.groupingBy(FrontProductReviewStatusHistory::getReviewNo));
@@ -88,7 +93,7 @@ public class AdminProductReviewService {
                 reviews.stream().map(review -> response(
                         review, products.get(review.getProductNo()), brands,
                         reportCounts.getOrDefault(review.getId(), 0L), reports.getOrDefault(review.getId(), List.of()),
-                        statusHistories.getOrDefault(review.getId(), List.of()), adminNames
+                        pendingReportCounts.getOrDefault(review.getId(), 0L), statusHistories.getOrDefault(review.getId(), List.of()), adminNames
                 )).toList(),
                 reviews.getTotalElements(),
                 reviews.getNumber(),
@@ -109,7 +114,12 @@ public class AdminProductReviewService {
             return;
         }
         String beforeStatus = review.getStatus();
+        List<FrontProductReviewReport> pendingReports = reportRepository.findAllByReviewNoAndStatus(
+                reviewId,
+                FrontProductReviewReportStatus.PENDING.name()
+        );
         review.changeStatus(status);
+        pendingReports.forEach(FrontProductReviewReport::resolve);
         statusHistoryRepository.save(FrontProductReviewStatusHistory.create(reviewId, beforeStatus, status.name()));
     }
 
@@ -127,10 +137,11 @@ public class AdminProductReviewService {
     private AdminProductReviewResponse response(
             FrontProductReview review,
             Product product,
-            Map<Long, Brand> brands,
-            long reportCount,
-            List<FrontProductReviewReport> reports,
-            List<FrontProductReviewStatusHistory> statusHistories,
+        Map<Long, Brand> brands,
+        long reportCount,
+        List<FrontProductReviewReport> reports,
+        long pendingReportCount,
+        List<FrontProductReviewStatusHistory> statusHistories,
             Map<Long, String> adminNames
     ) {
         String status = review.getStatus();
@@ -145,8 +156,9 @@ public class AdminProductReviewService {
                 status,
                 FrontProductReviewStatus.HIDDEN.name().equals(status) ? "숨김" : "노출",
                 reportCount,
+                pendingReportCount,
                 reports.stream().map(report -> new AdminProductReviewResponse.ReportDetail(
-                        report.getReason(), report.getDetail(),
+                        report.getReason(), report.getDetail(), reportStatusLabel(report.getStatus()),
                         report.getCrtDtm() == null ? "-" : report.getCrtDtm().format(DATE_TIME_FORMATTER)
                 )).toList(),
                 statusHistories.stream().map(history -> new AdminProductReviewResponse.StatusHistoryDetail(
@@ -162,5 +174,9 @@ public class AdminProductReviewService {
 
     private String statusLabel(String status) {
         return FrontProductReviewStatus.HIDDEN.name().equals(status) ? "숨김" : "노출";
+    }
+
+    private String reportStatusLabel(String status) {
+        return FrontProductReviewReportStatus.RESOLVED.name().equals(status) ? "처리 완료" : "처리 대기";
     }
 }

@@ -1,6 +1,8 @@
 package com.section.admin.review.service;
 
 import com.section.common.commerce.entity.FrontProductReview;
+import com.section.common.commerce.entity.FrontProductReviewReport;
+import com.section.common.commerce.entity.FrontProductReviewReportStatus;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.entity.FrontProductReviewStatusHistory;
 import com.section.common.commerce.entity.Brand;
@@ -71,6 +73,8 @@ class AdminProductReviewServiceTest {
         given(reviewRepository.findAllByOrderByIdDesc(PageRequest.of(0, 20)))
                 .willReturn(new PageImpl<>(List.of(review), PageRequest.of(0, 20), 1));
         given(reportRepository.countByReviewNoIn(List.of(12L))).willReturn(List.of());
+        given(reportRepository.countByReviewNoInAndStatus(List.of(12L), FrontProductReviewReportStatus.PENDING.name()))
+                .willReturn(List.of());
         given(reportRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of());
         given(statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of(history));
         given(history.getReviewNo()).willReturn(12L);
@@ -102,12 +106,16 @@ class AdminProductReviewServiceTest {
     @Test
     void changesTheRequestedReviewVisibilityStatus() {
         FrontProductReview review = mock(FrontProductReview.class);
+        FrontProductReviewReport pendingReport = mock(FrontProductReviewReport.class);
         given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));
         given(review.getStatus()).willReturn(FrontProductReviewStatus.VISIBLE.name());
+        given(reportRepository.findAllByReviewNoAndStatus(12L, FrontProductReviewReportStatus.PENDING.name()))
+                .willReturn(List.of(pendingReport));
 
         service.changeStatus(12L, FrontProductReviewStatus.HIDDEN);
 
         verify(review).changeStatus(FrontProductReviewStatus.HIDDEN);
+        verify(pendingReport).resolve();
         ArgumentCaptor<FrontProductReviewStatusHistory> historyCaptor = ArgumentCaptor.forClass(FrontProductReviewStatusHistory.class);
         verify(statusHistoryRepository).save(historyCaptor.capture());
         assertThat(historyCaptor.getValue().getReviewNo()).isEqualTo(12L);
@@ -137,5 +145,6 @@ class AdminProductReviewServiceTest {
 
         verify(statusHistoryRepository, never()).save(any());
         verify(review, never()).changeStatus(any());
+        verify(reportRepository, never()).findAllByReviewNoAndStatus(any(Long.class), any(String.class));
     }
 }

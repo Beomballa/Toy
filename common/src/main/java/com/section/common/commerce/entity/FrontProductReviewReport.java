@@ -41,14 +41,22 @@ public class FrontProductReviewReport extends BaseEntity {
     @Column(name = "detail", length = 500)
     private String detail;
 
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;
+
     private FrontProductReviewReport(long reviewNo, long memberNo, String reason, String detail) {
         this.reviewNo = reviewNo;
         this.memberNo = memberNo;
         this.reason = reason;
         this.detail = detail;
+        this.status = FrontProductReviewReportStatus.PENDING.name();
     }
 
     public static FrontProductReviewReport create(long reviewNo, long memberNo, String reason, String detail) {
         return new FrontProductReviewReport(reviewNo, memberNo, reason, detail);
+    }
+
+    public void resolve() {
+        this.status = FrontProductReviewReportStatus.RESOLVED.name();
     }
 }

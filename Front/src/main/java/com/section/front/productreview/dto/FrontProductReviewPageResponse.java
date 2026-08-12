@@ -6,6 +6,7 @@ public record FrontProductReviewPageResponse(
         List<FrontProductReviewResponse> reviews,
         long totalCount,
         double averageRating,
+        List<Long> ratingDistribution,
         int page,
         int totalPages,
         boolean hasNext

@@ -61,6 +61,7 @@
         detailReviewCount: document.getElementById("detailReviewCount"),
         detailReviewAverage: document.getElementById("detailReviewAverage"),
         detailReviewAverageText: document.getElementById("detailReviewAverageText"),
+        detailReviewDistribution: document.getElementById("detailReviewDistribution"),
         detailReviewList: document.getElementById("detailReviewList"),
         detailReviewMoreButton: document.getElementById("detailReviewMoreButton"),
         detailReviewSort: document.getElementById("detailReviewSort"),
@@ -464,6 +465,23 @@
         };
     }
 
+    function normalizeRatingDistribution(distribution) {
+        if (!Array.isArray(distribution) || distribution.length !== 5) {
+            throw new Error("후기 별점 분포 정보가 올바르지 않습니다.");
+        }
+        return distribution.map((count, index) => detailInteger(count, `${5 - index}점 후기 수`, 0));
+    }
+
+    function renderRatingDistribution(distribution, totalCount) {
+        if (!elements.detailReviewDistribution) return;
+        const maxCount = Math.max(1, ...distribution);
+        elements.detailReviewDistribution.innerHTML = distribution.map((count, index) => {
+            const rating = 5 - index;
+            const percent = totalCount > 0 ? Math.round((count / maxCount) * 100) : 0;
+            return `<div><span>${rating}점</span><i><b style="width:${percent}%"></b></i><strong>${count}</strong></div>`;
+        }).join("");
+    }
+
     async function loadReviews(page = 0, append = false) {
         if (!elements.detailReviewList || detailReviewState.loading) return;
         detailReviewState.loading = true;
@@ -477,6 +495,7 @@
                 throw new Error("구매 후기 응답이 올바르지 않습니다.");
             }
             const reviews = payload.reviews.map(normalizeReview);
+            const ratingDistribution = normalizeRatingDistribution(payload.ratingDistribution);
             detailReviewState.page = Number.isSafeInteger(payload.page) ? payload.page : page;
             detailReviewState.hasNext = payload.hasNext === true;
             if (elements.detailReviewCount) elements.detailReviewCount.textContent = String(payload.totalCount);
@@ -486,6 +505,7 @@
                     ? `${payload.totalCount}개의 배송 완료 구매 후기`
                     : "아직 등록된 후기가 없습니다.";
             }
+            renderRatingDistribution(ratingDistribution, payload.totalCount);
             if (append) {
                 elements.detailReviewList.insertAdjacentHTML("beforeend", reviews.map(reviewMarkup).join(""));
             } else {

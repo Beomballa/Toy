@@ -3,6 +3,7 @@ package com.section.front.productreview.service;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
+import com.section.common.commerce.repository.FrontProductReviewRepository.ReviewRatingCount;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
@@ -109,6 +110,8 @@ class FrontProductReviewServiceTest {
         )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
         given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
                 .willReturn(new Object[]{0L, 0D});
+        given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(List.of());
 
         var response = service.getReviews(11L, 0, "RATING_DESC");
 
@@ -116,6 +119,28 @@ class FrontProductReviewServiceTest {
         verify(reviewRepository).findByProductNoAndStatusOrderByRatingDescIdDesc(
                 11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
         );
+    }
+
+    @Test
+    void returnsFixedRatingDistributionFromVisibleReviewGroups() {
+        ReviewRatingCount fiveStar = mock(ReviewRatingCount.class);
+        ReviewRatingCount threeStar = mock(ReviewRatingCount.class);
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(reviewRepository.findByProductNoAndStatusOrderByIdDesc(
+                11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
+        )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+        given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(new Object[]{5L, 4.6D});
+        given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(List.of(fiveStar, threeStar));
+        given(fiveStar.getRating()).willReturn(5);
+        given(fiveStar.getCount()).willReturn(4L);
+        given(threeStar.getRating()).willReturn(3);
+        given(threeStar.getCount()).willReturn(1L);
+
+        var response = service.getReviews(11L, 0, "RECENT");
+
+        assertThat(response.ratingDistribution()).containsExactly(4L, 0L, 1L, 0L, 0L);
     }
 
     @Test

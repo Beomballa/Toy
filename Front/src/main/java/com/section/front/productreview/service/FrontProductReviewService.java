@@ -70,10 +70,19 @@ public class FrontProductReviewService {
         Object[] summary = reviewRepository.getSummaryByProductNo(productNo, FrontProductReviewStatus.VISIBLE.name());
         long totalCount = ((Number) summary[0]).longValue();
         double averageRating = ((Number) summary[1]).doubleValue();
+        long[] ratingDistribution = new long[5];
+        reviewRepository.countByProductNoAndStatusGroupByRating(productNo, FrontProductReviewStatus.VISIBLE.name())
+                .forEach(row -> {
+                    int rating = row.getRating() == null ? 0 : row.getRating();
+                    if (rating >= 1 && rating <= 5) {
+                        ratingDistribution[5 - rating] = row.getCount();
+                    }
+                });
         return new FrontProductReviewPageResponse(
                 reviews.map(FrontProductReviewResponse::from).getContent(),
                 totalCount,
                 Math.round(averageRating * 10) / 10.0,
+                java.util.Arrays.stream(ratingDistribution).boxed().toList(),
                 reviews.getNumber(),
                 reviews.getTotalPages(),
                 reviews.hasNext()

@@ -1522,6 +1522,44 @@ main#top {
     border-bottom: 1px solid #ededed;
 }
 
+.detail-review-distribution {
+    display: grid;
+    gap: 6px;
+    padding: 14px 0;
+    border-bottom: 1px solid #ededed;
+}
+
+.detail-review-distribution > div {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) 24px;
+    align-items: center;
+    gap: 8px;
+    color: #777;
+    font-size: 11px;
+}
+
+.detail-review-distribution i {
+    overflow: hidden;
+    height: 5px;
+    border-radius: 999px;
+    background: #f0f0f0;
+}
+
+.detail-review-distribution b {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: #222;
+    transition: width .2s ease;
+}
+
+.detail-review-distribution strong {
+    color: #555;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+}
+
 .detail-review-controls label {
     color: #777;
     font-size: 11px;

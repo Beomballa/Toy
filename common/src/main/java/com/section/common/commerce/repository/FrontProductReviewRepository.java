@@ -60,4 +60,16 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
     @Query("select count(review), coalesce(avg(review.rating), 0) from FrontProductReview review "
             + "where review.productNo = :productNo and review.status = :status")
     Object[] getSummaryByProductNo(@Param("productNo") long productNo, @Param("status") String status);
+
+    @Query("select review.rating as rating, count(review) as count from FrontProductReview review "
+            + "where review.productNo = :productNo and review.status = :status group by review.rating")
+    List<ReviewRatingCount> countByProductNoAndStatusGroupByRating(
+            @Param("productNo") long productNo,
+            @Param("status") String status
+    );
+
+    interface ReviewRatingCount {
+        Integer getRating();
+        long getCount();
+    }
 }

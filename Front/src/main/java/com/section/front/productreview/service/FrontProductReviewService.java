@@ -142,6 +142,19 @@ public class FrontProductReviewService {
         );
     }
 
+    @Transactional
+    public void deleteMemberReview(long memberNo, long reviewId) {
+        if (reviewId <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후기 번호가 올바르지 않습니다.");
+        }
+        accountRepository.findById(memberNo)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
+        FrontProductReview review = reviewRepository.findByIdAndMemberNo(reviewId, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        reviewRepository.delete(review);
+    }
+
     private void requireProduct(long productNo) {
         if (productNo <= 0 || productRepository.getFrontCatalogProduct(productNo).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다.");

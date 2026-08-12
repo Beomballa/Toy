@@ -7,11 +7,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Optional;
+
 public interface FrontProductReviewRepository extends JpaRepository<FrontProductReview, Long> {
 
     Page<FrontProductReview> findByProductNoOrderByIdDesc(long productNo, Pageable pageable);
 
     Page<FrontProductReview> findByMemberNoOrderByIdDesc(long memberNo, Pageable pageable);
+
+    Optional<FrontProductReview> findByIdAndMemberNo(long id, long memberNo);
 
     boolean existsByMemberNoAndOrderNoAndProductNo(long memberNo, long orderNo, long productNo);
 

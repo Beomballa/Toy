@@ -160,7 +160,7 @@
             if (!reviews.length && memberReviewPage === 0) {
                 target.innerHTML = '<p class="my-review__empty">아직 작성한 후기가 없습니다. 배송 완료 주문의 상품에서 후기를 남겨보세요.</p>';
             } else {
-                target.insertAdjacentHTML("beforeend", reviews.map(review => `<a class="my-review" href="/front/products/${Math.max(0, Number(review.productId) || 0)}#detailReviews"><img src="${safe(safeImage(review.thumbnailUrl))}" alt="${safe(review.productName)}"><span><strong>${safe(review.productBrand)} · ${safe(review.productName)}</strong><em>${"★".repeat(Math.min(5, Math.max(1, Number(review.rating) || 1)))}${"☆".repeat(5 - Math.min(5, Math.max(1, Number(review.rating) || 1)))}</em><p>${safe(review.content)}</p><small>${safe(review.createdDate)}</small></span></a>`).join(""));
+                target.insertAdjacentHTML("beforeend", reviews.map(review => `<article class="my-review"><a href="/front/products/${Math.max(0, Number(review.productId) || 0)}#detailReviews"><img src="${safe(safeImage(review.thumbnailUrl))}" alt="${safe(review.productName)}"><span><strong>${safe(review.productBrand)} · ${safe(review.productName)}</strong><em>${"★".repeat(Math.min(5, Math.max(1, Number(review.rating) || 1)))}${"☆".repeat(5 - Math.min(5, Math.max(1, Number(review.rating) || 1)))}</em><p>${safe(review.content)}</p><small>${safe(review.createdDate)}</small></span></a><button type="button" data-delete-review-id="${Math.max(0, Number(review.id) || 0)}">삭제</button></article>`).join(""));
             }
             memberReviewPage += 1;
             memberReviewsLoaded = !payload.hasNext;
@@ -296,6 +296,20 @@
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
     document.getElementById("memberReviewsMoreButton").addEventListener("click", () => loadMemberReviews());
+    document.getElementById("memberReviewsList").addEventListener("click", async event => {
+        const button = event.target.closest("[data-delete-review-id]");
+        if (!button || !confirm("작성한 후기를 삭제할까요?")) return;
+        button.disabled = true;
+        try {
+            const response = await fetch(`/api/front/member/reviews/${encodeURIComponent(button.dataset.deleteReviewId)}`, { method: "DELETE" });
+            if (!response.ok) throw new Error("후기를 삭제하지 못했습니다.");
+            await loadMemberReviews(true);
+            toast("작성한 후기를 삭제했습니다.");
+        } catch (_) {
+            toast("후기를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+            button.disabled = false;
+        }
+    });
     document.getElementById("memberOrderStatusFilter").addEventListener("change", event => {
         memberOrderStatus = event.target.value;
         loadMemberOrders(true);

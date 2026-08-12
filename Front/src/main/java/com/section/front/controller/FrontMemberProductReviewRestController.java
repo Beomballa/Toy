@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -30,5 +32,14 @@ public class FrontMemberProductReviewRestController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
         }
         return reviewService.getMemberReviews(member.memberId(), page);
+    }
+
+    @DeleteMapping("/{reviewId}")
+    public void deleteReview(@PathVariable long reviewId, HttpServletRequest request) {
+        AuthenticatedFrontMember member = FrontMemberSession.read(request.getSession(false));
+        if (member == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인이 필요합니다.");
+        }
+        reviewService.deleteMemberReview(member.memberId(), reviewId);
     }
 }

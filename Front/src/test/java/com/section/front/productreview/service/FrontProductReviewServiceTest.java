@@ -156,6 +156,19 @@ class FrontProductReviewServiceTest {
         assertThat(response).extracting(item -> item.orderNumber()).containsExactly("ORDER-20260812-001");
     }
 
+    @Test
+    void deletesOnlyTheMembersOwnReview() {
+        Account member = mock(Account.class);
+        FrontProductReview review = mock(FrontProductReview.class);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(member));
+        given(member.isAvailableCustomer()).willReturn(true);
+        given(reviewRepository.findByIdAndMemberNo(31L, 7L)).willReturn(Optional.of(review));
+
+        service.deleteMemberReview(7L, 31L);
+
+        verify(reviewRepository).delete(review);
+    }
+
     private FrontProductReviewCreateRequest request() {
         return new FrontProductReviewCreateRequest("ORDER-20260812-001", 5, "배송이 빠르고 상태가 좋습니다.");
     }

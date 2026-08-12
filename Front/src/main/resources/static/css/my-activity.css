@@ -50,9 +50,11 @@ button:disabled { cursor:not-allowed; opacity:.35; }
 .my-reviews__head h2 { margin:0; font-size:18px; letter-spacing:-.04em; }
 .my-reviews__head > span { color:var(--muted); font-size:11px; }
 .my-reviews__list { margin-top:17px; border-top:1px solid var(--line); }
-.my-review { display:grid; grid-template-columns:54px minmax(0,1fr); gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+.my-review { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:start; padding:14px 0; border-bottom:1px solid var(--line); }
+.my-review > a { display:grid; grid-template-columns:54px minmax(0,1fr); gap:12px; min-width:0; }
 .my-review img { width:54px; aspect-ratio:1; border-radius:8px; background:var(--soft); object-fit:cover; }
 .my-review span { min-width:0; }
+.my-review button { min-height:28px; padding:0 7px; border:0; border-radius:5px; color:var(--muted); background:var(--soft); font-size:10px; }
 .my-review strong,.my-review p,.my-review small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .my-review strong { font-size:12px; }
 .my-review em { display:block; margin-top:5px; color:#222; font-size:10px; font-style:normal; letter-spacing:1px; }

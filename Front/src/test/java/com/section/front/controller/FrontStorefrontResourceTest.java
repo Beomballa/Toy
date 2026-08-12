@@ -421,8 +421,8 @@ class FrontStorefrontResourceTest {
                 .contains("data-tab=\"hidden\"")
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
-                .contains("/css/my-activity.css?v=20260812.1")
-                .contains("/js/view/my-activity.js?v=20260812.2");
+                .contains("/css/my-activity.css?v=20260812.2")
+                .contains("/js/view/my-activity.js?v=20260812.3");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")

@@ -5,11 +5,13 @@ import com.section.admin.review.res.AdminProductReviewResponse;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewReport;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
+import com.section.common.commerce.entity.FrontProductReviewStatusHistory;
 import com.section.common.commerce.entity.Brand;
 import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
+import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,7 @@ public class AdminProductReviewService {
 
     private final FrontProductReviewRepository reviewRepository;
     private final FrontProductReviewReportRepository reportRepository;
+    private final FrontProductReviewStatusHistoryRepository statusHistoryRepository;
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
 
@@ -85,7 +88,12 @@ public class AdminProductReviewService {
         }
         FrontProductReview review = reviewRepository.findById(reviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        if (status.name().equals(review.getStatus())) {
+            return;
+        }
+        String beforeStatus = review.getStatus();
         review.changeStatus(status);
+        statusHistoryRepository.save(FrontProductReviewStatusHistory.create(reviewId, beforeStatus, status.name()));
     }
 
     private FrontProductReviewStatus parseStatus(String rawStatus) {

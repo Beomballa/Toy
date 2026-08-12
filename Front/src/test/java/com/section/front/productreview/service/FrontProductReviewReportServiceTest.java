@@ -3,6 +3,7 @@ package com.section.front.productreview.service;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
+import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -26,7 +27,7 @@ class FrontProductReviewReportServiceTest {
     private final FrontProductReviewReportRepository reportRepository = mock(FrontProductReviewReportRepository.class);
     private final AccountRepository accountRepository = mock(AccountRepository.class);
     private final FrontProductReviewService service = new FrontProductReviewService(
-            reviewRepository, reportRepository, mock(ProductRepository.class), mock(OrderRepository.class),
+            reviewRepository, reportRepository, mock(FrontProductReviewStatusHistoryRepository.class), mock(ProductRepository.class), mock(OrderRepository.class),
             mock(OrderItemRepository.class), accountRepository, mock(FrontProductCatalogService.class)
     );
 

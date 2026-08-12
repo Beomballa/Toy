@@ -7,5 +7,7 @@ import java.util.List;
 
 public interface FrontProductReviewStatusHistoryRepository extends JpaRepository<FrontProductReviewStatusHistory, Long> {
 
+    void deleteByReviewNo(long reviewNo);
+
     List<FrontProductReviewStatusHistory> findAllByReviewNoInOrderByIdDesc(List<Long> reviewNos);
 }

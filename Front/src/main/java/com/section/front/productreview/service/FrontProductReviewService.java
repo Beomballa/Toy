@@ -7,6 +7,7 @@ import com.section.common.commerce.entity.FrontProductReviewReport;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
+import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -41,6 +42,7 @@ public class FrontProductReviewService {
 
     private final FrontProductReviewRepository reviewRepository;
     private final FrontProductReviewReportRepository reportRepository;
+    private final FrontProductReviewStatusHistoryRepository statusHistoryRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -180,6 +182,8 @@ public class FrontProductReviewService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
         FrontProductReview review = reviewRepository.findByIdAndMemberNo(reviewId, memberNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        reportRepository.deleteByReviewNo(review.getId());
+        statusHistoryRepository.deleteByReviewNo(review.getId());
         reviewRepository.delete(review);
     }
 

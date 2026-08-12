@@ -6,6 +6,7 @@ import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
+import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -30,6 +31,7 @@ class FrontProductReviewServiceTest {
 
     private final FrontProductReviewRepository reviewRepository = mock(FrontProductReviewRepository.class);
     private final FrontProductReviewReportRepository reportRepository = mock(FrontProductReviewReportRepository.class);
+    private final FrontProductReviewStatusHistoryRepository statusHistoryRepository = mock(FrontProductReviewStatusHistoryRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final OrderRepository orderRepository = mock(OrderRepository.class);
     private final OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
@@ -38,6 +40,7 @@ class FrontProductReviewServiceTest {
     private final FrontProductReviewService service = new FrontProductReviewService(
             reviewRepository,
             reportRepository,
+            statusHistoryRepository,
             productRepository,
             orderRepository,
             orderItemRepository,
@@ -166,9 +169,12 @@ class FrontProductReviewServiceTest {
         given(accountRepository.findById(7L)).willReturn(Optional.of(member));
         given(member.isAvailableCustomer()).willReturn(true);
         given(reviewRepository.findByIdAndMemberNo(31L, 7L)).willReturn(Optional.of(review));
+        given(review.getId()).willReturn(31L);
 
         service.deleteMemberReview(7L, 31L);
 
+        verify(reportRepository).deleteByReviewNo(31L);
+        verify(statusHistoryRepository).deleteByReviewNo(31L);
         verify(reviewRepository).delete(review);
     }
 

@@ -11,6 +11,7 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.product.service.FrontProductCatalogService;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,12 +31,14 @@ class FrontProductReviewServiceTest {
     private final OrderRepository orderRepository = mock(OrderRepository.class);
     private final OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
     private final AccountRepository accountRepository = mock(AccountRepository.class);
+    private final FrontProductCatalogService productCatalogService = mock(FrontProductCatalogService.class);
     private final FrontProductReviewService service = new FrontProductReviewService(
             reviewRepository,
             productRepository,
             orderRepository,
             orderItemRepository,
-            accountRepository
+            accountRepository,
+            productCatalogService
     );
 
     @Test

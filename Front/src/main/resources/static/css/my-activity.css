@@ -44,6 +44,22 @@ button:disabled { cursor:not-allowed; opacity:.35; }
 .my-order__status { min-width:72px; padding:7px 9px; border-radius:999px; color:#555; background:var(--soft); text-align:center; font-size:10px; font-weight:800; white-space:nowrap; }
 .my-order__empty { padding:24px 0 6px; color:var(--muted); font-size:12px; }
 .my-orders__more { display:block; width:100%; margin-top:16px; }
+.my-reviews { margin:18px 0 28px; padding:24px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+.my-reviews__head { display:flex; align-items:end; justify-content:space-between; gap:16px; }
+.my-reviews__head p { margin:0 0 5px; color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.my-reviews__head h2 { margin:0; font-size:18px; letter-spacing:-.04em; }
+.my-reviews__head > span { color:var(--muted); font-size:11px; }
+.my-reviews__list { margin-top:17px; border-top:1px solid var(--line); }
+.my-review { display:grid; grid-template-columns:54px minmax(0,1fr); gap:12px; padding:14px 0; border-bottom:1px solid var(--line); }
+.my-review img { width:54px; aspect-ratio:1; border-radius:8px; background:var(--soft); object-fit:cover; }
+.my-review span { min-width:0; }
+.my-review strong,.my-review p,.my-review small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.my-review strong { font-size:12px; }
+.my-review em { display:block; margin-top:5px; color:#222; font-size:10px; font-style:normal; letter-spacing:1px; }
+.my-review p { margin:5px 0 0; color:#555; font-size:11px; }
+.my-review small { margin-top:5px; color:var(--muted); font-size:10px; }
+.my-review__empty { padding:22px 0 4px; color:var(--muted); font-size:12px; }
+.my-reviews__more { display:block; width:100%; min-height:34px; margin-top:16px; padding:0 12px; border:1px solid #ddd; border-radius:7px; background:#fff; font-size:11px; }
 .my-tabs button { position:relative; padding:20px 0 17px; border:0; color:#999; background:none; font-weight:700; }
 .my-tabs button span { margin-left:4px; font-size:11px; }
 .my-tabs button.is-active { color:var(--ink); }
@@ -100,6 +116,7 @@ button:disabled { cursor:not-allowed; opacity:.35; }
   .my-hero dl { grid-template-columns:repeat(2,1fr); gap:18px 0; margin-top:28px; }
   .my-tabs { overflow-x:auto; gap:20px; }
   .my-orders { margin-top:24px; padding:18px; }
+  .my-reviews { padding:18px; }
   .my-orders__head { align-items:flex-start; }
   .my-orders__tools { align-items:flex-end; flex-direction:column; }
   .my-order { grid-template-columns:minmax(0,1fr) auto; gap:10px; }

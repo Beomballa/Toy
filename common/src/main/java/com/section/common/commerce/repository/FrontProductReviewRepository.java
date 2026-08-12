@@ -11,6 +11,8 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
 
     Page<FrontProductReview> findByProductNoOrderByIdDesc(long productNo, Pageable pageable);
 
+    Page<FrontProductReview> findByMemberNoOrderByIdDesc(long memberNo, Pageable pageable);
+
     boolean existsByMemberNoAndOrderNoAndProductNo(long memberNo, long orderNo, long productNo);
 
     @Query("select count(review), coalesce(avg(review.rating), 0) from FrontProductReview review where review.productNo = :productNo")

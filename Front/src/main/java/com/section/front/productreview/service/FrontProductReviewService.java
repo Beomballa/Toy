@@ -10,8 +10,11 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.productreview.dto.FrontMemberProductReviewPageResponse;
+import com.section.front.productreview.dto.FrontMemberProductReviewResponse;
 import com.section.front.productreview.dto.FrontProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontProductReviewResponse;
+import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +38,7 @@ public class FrontProductReviewService {
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
     private final AccountRepository accountRepository;
+    private final FrontProductCatalogService productCatalogService;
 
     @Transactional(readOnly = true)
     public FrontProductReviewPageResponse getReviews(long productNo, int pageNumber) {
@@ -89,6 +97,34 @@ public class FrontProductReviewService {
         return FrontProductReviewResponse.from(reviewRepository.save(review));
     }
 
+    @Transactional(readOnly = true)
+    public FrontMemberProductReviewPageResponse getMemberReviews(long memberNo, int pageNumber) {
+        if (pageNumber < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 번호가 올바르지 않습니다.");
+        }
+        accountRepository.findById(memberNo)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
+        Page<FrontProductReview> reviews = reviewRepository.findByMemberNoOrderByIdDesc(
+                memberNo,
+                PageRequest.of(pageNumber, REVIEW_PAGE_SIZE)
+        );
+        Map<Long, com.section.front.product.dto.FrontProductResponse> products = productCatalogService.findProducts(
+                new LinkedHashSet<>(reviews.map(FrontProductReview::getProductNo).toList())
+        );
+        List<FrontMemberProductReviewResponse> responses = reviews.stream()
+                .map(review -> toMemberReviewResponse(review, products.get(review.getProductNo())))
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        return new FrontMemberProductReviewPageResponse(
+                responses,
+                reviews.getTotalElements(),
+                reviews.getNumber(),
+                reviews.getTotalPages(),
+                reviews.hasNext()
+        );
+    }
+
     private void requireProduct(long productNo) {
         if (productNo <= 0 || productRepository.getFrontCatalogProduct(productNo).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "상품을 찾을 수 없습니다.");
@@ -112,5 +148,24 @@ public class FrontProductReviewService {
             return "회원";
         }
         return source.substring(0, 1) + "***";
+    }
+
+    private FrontMemberProductReviewResponse toMemberReviewResponse(
+            FrontProductReview review,
+            com.section.front.product.dto.FrontProductResponse product
+    ) {
+        if (product == null) {
+            return null;
+        }
+        return new FrontMemberProductReviewResponse(
+                review.getId(),
+                product.id(),
+                product.name(),
+                product.brand(),
+                product.thumbnailUrl(),
+                review.getRating(),
+                review.getContent(),
+                review.getCrtDtm().toLocalDate().toString()
+        );
     }
 }

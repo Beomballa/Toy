@@ -169,6 +169,23 @@ class AdminProductReviewServiceTest {
     }
 
     @Test
+    void pendingReportFilterKeepsRequestedVisibilityStatus() {
+        given(reviewRepository.findReviewsWithReportStatus(
+                FrontProductReviewStatus.HIDDEN.name(),
+                FrontProductReviewReportStatus.PENDING.name(),
+                PageRequest.of(0, 20)
+        )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        service.getReviews("HIDDEN", false, true, 0, 20);
+
+        verify(reviewRepository).findReviewsWithReportStatus(
+                FrontProductReviewStatus.HIDDEN.name(),
+                FrontProductReviewReportStatus.PENDING.name(),
+                PageRequest.of(0, 20)
+        );
+    }
+
+    @Test
     void doesNotCreateHistoryWhenTheReviewIsAlreadyInTheRequestedStatus() {
         FrontProductReview review = mock(FrontProductReview.class);
         given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));

@@ -35,7 +35,8 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
 
     @Query("select review from FrontProductReview review where (:status is null or review.status = :status) "
             + "and exists (select 1 from FrontProductReviewReport report where report.reviewNo = review.id "
-            + "and report.status = :reportStatus) order by review.id desc")
+            + "and report.status = :reportStatus) order by (select min(report.crtDtm) from FrontProductReviewReport report "
+            + "where report.reviewNo = review.id and report.status = :reportStatus) asc, review.id asc")
     Page<FrontProductReview> findReviewsWithReportStatus(
             @Param("status") String status,
             @Param("reportStatus") String reportStatus,

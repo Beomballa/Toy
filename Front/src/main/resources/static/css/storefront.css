@@ -1550,6 +1550,9 @@ main#top {
     overflow-wrap: anywhere;
 }
 
+.detail-review-item footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.detail-review-item footer button { border:0; padding:0; color:#888; background:transparent; font-size:11px; text-decoration:underline; text-underline-offset:3px; }
+
 .detail-review-empty strong {
     color: #444;
     font-size: 13px;

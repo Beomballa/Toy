@@ -5,6 +5,7 @@ import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
+import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
@@ -28,6 +29,7 @@ import static org.mockito.Mockito.verify;
 class FrontProductReviewServiceTest {
 
     private final FrontProductReviewRepository reviewRepository = mock(FrontProductReviewRepository.class);
+    private final FrontProductReviewReportRepository reportRepository = mock(FrontProductReviewReportRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final OrderRepository orderRepository = mock(OrderRepository.class);
     private final OrderItemRepository orderItemRepository = mock(OrderItemRepository.class);
@@ -35,6 +37,7 @@ class FrontProductReviewServiceTest {
     private final FrontProductCatalogService productCatalogService = mock(FrontProductCatalogService.class);
     private final FrontProductReviewService service = new FrontProductReviewService(
             reviewRepository,
+            reportRepository,
             productRepository,
             orderRepository,
             orderItemRepository,

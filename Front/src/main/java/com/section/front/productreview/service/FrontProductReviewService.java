@@ -3,14 +3,17 @@ package com.section.front.productreview.service;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
+import com.section.common.commerce.entity.FrontProductReviewReport;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
+import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.productreview.dto.FrontProductReviewReportRequest;
 import com.section.front.productreview.dto.FrontReviewEligibleOrderResponse;
 import com.section.front.productreview.dto.FrontMemberProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontMemberProductReviewResponse;
@@ -37,6 +40,7 @@ public class FrontProductReviewService {
     private static final int REVIEW_PAGE_SIZE = 10;
 
     private final FrontProductReviewRepository reviewRepository;
+    private final FrontProductReviewReportRepository reportRepository;
     private final ProductRepository productRepository;
     private final OrderRepository orderRepository;
     private final OrderItemRepository orderItemRepository;
@@ -105,6 +109,27 @@ public class FrontProductReviewService {
         return FrontProductReviewResponse.from(reviewRepository.save(review));
     }
 
+    @Transactional
+    public void reportReview(long memberNo, long reviewId, FrontProductReviewReportRequest request) {
+        Account member = accountRepository.findById(memberNo)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
+        FrontProductReview review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        if (!review.isVisible()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다.");
+        }
+        if (memberNo == review.getMemberNo()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "본인이 작성한 후기는 신고할 수 없습니다.");
+        }
+        if (reportRepository.existsByReviewNoAndMemberNo(reviewId, memberNo)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 신고한 후기입니다.");
+        }
+        String reason = normalizeRequiredText(request.reason(), "신고 사유", 30);
+        String detail = normalizeOptionalText(request.detail(), 500);
+        reportRepository.save(FrontProductReviewReport.create(reviewId, member.getId(), reason, detail));
+    }
+
     @Transactional(readOnly = true)
     public List<FrontReviewEligibleOrderResponse> getEligibleOrders(long memberNo, long productNo) {
         requireProduct(productNo);
@@ -169,6 +194,25 @@ public class FrontProductReviewService {
 
     private String normalizeOrderNumber(String orderNumber) {
         return orderNumber.trim().replaceAll("\\s+", " ");
+    }
+
+    private String normalizeRequiredText(String value, String fieldName, int maxLength) {
+        String normalized = normalizeOptionalText(value, maxLength);
+        if (normalized == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, fieldName + "을 입력하세요.");
+        }
+        return normalized;
+    }
+
+    private String normalizeOptionalText(String value, int maxLength) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().replaceAll("\\s+", " ");
+        if (normalized.length() > maxLength) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "입력값 길이가 올바르지 않습니다.");
+        }
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private String reviewerName(Account member) {

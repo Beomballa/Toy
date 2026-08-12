@@ -437,7 +437,7 @@
             <article class="detail-review-item">
                 <div><strong>${escapeMarkup(review.reviewerName)}</strong><span>${reviewStars(review.rating)}</span></div>
                 <p>${escapeMarkup(review.content)}</p>
-                <time>${escapeMarkup(review.createdDate)}</time>
+                <footer><time>${escapeMarkup(review.createdDate)}</time><button type="button" data-review-report-id="${review.id}">신고</button></footer>
             </article>
         `;
     }
@@ -560,6 +560,21 @@
             showToast("후기를 등록하지 못했습니다.", error.message.replace(/<[^>]*>/g, "") || "로그인과 주문 상태를 확인해주세요.", true);
         } finally {
             elements.detailReviewSubmitButton.disabled = false;
+        }
+    }
+
+    async function reportReview(reviewId) {
+        if (!Number.isSafeInteger(reviewId) || reviewId < 1) return;
+        const reason = window.prompt("신고 사유를 입력하세요. 예: 광고, 부적절한 내용");
+        if (!reason?.trim()) return;
+        try {
+            const response = await fetch(`/api/front/products/${productId}/reviews/${reviewId}/reports`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: reason.trim() })
+            });
+            if (!response.ok) throw new Error((await response.text()) || "후기를 신고하지 못했습니다.");
+            showToast("후기를 신고했습니다.", "운영자가 신고 내용을 확인합니다.");
+        } catch (error) {
+            showToast("후기를 신고하지 못했습니다.", error.message.replace(/<[^>]*>/g, ""), true);
         }
     }
 
@@ -2512,6 +2527,10 @@
         elements.detailReviewWriteButton?.addEventListener("click", () => setReviewFormOpen(true));
         elements.detailReviewFormCloseButton?.addEventListener("click", () => setReviewFormOpen(false));
         elements.detailReviewForm?.addEventListener("submit", submitReview);
+        elements.detailReviewList?.addEventListener("click", event => {
+            const button = event.target.closest("[data-review-report-id]");
+            if (button) reportReview(Number(button.dataset.reviewReportId));
+        });
         try {
             const response = await fetch(`/api/front/products/${productId}`);
             if (!response.ok) {

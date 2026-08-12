@@ -3,6 +3,7 @@ package com.section.front.controller;
 import com.section.front.auth.support.FrontMemberSession;
 import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.productreview.dto.FrontProductReviewReportRequest;
 import com.section.front.productreview.dto.FrontReviewEligibleOrderResponse;
 import com.section.front.productreview.dto.FrontProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontProductReviewResponse;
@@ -44,6 +45,15 @@ public class FrontProductReviewRestController {
             HttpServletRequest httpRequest
     ) {
         return reviewService.createReview(memberNo(httpRequest), productId, request);
+    }
+
+    @PostMapping("/{reviewId}/reports")
+    public void reportReview(
+            @PathVariable long reviewId,
+            @Valid @RequestBody FrontProductReviewReportRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        reviewService.reportReview(memberNo(httpRequest), reviewId, request);
     }
 
     @GetMapping("/eligible-orders")

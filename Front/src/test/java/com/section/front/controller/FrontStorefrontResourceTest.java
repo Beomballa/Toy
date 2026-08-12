@@ -302,7 +302,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260803.1");
+                .contains("/js/view/detail.js?v=20260812.1");
         assertThat(readResource("static/js/view/detail.js"))
                 .contains("function normalizeDetailProduct(")
                 .contains("function normalizeDetailOptions(")
@@ -326,8 +326,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"copyOrderNumberButton\"")
                 .contains("id=\"copyTrackingButton\"")
                 .contains("id=\"printOrderButton\"")
-                .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/order-lookup.js?v=20260803.1");
+                .contains("/css/commerce.css?v=20260812.1")
+                .contains("/js/view/order-lookup.js?v=20260812.2");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
                 .contains("JSON.stringify({ orderNumber, phone })")
@@ -365,8 +365,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"deliveryRequestPreset\"")
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260802.1")
+                .contains("/css/commerce.css?v=20260806.2")
+                .contains("/js/view/commerce.js?v=20260812.1")
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("id=\"completedOrderTitle\"");
@@ -421,8 +421,8 @@ class FrontStorefrontResourceTest {
                 .contains("data-tab=\"hidden\"")
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
-                .contains("/css/my-activity.css?v=20260726.2")
-                .contains("/js/view/my-activity.js?v=20260803.1");
+                .contains("/css/my-activity.css?v=20260812.1")
+                .contains("/js/view/my-activity.js?v=20260812.2");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -469,7 +469,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportNoticePagination\"")
                 .contains("id=\"supportCopySummaryButton\"")
                 .contains("/css/support-center.css?v=20260726.1")
-                .contains("/js/view/support-center.js?v=20260803.2");
+                .contains("/js/view/support-center.js?v=20260812.1");
         assertThat(script)
                 .contains("grade-stock-support-searches")
                 .contains("boardType: \"NOTICE\"")

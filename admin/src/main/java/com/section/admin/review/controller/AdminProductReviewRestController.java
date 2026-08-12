@@ -27,10 +27,11 @@ public class AdminProductReviewRestController {
     public AdminProductReviewListResponse getReviews(
             @RequestParam(defaultValue = "ALL") String status,
             @RequestParam(defaultValue = "false") boolean reportedOnly,
+            @RequestParam(defaultValue = "false") boolean pendingOnly,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        return reviewService.getReviews(status, reportedOnly, page, size);
+        return reviewService.getReviews(status, reportedOnly, pendingOnly, page, size);
     }
 
     @PatchMapping("/{reviewId}/status")

@@ -46,13 +46,17 @@ public class AdminProductReviewService {
     private final BrandRepository brandRepository;
     private final AdminUserRepository adminUserRepository;
 
-    public AdminProductReviewListResponse getReviews(String rawStatus, boolean reportedOnly, int page, int size) {
+    public AdminProductReviewListResponse getReviews(String rawStatus, boolean reportedOnly, boolean pendingOnly, int page, int size) {
         if (page < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 번호가 올바르지 않습니다.");
         }
         FrontProductReviewStatus status = parseStatus(rawStatus);
         Pageable pageable = PageRequest.of(page, Math.min(Math.max(1, size), MAX_PAGE_SIZE));
-        Page<FrontProductReview> reviews = reportedOnly
+        Page<FrontProductReview> reviews = pendingOnly
+                ? reviewRepository.findReviewsWithReportStatus(
+                status == null ? null : status.name(), FrontProductReviewReportStatus.PENDING.name(), pageable
+        )
+                : reportedOnly
                 ? reviewRepository.findReportedReviews(status == null ? null : status.name(), pageable)
                 : status == null
                 ? reviewRepository.findAllByOrderByIdDesc(pageable)

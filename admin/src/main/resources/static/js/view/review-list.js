@@ -1,7 +1,15 @@
 (() => {
     "use strict";
     const params = new URLSearchParams(location.search);
-    const state = { status: params.get("status") || "ALL", reportedOnly: params.get("reportedOnly") === "true", page: 0, hasNext: false, loading: false };
+    const state = {
+        status: params.get("status") || "ALL",
+        reportedOnly: params.get("reportedOnly") === "true",
+        pendingOnly: params.get("pendingOnly") === "true",
+        page: 0,
+        hasNext: false,
+        loading: false
+    };
+    if (state.pendingOnly) state.reportedOnly = false;
     const body = document.getElementById("reviewListBody");
     const moreButton = document.getElementById("reviewMoreButton");
 
@@ -15,7 +23,7 @@
         state.loading = true;
         moreButton.disabled = true;
         try {
-            const response = await fetch(`/api/admin/reviews?status=${encodeURIComponent(state.status)}&reportedOnly=${state.reportedOnly}&page=${state.page}&size=20`, { headers: { Accept: "application/json" } });
+            const response = await fetch(`/api/admin/reviews?status=${encodeURIComponent(state.status)}&reportedOnly=${state.reportedOnly}&pendingOnly=${state.pendingOnly}&page=${state.page}&size=20`, { headers: { Accept: "application/json" } });
             if (!response.ok) throw new Error("후기 목록을 불러오지 못했습니다.");
             const payload = await response.json();
             const reviews = Array.isArray(payload.reviews) ? payload.reviews : [];
@@ -48,12 +56,28 @@
     });
     document.getElementById("reviewReportedOnlyButton").addEventListener("click", event => {
         state.reportedOnly = !state.reportedOnly;
-        event.currentTarget.classList.toggle("btn-danger", state.reportedOnly);
-        event.currentTarget.classList.toggle("btn-outline-danger", !state.reportedOnly);
-        event.currentTarget.setAttribute("aria-pressed", String(state.reportedOnly));
+        if (state.reportedOnly) state.pendingOnly = false;
+        syncReportFilterButtons();
         syncUrl();
         load(true);
     });
+    document.getElementById("reviewPendingOnlyButton").addEventListener("click", event => {
+        state.pendingOnly = !state.pendingOnly;
+        if (state.pendingOnly) state.reportedOnly = false;
+        syncReportFilterButtons();
+        syncUrl();
+        load(true);
+    });
+    function syncReportFilterButtons() {
+        const reportedButton = document.getElementById("reviewReportedOnlyButton");
+        const pendingButton = document.getElementById("reviewPendingOnlyButton");
+        reportedButton.classList.toggle("btn-danger", state.reportedOnly);
+        reportedButton.classList.toggle("btn-outline-danger", !state.reportedOnly);
+        reportedButton.setAttribute("aria-pressed", String(state.reportedOnly));
+        pendingButton.classList.toggle("btn-warning", state.pendingOnly);
+        pendingButton.classList.toggle("btn-outline-warning", !state.pendingOnly);
+        pendingButton.setAttribute("aria-pressed", String(state.pendingOnly));
+    }
     body.addEventListener("click", async event => {
         const reportButton = event.target.closest("[data-review-reports]");
         if (reportButton) {
@@ -96,14 +120,13 @@
     });
     moreButton.addEventListener("click", () => load());
     document.querySelector(`[data-status="${state.status}"]`)?.classList.replace("btn-outline-secondary", "btn-dark");
-    document.getElementById("reviewReportedOnlyButton").classList.toggle("btn-danger", state.reportedOnly);
-    document.getElementById("reviewReportedOnlyButton").classList.toggle("btn-outline-danger", !state.reportedOnly);
-    document.getElementById("reviewReportedOnlyButton").setAttribute("aria-pressed", String(state.reportedOnly));
+    syncReportFilterButtons();
     load(true);
 
     function syncUrl() {
         const next = new URLSearchParams({ status: state.status });
         if (state.reportedOnly) next.set("reportedOnly", "true");
+        if (state.pendingOnly) next.set("pendingOnly", "true");
         history.replaceState(null, "", `/admin/reviews?${next}`);
     }
 })();

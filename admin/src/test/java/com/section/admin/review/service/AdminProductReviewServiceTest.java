@@ -51,7 +51,7 @@ class AdminProductReviewServiceTest {
         given(reviewRepository.findByStatusOrderByIdDesc(FrontProductReviewStatus.HIDDEN.name(), PageRequest.of(0, 20)))
                 .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        var response = service.getReviews("HIDDEN", false, 0, 20);
+        var response = service.getReviews("HIDDEN", false, false, 0, 20);
 
         assertThat(response.totalCount()).isZero();
         verify(reviewRepository).findByStatusOrderByIdDesc(FrontProductReviewStatus.HIDDEN.name(), PageRequest.of(0, 20));
@@ -93,7 +93,7 @@ class AdminProductReviewServiceTest {
         given(admin.getAdminNo()).willReturn(3L);
         given(admin.getName()).willReturn("운영자");
 
-        var response = service.getReviews("ALL", false, 0, 20);
+        var response = service.getReviews("ALL", false, false, 0, 20);
 
         assertThat(response.reviews().get(0).statusHistories()).singleElement().satisfies(item -> {
             assertThat(item.actionLabel()).isEqualTo("숨김");
@@ -129,10 +129,28 @@ class AdminProductReviewServiceTest {
         given(reviewRepository.findReportedReviews(null, PageRequest.of(0, 20)))
                 .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        var response = service.getReviews("ALL", true, 0, 20);
+        var response = service.getReviews("ALL", true, false, 0, 20);
 
         assertThat(response.reviews()).isEmpty();
         verify(reviewRepository).findReportedReviews(null, PageRequest.of(0, 20));
+    }
+
+    @Test
+    void loadsOnlyPendingReportedReviewsWhenPendingFilterIsRequested() {
+        given(reviewRepository.findReviewsWithReportStatus(
+                null,
+                FrontProductReviewReportStatus.PENDING.name(),
+                PageRequest.of(0, 20)
+        )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var response = service.getReviews("ALL", false, true, 0, 20);
+
+        assertThat(response.reviews()).isEmpty();
+        verify(reviewRepository).findReviewsWithReportStatus(
+                null,
+                FrontProductReviewReportStatus.PENDING.name(),
+                PageRequest.of(0, 20)
+        );
     }
 
     @Test

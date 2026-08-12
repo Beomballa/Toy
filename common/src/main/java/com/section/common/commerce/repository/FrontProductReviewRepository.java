@@ -29,6 +29,15 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
             Pageable pageable
     );
 
+    @Query("select review from FrontProductReview review where (:status is null or review.status = :status) "
+            + "and exists (select 1 from FrontProductReviewReport report where report.reviewNo = review.id "
+            + "and report.status = :reportStatus) order by review.id desc")
+    Page<FrontProductReview> findReviewsWithReportStatus(
+            @Param("status") String status,
+            @Param("reportStatus") String reportStatus,
+            Pageable pageable
+    );
+
     Optional<FrontProductReview> findByIdAndMemberNo(long id, long memberNo);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

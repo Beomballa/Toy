@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 import java.util.List;
@@ -71,13 +72,33 @@ class FrontProductReviewServiceTest {
         given(savedReview.getRating()).willReturn(5);
         given(savedReview.getContent()).willReturn("배송이 빠르고 상태가 좋습니다.");
         given(savedReview.getCrtDtm()).willReturn(java.time.LocalDateTime.of(2026, 8, 12, 12, 0));
-        given(reviewRepository.save(any(FrontProductReview.class))).willReturn(savedReview);
+        given(reviewRepository.saveAndFlush(any(FrontProductReview.class))).willReturn(savedReview);
 
         var response = service.createReview(7L, 11L, request());
 
         assertThat(response.reviewerName()).isEqualTo("테***");
         assertThat(response.rating()).isEqualTo(5);
-        verify(reviewRepository).save(any(FrontProductReview.class));
+        verify(reviewRepository).saveAndFlush(any(FrontProductReview.class));
+    }
+
+    @Test
+    void translatesReviewUniqueConstraintViolationToConflict() {
+        Account member = mock(Account.class);
+        Orders order = mock(Orders.class);
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(accountRepository.findById(7L)).willReturn(Optional.of(member));
+        given(member.isAvailableCustomer()).willReturn(true);
+        given(member.getNickname()).willReturn("테스터");
+        given(orderRepository.findByOrderNumAndMemberNoForUpdate("ORDER-20260812-001", 7L)).willReturn(Optional.of(order));
+        given(order.getId()).willReturn(20L);
+        given(order.getStatus()).willReturn(OrderStatus.DELIVERED.name());
+        given(orderItemRepository.existsByOrderNoAndProductNo(20L, 11L)).willReturn(true);
+        given(reviewRepository.existsByMemberNoAndOrderNoAndProductNo(7L, 20L, 11L)).willReturn(false);
+        given(reviewRepository.saveAndFlush(any(FrontProductReview.class))).willThrow(new DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> service.createReview(7L, 11L, request()))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("이미 작성한 리뷰");
     }
 
     @Test

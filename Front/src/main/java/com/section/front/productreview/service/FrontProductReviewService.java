@@ -23,6 +23,7 @@ import com.section.front.productreview.dto.FrontProductReviewResponse;
 import com.section.front.product.dto.FrontProductResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -113,7 +114,11 @@ public class FrontProductReviewService {
                 request.rating(),
                 content
         );
-        return FrontProductReviewResponse.from(reviewRepository.save(review));
+        try {
+            return FrontProductReviewResponse.from(reviewRepository.saveAndFlush(review));
+        } catch (DataIntegrityViolationException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 작성한 리뷰입니다.", exception);
+        }
     }
 
     @Transactional

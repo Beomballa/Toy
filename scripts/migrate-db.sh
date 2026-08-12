@@ -111,6 +111,7 @@ MIGRATIONS=(
   "2026080601|customer order history|db/front_member_order.sql"
   "2026080602|customer delivery addresses|db/front_member_delivery_address.sql"
   "2026081201|customer product reviews|db/front_product_review.sql"
+  "2026081202|customer product review visibility|db/front_product_review_status.sql"
 )
 
 for migration in "${MIGRATIONS[@]}"; do

@@ -47,6 +47,9 @@ public class FrontProductReview extends BaseEntity {
     @Column(name = "content", nullable = false, length = 1000)
     private String content;
 
+    @Column(name = "status", nullable = false, length = 20)
+    private String status;
+
     private FrontProductReview(
             Long memberNo,
             Long productNo,
@@ -61,6 +64,7 @@ public class FrontProductReview extends BaseEntity {
         this.reviewerName = reviewerName;
         this.rating = rating;
         this.content = content;
+        this.status = FrontProductReviewStatus.VISIBLE.name();
     }
 
     public static FrontProductReview create(
@@ -72,5 +76,13 @@ public class FrontProductReview extends BaseEntity {
             String content
     ) {
         return new FrontProductReview(memberNo, productNo, orderNo, reviewerName, rating, content);
+    }
+
+    public void changeStatus(FrontProductReviewStatus reviewStatus) {
+        this.status = reviewStatus.name();
+    }
+
+    public boolean isVisible() {
+        return FrontProductReviewStatus.VISIBLE.name().equals(status);
     }
 }

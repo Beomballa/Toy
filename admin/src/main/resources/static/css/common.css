@@ -2285,3 +2285,6 @@
     resize: none;
 }
 .notion-content:focus { box-shadow: none; }
+/* Product review list keeps long customer text inside the table on narrow viewports. */
+.admin-review-content { min-width: 260px; max-width: 460px; white-space: normal; overflow-wrap: anywhere; }
+.admin-review-product-name { max-width: 220px; }

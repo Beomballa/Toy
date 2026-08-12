@@ -38,6 +38,9 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders">
             <i class="fas fa-shopping-cart"></i> 주문 관리
         </a>
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('reviews') ? 'active' : ''}" href="/admin/reviews">
+            <i class="fas fa-star"></i> 상품 후기 관리
+        </a>
     </div>
 
     <div class="nav-section">

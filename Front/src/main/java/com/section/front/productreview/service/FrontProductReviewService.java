@@ -2,6 +2,7 @@ package com.section.front.productreview.service;
 
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.FrontProductReview;
+import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
@@ -49,11 +50,12 @@ public class FrontProductReviewService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 번호가 올바르지 않습니다.");
         }
 
-        Page<FrontProductReview> reviews = reviewRepository.findByProductNoOrderByIdDesc(
+        Page<FrontProductReview> reviews = reviewRepository.findByProductNoAndStatusOrderByIdDesc(
                 productNo,
+                FrontProductReviewStatus.VISIBLE.name(),
                 PageRequest.of(pageNumber, REVIEW_PAGE_SIZE)
         );
-        Object[] summary = reviewRepository.getSummaryByProductNo(productNo);
+        Object[] summary = reviewRepository.getSummaryByProductNo(productNo, FrontProductReviewStatus.VISIBLE.name());
         long totalCount = ((Number) summary[0]).longValue();
         double averageRating = ((Number) summary[1]).doubleValue();
         return new FrontProductReviewPageResponse(

@@ -382,6 +382,11 @@
             showToast("주문자와 배송지 입력값을 다시 확인해주세요.");
             return;
         }
+        if (elements.saveAddress?.checked && !elements.addressName?.value.trim()) {
+            showToast("저장할 배송지 이름을 입력해주세요.");
+            elements.addressName.focus();
+            return;
+        }
         submitting = true;
         elements.submit.disabled = true;
         elements.submit.setAttribute("aria-busy", "true");

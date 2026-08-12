@@ -53,6 +53,20 @@ class FrontMemberDeliveryAddressServiceTest {
         verify(nextAddress).setDefault(true);
     }
 
+    @Test
+    void updatesOnlyTheMembersOwnDeliveryAddress() {
+        Account account = mock(Account.class);
+        FrontMemberDeliveryAddress address = mock(FrontMemberDeliveryAddress.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(addressRepository.findByIdAndMemberNo(10L, 7L)).willReturn(Optional.of(address));
+        given(addressRepository.findAllByMemberNoOrderByDefaultYnDescIdDesc(7L)).willReturn(List.of(address));
+
+        service.update(7L, 10L, request(false));
+
+        verify(address).update("집", "홍길동", "01011112222", "06236", "서울시 강남구", "101호");
+    }
+
     private FrontDeliveryAddressRequest request(boolean defaultAddress) {
         return new FrontDeliveryAddressRequest("집", "홍길동", "010-1111-2222", "06236", "서울시 강남구", "101호", defaultAddress);
     }

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>배송지 관리 | NOREN</title>
+    <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+    <link rel="stylesheet" href="/css/delivery-addresses.css?v=20260812.1">
+    <link rel="stylesheet" href="/css/storefront-shell.css?v=20260804.1">
+</head>
+<body class="storefront-page delivery-address-body">
+<a class="address-skip" href="#deliveryAddressMain">본문 바로가기</a>
+<header th:replace="~{fragments/storefront-shell :: header('MY', '배송지 관리')}"></header>
+<main class="address-shell" id="deliveryAddressMain" tabindex="-1">
+    <section class="address-hero"><div><p>Delivery Address</p><h1>배송지 관리</h1><span>주문할 때 사용할 배송지를 저장하고 기본 배송지를 설정하세요.</span></div><a href="/front/my">MY 쇼핑 활동</a></section>
+    <section class="address-create"><div><h2 id="addressFormTitle">새 배송지 등록</h2><span>배송지 이름과 수령 정보를 입력하세요.</span></div><form id="deliveryAddressForm"><input id="deliveryAddressId" type="hidden"><div class="address-form-grid"><label>배송지 이름<input name="addressName" maxlength="40" required placeholder="예: 집, 회사"></label><label>받는 분<input name="recipientName" maxlength="50" required></label><label>연락처<input name="recipientPhone" maxlength="20" inputmode="tel" required placeholder="010-0000-0000"></label><label>우편번호<input name="postalCode" maxlength="10" inputmode="numeric" required></label><label class="address-form-wide">주소<input name="address1" maxlength="200" required></label><label class="address-form-wide">상세 주소<input name="address2" maxlength="200"></label></div><div class="address-form-actions"><label><input type="checkbox" name="defaultAddress"> 기본 배송지로 설정</label><button type="button" id="deliveryAddressFormReset">입력 초기화</button><button type="submit" id="deliveryAddressSubmit">배송지 저장</button></div></form></section>
+    <section class="address-list-section" aria-labelledby="deliveryAddressListTitle"><div class="address-list-head"><div><p>Saved Addresses</p><h2 id="deliveryAddressListTitle">저장한 배송지</h2></div><span id="deliveryAddressCount">0개</span></div><div class="address-list" id="deliveryAddressList" aria-live="polite" aria-busy="true"></div></section>
+</main>
+<div class="address-toast" id="deliveryAddressToast" role="status" aria-live="polite" hidden></div>
+<footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
+<script src="/js/view/storefront-state.js?v=20260805.2"></script><script src="/js/view/storefront-shell.js?v=20260802.1"></script><script src="/js/view/delivery-addresses.js?v=20260812.1"></script>
+</body></html>

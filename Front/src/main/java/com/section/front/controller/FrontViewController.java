@@ -67,6 +67,11 @@ public class FrontViewController {
         return "views/my-activity";
     }
 
+    @GetMapping("/front/my/addresses")
+    public String deliveryAddresses() {
+        return "views/delivery-addresses";
+    }
+
     @GetMapping("/front/support")
     public String supportCenter() {
         return "views/support-center";

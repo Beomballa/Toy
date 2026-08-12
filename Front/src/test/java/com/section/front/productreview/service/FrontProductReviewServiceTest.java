@@ -121,6 +121,26 @@ class FrontProductReviewServiceTest {
     }
 
     @Test
+    void rejectsContentThatBecomesEmptyAfterWhitespaceNormalization() {
+        Account member = mock(Account.class);
+        Orders order = mock(Orders.class);
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(accountRepository.findById(7L)).willReturn(Optional.of(member));
+        given(member.isAvailableCustomer()).willReturn(true);
+        given(orderRepository.findByOrderNumAndMemberNoForUpdate("ORDER-20260812-001", 7L)).willReturn(Optional.of(order));
+        given(order.getId()).willReturn(20L);
+        given(order.getStatus()).willReturn(OrderStatus.DELIVERED.name());
+        given(orderItemRepository.existsByOrderNoAndProductNo(20L, 11L)).willReturn(true);
+        given(reviewRepository.existsByMemberNoAndOrderNoAndProductNo(7L, 20L, 11L)).willReturn(false);
+
+        assertThatThrownBy(() -> service.createReview(7L, 11L, new FrontProductReviewCreateRequest(
+                "ORDER-20260812-001", 5, " \n \t "
+        )))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("후기 내용을 입력");
+    }
+
+    @Test
     void returnsOnlyDeliveredOrdersThatCanStillReceiveAReview() {
         Account member = mock(Account.class);
         Orders order = mock(Orders.class);

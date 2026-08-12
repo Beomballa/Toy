@@ -15,6 +15,7 @@ import com.section.front.productreview.dto.FrontMemberProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontMemberProductReviewResponse;
 import com.section.front.productreview.dto.FrontProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontProductReviewResponse;
+import com.section.front.product.dto.FrontProductResponse;
 import com.section.front.product.service.FrontProductCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -87,13 +88,17 @@ public class FrontProductReviewService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 작성한 리뷰입니다.");
         }
 
+        String content = normalizeContent(request.content());
+        if (content.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후기 내용을 입력하세요.");
+        }
         FrontProductReview review = FrontProductReview.create(
                 memberNo,
                 productNo,
                 order.getId(),
                 reviewerName(member),
                 request.rating(),
-                normalizeContent(request.content())
+                content
         );
         return FrontProductReviewResponse.from(reviewRepository.save(review));
     }
@@ -121,7 +126,7 @@ public class FrontProductReviewService {
                 memberNo,
                 PageRequest.of(pageNumber, REVIEW_PAGE_SIZE)
         );
-        Map<Long, com.section.front.product.dto.FrontProductResponse> products = productCatalogService.findProducts(
+        Map<Long, FrontProductResponse> products = productCatalogService.findProducts(
                 new LinkedHashSet<>(reviews.map(FrontProductReview::getProductNo).toList())
         );
         List<FrontMemberProductReviewResponse> responses = reviews.stream()
@@ -164,7 +169,7 @@ public class FrontProductReviewService {
 
     private FrontMemberProductReviewResponse toMemberReviewResponse(
             FrontProductReview review,
-            com.section.front.product.dto.FrontProductResponse product
+            FrontProductResponse product
     ) {
         if (product == null) {
             return null;

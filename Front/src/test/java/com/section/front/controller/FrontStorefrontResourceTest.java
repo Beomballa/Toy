@@ -302,7 +302,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260812.1");
+                .contains("/js/view/detail.js?v=20260812.2");
         assertThat(readResource("static/js/view/detail.js"))
                 .contains("function normalizeDetailProduct(")
                 .contains("function normalizeDetailOptions(")

@@ -22,14 +22,15 @@
                 <button class="btn btn-sm btn-dark" type="button" data-status="ALL">전체</button>
                 <button class="btn btn-sm btn-outline-secondary" type="button" data-status="VISIBLE">노출</button>
                 <button class="btn btn-sm btn-outline-secondary" type="button" data-status="HIDDEN">숨김</button>
+                <button class="btn btn-sm btn-outline-danger" type="button" id="reviewReportedOnlyButton" aria-pressed="false">신고 있음</button>
             </div>
             <span class="small text-muted" id="reviewListMeta">후기 목록을 불러오는 중입니다.</span>
         </div>
     </section>
     <section class="card admin-panel-card admin-table-card">
         <div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th class="ps-4">상품</th><th>작성자</th><th>평점</th><th>후기</th><th>작성일</th><th>상태</th><th class="text-end pe-4">관리</th></tr></thead>
-            <tbody id="reviewListBody"><tr><td colspan="7" class="text-center py-5 text-muted">후기 목록을 불러오는 중입니다.</td></tr></tbody>
+            <thead class="table-light"><tr><th class="ps-4">상품</th><th>작성자</th><th>평점</th><th>후기</th><th>신고</th><th>작성일</th><th>상태</th><th class="text-end pe-4">관리</th></tr></thead>
+            <tbody id="reviewListBody"><tr><td colspan="8" class="text-center py-5 text-muted">후기 목록을 불러오는 중입니다.</td></tr></tbody>
         </table></div></div>
         <div class="card-footer bg-white d-flex justify-content-between align-items-center"><span class="small text-muted" id="reviewPageMeta"></span><button class="btn btn-sm btn-outline-secondary" id="reviewMoreButton" type="button" hidden>후기 더보기</button></div>
     </section>

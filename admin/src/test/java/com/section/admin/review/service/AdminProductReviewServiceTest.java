@@ -4,6 +4,7 @@ import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
+import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.PageImpl;
@@ -21,10 +22,12 @@ import static org.mockito.Mockito.verify;
 class AdminProductReviewServiceTest {
 
     private final FrontProductReviewRepository reviewRepository = mock(FrontProductReviewRepository.class);
+    private final FrontProductReviewReportRepository reportRepository = mock(FrontProductReviewReportRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final BrandRepository brandRepository = mock(BrandRepository.class);
     private final AdminProductReviewService service = new AdminProductReviewService(
             reviewRepository,
+            reportRepository,
             productRepository,
             brandRepository
     );
@@ -34,7 +37,7 @@ class AdminProductReviewServiceTest {
         given(reviewRepository.findByStatusOrderByIdDesc(FrontProductReviewStatus.HIDDEN.name(), PageRequest.of(0, 20)))
                 .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
 
-        var response = service.getReviews("HIDDEN", 0, 20);
+        var response = service.getReviews("HIDDEN", false, 0, 20);
 
         assertThat(response.totalCount()).isZero();
         verify(reviewRepository).findByStatusOrderByIdDesc(FrontProductReviewStatus.HIDDEN.name(), PageRequest.of(0, 20));
@@ -48,5 +51,16 @@ class AdminProductReviewServiceTest {
         service.changeStatus(12L, FrontProductReviewStatus.HIDDEN);
 
         verify(review).changeStatus(FrontProductReviewStatus.HIDDEN);
+    }
+
+    @Test
+    void loadsReportedReviewsWhenReportedFilterIsRequested() {
+        given(reviewRepository.findReportedReviews(null, PageRequest.of(0, 20)))
+                .willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 20), 0));
+
+        var response = service.getReviews("ALL", true, 0, 20);
+
+        assertThat(response.reviews()).isEmpty();
+        verify(reviewRepository).findReportedReviews(null, PageRequest.of(0, 20));
     }
 }

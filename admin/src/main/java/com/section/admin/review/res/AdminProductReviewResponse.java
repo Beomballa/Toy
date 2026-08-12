@@ -10,6 +10,10 @@ public record AdminProductReviewResponse(
         String content,
         String status,
         String statusLabel,
+        long reportCount,
+        java.util.List<ReportDetail> reports,
         String createdAt
 ) {
+    public record ReportDetail(String reason, String detail, String createdAt) {
+    }
 }

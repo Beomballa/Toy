@@ -13,6 +13,8 @@ import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.entity.AdminUser;
+import com.section.common.system.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,7 +35,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AdminProductReviewService {
 
-    private static final int DEFAULT_PAGE_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -42,6 +43,7 @@ public class AdminProductReviewService {
     private final FrontProductReviewStatusHistoryRepository statusHistoryRepository;
     private final ProductRepository productRepository;
     private final BrandRepository brandRepository;
+    private final AdminUserRepository adminUserRepository;
 
     public AdminProductReviewListResponse getReviews(String rawStatus, boolean reportedOnly, int page, int size) {
         if (page < 0) {
@@ -61,6 +63,19 @@ public class AdminProductReviewService {
         Map<Long, List<FrontProductReviewReport>> reports = reviewIds.isEmpty() ? Map.of()
                 : reportRepository.findAllByReviewNoInOrderByIdDesc(reviewIds).stream()
                 .collect(Collectors.groupingBy(FrontProductReviewReport::getReviewNo));
+        Map<Long, List<FrontProductReviewStatusHistory>> statusHistories = reviewIds.isEmpty() ? Map.of()
+                : statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(reviewIds).stream()
+                .collect(Collectors.groupingBy(FrontProductReviewStatusHistory::getReviewNo));
+        List<Long> actorIds = statusHistories.values().stream()
+                .flatMap(List::stream)
+                .map(FrontProductReviewStatusHistory::getCrtNo)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> adminNames = actorIds.isEmpty() ? Map.of() : adminUserRepository.findAllById(
+                        actorIds
+                ).stream()
+                .collect(Collectors.toMap(AdminUser::getAdminNo, AdminUser::getName));
         Map<Long, Product> products = productRepository.findAllById(
                         reviews.stream().map(FrontProductReview::getProductNo).collect(Collectors.toSet())
                 ).stream()
@@ -72,7 +87,8 @@ public class AdminProductReviewService {
         return new AdminProductReviewListResponse(
                 reviews.stream().map(review -> response(
                         review, products.get(review.getProductNo()), brands,
-                        reportCounts.getOrDefault(review.getId(), 0L), reports.getOrDefault(review.getId(), List.of())
+                        reportCounts.getOrDefault(review.getId(), 0L), reports.getOrDefault(review.getId(), List.of()),
+                        statusHistories.getOrDefault(review.getId(), List.of()), adminNames
                 )).toList(),
                 reviews.getTotalElements(),
                 reviews.getNumber(),
@@ -112,7 +128,9 @@ public class AdminProductReviewService {
             Product product,
             Map<Long, Brand> brands,
             long reportCount,
-            List<FrontProductReviewReport> reports
+            List<FrontProductReviewReport> reports,
+            List<FrontProductReviewStatusHistory> statusHistories,
+            Map<Long, String> adminNames
     ) {
         String status = review.getStatus();
         return new AdminProductReviewResponse(
@@ -130,7 +148,18 @@ public class AdminProductReviewService {
                         report.getReason(), report.getDetail(),
                         report.getCrtDtm() == null ? "-" : report.getCrtDtm().format(DATE_TIME_FORMATTER)
                 )).toList(),
+                statusHistories.stream().map(history -> new AdminProductReviewResponse.StatusHistoryDetail(
+                        "HIDE".equals(history.getActionType()) ? "숨김" : "복구",
+                        statusLabel(history.getBeforeStatus()),
+                        statusLabel(history.getAfterStatus()),
+                        adminNames.getOrDefault(history.getCrtNo(), history.getCrtNo() == null ? "-" : "관리자#" + history.getCrtNo()),
+                        history.getCrtDtm() == null ? "-" : history.getCrtDtm().format(DATE_TIME_FORMATTER)
+                )).toList(),
                 review.getCrtDtm() == null ? "-" : review.getCrtDtm().format(DATE_TIME_FORMATTER)
         );
+    }
+
+    private String statusLabel(String status) {
+        return FrontProductReviewStatus.HIDDEN.name().equals(status) ? "숨김" : "노출";
     }
 }

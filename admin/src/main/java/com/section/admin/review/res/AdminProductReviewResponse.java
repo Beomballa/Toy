@@ -12,8 +12,12 @@ public record AdminProductReviewResponse(
         String statusLabel,
         long reportCount,
         java.util.List<ReportDetail> reports,
+        java.util.List<StatusHistoryDetail> statusHistories,
         String createdAt
 ) {
     public record ReportDetail(String reason, String detail, String createdAt) {
+    }
+
+    public record StatusHistoryDetail(String actionLabel, String beforeStatusLabel, String afterStatusLabel, String actorName, String createdAt) {
     }
 }

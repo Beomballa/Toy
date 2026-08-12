@@ -3,11 +3,15 @@ package com.section.admin.review.service;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.entity.FrontProductReviewStatusHistory;
+import com.section.common.commerce.entity.Brand;
+import com.section.common.commerce.entity.Product;
 import com.section.common.commerce.repository.BrandRepository;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.common.commerce.repository.FrontProductReviewReportRepository;
 import com.section.common.commerce.repository.FrontProductReviewStatusHistoryRepository;
 import com.section.common.commerce.repository.ProductRepository;
+import com.section.common.system.repository.AdminUserRepository;
+import com.section.common.system.entity.AdminUser;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
@@ -30,12 +34,14 @@ class AdminProductReviewServiceTest {
     private final FrontProductReviewStatusHistoryRepository statusHistoryRepository = mock(FrontProductReviewStatusHistoryRepository.class);
     private final ProductRepository productRepository = mock(ProductRepository.class);
     private final BrandRepository brandRepository = mock(BrandRepository.class);
+    private final AdminUserRepository adminUserRepository = mock(AdminUserRepository.class);
     private final AdminProductReviewService service = new AdminProductReviewService(
             reviewRepository,
             reportRepository,
             statusHistoryRepository,
             productRepository,
-            brandRepository
+            brandRepository,
+            adminUserRepository
     );
 
     @Test
@@ -47,6 +53,50 @@ class AdminProductReviewServiceTest {
 
         assertThat(response.totalCount()).isZero();
         verify(reviewRepository).findByStatusOrderByIdDesc(FrontProductReviewStatus.HIDDEN.name(), PageRequest.of(0, 20));
+    }
+
+    @Test
+    void includesStatusHistoryWithTheProcessingAdminInTheReviewList() {
+        FrontProductReview review = mock(FrontProductReview.class);
+        FrontProductReviewStatusHistory history = mock(FrontProductReviewStatusHistory.class);
+        Product product = mock(Product.class);
+        Brand brand = mock(Brand.class);
+        AdminUser admin = mock(AdminUser.class);
+        given(review.getId()).willReturn(12L);
+        given(review.getProductNo()).willReturn(21L);
+        given(review.getStatus()).willReturn(FrontProductReviewStatus.HIDDEN.name());
+        given(review.getReviewerName()).willReturn("구매자");
+        given(review.getRating()).willReturn(5);
+        given(review.getContent()).willReturn("후기 내용");
+        given(reviewRepository.findAllByOrderByIdDesc(PageRequest.of(0, 20)))
+                .willReturn(new PageImpl<>(List.of(review), PageRequest.of(0, 20), 1));
+        given(reportRepository.countByReviewNoIn(List.of(12L))).willReturn(List.of());
+        given(reportRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of());
+        given(statusHistoryRepository.findAllByReviewNoInOrderByIdDesc(List.of(12L))).willReturn(List.of(history));
+        given(history.getReviewNo()).willReturn(12L);
+        given(history.getCrtNo()).willReturn(3L);
+        given(history.getActionType()).willReturn("HIDE");
+        given(history.getBeforeStatus()).willReturn(FrontProductReviewStatus.VISIBLE.name());
+        given(history.getAfterStatus()).willReturn(FrontProductReviewStatus.HIDDEN.name());
+        given(productRepository.findAllById(any())).willReturn(List.of(product));
+        given(product.getId()).willReturn(21L);
+        given(product.getBrandNo()).willReturn(4L);
+        given(product.getNameKo()).willReturn("테스트 상품");
+        given(brandRepository.findAllById(any())).willReturn(List.of(brand));
+        given(brand.getBrandNo()).willReturn(4L);
+        given(brand.getNameKo()).willReturn("테스트 브랜드");
+        given(adminUserRepository.findAllById(List.of(3L))).willReturn(List.of(admin));
+        given(admin.getAdminNo()).willReturn(3L);
+        given(admin.getName()).willReturn("운영자");
+
+        var response = service.getReviews("ALL", false, 0, 20);
+
+        assertThat(response.reviews().get(0).statusHistories()).singleElement().satisfies(item -> {
+            assertThat(item.actionLabel()).isEqualTo("숨김");
+            assertThat(item.beforeStatusLabel()).isEqualTo("노출");
+            assertThat(item.afterStatusLabel()).isEqualTo("숨김");
+            assertThat(item.actorName()).isEqualTo("운영자");
+        });
     }
 
     @Test

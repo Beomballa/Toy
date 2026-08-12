@@ -69,6 +69,8 @@
         detailReviewForm: document.getElementById("detailReviewForm"),
         detailReviewFormCloseButton: document.getElementById("detailReviewFormCloseButton"),
         detailReviewSubmitButton: document.getElementById("detailReviewSubmitButton"),
+        detailReviewContent: document.getElementById("detailReviewContent"),
+        detailReviewContentCount: document.getElementById("detailReviewContentCount"),
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailRecentCount: document.getElementById("detailRecentCount"),
@@ -528,7 +530,17 @@
     function setReviewFormOpen(open) {
         if (!elements.detailReviewForm) return;
         elements.detailReviewForm.hidden = !open;
-        if (open) loadEligibleReviewOrders();
+        if (open) {
+            updateReviewContentCount();
+            loadEligibleReviewOrders();
+        }
+    }
+
+    function updateReviewContentCount() {
+        if (!elements.detailReviewContent || !elements.detailReviewContentCount) return;
+        const length = elements.detailReviewContent.value.length;
+        elements.detailReviewContentCount.textContent = `${length.toLocaleString("ko-KR")} / 1,000자`;
+        elements.detailReviewContentCount.classList.toggle("is-limit", length >= 1000);
     }
 
     async function loadEligibleReviewOrders() {
@@ -2599,6 +2611,7 @@
         });
         elements.detailReviewWriteButton?.addEventListener("click", () => setReviewFormOpen(true));
         elements.detailReviewFormCloseButton?.addEventListener("click", () => setReviewFormOpen(false));
+        elements.detailReviewContent?.addEventListener("input", updateReviewContentCount);
         elements.detailReviewForm?.addEventListener("submit", submitReview);
         elements.detailReviewList?.addEventListener("click", event => {
             const button = event.target.closest("[data-review-report-id]");

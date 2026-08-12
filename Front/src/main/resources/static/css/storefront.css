@@ -1717,6 +1717,18 @@ main#top {
     text-decoration: underline;
 }
 
+.detail-review-form__count {
+    margin: -3px 0 0;
+    color: #888;
+    font-size: 11px;
+    text-align: right;
+}
+
+.detail-review-form__count.is-limit {
+    color: #b54a3a;
+    font-weight: 700;
+}
+
 .detail-review-form > button[type="submit"] {
     min-height: 42px;
     border: 0;

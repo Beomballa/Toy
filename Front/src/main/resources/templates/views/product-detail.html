@@ -6,7 +6,7 @@
     <title>NOREN Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260812.3">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260812.4">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260804.1">
 </head>
 <body class="detail-body storefront-page" th:attr="data-product-id=${productId}">
@@ -284,7 +284,8 @@
                     <option value="1">1점 · 불만족</option>
                 </select>
                 <label for="detailReviewContent">후기 내용</label>
-                <textarea id="detailReviewContent" name="content" maxlength="1000" required placeholder="상품 상태와 사용 경험을 1,000자 이내로 남겨주세요."></textarea>
+                <textarea id="detailReviewContent" name="content" maxlength="1000" required aria-describedby="detailReviewContentCount" placeholder="상품 상태와 사용 경험을 1,000자 이내로 남겨주세요."></textarea>
+                <p class="detail-review-form__count" id="detailReviewContentCount" aria-live="polite">0 / 1,000자</p>
                 <p>주문 번호는 <a href="/front/orders">주문 내역</a>에서 확인할 수 있습니다.</p>
                 <button type="submit" id="detailReviewSubmitButton">후기 등록</button>
             </form>
@@ -429,6 +430,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/detail.js?v=20260812.7"></script>
+<script src="/js/view/detail.js?v=20260812.8"></script>
 </body>
 </html>

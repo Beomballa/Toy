@@ -10,6 +10,7 @@ import com.section.common.commerce.repository.ProductRepository;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.productreview.dto.FrontReviewEligibleOrderResponse;
 import com.section.front.productreview.dto.FrontMemberProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontMemberProductReviewResponse;
 import com.section.front.productreview.dto.FrontProductReviewPageResponse;
@@ -95,6 +96,17 @@ public class FrontProductReviewService {
                 normalizeContent(request.content())
         );
         return FrontProductReviewResponse.from(reviewRepository.save(review));
+    }
+
+    @Transactional(readOnly = true)
+    public List<FrontReviewEligibleOrderResponse> getEligibleOrders(long memberNo, long productNo) {
+        requireProduct(productNo);
+        accountRepository.findById(memberNo)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
+        return orderRepository.findReviewEligibleOrders(memberNo, productNo, OrderStatus.DELIVERED.name()).stream()
+                .map(order -> new FrontReviewEligibleOrderResponse(order.getOrderNum()))
+                .toList();
     }
 
     @Transactional(readOnly = true)

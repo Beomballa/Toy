@@ -497,10 +497,36 @@
     function setReviewFormOpen(open) {
         if (!elements.detailReviewForm) return;
         elements.detailReviewForm.hidden = !open;
+        if (open) loadEligibleReviewOrders();
+    }
+
+    async function loadEligibleReviewOrders() {
         const orderNumberInput = document.getElementById("detailReviewOrderNumber");
-        if (open && orderNumberInput) {
-            orderNumberInput.value = reviewOrderNumber;
-            orderNumberInput.focus();
+        if (!orderNumberInput) return;
+        orderNumberInput.disabled = true;
+        orderNumberInput.replaceChildren(new Option("작성 가능한 주문을 확인 중입니다.", ""));
+        try {
+            const response = await fetch(`/api/front/products/${productId}/reviews/eligible-orders`, { headers: { Accept: "application/json" } });
+            if (response.status === 401) {
+                orderNumberInput.replaceChildren(new Option("로그인 후 주문을 선택할 수 있습니다.", ""));
+                return;
+            }
+            if (!response.ok) throw new Error("작성 가능한 주문을 불러오지 못했습니다.");
+            const orders = await response.json();
+            if (!Array.isArray(orders)) throw new Error("작성 가능한 주문 응답이 올바르지 않습니다.");
+            const options = orders.map((order) => {
+                const orderNumber = detailText(order?.orderNumber, 50, true);
+                return new Option(orderNumber, orderNumber, false, orderNumber === reviewOrderNumber);
+            });
+            orderNumberInput.replaceChildren(
+                new Option(options.length ? "배송 완료 주문을 선택하세요." : "작성 가능한 주문이 없습니다.", ""),
+                ...options
+            );
+            orderNumberInput.disabled = !options.length;
+            if (options.length) orderNumberInput.focus();
+        } catch (error) {
+            orderNumberInput.replaceChildren(new Option("주문을 불러오지 못했습니다.", ""));
+            showToast("작성 가능한 주문을 불러오지 못했습니다.", "잠시 후 다시 시도해주세요.", true);
         }
     }
 

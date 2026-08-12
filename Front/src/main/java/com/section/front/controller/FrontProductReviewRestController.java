@@ -3,6 +3,7 @@ package com.section.front.controller;
 import com.section.front.auth.support.FrontMemberSession;
 import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
 import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
+import com.section.front.productreview.dto.FrontReviewEligibleOrderResponse;
 import com.section.front.productreview.dto.FrontProductReviewPageResponse;
 import com.section.front.productreview.dto.FrontProductReviewResponse;
 import com.section.front.productreview.service.FrontProductReviewService;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,6 +44,14 @@ public class FrontProductReviewRestController {
             HttpServletRequest httpRequest
     ) {
         return reviewService.createReview(memberNo(httpRequest), productId, request);
+    }
+
+    @GetMapping("/eligible-orders")
+    public List<FrontReviewEligibleOrderResponse> getEligibleOrders(
+            @PathVariable long productId,
+            HttpServletRequest httpRequest
+    ) {
+        return reviewService.getEligibleOrders(memberNo(httpRequest), productId);
     }
 
     private long memberNo(HttpServletRequest request) {

@@ -28,6 +28,16 @@ public interface OrderRepository extends JpaRepository<Orders, Long>, CustomOrde
 
     Page<Orders> findByMemberNoAndStatusOrderByIdDesc(Long memberNo, String status, Pageable pageable);
 
+    @Query("select o from Orders o where o.memberNo = :memberNo and o.status = :status "
+            + "and exists (select 1 from OrderItem item where item.orderNo = o.id and item.productNo = :productNo) "
+            + "and not exists (select 1 from FrontProductReview review where review.memberNo = :memberNo "
+            + "and review.orderNo = o.id and review.productNo = :productNo) order by o.id desc")
+    List<Orders> findReviewEligibleOrders(
+            @Param("memberNo") long memberNo,
+            @Param("productNo") long productNo,
+            @Param("status") String status
+    );
+
     @Query("SELECT orders.status AS status, COUNT(orders) AS count FROM Orders orders "
             + "WHERE orders.memberNo = :memberNo GROUP BY orders.status")
     List<MemberOrderStatusCount> countByMemberNoGroupByStatus(@Param("memberNo") Long memberNo);

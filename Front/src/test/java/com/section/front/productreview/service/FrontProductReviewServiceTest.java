@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -117,6 +118,22 @@ class FrontProductReviewServiceTest {
         assertThatThrownBy(() -> service.createReview(7L, 11L, request()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("이미 작성한 리뷰");
+    }
+
+    @Test
+    void returnsOnlyDeliveredOrdersThatCanStillReceiveAReview() {
+        Account member = mock(Account.class);
+        Orders order = mock(Orders.class);
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(accountRepository.findById(7L)).willReturn(Optional.of(member));
+        given(member.isAvailableCustomer()).willReturn(true);
+        given(order.getOrderNum()).willReturn("ORDER-20260812-001");
+        given(orderRepository.findReviewEligibleOrders(7L, 11L, OrderStatus.DELIVERED.name()))
+                .willReturn(List.of(order));
+
+        var response = service.getEligibleOrders(7L, 11L);
+
+        assertThat(response).extracting(item -> item.orderNumber()).containsExactly("ORDER-20260812-001");
     }
 
     private FrontProductReviewCreateRequest request() {

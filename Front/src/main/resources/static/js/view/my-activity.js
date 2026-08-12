@@ -302,11 +302,14 @@
         button.disabled = true;
         try {
             const response = await fetch(`/api/front/member/reviews/${encodeURIComponent(button.dataset.deleteReviewId)}`, { method: "DELETE" });
-            if (!response.ok) throw new Error("후기를 삭제하지 못했습니다.");
+            if (!response.ok) {
+                const error = await response.json().catch(() => null);
+                throw new Error(error?.message || "후기를 삭제하지 못했습니다.");
+            }
             await loadMemberReviews(true);
             toast("작성한 후기를 삭제했습니다.");
-        } catch (_) {
-            toast("후기를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
+        } catch (error) {
+            toast(error.message || "후기를 삭제하지 못했습니다. 잠시 후 다시 시도해주세요.");
             button.disabled = false;
         }
     });

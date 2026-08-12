@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class FrontProductReviewServiceTest {
@@ -197,7 +198,7 @@ class FrontProductReviewServiceTest {
         FrontProductReview review = mock(FrontProductReview.class);
         given(accountRepository.findById(7L)).willReturn(Optional.of(member));
         given(member.isAvailableCustomer()).willReturn(true);
-        given(reviewRepository.findByIdAndMemberNo(31L, 7L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdAndMemberNoForUpdate(31L, 7L)).willReturn(Optional.of(review));
         given(review.getId()).willReturn(31L);
 
         service.deleteMemberReview(7L, 31L);
@@ -205,6 +206,24 @@ class FrontProductReviewServiceTest {
         verify(reportRepository).deleteByReviewNo(31L);
         verify(statusHistoryRepository).deleteByReviewNo(31L);
         verify(reviewRepository).delete(review);
+    }
+
+    @Test
+    void preventsDeletingReviewThatHasOperationalHistory() {
+        Account member = mock(Account.class);
+        FrontProductReview review = mock(FrontProductReview.class);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(member));
+        given(member.isAvailableCustomer()).willReturn(true);
+        given(reviewRepository.findByIdAndMemberNoForUpdate(31L, 7L)).willReturn(Optional.of(review));
+        given(review.getId()).willReturn(31L);
+        given(statusHistoryRepository.existsByReviewNo(31L)).willReturn(true);
+
+        assertThatThrownBy(() -> service.deleteMemberReview(7L, 31L))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("운영 처리 이력");
+        verify(reportRepository, never()).deleteByReviewNo(31L);
+        verify(statusHistoryRepository, never()).deleteByReviewNo(31L);
+        verify(reviewRepository, never()).delete(review);
     }
 
     private FrontProductReviewCreateRequest request() {

@@ -423,7 +423,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
                 .contains("/css/my-activity.css?v=20260812.2")
-                .contains("/js/view/my-activity.js?v=20260812.3");
+                .contains("/js/view/my-activity.js?v=20260812.4");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")

@@ -185,8 +185,12 @@ public class FrontProductReviewService {
         accountRepository.findById(memberNo)
                 .filter(Account::isAvailableCustomer)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
-        FrontProductReview review = reviewRepository.findByIdAndMemberNo(reviewId, memberNo)
+        // 신고와 동일한 후기 잠금을 사용해 운영 기록 확인과 삭제가 교차하지 않도록 합니다.
+        FrontProductReview review = reviewRepository.findByIdAndMemberNoForUpdate(reviewId, memberNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
+        if (reportRepository.existsByReviewNo(review.getId()) || statusHistoryRepository.existsByReviewNo(review.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "신고 또는 운영 처리 이력이 있는 후기는 삭제할 수 없습니다.");
+        }
         reportRepository.deleteByReviewNo(review.getId());
         statusHistoryRepository.deleteByReviewNo(review.getId());
         reviewRepository.delete(review);

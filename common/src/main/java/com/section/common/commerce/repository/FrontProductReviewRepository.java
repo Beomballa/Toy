@@ -45,6 +45,13 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
     Optional<FrontProductReview> findByIdAndMemberNo(long id, long memberNo);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select review from FrontProductReview review where review.id = :reviewId and review.memberNo = :memberNo")
+    Optional<FrontProductReview> findByIdAndMemberNoForUpdate(
+            @Param("reviewId") long reviewId,
+            @Param("memberNo") long memberNo
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select review from FrontProductReview review where review.id = :reviewId")
     Optional<FrontProductReview> findByIdForUpdate(@Param("reviewId") long reviewId);
 

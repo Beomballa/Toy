@@ -12,6 +12,8 @@ public interface FrontProductReviewReportRepository extends JpaRepository<FrontP
 
     boolean existsByReviewNoAndMemberNo(long reviewNo, long memberNo);
 
+    boolean existsByReviewNo(long reviewNo);
+
     void deleteByReviewNo(long reviewNo);
 
     List<FrontProductReviewReport> findAllByReviewNoInOrderByIdDesc(List<Long> reviewNos);

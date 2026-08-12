@@ -448,7 +448,7 @@
             <article class="detail-review-item">
                 <div><strong>${escapeMarkup(review.reviewerName)}</strong><span>${reviewStars(review.rating)}</span></div>
                 <p>${escapeMarkup(review.content)}</p>
-                <footer><time>${escapeMarkup(review.createdDate)}</time><button type="button" data-review-report-id="${review.id}">신고</button></footer>
+                <footer><time>${escapeMarkup(review.createdDate)}</time>${review.reportedByMe ? '<span class="detail-review-reported">신고 완료</span>' : `<button type="button" data-review-report-id="${review.id}">신고</button>`}</footer>
             </article>
         `;
     }
@@ -461,7 +461,8 @@
             reviewerName: detailText(review?.reviewerName, 40, true),
             rating,
             content: detailText(review?.content, 1000, true),
-            createdDate: detailText(review?.createdDate, 30, true)
+            createdDate: detailText(review?.createdDate, 30, true),
+            reportedByMe: review?.reportedByMe === true
         };
     }
 
@@ -633,6 +634,7 @@
             });
             if (!response.ok) throw new Error((await response.text()) || "후기를 신고하지 못했습니다.");
             closeReportModal();
+            await loadReviews(0);
             showToast("후기를 신고했습니다.", "운영자가 신고 내용을 확인합니다.");
         } catch (error) {
             showToast("후기를 신고하지 못했습니다.", error.message.replace(/<[^>]*>/g, ""), true);

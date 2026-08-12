@@ -9,17 +9,19 @@ public record FrontProductReviewResponse(
         String reviewerName,
         int rating,
         String content,
-        String createdDate
+        String createdDate,
+        boolean reportedByMe
 ) {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    public static FrontProductReviewResponse from(FrontProductReview review) {
+    public static FrontProductReviewResponse from(FrontProductReview review, boolean reportedByMe) {
         return new FrontProductReviewResponse(
                 review.getId(),
                 review.getReviewerName(),
                 review.getRating(),
                 review.getContent(),
-                review.getCrtDtm().toLocalDate().format(DATE_FORMATTER)
+                review.getCrtDtm().toLocalDate().format(DATE_FORMATTER),
+                reportedByMe
         );
     }
 }

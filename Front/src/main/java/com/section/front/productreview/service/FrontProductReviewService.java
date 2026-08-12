@@ -51,7 +51,7 @@ public class FrontProductReviewService {
     private final FrontProductCatalogService productCatalogService;
 
     @Transactional(readOnly = true)
-    public FrontProductReviewPageResponse getReviews(long productNo, int pageNumber, String rawSort) {
+    public FrontProductReviewPageResponse getReviews(long productNo, int pageNumber, String rawSort, Long memberNo) {
         requireProduct(productNo);
         if (pageNumber < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 번호가 올바르지 않습니다.");
@@ -78,8 +78,13 @@ public class FrontProductReviewService {
                         ratingDistribution[5 - rating] = row.getCount();
                     }
                 });
+        java.util.Set<Long> reportedReviewNos = memberNo == null || reviews.isEmpty() ? java.util.Set.of()
+                : new java.util.HashSet<>(reportRepository.findReviewNosByMemberNoAndReviewNoIn(
+                memberNo,
+                reviews.stream().map(FrontProductReview::getId).toList()
+        ));
         return new FrontProductReviewPageResponse(
-                reviews.map(FrontProductReviewResponse::from).getContent(),
+                reviews.map(review -> FrontProductReviewResponse.from(review, reportedReviewNos.contains(review.getId()))).getContent(),
                 totalCount,
                 Math.round(averageRating * 10) / 10.0,
                 java.util.Arrays.stream(ratingDistribution).boxed().toList(),
@@ -124,7 +129,7 @@ public class FrontProductReviewService {
                 content
         );
         try {
-            return FrontProductReviewResponse.from(reviewRepository.saveAndFlush(review));
+            return FrontProductReviewResponse.from(reviewRepository.saveAndFlush(review), false);
         } catch (DataIntegrityViolationException exception) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 작성한 리뷰입니다.", exception);
         }

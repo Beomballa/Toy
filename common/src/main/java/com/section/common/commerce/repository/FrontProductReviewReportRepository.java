@@ -20,6 +20,13 @@ public interface FrontProductReviewReportRepository extends JpaRepository<FrontP
 
     List<FrontProductReviewReport> findAllByReviewNoAndStatus(long reviewNo, String status);
 
+    @Query("select report.reviewNo from FrontProductReviewReport report where report.memberNo = :memberNo "
+            + "and report.reviewNo in :reviewNos")
+    List<Long> findReviewNosByMemberNoAndReviewNoIn(
+            @Param("memberNo") long memberNo,
+            @Param("reviewNos") List<Long> reviewNos
+    );
+
     @Query("select report.reviewNo as reviewNo, count(report) as count from FrontProductReviewReport report "
             + "where report.reviewNo in :reviewNos group by report.reviewNo")
     List<ReviewReportCount> countByReviewNoIn(@Param("reviewNos") List<Long> reviewNos);

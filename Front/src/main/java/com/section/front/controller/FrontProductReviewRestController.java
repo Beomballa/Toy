@@ -34,9 +34,11 @@ public class FrontProductReviewRestController {
     public FrontProductReviewPageResponse getReviews(
             @PathVariable long productId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "RECENT") String sort
+            @RequestParam(defaultValue = "RECENT") String sort,
+            HttpServletRequest httpRequest
     ) {
-        return reviewService.getReviews(productId, page, sort);
+        AuthenticatedFrontMember member = FrontMemberSession.read(httpRequest.getSession(false));
+        return reviewService.getReviews(productId, page, sort, member == null ? null : member.memberId());
     }
 
     @PostMapping

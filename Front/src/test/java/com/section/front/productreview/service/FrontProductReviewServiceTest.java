@@ -113,7 +113,7 @@ class FrontProductReviewServiceTest {
         given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
                 .willReturn(List.of());
 
-        var response = service.getReviews(11L, 0, "RATING_DESC");
+        var response = service.getReviews(11L, 0, "RATING_DESC", null);
 
         assertThat(response.reviews()).isEmpty();
         verify(reviewRepository).findByProductNoAndStatusOrderByRatingDescIdDesc(
@@ -138,7 +138,7 @@ class FrontProductReviewServiceTest {
         given(threeStar.getRating()).willReturn(3);
         given(threeStar.getCount()).willReturn(1L);
 
-        var response = service.getReviews(11L, 0, "RECENT");
+        var response = service.getReviews(11L, 0, "RECENT", null);
 
         assertThat(response.ratingDistribution()).containsExactly(4L, 0L, 1L, 0L, 0L);
     }
@@ -147,9 +147,33 @@ class FrontProductReviewServiceTest {
     void rejectsUnknownReviewSort() {
         given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
 
-        assertThatThrownBy(() -> service.getReviews(11L, 0, "PRICE_ASC"))
+        assertThatThrownBy(() -> service.getReviews(11L, 0, "PRICE_ASC", null))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("정렬 기준");
+    }
+
+    @Test
+    void marksReviewsReportedByTheCurrentMemberUsingOneBatchQuery() {
+        FrontProductReview review = mock(FrontProductReview.class);
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(reviewRepository.findByProductNoAndStatusOrderByIdDesc(
+                11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
+        )).willReturn(new PageImpl<>(List.of(review), PageRequest.of(0, 10), 1));
+        given(review.getId()).willReturn(31L);
+        given(review.getReviewerName()).willReturn("구매자");
+        given(review.getRating()).willReturn(5);
+        given(review.getContent()).willReturn("후기 내용");
+        given(review.getCrtDtm()).willReturn(java.time.LocalDateTime.of(2026, 8, 12, 12, 0));
+        given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(new Object[]{1L, 5D});
+        given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(List.of());
+        given(reportRepository.findReviewNosByMemberNoAndReviewNoIn(7L, List.of(31L))).willReturn(List.of(31L));
+
+        var response = service.getReviews(11L, 0, "RECENT", 7L);
+
+        assertThat(response.reviews()).singleElement().satisfies(item -> assertThat(item.reportedByMe()).isTrue());
+        verify(reportRepository).findReviewNosByMemberNoAndReviewNoIn(7L, List.of(31L));
     }
 
     @Test

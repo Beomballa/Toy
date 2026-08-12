@@ -17,6 +17,13 @@ public interface OrderRepository extends JpaRepository<Orders, Long>, CustomOrde
 
     Optional<Orders> findByOrderNumAndMemberNo(String orderNum, Long memberNo);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT o FROM Orders o WHERE o.orderNum = :orderNumber AND o.memberNo = :memberNo")
+    Optional<Orders> findByOrderNumAndMemberNoForUpdate(
+            @Param("orderNumber") String orderNumber,
+            @Param("memberNo") Long memberNo
+    );
+
     Page<Orders> findByMemberNoOrderByIdDesc(Long memberNo, Pageable pageable);
 
     Page<Orders> findByMemberNoAndStatusOrderByIdDesc(Long memberNo, String status, Pageable pageable);

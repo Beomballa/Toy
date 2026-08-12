@@ -35,6 +35,7 @@
     let detailModalReturnFocus = null;
     let memoryCartToken = null;
     let cartSubmitting = false;
+    const detailReviewState = { page: 0, hasNext: false, loading: false };
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -54,6 +55,15 @@
         detailOptionCount: document.getElementById("detailOptionCount"),
         detailRelatedGrid: document.getElementById("detailRelatedGrid"),
         detailRelatedCount: document.getElementById("detailRelatedCount"),
+        detailReviewCount: document.getElementById("detailReviewCount"),
+        detailReviewAverage: document.getElementById("detailReviewAverage"),
+        detailReviewAverageText: document.getElementById("detailReviewAverageText"),
+        detailReviewList: document.getElementById("detailReviewList"),
+        detailReviewMoreButton: document.getElementById("detailReviewMoreButton"),
+        detailReviewWriteButton: document.getElementById("detailReviewWriteButton"),
+        detailReviewForm: document.getElementById("detailReviewForm"),
+        detailReviewFormCloseButton: document.getElementById("detailReviewFormCloseButton"),
+        detailReviewSubmitButton: document.getElementById("detailReviewSubmitButton"),
         detailRecentSection: document.getElementById("detailRecentSection"),
         detailRecentGrid: document.getElementById("detailRecentGrid"),
         detailRecentCount: document.getElementById("detailRecentCount"),
@@ -415,6 +425,111 @@
                 <span>${escapeMarkup(message)}</span>
             </article>
         `).join("");
+    }
+
+    function reviewStars(rating) {
+        return "★".repeat(rating) + "☆".repeat(5 - rating);
+    }
+
+    function reviewMarkup(review) {
+        return `
+            <article class="detail-review-item">
+                <div><strong>${escapeMarkup(review.reviewerName)}</strong><span>${reviewStars(review.rating)}</span></div>
+                <p>${escapeMarkup(review.content)}</p>
+                <time>${escapeMarkup(review.createdDate)}</time>
+            </article>
+        `;
+    }
+
+    function normalizeReview(review) {
+        const rating = detailInteger(review?.rating, "후기 평점", 1);
+        if (rating > 5) throw new Error("후기 평점 정보가 올바르지 않습니다.");
+        return {
+            id: detailInteger(review?.id, "후기 번호", 1),
+            reviewerName: detailText(review?.reviewerName, 40, true),
+            rating,
+            content: detailText(review?.content, 1000, true),
+            createdDate: detailText(review?.createdDate, 30, true)
+        };
+    }
+
+    async function loadReviews(page = 0, append = false) {
+        if (!elements.detailReviewList || detailReviewState.loading) return;
+        detailReviewState.loading = true;
+        if (elements.detailReviewMoreButton) elements.detailReviewMoreButton.disabled = true;
+        try {
+            const response = await fetch(`/api/front/products/${productId}/reviews?page=${page}`);
+            if (!response.ok) throw new Error("구매 후기를 불러오지 못했습니다.");
+            const payload = await response.json();
+            if (!Array.isArray(payload?.reviews) || !Number.isSafeInteger(payload?.totalCount)
+                    || !Number.isFinite(payload?.averageRating)) {
+                throw new Error("구매 후기 응답이 올바르지 않습니다.");
+            }
+            const reviews = payload.reviews.map(normalizeReview);
+            detailReviewState.page = Number.isSafeInteger(payload.page) ? payload.page : page;
+            detailReviewState.hasNext = payload.hasNext === true;
+            if (elements.detailReviewCount) elements.detailReviewCount.textContent = String(payload.totalCount);
+            if (elements.detailReviewAverage) elements.detailReviewAverage.textContent = payload.totalCount ? `${payload.averageRating.toFixed(1)} / 5` : "-";
+            if (elements.detailReviewAverageText) {
+                elements.detailReviewAverageText.textContent = payload.totalCount
+                    ? `${payload.totalCount}개의 배송 완료 구매 후기`
+                    : "아직 등록된 후기가 없습니다.";
+            }
+            if (append) {
+                elements.detailReviewList.insertAdjacentHTML("beforeend", reviews.map(reviewMarkup).join(""));
+            } else {
+                elements.detailReviewList.innerHTML = reviews.length
+                    ? reviews.map(reviewMarkup).join("")
+                    : '<article class="detail-review-empty"><strong>첫 구매 후기를 남겨주세요.</strong><p>배송 완료 주문 상품만 작성할 수 있습니다.</p></article>';
+            }
+            if (elements.detailReviewMoreButton) elements.detailReviewMoreButton.hidden = !detailReviewState.hasNext;
+        } catch (error) {
+            if (!append) {
+                elements.detailReviewList.innerHTML = '<article class="detail-review-empty"><strong>구매 후기를 불러오지 못했습니다.</strong><p>잠시 후 다시 시도해주세요.</p></article>';
+            }
+        } finally {
+            detailReviewState.loading = false;
+            if (elements.detailReviewMoreButton) elements.detailReviewMoreButton.disabled = false;
+        }
+    }
+
+    function setReviewFormOpen(open) {
+        if (!elements.detailReviewForm) return;
+        elements.detailReviewForm.hidden = !open;
+        if (open) document.getElementById("detailReviewOrderNumber")?.focus();
+    }
+
+    async function submitReview(event) {
+        event.preventDefault();
+        if (!elements.detailReviewForm || !elements.detailReviewSubmitButton) return;
+        const form = new FormData(elements.detailReviewForm);
+        const orderNumber = String(form.get("orderNumber") || "").trim();
+        const rating = Number(form.get("rating"));
+        const content = String(form.get("content") || "").trim();
+        if (!orderNumber || orderNumber.length > 50 || !Number.isSafeInteger(rating) || rating < 1 || rating > 5 || !content) {
+            showToast("후기 내용을 확인해주세요.", "주문 번호, 평점, 내용을 모두 입력해야 합니다.", true);
+            return;
+        }
+        elements.detailReviewSubmitButton.disabled = true;
+        try {
+            const response = await fetch(`/api/front/products/${productId}/reviews`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ orderNumber, rating, content })
+            });
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || "후기 등록을 처리하지 못했습니다.");
+            }
+            elements.detailReviewForm.reset();
+            setReviewFormOpen(false);
+            await loadReviews(0);
+            showToast("구매 후기를 등록했습니다.", "배송 완료 주문 기준으로 후기 목록에 반영했습니다.");
+        } catch (error) {
+            showToast("후기를 등록하지 못했습니다.", error.message.replace(/<[^>]*>/g, "") || "로그인과 주문 상태를 확인해주세요.", true);
+        } finally {
+            elements.detailReviewSubmitButton.disabled = false;
+        }
     }
 
     function renderOverview(product) {
@@ -2362,6 +2477,10 @@
             }
         });
         elements.copyDetailRecentLinksButton?.addEventListener("click", copyRecentProductLinks);
+        elements.detailReviewMoreButton?.addEventListener("click", () => loadReviews(detailReviewState.page + 1, true));
+        elements.detailReviewWriteButton?.addEventListener("click", () => setReviewFormOpen(true));
+        elements.detailReviewFormCloseButton?.addEventListener("click", () => setReviewFormOpen(false));
+        elements.detailReviewForm?.addEventListener("submit", submitReview);
         try {
             const response = await fetch(`/api/front/products/${productId}`);
             if (!response.ok) {
@@ -2398,6 +2517,7 @@
             syncSelectedOptionActions(restoredOption || {});
             renderRelated(product);
             renderRecentProducts(product.id);
+            loadReviews();
             syncActionButtons();
         } catch (error) {
             if (elements.detailTitle) {

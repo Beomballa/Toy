@@ -1486,6 +1486,168 @@ main#top {
     margin: 0;
 }
 
+.detail-reviews {
+    min-width: 0;
+}
+
+.detail-review-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 18px 0;
+    border-top: 2px solid #222;
+    border-bottom: 1px solid #e9e9e9;
+}
+
+.detail-review-summary strong {
+    color: #111;
+    font-size: 22px;
+    letter-spacing: -.6px;
+}
+
+.detail-review-summary span,
+.detail-review-item time,
+.detail-review-form > p {
+    color: #777;
+    font-size: 12px;
+}
+
+.detail-review-list {
+    min-width: 0;
+}
+
+.detail-review-item,
+.detail-review-empty {
+    padding: 20px 4px;
+    border-bottom: 1px solid #ededed;
+}
+
+.detail-review-item > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.detail-review-item strong {
+    color: #222;
+    font-size: 13px;
+}
+
+.detail-review-item span {
+    flex: 0 0 auto;
+    color: #222;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.detail-review-item p,
+.detail-review-empty p {
+    margin: 10px 0 8px;
+    color: #444;
+    font-size: 13px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+}
+
+.detail-review-empty strong {
+    color: #444;
+    font-size: 13px;
+}
+
+.detail-review-more {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    background: #fff;
+    color: #333;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.detail-review-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+    padding: 20px;
+    border-radius: 10px;
+    background: #f7f7f7;
+}
+
+.detail-review-form__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.detail-review-form__head strong {
+    font-size: 14px;
+}
+
+.detail-review-form__head button {
+    border: 0;
+    background: transparent;
+    color: #666;
+    font-size: 12px;
+}
+
+.detail-review-form label {
+    color: #333;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.detail-review-form input,
+.detail-review-form select,
+.detail-review-form textarea {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: #fff;
+    color: #222;
+    font: inherit;
+    font-size: 13px;
+}
+
+.detail-review-form input,
+.detail-review-form select {
+    height: 40px;
+    padding: 0 12px;
+}
+
+.detail-review-form textarea {
+    min-height: 110px;
+    padding: 12px;
+    resize: vertical;
+}
+
+.detail-review-form > p {
+    margin: 0;
+}
+
+.detail-review-form > p a {
+    color: #333;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.detail-review-form > button[type="submit"] {
+    min-height: 42px;
+    border: 0;
+    border-radius: 7px;
+    background: #222;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
 @media (max-width: 640px) {
     .catalog-live-metrics {
         grid-template-columns: repeat(2, minmax(0, 1fr));

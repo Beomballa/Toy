@@ -76,6 +76,7 @@
             <a href="#detailOverview">개요</a>
             <a href="#detailOptions">옵션</a>
             <a href="#detailGuide">안내</a>
+            <a href="#detailReviews">후기</a>
             <a href="#detailRelated">연관 상품</a>
             <a href="#detailRecentSection">최근 본 상품</a>
         </nav>
@@ -239,6 +240,47 @@
             </div>
         </section>
 
+        <section class="detail-section detail-reviews" id="detailReviews">
+            <div class="section-heading">
+                <p class="eyebrow">Reviews</p>
+                <div>
+                    <h2>구매 후기 <span class="detail-section-count" id="detailReviewCount" aria-live="polite">0</span></h2>
+                    <p>배송 완료된 주문 상품의 후기만 공개합니다.</p>
+                </div>
+                <button class="catalog-reset-button" type="button" id="detailReviewWriteButton">후기 작성</button>
+            </div>
+            <div class="detail-review-summary" id="detailReviewSummary" aria-label="구매 후기 평점">
+                <strong id="detailReviewAverage">-</strong>
+                <span id="detailReviewAverageText">아직 등록된 후기가 없습니다.</span>
+            </div>
+            <div class="detail-review-list" id="detailReviewList" aria-live="polite">
+                <article class="detail-review-empty">
+                    <strong>구매 후기를 불러오는 중입니다.</strong>
+                </article>
+            </div>
+            <button class="detail-review-more" type="button" id="detailReviewMoreButton" hidden>후기 더보기</button>
+            <form class="detail-review-form" id="detailReviewForm" hidden>
+                <div class="detail-review-form__head">
+                    <strong>구매 후기 작성</strong>
+                    <button type="button" id="detailReviewFormCloseButton">닫기</button>
+                </div>
+                <label for="detailReviewOrderNumber">배송 완료 주문 번호</label>
+                <input id="detailReviewOrderNumber" name="orderNumber" type="text" maxlength="50" autocomplete="off" required placeholder="예: ORDER-20260812-001">
+                <label for="detailReviewRating">평점</label>
+                <select id="detailReviewRating" name="rating" required>
+                    <option value="5">5점 · 매우 만족</option>
+                    <option value="4">4점 · 만족</option>
+                    <option value="3">3점 · 보통</option>
+                    <option value="2">2점 · 아쉬움</option>
+                    <option value="1">1점 · 불만족</option>
+                </select>
+                <label for="detailReviewContent">후기 내용</label>
+                <textarea id="detailReviewContent" name="content" maxlength="1000" required placeholder="상품 상태와 사용 경험을 1,000자 이내로 남겨주세요."></textarea>
+                <p>주문 번호는 <a href="/front/orders">주문 내역</a>에서 확인할 수 있습니다.</p>
+                <button type="submit" id="detailReviewSubmitButton">후기 등록</button>
+            </form>
+        </section>
+
         <section class="detail-section" id="detailRelated">
             <div class="section-heading">
                 <p class="eyebrow">Related</p>
@@ -366,6 +408,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/detail.js?v=20260803.1"></script>
+<script src="/js/view/detail.js?v=20260812.1"></script>
 </body>
 </html>

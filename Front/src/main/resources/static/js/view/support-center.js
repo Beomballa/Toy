@@ -112,7 +112,8 @@
         noticePage: 0,
         noticeSize: 10,
         noticeSort: "LATEST",
-        expandedFaqIds: new Set()
+        expandedFaqIds: new Set(),
+        orderContext: null
     };
     let noticeController = null;
     let noticeSequence = 0;
@@ -151,7 +152,8 @@
         noticePageText: document.getElementById("supportNoticePageText"),
         copySummary: document.getElementById("supportCopySummaryButton"),
         topButton: document.getElementById("supportTopButton"),
-        toast: document.getElementById("supportToast")
+        toast: document.getElementById("supportToast"),
+        orderContext: document.getElementById("supportOrderContext")
     };
 
     function hydrateFromUrl() {
@@ -167,6 +169,7 @@
         state.noticeSort = VALID_SORTS.includes(sort) ? sort : "LATEST";
         state.noticeSize = VALID_SIZES.includes(size) ? size : 10;
         state.noticePage = Number.isInteger(page) && page >= 0 ? page : 0;
+        if (params.get("context") === "order") state.orderContext = readOrderContext();
     }
 
     function updateUrl(mode = "push") {
@@ -188,6 +191,7 @@
         renderFaqs();
         renderRecentSearches();
         if (state.view === "notice") void loadNotices();
+        renderOrderContext();
         updateDocumentTitle();
     }
 
@@ -622,8 +626,23 @@
     function copyCurrentSummary() {
         const topic = state.topic === "ALL" ? "전체" : topicLabel(state.topic);
         const keyword = state.keyword || "없음";
-        const text = `NOREN 고객지원 문의\n화면: ${state.view === "faq" ? "자주 묻는 질문" : "공지사항"}\n주제: ${topic}\n검색어: ${keyword}\n경로: ${window.location.href}`;
+        const orderLine = state.orderContext ? `\n주문번호: ${state.orderContext.orderNumber}\n주문 상태: ${state.orderContext.statusLabel}` : "";
+        const text = `NOREN 고객지원 문의\n화면: ${state.view === "faq" ? "자주 묻는 질문" : "공지사항"}\n주제: ${topic}\n검색어: ${keyword}${orderLine}\n경로: ${window.location.href}`;
         copyText(text, "현재 문의 내용을 복사했습니다.");
+    }
+
+    function readOrderContext() {
+        try {
+            const value = JSON.parse(window.sessionStorage.getItem("noren-support-order-context") || "{}");
+            if (!/^GS[A-Z0-9]{10,40}$/.test(value.orderNumber) || typeof value.statusLabel !== "string" || value.statusLabel.length > 30) return null;
+            return { orderNumber: value.orderNumber, statusLabel: value.statusLabel };
+        } catch (_) { return null; }
+    }
+
+    function renderOrderContext() {
+        if (!elements.orderContext) return;
+        elements.orderContext.hidden = !state.orderContext;
+        elements.orderContext.textContent = state.orderContext ? `주문 ${state.orderContext.orderNumber} · ${state.orderContext.statusLabel} 관련 도움말을 보고 있습니다.` : "";
     }
 
     async function copyText(text, successMessage) {

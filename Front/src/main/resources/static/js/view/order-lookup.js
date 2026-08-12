@@ -466,6 +466,17 @@
     document.getElementById("copyTrackingButton").addEventListener("click", () => {
         copyText(currentOrder?.trackingNumber, "송장번호를 복사했습니다.");
     });
+    document.getElementById("orderSupportButton").addEventListener("click", () => {
+        if (!currentOrder) return showToast("먼저 주문을 조회해주세요.");
+        try {
+            sessionStorage.setItem("noren-support-order-context", JSON.stringify({
+                orderNumber: currentOrder.orderNumber, statusLabel: currentOrder.statusLabel
+            }));
+        } catch (_) {
+            // 저장소를 쓸 수 없어도 주문 도움말 이동은 제공한다.
+        }
+        location.assign("/front/support?topic=ORDER&context=order");
+    });
     document.getElementById("printOrderButton").addEventListener("click", () => {
         if (!currentOrder) {
             showToast("먼저 주문을 조회해주세요.");

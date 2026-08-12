@@ -27,7 +27,7 @@
     <section class="order-result" id="orderResult" hidden aria-live="polite">
         <div class="order-result__head">
             <div><p>Order Detail</p><h2 id="orderResultNumber"></h2><span id="orderResultDate"></span></div>
-            <div class="order-result__actions"><strong id="orderResultStatus"></strong><button type="button" id="copyOrderNumberButton">주문번호 복사</button><button type="button" id="printOrderButton">인쇄</button><button type="button" id="memberOrderReorderButton" hidden>장바구니에 다시 담기</button><button type="button" id="memberOrderCancelButton" class="order-cancel-button" hidden>주문 취소</button></div>
+            <div class="order-result__actions"><strong id="orderResultStatus"></strong><button type="button" id="copyOrderNumberButton">주문번호 복사</button><button type="button" id="orderSupportButton">주문 도움말</button><button type="button" id="printOrderButton">인쇄</button><button type="button" id="memberOrderReorderButton" hidden>장바구니에 다시 담기</button><button type="button" id="memberOrderCancelButton" class="order-cancel-button" hidden>주문 취소</button></div>
         </div>
         <ol class="order-progress" id="orderProgress" aria-label="주문 처리 단계">
             <li>주문 접수</li><li>결제 확인</li><li>배송 준비</li><li>배송 중</li><li>배송 완료</li>
@@ -56,6 +56,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-    <script src="/js/view/order-lookup.js?v=20260806.3"></script>
+    <script src="/js/view/order-lookup.js?v=20260812.1"></script>
 </body>
 </html>

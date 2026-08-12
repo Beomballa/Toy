@@ -294,7 +294,7 @@ class FrontStorefrontResourceTest {
         String html = readResource("templates/views/product-detail.html");
 
         assertThat(html)
-                .contains("/css/storefront.css?v=20260725.4")
+                .contains("/css/storefront.css?v=20260812.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -302,7 +302,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailBuyNowButton\"")
                 .contains("id=\"detailGuide\"")
                 .contains("id=\"detailGuideDescription\"")
-                .contains("/js/view/detail.js?v=20260812.4");
+                .contains("id=\"detailReviewSort\"")
+                .contains("/js/view/detail.js?v=20260812.5");
         assertThat(readResource("static/js/view/detail.js"))
                 .contains("function normalizeDetailProduct(")
                 .contains("function normalizeDetailOptions(")

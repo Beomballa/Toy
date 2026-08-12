@@ -37,7 +37,7 @@
     let reportingReviewId = null;
     let memoryCartToken = null;
     let cartSubmitting = false;
-    const detailReviewState = { page: 0, hasNext: false, loading: false };
+    const detailReviewState = { page: 0, hasNext: false, loading: false, sort: "RECENT" };
     const reviewOrderNumber = new URLSearchParams(window.location.search).get("reviewOrder") || "";
 
     const elements = {
@@ -63,6 +63,7 @@
         detailReviewAverageText: document.getElementById("detailReviewAverageText"),
         detailReviewList: document.getElementById("detailReviewList"),
         detailReviewMoreButton: document.getElementById("detailReviewMoreButton"),
+        detailReviewSort: document.getElementById("detailReviewSort"),
         detailReviewWriteButton: document.getElementById("detailReviewWriteButton"),
         detailReviewForm: document.getElementById("detailReviewForm"),
         detailReviewFormCloseButton: document.getElementById("detailReviewFormCloseButton"),
@@ -468,7 +469,7 @@
         detailReviewState.loading = true;
         if (elements.detailReviewMoreButton) elements.detailReviewMoreButton.disabled = true;
         try {
-            const response = await fetch(`/api/front/products/${productId}/reviews?page=${page}`);
+            const response = await fetch(`/api/front/products/${productId}/reviews?page=${page}&sort=${encodeURIComponent(detailReviewState.sort)}`);
             if (!response.ok) throw new Error("구매 후기를 불러오지 못했습니다.");
             const payload = await response.json();
             if (!Array.isArray(payload?.reviews) || !Number.isSafeInteger(payload?.totalCount)
@@ -2570,6 +2571,10 @@
         });
         elements.copyDetailRecentLinksButton?.addEventListener("click", copyRecentProductLinks);
         elements.detailReviewMoreButton?.addEventListener("click", () => loadReviews(detailReviewState.page + 1, true));
+        elements.detailReviewSort?.addEventListener("change", event => {
+            detailReviewState.sort = event.currentTarget.value;
+            loadReviews(0);
+        });
         elements.detailReviewWriteButton?.addEventListener("click", () => setReviewFormOpen(true));
         elements.detailReviewFormCloseButton?.addEventListener("click", () => setReviewFormOpen(false));
         elements.detailReviewForm?.addEventListener("submit", submitReview);

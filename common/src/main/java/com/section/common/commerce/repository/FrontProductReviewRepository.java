@@ -16,6 +16,10 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
 
     Page<FrontProductReview> findByProductNoAndStatusOrderByIdDesc(long productNo, String status, Pageable pageable);
 
+    Page<FrontProductReview> findByProductNoAndStatusOrderByRatingDescIdDesc(long productNo, String status, Pageable pageable);
+
+    Page<FrontProductReview> findByProductNoAndStatusOrderByRatingAscIdDesc(long productNo, String status, Pageable pageable);
+
     Page<FrontProductReview> findByMemberNoOrderByIdDesc(long memberNo, Pageable pageable);
 
     Page<FrontProductReview> findAllByOrderByIdDesc(Pageable pageable);

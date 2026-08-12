@@ -1512,8 +1512,45 @@ main#top {
     font-size: 12px;
 }
 
+.detail-review-controls {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    min-width: 0;
+    padding: 12px 0;
+    border-bottom: 1px solid #ededed;
+}
+
+.detail-review-controls label {
+    color: #777;
+    font-size: 11px;
+}
+
+.detail-review-controls select {
+    min-width: 108px;
+    min-height: 32px;
+    padding: 0 28px 0 10px;
+    border: 1px solid #e2e2e2;
+    border-radius: 6px;
+    background: #fff;
+    color: #333;
+    font-size: 12px;
+}
+
 .detail-review-list {
     min-width: 0;
+}
+
+@media (max-width: 480px) {
+    .detail-review-controls {
+        justify-content: space-between;
+    }
+
+    .detail-review-controls select {
+        flex: 1 1 auto;
+        max-width: 150px;
+    }
 }
 
 .detail-review-item,

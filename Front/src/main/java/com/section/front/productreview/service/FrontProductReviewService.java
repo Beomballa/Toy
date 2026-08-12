@@ -50,17 +50,22 @@ public class FrontProductReviewService {
     private final FrontProductCatalogService productCatalogService;
 
     @Transactional(readOnly = true)
-    public FrontProductReviewPageResponse getReviews(long productNo, int pageNumber) {
+    public FrontProductReviewPageResponse getReviews(long productNo, int pageNumber, String rawSort) {
         requireProduct(productNo);
         if (pageNumber < 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "페이지 번호가 올바르지 않습니다.");
         }
 
-        Page<FrontProductReview> reviews = reviewRepository.findByProductNoAndStatusOrderByIdDesc(
-                productNo,
-                FrontProductReviewStatus.VISIBLE.name(),
-                PageRequest.of(pageNumber, REVIEW_PAGE_SIZE)
-        );
+        FrontProductReviewSort sort = FrontProductReviewSort.from(rawSort);
+        PageRequest pageable = PageRequest.of(pageNumber, REVIEW_PAGE_SIZE);
+        Page<FrontProductReview> reviews = switch (sort) {
+            case RATING_DESC -> reviewRepository.findByProductNoAndStatusOrderByRatingDescIdDesc(
+                    productNo, FrontProductReviewStatus.VISIBLE.name(), pageable);
+            case RATING_ASC -> reviewRepository.findByProductNoAndStatusOrderByRatingAscIdDesc(
+                    productNo, FrontProductReviewStatus.VISIBLE.name(), pageable);
+            case RECENT -> reviewRepository.findByProductNoAndStatusOrderByIdDesc(
+                    productNo, FrontProductReviewStatus.VISIBLE.name(), pageable);
+        };
         Object[] summary = reviewRepository.getSummaryByProductNo(productNo, FrontProductReviewStatus.VISIBLE.name());
         long totalCount = ((Number) summary[0]).longValue();
         double averageRating = ((Number) summary[1]).doubleValue();
@@ -248,5 +253,22 @@ public class FrontProductReviewService {
                 review.getContent(),
                 review.getCrtDtm().toLocalDate().toString()
         );
+    }
+
+    private enum FrontProductReviewSort {
+        RECENT,
+        RATING_DESC,
+        RATING_ASC;
+
+        private static FrontProductReviewSort from(String rawSort) {
+            if (rawSort == null || rawSort.isBlank()) {
+                return RECENT;
+            }
+            try {
+                return valueOf(rawSort.trim().toUpperCase());
+            } catch (IllegalArgumentException exception) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후기 정렬 기준이 올바르지 않습니다.");
+            }
+        }
     }
 }

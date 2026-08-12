@@ -2,6 +2,7 @@ package com.section.front.productreview.service;
 
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.FrontProductReview;
+import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
@@ -16,6 +17,8 @@ import com.section.front.productreview.dto.FrontProductReviewCreateRequest;
 import com.section.front.product.service.FrontProductCatalogService;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.Optional;
 import java.util.List;
@@ -74,6 +77,32 @@ class FrontProductReviewServiceTest {
         assertThat(response.reviewerName()).isEqualTo("테***");
         assertThat(response.rating()).isEqualTo(5);
         verify(reviewRepository).save(any(FrontProductReview.class));
+    }
+
+    @Test
+    void sortsVisibleReviewsByHighRatingWhenRequested() {
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+        given(reviewRepository.findByProductNoAndStatusOrderByRatingDescIdDesc(
+                11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
+        )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
+        given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
+                .willReturn(new Object[]{0L, 0D});
+
+        var response = service.getReviews(11L, 0, "RATING_DESC");
+
+        assertThat(response.reviews()).isEmpty();
+        verify(reviewRepository).findByProductNoAndStatusOrderByRatingDescIdDesc(
+                11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
+        );
+    }
+
+    @Test
+    void rejectsUnknownReviewSort() {
+        given(productRepository.getFrontCatalogProduct(11L)).willReturn(Optional.of(mock(FrontCatalogProductRow.class)));
+
+        assertThatThrownBy(() -> service.getReviews(11L, 0, "PRICE_ASC"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("정렬 기준");
     }
 
     @Test

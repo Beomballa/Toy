@@ -33,9 +33,10 @@ public class FrontProductReviewRestController {
     @GetMapping
     public FrontProductReviewPageResponse getReviews(
             @PathVariable long productId,
-            @RequestParam(defaultValue = "0") int page
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "RECENT") String sort
     ) {
-        return reviewService.getReviews(productId, page);
+        return reviewService.getReviews(productId, page, sort);
     }
 
     @PostMapping

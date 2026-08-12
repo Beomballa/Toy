@@ -6,7 +6,7 @@
     <title>NOREN Product Detail</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
+    <link rel="stylesheet" href="/css/storefront.css?v=20260812.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260804.1">
 </head>
 <body class="detail-body storefront-page" th:attr="data-product-id=${productId}">
@@ -253,6 +253,14 @@
                 <strong id="detailReviewAverage">-</strong>
                 <span id="detailReviewAverageText">아직 등록된 후기가 없습니다.</span>
             </div>
+            <div class="detail-review-controls">
+                <label for="detailReviewSort">후기 정렬</label>
+                <select id="detailReviewSort" aria-label="후기 정렬">
+                    <option value="RECENT">최신순</option>
+                    <option value="RATING_DESC">평점 높은순</option>
+                    <option value="RATING_ASC">평점 낮은순</option>
+                </select>
+            </div>
             <div class="detail-review-list" id="detailReviewList" aria-live="polite">
                 <article class="detail-review-empty">
                     <strong>구매 후기를 불러오는 중입니다.</strong>
@@ -420,6 +428,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/detail.js?v=20260812.4"></script>
+<script src="/js/view/detail.js?v=20260812.5"></script>
 </body>
 </html>

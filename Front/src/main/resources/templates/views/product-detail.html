@@ -397,6 +397,18 @@
     </div>
 </aside>
 
+<aside class="detail-report-modal" id="detailReportModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="detailReportModalTitle">
+    <form class="detail-report-modal__panel" id="detailReportForm" novalidate>
+        <div class="detail-image-modal__head"><strong id="detailReportModalTitle">후기 신고</strong><button type="button" id="detailReportModalCloseButton" aria-label="후기 신고 닫기">×</button></div>
+        <p>운영자가 확인할 수 있도록 신고 사유를 선택해주세요.</p>
+        <label for="detailReportReason">신고 사유</label>
+        <select id="detailReportReason" name="reason" required><option value="">사유를 선택하세요.</option><option value="광고 또는 홍보">광고 또는 홍보</option><option value="욕설 또는 혐오 표현">욕설 또는 혐오 표현</option><option value="상품과 무관한 내용">상품과 무관한 내용</option><option value="허위 또는 부정확한 정보">허위 또는 부정확한 정보</option><option value="기타">기타</option></select>
+        <label for="detailReportDetail">상세 내용 <span>선택</span></label>
+        <textarea id="detailReportDetail" name="detail" maxlength="500" placeholder="운영 확인에 필요한 내용을 500자 이내로 남겨주세요."></textarea>
+        <div class="detail-report-modal__actions"><button type="button" id="detailReportCancelButton">취소</button><button type="submit" id="detailReportSubmitButton">신고 접수</button></div>
+    </form>
+</aside>
+
 <nav class="detail-mobile-actions" id="detailMobileActions" aria-label="모바일 상품 액션">
     <button type="button" id="detailMobileBookmarkButton" aria-pressed="false"><span aria-hidden="true">♡</span><strong>관심</strong></button>
     <button type="button" id="detailMobileCompareButton" aria-pressed="false"><span aria-hidden="true">＋</span><strong>비교</strong></button>
@@ -408,6 +420,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/detail.js?v=20260812.3"></script>
+<script src="/js/view/detail.js?v=20260812.4"></script>
 </body>
 </html>

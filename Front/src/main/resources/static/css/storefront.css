@@ -6047,6 +6047,20 @@ main#top > .home-category-rail {
     background: var(--store-surface);
 }
 
+.detail-report-modal { position:fixed; z-index:181; inset:0; display:none; place-items:center; padding:24px; background:rgba(0,0,0,.62); overscroll-behavior:contain; }
+.detail-report-modal.is-open { display:grid; }
+.detail-report-modal__panel { display:grid; width:min(440px,100%); gap:10px; margin:0; padding:20px; background:#fff; }
+.detail-report-modal__panel > p { margin:0 0 8px; color:var(--store-muted); font-size:13px; line-height:1.5; }
+.detail-report-modal label { color:#333; font-size:12px; font-weight:700; }
+.detail-report-modal label span { color:#999; font-weight:400; }
+.detail-report-modal select,.detail-report-modal textarea { width:100%; min-width:0; box-sizing:border-box; border:1px solid var(--store-line); border-radius:7px; background:#fff; color:#222; font:inherit; font-size:13px; }
+.detail-report-modal select { height:40px; padding:0 10px; }
+.detail-report-modal textarea { min-height:100px; padding:10px; resize:vertical; }
+.detail-report-modal__actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
+.detail-report-modal__actions button { min-height:40px; border:0; border-radius:7px; font-size:13px; font-weight:700; }
+.detail-report-modal__actions button[type="button"] { background:var(--store-chip); color:#333; }
+.detail-report-modal__actions button[type="submit"] { background:#222; color:#fff; }
+
 .detail-top-button {
     right: 24px;
     bottom: 24px;

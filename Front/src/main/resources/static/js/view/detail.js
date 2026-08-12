@@ -33,6 +33,8 @@
     const optionSelectionHistory = [];
     let toastTimerSeed = 0;
     let detailModalReturnFocus = null;
+    let detailReportModalReturnFocus = null;
+    let reportingReviewId = null;
     let memoryCartToken = null;
     let cartSubmitting = false;
     const detailReviewState = { page: 0, hasNext: false, loading: false };
@@ -164,6 +166,13 @@
         detailImageModal: document.getElementById("detailImageModal"),
         detailImageModalCloseButton: document.getElementById("detailImageModalCloseButton"),
         detailImageModalImage: document.getElementById("detailImageModalImage"),
+        detailReportModal: document.getElementById("detailReportModal"),
+        detailReportForm: document.getElementById("detailReportForm"),
+        detailReportReason: document.getElementById("detailReportReason"),
+        detailReportDetail: document.getElementById("detailReportDetail"),
+        detailReportModalCloseButton: document.getElementById("detailReportModalCloseButton"),
+        detailReportCancelButton: document.getElementById("detailReportCancelButton"),
+        detailReportSubmitButton: document.getElementById("detailReportSubmitButton"),
         detailMobileActions: document.getElementById("detailMobileActions"),
         detailRetryButton: document.getElementById("detailRetryButton"),
         detailScrollTopButton: document.getElementById("detailScrollTopButton"),
@@ -563,18 +572,51 @@
         }
     }
 
-    async function reportReview(reviewId) {
-        if (!Number.isSafeInteger(reviewId) || reviewId < 1) return;
-        const reason = window.prompt("신고 사유를 입력하세요. 예: 광고, 부적절한 내용");
-        if (!reason?.trim()) return;
+    function openReportModal(reviewId) {
+        if (!Number.isSafeInteger(reviewId) || reviewId < 1 || !elements.detailReportModal || !elements.detailReportForm) return;
+        closeDetailImageModal();
+        reportingReviewId = reviewId;
+        detailReportModalReturnFocus = document.activeElement;
+        elements.detailReportForm.reset();
+        elements.detailReportModal.classList.add("is-open");
+        elements.detailReportModal.setAttribute("aria-hidden", "false");
+        setDetailModalBackgroundInert(true);
+        document.body.classList.add("has-open-modal");
+        elements.detailReportReason?.focus();
+    }
+
+    function closeReportModal() {
+        if (!elements.detailReportModal?.classList.contains("is-open")) return;
+        elements.detailReportModal.classList.remove("is-open");
+        elements.detailReportModal.setAttribute("aria-hidden", "true");
+        setDetailModalBackgroundInert(false);
+        document.body.classList.remove("has-open-modal");
+        reportingReviewId = null;
+        if (detailReportModalReturnFocus?.isConnected) detailReportModalReturnFocus.focus();
+        detailReportModalReturnFocus = null;
+    }
+
+    async function submitReviewReport(event) {
+        event.preventDefault();
+        const reviewId = reportingReviewId;
+        const reason = elements.detailReportReason?.value.trim() || "";
+        const detail = elements.detailReportDetail?.value.trim() || "";
+        if (!Number.isSafeInteger(reviewId) || reviewId < 1 || !reason) {
+            showToast("신고 사유를 선택해주세요.", "신고 이유를 선택한 뒤 다시 시도해주세요.", true);
+            return;
+        }
+        elements.detailReportSubmitButton.disabled = true;
         try {
             const response = await fetch(`/api/front/products/${productId}/reviews/${reviewId}/reports`, {
-                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: reason.trim() })
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason, detail })
             });
             if (!response.ok) throw new Error((await response.text()) || "후기를 신고하지 못했습니다.");
+            closeReportModal();
             showToast("후기를 신고했습니다.", "운영자가 신고 내용을 확인합니다.");
         } catch (error) {
             showToast("후기를 신고하지 못했습니다.", error.message.replace(/<[^>]*>/g, ""), true);
+        } finally {
+            elements.detailReportSubmitButton.disabled = false;
         }
     }
 
@@ -2109,6 +2151,9 @@
         syncDetailScrollProgress();
         elements.detailZoomButton?.addEventListener("click", openDetailImageModal);
         elements.detailImageModalCloseButton?.addEventListener("click", closeDetailImageModal);
+        elements.detailReportModalCloseButton?.addEventListener("click", closeReportModal);
+        elements.detailReportCancelButton?.addEventListener("click", closeReportModal);
+        elements.detailReportForm?.addEventListener("submit", submitReviewReport);
         elements.detailImageModal?.addEventListener("click", (event) => {
             if (event.target === elements.detailImageModal) {
                 closeDetailImageModal();
@@ -2117,6 +2162,7 @@
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeDetailImageModal();
+                closeReportModal();
             }
             if (event.key === "Tab" && elements.detailImageModal?.classList.contains("is-open")) {
                 keepFocusInsideDetailImageModal(event);
@@ -2529,7 +2575,7 @@
         elements.detailReviewForm?.addEventListener("submit", submitReview);
         elements.detailReviewList?.addEventListener("click", event => {
             const button = event.target.closest("[data-review-report-id]");
-            if (button) reportReview(Number(button.dataset.reviewReportId));
+            if (button) openReportModal(Number(button.dataset.reviewReportId));
         });
         try {
             const response = await fetch(`/api/front/products/${productId}`);

@@ -341,7 +341,8 @@
     function applySavedAddress(address) { ["recipientName","recipientPhone","postalCode","address1","address2"].forEach(name => { const input=elements.form?.elements[name]; if (input) input.value=address[name] || ""; }); }
     async function saveDeliveryAddress(body) {
         if (!elements.saveAddress?.checked || !elements.addressName?.value.trim()) return;
-        await fetch("/api/front/member/delivery-addresses", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({addressName:elements.addressName.value.trim(),recipientName:body.recipientName,recipientPhone:body.recipientPhone,postalCode:body.postalCode,address1:body.address1,address2:body.address2,defaultAddress:!savedAddresses.length}) });
+        const response = await fetch("/api/front/member/delivery-addresses", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({addressName:elements.addressName.value.trim(),recipientName:body.recipientName,recipientPhone:body.recipientPhone,postalCode:body.postalCode,address1:body.address1,address2:body.address2,defaultAddress:!savedAddresses.length}) });
+        if (!response.ok) throw new Error("배송지를 저장하지 못했습니다.");
     }
 
     elements.form?.querySelectorAll('input[inputmode="tel"]').forEach((input) => {

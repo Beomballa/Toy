@@ -25,7 +25,7 @@ class FrontMemberDeliveryAddressServiceTest {
         Account account = mock(Account.class);
         FrontMemberDeliveryAddress existing = mock(FrontMemberDeliveryAddress.class);
         given(account.isAvailableCustomer()).willReturn(true);
-        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(accountRepository.findByIdForUpdate(7L)).willReturn(Optional.of(account));
         given(addressRepository.findAllByMemberNoOrderByDefaultYnDescIdDesc(7L))
                 .willReturn(List.of(existing), List.of());
 
@@ -41,7 +41,7 @@ class FrontMemberDeliveryAddressServiceTest {
         FrontMemberDeliveryAddress defaultAddress = mock(FrontMemberDeliveryAddress.class);
         FrontMemberDeliveryAddress nextAddress = mock(FrontMemberDeliveryAddress.class);
         given(account.isAvailableCustomer()).willReturn(true);
-        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(accountRepository.findByIdForUpdate(7L)).willReturn(Optional.of(account));
         given(defaultAddress.isDefaultAddress()).willReturn(true);
         given(addressRepository.findByIdAndMemberNo(10L, 7L)).willReturn(Optional.of(defaultAddress));
         given(addressRepository.findAllByMemberNoOrderByDefaultYnDescIdDesc(7L))
@@ -58,7 +58,7 @@ class FrontMemberDeliveryAddressServiceTest {
         Account account = mock(Account.class);
         FrontMemberDeliveryAddress address = mock(FrontMemberDeliveryAddress.class);
         given(account.isAvailableCustomer()).willReturn(true);
-        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(accountRepository.findByIdForUpdate(7L)).willReturn(Optional.of(account));
         given(addressRepository.findByIdAndMemberNo(10L, 7L)).willReturn(Optional.of(address));
         given(addressRepository.findAllByMemberNoOrderByDefaultYnDescIdDesc(7L)).willReturn(List.of(address));
 

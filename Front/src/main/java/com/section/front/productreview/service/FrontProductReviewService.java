@@ -114,7 +114,8 @@ public class FrontProductReviewService {
         Account member = accountRepository.findById(memberNo)
                 .filter(Account::isAvailableCustomer)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "사용할 수 없는 회원입니다."));
-        FrontProductReview review = reviewRepository.findById(reviewId)
+        // 동일 후기 신고는 잠금 안에서 중복 여부를 확인해 고유 제약 위반을 사용자 오류로 노출하지 않습니다.
+        FrontProductReview review = reviewRepository.findByIdForUpdate(reviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
         if (!review.isVisible()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다.");

@@ -37,7 +37,7 @@ class FrontProductReviewReportServiceTest {
         given(accountRepository.findById(7L)).willReturn(Optional.of(member));
         given(member.isAvailableCustomer()).willReturn(true);
         given(member.getId()).willReturn(7L);
-        given(reviewRepository.findById(11L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdForUpdate(11L)).willReturn(Optional.of(review));
         given(review.isVisible()).willReturn(true);
         given(review.getMemberNo()).willReturn(8L);
         given(reportRepository.existsByReviewNoAndMemberNo(11L, 7L)).willReturn(false);
@@ -53,7 +53,7 @@ class FrontProductReviewReportServiceTest {
         FrontProductReview review = mock(FrontProductReview.class);
         given(accountRepository.findById(7L)).willReturn(Optional.of(member));
         given(member.isAvailableCustomer()).willReturn(true);
-        given(reviewRepository.findById(11L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdForUpdate(11L)).willReturn(Optional.of(review));
         given(review.isVisible()).willReturn(true);
         given(review.getMemberNo()).willReturn(8L);
         given(reportRepository.existsByReviewNoAndMemberNo(11L, 7L)).willReturn(true);

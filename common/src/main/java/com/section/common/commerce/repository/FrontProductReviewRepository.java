@@ -1,9 +1,11 @@
 package com.section.common.commerce.repository;
 
 import com.section.common.commerce.entity.FrontProductReview;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -28,6 +30,10 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
     );
 
     Optional<FrontProductReview> findByIdAndMemberNo(long id, long memberNo);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select review from FrontProductReview review where review.id = :reviewId")
+    Optional<FrontProductReview> findByIdForUpdate(@Param("reviewId") long reviewId);
 
     boolean existsByMemberNoAndOrderNoAndProductNo(long memberNo, long orderNo, long productNo);
 

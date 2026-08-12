@@ -14,6 +14,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.springframework.web.server.ResponseStatusException;
 
 class FrontMemberDeliveryAddressServiceTest {
     private final FrontMemberDeliveryAddressRepository addressRepository = mock(FrontMemberDeliveryAddressRepository.class);
@@ -65,6 +67,19 @@ class FrontMemberDeliveryAddressServiceTest {
         service.update(7L, 10L, request(false));
 
         verify(address).update("집", "홍길동", "01011112222", "06236", "서울시 강남구", "101호");
+    }
+
+    @Test
+    void rejectsSavingMoreThanTwentyDeliveryAddresses() {
+        Account account = mock(Account.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findByIdForUpdate(7L)).willReturn(Optional.of(account));
+        given(addressRepository.findAllByMemberNoOrderByDefaultYnDescIdDesc(7L))
+                .willReturn(java.util.Collections.nCopies(20, mock(FrontMemberDeliveryAddress.class)));
+
+        assertThatThrownBy(() -> service.save(7L, request(false)))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("최대 20개");
     }
 
     private FrontDeliveryAddressRequest request(boolean defaultAddress) {

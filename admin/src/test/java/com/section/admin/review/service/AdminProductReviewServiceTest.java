@@ -102,7 +102,7 @@ class AdminProductReviewServiceTest {
     @Test
     void changesTheRequestedReviewVisibilityStatus() {
         FrontProductReview review = mock(FrontProductReview.class);
-        given(reviewRepository.findById(12L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));
         given(review.getStatus()).willReturn(FrontProductReviewStatus.VISIBLE.name());
 
         service.changeStatus(12L, FrontProductReviewStatus.HIDDEN);
@@ -130,7 +130,7 @@ class AdminProductReviewServiceTest {
     @Test
     void doesNotCreateHistoryWhenTheReviewIsAlreadyInTheRequestedStatus() {
         FrontProductReview review = mock(FrontProductReview.class);
-        given(reviewRepository.findById(12L)).willReturn(Optional.of(review));
+        given(reviewRepository.findByIdForUpdate(12L)).willReturn(Optional.of(review));
         given(review.getStatus()).willReturn(FrontProductReviewStatus.HIDDEN.name());
 
         service.changeStatus(12L, FrontProductReviewStatus.HIDDEN);

@@ -102,7 +102,8 @@ public class AdminProductReviewService {
         if (reviewId <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "후기 번호가 올바르지 않습니다.");
         }
-        FrontProductReview review = reviewRepository.findById(reviewId)
+        // 동일 후기의 숨김·복구 요청은 한 전환씩 처리해 감사 이력 순서를 보장합니다.
+        FrontProductReview review = reviewRepository.findByIdForUpdate(reviewId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "후기를 찾을 수 없습니다."));
         if (status.name().equals(review.getStatus())) {
             return;

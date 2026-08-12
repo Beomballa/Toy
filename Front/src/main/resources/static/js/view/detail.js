@@ -36,6 +36,7 @@
     let memoryCartToken = null;
     let cartSubmitting = false;
     const detailReviewState = { page: 0, hasNext: false, loading: false };
+    const reviewOrderNumber = new URLSearchParams(window.location.search).get("reviewOrder") || "";
 
     const elements = {
         detailTitle: document.getElementById("detailTitle"),
@@ -496,7 +497,11 @@
     function setReviewFormOpen(open) {
         if (!elements.detailReviewForm) return;
         elements.detailReviewForm.hidden = !open;
-        if (open) document.getElementById("detailReviewOrderNumber")?.focus();
+        const orderNumberInput = document.getElementById("detailReviewOrderNumber");
+        if (open && orderNumberInput) {
+            orderNumberInput.value = reviewOrderNumber;
+            orderNumberInput.focus();
+        }
     }
 
     async function submitReview(event) {
@@ -2518,6 +2523,10 @@
             renderRelated(product);
             renderRecentProducts(product.id);
             loadReviews();
+            if (reviewOrderNumber) {
+                setReviewFormOpen(true);
+                document.getElementById("detailReviews")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
             syncActionButtons();
         } catch (error) {
             if (elements.detailTitle) {

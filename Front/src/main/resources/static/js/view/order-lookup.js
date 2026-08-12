@@ -384,7 +384,7 @@
         document.getElementById("orderItems").innerHTML = order.items.map((item) => `
             <article class="order-item">
                 <a href="/front/products/${item.productId}"><img src="${escapeMarkup(item.thumbnailUrl || fallbackImage())}" alt="${escapeMarkup(item.productName)}" data-order-product-image></a>
-                <div><strong>${escapeMarkup(item.productName)}</strong><span>${formatPrice(item.unitPrice)} · ${item.quantity}개</span></div>
+                <div><strong>${escapeMarkup(item.productName)}</strong><span>${formatPrice(item.unitPrice)} · ${item.quantity}개</span>${isMemberOrder && order.status === "DELIVERED" ? `<a class="order-item__review-link" href="/front/products/${item.productId}?reviewOrder=${encodeURIComponent(order.orderNumber)}#detailReviews">후기 작성</a>` : ""}</div>
                 <b>${formatPrice(item.lineAmount)}</b>
             </article>
         `).join("");

@@ -245,6 +245,7 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .order-item div { display: grid; gap: 8px; min-width: 0; }
 .order-item div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .order-item div span { color: var(--muted); font-size: 11px; }
+.order-item__review-link { width: fit-content; color: #222; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .order-item b { font-size: 13px; }
 .order-result aside { padding: 24px; border-radius: 14px; background: var(--soft); }
 .order-result aside dl { margin: 0 0 30px; }

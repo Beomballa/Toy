@@ -67,4 +67,24 @@ test("컬렉션은 최신 검색 응답만 표시하고 실패한 요청을 재�
 
   await expect(page.locator(".collection-product h2")).toHaveText("재시도 성공 상품");
   await expect(page.locator("#collectionGrid")).toHaveAttribute("aria-busy", "false");
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const toolbar = document.querySelector("#collectionSearchForm").getBoundingClientRect();
+    const grid = document.querySelector("#collectionGrid").getBoundingClientRect();
+    return {
+      bodyOverflow: document.documentElement.scrollWidth - viewportWidth,
+      toolbarWidth: toolbar.width,
+      toolbarLeft: toolbar.left,
+      toolbarRight: toolbar.right,
+      gridWidth: grid.width,
+      viewportWidth
+    };
+  });
+
+  expect(layout.bodyOverflow).toBe(0);
+  expect(layout.toolbarWidth).toBeGreaterThan(0);
+  expect(layout.toolbarLeft).toBeGreaterThanOrEqual(0);
+  expect(layout.toolbarRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.gridWidth).toBeGreaterThan(0);
 });

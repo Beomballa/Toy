@@ -18,6 +18,7 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
     const actionBounds = actions.getBoundingClientRect();
     const menuBounds = actionMenu.getBoundingClientRect();
     const navigationBounds = navigation.getBoundingClientRect();
+    const catalogToolbar = document.querySelector(".catalog-toolbar");
     return {
       bodyOverflow: document.body.scrollWidth - document.body.clientWidth,
       railWidth: rail.getBoundingClientRect().width,
@@ -27,7 +28,8 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
       menuWidth: menuBounds.width,
       menuRight: menuBounds.right,
       navigationWidth: navigationBounds.width,
-      navigationRight: navigationBounds.right
+      navigationRight: navigationBounds.right,
+      catalogToolbarPosition: getComputedStyle(catalogToolbar).position
     };
   });
 
@@ -40,6 +42,7 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
   expect(layout.menuRight).toBeLessThanOrEqual(page.viewportSize().width);
   expect(layout.navigationWidth).toBeGreaterThan(0);
   expect(layout.navigationRight).toBeLessThanOrEqual(page.viewportSize().width);
+  expect(layout.catalogToolbarPosition).toBe("static");
   if (testInfo.project.name === "desktop-chromium") {
     expect(layout.slideWidth).toBeLessThan(layout.railWidth / 3);
   } else {

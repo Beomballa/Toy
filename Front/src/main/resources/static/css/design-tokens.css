@@ -1,0 +1,94 @@
+:root {
+    --noren-page: #f8f7f3;
+    --noren-surface: #fff;
+    --noren-ink: #1e2722;
+    --noren-muted: #5f6b65;
+    --noren-border: #e5e3dc;
+    --noren-border-strong: #c9cec8;
+    --noren-sage: #5e735f;
+    --noren-sage-soft: #e7eee6;
+    --noren-terracotta: #b65a3f;
+    --noren-terracotta-soft: #f4e6de;
+    --noren-overlay: rgb(30 39 34 / 48%);
+    --noren-shadow-sm: 0 8px 24px rgb(30 39 34 / 7%);
+    --noren-shadow-lg: 0 24px 72px rgb(30 39 34 / 16%);
+    --noren-content-width: 1200px;
+    --noren-gutter: 40px;
+    --noren-radius-sm: 8px;
+    --noren-radius-md: 12px;
+    --noren-radius-lg: 18px;
+    --noren-control-height: 44px;
+    --noren-action-height: 48px;
+    --noren-transition: 180ms ease;
+}
+
+.storefront-page,
+.storefront-home {
+    color: var(--noren-ink);
+    background: var(--noren-page);
+    font-family: "Pretendard Variable", Pretendard, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.storefront-page *,
+.storefront-home * {
+    box-sizing: border-box;
+}
+
+.storefront-page button,
+.storefront-page input,
+.storefront-page select,
+.storefront-page textarea,
+.storefront-home button,
+.storefront-home input,
+.storefront-home select,
+.storefront-home textarea {
+    font: inherit;
+}
+
+.storefront-page :is(button, a, input, select, textarea, summary):focus-visible,
+.storefront-home :is(button, a, input, select, textarea, summary):focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--noren-sage) 72%, white);
+    outline-offset: 2px;
+}
+
+.storefront-page :is(input, select, textarea),
+.storefront-home :is(input, select, textarea) {
+    color: var(--noren-ink);
+    background: var(--noren-surface);
+    border-color: var(--noren-border-strong);
+}
+
+.storefront-page :is(button, a),
+.storefront-home :is(button, a) {
+    -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 900px) {
+    :root {
+        --noren-gutter: 24px;
+    }
+}
+
+@media (max-width: 600px) {
+    :root {
+        --noren-gutter: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --noren-transition: 0ms;
+    }
+
+    .storefront-page *,
+    .storefront-home * {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}

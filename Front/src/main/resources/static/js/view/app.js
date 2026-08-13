@@ -1057,12 +1057,7 @@
             }
         });
         elements.focusLowStockButton?.addEventListener("click", () => {
-            state.stock = "LOW";
-            if (elements.stockFilter) {
-                elements.stockFilter.value = "LOW";
-            }
-            refreshCatalog();
-            document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            window.location.assign("/front/collections/fast-delivery");
         });
         elements.openDrawerFromTop?.addEventListener("click", openHeaderSearch);
         elements.closeHeaderSearchButton?.addEventListener("click", () => closeHeaderSearch(true));
@@ -2008,13 +2003,12 @@
     }
 
     async function applyHeaderSearch() {
-        state.search = elements.headerSearchInput?.value.trim().toLowerCase() || "";
-        if (elements.searchInput) {
-            elements.searchInput.value = state.search;
+        const keyword = elements.headerSearchInput?.value.trim() || "";
+        if (!keyword) {
+            elements.headerSearchInput?.focus();
+            return;
         }
-        closeHeaderSearch();
-        await refreshCatalog();
-        document.getElementById("catalog")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.location.assign(`/front/collections/recommended?keyword=${encodeURIComponent(keyword)}`);
     }
 
     async function applyHomePreset(preset) {

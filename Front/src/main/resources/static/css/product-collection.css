@@ -1,21 +1,21 @@
 :root {
-    --collection-ink: #161616;
-    --collection-muted: #777;
-    --collection-line: #e8e8e8;
-    --collection-soft: #f5f5f5;
-    --collection-accent: #ef6253;
-    --collection-width: 1280px;
+    --collection-ink: var(--noren-ink);
+    --collection-muted: var(--noren-muted);
+    --collection-line: var(--noren-border);
+    --collection-soft: var(--noren-sage-soft);
+    --collection-accent: var(--noren-terracotta);
+    --collection-width: var(--noren-content-width);
 }
 
 .collection-body {
     margin: 0;
-    background: #fff;
+    background: var(--noren-page);
     color: var(--collection-ink);
     font-family: "Pretendard Variable", sans-serif;
 }
 
 .collection-shell {
-    width: min(calc(100% - 48px), var(--collection-width));
+    width: min(calc(100% - var(--noren-gutter) * 2), var(--collection-width));
     margin: 0 auto;
 }
 
@@ -85,7 +85,7 @@
     justify-content: space-between;
     gap: 32px;
     align-items: flex-end;
-    padding: 74px 0 42px;
+    padding: 64px 0 36px;
     border-bottom: 1px solid var(--collection-line);
 }
 
@@ -108,7 +108,7 @@
 
 .collection-hero h1 {
     margin: 0 0 14px;
-    font-size: clamp(30px, 4vw, 52px);
+    font-size: clamp(28px, 4vw, 42px);
     line-height: 1.08;
     letter-spacing: -.045em;
 }
@@ -139,7 +139,11 @@
     grid-template-columns: minmax(220px, 1fr) 190px auto auto;
     gap: 10px;
     align-items: end;
-    padding: 28px 0;
+    margin: 24px 0;
+    padding: 20px;
+    border: 1px solid var(--collection-line);
+    border-radius: var(--noren-radius-md);
+    background: var(--noren-surface);
 }
 
 .collection-toolbar label {
@@ -207,7 +211,7 @@
     display: block;
     overflow: hidden;
     aspect-ratio: 1 / 1;
-    border-radius: 10px;
+    border-radius: var(--noren-radius-md);
     background: var(--collection-soft);
 }
 
@@ -308,7 +312,8 @@
     place-items: center;
     min-height: 340px;
     border: 1px solid var(--collection-line);
-    border-radius: 12px;
+    border-radius: var(--noren-radius-md);
+    background: var(--noren-surface);
     color: var(--collection-muted);
     text-align: center;
 }

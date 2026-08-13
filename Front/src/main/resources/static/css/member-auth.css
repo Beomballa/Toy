@@ -1,9 +1,9 @@
 :root {
-    --member-ink: #20211f;
-    --member-muted: #72746f;
-    --member-line: #dedfd9;
-    --member-surface: #f1f2ed;
-    --member-accent: #687360;
+    --member-ink: var(--noren-ink);
+    --member-muted: var(--noren-muted);
+    --member-line: var(--noren-border);
+    --member-surface: var(--noren-page);
+    --member-accent: var(--noren-sage);
 }
 
 .member-auth-page {
@@ -46,7 +46,7 @@
     min-width: 0;
     padding: 58px 64px;
     color: #fff;
-    background: linear-gradient(145deg, #1e211d 0%, #3e4739 100%);
+    background: linear-gradient(145deg, var(--noren-ink) 0%, var(--noren-sage) 100%);
 }
 
 .member-auth__intro > p,
@@ -103,6 +103,7 @@
     padding: 58px 64px;
     border: 1px solid var(--member-line);
     border-left: 0;
+    background: var(--noren-surface);
 }
 
 .member-auth__panel > div {
@@ -161,7 +162,7 @@
     margin: 0 0 18px;
     padding: 12px 14px;
     color: #8d372e;
-    background: #fbefeb;
+    background: var(--noren-terracotta-soft);
     font-size: 12px;
 }
 

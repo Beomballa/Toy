@@ -1,21 +1,23 @@
+@import url("/css/design-tokens.css?v=20260813.1");
+
 :root {
-    --store-shell-black: #222;
-    --store-shell-gray-900: #333;
-    --store-shell-gray-700: #666;
-    --store-shell-gray-500: #999;
-    --store-shell-gray-300: #d3d3d3;
-    --store-shell-gray-200: #ebebeb;
-    --store-shell-gray-100: #f4f4f4;
-    --store-shell-white: #fff;
-    --store-shell-width: 1200px;
-    --store-shell-gutter: 40px;
-    --store-shell-accent: #65705d;
+    --store-shell-black: var(--noren-ink);
+    --store-shell-gray-900: #36413b;
+    --store-shell-gray-700: var(--noren-muted);
+    --store-shell-gray-500: #7d8781;
+    --store-shell-gray-300: var(--noren-border-strong);
+    --store-shell-gray-200: var(--noren-border);
+    --store-shell-gray-100: var(--noren-page);
+    --store-shell-white: var(--noren-surface);
+    --store-shell-width: var(--noren-content-width);
+    --store-shell-gutter: var(--noren-gutter);
+    --store-shell-accent: var(--noren-sage);
 }
 
 .storefront-page {
     margin: 0;
     color: var(--store-shell-black);
-    background: var(--store-shell-white);
+    background: var(--noren-page);
     font-family: "Pretendard Variable", Pretendard, sans-serif;
     font-size: 14px;
     line-height: 1.5;
@@ -37,7 +39,7 @@
     z-index: 100;
     width: 100%;
     color: var(--store-shell-black);
-    background: var(--store-shell-white);
+    background: rgb(255 255 255 / 96%);
     border-bottom: 1px solid var(--store-shell-gray-200);
 }
 
@@ -240,7 +242,7 @@
     inset: 0;
     z-index: 300;
     padding: 72px 24px;
-    background: rgb(0 0 0 / 42%);
+    background: var(--noren-overlay);
 }
 
 .store-shell__search[hidden] {
@@ -252,8 +254,9 @@
     margin: 0 auto;
     padding: 28px 32px 32px;
     background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 24px 70px rgb(0 0 0 / 20%);
+    border: 1px solid var(--noren-border);
+    border-radius: var(--noren-radius-lg);
+    box-shadow: var(--noren-shadow-lg);
 }
 
 .store-shell__search-head {

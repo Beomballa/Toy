@@ -23,7 +23,7 @@ class FrontStorefrontResourceTest {
                 .contains("autocomplete=\"current-password\"")
                 .contains("autocomplete=\"new-password\"")
                 .contains("/js/view/member-auth.js?v=20260805.2")
-                .contains("/css/member-auth.css?v=20260804.2");
+                .contains("/css/member-auth.css?v=20260813.1");
         assertThat(script)
                 .contains("/api/front/auth/me")
                 .contains("/api/front/auth/login")
@@ -145,7 +145,7 @@ class FrontStorefrontResourceTest {
                 .contains("비로그인 및 일시적인 통신 실패")
                 .contains("Object.freeze({ keys, read, write, remove, count, notify, forgetSession, ready })");
         assertThat(css)
-                .contains("--store-shell-width: 1200px")
+                .contains("--store-shell-width: var(--noren-content-width)")
                 .contains(".store-footer,\n.store-footer *")
                 .contains(".store-shell__primary")
                 .contains(".store-shell__category")
@@ -157,7 +157,7 @@ class FrontStorefrontResourceTest {
             assertThat(readResource("templates/views/" + page))
                     .as(page)
                     .contains("storefront-page")
-                    .contains("/css/storefront-shell.css?v=20260804.1")
+                    .contains("/css/storefront-shell.css?v=20260813.1")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
                     .contains("/js/view/storefront-state.js?v=20260805.2")
@@ -206,7 +206,8 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
-                .contains("/css/storefront-home.css?v=20260803.3")
+                .contains("/css/design-tokens.css?v=20260813.1")
+                .contains("/css/storefront-home.css?v=20260813.1")
                 .contains("/images/brand/noren-wordmark.png")
                 .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")
@@ -226,7 +227,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260805.2")
-                .contains("/js/view/app.js?v=20260803.7");
+                .contains("/js/view/app.js?v=20260813.1");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -240,7 +241,31 @@ class FrontStorefrontResourceTest {
                 .contains("elements.heroCampaignImage.src = slide.image");
         assertThat(homeCss)
                 .contains("body.storefront-home.is-header-search-open")
-                .contains("overflow: hidden");
+                .contains("overflow: hidden")
+                .containsSubsequence(".storefront-home .catalog-toolbar {", "position: static")
+                .contains(".storefront-home .product-rail-header");
+        assertThat(script)
+                .contains("window.location.assign(\"/front/collections/fast-delivery\")")
+                .contains("/front/collections/recommended?keyword=${encodeURIComponent(keyword)}");
+    }
+
+    @Test
+    void storefrontDesignTokensKeepSharedPaletteLayoutAndFocusContracts() throws IOException {
+        String tokens = readResource("static/css/design-tokens.css");
+        String shell = readResource("static/css/storefront-shell.css");
+
+        assertThat(tokens)
+                .contains("--noren-page: #f8f7f3")
+                .contains("--noren-ink: #1e2722")
+                .contains("--noren-sage: #5e735f")
+                .contains("--noren-terracotta: #b65a3f")
+                .contains("--noren-content-width: 1200px")
+                .contains(":focus-visible")
+                .contains("@media (prefers-reduced-motion: reduce)");
+        assertThat(shell)
+                .startsWith("@import url(\"/css/design-tokens.css?v=20260813.1\")")
+                .contains("--store-shell-width: var(--noren-content-width)")
+                .contains("background: var(--noren-overlay)");
     }
 
     @Test
@@ -292,9 +317,11 @@ class FrontStorefrontResourceTest {
     @Test
     void detailPageKeepsCommerceVisualAndPrimaryActionHooks() throws IOException {
         String html = readResource("templates/views/product-detail.html");
+        String pageCss = readResource("static/css/product-detail.css");
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260812.4")
+                .contains("/css/product-detail.css?v=20260813.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -306,6 +333,13 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailReviewDistribution\"")
                 .contains("id=\"detailReviewContentCount\"")
                 .contains("/js/view/detail.js?v=20260812.8");
+        assertThat(pageCss)
+                .contains(".detail-body .detail-hero")
+                .contains("grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr)")
+                .contains(".detail-body .detail-signal-list")
+                .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
+                .contains(".detail-body .detail-breadcrumb .detail-catalog-return")
+                .contains("@media (max-width: 767px)");
         assertThat(readResource("static/js/view/detail.js"))
                 .contains("function normalizeDetailProduct(")
                 .contains("function normalizeDetailOptions(")
@@ -426,7 +460,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-tab=\"hidden\"")
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
-                .contains("/css/my-activity.css?v=20260812.2")
+                .contains("/css/my-activity.css?v=20260813.1")
                 .contains("/js/view/my-activity.js?v=20260812.4");
         assertThat(script)
                 .contains("front-recent-viewed-products")
@@ -723,7 +757,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionSearchInput\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
-                .contains("/css/product-collection.css?v=20260727.1")
+                .contains("/css/product-collection.css?v=20260813.1")
                 .contains("/js/view/product-collection.js?v=20260803.1")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)

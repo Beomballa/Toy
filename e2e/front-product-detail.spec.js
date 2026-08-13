@@ -60,3 +60,34 @@ test("상품 상세는 옵션 추가금을 계산하고 불일치한 장바구�
   await page.locator("#detailAddCartButton").click();
   await expect(page.locator(".toast.is-warning")).toContainText("장바구니 합계가 요청한 상품과 일치하지 않습니다");
 });
+
+test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async ({ page }) => {
+  await page.route("**/api/front/products/12", async (route) => route.fulfill({ json: productDetail() }));
+  await page.goto("/front/products/12");
+  await expect(page.locator("#detailTitle")).toHaveText("오늘의 셀렉션 012");
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const signals = document.querySelector("#detailSignalList").getBoundingClientRect();
+    const returnLink = document.querySelector("#backToCatalogLink").getBoundingClientRect();
+    const hero = document.querySelector("#detailHero").getBoundingClientRect();
+    return {
+      bodyOverflow: document.documentElement.scrollWidth - viewportWidth,
+      signalWidth: signals.width,
+      signalLeft: signals.left,
+      signalRight: signals.right,
+      returnWidth: returnLink.width,
+      returnRight: returnLink.right,
+      heroWidth: hero.width,
+      viewportWidth
+    };
+  });
+
+  expect(layout.bodyOverflow).toBe(0);
+  expect(layout.heroWidth).toBeGreaterThan(0);
+  expect(layout.signalWidth).toBeGreaterThan(0);
+  expect(layout.signalLeft).toBeGreaterThanOrEqual(0);
+  expect(layout.signalRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.returnWidth).toBeGreaterThan(0);
+  expect(layout.returnRight).toBeLessThanOrEqual(layout.viewportWidth);
+});

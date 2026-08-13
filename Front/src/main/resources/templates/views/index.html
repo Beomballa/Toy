@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/design-tokens.css?v=20260813.1">
     <link rel="stylesheet" href="/css/main.css?v=20260726.1">
     <link rel="stylesheet" href="/css/storefront.css?v=20260726.1">
-    <link rel="stylesheet" href="/css/storefront-home.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/storefront-home.css?v=20260813.2">
 </head>
 <body class="storefront-home">
 <a class="skip-link" href="#top">본문 바로가기</a>
@@ -317,10 +317,15 @@
             </div>
             <div class="section-action-bar section-action-bar--featured">
                 <a class="catalog-reset-button" href="/front/collections/recommended">전체 보기</a>
-                <button class="catalog-reset-button" type="button" id="sortFeaturedPriceButton">가격 낮은 순</button>
-                <button class="catalog-reset-button" type="button" id="sortFeaturedStockButton">재고 낮은 순</button>
-                <button class="catalog-reset-button" type="button" id="bookmarkFeaturedButton">Featured 모두 찜</button>
-                <button class="catalog-reset-button" type="button" id="copyFeaturedLinksButton">Featured 링크 복사</button>
+                <details class="rail-action-menu featured-action-menu">
+                    <summary aria-label="큐레이션 정렬 및 관리">•••</summary>
+                    <div class="rail-action-menu__panel">
+                        <button type="button" id="sortFeaturedPriceButton">가격 낮은 순</button>
+                        <button type="button" id="sortFeaturedStockButton">재고 낮은 순</button>
+                        <button type="button" id="bookmarkFeaturedButton">Featured 모두 찜</button>
+                        <button type="button" id="copyFeaturedLinksButton">Featured 링크 복사</button>
+                    </div>
+                </details>
             </div>
             <div class="spotlight-grid" id="featuredGrid"></div>
         </section>

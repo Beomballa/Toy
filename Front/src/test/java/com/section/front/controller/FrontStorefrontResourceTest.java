@@ -207,7 +207,7 @@ class FrontStorefrontResourceTest {
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
                 .contains("/css/design-tokens.css?v=20260813.1")
-                .contains("/css/storefront-home.css?v=20260813.1")
+                .contains("/css/storefront-home.css?v=20260813.2")
                 .contains("/images/brand/noren-wordmark.png")
                 .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")
@@ -219,6 +219,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-storefront-count=\"bookmark\"")
                 .contains("data-storefront-count=\"compare\"")
                 .contains("id=\"homeCategoryRail\"")
+                .contains("class=\"rail-action-menu featured-action-menu\"")
                 .contains("id=\"heroNextButton\"")
                 .contains("id=\"heroPauseButton\"")
                 .contains("id=\"heroCampaignImage\"")
@@ -243,7 +244,10 @@ class FrontStorefrontResourceTest {
                 .contains("body.storefront-home.is-header-search-open")
                 .contains("overflow: hidden")
                 .containsSubsequence(".storefront-home .catalog-toolbar {", "position: static")
-                .contains(".storefront-home .product-rail-header");
+                .contains(".storefront-home .product-rail-header")
+                .contains(".storefront-home .catalog-card__select")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains(".storefront-home .catalog-page-metrics");
         assertThat(script)
                 .contains("window.location.assign(\"/front/collections/fast-delivery\")")
                 .contains("/front/collections/recommended?keyword=${encodeURIComponent(keyword)}");

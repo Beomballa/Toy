@@ -58,9 +58,10 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
 
     boolean existsByMemberNoAndOrderNoAndProductNo(long memberNo, long orderNo, long productNo);
 
-    @Query("select count(review), coalesce(avg(review.rating), 0) from FrontProductReview review "
+    @Query("select count(review) as totalCount, coalesce(avg(review.rating), 0) as averageRating "
+            + "from FrontProductReview review "
             + "where review.productNo = :productNo and review.status = :status")
-    Object[] getSummaryByProductNo(@Param("productNo") long productNo, @Param("status") String status);
+    ReviewSummary getSummaryByProductNo(@Param("productNo") long productNo, @Param("status") String status);
 
     @Query("select review.rating as rating, count(review) as count from FrontProductReview review "
             + "where review.productNo = :productNo and review.status = :status group by review.rating")
@@ -72,5 +73,10 @@ public interface FrontProductReviewRepository extends JpaRepository<FrontProduct
     interface ReviewRatingCount {
         Integer getRating();
         long getCount();
+    }
+
+    interface ReviewSummary {
+        long getTotalCount();
+        Double getAverageRating();
     }
 }

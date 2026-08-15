@@ -67,9 +67,12 @@ public class FrontProductReviewService {
             case RECENT -> reviewRepository.findByProductNoAndStatusOrderByIdDesc(
                     productNo, FrontProductReviewStatus.VISIBLE.name(), pageable);
         };
-        Object[] summary = reviewRepository.getSummaryByProductNo(productNo, FrontProductReviewStatus.VISIBLE.name());
-        long totalCount = ((Number) summary[0]).longValue();
-        double averageRating = ((Number) summary[1]).doubleValue();
+        FrontProductReviewRepository.ReviewSummary summary = reviewRepository.getSummaryByProductNo(
+                productNo,
+                FrontProductReviewStatus.VISIBLE.name()
+        );
+        long totalCount = summary.getTotalCount();
+        double averageRating = summary.getAverageRating() == null ? 0 : summary.getAverageRating();
         long[] ratingDistribution = new long[5];
         reviewRepository.countByProductNoAndStatusGroupByRating(productNo, FrontProductReviewStatus.VISIBLE.name())
                 .forEach(row -> {

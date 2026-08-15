@@ -4,6 +4,7 @@ import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.commerce.entity.FrontProductReview;
 import com.section.common.commerce.entity.FrontProductReviewStatus;
 import com.section.common.commerce.repository.FrontProductReviewRepository.ReviewRatingCount;
+import com.section.common.commerce.repository.FrontProductReviewRepository.ReviewSummary;
 import com.section.common.commerce.entity.Orders;
 import com.section.common.commerce.dto.FrontCatalogProductRow;
 import com.section.common.commerce.repository.FrontProductReviewRepository;
@@ -109,7 +110,7 @@ class FrontProductReviewServiceTest {
                 11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
         )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
         given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
-                .willReturn(new Object[]{0L, 0D});
+                .willReturn(reviewSummary(0L, 0D));
         given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
                 .willReturn(List.of());
 
@@ -130,7 +131,7 @@ class FrontProductReviewServiceTest {
                 11L, FrontProductReviewStatus.VISIBLE.name(), PageRequest.of(0, 10)
         )).willReturn(new PageImpl<>(List.of(), PageRequest.of(0, 10), 0));
         given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
-                .willReturn(new Object[]{5L, 4.6D});
+                .willReturn(reviewSummary(5L, 4.6D));
         given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
                 .willReturn(List.of(fiveStar, threeStar));
         given(fiveStar.getRating()).willReturn(5);
@@ -165,7 +166,7 @@ class FrontProductReviewServiceTest {
         given(review.getContent()).willReturn("후기 내용");
         given(review.getCrtDtm()).willReturn(java.time.LocalDateTime.of(2026, 8, 12, 12, 0));
         given(reviewRepository.getSummaryByProductNo(11L, FrontProductReviewStatus.VISIBLE.name()))
-                .willReturn(new Object[]{1L, 5D});
+                .willReturn(reviewSummary(1L, 5D));
         given(reviewRepository.countByProductNoAndStatusGroupByRating(11L, FrontProductReviewStatus.VISIBLE.name()))
                 .willReturn(List.of());
         given(reportRepository.findReviewNosByMemberNoAndReviewNoIn(7L, List.of(31L))).willReturn(List.of(31L));
@@ -298,5 +299,19 @@ class FrontProductReviewServiceTest {
 
     private FrontProductReviewCreateRequest request() {
         return new FrontProductReviewCreateRequest("ORDER-20260812-001", 5, "배송이 빠르고 상태가 좋습니다.");
+    }
+
+    private ReviewSummary reviewSummary(long count, double averageRating) {
+        return new ReviewSummary() {
+            @Override
+            public long getTotalCount() {
+                return count;
+            }
+
+            @Override
+            public Double getAverageRating() {
+                return averageRating;
+            }
+        };
     }
 }

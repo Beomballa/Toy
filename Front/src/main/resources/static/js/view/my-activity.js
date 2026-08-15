@@ -10,7 +10,11 @@
     const labels = { recent: "최근 본 상품", wishlist: "관심 상품", compare: "비교 상품", hidden: "숨긴 상품" };
     const LIMITS = { recent: 12, wishlist: 24, compare: 3, hidden: 12 };
     const PLACEHOLDER = "/images/product-placeholder.svg";
-    const state = { tab: new URLSearchParams(location.search).get("tab") || "recent", keyword: "", stock: "ALL", sort: "RECENT", view: "grid", selected: new Set() };
+    const savedView = (() => {
+        try { return localStorage.getItem("front-my-view") === "list" ? "list" : "grid"; }
+        catch (_) { return "grid"; }
+    })();
+    const state = { tab: new URLSearchParams(location.search).get("tab") || "recent", keyword: "", stock: "ALL", sort: "RECENT", view: savedView, selected: new Set() };
     if (!KEYS[state.tab]) state.tab = "recent";
     const el = {
         grid: document.getElementById("myProductGrid"), search: document.getElementById("mySearchInput"),
@@ -94,14 +98,20 @@
     function image(item) { return item.thumbnailUrl || PLACEHOLDER; }
     function toast(message) {
         el.toast.textContent = message; el.toast.hidden = false; clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => { el.toast.hidden = true; }, 2400);
+        toastTimer = setTimeout(() => { el.toast.hidden = true; }, 4200);
     }
     async function loadMemberOrders(reset = false) {
         const target = document.getElementById("memberOrdersList");
         const moreButton = document.getElementById("memberOrdersMoreButton");
-        if (reset) { memberOrderPage = 0; memberOrdersLoaded = false; memberOrderSequence += 1; target.replaceChildren(); }
+        if (reset) {
+            memberOrderPage = 0;
+            memberOrdersLoaded = false;
+            memberOrderSequence += 1;
+            target.innerHTML = '<p class="my-order__empty">주문 내역을 불러오는 중입니다.</p>';
+        }
         if (memberOrdersLoaded && !reset) return;
         const requestSequence = memberOrderSequence;
+        target.setAttribute("aria-busy", "true");
         moreButton.disabled = true;
         try {
             const response = await fetch(`/api/front/member/orders?page=${memberOrderPage}&status=${encodeURIComponent(memberOrderStatus)}`, { headers: { Accept: "application/json" } });
@@ -116,6 +126,7 @@
             if (requestSequence !== memberOrderSequence) return;
             renderMemberOrderSummary(payload.statusSummaries);
             const orders = Array.isArray(payload.items) ? payload.items : [];
+            if (memberOrderPage === 0) target.replaceChildren();
             if (!orders.length && memberOrderPage === 0) {
                 target.innerHTML = '<p class="my-order__empty">최근 주문이 없습니다. 상품을 둘러보고 첫 주문을 시작해보세요.</p>';
             } else {
@@ -126,9 +137,10 @@
             moreButton.hidden = memberOrdersLoaded;
         } catch (_) {
             if (requestSequence !== memberOrderSequence) return;
-            if (!target.children.length) target.innerHTML = '<p class="my-order__empty">주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
+            if (memberOrderPage === 0) target.innerHTML = '<p class="my-order__empty">주문 내역을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
             toast("주문 내역을 불러오지 못했습니다.");
         } finally {
+            if (requestSequence === memberOrderSequence) target.setAttribute("aria-busy", "false");
             moreButton.disabled = false;
         }
     }
@@ -141,9 +153,15 @@
     async function loadMemberReviews(reset = false) {
         const target = document.getElementById("memberReviewsList");
         const moreButton = document.getElementById("memberReviewsMoreButton");
-        if (reset) { memberReviewPage = 0; memberReviewsLoaded = false; memberReviewSequence += 1; target.replaceChildren(); }
+        if (reset) {
+            memberReviewPage = 0;
+            memberReviewsLoaded = false;
+            memberReviewSequence += 1;
+            target.innerHTML = '<p class="my-review__empty">작성한 후기를 불러오는 중입니다.</p>';
+        }
         if (memberReviewsLoaded && !reset) return;
         const requestSequence = memberReviewSequence;
+        target.setAttribute("aria-busy", "true");
         moreButton.disabled = true;
         try {
             const response = await fetch(`/api/front/member/reviews?page=${memberReviewPage}`, { headers: { Accept: "application/json" } });
@@ -157,6 +175,7 @@
             const payload = await response.json();
             if (requestSequence !== memberReviewSequence) return;
             const reviews = Array.isArray(payload.reviews) ? payload.reviews : [];
+            if (memberReviewPage === 0) target.replaceChildren();
             if (!reviews.length && memberReviewPage === 0) {
                 target.innerHTML = '<p class="my-review__empty">아직 작성한 후기가 없습니다. 배송 완료 주문의 상품에서 후기를 남겨보세요.</p>';
             } else {
@@ -168,8 +187,9 @@
             document.getElementById("memberReviewCount").textContent = String(Math.max(0, Number(payload.totalCount) || 0));
         } catch (_) {
             if (requestSequence !== memberReviewSequence) return;
-            if (!target.children.length) target.innerHTML = '<p class="my-review__empty">작성한 후기를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
+            if (memberReviewPage === 0) target.innerHTML = '<p class="my-review__empty">작성한 후기를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
         } finally {
+            if (requestSequence === memberReviewSequence) target.setAttribute("aria-busy", "false");
             moreButton.disabled = false;
         }
     }
@@ -188,7 +208,7 @@
             : state.sort === "NAME" ? String(a.name||a.headline||"").localeCompare(String(b.name||b.headline||""),"ko") : 0);
     }
     function syncCounts() {
-        const all = Object.keys(KEYS).flatMap(tab => read(tab));
+        const all = [...new Map(Object.keys(KEYS).flatMap(tab => read(tab)).map(item => [item.id, item])).values()];
         document.getElementById("myTotalCount").textContent = all.length;
         document.getElementById("myAveragePrice").textContent = price(all.length ? Math.round(all.reduce((s,i)=>s+Number(i.price||0),0)/all.length) : 0);
         document.getElementById("myLowStockCount").textContent = all.filter(i=>Number(i.stock||0)<=20).length;
@@ -203,22 +223,41 @@
     }
     function render() {
         const items = filtered();
-        document.querySelectorAll("[data-tab]").forEach(button => { button.classList.toggle("is-active",button.dataset.tab===state.tab); button.setAttribute("aria-current",button.dataset.tab===state.tab?"page":"false"); });
+        document.querySelectorAll("[data-tab]").forEach(button => {
+            const active = button.dataset.tab === state.tab;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-selected", String(active));
+            button.tabIndex = active ? 0 : -1;
+        });
         document.getElementById("myResultTitle").textContent = `${items.length}개 상품`;
         document.getElementById("myResultDescription").textContent = `${labels[state.tab]}에서 현재 조건에 맞는 상품입니다.`;
         el.grid.classList.toggle("is-list",state.view==="list");
+        document.querySelectorAll("[data-view]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.view === state.view)));
+        document.getElementById("mySearchClearButton").hidden = !state.keyword;
+        const emptyActions = {
+            recent: ["상품을 둘러보면 최근 확인한 상품이 여기에 표시됩니다.", "/front/collections/recommended", "상품 둘러보기"],
+            wishlist: ["상품의 관심 버튼을 눌러 나만의 목록을 만들어보세요.", "/front/collections/recommended", "관심 상품 찾기"],
+            compare: ["상품을 최대 3개까지 담아 가격과 재고를 비교할 수 있습니다.", "/front/compare", "비교 화면 열기"],
+            hidden: ["숨긴 상품이 없습니다. 현재 모든 상품이 탐색 결과에 표시됩니다.", "/front/collections/recommended", "상품 둘러보기"]
+        };
+        const emptyAction = emptyActions[state.tab];
         el.grid.innerHTML = items.length ? items.map(item => `
           <article class="my-card" data-product-id="${item.id}">
             <label class="my-card__check"><input type="checkbox" data-select-id="${item.id}" ${state.selected.has(Number(item.id))?"checked":""} aria-label="${safe(item.name||item.headline)} 선택"></label>
             <a class="my-card__visual" href="/front/products/${item.id}"><img src="${safe(image(item))}" alt="${safe(item.name||item.headline)}"></a>
             <div class="my-card__copy"><div class="my-card__brand"><span>${safe(item.brand||"NOREN")}</span><span>${Number(item.stock||0)<=0?"품절":Number(item.stock||0)<=20?"재고주의":"재고안정"}</span></div><h2>${safe(item.name||item.headline||`상품 ${item.id}`)}</h2><p>${safe(item.model||item.category||"상품 정보 확인")}</p><div class="my-card__price"><strong>${price(item.price)}</strong><span>재고 ${Number(item.stock||0)}개</span></div></div>
             <div class="my-card__actions"><a href="/front/products/${item.id}">상세 보기</a><button type="button" data-remove-id="${item.id}">목록에서 삭제</button></div>
-          </article>`).join("") : `<div class="my-empty"><strong>${labels[state.tab]}이 없습니다.</strong><p>검색 조건을 바꾸거나 상품을 둘러보고 활동을 시작해보세요.</p><a href="/front#catalog">상품 둘러보기</a></div>`;
+          </article>`).join("") : `<div class="my-empty"><strong>${labels[state.tab]}이 없습니다.</strong><p>${emptyAction[0]}</p><a href="${emptyAction[1]}">${emptyAction[2]}</a></div>`;
         bindImageFallbacks();
         syncCounts(); syncSelection(items);
         document.getElementById("mySelectAllButton").disabled = !items.length;
+        document.getElementById("mySelectAllButton").textContent = items.length && items.every(item => state.selected.has(Number(item.id))) ? "전체 해제" : "전체 선택";
         document.getElementById("myClearTabButton").disabled = !read().length;
-        history.replaceState(null,"",`/front/my?tab=${state.tab}`);
+        document.getElementById("myExportButton").disabled = !items.length;
+        document.getElementById("myCopySummaryButton").disabled = !items.length;
+        const url = new URL(location.href);
+        url.searchParams.set("tab", state.tab);
+        history.replaceState(null, "", `${url.pathname}${url.search}`);
     }
     function bindImageFallbacks() {
         el.grid.querySelectorAll(".my-card__visual img").forEach(img => {
@@ -268,7 +307,7 @@
     function downloadCsv() {
         const rows = [["상품번호","브랜드","상품명","모델","가격","재고"],...filtered().map(i=>[i.id,i.brand,i.name||i.headline,i.model,i.price,i.stock])];
         const csv = "\ufeff"+rows.map(row=>row.map(csvCell).join(",")).join("\n");
-        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=`grade-stock-${state.tab}.csv`; a.click(); URL.revokeObjectURL(a.href);
+        const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download=`noren-${state.tab}.csv`; a.click(); URL.revokeObjectURL(a.href);
     }
 
     function csvCell(value) {
@@ -277,8 +316,23 @@
         return `\"${safeText.replaceAll("\"", "\"\"")}\"`;
     }
 
-    document.querySelectorAll("[data-tab]").forEach(button=>button.addEventListener("click",()=>{state.tab=button.dataset.tab;state.selected.clear();render();}));
-    document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{state.view=button.dataset.view;document.querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b===button)));render();}));
+    const tabButtons = [...document.querySelectorAll("[data-tab]")];
+    tabButtons.forEach((button, index) => {
+        button.addEventListener("click", () => { state.tab = button.dataset.tab; state.selected.clear(); render(); });
+        button.addEventListener("keydown", event => {
+            if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+            event.preventDefault();
+            const targetIndex = event.key === "Home" ? 0 : event.key === "End" ? tabButtons.length - 1
+                : event.key === "ArrowRight" ? (index + 1) % tabButtons.length : (index - 1 + tabButtons.length) % tabButtons.length;
+            tabButtons[targetIndex].focus();
+            tabButtons[targetIndex].click();
+        });
+    });
+    document.querySelectorAll("[data-view]").forEach(button=>button.addEventListener("click",()=>{
+        state.view=button.dataset.view;
+        try { localStorage.setItem("front-my-view", state.view); } catch (_) { toast("보기 설정을 저장하지 못했습니다."); }
+        render();
+    }));
     el.search.addEventListener("input",()=>{state.keyword=cleanText(el.search.value, 100).toLocaleLowerCase("ko-KR");render();});
     el.stock.addEventListener("change",()=>{state.stock=el.stock.value;render();});
     el.sort.addEventListener("change",()=>{state.sort=el.sort.value;render();});
@@ -326,7 +380,11 @@
     });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
-    addEventListener("keydown",event=>{if(event.key==="/"&&document.activeElement!==el.search){event.preventDefault();el.search.focus();}if(event.key==="Escape"&&state.keyword){el.search.value="";state.keyword="";render();}});
+    addEventListener("keydown",event=>{
+        const editable = event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement;
+        if(event.key==="/" && !editable){event.preventDefault();el.search.focus();}
+        if(event.key==="Escape" && state.keyword){el.search.value="";state.keyword="";render();}
+    });
     render();
     loadMemberOrders();
     loadMemberReviews();

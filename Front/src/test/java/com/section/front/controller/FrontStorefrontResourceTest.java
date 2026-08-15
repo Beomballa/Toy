@@ -489,8 +489,12 @@ class FrontStorefrontResourceTest {
                 .contains("data-tab=\"hidden\"")
                 .contains("id=\"myDeleteSelectedButton\"")
                 .contains("id=\"myExportButton\"")
-                .contains("/css/my-activity.css?v=20260813.1")
-                .contains("/js/view/my-activity.js?v=20260812.4");
+                .contains("class=\"my-management\"")
+                .contains("role=\"tablist\"")
+                .contains("aria-busy=\"true\"")
+                .containsSubsequence("class=\"my-board\"", "class=\"my-orders\"")
+                .contains("/css/my-activity.css?v=20260815.1")
+                .contains("/js/view/my-activity.js?v=20260815.1");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")
@@ -508,11 +512,18 @@ class FrontStorefrontResourceTest {
                 .contains("function bindImageFallbacks()")
                 .contains("function resetAllActivity()")
                 .contains("window.StorefrontState.remove(KEYS[tab])")
+                .contains("front-my-view")
+                .contains("aria-selected")
+                .contains("ArrowRight")
+                .contains("noren-${state.tab}.csv")
+                .contains("target.setAttribute(\"aria-busy\", \"false\")")
                 .doesNotContain("placehold.co");
         assertThat(css)
                 .contains(".my-grid.is-list")
                 .contains(".my-selection[hidden]")
-                .contains("@media (max-width:780px)");
+                .contains(".my-management[open]")
+                .contains("@media (max-width: 780px)")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))");
     }
 
     @Test

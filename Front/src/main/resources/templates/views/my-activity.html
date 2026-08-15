@@ -5,52 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY 쇼핑 활동 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/my-activity.css?v=20260813.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/my-activity.css?v=20260815.1">
 </head>
-<body class="storefront-page">
+<body class="storefront-page my-activity-page">
 <a class="my-skip" href="#myActivityMain">본문 바로가기</a>
 <header th:replace="~{fragments/storefront-shell :: header('MY', 'MY 쇼핑 활동')}"></header>
 <main class="my-shell" id="myActivityMain" tabindex="-1">
     <section class="my-hero">
-        <div><p>Personal Shopping Desk</p><h1>MY 쇼핑 활동</h1><span>최근 확인하고 저장한 상품을 한곳에서 정리하고 비교하세요.</span></div>
+        <div class="my-hero__copy">
+            <p>Personal Shopping Desk</p>
+            <h1>MY 쇼핑 활동</h1>
+            <span>최근 확인하고 저장한 상품을 한곳에서 정리하고 비교하세요.</span>
+            <div class="my-hero__links"><a href="/front/orders">주문 조회</a><a href="/front/my/addresses">배송지 관리</a></div>
+        </div>
         <dl aria-label="쇼핑 활동 요약"><div><dt>전체</dt><dd id="myTotalCount">0</dd></div><div><dt>평균가</dt><dd id="myAveragePrice">0원</dd></div><div><dt>재고주의</dt><dd id="myLowStockCount">0</dd></div><div><dt>총재고</dt><dd id="myTotalStock">0</dd></div></dl>
     </section>
+
+    <section class="my-board" aria-labelledby="myBoardTitle">
+        <div class="my-section-head"><div><p>My Collections</p><h2 id="myBoardTitle">저장한 상품</h2><span>최근 본 상품부터 관심·비교·숨김 목록까지 이어서 관리합니다.</span></div></div>
+        <nav class="my-tabs" role="tablist" aria-label="쇼핑 활동 분류">
+            <button type="button" role="tab" data-tab="recent" aria-controls="myProductGrid">최근 본 상품 <span id="myRecentCount">0</span></button>
+            <button type="button" role="tab" data-tab="wishlist" aria-controls="myProductGrid">관심 상품 <span id="myWishlistCount">0</span></button>
+            <button type="button" role="tab" data-tab="compare" aria-controls="myProductGrid">비교 상품 <span id="myCompareCount">0</span></button>
+            <button type="button" role="tab" data-tab="hidden" aria-controls="myProductGrid">숨긴 상품 <span id="myHiddenCount">0</span></button>
+        </nav>
+        <div class="my-toolbar" aria-label="상품 검색 및 정렬">
+            <label class="my-search">검색<span><input id="mySearchInput" type="search" placeholder="브랜드, 상품명, 모델 검색" autocomplete="off"><button id="mySearchClearButton" type="button" hidden>지우기</button></span></label>
+            <label>재고<select id="myStockFilter"><option value="ALL">전체</option><option value="AVAILABLE">구매 가능</option><option value="LOW">재고 주의</option><option value="SOLD_OUT">품절</option></select></label>
+            <label>정렬<select id="mySortSelect"><option value="RECENT">최근 저장순</option><option value="PRICE_LOW">낮은 가격순</option><option value="PRICE_HIGH">높은 가격순</option><option value="STOCK_LOW">낮은 재고순</option><option value="NAME">이름순</option></select></label>
+            <div class="my-view-toggle" aria-label="보기 방식"><button type="button" data-view="grid" aria-pressed="true">격자</button><button type="button" data-view="list" aria-pressed="false">목록</button></div>
+        </div>
+        <div class="my-command">
+            <div><strong id="myResultTitle">0개 상품</strong><span id="myResultDescription" aria-live="polite">저장된 상품을 확인하고 있습니다.</span></div>
+            <button type="button" id="mySelectAllButton">전체 선택</button>
+        </div>
+        <div class="my-selection" id="mySelectionBar" hidden>
+            <span id="mySelectionText"></span>
+            <div><button type="button" id="myMoveWishlistButton">관심에 담기</button><button type="button" id="myMoveCompareButton">비교에 담기</button><button type="button" id="myDeleteSelectedButton">선택 삭제</button><button type="button" id="myClearSelectionButton">선택 해제</button></div>
+        </div>
+        <section class="my-grid" id="myProductGrid" role="tabpanel" aria-labelledby="myBoardTitle" aria-live="polite"></section>
+        <details class="my-management">
+            <summary><span><strong>쇼핑 활동 관리</strong><small>목록 내보내기, 요약 복사, 초기화</small></span><b>+</b></summary>
+            <div><button type="button" id="myExportButton">CSV 내보내기</button><button type="button" id="myCopySummaryButton">요약 복사</button><button type="button" id="myClearTabButton">현재 목록 비우기</button><button type="button" id="myResetAllButton">전체 활동 초기화</button></div>
+        </details>
+    </section>
+
     <section class="my-orders" id="memberOrders" aria-labelledby="memberOrdersTitle">
-        <div class="my-orders__head"><div><p>Order History</p><h2 id="memberOrdersTitle">최근 주문</h2></div><div class="my-orders__tools"><label>상태 <select id="memberOrderStatusFilter"><option value="ALL">전체 주문</option><option value="ORDERED">주문 접수</option><option value="PAID">결제 확인</option><option value="PREPARING">배송 준비</option><option value="SHIPPED">배송 중</option><option value="DELIVERED">배송 완료</option><option value="CANCELLED">주문 취소</option></select></label><a href="/front/orders">주문 조회</a></div></div>
+        <div class="my-orders__head"><div><p>Order History</p><h2 id="memberOrdersTitle">최근 주문</h2><span>주문 상태와 배송 흐름을 한곳에서 확인하세요.</span></div><div class="my-orders__tools"><label>상태 <select id="memberOrderStatusFilter"><option value="ALL">전체 주문</option><option value="ORDERED">주문 접수</option><option value="PAID">결제 확인</option><option value="PREPARING">배송 준비</option><option value="SHIPPED">배송 중</option><option value="DELIVERED">배송 완료</option><option value="CANCELLED">주문 취소</option></select></label><a href="/front/orders">전체 조회</a></div></div>
         <div class="my-orders__summary" id="memberOrdersSummary" aria-label="주문 상태 요약"></div>
-        <div class="my-orders__list" id="memberOrdersList" aria-live="polite"></div>
+        <div class="my-orders__list" id="memberOrdersList" aria-live="polite" aria-busy="true"><p class="my-order__empty">주문 내역을 불러오는 중입니다.</p></div>
         <button class="my-orders__more" id="memberOrdersMoreButton" type="button" hidden>주문 더보기</button>
     </section>
     <section class="my-reviews" id="memberReviews" aria-labelledby="memberReviewsTitle">
-        <div class="my-reviews__head"><div><p>My Reviews</p><h2 id="memberReviewsTitle">작성한 후기</h2></div><span id="memberReviewCount">0</span></div>
-        <div class="my-reviews__list" id="memberReviewsList" aria-live="polite"></div>
+        <div class="my-reviews__head"><div><p>My Reviews</p><h2 id="memberReviewsTitle">작성한 후기</h2><span>남긴 후기와 상품을 다시 확인할 수 있습니다.</span></div><b><span id="memberReviewCount">0</span>개</b></div>
+        <div class="my-reviews__list" id="memberReviewsList" aria-live="polite" aria-busy="true"><p class="my-review__empty">작성한 후기를 불러오는 중입니다.</p></div>
         <button class="my-reviews__more" id="memberReviewsMoreButton" type="button" hidden>후기 더보기</button>
     </section>
-    <nav class="my-tabs" aria-label="쇼핑 활동 분류">
-        <button type="button" data-tab="recent">최근 본 상품 <span id="myRecentCount">0</span></button>
-        <button type="button" data-tab="wishlist">관심 상품 <span id="myWishlistCount">0</span></button>
-        <button type="button" data-tab="compare">비교 상품 <span id="myCompareCount">0</span></button>
-        <button type="button" data-tab="hidden">숨긴 상품 <span id="myHiddenCount">0</span></button>
-    </nav>
-    <section class="my-toolbar" aria-label="상품 검색 및 정렬">
-        <label class="my-search">검색<input id="mySearchInput" type="search" placeholder="브랜드, 상품명, 모델 검색" autocomplete="off"><button id="mySearchClearButton" type="button">지우기</button></label>
-        <label>재고<select id="myStockFilter"><option value="ALL">전체</option><option value="AVAILABLE">구매 가능</option><option value="LOW">재고 주의</option><option value="SOLD_OUT">품절</option></select></label>
-        <label>정렬<select id="mySortSelect"><option value="RECENT">최근 저장순</option><option value="PRICE_LOW">낮은 가격순</option><option value="PRICE_HIGH">높은 가격순</option><option value="STOCK_LOW">낮은 재고순</option><option value="NAME">이름순</option></select></label>
-        <div class="my-view-toggle" aria-label="보기 방식"><button type="button" data-view="grid" aria-pressed="true">격자</button><button type="button" data-view="list" aria-pressed="false">목록</button></div>
-    </section>
-    <section class="my-command">
-        <div><strong id="myResultTitle">0개 상품</strong><span id="myResultDescription">저장된 상품을 확인하고 있습니다.</span></div>
-        <div><button type="button" id="mySelectAllButton">전체 선택</button><button type="button" id="myMoveWishlistButton">관심에 담기</button><button type="button" id="myMoveCompareButton">비교에 담기</button><button type="button" id="myDeleteSelectedButton">선택 삭제</button><button type="button" id="myClearTabButton">현재 목록 비우기</button></div>
-    </section>
-    <div class="my-selection" id="mySelectionBar" hidden><span id="mySelectionText"></span><button type="button" id="myClearSelectionButton">선택 해제</button></div>
-    <section class="my-grid" id="myProductGrid" aria-live="polite"></section>
-    <footer class="my-footer-tools"><button type="button" id="myExportButton">CSV 내보내기</button><button type="button" id="myCopySummaryButton">요약 복사</button><button type="button" id="myResetAllButton">전체 활동 초기화</button><a href="/front/my/addresses">배송지 관리</a><a href="/front/compare">비교 분석 열기</a><a href="/front#catalog">상품 더 둘러보기</a></footer>
+    <nav class="my-footer-tools" aria-label="MY 바로가기"><a href="/front/my/addresses">배송지 관리</a><a href="/front/compare">비교 분석 열기</a><a href="/front/collections/recommended">상품 더 둘러보기</a></nav>
 </main>
 <div class="my-toast" id="myToast" role="status" aria-live="polite" hidden></div>
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-    <script src="/js/view/my-activity.js?v=20260812.4"></script>
+<script src="/js/view/my-activity.js?v=20260815.1"></script>
 </body>
 </html>

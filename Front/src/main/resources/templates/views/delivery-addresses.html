@@ -1,21 +1,52 @@
 <!DOCTYPE html>
 <html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>배송지 관리 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/delivery-addresses.css?v=20260812.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/delivery-addresses.css?v=20260815.1">
 </head>
 <body class="storefront-page delivery-address-body">
 <a class="address-skip" href="#deliveryAddressMain">본문 바로가기</a>
 <header th:replace="~{fragments/storefront-shell :: header('MY', '배송지 관리')}"></header>
 <main class="address-shell" id="deliveryAddressMain" tabindex="-1">
-    <section class="address-hero"><div><p>Delivery Address</p><h1>배송지 관리</h1><span>주문할 때 사용할 배송지를 저장하고 기본 배송지를 설정하세요.</span></div><a href="/front/my">MY 쇼핑 활동</a></section>
-    <section class="address-create"><div><h2 id="addressFormTitle">새 배송지 등록</h2><span>배송지 이름과 수령 정보를 입력하세요.</span></div><form id="deliveryAddressForm"><input id="deliveryAddressId" type="hidden"><div class="address-form-grid"><label>배송지 이름<input name="addressName" maxlength="40" required placeholder="예: 집, 회사"></label><label>받는 분<input name="recipientName" maxlength="50" required></label><label>연락처<input name="recipientPhone" maxlength="20" inputmode="tel" required placeholder="010-0000-0000"></label><label>우편번호<input name="postalCode" maxlength="10" inputmode="numeric" required></label><label class="address-form-wide">주소<input name="address1" maxlength="200" required></label><label class="address-form-wide">상세 주소<input name="address2" maxlength="200"></label></div><div class="address-form-actions"><label><input type="checkbox" name="defaultAddress"> 기본 배송지로 설정</label><button type="button" id="deliveryAddressFormReset">입력 초기화</button><button type="submit" id="deliveryAddressSubmit">배송지 저장</button></div></form></section>
-    <section class="address-list-section" aria-labelledby="deliveryAddressListTitle"><div class="address-list-head"><div><p>Saved Addresses</p><h2 id="deliveryAddressListTitle">저장한 배송지</h2></div><span id="deliveryAddressCount">0개</span></div><div class="address-list" id="deliveryAddressList" aria-live="polite" aria-busy="true"></div></section>
+    <section class="address-hero">
+        <div><p>Delivery Address</p><h1>배송지 관리</h1><span>주문할 때 사용할 배송지를 저장하고 기본 배송지를 설정하세요.</span></div>
+        <div class="address-hero__links"><a href="/front/my">MY 쇼핑 활동</a><a href="/front/orders">주문 조회</a></div>
+    </section>
+
+    <section class="address-create" aria-labelledby="addressFormTitle">
+        <div class="address-create__intro"><p>Address Form</p><h2 id="addressFormTitle" tabindex="-1">새 배송지 등록</h2><span>배송지는 최대 20개까지 저장할 수 있습니다.</span></div>
+        <form id="deliveryAddressForm" novalidate>
+            <input id="deliveryAddressId" type="hidden">
+            <p class="address-form-status" id="deliveryAddressFormStatus" role="alert" hidden></p>
+            <div class="address-form-grid">
+                <label for="addressName">배송지 이름</label><div class="address-field"><input id="addressName" name="addressName" maxlength="40" required autocomplete="off" placeholder="예: 집, 회사" aria-describedby="addressNameError"><p data-address-error="addressName" id="addressNameError" hidden></p></div>
+                <label for="recipientName">받는 분</label><div class="address-field"><input id="recipientName" name="recipientName" maxlength="50" required autocomplete="name" aria-describedby="recipientNameError"><p data-address-error="recipientName" id="recipientNameError" hidden></p></div>
+                <label for="recipientPhone">연락처</label><div class="address-field"><input id="recipientPhone" name="recipientPhone" maxlength="13" inputmode="tel" autocomplete="tel" required placeholder="010-0000-0000" aria-describedby="recipientPhoneError"><p data-address-error="recipientPhone" id="recipientPhoneError" hidden></p></div>
+                <label for="postalCode">우편번호</label><div class="address-field"><input id="postalCode" name="postalCode" maxlength="10" inputmode="numeric" autocomplete="postal-code" required placeholder="5자리 우편번호" aria-describedby="postalCodeError"><p data-address-error="postalCode" id="postalCodeError" hidden></p></div>
+                <label for="addressLine1">주소</label><div class="address-field"><input id="addressLine1" name="address1" maxlength="200" autocomplete="address-line1" required placeholder="도로명 또는 지번 주소" aria-describedby="address1Error"><p data-address-error="address1" id="address1Error" hidden></p></div>
+                <label for="addressLine2">상세 주소 <span>선택</span></label><div class="address-field"><input id="addressLine2" name="address2" maxlength="200" autocomplete="address-line2" placeholder="동·호수 등"></div>
+            </div>
+            <div class="address-form-actions">
+                <label class="address-default-check"><input type="checkbox" name="defaultAddress"> 기본 배송지로 설정</label>
+                <button type="button" id="deliveryAddressFormReset">입력 초기화</button>
+                <button type="submit" id="deliveryAddressSubmit" data-pending-label="저장 중">배송지 저장</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="address-list-section" aria-labelledby="deliveryAddressListTitle">
+        <div class="address-list-head"><div><p>Saved Addresses</p><h2 id="deliveryAddressListTitle">저장한 배송지</h2><span>기본 배송지가 주문 화면에서 먼저 선택됩니다.</span></div><b id="deliveryAddressCount">0개</b></div>
+        <div class="address-list" id="deliveryAddressList" aria-live="polite" aria-busy="true"><div class="address-empty">배송지를 불러오는 중입니다.</div></div>
+    </section>
 </main>
 <div class="address-toast" id="deliveryAddressToast" role="status" aria-live="polite" hidden></div>
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
-<script src="/js/view/storefront-state.js?v=20260805.2"></script><script src="/js/view/storefront-shell.js?v=20260802.1"></script><script src="/js/view/delivery-addresses.js?v=20260812.1"></script>
-</body></html>
+<script src="/js/view/storefront-state.js?v=20260805.2"></script>
+<script src="/js/view/storefront-shell.js?v=20260802.1"></script>
+<script src="/js/view/delivery-addresses.js?v=20260815.1"></script>
+</body>
+</html>

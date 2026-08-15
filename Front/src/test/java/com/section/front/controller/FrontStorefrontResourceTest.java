@@ -527,6 +527,40 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void deliveryAddressPageKeepsValidationMutationAndResponsiveContracts() throws IOException {
+        String html = readResource("templates/views/delivery-addresses.html");
+        String script = readResource("static/js/view/delivery-addresses.js");
+        String css = readResource("static/css/delivery-addresses.css");
+
+        assertThat(html)
+                .contains("id=\"deliveryAddressForm\" novalidate")
+                .contains("id=\"deliveryAddressFormStatus\" role=\"alert\"")
+                .contains("data-address-error=\"recipientPhone\"")
+                .contains("autocomplete=\"postal-code\"")
+                .contains("aria-busy=\"true\"")
+                .contains("/css/delivery-addresses.css?v=20260815.1")
+                .contains("/js/view/delivery-addresses.js?v=20260815.1");
+        assertThat(script)
+                .contains("function normalizeAddresses(payload)")
+                .contains("payload.length > MAX_ADDRESS_COUNT")
+                .contains("ids.has(id)")
+                .contains("defaultCount > 1")
+                .contains("function validateForm()")
+                .contains("const addressIdInput = document.getElementById(\"deliveryAddressId\")")
+                .doesNotContain("form.elements.id")
+                .contains("state.mutating")
+                .contains("data-address-retry")
+                .contains("/front/login?next=/front/my/addresses")
+                .contains("matchMedia(\"(prefers-reduced-motion: reduce)\")")
+                .contains("form.setAttribute(\"aria-busy\", String(value))");
+        assertThat(css)
+                .contains(".address-field input[aria-invalid=\"true\"]")
+                .contains(".address-create.is-editing")
+                .contains("grid-template-columns: repeat(2, minmax(0, 1fr))")
+                .contains("@media (max-width: 520px)");
+    }
+
+    @Test
     void supportCenterKeepsSearchFaqAndPublicNoticeContracts() throws IOException {
         String home = readResource("templates/views/index.html");
         String html = readResource("templates/views/support-center.html");

@@ -6,7 +6,7 @@
     <title>로그인 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
-    <link rel="stylesheet" href="/css/member-auth.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/member-auth.css?v=20260815.1">
 </head>
 <body class="storefront-page member-auth-page">
 <a class="member-auth-skip" href="#memberAuthMain">본문 바로가기</a>
@@ -33,34 +33,53 @@
 
         <div id="memberAnonymousPanel">
             <div class="member-auth__tabs" role="tablist" aria-label="회원 인증 방식">
-                <button type="button" role="tab" id="memberLoginTab" aria-controls="memberLoginForm" aria-selected="true">로그인</button>
-                <button type="button" role="tab" id="memberSignUpTab" aria-controls="memberSignUpForm" aria-selected="false">회원가입</button>
+                <button type="button" role="tab" id="memberLoginTab" aria-controls="memberLoginForm" aria-selected="true" tabindex="0">로그인</button>
+                <button type="button" role="tab" id="memberSignUpTab" aria-controls="memberSignUpForm" aria-selected="false" tabindex="-1">회원가입</button>
             </div>
             <h2 class="member-auth__title" id="memberAuthTitle">다시 만나 반갑습니다.</h2>
             <p class="member-auth__description" id="memberAuthDescription">가입한 이메일로 로그인하세요.</p>
             <p class="member-auth__status" id="memberAuthStatus" role="alert" hidden></p>
 
             <form class="member-auth__form" id="memberLoginForm" novalidate>
-                <label>이메일<input name="email" type="email" autocomplete="username" maxlength="255" required placeholder="name@example.com"></label>
-                <label>비밀번호<input name="password" type="password" autocomplete="current-password" maxlength="100" required></label>
-                <button type="submit">로그인</button>
+                <label for="memberLoginEmail">이메일</label>
+                <div class="member-auth__field">
+                    <input id="memberLoginEmail" name="email" type="email" autocomplete="username" inputmode="email" maxlength="255" required placeholder="name@example.com" aria-describedby="memberLoginEmailError">
+                    <p class="member-auth__field-error" id="memberLoginEmailError" data-field-error="email" hidden></p>
+                </div>
+                <label for="memberLoginPassword">비밀번호</label>
+                <div class="member-auth__field">
+                    <div class="member-auth__input"><input id="memberLoginPassword" name="password" type="password" autocomplete="current-password" maxlength="100" required aria-describedby="memberLoginPasswordNote memberLoginPasswordError"><button type="button" data-password-toggle="memberLoginPassword" aria-label="비밀번호 표시">보기</button></div>
+                    <p class="member-auth__key-note" id="memberLoginPasswordNote" data-caps-note hidden>Caps Lock이 켜져 있습니다.</p>
+                    <p class="member-auth__field-error" id="memberLoginPasswordError" data-field-error="password" hidden></p>
+                </div>
+                <button class="member-auth__submit" type="submit" data-pending-label="로그인 중">로그인</button>
             </form>
 
             <form class="member-auth__form" id="memberSignUpForm" hidden novalidate>
-                <label>이메일<input name="email" type="email" autocomplete="email" maxlength="255" required placeholder="name@example.com"></label>
-                <label>이름<input name="name" type="text" autocomplete="name" maxlength="100" required></label>
-                <label>닉네임 <span>선택</span><input name="nickname" type="text" autocomplete="nickname" maxlength="100"></label>
-                <label>비밀번호 <span>영문과 숫자를 포함한 8자 이상</span><input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label>
-                <label>비밀번호 확인<input name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label>
-                <button type="submit">NOREN 시작하기</button>
+                <label for="memberSignUpEmail">이메일</label>
+                <div class="member-auth__field"><input id="memberSignUpEmail" name="email" type="email" autocomplete="email" inputmode="email" maxlength="255" required placeholder="name@example.com" aria-describedby="memberSignUpEmailError"><p class="member-auth__field-error" id="memberSignUpEmailError" data-field-error="email" hidden></p></div>
+                <label for="memberSignUpName">이름</label>
+                <div class="member-auth__field"><input id="memberSignUpName" name="name" type="text" autocomplete="name" maxlength="100" required aria-describedby="memberSignUpNameError"><p class="member-auth__field-error" id="memberSignUpNameError" data-field-error="name" hidden></p></div>
+                <label for="memberSignUpNickname">닉네임 <span>선택</span></label>
+                <div class="member-auth__field"><input id="memberSignUpNickname" name="nickname" type="text" autocomplete="nickname" maxlength="100"></div>
+                <label for="memberSignUpPassword">비밀번호 <span>영문과 숫자를 포함한 8자 이상</span></label>
+                <div class="member-auth__field">
+                    <div class="member-auth__input"><input id="memberSignUpPassword" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="memberPasswordRules memberSignUpPasswordNote memberSignUpPasswordError"><button type="button" data-password-toggle="memberSignUpPassword" aria-label="비밀번호 표시">보기</button></div>
+                    <p class="member-auth__key-note" id="memberSignUpPasswordNote" data-caps-note hidden>Caps Lock이 켜져 있습니다.</p>
+                    <ul class="member-auth__rules" id="memberPasswordRules" aria-label="비밀번호 조건"><li data-password-rule="length">8자 이상</li><li data-password-rule="letter">영문 포함</li><li data-password-rule="number">숫자 포함</li></ul>
+                    <p class="member-auth__field-error" id="memberSignUpPasswordError" data-field-error="password" hidden></p>
+                </div>
+                <label for="memberSignUpPasswordConfirm">비밀번호 확인</label>
+                <div class="member-auth__field"><div class="member-auth__input"><input id="memberSignUpPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" required aria-describedby="memberSignUpPasswordConfirmError"><button type="button" data-password-toggle="memberSignUpPasswordConfirm" aria-label="비밀번호 확인 표시">보기</button></div><p class="member-auth__field-error" id="memberSignUpPasswordConfirmError" data-field-error="passwordConfirm" hidden></p></div>
+                <button class="member-auth__submit" type="submit" data-pending-label="가입 중">NOREN 시작하기</button>
             </form>
-            <p class="member-auth__policy">회원가입 시 서비스 이용약관과 개인정보 처리방침에 동의한 것으로 간주합니다.</p>
+            <p class="member-auth__policy">회원가입 시 <a href="/front/support">서비스 이용 안내</a>와 개인정보 처리방침에 동의한 것으로 간주합니다.</p>
         </div>
     </section>
 </main>
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/member-auth.js?v=20260805.2"></script>
+<script src="/js/view/member-auth.js?v=20260815.1"></script>
 </body>
 </html>

@@ -22,20 +22,30 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"memberAuthStatus\" role=\"alert\"")
                 .contains("autocomplete=\"current-password\"")
                 .contains("autocomplete=\"new-password\"")
-                .contains("/js/view/member-auth.js?v=20260805.2")
-                .contains("/css/member-auth.css?v=20260813.1");
+                .contains("data-password-toggle=\"memberLoginPassword\"")
+                .contains("id=\"memberPasswordRules\"")
+                .contains("data-field-error=\"passwordConfirm\"")
+                .contains("/js/view/member-auth.js?v=20260815.1")
+                .contains("/css/member-auth.css?v=20260815.1");
         assertThat(script)
                 .contains("/api/front/auth/me")
                 .contains("/api/front/auth/login")
                 .contains("/api/front/auth/signup")
                 .contains("/api/front/auth/logout")
                 .contains("next.startsWith(\"/front\")")
-                .contains("loginForm.reportValidity()")
-                .containsSubsequence("const form = new FormData(loginForm);", "setPending(loginForm, true);")
-                .contains("passwordConfirm");
+                .contains("function validateForm(form)")
+                .contains("function validatePasswordConfirm(")
+                .contains("function togglePassword(button)")
+                .contains("getModifierState?.(\"CapsLock\")")
+                .contains("history.replaceState")
+                .contains("ArrowRight")
+                .contains("normalizeEmail(")
+                .containsSubsequence("const form = new FormData(loginForm);", "setPending(loginForm, true);");
         assertThat(css)
                 .contains(".member-auth *")
                 .contains("box-sizing: border-box")
+                .contains(".member-auth__field-error")
+                .contains(".member-auth__rules li.is-valid")
                 .contains("grid-template-columns: minmax(0, 1.1fr) minmax(420px, .9fr)")
                 .contains("@media (max-width: 560px)");
     }

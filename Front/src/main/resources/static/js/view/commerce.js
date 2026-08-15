@@ -23,6 +23,7 @@
         saveAddress: document.getElementById("saveDeliveryAddressCheck"),
         addressName: document.getElementById("deliveryAddressName"),
         addressNameLabel: document.getElementById("deliveryAddressNameLabel"),
+        formStatus: document.getElementById("checkoutFormStatus"),
         toast: document.getElementById("commerceToast")
     };
     let cart = { items: [], itemCount: 0, totalQuantity: 0, totalAmount: 0 };
@@ -81,7 +82,13 @@
         window.clearTimeout(toastTimer);
         toastTimer = window.setTimeout(() => {
             elements.toast.hidden = true;
-        }, 2800);
+        }, 4200);
+    }
+
+    function showFormStatus(message = "") {
+        if (!elements.formStatus) return;
+        elements.formStatus.textContent = message;
+        elements.formStatus.hidden = !message;
     }
 
     async function request(path, options = {}) {
@@ -121,19 +128,22 @@
     }
 
     function renderCart() {
+        const hasItems = cart.items.length > 0;
         elements.count.textContent = `${cart.itemCount}개 상품 · 총 ${cart.totalQuantity}개`;
         elements.subtotal.textContent = formatPrice(cart.totalAmount);
         elements.total.textContent = formatPrice(cart.totalAmount);
         if (elements.totalQuantity) elements.totalQuantity.textContent = `${cart.totalQuantity}개`;
         const lowStockCount = cart.items.filter((item) => item.stock - item.quantity <= 3).length;
         if (elements.stockSummary) {
+            elements.stockSummary.hidden = !hasItems;
             elements.stockSummary.textContent = lowStockCount
                 ? `${lowStockCount}개 옵션의 남은 재고가 3개 이하입니다.`
                 : "현재 담긴 옵션은 재고가 안정적입니다.";
             elements.stockSummary.classList.toggle("is-alert", lowStockCount > 0);
         }
-        syncCheckoutAvailability(cart.items.length > 0);
-        if (!cart.items.length) {
+        document.body.classList.toggle("has-commerce-items", hasItems);
+        syncCheckoutAvailability(hasItems);
+        if (!hasItems) {
             renderEmpty("장바구니가 비어 있습니다.");
             return;
         }
@@ -176,9 +186,11 @@
     function syncCheckoutAvailability(available) {
         if (elements.clearCart) {
             elements.clearCart.disabled = !available || cartMutating;
+            elements.clearCart.hidden = !available;
         }
         elements.checkoutLink?.classList.toggle("is-disabled", !available);
         elements.checkoutLink?.setAttribute("aria-disabled", String(!available));
+        elements.checkoutLink?.setAttribute("tabindex", available ? "0" : "-1");
         if (elements.submit) {
             elements.submit.disabled = !available || submitting;
         }
@@ -288,6 +300,11 @@
     });
 
     elements.clearCart?.addEventListener("click", clearCart);
+    elements.checkoutLink?.addEventListener("click", (event) => {
+        if (elements.checkoutLink.getAttribute("aria-disabled") === "true") {
+            event.preventDefault();
+        }
+    });
 
     function syncBuyerToRecipient() {
         if (!elements.sameBuyer?.checked || !elements.form) return;
@@ -375,18 +392,25 @@
 
     elements.form?.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (submitting || !cart.items.length || !elements.form.reportValidity()) return;
+        if (submitting || !cart.items.length) return;
+        if (!elements.form.reportValidity()) {
+            showFormStatus("필수 입력 항목을 확인해주세요.");
+            return;
+        }
         const body = Object.fromEntries(new FormData(elements.form).entries());
         const normalizedBody = normalizeCheckoutPayload(body);
         if (!normalizedBody) {
+            showFormStatus("주문자와 배송지 입력 형식을 다시 확인해주세요.");
             showToast("주문자와 배송지 입력값을 다시 확인해주세요.");
             return;
         }
         if (elements.saveAddress?.checked && !elements.addressName?.value.trim()) {
+            showFormStatus("저장할 배송지 이름을 입력해주세요.");
             showToast("저장할 배송지 이름을 입력해주세요.");
             elements.addressName.focus();
             return;
         }
+        showFormStatus();
         submitting = true;
         elements.submit.disabled = true;
         elements.submit.setAttribute("aria-busy", "true");
@@ -413,6 +437,7 @@
             syncCheckoutAvailability(cart.items.length > 0);
         }
     });
+    elements.form?.addEventListener("input", () => showFormStatus());
     loadSavedAddresses();
 
     function emptyCart() {

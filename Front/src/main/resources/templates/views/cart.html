@@ -5,18 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>장바구니 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/commerce.css?v=20260727.1">
+    <link rel="stylesheet" href="/css/design-tokens.css?v=20260813.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260815.1">
 </head>
-<body class="storefront-page" data-commerce-page="cart">
+<body class="storefront-page commerce-page commerce-cart-page" data-commerce-page="cart">
+<a class="skip-link" href="#commerceMain">장바구니 본문 바로가기</a>
 <header th:replace="~{fragments/storefront-shell :: header('SHOP', '장바구니')}"></header>
-<main class="commerce-shell">
+<main class="commerce-shell" id="commerceMain" tabindex="-1">
     <section class="commerce-main">
-        <div class="commerce-title"><div><p>Shopping Bag</p><h1>장바구니</h1></div><div class="commerce-title__tools"><span id="commerceItemCount">0개 상품</span><button type="button" id="clearCartButton">전체 삭제</button></div></div>
+        <div class="commerce-title">
+            <div><p>Shopping Bag</p><h1>장바구니</h1><span>선택한 옵션과 수량을 확인한 뒤 주문서로 이동하세요.</span></div>
+            <div class="commerce-title__tools"><span id="commerceItemCount">0개 상품</span><button type="button" id="clearCartButton">전체 삭제</button></div>
+        </div>
         <div class="commerce-list" id="commerceCartList" aria-live="polite" aria-busy="true"></div>
+        <a class="commerce-continue-link" href="/front/collections/recommended">쇼핑 계속하기</a>
     </section>
     <aside class="commerce-summary">
-        <h2>주문 예상 금액</h2>
+        <div class="commerce-summary__head"><p>Order Summary</p><h2>주문 예상 금액</h2></div>
         <dl><div><dt>총 수량</dt><dd id="commerceTotalQuantity">0개</dd></div><div><dt>상품 금액</dt><dd id="commerceSubtotal">0원</dd></div><div><dt>배송비</dt><dd>무료</dd></div><div class="total"><dt>총 결제 예정 금액</dt><dd id="commerceTotal">0원</dd></div></dl>
         <div class="commerce-stock-summary" id="commerceStockSummary" role="status">상품을 담으면 재고 상태를 확인할 수 있습니다.</div>
         <a class="commerce-primary" href="/front/checkout" id="commerceCheckoutLink">주문하기</a>
@@ -27,6 +33,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/commerce.js?v=20260802.1"></script>
+<script src="/js/view/commerce.js?v=20260815.1"></script>
 </body>
 </html>

@@ -325,7 +325,7 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260812.4")
-                .contains("/css/product-detail.css?v=20260813.1")
+                .contains("/css/product-detail.css?v=20260815.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")
@@ -336,12 +336,14 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailReviewSort\"")
                 .contains("id=\"detailReviewDistribution\"")
                 .contains("id=\"detailReviewContentCount\"")
-                .contains("/js/view/detail.js?v=20260812.8");
+                .contains("/js/view/detail.js?v=20260815.1");
         assertThat(pageCss)
                 .contains(".detail-body .detail-hero")
                 .contains("grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr)")
                 .contains(".detail-body .detail-signal-list")
-                .contains("grid-template-columns: repeat(3, minmax(0, 1fr))")
+                .contains("grid-template-columns: 1fr")
+                .contains(".detail-body .detail-option-insights")
+                .contains(".detail-body .detail-actions")
                 .contains(".detail-body .detail-breadcrumb .detail-catalog-return")
                 .contains("@media (max-width: 767px)");
         assertThat(readResource("static/js/view/detail.js"))
@@ -369,7 +371,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"copyOrderNumberButton\"")
                 .contains("id=\"copyTrackingButton\"")
                 .contains("id=\"printOrderButton\"")
-                .contains("/css/commerce.css?v=20260812.1")
+                .contains("/css/commerce.css?v=20260815.1")
                 .contains("/js/view/order-lookup.js?v=20260812.2");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
@@ -408,8 +410,10 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"deliveryRequestPreset\"")
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/css/commerce.css?v=20260806.2")
-                .contains("/js/view/commerce.js?v=20260812.1")
+                .contains("/css/commerce.css?v=20260815.1")
+                .contains("/js/view/commerce.js?v=20260815.1")
+                .contains("id=\"checkoutFormStatus\"")
+                .contains("class=\"storefront-page commerce-page commerce-checkout-page\"")
                 .contains("role=\"dialog\"")
                 .contains("aria-modal=\"true\"")
                 .contains("id=\"completedOrderTitle\"");
@@ -423,19 +427,25 @@ class FrontStorefrontResourceTest {
                 .contains("syncBuyerToRecipient")
                 .contains("elements.form.hidden = false")
                 .contains("elements.complete.hidden = false");
+        assertThat(script)
+                .contains("function showFormStatus(message = \"\")")
+                .contains("showFormStatus(\"필수 입력 항목을 확인해주세요.\")")
+                .contains("elements.form?.addEventListener(\"input\", () => showFormStatus())");
     }
 
     @Test
     void cartKeepsBulkClearAndStockWarningHooks() throws IOException {
         String html = readResource("templates/views/cart.html");
         String script = readResource("static/js/view/commerce.js");
+        String css = readResource("static/css/commerce.css");
 
         assertThat(html)
                 .contains("id=\"clearCartButton\"")
                 .contains("id=\"commerceStockSummary\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/css/commerce.css?v=20260727.1")
-                .contains("/js/view/commerce.js?v=20260802.1");
+                .contains("/css/commerce.css?v=20260815.1")
+                .contains("/js/view/commerce.js?v=20260815.1")
+                .contains("class=\"storefront-page commerce-page commerce-cart-page\"");
         assertThat(script)
                 .contains("request(\"/api/front/cart/items\", { method: \"DELETE\" })")
                 .contains("commerce-stock-badge")
@@ -443,12 +453,17 @@ class FrontStorefrontResourceTest {
                 .contains("data-cart-retry")
                 .contains("if (cartMutating) return")
                 .contains("syncCheckoutAvailability(false)")
+                .contains("elements.checkoutLink?.setAttribute(\"tabindex\", available ? \"0\" : \"-1\")")
+                .contains("elements.stockSummary.hidden = !hasItems")
                 .contains("function normalizeCart(payload)")
                 .contains("lineAmount !== unitPrice * quantity")
                 .contains("totalAmount !== calculatedAmount")
                 .contains("function normalizeOrderCreateResponse(order, expectedTotalAmount)")
                 .contains("\"/images/product-placeholder.svg\"")
                 .doesNotContain("placehold.co");
+        assertThat(css)
+                .contains(".commerce-page > .skip-link")
+                .contains(".has-commerce-items .commerce-continue-link");
     }
 
     @Test
@@ -678,6 +693,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailMobilePrimaryButton\"");
         assertThat(script)
                 .contains("focusDetailOptions")
+                .contains("initMobileActionDock")
+                .contains("is-detail-purchase-docked")
                 .contains("detailMobileBookmarkButton")
                 .contains("detailMobileCompareButton")
                 .contains("thumbnailUrl: product.thumbnailUrl");

@@ -5,24 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문서 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/commerce.css?v=20260806.2">
+    <link rel="stylesheet" href="/css/design-tokens.css?v=20260813.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260815.1">
 </head>
-<body class="storefront-page" data-commerce-page="checkout">
+<body class="storefront-page commerce-page commerce-checkout-page" data-commerce-page="checkout">
+<a class="skip-link" href="#commerceMain">주문서 본문 바로가기</a>
 <header th:replace="~{fragments/storefront-shell :: header('SHOP', '주문서')}"></header>
-<main class="commerce-shell">
+<main class="commerce-shell" id="commerceMain" tabindex="-1">
     <section class="commerce-main">
-        <div class="commerce-title"><div><p>Checkout</p><h1>주문서</h1></div><span id="commerceItemCount">0개 상품</span></div>
+        <div class="commerce-title">
+            <div><p>Checkout</p><h1>주문서</h1><span>주문 상품과 배송 정보를 마지막으로 확인해주세요.</span></div>
+            <div class="commerce-title__tools"><span id="commerceItemCount">0개 상품</span><a href="/front/cart">장바구니로 돌아가기</a></div>
+        </div>
         <ol class="checkout-steps" aria-label="주문 단계"><li class="is-complete">장바구니</li><li class="is-current">배송 정보</li><li>주문 접수</li></ol>
         <div class="checkout-products" id="commerceCartList" aria-live="polite" aria-busy="true"></div>
         <form class="checkout-form" id="checkoutForm" autocomplete="on">
             <fieldset><legend>주문자 정보</legend><div class="form-grid"><label>이름<input name="buyerName" required maxlength="50" autocomplete="name"></label><label>연락처<input name="buyerPhone" required maxlength="20" inputmode="tel" autocomplete="tel" placeholder="010-0000-0000" pattern="[0-9() -]{10,20}"><small>숫자 10~11자 기준으로 입력해주세요.</small></label></div></fieldset>
             <fieldset><legend>배송지 정보</legend><label class="saved-address">저장 배송지<select id="savedDeliveryAddress"><option value="">직접 입력</option></select></label><label class="same-buyer"><input type="checkbox" id="sameBuyerCheck"> 주문자와 동일</label><div class="form-grid"><label>받는 분<input name="recipientName" required maxlength="50" autocomplete="shipping name"></label><label>연락처<input name="recipientPhone" required maxlength="20" inputmode="tel" autocomplete="shipping tel" pattern="[0-9() -]{10,20}"></label><label>우편번호<input name="postalCode" required maxlength="10" inputmode="numeric" autocomplete="shipping postal-code"></label><label class="wide">주소<input name="address1" required maxlength="200" autocomplete="shipping address-line1"></label><label class="wide">상세 주소<input name="address2" maxlength="200" autocomplete="shipping address-line2"><small class="field-counter" data-field-counter="address2">0 / 200</small></label><label class="save-address"><input type="checkbox" id="saveDeliveryAddressCheck"> 이 배송지를 저장</label><label class="delivery-address-name" id="deliveryAddressNameLabel" hidden>배송지 이름<input id="deliveryAddressName" maxlength="40" placeholder="예: 집, 회사"></label><label class="wide">배송 요청사항<select id="deliveryRequestPreset"><option value="">직접 입력</option><option>문 앞에 놓아주세요</option><option>경비실에 맡겨주세요</option><option>배송 전 연락해주세요</option><option>택배함에 넣어주세요</option></select><input name="deliveryRequest" maxlength="200" placeholder="배송 요청사항을 입력하세요"><small class="field-counter" data-field-counter="deliveryRequest">0 / 200</small></label></div></fieldset>
             <p class="checkout-privacy">입력한 정보는 비회원 주문 접수와 배송 확인 목적으로만 사용됩니다.</p>
+            <p class="checkout-form-status" id="checkoutFormStatus" role="status" aria-live="polite" hidden></p>
         </form>
     </section>
     <aside class="commerce-summary">
-        <h2>최종 주문 금액</h2>
+        <div class="commerce-summary__head"><p>Final Summary</p><h2>최종 주문 금액</h2></div>
         <dl><div><dt>총 수량</dt><dd id="commerceTotalQuantity">0개</dd></div><div><dt>상품 금액</dt><dd id="commerceSubtotal">0원</dd></div><div><dt>배송비</dt><dd>무료</dd></div><div class="total"><dt>총 주문 금액</dt><dd id="commerceTotal">0원</dd></div></dl>
         <button class="commerce-primary" type="submit" form="checkoutForm" id="submitOrderButton"><span>주문 접수하기</span></button>
         <p>현재 데모에서는 PG 결제 없이 주문 접수 상태로 저장됩니다.</p>
@@ -33,6 +39,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/commerce.js?v=20260812.1"></script>
+<script src="/js/view/commerce.js?v=20260815.1"></script>
 </body>
 </html>

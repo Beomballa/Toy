@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/css/main.css?v=20260718.23">
     <link rel="stylesheet" href="/css/storefront.css?v=20260812.4">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
-    <link rel="stylesheet" href="/css/product-detail.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/product-detail.css?v=20260815.1">
 </head>
 <body class="detail-body storefront-page" th:attr="data-product-id=${productId}">
 <a class="skip-link" href="#detailPage">상품 정보 바로가기</a>
@@ -39,6 +39,19 @@
                 <h1 id="detailTitle">상품 상세를 불러오는 중입니다.</h1>
                 <p class="detail-description" id="detailDescription">선택한 상품의 카테고리, 재고, 옵션, 연관 상품을 정리하고 있습니다.</p>
                 <button class="detail-retry-button" type="button" id="detailRetryButton" hidden>상품 정보 다시 불러오기</button>
+                <div class="detail-hero__side">
+                    <div class="detail-price-card">
+                        <p>발매가</p>
+                        <strong id="detailPrice">-</strong>
+                        <span id="detailStockText">총 재고를 계산 중입니다.</span>
+                    </div>
+                    <div class="detail-signal-list" id="detailSignalList" aria-label="상품 상태 신호">
+                        <article class="signal-card">
+                            <strong>Signal</strong>
+                            <span>상세 데이터를 불러오는 중입니다.</span>
+                        </article>
+                    </div>
+                </div>
                 <div class="detail-actions">
                     <button class="detail-primary-action" type="button" id="detailPrimaryAction" aria-controls="detailOptions">구매 옵션 확인</button>
                     <div class="detail-secondary-actions">
@@ -56,19 +69,6 @@
                     </div>
                 </div>
             </div>
-            <aside class="detail-hero__side">
-                <div class="detail-price-card">
-                    <p>발매가</p>
-                    <strong id="detailPrice">-</strong>
-                    <span id="detailStockText">총 재고를 계산 중입니다.</span>
-                </div>
-                <div class="detail-signal-list" id="detailSignalList">
-                    <article class="signal-card">
-                        <strong>Signal</strong>
-                        <span>상세 데이터를 불러오는 중입니다.</span>
-                    </article>
-                </div>
-            </aside>
             </div>
         </section>
 
@@ -107,11 +107,11 @@
                 </div>
                 <div class="detail-section-actions">
                     <button class="catalog-reset-button" type="button" id="detailOptionSortStockButton">재고 낮은 순</button>
-                    <button class="catalog-reset-button" type="button" id="detailOptionLowStockOnlyButton">긴장 재고만 보기</button>
                     <button class="catalog-reset-button" type="button" id="detailOptionAvailableOnlyButton" aria-pressed="false">구매 가능만 보기</button>
                     <details class="board-action-menu detail-section-menu">
-                        <summary>정렬·관리</summary>
+                        <summary>필터·분석</summary>
                         <div class="board-action-menu__panel">
+                            <button class="catalog-reset-button" type="button" id="detailOptionLowStockOnlyButton">긴장 재고만 보기</button>
                             <button class="catalog-reset-button" type="button" id="detailOptionSortNameButton">옵션명 순</button>
                             <button class="catalog-reset-button" type="button" id="detailOptionSortStockHighButton">재고 높은 순</button>
                             <button class="catalog-reset-button" type="button" id="detailOptionStableOnlyButton">안정 재고만 보기</button>
@@ -120,29 +120,6 @@
                         </div>
                     </details>
                 </div>
-            </div>
-            <div class="detail-option-overview" id="detailOptionOverview" aria-label="옵션 재고 요약">
-                <span>구매 가능 <strong id="detailAvailableOptionCount">0</strong></span>
-                <span>긴장 재고 <strong id="detailLowOptionCount">0</strong></span>
-                <span>품절 <strong id="detailSoldOutOptionCount">0</strong></span>
-                <span>전체 재고 <strong id="detailTotalOptionStock">0</strong></span>
-                <span>최소 재고 <strong id="detailMinOptionStock">0</strong></span>
-                <span>최대 재고 <strong id="detailMaxOptionStock">0</strong></span>
-                <span>중앙 재고 <strong id="detailMedianOptionStock">0</strong></span>
-                <span>선택 순위 <strong id="detailSelectedOptionRank">-</strong></span>
-                <div class="detail-option-stock-rate" aria-label="구매 가능 옵션 비율">
-                    <strong id="detailOptionStockRateText">0%</strong>
-                    <span><i id="detailOptionStockRateBar"></i></span>
-                </div>
-                <button type="button" id="detailRecommendOptionButton">추천 옵션 선택</button>
-                <button type="button" id="detailCopyOptionMatrixButton">재고 행렬 복사</button>
-            </div>
-            <div class="detail-option-distribution" aria-label="옵션 재고 구간 분포">
-                <div><span>품절 <strong id="detailOptionSoldOutRate">0%</strong></span><i><b id="detailOptionSoldOutBar"></b></i></div>
-                <div><span>즉시 확인 <strong id="detailOptionCriticalRate">0%</strong></span><i><b id="detailOptionCriticalBar"></b></i></div>
-                <div><span>긴장 재고 <strong id="detailOptionLowRate">0%</strong></span><i><b id="detailOptionLowBar"></b></i></div>
-                <div><span>안정 재고 <strong id="detailOptionStableRate">0%</strong></span><i><b id="detailOptionStableBar"></b></i></div>
-                <div><span>최고 옵션 집중 <strong id="detailOptionConcentrationRate">0%</strong></span><i><b id="detailOptionConcentrationBar"></b></i></div>
             </div>
             <div class="detail-option-grid" id="detailOptionGrid" role="radiogroup" aria-label="구매 옵션">
                 <article class="detail-option-card">
@@ -155,20 +132,6 @@
                 <button type="button" id="detailCopySelectedOptionButton">복사</button>
                 <button type="button" id="detailShareSelectedOptionButton">공유</button>
                 <button type="button" id="detailClearOptionButton">선택 해제</button>
-            </div>
-            <div class="detail-option-history" id="detailOptionHistory" aria-label="옵션 탐색 이력">
-                <div>
-                    <span>옵션 탐색 <strong id="detailOptionHistoryCount">0</strong></span>
-                    <div class="detail-option-history__actions">
-                        <button type="button" id="detailPreviousOptionButton">이전 옵션</button>
-                        <button type="button" id="detailNextOptionButton">다음 옵션</button>
-                        <button type="button" id="detailCopyOptionHistoryButton">탐색 복사</button>
-                        <button type="button" id="detailClearOptionHistoryButton">이력 비우기</button>
-                    </div>
-                </div>
-                <div class="detail-option-history__list" id="detailOptionHistoryList">
-                    <span>선택한 옵션이 여기에 표시됩니다.</span>
-                </div>
             </div>
             <div class="detail-purchase-estimate" id="detailPurchaseEstimate" aria-keyshortcuts="- +" hidden>
                 <label for="detailQuantityInput">수량</label>
@@ -209,6 +172,48 @@
                     <div><dt>수량 상태</dt><dd id="detailQuantityStatus">-</dd></div>
                 </dl>
             </div>
+            <details class="detail-option-insights">
+                <summary><span>옵션 분석</span><small>재고 통계 · 분포 · 탐색 이력</small></summary>
+                <div class="detail-option-insights__body">
+                    <div class="detail-option-overview" id="detailOptionOverview" aria-label="옵션 재고 요약">
+                        <span>구매 가능 <strong id="detailAvailableOptionCount">0</strong></span>
+                        <span>긴장 재고 <strong id="detailLowOptionCount">0</strong></span>
+                        <span>품절 <strong id="detailSoldOutOptionCount">0</strong></span>
+                        <span>전체 재고 <strong id="detailTotalOptionStock">0</strong></span>
+                        <span>최소 재고 <strong id="detailMinOptionStock">0</strong></span>
+                        <span>최대 재고 <strong id="detailMaxOptionStock">0</strong></span>
+                        <span>중앙 재고 <strong id="detailMedianOptionStock">0</strong></span>
+                        <span>선택 순위 <strong id="detailSelectedOptionRank">-</strong></span>
+                        <div class="detail-option-stock-rate" aria-label="구매 가능 옵션 비율">
+                            <strong id="detailOptionStockRateText">0%</strong>
+                            <span><i id="detailOptionStockRateBar"></i></span>
+                        </div>
+                        <button type="button" id="detailRecommendOptionButton">추천 옵션 선택</button>
+                        <button type="button" id="detailCopyOptionMatrixButton">재고 행렬 복사</button>
+                    </div>
+                    <div class="detail-option-distribution" aria-label="옵션 재고 구간 분포">
+                        <div><span>품절 <strong id="detailOptionSoldOutRate">0%</strong></span><i><b id="detailOptionSoldOutBar"></b></i></div>
+                        <div><span>즉시 확인 <strong id="detailOptionCriticalRate">0%</strong></span><i><b id="detailOptionCriticalBar"></b></i></div>
+                        <div><span>긴장 재고 <strong id="detailOptionLowRate">0%</strong></span><i><b id="detailOptionLowBar"></b></i></div>
+                        <div><span>안정 재고 <strong id="detailOptionStableRate">0%</strong></span><i><b id="detailOptionStableBar"></b></i></div>
+                        <div><span>최고 옵션 집중 <strong id="detailOptionConcentrationRate">0%</strong></span><i><b id="detailOptionConcentrationBar"></b></i></div>
+                    </div>
+                    <div class="detail-option-history" id="detailOptionHistory" aria-label="옵션 탐색 이력">
+                        <div>
+                            <span>옵션 탐색 <strong id="detailOptionHistoryCount">0</strong></span>
+                            <div class="detail-option-history__actions">
+                                <button type="button" id="detailPreviousOptionButton">이전 옵션</button>
+                                <button type="button" id="detailNextOptionButton">다음 옵션</button>
+                                <button type="button" id="detailCopyOptionHistoryButton">탐색 복사</button>
+                                <button type="button" id="detailClearOptionHistoryButton">이력 비우기</button>
+                            </div>
+                        </div>
+                        <div class="detail-option-history__list" id="detailOptionHistoryList">
+                            <span>선택한 옵션이 여기에 표시됩니다.</span>
+                        </div>
+                    </div>
+                </div>
+            </details>
         </section>
 
         <section class="detail-section detail-guide" id="detailGuide">
@@ -423,7 +428,7 @@
 <nav class="detail-mobile-actions" id="detailMobileActions" aria-label="모바일 상품 액션">
     <button type="button" id="detailMobileBookmarkButton" aria-pressed="false"><span aria-hidden="true">♡</span><strong>관심</strong></button>
     <button type="button" id="detailMobileCompareButton" aria-pressed="false"><span aria-hidden="true">＋</span><strong>비교</strong></button>
-    <button class="detail-mobile-actions__primary" type="button" id="detailMobilePrimaryButton"><span id="detailMobilePrice">가격 확인</span><strong>옵션 확인</strong></button>
+    <button class="detail-mobile-actions__primary" type="button" id="detailMobilePrimaryButton" aria-controls="detailOptions"><span id="detailMobilePrice">가격 확인</span><strong>옵션 확인</strong></button>
 </nav>
 
 <button class="floating-top-button detail-top-button" type="button" id="detailScrollTopButton" aria-label="상단으로 이동">TOP</button>
@@ -431,6 +436,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/detail.js?v=20260812.8"></script>
+<script src="/js/view/detail.js?v=20260815.1"></script>
 </body>
 </html>

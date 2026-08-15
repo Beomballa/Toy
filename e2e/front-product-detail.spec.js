@@ -66,12 +66,17 @@ test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async (
   await page.goto("/front/products/12");
   await expect(page.locator("#detailTitle")).toHaveText("오늘의 셀렉션 012");
 
-  const layout = await page.evaluate(() => {
+    const layout = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;
     const signals = document.querySelector("#detailSignalList").getBoundingClientRect();
     const returnLink = document.querySelector("#backToCatalogLink").getBoundingClientRect();
-    const hero = document.querySelector("#detailHero").getBoundingClientRect();
-    return {
+      const hero = document.querySelector("#detailHero").getBoundingClientRect();
+      const desktopActions = document.querySelector(".detail-actions");
+      const mobileActions = document.querySelector("#detailMobileActions");
+      const mobileBounds = mobileActions.getBoundingClientRect();
+      const optionGrid = document.querySelector("#detailOptionGrid");
+      const insights = document.querySelector(".detail-option-insights");
+      return {
       bodyOverflow: document.documentElement.scrollWidth - viewportWidth,
       signalWidth: signals.width,
       signalLeft: signals.left,
@@ -79,7 +84,14 @@ test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async (
       returnWidth: returnLink.width,
       returnRight: returnLink.right,
       heroWidth: hero.width,
-      viewportWidth
+      viewportWidth,
+      desktopActionsDisplay: getComputedStyle(desktopActions).display,
+      mobileActionsDisplay: getComputedStyle(mobileActions).display,
+      mobileActionsRight: mobileBounds.right,
+      mobileActionsBottom: mobileBounds.bottom,
+      viewportHeight: window.innerHeight,
+      insightsOpen: insights.open,
+      optionGridBeforeInsights: Boolean(optionGrid.compareDocumentPosition(insights) & Node.DOCUMENT_POSITION_FOLLOWING)
     };
   });
 
@@ -90,4 +102,28 @@ test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async (
   expect(layout.signalRight).toBeLessThanOrEqual(layout.viewportWidth);
   expect(layout.returnWidth).toBeGreaterThan(0);
   expect(layout.returnRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.insightsOpen).toBe(false);
+  expect(layout.optionGridBeforeInsights).toBe(true);
+  if (test.info().project.name === "desktop-chromium") {
+    expect(layout.desktopActionsDisplay).not.toBe("none");
+    expect(layout.mobileActionsDisplay).toBe("none");
+  } else {
+    expect(layout.desktopActionsDisplay).not.toBe("none");
+    expect(layout.mobileActionsDisplay).toBe("none");
+    await page.locator("#detailOptions").scrollIntoViewIfNeeded();
+    await expect(page.locator("body")).toHaveClass(/is-detail-purchase-docked/);
+    const docked = await page.locator("#detailMobileActions").evaluate((element) => {
+      const bounds = element.getBoundingClientRect();
+      return {
+        display: getComputedStyle(element).display,
+        right: bounds.right,
+        bottom: bounds.bottom,
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: window.innerHeight
+      };
+    });
+    expect(docked.display).toBe("grid");
+    expect(docked.right).toBeLessThanOrEqual(docked.viewportWidth);
+    expect(docked.bottom).toBeLessThanOrEqual(docked.viewportHeight);
+  }
 });

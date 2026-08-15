@@ -2170,6 +2170,20 @@
         return stack;
     }
 
+    function initMobileActionDock() {
+        const desktopActions = document.querySelector(".detail-actions");
+        const mobileActions = elements.detailMobileActions;
+        if (!desktopActions || !mobileActions) return;
+        const mobileQuery = window.matchMedia("(max-width: 767px)");
+        const syncDock = () => {
+            const shouldDock = mobileQuery.matches && desktopActions.getBoundingClientRect().bottom < 0;
+            document.body.classList.toggle("is-detail-purchase-docked", shouldDock);
+        };
+        window.addEventListener("scroll", syncDock, { passive: true });
+        mobileQuery.addEventListener("change", syncDock);
+        syncDock();
+    }
+
     async function init() {
         if (!productId) {
             return;
@@ -2177,6 +2191,7 @@
         syncCatalogLinks();
         document.addEventListener("error", handleProductImageError, true);
         initSectionNavigation();
+        initMobileActionDock();
         window.addEventListener("scroll", syncDetailScrollProgress, { passive: true });
         window.addEventListener("storage", syncDetailStateFromStorage);
         document.addEventListener("storefront:state-ready", () => {

@@ -115,3 +115,51 @@ test("장바구니 합계가 응답 품목과 다르면 주문 진입을 차단�
   await expect(page.locator("[data-cart-retry]")).toBeVisible();
   await expect(page.locator("#commerceCheckoutLink")).toHaveAttribute("aria-disabled", "true");
 });
+
+test("장바구니와 주문서는 공통 폭과 모바일 입력 구조를 유지한다", async ({ page }, testInfo) => {
+  await page.route("**/api/front/cart", async (route) => route.fulfill({ json: cartResponse(2) }));
+  await page.route("**/api/front/member/delivery-addresses", async (route) => route.fulfill({ json: [] }));
+
+  await page.goto("/front/cart");
+  await expect(page.locator(".commerce-item")).toHaveCount(1);
+  const cartLayout = await page.evaluate(() => {
+    const shell = document.querySelector(".commerce-shell").getBoundingClientRect();
+    const item = document.querySelector(".commerce-item").getBoundingClientRect();
+    const summary = document.querySelector(".commerce-summary").getBoundingClientRect();
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      shellWidth: shell.width,
+      itemWidth: item.width,
+      summaryWidth: summary.width,
+      clearHidden: document.querySelector("#clearCartButton").hidden
+    };
+  });
+  expect(cartLayout.overflow).toBe(0);
+  expect(cartLayout.itemWidth).toBeGreaterThan(0);
+  expect(cartLayout.summaryWidth).toBeGreaterThan(0);
+  expect(cartLayout.clearHidden).toBe(false);
+
+  await page.goto("/front/checkout");
+  await expect(page.locator(".commerce-item")).toHaveCount(1);
+  const checkoutLayout = await page.evaluate(() => {
+    const fields = [...document.querySelectorAll(".form-grid input, .form-grid select")].map((field) => field.getBoundingClientRect());
+    const summary = document.querySelector(".commerce-summary").getBoundingClientRect();
+    return {
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      minFieldWidth: Math.min(...fields.map((field) => field.width)),
+      maxFieldRight: Math.max(...fields.map((field) => field.right)),
+      summaryWidth: summary.width,
+      viewportWidth: document.documentElement.clientWidth
+    };
+  });
+  expect(checkoutLayout.overflow).toBe(0);
+  expect(checkoutLayout.minFieldWidth).toBeGreaterThan(0);
+  expect(checkoutLayout.maxFieldRight).toBeLessThanOrEqual(checkoutLayout.viewportWidth);
+  expect(checkoutLayout.summaryWidth).toBeGreaterThan(0);
+
+  if (testInfo.project.name === "desktop-chromium") {
+    expect(cartLayout.shellWidth).toBeGreaterThan(900);
+  } else {
+    expect(cartLayout.shellWidth).toBeLessThan(500);
+  }
+});

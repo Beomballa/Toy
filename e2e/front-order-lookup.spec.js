@@ -98,3 +98,57 @@ test("주문조회는 현재 상태와 최신 이력이 다른 응답을 거부�
   await expect(page.locator("#orderResultNumber")).toHaveText("GSHISTORY0000");
   await expect(page.locator("#orderDelivery")).toContainText("정상수령인");
 });
+
+test("주문조회는 잘못된 입력을 필드에 연결하고 API를 호출하지 않는다", async ({ page }) => {
+  let requests = 0;
+  await page.route("**/api/front/orders/lookup", route => { requests += 1; return route.abort(); });
+  await page.goto("/front/orders");
+
+  await page.locator('[name="orderNumber"]').fill("INVALID");
+  await page.locator('[name="phone"]').fill("123");
+  await page.locator("#orderLookupForm").evaluate(form => form.requestSubmit());
+  await expect(page.locator('[name="orderNumber"]')).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#orderLookupNumberError")).toContainText("주문번호 형식");
+  expect(requests).toBe(0);
+});
+
+test("회원 주문은 연락처 폼 없이 자동 조회하고 보조 기능을 오버플로에 둔다", async ({ page }) => {
+  const number = "GSMEMBER00000";
+  await page.route(`**/api/front/member/orders/${number}`, route => route.fulfill({ json: orderResponse(number, "회원수령인") }));
+  await page.goto(`/front/orders/${number}?member=true`);
+
+  await expect(page.locator("body")).toHaveClass(/is-member-order/);
+  await expect(page.locator("#orderLookupForm")).not.toBeVisible();
+  await expect(page.locator("#orderResultNumber")).toHaveText(number);
+  await expect(page.locator("#orderResultStatus")).toHaveText("주문 접수");
+  await expect(page.locator("#copyOrderNumberButton")).not.toBeVisible();
+  await page.locator("#orderResultMore summary").click();
+  await expect(page.locator("#copyOrderNumberButton")).toBeVisible();
+  await expect(page.locator("#orderHistoryCount")).toHaveText("1개 이력");
+});
+
+test("취소 주문은 진행 단계를 완료로 표시하지 않고 모바일 경계를 유지한다", async ({ page }) => {
+  const number = "GSCANCEL00000";
+  const response = orderResponse(number, "취소수령인");
+  Object.assign(response, { status: "CANCELLED", statusLabel: "주문 취소", statusStep: 0 });
+  response.statusHistory = [
+    { status: "CANCELLED", statusLabel: "주문 취소", changedAt: "2026.07.27 10:30" },
+    { status: "ORDERED", statusLabel: "주문 접수", changedAt: "2026.07.27 10:00" }
+  ];
+  await page.route("**/api/front/orders/lookup", route => route.fulfill({ json: response }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/front/orders");
+  await page.locator('[name="orderNumber"]').fill(number);
+  await page.locator('[name="phone"]').fill("010-1234-5678");
+  await page.locator("#orderLookupForm").evaluate(form => form.requestSubmit());
+
+  await expect(page.locator("#orderCancelledNotice")).toBeVisible();
+  await expect(page.locator("#orderProgress")).toHaveClass(/is-cancelled/);
+  await expect(page.locator("#orderProgress .is-complete")).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+  for (const selector of [".order-result__head", ".order-result__grid", ".order-history"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+  }
+});

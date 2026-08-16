@@ -381,8 +381,12 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"copyOrderNumberButton\"")
                 .contains("id=\"copyTrackingButton\"")
                 .contains("id=\"printOrderButton\"")
-                .contains("/css/commerce.css?v=20260815.1")
-                .contains("/js/view/order-lookup.js?v=20260812.2");
+                .contains("id=\"orderResultMore\"")
+                .contains("id=\"orderCancelledNotice\"")
+                .contains("data-order-field-error=\"phone\"")
+                .contains("id=\"orderLookupStatus\" role=\"status\"")
+                .contains("/css/commerce.css?v=20260815.2")
+                .contains("/js/view/order-lookup.js?v=20260815.1");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
                 .contains("JSON.stringify({ orderNumber, phone })")
@@ -399,6 +403,12 @@ class FrontStorefrontResourceTest {
                 .contains("Boolean(deliveryCompany) !== Boolean(trackingNumber)")
                 .contains("data-order-product-image")
                 .contains("function normalizeImageSource(")
+                .contains("function validateLookupForm()")
+                .contains("function showLookupError(")
+                .contains("document.body.classList.toggle(\"is-member-order\"")
+                .contains("payload.unavailableProducts.length > 100")
+                .contains("document.execCommand(\"copy\")")
+                .contains("prefers-reduced-motion: reduce")
                 .contains("lookupController?.abort()")
                 .contains("signal: lookupController.signal")
                 .contains("function clearOrderResult()")
@@ -408,7 +418,11 @@ class FrontStorefrontResourceTest {
                 .doesNotContain("placehold.co");
         assertThat(css)
                 .contains(".order-result__grid")
-                .contains(".order-progress li.is-current");
+                .contains(".order-progress li.is-current")
+                .contains(".order-result__more > div")
+                .contains(".order-lookup-body.is-member-order")
+                .contains(".order-progress.is-cancelled")
+                .contains(".store-shell, .store-footer");
     }
 
     @Test

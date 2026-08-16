@@ -4,15 +4,24 @@
     const form = document.getElementById("orderLookupForm");
     const result = document.getElementById("orderResult");
     const error = document.getElementById("orderLookupError");
+    const lookupStatus = document.getElementById("orderLookupStatus");
+    const loginLink = document.getElementById("orderLoginLink");
     const toast = document.getElementById("commerceToast");
     const initialOrderNumber = document.body.dataset.orderNumber || "";
     const isMemberOrder = new URLSearchParams(location.search).get("member") === "true";
     const cancelDialog = document.getElementById("memberOrderCancelDialog");
     const cancelForm = document.getElementById("memberOrderCancelForm");
+    const cancelReason = document.getElementById("memberOrderCancelReason");
     let currentOrder = null;
     let toastTimer = null;
     let lookupController = null;
     let lookupSequence = 0;
+
+    document.body.classList.toggle("is-member-order", isMemberOrder);
+    if (isMemberOrder) {
+        document.getElementById("orderLookupTitle").textContent = "주문 상세";
+        document.getElementById("orderLookupDescription").textContent = "회원 주문 정보와 현재 배송 상태를 확인합니다.";
+    }
 
     const ORDER_NUMBER_PATTERN = /^GS[A-Z0-9]{10,40}$/;
     const STATUS_STEPS = Object.freeze({
@@ -86,7 +95,7 @@
         window.clearTimeout(toastTimer);
         toastTimer = window.setTimeout(() => {
             toast.hidden = true;
-        }, 2400);
+        }, 4200);
     }
 
     function formatPhone(value) {
@@ -226,7 +235,63 @@
             await navigator.clipboard.writeText(value);
             showToast(successMessage);
         } catch (ignored) {
-            showToast("복사하지 못했습니다. 값을 직접 선택해주세요.");
+            const input = document.createElement("textarea");
+            input.value = value;
+            input.setAttribute("readonly", "");
+            input.style.position = "fixed";
+            input.style.opacity = "0";
+            document.body.append(input);
+            input.select();
+            const copied = document.execCommand("copy");
+            input.remove();
+            showToast(copied ? successMessage : "복사하지 못했습니다. 값을 직접 선택해주세요.");
+        }
+    }
+
+    function clearLookupFeedback() {
+        error.hidden = true;
+        error.textContent = "";
+        loginLink.hidden = true;
+        lookupStatus.hidden = true;
+        lookupStatus.textContent = "";
+    }
+
+    function showLookupError(message, requiresLogin = false) {
+        error.textContent = message;
+        error.hidden = false;
+        loginLink.hidden = !requiresLogin;
+        lookupStatus.hidden = true;
+    }
+
+    function clearFieldError(name) {
+        const input = form.elements[name];
+        const target = form.querySelector(`[data-order-field-error="${name}"]`);
+        input?.removeAttribute("aria-invalid");
+        if (target) {
+            target.hidden = true;
+            target.textContent = "";
+        }
+    }
+
+    function fieldError(name, message) {
+        const input = form.elements[name];
+        const target = form.querySelector(`[data-order-field-error="${name}"]`);
+        if (!input || !target) return;
+        input.setAttribute("aria-invalid", "true");
+        target.textContent = message;
+        target.hidden = false;
+    }
+
+    function validateLookupForm() {
+        clearFieldError("orderNumber");
+        clearFieldError("phone");
+        try {
+            return normalizeLookupInput(form.elements.orderNumber.value, form.elements.phone.value);
+        } catch (inputError) {
+            const field = inputError.message.includes("연락처") ? "phone" : "orderNumber";
+            fieldError(field, inputError.message);
+            form.elements[field].focus();
+            throw inputError;
         }
     }
 
@@ -235,7 +300,7 @@
         lookupController = new AbortController();
         const activeRequest = ++lookupSequence;
         clearOrderResult();
-        error.hidden = true;
+        clearLookupFeedback();
         setLookupBusy(true);
         try {
             const response = await fetch("/api/front/orders/lookup", {
@@ -262,8 +327,7 @@
         } catch (requestError) {
             if (requestError.name === "AbortError" || activeRequest !== lookupSequence) return;
             clearOrderResult();
-            error.textContent = requestError.message;
-            error.hidden = false;
+            showLookupError(requestError.message);
         } finally {
             if (activeRequest === lookupSequence) {
                 setLookupBusy(false);
@@ -276,12 +340,16 @@
         lookupController = new AbortController();
         const activeRequest = ++lookupSequence;
         clearOrderResult();
-        error.hidden = true;
+        clearLookupFeedback();
+        lookupStatus.textContent = "회원 주문 정보를 불러오는 중입니다.";
+        lookupStatus.hidden = false;
         setLookupBusy(true);
+        let requiresLogin = false;
         try {
             const response = await fetch(`/api/front/member/orders/${encodeURIComponent(orderNumber)}`, {
                 headers: { Accept: "application/json" }, signal: lookupController.signal
             });
+            requiresLogin = response.status === 401;
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) {
                 const fallback = response.status === 401 ? "로그인 후 주문 내역을 확인할 수 있습니다." : "주문 정보를 확인할 수 없습니다.";
@@ -292,8 +360,7 @@
         } catch (requestError) {
             if (requestError.name === "AbortError" || activeRequest !== lookupSequence) return;
             clearOrderResult();
-            error.textContent = requestError.message;
-            error.hidden = false;
+            showLookupError(requestError.message, requiresLogin);
         } finally {
             if (activeRequest === lookupSequence) setLookupBusy(false);
         }
@@ -338,8 +405,10 @@
             });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload.message || "상품을 다시 담지 못했습니다.");
-            const unavailable = Array.isArray(payload.unavailableProducts) ? payload.unavailableProducts.length : 0;
-            showToast(unavailable ? `${payload.addedCount}개 상품을 담았습니다. ${unavailable}개는 재고를 확인해주세요.` : `${payload.addedCount}개 상품을 장바구니에 담았습니다.`);
+            const addedCount = safeInteger(payload.addedCount, "담은 상품 수", 0, 100);
+            if (!Array.isArray(payload.unavailableProducts) || payload.unavailableProducts.length > 100) throw new Error("재주문 응답이 올바르지 않습니다.");
+            const unavailable = payload.unavailableProducts.length;
+            showToast(unavailable ? `${addedCount}개 상품을 담았습니다. ${unavailable}개는 재고를 확인해주세요.` : `${addedCount}개 상품을 장바구니에 담았습니다.`);
         } catch (error) { showToast(error.message || "상품을 다시 담지 못했습니다."); }
         finally { button.disabled = false; }
     }
@@ -349,6 +418,7 @@
         button.disabled = busy;
         button.toggleAttribute("aria-busy", busy);
         button.querySelector("span").textContent = busy ? "조회 중" : "주문 조회";
+        result.setAttribute("aria-busy", String(busy));
     }
 
     function clearOrderResult() {
@@ -362,8 +432,12 @@
         document.getElementById("orderItems").replaceChildren();
         document.getElementById("orderDelivery").replaceChildren();
         document.getElementById("orderHistory").replaceChildren();
+        document.getElementById("orderHistoryCount").textContent = "";
         document.getElementById("orderTracking").hidden = true;
         document.getElementById("orderTrackingText").textContent = "";
+        document.getElementById("orderCancelledNotice").hidden = true;
+        document.getElementById("orderProgress").classList.remove("is-cancelled");
+        document.getElementById("orderResultMore").removeAttribute("open");
     }
 
     function render(order) {
@@ -371,6 +445,7 @@
         document.getElementById("orderResultNumber").textContent = order.orderNumber;
         document.getElementById("orderResultDate").textContent = `${order.orderedAt} · 주문자 ${order.buyerName}`;
         document.getElementById("orderResultStatus").textContent = order.statusLabel;
+        document.getElementById("orderResultStatus").dataset.status = order.status;
         document.getElementById("memberOrderCancelButton").hidden = !isMemberOrder
             || !["ORDERED", "PAID", "PREPARING"].includes(order.status);
         document.getElementById("memberOrderReorderButton").hidden = !isMemberOrder || !order.items.length;
@@ -381,6 +456,8 @@
             item.classList.toggle("is-complete", order.statusStep > 0 && index + 1 <= order.statusStep);
             item.classList.toggle("is-current", index + 1 === order.statusStep);
         });
+        document.getElementById("orderProgress").classList.toggle("is-cancelled", order.status === "CANCELLED");
+        document.getElementById("orderCancelledNotice").hidden = order.status !== "CANCELLED";
         document.getElementById("orderItems").innerHTML = order.items.map((item) => `
             <article class="order-item">
                 <a href="/front/products/${item.productId}"><img src="${escapeMarkup(item.thumbnailUrl || fallbackImage())}" alt="${escapeMarkup(item.productName)}" data-order-product-image></a>
@@ -403,6 +480,7 @@
         document.getElementById("orderHistory").innerHTML = order.statusHistory.map((event) => `
             <li><strong>${escapeMarkup(event.statusLabel)}</strong><span>${escapeMarkup(event.changedAt)}</span></li>
         `).join("");
+        document.getElementById("orderHistoryCount").textContent = `${order.statusHistory.length}개 이력`;
         document.querySelectorAll("[data-order-product-image]").forEach((image) => {
             image.addEventListener("error", () => {
                 if (image.dataset.fallbackApplied === "true") return;
@@ -411,30 +489,32 @@
             }, { once: true });
         });
         result.hidden = false;
-        result.scrollIntoView({ behavior: "smooth", block: "start" });
+        lookupStatus.hidden = true;
+        result.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+        result.focus({ preventScroll: true });
     }
 
     form.addEventListener("submit", (event) => {
         event.preventDefault();
-        if (!form.reportValidity()) return;
-        const values = new FormData(form);
+        clearLookupFeedback();
         try {
-            const input = normalizeLookupInput(values.get("orderNumber"), values.get("phone"));
+            const input = validateLookupForm();
             form.elements.orderNumber.value = input.orderNumber;
             form.elements.phone.value = formatPhone(input.phone);
             lookup(input.orderNumber, input.phone);
         } catch (inputError) {
             clearOrderResult();
-            error.textContent = inputError.message;
-            error.hidden = false;
+            showLookupError(inputError.message);
         }
     });
 
     form.elements.orderNumber.addEventListener("input", (event) => {
         event.target.value = event.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+        clearFieldError("orderNumber");
     });
     form.elements.phone.addEventListener("input", (event) => {
         event.target.value = formatPhone(event.target.value);
+        clearFieldError("phone");
     });
     document.getElementById("clearOrderLookupButton").addEventListener("click", () => {
         lookupController?.abort();
@@ -442,7 +522,9 @@
         setLookupBusy(false);
         form.reset();
         clearOrderResult();
-        error.hidden = true;
+        clearLookupFeedback();
+        clearFieldError("orderNumber");
+        clearFieldError("phone");
         try {
             window.history.replaceState(null, "", "/front/orders");
         } catch (ignored) {
@@ -462,6 +544,7 @@
     });
     document.getElementById("copyOrderNumberButton").addEventListener("click", () => {
         copyText(currentOrder?.orderNumber, "주문번호를 복사했습니다.");
+        document.getElementById("orderResultMore").removeAttribute("open");
     });
     document.getElementById("copyTrackingButton").addEventListener("click", () => {
         copyText(currentOrder?.trackingNumber, "송장번호를 복사했습니다.");
@@ -483,18 +566,25 @@
             return;
         }
         window.print();
+        document.getElementById("orderResultMore").removeAttribute("open");
     });
     document.getElementById("memberOrderCancelButton").addEventListener("click", () => {
-        document.getElementById("memberOrderCancelReason").value = "";
+        cancelReason.value = "";
+        document.getElementById("memberOrderCancelReasonCount").textContent = "0";
         cancelDialog.showModal();
-        document.getElementById("memberOrderCancelReason").focus();
+        cancelReason.focus();
     });
     document.getElementById("memberOrderReorderButton").addEventListener("click", reorderMemberOrder);
     document.getElementById("memberOrderCancelCloseButton").addEventListener("click", () => cancelDialog.close());
     cancelForm.addEventListener("submit", (event) => { event.preventDefault(); cancelMemberOrder(); });
+    cancelReason.addEventListener("input", () => {
+        document.getElementById("memberOrderCancelReasonCount").textContent = String(cancelReason.value.length);
+    });
 
     if (initialOrderNumber) {
         if (isMemberOrder) {
+            lookupStatus.textContent = "회원 주문 정보를 불러오는 중입니다.";
+            lookupStatus.hidden = false;
             lookupMemberOrder(initialOrderNumber);
             return;
         }

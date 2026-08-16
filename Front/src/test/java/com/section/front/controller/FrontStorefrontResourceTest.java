@@ -412,6 +412,7 @@ class FrontStorefrontResourceTest {
                 .contains("lookupController?.abort()")
                 .contains("signal: lookupController.signal")
                 .contains("function clearOrderResult()")
+                .contains("memberOrder: isMemberOrder")
                 .contains("document.getElementById(\"orderDelivery\").replaceChildren()")
                 .contains("window.history.replaceState(null, \"\", \"/front/orders\")")
                 .contains("\"/images/product-placeholder.svg\"")
@@ -595,8 +596,12 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportExpandAllButton\"")
                 .contains("id=\"supportNoticePagination\"")
                 .contains("id=\"supportCopySummaryButton\"")
-                .contains("/css/support-center.css?v=20260726.1")
-                .contains("/js/view/support-center.js?v=20260812.1");
+                .contains("id=\"supportOrderContextCard\"")
+                .contains("id=\"supportOrderContextClearButton\"")
+                .doesNotContain("/css/main.css")
+                .doesNotContain("/css/storefront.css")
+                .contains("/css/support-center.css?v=20260816.1")
+                .contains("/js/view/support-center.js?v=20260816.1");
         assertThat(script)
                 .contains("grade-stock-support-searches")
                 .contains("boardType: \"NOTICE\"")
@@ -612,6 +617,13 @@ class FrontStorefrontResourceTest {
                 .contains("page > 200000")
                 .contains("function normalizeSearchKeyword(")
                 .contains("state.expandedFaqIds")
+                .contains("id: \"order-cancel\"")
+                .contains("id: \"order-reorder\"")
+                .contains("params.set(\"faq\", state.faqId)")
+                .contains("params.set(\"context\", \"order\")")
+                .contains("function clearOrderContext()")
+                .contains("memberOrder: value.memberOrder === true")
+                .contains("function reducedMotion()")
                 .contains("navigator.clipboard?.writeText")
                 .contains("window.addEventListener(\"popstate\"")
                 .contains("event.key === \"/\"");
@@ -619,6 +631,7 @@ class FrontStorefrontResourceTest {
                 .contains(".support-layout")
                 .contains("grid-template-columns: 220px minmax(0, 1fr)")
                 .contains(".support-faq h3 > button")
+                .contains(".support-order-context")
                 .contains(".support-body [hidden]")
                 .contains("@media (max-width: 620px)");
     }

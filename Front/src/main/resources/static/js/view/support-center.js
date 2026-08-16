@@ -62,6 +62,20 @@
             keywords: ["결제", "배송", "데모", "거래"]
         },
         {
+            id: "order-cancel",
+            topic: "ORDER",
+            question: "주문 취소는 언제까지 가능한가요?",
+            answer: "회원 주문은 출고 전 상태에서 주문 상세의 주문 취소 버튼으로 취소할 수 있습니다. 배송 중이거나 배송이 완료된 주문은 화면에서 취소할 수 없습니다.",
+            keywords: ["주문 취소", "출고", "회원 주문", "재고 복구"]
+        },
+        {
+            id: "order-reorder",
+            topic: "ORDER",
+            question: "이전 주문 상품을 다시 장바구니에 담을 수 있나요?",
+            answer: "회원 주문 상세의 장바구니에 다시 담기를 이용해 현재 판매 중인 상품을 담을 수 있습니다. 품절되거나 재고가 부족한 상품은 결과 안내에서 따로 확인할 수 있습니다.",
+            keywords: ["재주문", "장바구니", "품절", "회원 주문"]
+        },
+        {
             id: "wishlist",
             topic: "ACCOUNT",
             question: "관심 상품은 어디에 저장되나요?",
@@ -113,6 +127,7 @@
         noticeSize: 10,
         noticeSort: "LATEST",
         expandedFaqIds: new Set(),
+        faqId: null,
         orderContext: null
     };
     let noticeController = null;
@@ -153,7 +168,10 @@
         copySummary: document.getElementById("supportCopySummaryButton"),
         topButton: document.getElementById("supportTopButton"),
         toast: document.getElementById("supportToast"),
-        orderContext: document.getElementById("supportOrderContext")
+        orderContext: document.getElementById("supportOrderContext"),
+        orderContextCard: document.getElementById("supportOrderContextCard"),
+        orderContextLink: document.getElementById("supportOrderContextLink"),
+        orderContextClear: document.getElementById("supportOrderContextClearButton")
     };
 
     function hydrateFromUrl() {
@@ -169,7 +187,13 @@
         state.noticeSort = VALID_SORTS.includes(sort) ? sort : "LATEST";
         state.noticeSize = VALID_SIZES.includes(size) ? size : 10;
         state.noticePage = Number.isInteger(page) && page >= 0 ? page : 0;
-        if (params.get("context") === "order") state.orderContext = readOrderContext();
+        state.orderContext = params.get("context") === "order" ? readOrderContext() : null;
+        const faqId = String(params.get("faq") || "");
+        state.faqId = FAQS.some((faq) => faq.id === faqId) ? faqId : null;
+        if (state.faqId) {
+            state.view = "faq";
+            state.expandedFaqIds.add(state.faqId);
+        }
     }
 
     function updateUrl(mode = "push") {
@@ -180,6 +204,8 @@
         if (state.view === "notice" && state.noticeSort !== "LATEST") params.set("sort", state.noticeSort);
         if (state.view === "notice" && state.noticeSize !== 10) params.set("size", String(state.noticeSize));
         if (state.view === "notice" && state.noticePage > 0) params.set("page", String(state.noticePage));
+        if (state.view === "faq" && state.faqId) params.set("faq", state.faqId);
+        if (state.orderContext) params.set("context", "order");
         const query = params.toString();
         const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
         if (`${window.location.pathname}${window.location.search}` === nextUrl) return;
@@ -193,6 +219,9 @@
         if (state.view === "notice") void loadNotices();
         renderOrderContext();
         updateDocumentTitle();
+        if (state.faqId) {
+            window.requestAnimationFrame(() => document.querySelector(`[data-faq-id="${state.faqId}"]`)?.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "center" }));
+        }
     }
 
     function syncControls() {
@@ -280,10 +309,13 @@
     function toggleFaq(id) {
         if (state.expandedFaqIds.has(id)) {
             state.expandedFaqIds.delete(id);
+            if (state.faqId === id) state.faqId = null;
         } else {
             state.expandedFaqIds.add(id);
+            state.faqId = id;
         }
         renderFaqs();
+        updateUrl("replace");
         document.getElementById(`supportFaqButton-${id}`)?.focus();
     }
 
@@ -518,6 +550,7 @@
         if (!VALID_VIEWS.includes(view)) return;
         state.view = view;
         state.noticePage = 0;
+        if (view !== "faq") state.faqId = null;
         if (view !== "notice") {
             noticeController?.abort();
             noticeController = null;
@@ -534,6 +567,7 @@
         if (!VALID_TOPICS.includes(topic)) return;
         state.topic = topic;
         state.view = "faq";
+        state.faqId = null;
         syncControls();
         renderFaqs();
         updateUrl();
@@ -541,6 +575,7 @@
 
     function submitSearch(keyword) {
         state.keyword = normalizeSearchKeyword(keyword ?? elements.keyword.value);
+        state.faqId = null;
         state.noticePage = 0;
         elements.keyword.value = state.keyword;
         if (state.keyword) rememberSearch(state.keyword);
@@ -554,7 +589,9 @@
 
     function clearSearch() {
         state.keyword = "";
+        state.faqId = null;
         state.noticePage = 0;
+        state.faqId = null;
         elements.keyword.value = "";
         syncControls();
         renderFaqs();
@@ -619,7 +656,9 @@
         const url = new URL(window.location.href);
         url.search = "";
         url.searchParams.set("view", "faq");
-        url.searchParams.set("keyword", faq.question);
+        url.searchParams.set("topic", faq.topic);
+        url.searchParams.set("faq", faq.id);
+        if (state.orderContext) url.searchParams.set("context", "order");
         copyText(url.toString(), "도움말 링크를 복사했습니다.");
     }
 
@@ -635,14 +674,25 @@
         try {
             const value = JSON.parse(window.sessionStorage.getItem("noren-support-order-context") || "{}");
             if (!/^GS[A-Z0-9]{10,40}$/.test(value.orderNumber) || typeof value.statusLabel !== "string" || value.statusLabel.length > 30) return null;
-            return { orderNumber: value.orderNumber, statusLabel: value.statusLabel };
+            return { orderNumber: value.orderNumber, statusLabel: value.statusLabel, memberOrder: value.memberOrder === true };
         } catch (_) { return null; }
     }
 
     function renderOrderContext() {
-        if (!elements.orderContext) return;
-        elements.orderContext.hidden = !state.orderContext;
-        elements.orderContext.textContent = state.orderContext ? `주문 ${state.orderContext.orderNumber} · ${state.orderContext.statusLabel} 관련 도움말을 보고 있습니다.` : "";
+        if (!elements.orderContextCard) return;
+        elements.orderContextCard.hidden = !state.orderContext;
+        elements.orderContext.textContent = state.orderContext ? `주문 ${state.orderContext.orderNumber} · 현재 상태 ${state.orderContext.statusLabel}` : "";
+        if (state.orderContext) {
+            elements.orderContextLink.href = `/front/orders/${encodeURIComponent(state.orderContext.orderNumber)}${state.orderContext.memberOrder ? "?member=true" : ""}`;
+        }
+    }
+
+    function clearOrderContext() {
+        state.orderContext = null;
+        try { window.sessionStorage.removeItem("noren-support-order-context"); } catch (_) { /* 현재 화면의 연결 해제는 유지한다. */ }
+        renderOrderContext();
+        updateUrl("replace");
+        showToast("주문 문의 연결을 해제했습니다.");
     }
 
     async function copyText(text, successMessage) {
@@ -671,7 +721,7 @@
         elements.toast.hidden = false;
         toastTimer = window.setTimeout(() => {
             elements.toast.hidden = true;
-        }, 2200);
+        }, 4200);
     }
 
     function handleViewKeydown(event) {
@@ -741,7 +791,8 @@
             void loadNotices();
         });
         elements.copySummary.addEventListener("click", copyCurrentSummary);
-        elements.topButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+        elements.orderContextClear.addEventListener("click", clearOrderContext);
+        elements.topButton.addEventListener("click", () => window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" }));
         window.addEventListener("scroll", () => {
             elements.topButton.hidden = window.scrollY < 640;
         }, { passive: true });
@@ -768,7 +819,7 @@
         if (nextPage < 0) return;
         state.noticePage = nextPage;
         void loadNotices();
-        document.getElementById("supportNoticeHeading")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        document.getElementById("supportNoticeHeading")?.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" });
     }
 
     function updateTopicCounts() {
@@ -805,6 +856,10 @@
 
     function isTypingTarget(target) {
         return target instanceof HTMLElement && (target.matches("input, textarea, select") || target.isContentEditable);
+    }
+
+    function reducedMotion() {
+        return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     }
 
     hydrateFromUrl();

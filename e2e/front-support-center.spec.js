@@ -1,72 +1,54 @@
 import { expect, test } from "@playwright/test";
 
-const noticePage = (boardType = "NOTICE") => ({
-  items: [{
-    id: 501,
-    boardType,
-    title: boardType === "NOTICE" ? "서비스 점검 안내" : "노출되면 안 되는 스타일",
-    summary: "안정적인 서비스 제공을 위한 안내입니다.",
-    viewCount: 12,
-    pinned: true,
-    createdDate: "2026.08.02"
-  }],
-  page: 0,
-  size: 10,
-  totalElements: 1,
-  totalPages: 1,
-  first: true,
-  last: true,
-  sort: "LATEST",
-  pageViewCount: 12,
-  pagePinnedCount: 1,
-  pageNoticeCount: 1,
-  pageStyleCount: boardType === "NOTICE" ? 0 : 1
-});
-
-test("고객지원은 공지가 아닌 응답을 거부하고 재시도 후 공지만 표시한다", async ({ page }) => {
-  let count = 0;
-  await page.route("**/api/front/content?**", async (route) => {
-    count += 1;
-    await route.fulfill({ json: noticePage(count === 1 ? "STYLE" : "NOTICE") });
-  });
-
-  await page.goto("/front/support?view=notice");
-  await expect(page.locator("#supportNoticeList")).toContainText("공지사항을 불러오지 못했습니다");
-  await expect(page.locator("body")).not.toContainText("노출되면 안 되는 스타일");
-
-  await page.locator("#supportNoticeList").getByRole("button", { name: "다시 불러오기" }).click();
-  await expect(page.locator("#supportNoticeList")).toContainText("서비스 점검 안내");
-  await expect(page.locator("#supportNoticeList a")).toHaveAttribute("href", "/front/content/501");
-});
-
-test("고객지원은 변조된 최근 검색어를 정리해 중복 없이 표시한다", async ({ page }) => {
+test("주문 문의 컨텍스트는 필터 이동에도 유지되고 원래 회원 주문으로 돌아간다", async ({ page }) => {
   await page.addInitScript(() => {
-    localStorage.setItem("grade-stock-support-searches", JSON.stringify([
-      "  주문   조회  ", "주문 조회", "", 123, "x".repeat(140)
-    ]));
+    sessionStorage.setItem("noren-support-order-context", JSON.stringify({
+      orderNumber: "GSMEMBER00000",
+      statusLabel: "배송 준비",
+      memberOrder: true
+    }));
   });
+  await page.goto("/front/support?topic=ORDER&context=order");
 
-  await page.goto("/front/support");
-  await expect(page.locator("#supportRecentSearchList button")).toHaveCount(2);
-  await expect(page.locator("#supportRecentSearchList button").first()).toHaveText("주문 조회");
-  await expect(page.locator("#supportRecentSearchList button").nth(1)).toHaveText("x".repeat(100));
+  await expect(page.locator("#supportOrderContextCard")).toBeVisible();
+  await expect(page.locator("#supportOrderContext")).toContainText("GSMEMBER00000");
+  await expect(page.locator("#supportOrderContextLink")).toHaveAttribute("href", "/front/orders/GSMEMBER00000?member=true");
+  await page.locator('[data-support-topic="SHOPPING"]').click();
+  await expect(page).toHaveURL(/context=order/);
+  await expect(page.locator("#supportOrderContextCard")).toBeVisible();
+
+  await page.locator("#supportOrderContextClearButton").click();
+  await expect(page.locator("#supportOrderContextCard")).toBeHidden();
+  await expect(page).not.toHaveURL(/context=order/);
+  expect(await page.evaluate(() => sessionStorage.getItem("noren-support-order-context"))).toBeNull();
 });
 
-test("고객지원은 전체 건수와 맞지 않는 공지 페이지를 거부한다", async ({ page }) => {
-  let attempts = 0;
-  await page.route("**/api/front/content?**", async (route) => {
-    const payload = noticePage();
-    if (attempts++ === 0) {
-      payload.totalElements = 11;
-      payload.totalPages = 2;
-      payload.last = false;
-    }
-    await route.fulfill({ json: payload });
-  });
+test("FAQ 직접 링크는 해당 답변을 펼치고 공유 가능한 짧은 식별자를 유지한다", async ({ page }) => {
+  await page.goto("/front/support?view=faq&topic=ORDER&faq=order-cancel");
 
-  await page.goto("/front/support?view=notice");
-  await expect(page.locator("#supportNoticeList")).toContainText("공지사항을 불러오지 못했습니다");
-  await page.getByRole("button", { name: "다시 불러오기" }).click();
-  await expect(page.locator("#supportNoticeList")).toContainText("서비스 점검 안내");
-  await expect(page.locator("#supportNoticeCount")).toHaveText("1");
+  const faq = page.locator('[data-faq-id="order-cancel"]');
+  await expect(faq.locator("[aria-expanded]")).toHaveAttribute("aria-expanded", "true");
+  await expect(faq.locator(".support-faq__answer")).toBeVisible();
+  await expect(faq).toContainText("출고 전 상태");
+  await expect(page).toHaveURL(/faq=order-cancel/);
+
+  await faq.locator("[aria-expanded]").click();
+  await expect(page).not.toHaveURL(/faq=order-cancel/);
+  await expect(faq.locator(".support-faq__answer")).toBeHidden();
+});
+
+test("고객지원 검색은 모바일에서도 지우기 제어와 화면 경계를 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/front/support");
+  await page.locator("#supportKeyword").fill("주문");
+
+  await expect(page.locator("#supportSearchClearButton")).toBeVisible();
+  await page.locator("#supportSearchClearButton").click();
+  await expect(page.locator("#supportKeyword")).toHaveValue("");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+  for (const selector of [".support-hero", ".support-quick-grid", ".support-layout", ".support-contact"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+  }
 });

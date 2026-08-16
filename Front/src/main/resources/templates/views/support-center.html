@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>고객지원 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-    <link rel="stylesheet" href="/css/main.css?v=20260718.23">
-    <link rel="stylesheet" href="/css/storefront.css?v=20260725.4">
-    <link rel="stylesheet" href="/css/support-center.css?v=20260726.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
+    <link rel="stylesheet" href="/css/support-center.css?v=20260816.1">
 </head>
 <body class="support-body storefront-page">
 <a class="skip-link" href="#supportMain">고객지원 본문 바로가기</a>
@@ -16,7 +14,7 @@
 <header th:replace="~{fragments/storefront-shell :: header('SUPPORT', '고객센터')}"></header>
 
 <div class="page-shell page-shell--support">
-    <main class="support-main" id="supportMain">
+    <main class="support-main" id="supportMain" tabindex="-1">
         <section class="support-hero" aria-labelledby="supportTitle">
             <div class="support-hero__copy">
                 <p class="eyebrow">NOREN Help Center</p>
@@ -45,6 +43,11 @@
                     <button type="button" id="supportRecentClearButton">전체 삭제</button>
                 </div>
             </div>
+        </section>
+
+        <section class="support-order-context" id="supportOrderContextCard" aria-labelledby="supportOrderContextTitle" hidden>
+            <div><span>ORDER CONTEXT</span><h2 id="supportOrderContextTitle">주문 문의를 이어서 보고 있습니다.</h2><p id="supportOrderContext"></p></div>
+            <div><a id="supportOrderContextLink" href="/front/orders">주문으로 돌아가기</a><button type="button" id="supportOrderContextClearButton">문의 연결 해제</button></div>
         </section>
 
         <nav class="support-quick-grid" aria-label="빠른 고객지원">
@@ -143,7 +146,7 @@
             <div>
                 <span>NEED MORE HELP?</span>
                 <h2 id="supportContactTitle">원하는 답을 찾지 못했나요?</h2>
-                <p>현재 NOREN은 데모 서비스입니다. 실제 거래 상담 대신 주문 상태와 서비스 이용 경로를 제공합니다.</p><p id="supportOrderContext" hidden></p>
+                <p>현재 NOREN은 데모 서비스입니다. 실제 거래 상담 대신 주문 상태와 서비스 이용 경로를 제공합니다.</p>
             </div>
             <div class="support-contact__actions">
                 <a href="/front/orders">주문 상태 확인</a>
@@ -160,6 +163,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/support-center.js?v=20260812.1"></script>
+<script src="/js/view/support-center.js?v=20260816.1"></script>
 </body>
 </html>

@@ -4,10 +4,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 class FrontStorefrontResourceTest {
+
+    private static final Pattern VERSIONED_TEMPLATE_ASSET = Pattern.compile(
+            "(?:href|src)=\"(/(?:css|js/view)/[^\"?]+)\\?v=([0-9]{8}\\.[0-9]+)\"");
+    private static final Pattern VERSIONED_CSS_IMPORT = Pattern.compile(
+            "@import url\\(\"(/css/[^\"?]+)\\?v=([0-9]{8}\\.[0-9]+)\"\\)");
 
     @Test
     void memberAuthPageKeepsAccessibleSessionAndValidationContracts() throws IOException {
@@ -68,6 +75,31 @@ class FrontStorefrontResourceTest {
             ClassPathResource resource = new ClassPathResource("static/images/product/category/" + image);
             assertThat(resource.exists()).as(image).isTrue();
         }
+    }
+
+    @Test
+    void storefrontTemplatesReferenceExistingVersionedLocalAssets() throws IOException {
+        String[] templates = {
+                "index.html",
+                "product-detail.html",
+                "product-collection.html",
+                "product-comparison.html",
+                "brand-directory.html",
+                "content-list.html",
+                "content-detail.html",
+                "support-center.html",
+                "cart.html",
+                "checkout.html",
+                "order-lookup.html",
+                "my-activity.html",
+                "delivery-addresses.html",
+                "member-auth.html",
+                "summer-edit.html"
+        };
+        for (String template : templates) {
+            assertVersionedAssetsExist("templates/views/" + template, VERSIONED_TEMPLATE_ASSET);
+        }
+        assertVersionedAssetsExist("static/css/storefront-shell.css", VERSIONED_CSS_IMPORT);
     }
 
     @Test
@@ -2812,7 +2844,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"comparisonOptionTable\"")
                 .contains("id=\"comparisonCsvButton\"")
                 .contains("id=\"comparisonPrintButton\"")
-                .contains("/js/view/product-comparison.js?v=20260803.1")
+                .contains("/js/view/product-comparison.js?v=20260817.1")
                 .contains("/css/product-comparison.css?v=20260726.1");
         assertThat(script)
                 .contains("front-compare-products")
@@ -2820,6 +2852,7 @@ class FrontStorefrontResourceTest {
                 .contains("front-bookmark-products")
                 .contains("Promise.allSettled")
                 .contains("fetch(`/api/front/products/${Number(item.id)}`, {")
+                .contains("if (!product) throw new Error(\"상품 응답 형식 오류\");")
                 .contains("loadController?.abort()")
                 .contains("signal: loadController.signal")
                 .contains("hasStoredSnapshot(stored[index])")
@@ -2831,6 +2864,8 @@ class FrontStorefrontResourceTest {
                 .contains("renderRecommendation(products)")
                 .contains("renderOptions(products)")
                 .contains("window.history")
+                .contains("function requestedIds()")
+                .contains("if (!requestedIds().length) void loadProducts();")
                 .contains("window.addEventListener(\"popstate\"")
                 .contains("window.addEventListener(\"storage\"")
                 .contains("new Blob([csv]")
@@ -2900,5 +2935,20 @@ class FrontStorefrontResourceTest {
     private String readResource(String path) throws IOException {
         ClassPathResource resource = new ClassPathResource(path);
         return resource.getContentAsString(StandardCharsets.UTF_8);
+    }
+
+    private void assertVersionedAssetsExist(String source, Pattern pattern) throws IOException {
+        Matcher matcher = pattern.matcher(readResource(source));
+        int assetCount = 0;
+        while (matcher.find()) {
+            assetCount++;
+            String assetPath = matcher.group(1);
+            String version = matcher.group(2);
+            assertThat(new ClassPathResource("static" + assetPath).exists())
+                    .as("%s references %s", source, assetPath)
+                    .isTrue();
+            assertThat(version).matches("[0-9]{8}\\.[0-9]+");
+        }
+        assertThat(assetCount).as("%s versioned local assets", source).isPositive();
     }
 }

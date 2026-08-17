@@ -44,7 +44,23 @@ DB_PASSWORD='secret' \
 
 콘텐츠 상세 API의 `estimatedReadMinutes`, `characterCount`, `newerContent`, `olderContent`는 추가 응답 필드입니다. 이전·다음 콘텐츠는 동일 게시판의 공개·게시 완료 문서만 `(crt_dtm, no)` 순서로 조회하므로 기존 URL과 요청 계약은 변경되지 않습니다.
 
-## 2. 빌드
+## 2. 릴리스 게이트
+
+병합과 배포 전에 아래 명령을 실행합니다. 이 검증은 공백 오류, 관리자 JavaScript 단위 테스트, 전체 Gradle 테스트와 JAR 빌드를 포함합니다. 프론트 템플릿이 존재하지 않는 로컬 CSS·JavaScript를 참조하거나 캐시 버전(`?v=YYYYMMDD.N`)을 누락한 경우에도 `FrontStorefrontResourceTest`가 실패합니다.
+
+```bash
+./scripts/verify-release.sh
+```
+
+GitHub Actions의 `Release Verification`도 같은 명령을 pull request와 `main`·`master` push에서 실행합니다. 이 게이트가 통과하지 않은 커밋은 배포 후보로 취급하지 않습니다.
+
+브라우저 회귀 검증까지 필요한 릴리스 후보는 MySQL이 준비된 환경에서 다음처럼 실행합니다. Playwright는 공유 상태 초기화 순서를 안정적으로 검증하기 위해 기본 1 워커로 Chrome 데스크톱과 Pixel 7 크기에서 인증, 장바구니·주문, 배송지, MY, 주문조회 등 주요 흐름과 가로 overflow를 확인합니다.
+
+```bash
+RUN_E2E=true ./scripts/verify-release.sh
+```
+
+## 3. 빌드
 
 ```bash
 ./gradlew clean test bootJar
@@ -58,7 +74,7 @@ DB_PASSWORD='secret' \
 
 `common`은 실행 애플리케이션이 아니라 각 모듈에 포함되는 라이브러리 JAR입니다.
 
-## 3. 공통 환경변수
+## 4. 공통 환경변수
 
 ```bash
 export SPRING_PROFILES_ACTIVE=prod
@@ -70,7 +86,7 @@ export DB_MAX_POOL_SIZE=20
 
 `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`는 운영 프로파일에서 필수입니다. 비밀번호는 셸 파일이나 저장소에 기록하지 않고 배포 플랫폼의 secret 기능으로 주입합니다.
 
-## 4. 최초 관리자
+## 5. 최초 관리자
 
 `admin_user` 테이블이 비어 있는 최초 배포에서만 다음 값을 지정합니다.
 
@@ -84,7 +100,7 @@ export ADMIN_BOOTSTRAP_NAME='운영 총괄'
 
 관리자 세션은 기본 30분이며 쿠키는 운영에서 `Secure`, `HttpOnly`, `SameSite=Strict`로 발급됩니다. 따라서 관리자 서비스는 반드시 HTTPS로 제공해야 합니다.
 
-## 5. 실행
+## 6. 실행
 
 ```bash
 SERVER_PORT=8080 java -jar Front/build/libs/Front-0.0.1-SNAPSHOT.jar
@@ -119,7 +135,7 @@ export BATCH_CONTENT_VIEW_RETENTION_DAYS=180
 
 `BATCH_CONTENT_VIEW_RETENTION_DAYS`는 실수로 최근 데이터를 대량 삭제하지 않도록 30일 이상 3650일 이하만 허용합니다. 삭제 성능은 `front_content_view_event.viewed_date` 인덱스를 사용합니다. 배치는 삭제된 문서를 참조하는 고아 이벤트를 먼저 정리한 뒤 기간 만료 데이터를 삭제하며, 로그의 `retentionStartDate`, `orphanDeleted`, `expiredDeleted`, `totalDeleted` 값으로 실행 결과를 확인합니다.
 
-## 6. 배포 후 확인
+## 7. 배포 후 확인
 
 각 애플리케이션은 다음 엔드포인트를 제공합니다.
 
@@ -143,9 +159,21 @@ ADMIN_SMOKE_PASSWORD='replace-with-secret' \
 
 관리자 세션 유효 시간은 `ADMIN_SESSION_TIMEOUT` 설정을 그대로 사용합니다. 로그아웃 시 관리자 서브도메인의 캐시, 쿠키, 브라우저 저장소를 제거하므로 운영 작업 데이터가 공용 브라우저에 남지 않습니다.
 
-## 7. 운영 및 롤백
+## 8. 운영 및 롤백
 
 - load balancer는 `/health/ready`가 `200`인 인스턴스에만 트래픽을 전달합니다.
 - 종료 시 Spring graceful shutdown이 진행되므로 프로세스 종료 유예 시간을 30초 이상 둡니다.
 - 배포 실패 시 이전 JAR로 롤백하되, DB 변경이 포함됐다면 사전에 준비한 하위 호환 롤백 절차를 따릅니다.
 - `/health/ready` 실패, 로그인 불가, 주요 목록 API의 반복적인 `5xx`가 발생하면 신규 버전 트래픽을 중단합니다.
+
+## 9. 배포 판정
+
+다음 순서를 모두 충족할 때에만 배포를 완료로 판정합니다.
+
+1. 배포 전 DB 백업과 `./scripts/migrate-db.sh`의 성공 로그를 보관한다.
+2. `./scripts/verify-release.sh`와 필요한 경우 `RUN_E2E=true` 검증이 통과한다.
+3. 신규 인스턴스의 `/health/live`, `/health/ready`가 모두 `200`이 된 뒤에만 트래픽을 연결한다.
+4. `./scripts/smoke-test.sh`가 프론트·관리자·배치에서 모두 성공한다.
+5. 배포 후 오류율, 로그인 실패율, 주문 API `5xx`와 DB 커넥션 풀 포화를 최소 30분 관찰한다.
+
+스테이징 URL, 운영 DB 접근 권한, TLS 인증서와 배포 플랫폼 권한은 저장소에 포함하지 않습니다. 실제 환경에서는 해당 secret을 배포 플랫폼에서 주입하고, 위 명령을 스테이징에서 먼저 실행한 뒤 운영에 동일한 절차를 적용합니다.

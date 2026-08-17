@@ -64,7 +64,9 @@
                 signal: loadController.signal
             });
             if (!response.ok) throw new Error("상품 조회 실패");
-            return normalizeProductResponse(await response.json(), Number(item.id));
+            const product = normalizeProductResponse(await response.json(), Number(item.id));
+            if (!product) throw new Error("상품 응답 형식 오류");
+            return product;
         }));
         if (sequence !== requestSequence) return;
         state.failedCount = results.filter((result) => result.status === "rejected").length;
@@ -270,11 +272,15 @@
     }
 
     function requestedProducts() {
-        const ids = Array.from(new Set(String(new URLSearchParams(location.search).get("ids") || "")
-            .split(",").map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))).slice(0, 3);
+        const ids = requestedIds();
         const stored = readProducts(KEYS.compare);
         if (!ids.length) return stored.slice(0, 3);
         return ids.map((id) => stored.find((item) => Number(item.id) === id) || { id });
+    }
+
+    function requestedIds() {
+        return Array.from(new Set(String(new URLSearchParams(location.search).get("ids") || "")
+            .split(",").map(Number).filter((id) => Number.isSafeInteger(id) && id > 0))).slice(0, 3);
     }
 
     function sortedProducts() {
@@ -370,7 +376,10 @@
         });
         elements.clear.addEventListener("click", clearAll);
         window.addEventListener("storage", (event) => { if (event.key === KEYS.compare) void loadProducts(); });
-        document.addEventListener("storefront:state-ready", () => void loadProducts());
+        document.addEventListener("storefront:state-ready", () => {
+            // 공유 URL은 최초 선택을 유지하고, 저장소 기반 진입만 동기화 후 새로 읽습니다.
+            if (!requestedIds().length) void loadProducts();
+        });
         window.addEventListener("popstate", loadProducts);
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape" && !elements.candidates.hidden) closeCandidates();

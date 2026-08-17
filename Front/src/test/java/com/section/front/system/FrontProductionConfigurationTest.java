@@ -19,8 +19,11 @@ class FrontProductionConfigurationTest {
                 .contains("url: ${DB_URL}")
                 .contains("username: ${DB_USERNAME}")
                 .contains("password: ${DB_PASSWORD}")
+                .contains("ddl-auto: ${JPA_DDL_AUTO:none}")
                 .contains("show-sql: false")
+                .contains("open-in-view: false")
                 .contains("shutdown: graceful")
+                .contains("forward-headers-strategy: framework")
                 .contains("max-http-request-header-size: ${SERVER_MAX_HTTP_REQUEST_HEADER_SIZE:16KB}")
                 .contains("level: \"%5p [requestId:%X{requestId:-}]\"")
                 .contains("compression:")
@@ -33,6 +36,7 @@ class FrontProductionConfigurationTest {
                 .contains("max-login-failures: ${FRONT_MAX_LOGIN_FAILURES:5}")
                 .contains("max-ip-login-failures: ${FRONT_MAX_IP_LOGIN_FAILURES:25}")
                 .contains("login-lock-duration: ${FRONT_LOGIN_LOCK_DURATION:15m}")
+                .contains("include-message: never")
                 .contains("include-stacktrace: never");
     }
 }

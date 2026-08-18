@@ -42,7 +42,15 @@
         page: 0,
         size: 20,
         keyword: "",
-        sort: "DEFAULT"
+        sort: "DEFAULT",
+        filters: {
+            brand: "",
+            category: "",
+            stock: "ALL",
+            priceBand: "ALL",
+            lowStockThreshold: 20,
+            featuredOnly: false
+        }
     };
     let pagination = {
         totalElements: 0,
@@ -63,7 +71,21 @@
         searchInput: document.getElementById("collectionSearchInput"),
         sortSelect: document.getElementById("collectionSortSelect"),
         searchButton: document.getElementById("collectionSearchButton"),
+        filterButton: document.getElementById("collectionFilterButton"),
+        filterCount: document.getElementById("collectionFilterCount"),
         resetButton: document.getElementById("collectionResetButton"),
+        filterDialog: document.getElementById("collectionFilterDialog"),
+        filterForm: document.getElementById("collectionFilterForm"),
+        filterClose: document.getElementById("collectionFilterCloseButton"),
+        brandInput: document.getElementById("collectionBrandInput"),
+        categoryInput: document.getElementById("collectionCategoryInput"),
+        stockSelect: document.getElementById("collectionStockSelect"),
+        priceBandSelect: document.getElementById("collectionPriceBandSelect"),
+        lowStockThreshold: document.getElementById("collectionLowStockThreshold"),
+        featuredOnly: document.getElementById("collectionFeaturedOnly"),
+        filterLocked: document.getElementById("collectionFilterLocked"),
+        filterReset: document.getElementById("collectionFilterResetButton"),
+        filterSummary: document.getElementById("collectionFilterSummary"),
         resultText: document.getElementById("collectionResultText"),
         rangeText: document.getElementById("collectionRangeText"),
         grid: document.getElementById("collectionGrid"),
@@ -81,6 +103,8 @@
         document.querySelector(`.store-shell__category a[href$="/${collectionType}"]`)?.classList.add("is-current");
         elements.searchInput.value = state.keyword;
         elements.sortSelect.value = state.sort;
+        syncFilterControls();
+        renderFilterSummary();
         bindEvents();
         loadProducts();
     }
@@ -101,11 +125,24 @@
             state.page = 0;
             elements.searchInput.value = "";
             elements.sortSelect.value = "DEFAULT";
+            resetFilters();
             loadProducts();
         });
+        elements.filterButton.addEventListener("click", openFilterDialog);
+        elements.filterForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            applyFilters();
+        });
+        elements.filterReset.addEventListener("click", () => {
+            resetFilters();
+            syncFilterControls();
+        });
+        elements.filterClose.addEventListener("click", closeFilterDialog);
+        elements.filterDialog.addEventListener("close", () => elements.filterButton.setAttribute("aria-expanded", "false"));
         elements.previousButton.addEventListener("click", () => movePage(state.page - 1));
         elements.nextButton.addEventListener("click", () => movePage(state.page + 1));
         elements.grid.addEventListener("click", handleGridClick);
+        elements.filterSummary.addEventListener("click", handleFilterSummaryClick);
         document.addEventListener("storefront:storage-change", handleStorageChange);
         document.addEventListener("storefront:state-ready", syncBookmarkButtons);
         window.addEventListener("storage", handleStorageChange);
@@ -135,6 +172,7 @@
         elements.grid.setAttribute("aria-busy", "true");
         elements.grid.innerHTML = '<div class="collection-state"><p>상품을 불러오고 있습니다.</p></div>';
         const params = new URLSearchParams({
+            ...state.filters,
             ...collection.query,
             keyword: state.keyword,
             sort: effectiveSort(),
@@ -185,6 +223,112 @@
 
     function effectiveSort() {
         return state.sort === "DEFAULT" ? collection.query.sort || "LATEST" : state.sort;
+    }
+
+    function openFilterDialog() {
+        syncFilterControls();
+        if (typeof elements.filterDialog.showModal === "function") {
+            elements.filterDialog.showModal();
+        } else {
+            elements.filterDialog.setAttribute("open", "");
+        }
+        elements.filterButton.setAttribute("aria-expanded", "true");
+        elements.brandInput.focus();
+    }
+
+    function closeFilterDialog() {
+        if (elements.filterDialog.open && typeof elements.filterDialog.close === "function") {
+            elements.filterDialog.close();
+        } else {
+            elements.filterDialog.removeAttribute("open");
+            elements.filterButton.setAttribute("aria-expanded", "false");
+        }
+        elements.filterButton.focus();
+    }
+
+    function applyFilters() {
+        state.filters.brand = normalizeFacet(elements.brandInput.value);
+        state.filters.category = normalizeFacet(elements.categoryInput.value);
+        state.filters.stock = elements.stockSelect.value;
+        state.filters.priceBand = elements.priceBandSelect.value;
+        state.filters.lowStockThreshold = Number(elements.lowStockThreshold.value);
+        state.filters.featuredOnly = elements.featuredOnly.checked;
+        state.page = 0;
+        closeFilterDialog();
+        renderFilterSummary();
+        loadProducts();
+    }
+
+    function resetFilters() {
+        state.filters = {
+            brand: "",
+            category: "",
+            stock: "ALL",
+            priceBand: "ALL",
+            lowStockThreshold: 20,
+            featuredOnly: false
+        };
+        renderFilterSummary();
+    }
+
+    function syncFilterControls() {
+        const locked = lockedFilterNames();
+        elements.brandInput.value = state.filters.brand;
+        elements.categoryInput.value = state.filters.category;
+        elements.stockSelect.value = state.filters.stock;
+        elements.priceBandSelect.value = state.filters.priceBand;
+        elements.lowStockThreshold.value = String(state.filters.lowStockThreshold);
+        elements.featuredOnly.checked = state.filters.featuredOnly;
+        elements.stockSelect.disabled = locked.includes("stock");
+        elements.priceBandSelect.disabled = locked.includes("priceBand");
+        elements.featuredOnly.disabled = locked.includes("featuredOnly");
+        elements.filterLocked.hidden = locked.length === 0;
+        elements.filterLocked.textContent = locked.length
+            ? `${locked.map(filterLabel).join(", ")} 조건은 이 컬렉션에 고정되어 있습니다.`
+            : "";
+    }
+
+    function lockedFilterNames() {
+        return ["stock", "priceBand", "featuredOnly"].filter((name) => {
+            const value = collection.query[name];
+            return value != null && value !== "ALL" && value !== false;
+        });
+    }
+
+    function renderFilterSummary() {
+        const filters = activeFilters();
+        elements.filterCount.textContent = String(filters.length);
+        elements.filterSummary.hidden = filters.length === 0;
+        elements.filterSummary.innerHTML = filters.map((filter) => `<button type="button" data-filter-reset="${filter.key}">${escapeHtml(filter.label)} <span aria-hidden="true">×</span></button>`).join("");
+    }
+
+    function activeFilters() {
+        const locked = lockedFilterNames();
+        const filters = [];
+        if (state.filters.brand) filters.push({ key: "brand", label: `브랜드: ${state.filters.brand}` });
+        if (state.filters.category) filters.push({ key: "category", label: `카테고리: ${state.filters.category}` });
+        if (!locked.includes("stock") && state.filters.stock !== "ALL") filters.push({ key: "stock", label: filterLabel(state.filters.stock) });
+        if (!locked.includes("priceBand") && state.filters.priceBand !== "ALL") filters.push({ key: "priceBand", label: filterLabel(state.filters.priceBand) });
+        if (state.filters.lowStockThreshold !== 20) filters.push({ key: "lowStockThreshold", label: `재고 주의: ${state.filters.lowStockThreshold}개 미만` });
+        if (!locked.includes("featuredOnly") && state.filters.featuredOnly) filters.push({ key: "featuredOnly", label: "대표 상품" });
+        return filters;
+    }
+
+    function handleFilterSummaryClick(event) {
+        const button = event.target.closest("[data-filter-reset]");
+        if (!button) return;
+        const key = button.dataset.filterReset;
+        if (key === "featuredOnly") state.filters[key] = false;
+        else if (key === "lowStockThreshold") state.filters[key] = 20;
+        else state.filters[key] = key === "stock" || key === "priceBand" ? "ALL" : "";
+        state.page = 0;
+        syncFilterControls();
+        renderFilterSummary();
+        loadProducts();
+    }
+
+    function filterLabel(value) {
+        return ({ stock: "재고", priceBand: "가격대", featuredOnly: "대표 상품", STABLE: "구매 가능", LOW: "재고 주의", UNDER_200: "20만원 미만", BETWEEN_200_300: "20~30만원", OVER_300: "30만원 초과" })[value] || value;
     }
 
     function renderProducts(products) {
@@ -314,6 +458,13 @@
         if (["DEFAULT", "PRICE_LOW", "PRICE_HIGH", "STOCK_DESC", "LATEST"].includes(requestedSort)) {
             state.sort = requestedSort;
         }
+        state.filters.brand = normalizeFacet(params.get("brand"));
+        state.filters.category = normalizeFacet(params.get("category"));
+        state.filters.stock = normalizeFilterOption(params.get("stock"), ["ALL", "LOW", "STABLE"]);
+        state.filters.priceBand = normalizeFilterOption(params.get("priceBand"), ["ALL", "UNDER_200", "BETWEEN_200_300", "OVER_300"]);
+        state.filters.lowStockThreshold = [10, 20, 30, 50].includes(Number(params.get("lowStockThreshold")))
+            ? Number(params.get("lowStockThreshold")) : 20;
+        state.filters.featuredOnly = params.get("featuredOnly") === "true";
     }
 
     function syncUrl() {
@@ -321,6 +472,12 @@
         if (state.page > 0) params.set("page", state.page + 1);
         if (state.keyword) params.set("keyword", state.keyword);
         if (state.sort !== "DEFAULT") params.set("sort", state.sort);
+        if (state.filters.brand) params.set("brand", state.filters.brand);
+        if (state.filters.category) params.set("category", state.filters.category);
+        if (state.filters.stock !== "ALL") params.set("stock", state.filters.stock);
+        if (state.filters.priceBand !== "ALL") params.set("priceBand", state.filters.priceBand);
+        if (state.filters.lowStockThreshold !== 20) params.set("lowStockThreshold", String(state.filters.lowStockThreshold));
+        if (state.filters.featuredOnly) params.set("featuredOnly", "true");
         const query = params.toString();
         window.history.replaceState({}, "", `${window.location.pathname}${query ? `?${query}` : ""}`);
     }
@@ -352,6 +509,15 @@
 
     function normalizeKeyword(value) {
         return String(value || "").trim().replace(/\s+/g, " ").slice(0, 100);
+    }
+
+    function normalizeFacet(value) {
+        return String(value || "").trim().replace(/\s+/g, " ").slice(0, 80);
+    }
+
+    function normalizeFilterOption(value, allowed) {
+        const normalized = String(value || "ALL").trim().toUpperCase();
+        return allowed.includes(normalized) ? normalized : "ALL";
     }
 
     function normalizePositiveInteger(value) {

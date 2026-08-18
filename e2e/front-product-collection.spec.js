@@ -88,3 +88,39 @@ test("컬렉션은 최신 검색 응답만 표시하고 실패한 요청을 재�
   expect(layout.toolbarRight).toBeLessThanOrEqual(layout.viewportWidth);
   expect(layout.gridWidth).toBeGreaterThan(0);
 });
+
+test("컬렉션 상세 필터는 URL과 요청 조건을 동기화하고 개별 조건을 해제한다", async ({ page }) => {
+  const requests = [];
+  await page.route("**/api/front/products?**", async (route) => {
+    requests.push(new URL(route.request().url()));
+    await route.fulfill({ json: pageResponse([product(10, "필터 상품")]) });
+  });
+
+  await page.goto("/front/collections/new");
+  await page.locator("#collectionFilterButton").click();
+  await expect(page.locator("#collectionFilterDialog")).toBeVisible();
+  await page.locator("#collectionBrandInput").fill("나이키");
+  await page.locator("#collectionCategoryInput").fill("스니커즈");
+  await page.locator("#collectionStockSelect").selectOption("STABLE");
+  await page.locator("#collectionPriceBandSelect").selectOption("UNDER_200");
+  await page.locator("#collectionLowStockThreshold").selectOption("10");
+  await page.locator("#collectionFeaturedOnly").check();
+  await page.locator("#collectionFilterForm").evaluate((form) => form.requestSubmit());
+
+  await expect(page.locator("#collectionFilterDialog")).toBeHidden();
+  await expect(page.locator("#collectionFilterCount")).toHaveText("6");
+  await expect(page).toHaveURL(/brand=%EB%82%98%EC%9D%B4%ED%82%A4/);
+  await expect(page).toHaveURL(/featuredOnly=true/);
+  const lastRequest = requests.at(-1).searchParams;
+  expect(lastRequest.get("brand")).toBe("나이키");
+  expect(lastRequest.get("category")).toBe("스니커즈");
+  expect(lastRequest.get("stock")).toBe("STABLE");
+  expect(lastRequest.get("priceBand")).toBe("UNDER_200");
+  expect(lastRequest.get("lowStockThreshold")).toBe("10");
+  expect(lastRequest.get("featuredOnly")).toBe("true");
+
+  await page.locator('[data-filter-reset="brand"]').click();
+  await expect(page.locator("#collectionFilterCount")).toHaveText("5");
+  await expect(page).not.toHaveURL(/brand=/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

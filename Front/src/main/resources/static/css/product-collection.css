@@ -175,6 +175,193 @@
     cursor: pointer;
 }
 
+#collectionFilterButton {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    justify-content: center;
+}
+
+#collectionFilterButton span {
+    display: grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--collection-soft);
+    font-size: 10px;
+}
+
+.collection-filter {
+    width: min(440px, calc(100% - 32px));
+    max-height: min(720px, calc(100dvh - 32px));
+    padding: 0;
+    border: 1px solid var(--collection-line);
+    border-radius: 16px;
+    background: var(--noren-surface);
+    color: var(--collection-ink);
+    box-shadow: 0 24px 64px rgba(30, 39, 34, .24);
+}
+
+.collection-filter::backdrop {
+    background: rgba(20, 27, 23, .4);
+}
+
+.collection-filter__head,
+.collection-filter__form {
+    display: grid;
+    gap: 18px;
+    padding: 24px;
+}
+
+.collection-filter__head {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    border-bottom: 1px solid var(--collection-line);
+}
+
+.collection-filter__head p,
+.collection-filter__head h2,
+.collection-filter__head span,
+.collection-filter__locked {
+    margin: 0;
+}
+
+.collection-filter__head p {
+    margin-bottom: 7px;
+    color: var(--collection-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .1em;
+}
+
+.collection-filter__head h2 {
+    font-size: 20px;
+    letter-spacing: -.04em;
+}
+
+.collection-filter__head span,
+.collection-filter__locked {
+    display: block;
+    margin-top: 7px;
+    color: var(--collection-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.collection-filter__head button,
+.collection-filter__actions button,
+.collection-filter__form input,
+.collection-filter__form select {
+    box-sizing: border-box;
+    min-height: 42px;
+    border: 1px solid var(--collection-line);
+    border-radius: 8px;
+    background: #fff;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+}
+
+.collection-filter__head button {
+    padding: 0 12px;
+    cursor: pointer;
+}
+
+.collection-filter__form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.collection-filter__form > label {
+    display: grid;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.collection-filter__form input,
+.collection-filter__form select {
+    width: 100%;
+    padding: 0 12px;
+    font-weight: 400;
+}
+
+.collection-filter__form input:disabled,
+.collection-filter__form select:disabled {
+    background: var(--noren-page);
+    color: var(--collection-muted);
+    cursor: not-allowed;
+}
+
+.collection-filter__toggle {
+    grid-column: 1 / -1;
+    display: flex !important;
+    align-items: center;
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--collection-line);
+    border-radius: 8px;
+    font-weight: 500 !important;
+}
+
+.collection-filter__toggle input {
+    width: 17px;
+    min-height: 17px;
+    margin-right: 9px;
+    accent-color: var(--collection-ink);
+}
+
+.collection-filter__locked {
+    grid-column: 1 / -1;
+    margin-top: -6px;
+}
+
+.collection-filter__actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding-top: 6px;
+}
+
+.collection-filter__actions button {
+    cursor: pointer;
+}
+
+#collectionFilterApplyButton {
+    border-color: var(--collection-ink);
+    background: var(--collection-ink);
+    color: #fff;
+    font-weight: 700;
+}
+
+.collection-filter-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: -4px 0 18px;
+}
+
+.collection-filter-summary button {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border: 1px solid var(--collection-line);
+    border-radius: 999px;
+    background: var(--noren-surface);
+    color: var(--collection-ink);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.collection-filter-summary button span {
+    color: var(--collection-muted);
+    font-size: 15px;
+}
+
 #collectionSearchButton {
     border-color: var(--collection-ink);
     background: var(--collection-ink);
@@ -434,6 +621,16 @@
 
     .collection-toolbar label:first-child {
         grid-column: 1 / -1;
+    }
+
+    .collection-filter {
+        width: min(100% - 24px, 440px);
+        max-height: calc(100dvh - 24px);
+    }
+
+    .collection-filter__head,
+    .collection-filter__form {
+        padding: 20px;
     }
 
     .collection-grid {

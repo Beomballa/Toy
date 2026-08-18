@@ -890,10 +890,13 @@ class FrontStorefrontResourceTest {
                 .contains("data-collection-type")
                 .contains("id=\"collectionSearchForm\" role=\"search\"")
                 .contains("id=\"collectionSearchInput\"")
+                .contains("id=\"collectionFilterDialog\"")
+                .contains("id=\"collectionFilterForm\"")
+                .contains("id=\"collectionFilterSummary\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
                 .contains("/css/product-collection.css?v=20260813.1")
-                .contains("/js/view/product-collection.js?v=20260803.1")
+                .contains("/js/view/product-collection.js?v=20260818.1")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)
                 .contains("/front/collections/recommended")
@@ -906,6 +909,10 @@ class FrontStorefrontResourceTest {
                 .contains("productController?.abort()")
                 .contains("signal: productController.signal")
                 .contains("data-collection-retry")
+                .contains("function openFilterDialog()")
+                .contains("function activeFilters()")
+                .contains("function normalizeFilterOption(")
+                .contains("...state.filters")
                 .contains("storefront:storage-change")
                 .contains("function syncBookmarkButtons()")
                 .contains("function normalizeProductPage(payload)")
@@ -917,7 +924,9 @@ class FrontStorefrontResourceTest {
                 .contains(".collection-grid")
                 .contains("grid-template-columns: repeat(4, minmax(0, 1fr))")
                 .contains(".collection-product__detail")
-                .contains(".collection-state__retry");
+                .contains(".collection-state__retry")
+                .contains(".collection-filter")
+                .contains(".collection-filter-summary");
     }
 
     @Test

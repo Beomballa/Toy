@@ -101,4 +101,38 @@ class FrontAuthenticationRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.authenticated").value(false));
     }
+
+    @Test
+    void changesPasswordForAuthenticatedMember() throws Exception {
+        AuthenticatedFrontMember member = new AuthenticatedFrontMember(9L, "member@example.com", "회원", "노렌");
+        given(authenticationService.changePassword(any(Long.class), any())).willReturn(member);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("frontMemberNo", 9L);
+        session.setAttribute("frontMemberEmail", "member@example.com");
+        session.setAttribute("frontMemberName", "회원");
+        session.setAttribute("frontMemberNickname", "노렌");
+
+        mockMvc.perform(post("/api/front/auth/password")
+                        .session(session)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "currentPassword", "noren1234",
+                                "newPassword", "renew1234"
+                        ))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.authenticated").value(true));
+
+        verify(authenticationService).changePassword(any(Long.class), any());
+    }
+
+    @Test
+    void rejectsPasswordChangeWithoutAuthenticatedSession() throws Exception {
+        mockMvc.perform(post("/api/front/auth/password")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of(
+                                "currentPassword", "noren1234",
+                                "newPassword", "renew1234"
+                        ))))
+                .andExpect(status().isUnauthorized());
+    }
 }

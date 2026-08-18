@@ -2,6 +2,7 @@ package com.section.front.auth.service;
 
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
+import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
 import com.section.front.auth.support.FrontPasswordEncoder;
@@ -61,6 +62,23 @@ public class FrontAuthenticationService {
             account.changePassword(passwordEncoder.encode(rawPassword));
         }
         return Optional.of(authenticated(account));
+    }
+
+    @Transactional
+    public AuthenticatedFrontMember changePassword(long memberId, FrontMemberPasswordChangeRequest request) {
+        Account account = accountRepository.findByIdForUpdate(memberId)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 정보를 다시 확인해 주세요."));
+
+        if (!passwordEncoder.matches(request.currentPassword(), account.getPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "현재 비밀번호를 확인해 주세요.");
+        }
+        if (request.currentPassword().equals(request.newPassword())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "새 비밀번호는 현재 비밀번호와 다르게 입력해 주세요.");
+        }
+
+        account.changePassword(passwordEncoder.encode(request.newPassword()));
+        return authenticated(account);
     }
 
     private AuthenticatedFrontMember authenticated(Account account) {

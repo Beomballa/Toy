@@ -3,6 +3,7 @@ package com.section.front.auth.service;
 import com.section.common.base.entity.type.YN;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
+import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.support.FrontPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,5 +78,28 @@ class FrontAuthenticationServiceTest {
         given(accountRepository.findByEmailIgnoreCase("member@example.com")).willReturn(Optional.of(account));
 
         assertThat(service.authenticate("member@example.com", "noren1234")).isEmpty();
+    }
+
+    @Test
+    void changesPasswordAfterCurrentPasswordVerification() {
+        Account account = Account.createCustomer("member@example.com", passwordEncoder.encode("noren1234"), "회원", null);
+        account.setId(13L);
+        given(accountRepository.findByIdForUpdate(13L)).willReturn(Optional.of(account));
+
+        service.changePassword(13L, new FrontMemberPasswordChangeRequest("noren1234", "renew1234"));
+
+        assertThat(passwordEncoder.matches("renew1234", account.getPassword())).isTrue();
+        assertThat(passwordEncoder.matches("noren1234", account.getPassword())).isFalse();
+    }
+
+    @Test
+    void rejectsPasswordChangeWhenCurrentPasswordDoesNotMatch() {
+        Account account = Account.createCustomer("member@example.com", passwordEncoder.encode("noren1234"), "회원", null);
+        account.setId(14L);
+        given(accountRepository.findByIdForUpdate(14L)).willReturn(Optional.of(account));
+
+        assertThatThrownBy(() -> service.changePassword(14L, new FrontMemberPasswordChangeRequest("wrong1234", "renew1234")))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("400");
     }
 }

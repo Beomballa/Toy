@@ -58,6 +58,30 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void myActivityKeepsPasswordChangeAndResponsiveContracts() throws IOException {
+        String html = readResource("templates/views/my-activity.html");
+        String script = readResource("static/js/view/my-activity.js");
+        String css = readResource("static/css/my-activity.css");
+
+        assertThat(html)
+                .contains("id=\"memberPasswordForm\"")
+                .contains("autocomplete=\"current-password\"")
+                .contains("id=\"memberConfirmPassword\"")
+                .contains("id=\"memberPasswordStatus\" role=\"status\"")
+                .contains("/js/view/my-activity.js?v=20260818.1")
+                .contains("/css/my-activity.css?v=20260818.1");
+        assertThat(script)
+                .contains("/api/front/auth/password")
+                .contains("submitButton.disabled = true")
+                .contains("form.reset()")
+                .contains("새 비밀번호 확인이 일치하지 않습니다.");
+        assertThat(css)
+                .contains(".my-security { display: grid")
+                .contains(".my-security__form { display: grid")
+                .contains(".my-security__action { align-items: stretch; flex-direction: column");
+    }
+
+    @Test
     void categoryProductImagesArePackagedAsVisibleLocalAssets() {
         String[] images = {
                 "sneakers.jpg",
@@ -540,8 +564,8 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"tablist\"")
                 .contains("aria-busy=\"true\"")
                 .containsSubsequence("class=\"my-board\"", "class=\"my-orders\"")
-                .contains("/css/my-activity.css?v=20260815.1")
-                .contains("/js/view/my-activity.js?v=20260815.1");
+                .contains("/css/my-activity.css?v=20260818.1")
+                .contains("/js/view/my-activity.js?v=20260818.1");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")

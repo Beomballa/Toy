@@ -378,6 +378,53 @@
         document.getElementById("memberOrderStatusFilter").value = memberOrderStatus;
         loadMemberOrders(true);
     });
+    document.getElementById("memberPasswordForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const currentPassword = document.getElementById("memberCurrentPassword").value;
+        const newPassword = document.getElementById("memberNewPassword").value;
+        const confirmPassword = document.getElementById("memberConfirmPassword").value;
+        const status = document.getElementById("memberPasswordStatus");
+        const submitButton = document.getElementById("memberPasswordSubmitButton");
+        const showPasswordStatus = (message, type = "") => {
+            status.textContent = message;
+            status.className = type ? `is-${type}` : "";
+        };
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            showPasswordStatus("모든 비밀번호를 입력해 주세요.", "error");
+            return;
+        }
+        if (!/^(?=.*[A-Za-z])(?=.*\d).{8,72}$/.test(newPassword)) {
+            showPasswordStatus("새 비밀번호는 영문과 숫자를 포함한 8자 이상이어야 합니다.", "error");
+            return;
+        }
+        if (currentPassword === newPassword) {
+            showPasswordStatus("새 비밀번호는 현재 비밀번호와 다르게 입력해 주세요.", "error");
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showPasswordStatus("새 비밀번호 확인이 일치하지 않습니다.", "error");
+            return;
+        }
+        submitButton.disabled = true;
+        showPasswordStatus("비밀번호를 변경하고 있습니다.");
+        try {
+            const response = await fetch("/api/front/auth/password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) throw new Error(payload?.message || "비밀번호를 변경하지 못했습니다.");
+            form.reset();
+            showPasswordStatus("비밀번호를 변경했습니다. 현재 기기에서 계속 이용할 수 있습니다.", "success");
+            toast("비밀번호를 변경했습니다.");
+        } catch (error) {
+            showPasswordStatus(error.message || "비밀번호를 변경하지 못했습니다. 잠시 후 다시 시도해 주세요.", "error");
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{

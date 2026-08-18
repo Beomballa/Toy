@@ -1,6 +1,7 @@
 package com.section.front.controller;
 
 import com.section.front.auth.dto.FrontMemberLoginRequest;
+import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
 import com.section.front.auth.dto.FrontMemberResponse;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.service.FrontAuthenticationService;
@@ -70,6 +71,22 @@ public class FrontAuthenticationRestController {
             session.invalidate();
         }
         return FrontMemberResponse.anonymous();
+    }
+
+    @PostMapping("/password")
+    public FrontMemberResponse changePassword(
+            @Valid @RequestBody FrontMemberPasswordChangeRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        AuthenticatedFrontMember sessionMember = FrontMemberSession.read(httpRequest.getSession(false));
+        if (sessionMember == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 후 비밀번호를 변경할 수 있습니다.");
+        }
+
+        AuthenticatedFrontMember member = authenticationService.changePassword(sessionMember.memberId(), request);
+        // Rotate the session identifier after a sensitive credential update.
+        storeAuthenticatedMember(httpRequest, member);
+        return FrontMemberResponse.authenticated(member);
     }
 
     private void storeAuthenticatedMember(HttpServletRequest request, AuthenticatedFrontMember member) {

@@ -153,7 +153,7 @@ ADMIN_SMOKE_PASSWORD='replace-with-secret' \
 ./scripts/smoke-test.sh
 ```
 
-`FRONT_DETAIL_PRODUCT_ID`와 `FRONT_CONTENT_ID`에는 운영 DB에 존재하는 대표 상품·콘텐츠 ID를 지정합니다. 프론트 smoke test는 메인, 신규 컬렉션, 장바구니, 주문 조회, 비교, MY, 콘텐츠 아카이브 화면과 카탈로그·상품 상세·장바구니·콘텐츠 반응 조회 API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 장바구니·주문·반응 데이터를 변경하는 요청은 호출하지 않습니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회·독자 반응·콘텐츠 효과 분석 API와 CSV 다운로드, 로그아웃 및 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
+`FRONT_DETAIL_PRODUCT_ID`와 `FRONT_CONTENT_ID`에는 운영 DB에 존재하는 대표 상품·콘텐츠 ID를 지정합니다. 프론트 smoke test는 메인, 신규 컬렉션, 여름 이벤트, 장바구니, 주문 조회, 비교, MY, 콘텐츠 아카이브 화면과 카탈로그·상품 상세·장바구니·콘텐츠 반응 조회 API, 미등록 상품의 `F002/404` 오류 계약을 확인합니다. 장바구니·주문·반응 데이터를 변경하는 요청은 호출하지 않습니다. 관리자 smoke test는 비로그인 화면 요청의 로그인 리다이렉트와 `/api/admin/**`의 `401`을 확인합니다. `ADMIN_SMOKE_LOGIN_ID`, `ADMIN_SMOKE_PASSWORD`를 제공하면 실제 로그인, 대시보드, 문서 일일 통계·프론트 조회·독자 반응·콘텐츠 효과 분석 API와 CSV 다운로드, 로그아웃 및 `Clear-Site-Data`까지 추가 검증하며 값은 로그에 출력하지 않습니다.
 
 세 애플리케이션은 응답의 `X-Request-Id`를 공통 장애 추적 키로 사용합니다. 프록시가 안전한 요청 ID를 전달하면 그대로 유지하고, 없거나 형식이 잘못된 경우 애플리케이션이 새 ID를 생성합니다. 요청 헤더 한도는 기본 16KB이며 필요한 경우 `SERVER_MAX_HTTP_REQUEST_HEADER_SIZE`로 조정합니다.
 

@@ -4,6 +4,7 @@ import com.section.common.base.entity.type.YN;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
+import com.section.front.auth.dto.FrontMemberProfileUpdateRequest;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.support.FrontPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,5 +102,18 @@ class FrontAuthenticationServiceTest {
         assertThatThrownBy(() -> service.changePassword(14L, new FrontMemberPasswordChangeRequest("wrong1234", "renew1234")))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
+    }
+
+    @Test
+    void updatesProfileWithNormalizedNameAndOptionalNickname() {
+        Account account = Account.createCustomer("member@example.com", passwordEncoder.encode("noren1234"), "기존 회원", "기존닉");
+        account.setId(15L);
+        given(accountRepository.findByIdForUpdate(15L)).willReturn(Optional.of(account));
+
+        var member = service.updateProfile(15L, new FrontMemberProfileUpdateRequest(" 새 회원 ", " 새닉 "));
+
+        assertThat(member.name()).isEqualTo("새 회원");
+        assertThat(member.nickname()).isEqualTo("새닉");
+        assertThat(account.getName()).isEqualTo("새 회원");
     }
 }

@@ -135,4 +135,24 @@ class FrontAuthenticationRestControllerTest {
                         ))))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    void updatesProfileAndRefreshesSessionMember() throws Exception {
+        AuthenticatedFrontMember member = new AuthenticatedFrontMember(9L, "member@example.com", "새 회원", "새닉");
+        given(authenticationService.updateProfile(any(Long.class), any())).willReturn(member);
+        MockHttpSession session = new MockHttpSession();
+        session.setAttribute("frontMemberNo", 9L);
+        session.setAttribute("frontMemberEmail", "member@example.com");
+        session.setAttribute("frontMemberName", "기존 회원");
+        session.setAttribute("frontMemberNickname", "기존닉");
+
+        mockMvc.perform(post("/api/front/auth/profile")
+                        .session(session)
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(Map.of("name", "새 회원", "nickname", "새닉"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("새 회원"));
+
+        verify(authenticationService).updateProfile(any(Long.class), any());
+    }
 }

@@ -16,6 +16,8 @@
 .collection-quick-view li { padding: 10px 0; border-bottom: 1px solid #eee; font-size: 13px; }
 .collection-quick-view a, .collection-product__actions button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid #ddd; border-radius: 7px; color: inherit; background: #fff; font-size: 11px; text-decoration: none; }
 .collection-product__actions { display: flex; gap: 6px; margin-top: 12px; }
+.collection-pagination__select { color: var(--collection-muted); font-size: 11px; }
+.collection-pagination__select select { min-height: 34px; margin-left: 6px; padding: 0 8px; border: 1px solid var(--collection-line); border-radius: 7px; background: #fff; font: inherit; }
 
 .collection-body {
     margin: 0;

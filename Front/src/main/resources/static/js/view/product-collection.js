@@ -97,6 +97,7 @@
         quickViewClose: document.getElementById("collectionQuickViewClose"),
         previousButton: document.getElementById("collectionPreviousButton"),
         nextButton: document.getElementById("collectionNextButton"),
+        pageSelect: document.getElementById("collectionPageSelect"),
         paginationText: document.getElementById("collectionPaginationText")
     };
 
@@ -147,6 +148,7 @@
         elements.filterDialog.addEventListener("close", () => elements.filterButton.setAttribute("aria-expanded", "false"));
         elements.previousButton.addEventListener("click", () => movePage(state.page - 1));
         elements.nextButton.addEventListener("click", () => movePage(state.page + 1));
+        elements.pageSelect.addEventListener("change", () => movePage(Number(elements.pageSelect.value)));
         elements.grid.addEventListener("click", handleGridClick);
         elements.quickViewClose.addEventListener("click", () => elements.quickView.close());
         elements.quickView.addEventListener("close", () => quickViewTrigger?.focus());
@@ -354,6 +356,9 @@
         elements.resultText.textContent = `${collection.title} ${total.toLocaleString("ko-KR")}개 상품`;
         elements.rangeText.textContent = `${start}-${Math.max(0, end)} / ${total.toLocaleString("ko-KR")}`;
         elements.paginationText.textContent = `${totalPages ? state.page + 1 : 0} / ${totalPages}`;
+        elements.pageSelect.hidden = totalPages <= 1;
+        elements.pageSelect.innerHTML = Array.from({ length: totalPages }, (_, index) => `<option value="${index}">${index + 1} 페이지</option>`).join("");
+        elements.pageSelect.value = String(state.page);
         elements.previousButton.disabled = Boolean(pagination.first);
         elements.nextButton.disabled = Boolean(pagination.last);
         elements.grid.innerHTML = products.length

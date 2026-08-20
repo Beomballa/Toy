@@ -25,6 +25,11 @@ const pageResponse = (products) => ({
   }
 });
 
+const multiPageResponse = (products, page) => ({
+  ...pageResponse(products),
+  pagination: { page, size: 20, totalElements: 40, totalPages: 2, first: page === 0, last: page === 1 }
+});
+
 test("컬렉션은 최신 검색 응답만 표시하고 실패한 요청을 재시도한다", async ({ page }) => {
   let retryCount = 0;
 
@@ -158,4 +163,18 @@ test("컬렉션 빠른 보기는 상세 조회 실패 후 모달 안에서 재�
   await page.locator("[data-quick-view-retry]").click();
   await expect(page.locator("#collectionQuickViewContent")).toContainText("등록된 옵션이 없습니다");
   expect(requests).toBe(2);
+});
+
+test("컬렉션은 페이지 선택으로 서버 20개 단위 페이지를 이동한다", async ({ page }) => {
+  const requestedPages = [];
+  await page.route("**/api/front/products?**", route => {
+    const requestPage = Number(new URL(route.request().url()).searchParams.get("page"));
+    requestedPages.push(requestPage);
+    return route.fulfill({ json: multiPageResponse([product(requestPage + 41, `${requestPage + 1} 페이지 상품`)], requestPage) });
+  });
+  await page.goto("/front/collections/new");
+  await expect(page.locator("#collectionPageSelect")).toHaveValue("0");
+  await page.locator("#collectionPageSelect").selectOption("1");
+  await expect(page.locator(".collection-product h2")).toHaveText("2 페이지 상품");
+  expect(requestedPages).toEqual([0, 1]);
 });

@@ -71,14 +71,16 @@ class FrontStorefrontResourceTest {
                 .contains("data-password-toggle=\"memberCurrentPassword\"")
                 .contains("data-caps-note")
                 .contains("id=\"memberProfileForm\"")
-                .contains("/js/view/my-activity.js?v=20260820.3")
-                .contains("/css/my-activity.css?v=20260820.3");
+                .contains("id=\"memberLogoutButton\"")
+                .contains("/js/view/my-activity.js?v=20260820.4")
+                .contains("/css/my-activity.css?v=20260820.4");
         assertThat(script)
                 .contains("/api/front/auth/password")
                 .contains("submitButton.disabled = true")
                 .contains("[data-password-toggle]")
                 .contains("getModifierState?.(\"CapsLock\")")
                 .contains("/api/front/auth/profile")
+                .contains("/api/front/auth/logout")
                 .contains("form.reset()")
                 .contains("새 비밀번호 확인이 일치하지 않습니다.");
         assertThat(css)
@@ -571,8 +573,8 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"tablist\"")
                 .contains("aria-busy=\"true\"")
                 .containsSubsequence("class=\"my-board\"", "class=\"my-orders\"")
-                .contains("/css/my-activity.css?v=20260820.3")
-                .contains("/js/view/my-activity.js?v=20260820.3");
+                .contains("/css/my-activity.css?v=20260820.4")
+                .contains("/js/view/my-activity.js?v=20260820.4");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")

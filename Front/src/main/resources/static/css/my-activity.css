@@ -122,7 +122,8 @@
 .my-review small { margin-top: 5px; color: var(--my-muted); font-size: 10px; }
 .my-review > button { min-height: 30px; padding: 0 8px; border: 0; border-radius: 6px; color: var(--my-muted); background: var(--my-soft); font-size: 10px; }
 
-.my-profile, .my-security { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 32px; align-items: start; margin-top: 18px; padding: 26px; border: 1px solid var(--my-line); border-radius: var(--noren-radius-md); background: var(--noren-surface); }
+.my-profile, .my-security { box-sizing: border-box; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 32px; align-items: start; max-width: 100%; margin-top: 18px; padding: 26px; border: 1px solid var(--my-line); border-radius: var(--noren-radius-md); background: var(--noren-surface); }
+.my-profile *, .my-security * { box-sizing: border-box; }
 .my-profile__copy > p, .my-security__copy > p { margin: 0 0 7px; color: var(--my-accent); font-size: 10px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
 .my-profile__copy h2, .my-security__copy h2 { margin: 0 0 5px; font-size: 20px; letter-spacing: -.04em; }
 .my-profile__copy > span { display: block; max-width: 340px; color: var(--my-muted); font-size: 12px; line-height: 1.65; }
@@ -137,6 +138,8 @@
 .my-profile__action p.is-error { color: #a23b32; }
 .my-profile__action p.is-success { color: #3e6750; }
 .my-profile__action button { flex: none; min-height: 38px; padding: 0 15px; border: 1px solid var(--my-ink); border-radius: 7px; color: #fff; background: var(--my-ink); font-size: 11px; font-weight: 700; }
+.my-profile__action > span { display: flex; flex: none; gap: 7px; }
+.my-profile__action #memberLogoutButton { color: var(--my-muted); border-color: var(--my-line); background: #fff; }
 
 .my-security__copy > span { display: block; max-width: 340px; color: var(--my-muted); font-size: 12px; line-height: 1.65; }
 .my-security__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
@@ -212,5 +215,7 @@
     .my-security__action { align-items: stretch; flex-direction: column; gap: 10px; }
     .my-profile__action button,
     .my-security__action button { width: 100%; }
+    .my-profile__action > span { width: 100%; }
+    .my-profile__action > span button { flex: 1; width: auto; }
     .my-toast { right: 16px; bottom: 16px; }
 }

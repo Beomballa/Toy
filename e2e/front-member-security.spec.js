@@ -21,6 +21,18 @@ test("MY 페이지는 기본정보를 정규화해 저장하고 최신 응답으
   expect(request).toEqual({ name: "새 회원", nickname: "새노렌" });
 });
 
+test("MY 페이지는 로그아웃 후 회원 저장소 연결을 해제하고 로그인으로 이동한다", async ({ page }) => {
+  let logoutRequested = false;
+  await page.route("**/api/front/auth/logout", route => {
+    logoutRequested = true;
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: false }) });
+  });
+  await page.goto("/front/my");
+  await page.locator("#memberLogoutButton").click();
+  await page.waitForURL("**/front/login?next=/front/my");
+  expect(logoutRequested).toBeTruthy();
+});
+
 test("MY 페이지는 비밀번호 확인 뒤 한 번의 요청으로 변경한다", async ({ page }) => {
   let requests = 0;
   let payload;

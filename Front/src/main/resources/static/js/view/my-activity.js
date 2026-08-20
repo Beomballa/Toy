@@ -491,6 +491,19 @@
             status.className = "is-error";
         } finally { submitButton.disabled = false; }
     });
+    document.getElementById("memberLogoutButton").addEventListener("click", async event => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        try {
+            const response = await fetch("/api/front/auth/logout", { method: "POST", headers: { Accept: "application/json" } });
+            if (!response.ok) throw new Error("로그아웃하지 못했습니다.");
+            window.StorefrontState?.forgetSession();
+            location.assign("/front/login?next=/front/my");
+        } catch (error) {
+            toast(error.message || "로그아웃하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+            button.disabled = false;
+        }
+    });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{

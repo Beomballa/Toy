@@ -6,7 +6,7 @@
     <title>MY 쇼핑 활동 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
-    <link rel="stylesheet" href="/css/my-activity.css?v=20260820.3">
+    <link rel="stylesheet" href="/css/my-activity.css?v=20260820.4">
 </head>
 <body class="storefront-page my-activity-page">
 <a class="my-skip" href="#myActivityMain">본문 바로가기</a>
@@ -68,7 +68,7 @@
             <label>이메일<input id="memberProfileEmail" type="email" readonly aria-describedby="memberProfileStatus"></label>
             <label>이름<input id="memberProfileName" name="name" type="text" autocomplete="name" maxlength="100" required aria-describedby="memberProfileStatus"></label>
             <label>닉네임<input id="memberProfileNickname" name="nickname" type="text" autocomplete="nickname" maxlength="100" aria-describedby="memberProfileStatus"></label>
-            <div class="my-profile__action"><p id="memberProfileStatus" role="status" aria-live="polite">로그인 정보를 확인하고 있습니다.</p><button id="memberProfileSubmitButton" type="submit">기본정보 저장</button></div>
+            <div class="my-profile__action"><p id="memberProfileStatus" role="status" aria-live="polite">로그인 정보를 확인하고 있습니다.</p><span><button id="memberLogoutButton" type="button">로그아웃</button><button id="memberProfileSubmitButton" type="submit">기본정보 저장</button></span></div>
         </form>
     </section>
     <section class="my-security" aria-labelledby="memberPasswordTitle">
@@ -86,6 +86,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/my-activity.js?v=20260820.3"></script>
+<script src="/js/view/my-activity.js?v=20260820.4"></script>
 </body>
 </html>

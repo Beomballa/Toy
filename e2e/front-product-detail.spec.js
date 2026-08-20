@@ -61,6 +61,31 @@ test("상품 상세는 옵션 추가금을 계산하고 불일치한 장바구�
   await expect(page.locator(".toast.is-warning")).toContainText("장바구니 합계가 요청한 상품과 일치하지 않습니다");
 });
 
+test("상품 상세는 선택한 옵션을 다시 눌러도 선택과 구매 수량을 유지한다", async ({ page }) => {
+  let submittedBody;
+  await page.route("**/api/front/products/12", route => route.fulfill({ json: productDetail() }));
+  await page.route("**/api/front/cart/items", async (route) => {
+    submittedBody = route.request().postDataJSON();
+    await route.fulfill({ json: {
+      items: [{ productId: 12, optionId: 31, quantity: 1, unitPrice: 80000, lineAmount: 80000 }],
+      totalQuantity: 1,
+      totalAmount: 80000
+    } });
+  });
+
+  await page.goto("/front/products/12");
+  const option = page.locator('[data-detail-option="260"]');
+  await option.click();
+  await option.click();
+
+  await expect(option).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator("#detailPurchaseEstimate")).toBeVisible();
+  await page.locator("#detailAddCartButton").click();
+  await expect.poll(() => submittedBody).toEqual({ productId: 12, optionId: 31, quantity: 1 });
+  await expect(page.locator(".toast").last()).toContainText("장바구니에 담았습니다");
+  expect(submittedBody).toEqual({ productId: 12, optionId: 31, quantity: 1 });
+});
+
 test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async ({ page }) => {
   await page.route("**/api/front/products/12", async (route) => route.fulfill({ json: productDetail() }));
   await page.goto("/front/products/12");

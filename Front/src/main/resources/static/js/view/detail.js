@@ -767,8 +767,9 @@
         if (!option || Number(option.stock || 0) <= 0) {
             return;
         }
-        selectedOptionName = selectedOptionName === optionName ? "" : optionName;
-        if (selectedOptionName) {
+        const selectionChanged = selectedOptionName !== optionName;
+        selectedOptionName = optionName;
+        if (selectionChanged) {
             recordOptionSelection(option);
         }
         rememberSelectedOption(productId, selectedOptionName);

@@ -412,7 +412,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailReviewSort\"")
                 .contains("id=\"detailReviewDistribution\"")
                 .contains("id=\"detailReviewContentCount\"")
-                .contains("/js/view/detail.js?v=20260815.1");
+                .contains("/js/view/detail.js?v=20260820.2");
         assertThat(pageCss)
                 .contains(".detail-body .detail-hero")
                 .contains("grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr)")

@@ -80,11 +80,12 @@ class FrontStorefrontResourceTest {
                 .contains("[data-password-toggle]")
                 .contains("getModifierState?.(\"CapsLock\")")
                 .contains("/api/front/auth/profile")
+                .contains("memberProfileSubmitting")
                 .contains("/api/front/auth/logout")
                 .contains("form.reset()")
                 .contains("새 비밀번호 확인이 일치하지 않습니다.");
         assertThat(css)
-                .contains(".my-security { display: grid")
+                .contains(".my-profile, .my-security { box-sizing: border-box")
                 .contains(".my-security__input { position: relative")
                 .contains(".my-security__form { display: grid")
                 .contains(".my-security__action { align-items: stretch; flex-direction: column");

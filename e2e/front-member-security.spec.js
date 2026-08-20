@@ -8,16 +8,20 @@ test.beforeEach(async ({ page }) => {
 
 test("MY 페이지는 기본정보를 정규화해 저장하고 최신 응답으로 갱신한다", async ({ page }) => {
   let request;
-  await page.route("**/api/front/auth/profile", route => {
+  let requestCount = 0;
+  await page.route("**/api/front/auth/profile", async route => {
+    requestCount += 1;
     request = route.request().postDataJSON();
-    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: true, email: "member@example.com", name: "새 회원", nickname: "새노렌" }) });
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: true, email: "member@example.com", name: "새 회원", nickname: "새노렌" }) });
   });
   await page.goto("/front/my");
   await expect(page.locator("#memberProfileEmail")).toHaveValue("member@example.com");
   await page.locator("#memberProfileName").fill(" 새 회원 ");
   await page.locator("#memberProfileNickname").fill(" 새노렌 ");
-  await page.locator("#memberProfileSubmitButton").click();
+  await page.locator("#memberProfileSubmitButton").dblclick();
   await expect(page.locator("#memberProfileStatus")).toContainText("저장했습니다");
+  expect(requestCount).toBe(1);
   expect(request).toEqual({ name: "새 회원", nickname: "새노렌" });
 });
 

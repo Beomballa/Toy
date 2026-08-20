@@ -30,6 +30,7 @@
     let memberReviewPage = 0;
     let memberReviewsLoaded = false;
     let memberReviewSequence = 0;
+    let memberProfileSubmitting = false;
 
     function read(tab = state.tab) {
         try {
@@ -468,12 +469,14 @@
     });
     document.getElementById("memberProfileForm").addEventListener("submit", async event => {
         event.preventDefault();
+        if (memberProfileSubmitting) return;
         const form = event.currentTarget;
         const name = cleanText(document.getElementById("memberProfileName").value, 100);
         const nickname = cleanText(document.getElementById("memberProfileNickname").value, 100);
         const status = document.getElementById("memberProfileStatus");
         const submitButton = document.getElementById("memberProfileSubmitButton");
         if (!name) { status.textContent = "이름을 입력해 주세요."; status.className = "is-error"; return; }
+        memberProfileSubmitting = true;
         submitButton.disabled = true;
         status.textContent = "기본정보를 저장하고 있습니다.";
         status.className = "";
@@ -489,7 +492,10 @@
         } catch (error) {
             status.textContent = error.message || "기본정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
             status.className = "is-error";
-        } finally { submitButton.disabled = false; }
+        } finally {
+            memberProfileSubmitting = false;
+            submitButton.disabled = false;
+        }
     });
     document.getElementById("memberLogoutButton").addEventListener("click", async event => {
         const button = event.currentTarget;

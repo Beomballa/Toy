@@ -455,7 +455,10 @@
         quickViewController = new AbortController();
         const requestSequence = ++quickViewRequestSequence;
         elements.quickViewContent.innerHTML = "<p>상품 정보를 불러오고 있습니다.</p>";
-        elements.quickView.showModal();
+        // 열린 상태에서는 콘텐츠와 요청만 교체해 모달 API 예외를 피한다.
+        if (!elements.quickView.open) {
+            elements.quickView.showModal();
+        }
         elements.quickViewClose.focus();
         try {
             const response = await fetch(`/api/front/products/${productId}`, { signal: quickViewController.signal });

@@ -165,6 +165,25 @@ test("컬렉션 빠른 보기는 상세 조회 실패 후 모달 안에서 재�
   expect(requests).toBe(2);
 });
 
+test("열린 빠른 보기에서 다른 상품을 선택하면 최신 상품 정보로 교체한다", async ({ page }) => {
+  await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([
+    product(31, "첫 번째 빠른 보기 상품"),
+    product(32, "두 번째 빠른 보기 상품")
+  ]) }));
+  await page.route("**/api/front/products/31", route => route.fulfill({ json: { ...product(31, "첫 번째 빠른 보기 상품"), options: [] } }));
+  await page.route("**/api/front/products/32", route => route.fulfill({ json: { ...product(32, "두 번째 빠른 보기 상품"), options: [] } }));
+
+  await page.goto("/front/collections/new");
+  await page.locator('[data-quick-view-id="31"]').click();
+  await expect(page.locator("#collectionQuickViewContent")).toContainText("첫 번째 빠른 보기 상품");
+  // dialog의 inert 처리 밖에서, 위임된 클릭 핸들러의 요청 교체 경로를 검증한다.
+  await page.locator('[data-quick-view-id="32"]').dispatchEvent("click");
+
+  await expect(page.locator("#collectionQuickView")).toBeVisible();
+  await expect(page.locator("#collectionQuickViewContent")).toContainText("두 번째 빠른 보기 상품");
+  await expect(page.locator("#collectionQuickViewContent")).not.toContainText("첫 번째 빠른 보기 상품");
+});
+
 test("컬렉션은 페이지 선택으로 서버 20개 단위 페이지를 이동한다", async ({ page }) => {
   const requestedPages = [];
   await page.route("**/api/front/products?**", route => {

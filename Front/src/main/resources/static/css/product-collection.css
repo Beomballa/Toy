@@ -7,6 +7,16 @@
     --collection-width: var(--noren-content-width);
 }
 
+.collection-quick-view { width: min(480px, calc(100% - 32px)); border: 0; border-radius: 16px; padding: 24px; box-shadow: 0 24px 60px rgb(0 0 0 / 20%); }
+.collection-quick-view::backdrop { background: rgb(0 0 0 / 42%); }
+.collection-quick-view > button { float: right; border: 0; background: transparent; color: #666; }
+.collection-quick-view h2 { margin: 8px 0; font-size: 22px; }
+.collection-quick-view p { color: #666; font-size: 13px; line-height: 1.5; }
+.collection-quick-view ul { margin: 18px 0; padding: 0; list-style: none; border-top: 1px solid #eee; }
+.collection-quick-view li { padding: 10px 0; border-bottom: 1px solid #eee; font-size: 13px; }
+.collection-quick-view a, .collection-product__actions button { display: inline-flex; min-height: 36px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid #ddd; border-radius: 7px; color: inherit; background: #fff; font-size: 11px; text-decoration: none; }
+.collection-product__actions { display: flex; gap: 6px; margin-top: 12px; }
+
 .collection-body {
     margin: 0;
     background: var(--noren-page);

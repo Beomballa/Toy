@@ -124,3 +124,21 @@ test("컬렉션 상세 필터는 URL과 요청 조건을 동기화하고 개별 
   await expect(page).not.toHaveURL(/brand=/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
 });
+
+test("컬렉션 빠른 보기는 상세 옵션을 표시하고 닫은 뒤 카드로 포커스를 돌린다", async ({ page }) => {
+  await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([product(21, "빠른 보기 상품")]) }));
+  await page.route("**/api/front/products/21", route => route.fulfill({ json: {
+    ...product(21, "빠른 보기 상품"),
+    headline: "빠른 확인",
+    options: [{ id: 1, name: "260", stock: 3, additionalPrice: 10000 }]
+  } }));
+
+  await page.goto("/front/collections/new");
+  const trigger = page.locator('[data-quick-view-id="21"]');
+  await trigger.click();
+  await expect(page.locator("#collectionQuickView")).toBeVisible();
+  await expect(page.locator("#collectionQuickViewContent")).toContainText("260 · 3개 · +10,000원");
+  await page.locator("#collectionQuickViewClose").click();
+  await expect(page.locator("#collectionQuickView")).toBeHidden();
+  await expect(trigger).toBeFocused();
+});

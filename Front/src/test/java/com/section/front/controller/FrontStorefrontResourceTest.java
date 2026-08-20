@@ -930,7 +930,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
                 .contains("/css/product-collection.css?v=20260813.1")
-                .contains("/js/view/product-collection.js?v=20260818.1")
+                .contains("id=\"collectionQuickView\"")
+                .contains("/js/view/product-collection.js?v=20260820.1")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)
                 .contains("/front/collections/recommended")

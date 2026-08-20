@@ -60,6 +60,7 @@
     };
     let currentProducts = [];
     let productController = null;
+    let quickViewTrigger = null;
     let requestSequence = 0;
     const elements = {
         eyebrow: document.getElementById("collectionEyebrow"),
@@ -89,6 +90,9 @@
         resultText: document.getElementById("collectionResultText"),
         rangeText: document.getElementById("collectionRangeText"),
         grid: document.getElementById("collectionGrid"),
+        quickView: document.getElementById("collectionQuickView"),
+        quickViewContent: document.getElementById("collectionQuickViewContent"),
+        quickViewClose: document.getElementById("collectionQuickViewClose"),
         previousButton: document.getElementById("collectionPreviousButton"),
         nextButton: document.getElementById("collectionNextButton"),
         paginationText: document.getElementById("collectionPaginationText")
@@ -142,6 +146,8 @@
         elements.previousButton.addEventListener("click", () => movePage(state.page - 1));
         elements.nextButton.addEventListener("click", () => movePage(state.page + 1));
         elements.grid.addEventListener("click", handleGridClick);
+        elements.quickViewClose.addEventListener("click", () => elements.quickView.close());
+        elements.quickView.addEventListener("close", () => quickViewTrigger?.focus());
         elements.filterSummary.addEventListener("click", handleFilterSummaryClick);
         document.addEventListener("storefront:storage-change", handleStorageChange);
         document.addEventListener("storefront:state-ready", syncBookmarkButtons);
@@ -374,7 +380,7 @@
                         <span>${escapeHtml(stockSignal)}</span>
                         <span>${escapeHtml(product.category || "미분류")}</span>
                     </div>
-                    <a class="collection-product__detail" href="${detailUrl}">상품 더보기</a>
+                    <div class="collection-product__actions"><button type="button" data-quick-view-id="${product.id}">빠른 보기</button><a class="collection-product__detail" href="${detailUrl}">상품 더보기</a></div>
                 </div>
             </article>`;
     }
@@ -387,6 +393,12 @@
     function handleGridClick(event) {
         if (event.target.closest("[data-collection-retry]")) {
             loadProducts();
+            return;
+        }
+        const quickViewButton = event.target.closest("[data-quick-view-id]");
+        if (quickViewButton) {
+            quickViewTrigger = quickViewButton;
+            openQuickView(Number(quickViewButton.dataset.quickViewId));
             return;
         }
         const button = event.target.closest("[data-bookmark-id]");
@@ -418,6 +430,23 @@
         button.setAttribute("aria-pressed", String(existingIndex < 0));
         button.querySelector("span").textContent = existingIndex < 0 ? "♥" : "♡";
         button.setAttribute("aria-label", `${button.closest(".collection-product")?.querySelector("h2")?.textContent || "상품"} 관심 상품 ${existingIndex < 0 ? "해제" : "추가"}`);
+    }
+
+    async function openQuickView(productId) {
+        if (!Number.isSafeInteger(productId) || productId <= 0) return;
+        elements.quickViewContent.innerHTML = "<p>상품 정보를 불러오고 있습니다.</p>";
+        elements.quickView.showModal();
+        elements.quickViewClose.focus();
+        try {
+            const response = await fetch(`/api/front/products/${productId}`);
+            if (!response.ok) throw new Error("상품 정보를 불러오지 못했습니다.");
+            const product = await response.json();
+            if (Number(product?.id) !== productId) throw new Error("상품 정보가 올바르지 않습니다.");
+            const options = Array.isArray(product.options) ? product.options : [];
+            elements.quickViewContent.innerHTML = `<p>${escapeHtml(product.brand || "NOREN")}</p><h2 id="collectionQuickViewTitle">${escapeHtml(product.name || "상품")}</h2><strong>${escapeHtml(product.priceLabel || formatPrice(product.price))}</strong><p>${escapeHtml(product.stockStatus || "재고 확인")} · 재고 ${Number(product.stock || 0).toLocaleString("ko-KR")}개</p><ul>${options.length ? options.slice(0, 6).map(option => `<li>${escapeHtml(option.name)} · ${Number(option.stock || 0)}개${Number(option.additionalPrice || 0) ? ` · +${escapeHtml(formatPrice(option.additionalPrice))}` : ""}</li>`).join("") : "<li>등록된 옵션이 없습니다.</li>"}</ul><a href="${productDetailUrl(productId)}">상품 상세 보기</a>`;
+        } catch (error) {
+            elements.quickViewContent.innerHTML = `<p>${escapeHtml(error.message || "상품 정보를 불러오지 못했습니다.")}</p>`;
+        }
     }
 
     function handleStorageChange(event) {

@@ -378,6 +378,16 @@
         document.getElementById("memberOrderStatusFilter").value = memberOrderStatus;
         loadMemberOrders(true);
     });
+    document.querySelectorAll("[data-password-toggle]").forEach(button => button.addEventListener("click", () => {
+        const input = document.getElementById(button.dataset.passwordToggle);
+        if (!input) return;
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        button.textContent = visible ? "보기" : "숨기기";
+        const label = button.dataset.passwordLabel || "비밀번호";
+        button.setAttribute("aria-label", visible ? `${label} 표시` : `${label} 숨기기`);
+        input.focus();
+    }));
     document.getElementById("memberPasswordForm").addEventListener("submit", async event => {
         event.preventDefault();
         const form = event.currentTarget;

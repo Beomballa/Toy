@@ -127,8 +127,11 @@
 .my-security__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; }
 .my-security__form label { display: grid; gap: 7px; min-width: 0; color: var(--my-muted); font-size: 10px; font-weight: 700; }
 .my-security__form label:first-child { grid-column: 1 / -1; }
-.my-security__form input { width: 100%; height: var(--noren-control-height); padding: 0 12px; border: 1px solid var(--noren-border-strong); border-radius: var(--noren-radius-sm); background: #fff; outline: none; font: inherit; }
+.my-security__input { position: relative; display: block; }
+.my-security__form input { width: 100%; height: var(--noren-control-height); padding: 0 54px 0 12px; border: 1px solid var(--noren-border-strong); border-radius: var(--noren-radius-sm); background: #fff; outline: none; font: inherit; }
 .my-security__form input:focus { border-color: var(--my-ink); box-shadow: 0 0 0 3px rgb(25 31 28 / 9%); }
+.my-security__input button { position: absolute; top: 50%; right: 7px; min-height: 28px; padding: 0 7px; border: 0; border-radius: 5px; color: var(--my-muted); background: transparent; font-size: 10px; font-weight: 700; transform: translateY(-50%); }
+.my-security__input button:hover, .my-security__input button:focus-visible { color: var(--my-ink); background: var(--my-soft); }
 .my-security__action { display: flex; grid-column: 1 / -1; align-items: center; justify-content: space-between; gap: 16px; padding-top: 2px; }
 .my-security__action p { min-width: 0; margin: 0; color: var(--my-muted); font-size: 11px; line-height: 1.45; }
 .my-security__action p.is-error { color: #a23b32; }

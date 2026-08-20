@@ -45,3 +45,17 @@ test("MY 페이지는 일치하지 않는 새 비밀번호를 요청 전에 안�
   expect(box.x + box.width).toBeLessThanOrEqual(390);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
 });
+
+test("MY 페이지는 각 비밀번호 입력값을 독립적으로 표시하거나 숨긴다", async ({ page }) => {
+  await page.goto("/front/my");
+  const current = page.locator("#memberCurrentPassword");
+  const button = page.locator('[data-password-toggle="memberCurrentPassword"]');
+
+  await expect(current).toHaveAttribute("type", "password");
+  await button.click();
+  await expect(current).toHaveAttribute("type", "text");
+  await expect(button).toHaveText("숨기기");
+  await button.click();
+  await expect(current).toHaveAttribute("type", "password");
+  await expect(button).toHaveText("보기");
+});

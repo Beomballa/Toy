@@ -654,4 +654,15 @@
         min-height: 39px;
         font-size: 13px;
     }
+
+    .collection-pagination {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 36px 0 52px;
+    }
+
+    .collection-pagination button {
+        min-width: 0;
+        padding: 0 10px;
+    }
 }

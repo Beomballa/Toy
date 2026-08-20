@@ -932,6 +932,8 @@ class FrontStorefrontResourceTest {
                 .contains("/css/product-collection.css?v=20260820.2")
                 .contains("id=\"collectionQuickView\"")
                 .contains("id=\"collectionPageSelect\"")
+                .contains("id=\"collectionFirstButton\"")
+                .contains("id=\"collectionLastButton\"")
                 .contains("/js/view/product-collection.js?v=20260820.2")
                 .contains("fragments/storefront-shell :: header('SHOP', '상품 컬렉션')");
         assertThat(shell)
@@ -944,6 +946,7 @@ class FrontStorefrontResourceTest {
                 .contains("상품 더보기")
                 .contains("productController?.abort()")
                 .contains("elements.pageSelect.addEventListener")
+                .contains("elements.firstButton.addEventListener")
                 .contains("signal: productController.signal")
                 .contains("data-collection-retry")
                 .contains("function openFilterDialog()")

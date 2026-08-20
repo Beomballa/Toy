@@ -178,3 +178,18 @@ test("컬렉션은 페이지 선택으로 서버 20개 단위 페이지를 이�
   await expect(page.locator(".collection-product h2")).toHaveText("2 페이지 상품");
   expect(requestedPages).toEqual([0, 1]);
 });
+
+test("컬렉션은 처음과 마지막 페이지로 바로 이동한다", async ({ page }) => {
+  const requestedPages = [];
+  await page.route("**/api/front/products?**", route => {
+    const requestPage = Number(new URL(route.request().url()).searchParams.get("page"));
+    requestedPages.push(requestPage);
+    return route.fulfill({ json: { ...multiPageResponse([product(requestPage + 51, `${requestPage + 1} 페이지 상품`)], requestPage), pagination: { page: requestPage, size: 20, totalElements: 60, totalPages: 3, first: requestPage === 0, last: requestPage === 2 } } });
+  });
+  await page.goto("/front/collections/new");
+  await page.locator("#collectionLastButton").click();
+  await expect(page.locator("#collectionPageSelect")).toHaveValue("2");
+  await page.locator("#collectionFirstButton").click();
+  await expect(page.locator("#collectionPageSelect")).toHaveValue("0");
+  expect(requestedPages).toEqual([0, 2, 0]);
+});

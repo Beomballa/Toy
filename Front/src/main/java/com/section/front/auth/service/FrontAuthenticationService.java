@@ -3,6 +3,7 @@ package com.section.front.auth.service;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
 import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
+import com.section.front.auth.dto.FrontMemberProfileUpdateRequest;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
 import com.section.front.auth.support.FrontPasswordEncoder;
@@ -78,6 +79,16 @@ public class FrontAuthenticationService {
         }
 
         account.changePassword(passwordEncoder.encode(request.newPassword()));
+        return authenticated(account);
+    }
+
+    @Transactional
+    public AuthenticatedFrontMember updateProfile(long memberId, FrontMemberProfileUpdateRequest request) {
+        Account account = accountRepository.findByIdForUpdate(memberId)
+                .filter(Account::isAvailableCustomer)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 정보를 다시 확인해 주세요."));
+        account.setName(normalizeRequiredText(request.name(), "이름"));
+        account.setNickname(normalizeOptionalText(request.nickname()));
         return authenticated(account);
     }
 

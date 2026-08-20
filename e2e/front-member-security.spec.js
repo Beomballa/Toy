@@ -1,8 +1,24 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/front/auth/me", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: true, email: "member@example.com", name: "기존 회원", nickname: "노렌" }) }));
   await page.route("**/api/front/member/orders**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ items: [], statusSummaries: [], hasNext: false }) }));
   await page.route("**/api/front/member/reviews**", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ reviews: [], totalCount: 0, hasNext: false }) }));
+});
+
+test("MY 페이지는 기본정보를 정규화해 저장하고 최신 응답으로 갱신한다", async ({ page }) => {
+  let request;
+  await page.route("**/api/front/auth/profile", route => {
+    request = route.request().postDataJSON();
+    return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: true, email: "member@example.com", name: "새 회원", nickname: "새노렌" }) });
+  });
+  await page.goto("/front/my");
+  await expect(page.locator("#memberProfileEmail")).toHaveValue("member@example.com");
+  await page.locator("#memberProfileName").fill(" 새 회원 ");
+  await page.locator("#memberProfileNickname").fill(" 새노렌 ");
+  await page.locator("#memberProfileSubmitButton").click();
+  await expect(page.locator("#memberProfileStatus")).toContainText("저장했습니다");
+  expect(request).toEqual({ name: "새 회원", nickname: "새노렌" });
 });
 
 test("MY 페이지는 비밀번호 확인 뒤 한 번의 요청으로 변경한다", async ({ page }) => {

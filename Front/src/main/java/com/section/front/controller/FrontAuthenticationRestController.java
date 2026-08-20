@@ -2,6 +2,7 @@ package com.section.front.controller;
 
 import com.section.front.auth.dto.FrontMemberLoginRequest;
 import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
+import com.section.front.auth.dto.FrontMemberProfileUpdateRequest;
 import com.section.front.auth.dto.FrontMemberResponse;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
 import com.section.front.auth.service.FrontAuthenticationService;
@@ -86,6 +87,20 @@ public class FrontAuthenticationRestController {
         AuthenticatedFrontMember member = authenticationService.changePassword(sessionMember.memberId(), request);
         // Rotate the session identifier after a sensitive credential update.
         storeAuthenticatedMember(httpRequest, member);
+        return FrontMemberResponse.authenticated(member);
+    }
+
+    @PostMapping("/profile")
+    public FrontMemberResponse updateProfile(
+            @Valid @RequestBody FrontMemberProfileUpdateRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        AuthenticatedFrontMember sessionMember = FrontMemberSession.read(httpRequest.getSession(false));
+        if (sessionMember == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 후 기본정보를 수정할 수 있습니다.");
+        }
+        AuthenticatedFrontMember member = authenticationService.updateProfile(sessionMember.memberId(), request);
+        FrontMemberSession.store(httpRequest.getSession(), member);
         return FrontMemberResponse.authenticated(member);
     }
 

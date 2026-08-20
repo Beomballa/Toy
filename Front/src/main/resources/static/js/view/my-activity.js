@@ -100,6 +100,27 @@
         el.toast.textContent = message; el.toast.hidden = false; clearTimeout(toastTimer);
         toastTimer = setTimeout(() => { el.toast.hidden = true; }, 4200);
     }
+    async function loadMemberProfile() {
+        const status = document.getElementById("memberProfileStatus");
+        const form = document.getElementById("memberProfileForm");
+        try {
+            const response = await fetch("/api/front/auth/me", { headers: { Accept: "application/json" } });
+            if (!response.ok) throw new Error("로그인 정보를 불러오지 못했습니다.");
+            const member = await response.json();
+            if (!member.authenticated) {
+                form.querySelectorAll("input, button").forEach(control => { control.disabled = true; });
+                status.textContent = "로그인 후 기본정보를 수정할 수 있습니다.";
+                return;
+            }
+            document.getElementById("memberProfileEmail").value = cleanText(member.email, 255);
+            document.getElementById("memberProfileName").value = cleanText(member.name, 100);
+            document.getElementById("memberProfileNickname").value = cleanText(member.nickname, 100);
+            status.textContent = "";
+        } catch (_) {
+            status.textContent = "로그인 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            status.className = "is-error";
+        }
+    }
     async function loadMemberOrders(reset = false) {
         const target = document.getElementById("memberOrdersList");
         const moreButton = document.getElementById("memberOrdersMoreButton");
@@ -445,6 +466,31 @@
             submitButton.disabled = false;
         }
     });
+    document.getElementById("memberProfileForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const name = cleanText(document.getElementById("memberProfileName").value, 100);
+        const nickname = cleanText(document.getElementById("memberProfileNickname").value, 100);
+        const status = document.getElementById("memberProfileStatus");
+        const submitButton = document.getElementById("memberProfileSubmitButton");
+        if (!name) { status.textContent = "이름을 입력해 주세요."; status.className = "is-error"; return; }
+        submitButton.disabled = true;
+        status.textContent = "기본정보를 저장하고 있습니다.";
+        status.className = "";
+        try {
+            const response = await fetch("/api/front/auth/profile", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ name, nickname }) });
+            const member = await response.json().catch(() => null);
+            if (!response.ok) throw new Error(member?.message || "기본정보를 저장하지 못했습니다.");
+            document.getElementById("memberProfileName").value = cleanText(member.name, 100);
+            document.getElementById("memberProfileNickname").value = cleanText(member.nickname, 100);
+            status.textContent = "기본정보를 저장했습니다.";
+            status.className = "is-success";
+            toast("기본정보를 저장했습니다.");
+        } catch (error) {
+            status.textContent = error.message || "기본정보를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            status.className = "is-error";
+        } finally { submitButton.disabled = false; }
+    });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{
@@ -455,4 +501,5 @@
     render();
     loadMemberOrders();
     loadMemberReviews();
+    loadMemberProfile();
 })();

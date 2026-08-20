@@ -6,7 +6,7 @@
     <title>MY 쇼핑 활동 | NOREN</title>
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260813.1">
-    <link rel="stylesheet" href="/css/my-activity.css?v=20260820.2">
+    <link rel="stylesheet" href="/css/my-activity.css?v=20260820.3">
 </head>
 <body class="storefront-page my-activity-page">
 <a class="my-skip" href="#myActivityMain">본문 바로가기</a>
@@ -62,6 +62,15 @@
         <div class="my-reviews__list" id="memberReviewsList" aria-live="polite" aria-busy="true"><p class="my-review__empty">작성한 후기를 불러오는 중입니다.</p></div>
         <button class="my-reviews__more" id="memberReviewsMoreButton" type="button" hidden>후기 더보기</button>
     </section>
+    <section class="my-profile" aria-labelledby="memberProfileTitle">
+        <div class="my-profile__copy"><p>Profile</p><h2 id="memberProfileTitle">기본정보</h2><span>주문과 고객지원에 표시되는 이름과 닉네임을 관리하세요.</span></div>
+        <form id="memberProfileForm" class="my-profile__form" novalidate>
+            <label>이메일<input id="memberProfileEmail" type="email" readonly aria-describedby="memberProfileStatus"></label>
+            <label>이름<input id="memberProfileName" name="name" type="text" autocomplete="name" maxlength="100" required aria-describedby="memberProfileStatus"></label>
+            <label>닉네임<input id="memberProfileNickname" name="nickname" type="text" autocomplete="nickname" maxlength="100" aria-describedby="memberProfileStatus"></label>
+            <div class="my-profile__action"><p id="memberProfileStatus" role="status" aria-live="polite">로그인 정보를 확인하고 있습니다.</p><button id="memberProfileSubmitButton" type="submit">기본정보 저장</button></div>
+        </form>
+    </section>
     <section class="my-security" aria-labelledby="memberPasswordTitle">
         <div class="my-security__copy"><p>Account Security</p><h2 id="memberPasswordTitle">비밀번호 변경</h2><span>현재 비밀번호를 확인한 뒤 영문과 숫자를 포함한 8자 이상 비밀번호로 변경하세요.</span></div>
         <form id="memberPasswordForm" class="my-security__form" novalidate>
@@ -77,6 +86,6 @@
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/my-activity.js?v=20260820.2"></script>
+<script src="/js/view/my-activity.js?v=20260820.3"></script>
 </body>
 </html>

@@ -59,3 +59,19 @@ test("MY 페이지는 각 비밀번호 입력값을 독립적으로 표시하거
   await expect(current).toHaveAttribute("type", "password");
   await expect(button).toHaveText("보기");
 });
+
+test("MY 페이지는 Caps Lock 상태를 비밀번호 필드에 연결해 안내한다", async ({ page }) => {
+  await page.goto("/front/my");
+  const input = page.locator("#memberNewPassword");
+  const note = page.locator("#memberNewPasswordCaps");
+
+  await input.focus();
+  await page.evaluate(() => {
+    const event = new KeyboardEvent("keydown", { bubbles: true, key: "A" });
+    Object.defineProperty(event, "getModifierState", { value: key => key === "CapsLock" });
+    document.querySelector("#memberNewPassword")?.dispatchEvent(event);
+  });
+  await expect(note).toBeVisible();
+  await input.blur();
+  await expect(note).toBeHidden();
+});

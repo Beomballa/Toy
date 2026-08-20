@@ -388,6 +388,16 @@
         button.setAttribute("aria-label", visible ? `${label} 표시` : `${label} 숨기기`);
         input.focus();
     }));
+    document.querySelectorAll("#memberPasswordForm input[type='password']").forEach(input => {
+        input.addEventListener("keydown", event => {
+            const note = input.closest("label")?.querySelector("[data-caps-note]");
+            if (note) note.hidden = !event.getModifierState?.("CapsLock");
+        });
+        input.addEventListener("blur", () => {
+            const note = input.closest("label")?.querySelector("[data-caps-note]");
+            if (note) note.hidden = true;
+        });
+    });
     document.getElementById("memberPasswordForm").addEventListener("submit", async event => {
         event.preventDefault();
         const form = event.currentTarget;

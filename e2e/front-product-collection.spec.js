@@ -142,3 +142,20 @@ test("컬렉션 빠른 보기는 상세 옵션을 표시하고 닫은 뒤 카드
   await expect(page.locator("#collectionQuickView")).toBeHidden();
   await expect(trigger).toBeFocused();
 });
+
+test("컬렉션 빠른 보기는 상세 조회 실패 후 모달 안에서 재시도한다", async ({ page }) => {
+  let requests = 0;
+  await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([product(22, "재시도 상품")]) }));
+  await page.route("**/api/front/products/22", route => {
+    requests += 1;
+    return requests === 1
+      ? route.fulfill({ status: 503, json: { message: "temporary" } })
+      : route.fulfill({ json: { ...product(22, "재시도 상품"), options: [] } });
+  });
+  await page.goto("/front/collections/new");
+  await page.locator('[data-quick-view-id="22"]').click();
+  await expect(page.locator("[data-quick-view-retry]")).toBeVisible();
+  await page.locator("[data-quick-view-retry]").click();
+  await expect(page.locator("#collectionQuickViewContent")).toContainText("등록된 옵션이 없습니다");
+  expect(requests).toBe(2);
+});

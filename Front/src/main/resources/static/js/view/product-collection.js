@@ -148,6 +148,10 @@
         elements.grid.addEventListener("click", handleGridClick);
         elements.quickViewClose.addEventListener("click", () => elements.quickView.close());
         elements.quickView.addEventListener("close", () => quickViewTrigger?.focus());
+        elements.quickViewContent.addEventListener("click", event => {
+            const retry = event.target.closest("[data-quick-view-retry]");
+            if (retry) openQuickView(Number(retry.dataset.quickViewRetry));
+        });
         elements.filterSummary.addEventListener("click", handleFilterSummaryClick);
         document.addEventListener("storefront:storage-change", handleStorageChange);
         document.addEventListener("storefront:state-ready", syncBookmarkButtons);
@@ -445,7 +449,7 @@
             const options = Array.isArray(product.options) ? product.options : [];
             elements.quickViewContent.innerHTML = `<p>${escapeHtml(product.brand || "NOREN")}</p><h2 id="collectionQuickViewTitle">${escapeHtml(product.name || "상품")}</h2><strong>${escapeHtml(product.priceLabel || formatPrice(product.price))}</strong><p>${escapeHtml(product.stockStatus || "재고 확인")} · 재고 ${Number(product.stock || 0).toLocaleString("ko-KR")}개</p><ul>${options.length ? options.slice(0, 6).map(option => `<li>${escapeHtml(option.name)} · ${Number(option.stock || 0)}개${Number(option.additionalPrice || 0) ? ` · +${escapeHtml(formatPrice(option.additionalPrice))}` : ""}</li>`).join("") : "<li>등록된 옵션이 없습니다.</li>"}</ul><a href="${productDetailUrl(productId)}">상품 상세 보기</a>`;
         } catch (error) {
-            elements.quickViewContent.innerHTML = `<p>${escapeHtml(error.message || "상품 정보를 불러오지 못했습니다.")}</p>`;
+            elements.quickViewContent.innerHTML = `<p>${escapeHtml(error.message || "상품 정보를 불러오지 못했습니다.")}</p><button type="button" data-quick-view-retry="${productId}">다시 시도</button>`;
         }
     }
 

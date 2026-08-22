@@ -401,7 +401,7 @@ class FrontStorefrontResourceTest {
 
         assertThat(html)
                 .contains("/css/storefront.css?v=20260812.4")
-                .contains("/css/product-detail.css?v=20260815.1")
+                .contains("/css/product-detail.css?v=20260822.1")
                 .contains("id=\"detailProductVisual\"")
                 .contains("id=\"detailVisualModel\"")
                 .contains("id=\"detailPrimaryAction\"")

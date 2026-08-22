@@ -152,3 +152,39 @@ test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async (
     expect(docked.bottom).toBeLessThanOrEqual(docked.viewportHeight);
   }
 });
+
+test("상품 상세 경로와 Signal은 긴 데이터에서도 반환 제어를 밀어내지 않는다", async ({ page }) => {
+  await page.route("**/api/front/products/12", route => route.fulfill({ json: {
+    ...productDetail(),
+    name: "아주 긴 상품명에서도 상품 목록으로 돌아가는 버튼을 화면 밖으로 밀어내지 않아야 합니다",
+    headline: "긴 설명을 가진 오늘의 셀렉션 상품"
+  } }));
+
+  await page.goto("/front/products/12");
+  await expect(page.locator("#detailTitle")).toHaveText("긴 설명을 가진 오늘의 셀렉션 상품");
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const breadcrumb = document.querySelector(".detail-breadcrumb").getBoundingClientRect();
+    const product = document.querySelector("#detailBreadcrumbProduct");
+    const returnLink = document.querySelector("#backToCatalogLink").getBoundingClientRect();
+    const signalCards = [...document.querySelectorAll("#detailSignalList .signal-card")];
+    return {
+      bodyOverflow: document.documentElement.scrollWidth - viewportWidth,
+      viewportWidth,
+      breadcrumbRight: breadcrumb.right,
+      productScrollWidth: product.scrollWidth,
+      productClientWidth: product.clientWidth,
+      returnLeft: returnLink.left,
+      returnRight: returnLink.right,
+      signalOverflow: signalCards.some((card) => card.scrollWidth > card.clientWidth)
+    };
+  });
+
+  expect(layout.bodyOverflow).toBe(0);
+  expect(layout.breadcrumbRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.returnLeft).toBeGreaterThanOrEqual(0);
+  expect(layout.returnRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.productScrollWidth).toBeGreaterThanOrEqual(layout.productClientWidth);
+  expect(layout.signalOverflow).toBe(false);
+});

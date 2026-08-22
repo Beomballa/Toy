@@ -36,7 +36,12 @@
     white-space: nowrap;
 }
 
+.detail-body .detail-breadcrumb #detailBreadcrumbCategory {
+    flex: 0 1 12rem;
+}
+
 .detail-body .detail-breadcrumb strong {
+    flex: 1 1 12rem;
     min-width: 0;
     color: var(--noren-ink);
 }
@@ -253,14 +258,17 @@
 }
 
 .detail-body .detail-signal-list .signal-card strong {
+    overflow: hidden;
     color: var(--noren-sage);
     font-size: 10px;
     line-height: 1.2;
     padding-top: 2px;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .detail-body .detail-signal-list .signal-card span {
+    display: block;
     min-width: 0;
     color: var(--noren-muted);
     font-size: 11px;
@@ -457,6 +465,19 @@
 
     .detail-body .detail-breadcrumb > button {
         display: none;
+    }
+
+    .detail-body .detail-breadcrumb {
+        gap: 6px;
+    }
+
+    .detail-body .detail-breadcrumb #detailBreadcrumbCategory,
+    .detail-body .detail-breadcrumb #detailBreadcrumbCategory + span {
+        display: none;
+    }
+
+    .detail-body .detail-breadcrumb strong {
+        flex-basis: 0;
     }
 
     .detail-body .detail-breadcrumb .detail-catalog-return {

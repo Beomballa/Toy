@@ -929,7 +929,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionFilterSummary\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
-                .contains("/css/product-collection.css?v=20260820.3")
+                .contains("/css/product-collection.css?v=20260822.1")
                 .contains("id=\"collectionQuickView\"")
                 .contains("id=\"collectionPageSelect\"")
                 .contains("id=\"collectionFirstButton\"")

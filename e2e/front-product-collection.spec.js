@@ -212,3 +212,44 @@ test("컬렉션은 처음과 마지막 페이지로 바로 이동한다", async 
   await expect(page.locator("#collectionPageSelect")).toHaveValue("0");
   expect(requestedPages).toEqual([0, 2, 0]);
 });
+
+test("컬렉션 카드는 동일한 행동 영역 폭으로 뷰포트 안에 정렬한다", async ({ page }) => {
+  await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([
+    product(61, "한 줄 상품"),
+    product(62, "두 줄로 길어지는 컬렉션 상품 이름"),
+    product(63, "정렬 확인 상품"),
+    product(64, "모바일 확인 상품")
+  ]) }));
+
+  await page.goto("/front/collections/new");
+  await expect(page.locator(".collection-product")).toHaveCount(4);
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const cards = [...document.querySelectorAll(".collection-product")];
+    const actionRows = cards.map((card) => {
+      const actions = [...card.querySelectorAll(".collection-product__actions > *")]
+        .map((action) => action.getBoundingClientRect());
+      return {
+        left: card.getBoundingClientRect().left,
+        right: card.getBoundingClientRect().right,
+        actionWidths: actions.map((action) => action.width),
+        actionRight: actions.map((action) => action.right)
+      };
+    });
+    return {
+      bodyOverflow: document.documentElement.scrollWidth - viewportWidth,
+      viewportWidth,
+      actionRows
+    };
+  });
+
+  expect(layout.bodyOverflow).toBe(0);
+  for (const row of layout.actionRows) {
+    expect(row.left).toBeGreaterThanOrEqual(0);
+    expect(row.right).toBeLessThanOrEqual(layout.viewportWidth);
+    expect(row.actionWidths).toHaveLength(2);
+    expect(Math.abs(row.actionWidths[0] - row.actionWidths[1])).toBeLessThanOrEqual(1);
+    expect(Math.max(...row.actionRight)).toBeLessThanOrEqual(row.right + 1);
+  }
+});

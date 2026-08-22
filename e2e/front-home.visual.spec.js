@@ -15,6 +15,7 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
     const actions = document.querySelector("#signalStrip .section-action-bar");
     const actionMenu = actions.querySelector(".rail-action-menu");
     const navigation = actions.querySelector(".product-rail-navigation");
+    const cards = [...rail.querySelectorAll(".rail-product-card")];
     const actionBounds = actions.getBoundingClientRect();
     const menuBounds = actionMenu.getBoundingClientRect();
     const navigationBounds = navigation.getBoundingClientRect();
@@ -29,6 +30,15 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
       menuRight: menuBounds.right,
       navigationWidth: navigationBounds.width,
       navigationRight: navigationBounds.right,
+      cardDetails: cards.map((card) => {
+        const cardBounds = card.getBoundingClientRect();
+        const detailBounds = card.querySelector(".rail-product-card__detail").getBoundingClientRect();
+        return {
+          cardRight: cardBounds.right,
+          detailWidth: detailBounds.width,
+          detailRight: detailBounds.right
+        };
+      }),
       catalogToolbarPosition: getComputedStyle(catalogToolbar).position
     };
   });
@@ -42,6 +52,10 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
   expect(layout.menuRight).toBeLessThanOrEqual(page.viewportSize().width);
   expect(layout.navigationWidth).toBeGreaterThan(0);
   expect(layout.navigationRight).toBeLessThanOrEqual(page.viewportSize().width);
+  for (const card of layout.cardDetails) {
+    expect(card.detailWidth).toBeGreaterThan(0);
+    expect(card.detailRight).toBeLessThanOrEqual(card.cardRight + 1);
+  }
   expect(layout.catalogToolbarPosition).toBe("static");
   if (testInfo.project.name === "desktop-chromium") {
     expect(layout.slideWidth).toBeLessThan(layout.railWidth / 3);

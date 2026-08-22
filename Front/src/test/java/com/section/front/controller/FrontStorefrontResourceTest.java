@@ -283,7 +283,7 @@ class FrontStorefrontResourceTest {
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
                 .contains("/css/design-tokens.css?v=20260813.1")
-                .contains("/css/storefront-home.css?v=20260813.2")
+                .contains("/css/storefront-home.css?v=20260822.1")
                 .contains("/images/brand/noren-wordmark.png")
                 .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")

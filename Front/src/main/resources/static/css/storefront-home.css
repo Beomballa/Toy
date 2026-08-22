@@ -499,7 +499,10 @@ body.storefront-home.is-header-search-open {
 }
 
 .storefront-home .rail-product-card {
-    padding-bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: 0;
 }
 
 .storefront-home .rail-product-card__visual-link {
@@ -518,6 +521,8 @@ body.storefront-home.is-header-search-open {
 
 .storefront-home .rail-product-card__body {
     gap: 3px;
+    grid-template-rows: auto auto minmax(42px, auto) auto minmax(18px, auto) auto auto;
+    flex: 1;
     margin-top: 10px;
 }
 
@@ -539,16 +544,22 @@ body.storefront-home.is-header-search-open {
 
 .storefront-home .rail-product-card__detail {
     display: inline-flex;
-    justify-content: flex-start;
-    width: max-content;
-    min-height: 28px;
-    margin-top: 3px;
-    padding: 0;
-    border: 0;
-    border-bottom: 1px solid currentColor;
-    border-radius: 0;
-    background: transparent;
+    justify-content: center;
+    width: 100%;
+    min-height: 36px;
+    margin-top: 8px;
+    padding: 0 12px;
+    border: 1px solid var(--home-line);
+    border-radius: var(--noren-radius-sm);
+    background: #fff;
     font-size: 12px;
+    font-weight: 700;
+}
+
+.storefront-home .rail-product-card__detail:hover {
+    border-color: var(--home-ink);
+    background: var(--home-ink);
+    color: #fff;
 }
 
 .storefront-home .flow-board,

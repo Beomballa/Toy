@@ -2740,7 +2740,8 @@ class FrontStorefrontResourceTest {
                 .contains("/front/content#contentSavedBoard")
                 .contains("data-content-return-link")
                 .contains("/js/view/content-detail.js?v=20260803.2")
-                .contains("/css/storefront.css?v=20260724.1");
+                .contains("/css/storefront.css?v=20260724.1")
+                .contains("/css/content-detail.css?v=20260824.1");
         assertThat(script)
                 .contains("fetch(`/api/front/content/${documentId}`, { signal: requestController.signal })")
                 .contains("paragraph.textContent = content")

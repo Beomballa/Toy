@@ -106,3 +106,54 @@ test("콘텐츠 상세는 다른 문서 응답과 불일치한 반응 집계를 
   await page.locator("#contentDetailReactionRetryButton").click();
   await expect(page.locator("#contentDetailReactionSummary")).toContainText("3명 중 67%");
 });
+
+test("짧은 콘텐츠 본문은 과도한 빈 영역 없이 읽기 도구와 행동 영역을 정렬한다", async ({ page }) => {
+  await page.route("**/api/front/content/99**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname.endsWith("/views")) {
+      await route.fulfill({ json: { counted: true, viewCount: 1 } });
+      return;
+    }
+    if (pathname.endsWith("/reactions")) {
+      await route.fulfill({ json: { helpfulCount: 0, notHelpfulCount: 0, totalCount: 0, helpfulRate: 0, selectedReaction: null, changed: false } });
+      return;
+    }
+    await route.fulfill({ json: {
+      id: 99,
+      boardType: "STYLE",
+      title: "짧은 콘텐츠 레이아웃",
+      content: "짧은 본문도 과도한 빈 공간 없이 읽을 수 있어야 합니다.",
+      createdDate: "2026.08.24",
+      viewCount: 0,
+      estimatedReadMinutes: 1,
+      characterCount: 32,
+      pinned: false,
+      newerContent: null,
+      olderContent: null,
+      relatedContents: []
+    } });
+  });
+
+  await page.goto("/front/content/99");
+  await expect(page.locator("#contentDetailTitle")).toHaveText("짧은 콘텐츠 레이아웃");
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const body = document.querySelector("#contentDetailBody").getBoundingClientRect();
+    const toolbar = document.querySelector(".content-detail-reader-toolbar").getBoundingClientRect();
+    const actions = [...document.querySelectorAll(".content-detail-article__actions > *")]
+      .map((element) => element.getBoundingClientRect());
+    return {
+      pageOverflow: document.documentElement.scrollWidth - viewportWidth,
+      bodyHeight: body.height,
+      toolbarRight: toolbar.right,
+      viewportWidth,
+      actionOverflow: actions.some((action) => action.right > viewportWidth + 1)
+    };
+  });
+
+  expect(layout.pageOverflow).toBe(0);
+  expect(layout.bodyHeight).toBeLessThan(220);
+  expect(layout.toolbarRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.actionOverflow).toBe(false);
+});

@@ -1,0 +1,20 @@
+.content-detail-body .content-detail-article__body {
+    min-height: 0;
+    padding: clamp(36px, 5vw, 56px) 0 clamp(44px, 6vw, 64px);
+}
+
+.content-detail-body .content-detail-reader-toolbar,
+.content-detail-body .content-detail-article__actions {
+    min-width: 0;
+}
+
+@media (max-width: 768px) {
+    .content-detail-body .content-detail-article__body {
+        min-height: 0;
+        padding: 32px 0 44px;
+    }
+
+    .content-detail-body .content-detail-article__actions > * {
+        min-width: 0;
+    }
+}

@@ -152,3 +152,29 @@ test("취소 주문은 진행 단계를 완료로 표시하지 않고 모바일 
     expect(box.x + box.width).toBeLessThanOrEqual(390);
   }
 });
+
+test("긴 주문번호와 추가 메뉴는 화면 경계 안에서 표시된다", async ({ page }) => {
+  const number = `GS${"A".repeat(40)}`;
+  await page.route(`**/api/front/member/orders/${number}`, route => route.fulfill({ json: orderResponse(number, "긴 주문번호 수령인") }));
+  await page.goto(`/front/orders/${number}?member=true`);
+  await expect(page.locator("#orderResultNumber")).toHaveText(number);
+  await page.locator("#orderResultMore summary").click();
+
+  const layout = await page.evaluate(() => {
+    const viewportWidth = document.documentElement.clientWidth;
+    const heading = document.querySelector("#orderResultNumber").getBoundingClientRect();
+    const menu = document.querySelector("#orderResultMore > div").getBoundingClientRect();
+    return {
+      overflow: document.documentElement.scrollWidth - viewportWidth,
+      headingRight: heading.right,
+      menuLeft: menu.left,
+      menuRight: menu.right,
+      viewportWidth
+    };
+  });
+
+  expect(layout.overflow).toBe(0);
+  expect(layout.headingRight).toBeLessThanOrEqual(layout.viewportWidth);
+  expect(layout.menuLeft).toBeGreaterThanOrEqual(0);
+  expect(layout.menuRight).toBeLessThanOrEqual(layout.viewportWidth);
+});

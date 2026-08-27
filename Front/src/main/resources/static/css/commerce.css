@@ -233,16 +233,17 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 
 .order-result { margin-top: 70px; padding-top: 34px; border-top: 2px solid var(--ink); }
 .order-result__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
-.order-result__head h2 { margin: 0 0 8px; font-size: 22px; }
+.order-result__head > div { min-width: 0; }
+.order-result__head h2 { margin: 0 0 8px; font-size: 22px; overflow-wrap: anywhere; }
 .order-result__head span { color: var(--muted); font-size: 12px; }
-.order-result__actions { display: flex; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
+.order-result__actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
 .order-result__actions > strong { padding: 9px 13px; border-radius: 999px; color: #176b45; background: #eaf7f0; font-size: 12px; }
 .order-result__actions button { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; color: #555; background: #fff; font-size: 11px; cursor: pointer; }
 .order-result__actions .order-cancel-button { border-color:#efc9c3; color:#b93e32; }
 .order-result__more { position: relative; }
 .order-result__more summary { display: grid; width: 36px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; place-items: center; list-style: none; letter-spacing: 1px; }
 .order-result__more summary::-webkit-details-marker { display: none; }
-.order-result__more > div { position: absolute; z-index: 10; top: calc(100% + 6px); right: 0; display: grid; width: 150px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--noren-shadow-sm); }
+.order-result__more > div { position: absolute; z-index: 10; top: calc(100% + 6px); right: 0; display: grid; width: min(150px, calc(100vw - 32px)); padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--noren-shadow-sm); }
 .order-result__more > div button { width: 100%; border: 0; text-align: left; }
 .order-cancel-dialog { width:min(420px,calc(100% - 32px)); padding:0; border:0; border-radius:14px; box-shadow:0 24px 80px rgba(0,0,0,.22); }
 .order-cancel-dialog::backdrop { background:rgba(0,0,0,.34); }

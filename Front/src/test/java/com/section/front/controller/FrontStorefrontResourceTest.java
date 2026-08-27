@@ -451,7 +451,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"orderCancelledNotice\"")
                 .contains("data-order-field-error=\"phone\"")
                 .contains("id=\"orderLookupStatus\" role=\"status\"")
-                .contains("/css/commerce.css?v=20260815.2")
+                .contains("/css/commerce.css?v=20260827.1")
                 .contains("/js/view/order-lookup.js?v=20260815.1");
         assertThat(script)
                 .contains("fetch(\"/api/front/orders/lookup\"")
@@ -501,7 +501,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"deliveryRequestPreset\"")
                 .contains("data-field-counter=\"deliveryRequest\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/css/commerce.css?v=20260815.1")
+                .contains("/css/commerce.css?v=20260827.1")
                 .contains("/js/view/commerce.js?v=20260815.1")
                 .contains("id=\"checkoutFormStatus\"")
                 .contains("class=\"storefront-page commerce-page commerce-checkout-page\"")
@@ -534,7 +534,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"clearCartButton\"")
                 .contains("id=\"commerceStockSummary\"")
                 .contains("id=\"commerceTotalQuantity\"")
-                .contains("/css/commerce.css?v=20260815.1")
+                .contains("/css/commerce.css?v=20260827.1")
                 .contains("/js/view/commerce.js?v=20260815.1")
                 .contains("class=\"storefront-page commerce-page commerce-cart-page\"");
         assertThat(script)

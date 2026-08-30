@@ -2908,7 +2908,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"comparisonCsvButton\"")
                 .contains("id=\"comparisonPrintButton\"")
                 .contains("/js/view/product-comparison.js?v=20260817.1")
-                .contains("/css/product-comparison.css?v=20260726.1");
+                .contains("/css/product-comparison.css?v=20260830.1");
         assertThat(script)
                 .contains("front-compare-products")
                 .contains("front-recent-viewed-products")

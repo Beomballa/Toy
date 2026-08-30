@@ -53,3 +53,23 @@ test("비교 상품 조회 실패를 가짜 0원 상품으로 표시하지 않�
   await expect(page.locator("#comparisonResultText")).toContainText("2개 상품");
   await expect(page.locator("#comparisonRefreshButton")).not.toHaveAttribute("aria-busy");
 });
+
+test("비교 제어와 긴 추천 문구는 320px 화면에서 겹치지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/products/*", async route => {
+    const id = Number(new URL(route.request().url()).pathname.split("/").pop());
+    await route.fulfill({ json: {
+      ...detail(id),
+      name: `긴 상품명 반응형 비교 제어 영역 검증용 상품 ${id}`,
+      brand: "NOREN-LONG-BRAND-NAME"
+    } });
+  });
+
+  await page.goto("/front/compare?ids=1,2");
+  for (const selector of [".comparison-toolbar", ".comparison-toolbar__actions", ".comparison-heading", ".comparison-heading > div:last-child", ".comparison-recommendation"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

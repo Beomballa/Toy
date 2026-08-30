@@ -1,0 +1,65 @@
+/* Content archive-specific layout safeguards stay outside the shared storefront stylesheet. */
+.content-list-body .content-list-hero > p:last-child,
+.content-list-body .content-list-heading > p,
+.content-list-body .content-saved-board__heading p {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.content-list-body .content-list-toolbar > *,
+.content-list-body .content-list-heading > *,
+.content-list-body .content-recent-board__heading > *,
+.content-list-body .content-saved-board__heading > * {
+    min-width: 0;
+}
+
+.content-list-body .content-list-tabs {
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.content-list-body .content-list-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.content-list-body .content-list-settings,
+.content-list-body .content-list-pagination {
+    min-width: 0;
+}
+
+.content-list-body .content-list-insights > div,
+.content-list-body .content-list-card__meta {
+    min-width: 0;
+}
+
+.content-list-body .content-list-card__meta span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.content-list-body .content-list-card h3,
+.content-list-body .content-list-card p {
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+    .content-list-body .content-list-hero > p:last-child {
+        max-width: 28rem;
+    }
+
+    .content-list-body .content-list-tabs {
+        margin-inline: -14px;
+        padding-inline: 14px;
+    }
+
+    .content-list-body .content-list-pagination {
+        gap: 8px;
+    }
+
+    .content-list-body .content-list-pagination button,
+    .content-list-body .content-list-pagination select {
+        min-width: 64px;
+    }
+}

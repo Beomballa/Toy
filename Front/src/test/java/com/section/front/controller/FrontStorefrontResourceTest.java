@@ -642,6 +642,19 @@ class FrontStorefrontResourceTest {
     }
 
     @Test
+    void contentListKeepsPageSpecificResponsiveLayoutContracts() throws IOException {
+        String html = readResource("templates/views/content-list.html");
+        String css = readResource("static/css/content-list.css");
+
+        assertThat(html).contains("/css/content-list.css?v=20260830.1");
+        assertThat(css)
+                .contains(".content-list-body .content-list-toolbar > *")
+                .contains("overscroll-behavior-x: contain")
+                .contains("overflow-wrap: anywhere")
+                .contains("@media (max-width: 480px)");
+    }
+
+    @Test
     void supportCenterKeepsSearchFaqAndPublicNoticeContracts() throws IOException {
         String home = readResource("templates/views/index.html");
         String html = readResource("templates/views/support-center.html");

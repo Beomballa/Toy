@@ -70,3 +70,39 @@ test("콘텐츠 목록은 불일치한 페이지 집계를 거부하고 재시�
   await expect(page.locator("#contentListGrid")).toContainText("정상 공지");
   await expect(page.locator("#contentListPageViews")).toHaveText("7");
 });
+
+test("콘텐츠 목록의 긴 제목과 탐색 제어는 320px 화면에서 넘치지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/content?**", route => route.fulfill({
+    json: {
+      items: [{
+        id: 101,
+        boardType: "STYLE",
+        title: "한 단어로 길게 이어지는 콘텐츠제목반응형레이아웃검증용문구",
+        summary: "긴 설명이 제어 영역과 카드 본문 폭을 밀어내지 않아야 합니다.",
+        viewCount: 7,
+        pinned: false,
+        createdDate: "2026.08.30"
+      }],
+      page: 0,
+      size: 8,
+      sort: "LATEST",
+      totalElements: 9,
+      totalPages: 2,
+      first: true,
+      last: false,
+      pageViewCount: 7,
+      pagePinnedCount: 0,
+      pageNoticeCount: 0,
+      pageStyleCount: 1
+    }
+  }));
+
+  await page.goto("/front/content");
+  for (const selector of [".content-list-toolbar", ".content-list-settings", ".content-list-insights", ".content-list-card", ".content-list-pagination"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

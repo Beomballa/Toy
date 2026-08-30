@@ -68,3 +68,28 @@ test("배송지 화면은 비정상 응답을 렌더링하지 않고 모바일 �
     expect(box.x + box.width).toBeLessThanOrEqual(390);
   }
 });
+
+test("배송지 카드 행동은 320px 화면에서 동일한 폭으로 정렬된다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/member/delivery-addresses", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify([address(1, {
+      addressName: "긴 배송지 이름으로 구성한 모바일 카드",
+      address1: "서울특별시 강남구 테헤란로 1234567890",
+      address2: "테스트동 123호",
+      defaultAddress: false
+    })])
+  }));
+  await page.goto("/front/my/addresses");
+
+  const actions = page.locator(".address-card__actions button");
+  await expect(actions).toHaveCount(3);
+  const bounds = await actions.evaluateAll(buttons => buttons.map(button => {
+    const box = button.getBoundingClientRect();
+    return { left: box.left, right: box.right, width: box.width };
+  }));
+  expect(bounds.every(({ left, right }) => left >= 0 && right <= 320)).toBeTruthy();
+  expect(bounds[0].width).toBe(bounds[1].width);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

@@ -14,9 +14,10 @@
 .address-shell { width: min(1040px, calc(100% - var(--noren-gutter) * 2)); margin: 52px auto 96px; outline: none; }
 
 .address-hero { display: flex; align-items: end; justify-content: space-between; gap: 28px; padding-bottom: 36px; border-bottom: 2px solid var(--address-ink); }
+.address-hero > div, .address-list-head > div { min-width: 0; }
 .address-hero p, .address-create__intro > p, .address-list-head p { margin: 0 0 7px; color: var(--address-accent); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .address-hero h1 { margin: 0 0 9px; font-size: 32px; line-height: 1.2; letter-spacing: -.055em; }
-.address-hero span, .address-create__intro > span, .address-list-head > div > span { color: var(--address-muted); font-size: 12px; }
+.address-hero span, .address-create__intro > span, .address-list-head > div > span { color: var(--address-muted); font-size: 12px; overflow-wrap: anywhere; }
 .address-hero__links { display: flex; gap: 7px; flex: none; }
 .address-hero__links a { display: inline-flex; min-height: 38px; align-items: center; padding: 0 13px; border: 1px solid var(--address-line); border-radius: var(--noren-radius-sm); background: var(--noren-surface); font-size: 11px; font-weight: 700; text-decoration: none; }
 
@@ -80,5 +81,8 @@
     .address-form-actions button { flex: 1; }
     .address-list-head { align-items: flex-start; }
     .address-card { min-height: 0; }
+    .address-card__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .address-card__actions button { min-width: 0; }
+    .address-card__actions button[data-address-delete] { margin-left: 0; }
     .address-toast { right: 16px; bottom: 16px; }
 }

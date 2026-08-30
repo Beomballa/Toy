@@ -33,7 +33,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"memberPasswordRules\"")
                 .contains("data-field-error=\"passwordConfirm\"")
                 .contains("/js/view/member-auth.js?v=20260815.1")
-                .contains("/css/member-auth.css?v=20260815.1");
+                .contains("/css/member-auth.css?v=20260830.1");
         assertThat(script)
                 .contains("/api/front/auth/me")
                 .contains("/api/front/auth/login")
@@ -73,7 +73,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"memberProfileForm\"")
                 .contains("id=\"memberLogoutButton\"")
                 .contains("/js/view/my-activity.js?v=20260820.4")
-                .contains("/css/my-activity.css?v=20260820.4");
+                .contains("/css/my-activity.css?v=20260830.1");
         assertThat(script)
                 .contains("/api/front/auth/password")
                 .contains("submitButton.disabled = true")
@@ -574,7 +574,7 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"tablist\"")
                 .contains("aria-busy=\"true\"")
                 .containsSubsequence("class=\"my-board\"", "class=\"my-orders\"")
-                .contains("/css/my-activity.css?v=20260820.4")
+                .contains("/css/my-activity.css?v=20260830.1")
                 .contains("/js/view/my-activity.js?v=20260820.4");
         assertThat(script)
                 .contains("front-recent-viewed-products")
@@ -619,7 +619,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-address-error=\"recipientPhone\"")
                 .contains("autocomplete=\"postal-code\"")
                 .contains("aria-busy=\"true\"")
-                .contains("/css/delivery-addresses.css?v=20260815.1")
+                .contains("/css/delivery-addresses.css?v=20260830.1")
                 .contains("/js/view/delivery-addresses.js?v=20260815.1");
         assertThat(script)
                 .contains("function normalizeAddresses(payload)")

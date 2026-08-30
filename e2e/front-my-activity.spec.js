@@ -115,3 +115,21 @@ test("MY 활동 탭은 키보드 전환과 모바일 경계를 유지한다", as
     expect(box.x + box.width).toBeLessThanOrEqual(390);
   }
 });
+
+test("MY 활동의 긴 상태 문구와 일괄 행동은 320px 화면에서 겹치지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.addInitScript(() => {
+    localStorage.setItem("front-recent-viewed-products", JSON.stringify([
+      { id: 41, name: "긴 상품명으로 구성된 저장 상품의 반응형 제어 영역 확인", brand: "NOREN", price: 120000, stock: 7 }
+    ]));
+  });
+  await page.goto("/front/my?tab=recent");
+
+  await page.locator('[data-select-id="41"]').check();
+  for (const selector of [".my-command", "#mySelectionBar", ".my-selection > div", ".my-profile", ".my-security"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

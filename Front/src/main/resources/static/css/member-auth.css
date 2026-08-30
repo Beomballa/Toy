@@ -70,6 +70,7 @@
     max-width: 31em;
     color: rgb(255 255 255 / 68%);
     line-height: 1.75;
+    overflow-wrap: anywhere;
 }
 
 .member-auth__intro dl {
@@ -156,6 +157,7 @@
     display: block;
     margin: 10px 0 30px;
     color: var(--member-muted);
+    overflow-wrap: anywhere;
 }
 
 .member-auth__status {

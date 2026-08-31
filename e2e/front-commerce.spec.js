@@ -163,3 +163,25 @@ test("장바구니와 주문서는 공통 폭과 모바일 입력 구조를 유�
     expect(cartLayout.shellWidth).toBeLessThan(500);
   }
 });
+
+test("긴 장바구니 상품명과 금액은 320px 화면에서 제어 영역을 밀지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/cart", async route => route.fulfill({ json: {
+    ...cartResponse(2),
+    items: [{
+      ...cartResponse(2).items[0],
+      productName: "한 단어로 길게 이어지는 장바구니 상품명반응형레이아웃검증용문구",
+      unitPrice: 999999999,
+      lineAmount: 1999999998
+    }],
+    totalAmount: 1999999998
+  } }));
+
+  await page.goto("/front/cart");
+  for (const selector of [".commerce-item", ".commerce-item__copy", ".commerce-item__amount", ".commerce-summary"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

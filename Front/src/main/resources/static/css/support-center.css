@@ -147,12 +147,14 @@
     margin: 5px 0 2px;
     font-size: 16px;
     letter-spacing: -.03em;
+    overflow-wrap: anywhere;
 }
 
 .support-order-context p {
     margin: 0;
     color: var(--support-muted);
     font-size: 11px;
+    overflow-wrap: anywhere;
 }
 
 .support-order-context > div:last-child {
@@ -922,7 +924,7 @@
     }
 
     #supportSearchForm > div {
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto auto;
     }
 
     #supportSearchForm input {
@@ -933,6 +935,10 @@
         display: inline-flex;
         align-items: center;
         padding-inline: 7px;
+    }
+
+    #supportSearchForm button {
+        padding-inline: 8px;
     }
 
     .support-quick-grid a {

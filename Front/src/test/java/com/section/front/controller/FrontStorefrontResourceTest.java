@@ -679,7 +679,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"supportOrderContextClearButton\"")
                 .doesNotContain("/css/main.css")
                 .doesNotContain("/css/storefront.css")
-                .contains("/css/support-center.css?v=20260816.1")
+                .contains("/css/support-center.css?v=20260831.1")
                 .contains("/js/view/support-center.js?v=20260816.1");
         assertThat(script)
                 .contains("grade-stock-support-searches")

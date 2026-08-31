@@ -52,3 +52,20 @@ test("고객지원 검색은 모바일에서도 지우기 제어와 화면 경�
     expect(box.x + box.width).toBeLessThanOrEqual(390);
   }
 });
+
+test("고객지원 검색의 지우기와 검색 버튼은 320px 화면에서 같은 행을 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/front/support");
+  await page.locator("#supportKeyword").fill("배송 문의");
+
+  const controls = await page.locator("#supportKeyword, #supportSearchClearButton, #supportSearchForm button[type=submit]").evaluateAll(elements =>
+    elements.map(element => {
+      const box = element.getBoundingClientRect();
+      return { center: box.top + box.height / 2, left: box.left, right: box.right };
+    })
+  );
+  expect(controls[0].center).toBe(controls[1].center);
+  expect(controls[1].center).toBe(controls[2].center);
+  expect(controls.every(({ left, right }) => left >= 0 && right <= 320)).toBeTruthy();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

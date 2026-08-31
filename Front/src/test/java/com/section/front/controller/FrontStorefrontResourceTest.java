@@ -234,7 +234,7 @@ class FrontStorefrontResourceTest {
             assertThat(readResource("templates/views/" + page))
                     .as(page)
                     .contains("storefront-page")
-                    .contains("/css/storefront-shell.css?v=20260813.1")
+                    .contains("/css/storefront-shell.css?v=20260831.1")
                     .contains("fragments/storefront-shell :: header(")
                     .contains("fragments/storefront-shell :: footer")
                     .contains("/js/view/storefront-state.js?v=20260805.2")

@@ -451,6 +451,9 @@
         background: #fff;
         border-top: 1px solid var(--store-shell-gray-200);
         box-shadow: 0 12px 24px rgb(0 0 0 / 8%);
+        max-height: calc(100dvh - 56px);
+        overscroll-behavior: contain;
+        overflow-y: auto;
         opacity: 0;
         transform: translateY(-8px);
         transition: opacity .2s ease, transform .2s ease, visibility .2s;
@@ -486,13 +489,16 @@
     }
 
     .store-shell__search {
+        min-height: 100dvh;
         padding: 0;
         background: #fff;
+        overscroll-behavior: contain;
+        overflow-y: auto;
     }
 
     .store-shell__search-panel {
         width: 100%;
-        min-height: 100%;
+        min-height: 100dvh;
         padding: 22px 20px;
         border-radius: 0;
         box-shadow: none;

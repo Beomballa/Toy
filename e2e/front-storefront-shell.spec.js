@@ -35,3 +35,18 @@ test("공통 검색은 모달 상태와 포커스를 관리하고 검색어를 �
   await page.locator("[data-store-shell-search-form]").evaluate((form) => form.requestSubmit());
   await expect(page).toHaveURL(/keyword=%EB%82%98%EC%9D%B4%ED%82%A4+%EC%97%90%EC%96%B4%ED%8F%AC%EC%8A%A4|keyword=%EB%82%98%EC%9D%B4%ED%82%A4%20%EC%97%90%EC%96%B4%ED%8F%AC%EC%8A%A4/);
 });
+
+test("모바일 메뉴와 검색 오버레이는 작은 높이에서도 뷰포트 안에서 스크롤된다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto("/front/support");
+
+  await page.locator(".store-shell__menu-button").click();
+  await expect(page.locator(".store-shell__category-wrap")).toBeVisible();
+  expect(await page.locator(".store-shell__category-wrap").evaluate(element => getComputedStyle(element).maxHeight)).toBe("424px");
+
+  await page.locator("[data-store-shell-search-open]").click();
+  await expect(page.locator("[data-store-shell-search]")).toBeVisible();
+  const overlay = await page.locator("[data-store-shell-search]").boundingBox();
+  expect(overlay.height).toBeGreaterThanOrEqual(480);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

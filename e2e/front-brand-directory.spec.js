@@ -86,3 +86,31 @@ test("브랜드 디렉터리는 facet 합계가 전체 상품 수와 다른 응�
   await expect(page.locator(".brand-card")).toHaveCount(2);
   await expect(page.locator("#brandDirectoryProducts")).toHaveText("2");
 });
+
+test("브랜드 상품 선택 바와 긴 상품명은 320px 화면에서 겹치지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/catalog/bootstrap?**", async route => {
+    const brand = new URL(route.request().url()).searchParams.get("brand");
+    await route.fulfill({ json: {
+      products: brand ? [{
+        ...product(brand),
+        name: "긴 상품명으로 카드 높이와 고정 선택 바 폭을 확인하는 반응형 브랜드 상품"
+      }] : [],
+      pagination: { page: 0, size: 12, totalElements: brand ? 1 : 0, totalPages: brand ? 1 : 0, first: true, last: true },
+      metrics: metrics(1, 1),
+      brandFacets: [{ value: "나이키", count: 1 }],
+      categoryFacets: [{ value: "스니커즈", count: 1 }]
+    } });
+  });
+
+  await page.goto("/front/brands");
+  await page.getByRole("button", { name: "나이키 브랜드 상품 보기" }).click();
+  await page.locator(".brand-product-card__select").click();
+  await expect(page.locator("#brandSelectionBar")).toBeVisible();
+  for (const selector of [".brand-product-card", "#brandSelectionBar", "#brandSelectionCompareButton", "#brandSelectionCancelButton"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

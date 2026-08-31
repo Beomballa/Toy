@@ -739,7 +739,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"brandProductSize\"")
                 .contains("id=\"brandPageSelect\"")
                 .contains("id=\"brandSelectionBar\"")
-                .contains("/css/brand-directory.css?v=20260726.1")
+                .contains("/css/brand-directory.css?v=20260831.1")
                 .contains("/js/view/brand-directory.js?v=20260803.2");
         assertThat(script)
                 .contains("/api/front/catalog/bootstrap?page=0&size=1")

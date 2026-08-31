@@ -76,6 +76,7 @@
     color: var(--brand-muted);
     font-size: 14px;
     line-height: 1.65;
+    overflow-wrap: anywhere;
 }
 
 .brand-hero__metrics {
@@ -493,6 +494,7 @@
     margin: 8px 0 0;
     color: var(--brand-muted);
     font-size: 11px;
+    overflow-wrap: anywhere;
 }
 
 .brand-products__utilities {
@@ -653,12 +655,16 @@
 }
 
 .brand-product-card__body h3 {
+    display: -webkit-box;
     overflow: hidden;
     min-height: 40px;
     margin: 0;
     font-size: 13px;
     font-weight: 500;
     line-height: 1.5;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .brand-product-card__body span {
@@ -1028,6 +1034,22 @@
 
     .brand-product-card__visual {
         aspect-ratio: 4 / 3;
+    }
+
+    .brand-selection-bar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: stretch;
+    }
+
+    .brand-selection-bar span {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    .brand-selection-bar button {
+        min-width: 0;
+        padding-inline: 8px;
     }
 }
 

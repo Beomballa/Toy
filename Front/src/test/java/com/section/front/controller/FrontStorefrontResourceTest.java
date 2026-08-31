@@ -149,6 +149,7 @@ class FrontStorefrontResourceTest {
                 .contains("frame-03.jpg")
                 .contains("id=\"summerMediaToggle\"")
                 .contains("id=\"summerProductGrid\"")
+                .contains("/css/summer-edit.css?v=20260831.1")
                 .contains("/js/view/summer-edit.js?v=20260803.1");
         assertThat(script)
                 .contains("prefers-reduced-motion: reduce")

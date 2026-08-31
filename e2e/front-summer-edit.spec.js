@@ -59,3 +59,18 @@ test("여름 에디트는 상품 응답 실패를 노출하고 재시도하며 �
     expect(box.x + box.width).toBeLessThanOrEqual(390);
   }
 });
+
+test("여름 에디트의 긴 상품명과 배너 제어는 320px 화면에서 넘치지 않는다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/products?**", route => route.fulfill({
+    json: pageResponse([product(4, "한 단어로 길게 이어지는 여름 이벤트 상품명반응형레이아웃검증용문구")])
+  }));
+
+  await page.goto("/front/events/summer-edit");
+  for (const selector of [".summer-hero__copy", ".summer-hero__controls", ".summer-products__grid", ".summer-product-card"]) {
+    const box = await page.locator(selector).boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(320);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

@@ -1182,13 +1182,24 @@ body.storefront-home.is-header-search-open {
 }
 
 @media (max-width: 420px) {
-    .storefront-home .product-rail-header {
+    .storefront-home .product-rail-header,
+    .storefront-home .signal-strip .product-rail-header {
         grid-template-columns: 1fr;
         gap: 12px;
     }
 
+    .storefront-home .section-action-bar,
     .storefront-home .signal-strip .section-action-bar {
+        width: 100%;
+        min-width: 0;
         justify-content: flex-start;
+        overscroll-behavior-x: contain;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .storefront-home .section-action-bar::-webkit-scrollbar {
+        display: none;
     }
 }
 

@@ -69,6 +69,24 @@ test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", as
   });
 });
 
+test("신규 드롭과 저재고 레일 제어는 320px에서 제목 아래로 안전하게 배치된다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/");
+  await page.locator("#signalStrip").scrollIntoViewIfNeeded();
+
+  for (const selector of ["#latestDropGrid", "#lowStockGrid"]) {
+    const rail = page.locator(selector);
+    const header = rail.locator("xpath=preceding-sibling::*[contains(@class, 'product-rail-header')][1]");
+    const actions = header.locator(".section-action-bar");
+    const [headerBox, actionsBox] = await Promise.all([header.boundingBox(), actions.boundingBox()]);
+    expect(headerBox.width).toBeLessThanOrEqual(320);
+    expect(actionsBox.x).toBeGreaterThanOrEqual(0);
+    expect(actionsBox.x + actionsBox.width).toBeLessThanOrEqual(320);
+    expect(actionsBox.y).toBeGreaterThan(headerBox.y);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});
+
 test("홈 카탈로그 카드와 페이지네이션은 겹치지 않는다", async ({ page }, testInfo) => {
   await page.addInitScript(() => localStorage.removeItem("front-catalog-display-preferences"));
   await page.goto("/");

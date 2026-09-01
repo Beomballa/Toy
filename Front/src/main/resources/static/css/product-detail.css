@@ -161,6 +161,7 @@
     color: var(--noren-muted);
     font-size: 14px;
     line-height: 1.7;
+    overflow-wrap: anywhere;
 }
 
 .detail-body .detail-actions {
@@ -347,6 +348,7 @@
     margin: 6px 0 0;
     color: var(--noren-muted);
     font-size: 12px;
+    overflow-wrap: anywhere;
 }
 
 .detail-body .detail-section-actions {
@@ -583,6 +585,21 @@
 }
 
 @media (max-width: 420px) {
+    .detail-body .detail-secondary-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .detail-body .detail-secondary-actions > .detail-action-menu {
+        min-width: 0;
+    }
+
+    .detail-body .detail-secondary-actions > button,
+    .detail-body .detail-action-menu > summary {
+        width: 100%;
+        padding-inline: 7px;
+        overflow-wrap: anywhere;
+    }
+
     .detail-body .detail-signal-list .signal-card {
         grid-template-columns: 54px minmax(0, 1fr);
     }

@@ -188,3 +188,22 @@ test("상품 상세 경로와 Signal은 긴 데이터에서도 반환 제어를 
   expect(layout.productScrollWidth).toBeGreaterThanOrEqual(layout.productClientWidth);
   expect(layout.signalOverflow).toBe(false);
 });
+
+test("상품 상세 보조 행동은 320px 화면에서 동일한 제어 폭을 유지한다", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.route("**/api/front/products/12", route => route.fulfill({ json: {
+    ...productDetail(),
+    description: "긴 상품 설명에서도 구매와 저장 행동이 화면 밖으로 밀리지 않아야 합니다."
+  } }));
+
+  await page.goto("/front/products/12");
+  const actions = page.locator(".detail-secondary-actions > button, .detail-secondary-actions summary");
+  await expect(actions).toHaveCount(3);
+  const bounds = await actions.evaluateAll(elements => elements.map(element => {
+    const box = element.getBoundingClientRect();
+    return { left: box.left, right: box.right, width: box.width };
+  }));
+  expect(bounds.every(({ left, right }) => left >= 0 && right <= 320)).toBeTruthy();
+  expect(Math.max(...bounds.map(({ width }) => width)) - Math.min(...bounds.map(({ width }) => width))).toBeLessThan(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

@@ -148,6 +148,58 @@ test("컬렉션 빠른 보기는 상세 옵션을 표시하고 닫은 뒤 카드
   await expect(trigger).toBeFocused();
 });
 
+test("컬렉션 모달은 좁은 화면에서 뷰포트 안에 유지되고 내부에서 스크롤된다", async ({ page }) => {
+  await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([product(23, "아주 긴 이름의 컬렉션 빠른 보기 상품을 위한 레이아웃 검증")]) }));
+  await page.route("**/api/front/products/23", route => route.fulfill({ json: {
+    ...product(23, "아주 긴 이름의 컬렉션 빠른 보기 상품을 위한 레이아웃 검증"),
+    options: Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      name: `긴 옵션 정보 ${index + 1}번째 항목`,
+      stock: index + 1,
+      additionalPrice: 10000
+    }))
+  } }));
+
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto("/front/collections/new");
+  await page.locator("#collectionFilterButton").click();
+  await expect(page.locator("#collectionFilterDialog")).toBeVisible();
+
+  const filterLayout = await page.locator("#collectionFilterDialog").evaluate((dialog) => {
+    const rect = dialog.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, scrollable: dialog.scrollHeight >= dialog.clientHeight };
+  });
+  expect(filterLayout.left).toBeGreaterThanOrEqual(0);
+  expect(filterLayout.right).toBeLessThanOrEqual(320);
+  expect(filterLayout.top).toBeGreaterThanOrEqual(0);
+  expect(filterLayout.bottom).toBeLessThanOrEqual(480);
+  expect(filterLayout.scrollable).toBeTruthy();
+
+  await page.locator("#collectionFilterCloseButton").click();
+  await page.locator('[data-quick-view-id="23"]').click();
+  await expect(page.locator("#collectionQuickView")).toBeVisible();
+
+  const quickViewLayout = await page.locator("#collectionQuickView").evaluate((dialog) => {
+    const rect = dialog.getBoundingClientRect();
+    const close = dialog.querySelector("#collectionQuickViewClose").getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      overflowY: getComputedStyle(dialog).overflowY,
+      closeRight: close.right
+    };
+  });
+  expect(quickViewLayout.left).toBeGreaterThanOrEqual(0);
+  expect(quickViewLayout.right).toBeLessThanOrEqual(320);
+  expect(quickViewLayout.top).toBeGreaterThanOrEqual(0);
+  expect(quickViewLayout.bottom).toBeLessThanOrEqual(480);
+  expect(quickViewLayout.closeRight).toBeLessThanOrEqual(quickViewLayout.right);
+  expect(quickViewLayout.overflowY).toBe("auto");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});
+
 test("컬렉션 빠른 보기는 상세 조회 실패 후 모달 안에서 재시도한다", async ({ page }) => {
   let requests = 0;
   await page.route("**/api/front/products?**", route => route.fulfill({ json: pageResponse([product(22, "재시도 상품")]) }));

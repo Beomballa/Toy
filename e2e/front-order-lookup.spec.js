@@ -127,6 +127,38 @@ test("회원 주문은 연락처 폼 없이 자동 조회하고 보조 기능을
   await expect(page.locator("#orderHistoryCount")).toHaveText("1개 이력");
 });
 
+test("회원 주문 취소 모달은 스크롤된 작은 화면에서도 뷰포트 안에 열린다", async ({ page }) => {
+  const number = "GSDIALOG00000";
+  await page.route(`**/api/front/member/orders/${number}`, route => route.fulfill({ json: orderResponse(number, "모달 수령인") }));
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(`/front/orders/${number}?member=true`);
+  await expect(page.locator("#memberOrderCancelButton")).toBeVisible();
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.locator("#memberOrderCancelButton").click();
+  await expect(page.locator("#memberOrderCancelDialog")).toBeVisible();
+
+  const layout = await page.locator("#memberOrderCancelDialog").evaluate((dialog) => {
+    const rect = dialog.getBoundingClientRect();
+    const textarea = dialog.querySelector("textarea").getBoundingClientRect();
+    return {
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      bottom: rect.bottom,
+      overflowY: getComputedStyle(dialog).overflowY,
+      textareaRight: textarea.right
+    };
+  });
+  expect(layout.left).toBeGreaterThanOrEqual(0);
+  expect(layout.right).toBeLessThanOrEqual(320);
+  expect(layout.top).toBeGreaterThanOrEqual(0);
+  expect(layout.bottom).toBeLessThanOrEqual(480);
+  expect(layout.textareaRight).toBeLessThanOrEqual(layout.right);
+  expect(layout.overflowY).toBe("auto");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});
+
 test("취소 주문은 진행 단계를 완료로 표시하지 않고 모바일 경계를 유지한다", async ({ page }) => {
   const number = "GSCANCEL00000";
   const response = orderResponse(number, "취소수령인");

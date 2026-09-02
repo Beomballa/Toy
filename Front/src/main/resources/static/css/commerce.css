@@ -246,14 +246,25 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .order-result__more summary::-webkit-details-marker { display: none; }
 .order-result__more > div { position: absolute; z-index: 10; top: calc(100% + 6px); right: 0; display: grid; width: min(150px, calc(100vw - 32px)); padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--noren-shadow-sm); }
 .order-result__more > div button { width: 100%; border: 0; text-align: left; }
-.order-cancel-dialog { width:min(420px,calc(100% - 32px)); padding:0; border:0; border-radius:14px; box-shadow:0 24px 80px rgba(0,0,0,.22); }
+.order-cancel-dialog {
+    width: min(420px, calc(100% - 32px));
+    max-height: calc(100dvh - 32px);
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.22);
+}
+.order-cancel-dialog[open] { position: fixed; inset: 0; margin: auto; }
 .order-cancel-dialog::backdrop { background:rgba(0,0,0,.34); }
 .order-cancel-dialog form { display:grid; gap:14px; padding:26px; }
 .order-cancel-dialog p { margin:0; color:var(--accent); font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
 .order-cancel-dialog h2 { margin:0; font-size:20px; letter-spacing:-.04em; }
 .order-cancel-dialog form > span { color:var(--muted); font-size:12px; line-height:1.55; }
 .order-cancel-dialog label { display:grid; gap:7px; margin-top:5px; color:#555; font-size:12px; font-weight:700; }
-.order-cancel-dialog textarea { min-height:88px; resize:vertical; padding:10px; border:1px solid #ddd; border-radius:8px; font:inherit; font-size:12px; outline:none; }
+.order-cancel-dialog textarea { width:100%; min-height:88px; box-sizing:border-box; resize:vertical; padding:10px; border:1px solid #ddd; border-radius:8px; font:inherit; font-size:12px; outline:none; }
 .order-cancel-dialog textarea:focus { border-color:var(--ink); }
 .order-cancel-dialog form > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
 .order-cancel-dialog form > div button { min-height:42px; border:1px solid #ddd; border-radius:8px; background:#fff; font-weight:800; cursor:pointer; }
@@ -346,6 +357,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
     .order-result__actions { gap: 6px; }
     .order-result__actions > button { min-height: 34px; }
     .order-history li { gap: 12px; align-items: flex-start; flex-direction: column; }
+    .order-cancel-dialog { width: calc(100% - 24px); max-height: calc(100dvh - 24px); }
+    .order-cancel-dialog form { padding: 20px; }
 }
 
 @media print {

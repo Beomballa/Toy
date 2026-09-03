@@ -510,6 +510,23 @@
             button.disabled = false;
         }
     });
+    document.getElementById("memberWithdrawalForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const password = document.getElementById("memberWithdrawalPassword").value;
+        const confirmed = document.getElementById("memberWithdrawalConfirm").checked;
+        const status = document.getElementById("memberWithdrawalStatus");
+        const button = document.getElementById("memberWithdrawalSubmitButton");
+        if (!password || !confirmed) { status.textContent = "현재 비밀번호와 탈퇴 동의를 확인해 주세요."; return; }
+        if (!window.confirm("회원 탈퇴를 진행할까요? 이 작업은 되돌릴 수 없습니다.")) return;
+        button.disabled = true;
+        try {
+            const response = await fetch("/api/front/auth/withdraw", { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ currentPassword: password }) });
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) throw new Error(payload?.message || "회원 탈퇴를 진행하지 못했습니다.");
+            window.StorefrontState?.forgetSession();
+            location.assign("/front/login");
+        } catch (error) { status.textContent = error.message || "회원 탈퇴를 진행하지 못했습니다."; button.disabled = false; }
+    });
     addEventListener("storage",event=>{if(Object.values(KEYS).includes(event.key))render();});
     document.addEventListener("storefront:state-ready", render);
     addEventListener("keydown",event=>{

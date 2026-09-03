@@ -107,3 +107,23 @@ test("MY 페이지는 Caps Lock 상태를 비밀번호 필드에 연결해 안�
   await input.blur();
   await expect(note).toBeHidden();
 });
+
+test("MY 페이지는 탈퇴 동의와 현재 비밀번호를 확인한 뒤 한 번만 요청한다", async ({ page }) => {
+  let requests = 0;
+  let payload;
+  await page.route("**/api/front/auth/withdraw", async route => {
+    requests += 1;
+    payload = route.request().postDataJSON();
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ authenticated: false }) });
+  });
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/front/my");
+  await page.locator("#memberWithdrawalPassword").fill("noren1234");
+  await page.locator("#memberWithdrawalConfirm").check();
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator("#memberWithdrawalSubmitButton").dblclick();
+  await page.waitForURL("**/front/login");
+  expect(requests).toBe(1);
+  expect(payload).toEqual({ currentPassword: "noren1234" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});

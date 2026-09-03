@@ -3,15 +3,20 @@ package com.section.front.auth.service;
 import com.section.common.base.entity.type.YN;
 import com.section.common.system.entity.Account;
 import com.section.common.system.repository.AccountRepository;
+import com.section.common.commerce.repository.FrontMemberDeliveryAddressRepository;
+import com.section.common.commerce.repository.FrontMemberProductActivityRepository;
+import com.section.common.commerce.repository.FrontProductReviewRepository;
 import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
 import com.section.front.auth.dto.FrontMemberProfileUpdateRequest;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
+import com.section.front.auth.dto.FrontMemberWithdrawalRequest;
 import com.section.front.auth.support.FrontPasswordEncoder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -24,11 +29,14 @@ class FrontAuthenticationServiceTest {
 
     private final AccountRepository accountRepository = mock(AccountRepository.class);
     private final FrontPasswordEncoder passwordEncoder = new FrontPasswordEncoder();
+    private final FrontMemberDeliveryAddressRepository deliveryAddressRepository = mock(FrontMemberDeliveryAddressRepository.class);
+    private final FrontMemberProductActivityRepository activityRepository = mock(FrontMemberProductActivityRepository.class);
+    private final FrontProductReviewRepository reviewRepository = mock(FrontProductReviewRepository.class);
     private FrontAuthenticationService service;
 
     @BeforeEach
     void setUp() {
-        service = new FrontAuthenticationService(accountRepository, passwordEncoder);
+        service = new FrontAuthenticationService(accountRepository, passwordEncoder, deliveryAddressRepository, activityRepository, reviewRepository);
     }
 
     @Test
@@ -59,6 +67,21 @@ class FrontAuthenticationServiceTest {
         )))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("409");
+    }
+
+    @Test
+    void withdrawsMemberAndErasesDirectCustomerData() {
+        Account account = Account.createCustomer("member@example.com", passwordEncoder.encode("noren1234"), "회원", "노렌");
+        account.setId(13L);
+        given(accountRepository.findByIdForUpdate(13L)).willReturn(Optional.of(account));
+        given(reviewRepository.findAllByMemberNo(13L)).willReturn(List.of());
+
+        service.withdraw(13L, new FrontMemberWithdrawalRequest("noren1234"));
+
+        assertThat(account.isAvailableCustomer()).isFalse();
+        assertThat(account.getEmail()).isEqualTo("withdrawn-13@noren.invalid");
+        verify(deliveryAddressRepository).deleteAllByMemberNo(13L);
+        verify(activityRepository).deleteAllByMemberNo(13L);
     }
 
     @Test

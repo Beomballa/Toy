@@ -85,4 +85,8 @@ public class FrontProductReview extends BaseEntity {
     public boolean isVisible() {
         return FrontProductReviewStatus.VISIBLE.name().equals(status);
     }
+
+    public void anonymizeReviewer() {
+        this.reviewerName = "탈퇴 회원";
+    }
 }

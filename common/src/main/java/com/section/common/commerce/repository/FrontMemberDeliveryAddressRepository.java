@@ -6,4 +6,5 @@ import java.util.Optional;
 public interface FrontMemberDeliveryAddressRepository extends JpaRepository<FrontMemberDeliveryAddress, Long> {
     List<FrontMemberDeliveryAddress> findAllByMemberNoOrderByDefaultYnDescIdDesc(Long memberNo);
     Optional<FrontMemberDeliveryAddress> findByIdAndMemberNo(Long id, Long memberNo);
+    void deleteAllByMemberNo(Long memberNo);
 }

@@ -5,6 +5,7 @@ import com.section.front.auth.dto.FrontMemberPasswordChangeRequest;
 import com.section.front.auth.dto.FrontMemberProfileUpdateRequest;
 import com.section.front.auth.dto.FrontMemberResponse;
 import com.section.front.auth.dto.FrontMemberSignUpRequest;
+import com.section.front.auth.dto.FrontMemberWithdrawalRequest;
 import com.section.front.auth.service.FrontAuthenticationService;
 import com.section.front.auth.support.FrontLoginAttemptGuard;
 import com.section.front.auth.support.FrontMemberSession;
@@ -102,6 +103,23 @@ public class FrontAuthenticationRestController {
         AuthenticatedFrontMember member = authenticationService.updateProfile(sessionMember.memberId(), request);
         FrontMemberSession.store(httpRequest.getSession(), member);
         return FrontMemberResponse.authenticated(member);
+    }
+
+    @PostMapping("/withdraw")
+    public FrontMemberResponse withdraw(
+            @Valid @RequestBody FrontMemberWithdrawalRequest request,
+            HttpServletRequest httpRequest
+    ) {
+        AuthenticatedFrontMember sessionMember = FrontMemberSession.read(httpRequest.getSession(false));
+        if (sessionMember == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "로그인 후 회원 탈퇴를 진행할 수 있습니다.");
+        }
+        authenticationService.withdraw(sessionMember.memberId(), request);
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            session.invalidate();
+        }
+        return FrontMemberResponse.anonymous();
     }
 
     private void storeAuthenticatedMember(HttpServletRequest request, AuthenticatedFrontMember member) {

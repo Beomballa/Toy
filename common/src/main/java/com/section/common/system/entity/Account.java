@@ -75,4 +75,16 @@ public class Account extends BaseEntity {
         this.initYn = YN.N;
         this.tmpPwIssueDt = null;
     }
+
+    public void withdraw(String anonymizedEmail, String encodedPassword) {
+        this.email = anonymizedEmail;
+        this.password = encodedPassword;
+        this.name = "탈퇴 회원";
+        this.nickname = null;
+        this.profileImgPath = null;
+        this.profileImgName = null;
+        this.delYn = YN.Y;
+        this.initYn = YN.N;
+        this.tmpPwIssueDt = null;
+    }
 }

@@ -1,6 +1,9 @@
 package com.section.front.commerce.service;
 
 import com.section.common.commerce.entity.FrontCart;
+import com.section.common.commerce.entity.FrontOrderClaim;
+import com.section.common.commerce.entity.FrontOrderClaimStatus;
+import com.section.common.commerce.repository.FrontOrderClaimRepository;
 import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.OrderDelivery;
 import com.section.common.commerce.entity.OrderItem;
@@ -23,6 +26,7 @@ import com.section.front.commerce.dto.FrontCartItemRequest;
 import com.section.front.commerce.dto.FrontCartItemResponse;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateRequest;
+import com.section.front.commerce.dto.FrontOrderClaimRequest;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDeliveryResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
@@ -74,6 +78,7 @@ public class FrontCommerceService {
     private final OrderDeliveryRepository orderDeliveryRepository;
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final AccountRepository accountRepository;
+    private final FrontOrderClaimRepository orderClaimRepository;
 
     @Transactional(readOnly = true)
     public FrontCartResponse getCart(String cartToken) {
@@ -280,6 +285,21 @@ public class FrontCommerceService {
         Orders order = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
         return toOrderDetail(order);
+    }
+
+    @Transactional
+    public void requestOrderClaim(long memberNo, String orderNumber, FrontOrderClaimRequest request) {
+        requireAvailableMember(memberNo);
+        Orders order = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        if (!"DELIVERED".equals(order.getStatus())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "배송 완료 주문만 교환 또는 반품을 신청할 수 있습니다.");
+        }
+        if (orderClaimRepository.existsByOrderNoAndStatusIn(order.getId(), List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED))) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "처리 중인 교환 또는 반품 요청이 있습니다.");
+        }
+        String reason = request.reason().trim();
+        orderClaimRepository.save(FrontOrderClaim.request(order.getId(), memberNo, request.claimType(), reason, LocalDateTime.now()));
     }
 
     @Transactional

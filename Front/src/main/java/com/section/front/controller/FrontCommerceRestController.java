@@ -4,6 +4,7 @@ import com.section.front.commerce.dto.FrontCartItemRequest;
 import com.section.front.commerce.dto.FrontCartQuantityRequest;
 import com.section.front.commerce.dto.FrontCartResponse;
 import com.section.front.commerce.dto.FrontOrderCreateRequest;
+import com.section.front.commerce.dto.FrontOrderClaimRequest;
 import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderLookupRequest;
@@ -14,6 +15,7 @@ import com.section.front.commerce.service.FrontCommerceService;
 import com.section.front.commerce.service.FrontOrderLookupRateLimiter;
 import com.section.front.auth.support.FrontMemberSession;
 import com.section.front.auth.support.FrontMemberSession.AuthenticatedFrontMember;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -120,6 +122,11 @@ public class FrontCommerceRestController {
             HttpServletRequest request
     ) {
         return commerceService.cancelMemberOrder(memberNo(request), orderNumber, cancelRequest);
+    }
+
+    @PostMapping("/member/orders/{orderNumber}/claims")
+    public void requestOrderClaim(@PathVariable String orderNumber, @Valid @RequestBody FrontOrderClaimRequest request, HttpServletRequest httpRequest) {
+        commerceService.requestOrderClaim(memberNo(httpRequest), orderNumber, request);
     }
 
     @PostMapping("/member/orders/{orderNumber}/reorder")

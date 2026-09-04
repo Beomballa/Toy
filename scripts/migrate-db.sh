@@ -115,6 +115,7 @@ MIGRATIONS=(
   "2026081203|customer product review reports|db/front_product_review_report.sql"
   "2026081204|customer product review status history|db/front_product_review_status_history.sql"
   "2026081205|customer product review report resolution|db/front_product_review_report_status.sql"
+  "2026090401|customer password reset tokens|db/front_password_reset_token.sql"
 )
 
 for migration in "${MIGRATIONS[@]}"; do

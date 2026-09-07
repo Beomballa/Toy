@@ -354,7 +354,7 @@ public class FrontCommerceService {
     @Transactional
     public void cancelMemberOrderClaim(long memberNo, long claimNo) {
         requireAvailableMember(memberNo);
-        FrontOrderClaim claim = orderClaimRepository.findByIdAndMemberNo(claimNo, memberNo)
+        FrontOrderClaim claim = orderClaimRepository.findByIdAndMemberNoForUpdate(claimNo, memberNo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "교환·반품 요청을 확인할 수 없습니다."));
         if (claim.getStatus() != FrontOrderClaimStatus.REQUESTED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "접수 완료 상태의 요청만 철회할 수 있습니다.");

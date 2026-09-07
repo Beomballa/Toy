@@ -433,11 +433,12 @@ class FrontCommerceServiceTest {
         ReflectionTestUtils.setField(claim, "id", 42L);
         given(account.isAvailableCustomer()).willReturn(true);
         given(accountRepository.findById(7L)).willReturn(Optional.of(account));
-        given(orderClaimRepository.findByIdAndMemberNo(42L, 7L)).willReturn(Optional.of(claim));
+        given(orderClaimRepository.findByIdAndMemberNoForUpdate(42L, 7L)).willReturn(Optional.of(claim));
 
         commerceService.cancelMemberOrderClaim(7L, 42L);
 
         assertThat(claim.getStatus()).isEqualTo(FrontOrderClaimStatus.CANCELLED);
+        verify(orderClaimRepository).findByIdAndMemberNoForUpdate(42L, 7L);
         verify(orderClaimHistoryRepository).save(any());
     }
 

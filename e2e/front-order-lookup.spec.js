@@ -159,6 +159,41 @@ test("회원 주문 취소 모달은 스크롤된 작은 화면에서도 뷰포�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
 });
 
+test("배송 완료 회원 주문은 교환 신청을 전송하고 모바일 모달 경계를 유지한다", async ({ page }) => {
+  const number = "GSCLAIM000000";
+  const response = orderResponse(number, "교환 수령인");
+  Object.assign(response, { status: "DELIVERED", statusLabel: "배송 완료", statusStep: 4 });
+  response.statusHistory = [{ status: "DELIVERED", statusLabel: "배송 완료", changedAt: "2026.07.29 10:00" }];
+  let claimPayload;
+  await page.route(`**/api/front/member/orders/${number}`, route => route.fulfill({ json: response }));
+  await page.route(`**/api/front/member/orders/${number}/claims`, async route => {
+    claimPayload = route.request().postDataJSON();
+    await route.fulfill({ status: 200, json: {} });
+  });
+  await page.setViewportSize({ width: 320, height: 480 });
+  await page.goto(`/front/orders/${number}?member=true`);
+  await page.locator("#memberOrderClaimButton").click();
+  await expect(page.locator("#memberOrderClaimDialog")).toBeVisible();
+  await page.locator("#memberOrderClaimType").selectOption("EXCHANGE");
+  await page.locator("#memberOrderClaimReason").fill("사이즈 교환을 원합니다.");
+
+  const layout = await page.locator("#memberOrderClaimDialog").evaluate((dialog) => {
+    const rect = dialog.getBoundingClientRect();
+    const field = dialog.querySelector("textarea").getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, fieldRight: field.right };
+  });
+  expect(layout.left).toBeGreaterThanOrEqual(0);
+  expect(layout.right).toBeLessThanOrEqual(320);
+  expect(layout.top).toBeGreaterThanOrEqual(0);
+  expect(layout.bottom).toBeLessThanOrEqual(480);
+  expect(layout.fieldRight).toBeLessThanOrEqual(layout.right);
+
+  await page.locator("#memberOrderClaimForm").evaluate(form => form.requestSubmit());
+  await expect(page.locator("#memberOrderClaimDialog")).toBeHidden();
+  expect(claimPayload).toEqual({ claimType: "EXCHANGE", reason: "사이즈 교환을 원합니다." });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBeTruthy();
+});
+
 test("취소 주문은 진행 단계를 완료로 표시하지 않고 모바일 경계를 유지한다", async ({ page }) => {
   const number = "GSCANCEL00000";
   const response = orderResponse(number, "취소수령인");

@@ -2,6 +2,9 @@ package com.section.front.commerce.service;
 
 import com.section.common.commerce.entity.FrontCart;
 import com.section.common.commerce.entity.FrontCartItem;
+import com.section.common.commerce.entity.FrontOrderClaim;
+import com.section.common.commerce.entity.FrontOrderClaimStatus;
+import com.section.common.commerce.entity.FrontOrderClaimType;
 import com.section.common.commerce.entity.OrderDelivery;
 import com.section.common.commerce.entity.OrderItem;
 import com.section.common.commerce.entity.Orders;
@@ -10,6 +13,7 @@ import com.section.common.commerce.entity.ProductOption;
 import com.section.common.system.entity.Account;
 import com.section.common.base.exception.BusinessException;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
+import com.section.front.commerce.dto.FrontOrderClaimRequest;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.FrontOrderClaimRepository;
@@ -26,6 +30,7 @@ import com.section.front.commerce.dto.FrontOrderCreateRequest;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -309,6 +314,52 @@ class FrontCommerceServiceTest {
 
         verify(productOptionRepository, never()).findAllByIdForUpdate(any());
         verify(orderStatusHistoryRepository, never()).save(any());
+    }
+
+    @Test
+    void recordsRequestedExchangeForDeliveredMemberOrder() {
+        Account account = mock(Account.class);
+        Orders order = mock(Orders.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(order.getId()).willReturn(42L);
+        given(order.getStatus()).willReturn("DELIVERED");
+        given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(orderClaimRepository.existsByOrderNoAndStatusIn(
+                42L, List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED)
+        )).willReturn(false);
+
+        commerceService.requestOrderClaim(
+                7L, ORDER_NUMBER, new FrontOrderClaimRequest(FrontOrderClaimType.EXCHANGE, "  사이즈를 변경하고 싶습니다.  ")
+        );
+
+        ArgumentCaptor<FrontOrderClaim> claimCaptor = ArgumentCaptor.forClass(FrontOrderClaim.class);
+        verify(orderClaimRepository).save(claimCaptor.capture());
+        FrontOrderClaim claim = claimCaptor.getValue();
+        assertThat(claim.getOrderNo()).isEqualTo(42L);
+        assertThat(claim.getMemberNo()).isEqualTo(7L);
+        assertThat(claim.getClaimType()).isEqualTo(FrontOrderClaimType.EXCHANGE);
+        assertThat(claim.getReason()).isEqualTo("사이즈를 변경하고 싶습니다.");
+    }
+
+    @Test
+    void rejectsDuplicateOpenOrderClaim() {
+        Account account = mock(Account.class);
+        Orders order = mock(Orders.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(order.getId()).willReturn(42L);
+        given(order.getStatus()).willReturn("DELIVERED");
+        given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(orderClaimRepository.existsByOrderNoAndStatusIn(
+                42L, List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED)
+        )).willReturn(true);
+
+        assertThatThrownBy(() -> commerceService.requestOrderClaim(
+                7L, ORDER_NUMBER, new FrontOrderClaimRequest(FrontOrderClaimType.RETURN, "상품 상태 확인이 필요합니다.")
+        )).isInstanceOf(ResponseStatusException.class).hasMessageContaining("409");
+
+        verify(orderClaimRepository, never()).save(any());
     }
 
     @Test

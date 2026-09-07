@@ -27,6 +27,9 @@
     let memberOrdersLoaded = false;
     let memberOrderStatus = "ALL";
     let memberOrderSequence = 0;
+    let memberOrderClaimPage = 0;
+    let memberOrderClaimsLoaded = false;
+    let memberOrderClaimSequence = 0;
     let memberReviewPage = 0;
     let memberReviewsLoaded = false;
     let memberReviewSequence = 0;
@@ -171,6 +174,48 @@
         const rows = Array.isArray(summaries) ? summaries : [];
         const total = rows.reduce((sum, item) => sum + Math.max(0, Number(item?.count) || 0), 0);
         target.innerHTML = [`<button type="button" data-member-order-status="ALL" class="${memberOrderStatus === "ALL" ? "is-active" : ""}">전체 ${total}</button>`, ...rows.map(item => `<button type="button" data-member-order-status="${safe(item.status)}" class="${memberOrderStatus === item.status ? "is-active" : ""}">${safe(item.label)} ${Math.max(0, Number(item.count) || 0)}</button>`)].join("");
+    }
+    async function loadMemberOrderClaims(reset = false) {
+        const target = document.getElementById("memberOrderClaimsList");
+        const moreButton = document.getElementById("memberOrderClaimsMoreButton");
+        if (reset) {
+            memberOrderClaimPage = 0;
+            memberOrderClaimsLoaded = false;
+            memberOrderClaimSequence += 1;
+            target.innerHTML = '<p class="my-claim__empty">교환·반품 요청을 불러오는 중입니다.</p>';
+        }
+        if (memberOrderClaimsLoaded && !reset) return;
+        const requestSequence = memberOrderClaimSequence;
+        target.setAttribute("aria-busy", "true");
+        moreButton.disabled = true;
+        try {
+            const response = await fetch(`/api/front/member/order-claims?page=${memberOrderClaimPage}`, { headers: { Accept: "application/json" } });
+            if (response.status === 401) {
+                target.innerHTML = '<p class="my-claim__empty">로그인 후 교환·반품 요청을 확인할 수 있습니다.</p>';
+                moreButton.hidden = true;
+                memberOrderClaimsLoaded = true;
+                return;
+            }
+            if (!response.ok) throw new Error("교환·반품 요청을 불러오지 못했습니다.");
+            const payload = await response.json();
+            if (requestSequence !== memberOrderClaimSequence) return;
+            const claims = Array.isArray(payload.items) ? payload.items : [];
+            if (memberOrderClaimPage === 0) target.replaceChildren();
+            if (!claims.length && memberOrderClaimPage === 0) {
+                target.innerHTML = '<p class="my-claim__empty">접수한 교환·반품 요청이 없습니다.</p>';
+            } else {
+                target.insertAdjacentHTML("beforeend", claims.map(claim => `<article class="my-claim"><div><span>${safe(claim.claimTypeLabel)} · ${safe(claim.requestedAt)}</span><strong>${safe(claim.reason)}</strong><a href="/front/orders/${encodeURIComponent(claim.orderNumber)}?member=true">주문 ${safe(claim.orderNumber)} 보기</a></div><em data-status="${safe(claim.status)}">${safe(claim.statusLabel)}</em></article>`).join(""));
+            }
+            memberOrderClaimPage += 1;
+            memberOrderClaimsLoaded = !payload.hasNext;
+            moreButton.hidden = memberOrderClaimsLoaded;
+        } catch (_) {
+            if (requestSequence !== memberOrderClaimSequence) return;
+            if (memberOrderClaimPage === 0) target.innerHTML = '<p class="my-claim__empty">교환·반품 요청을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</p>';
+        } finally {
+            if (requestSequence === memberOrderClaimSequence) target.setAttribute("aria-busy", "false");
+            moreButton.disabled = false;
+        }
     }
     async function loadMemberReviews(reset = false) {
         const target = document.getElementById("memberReviewsList");
@@ -371,6 +416,7 @@
     document.getElementById("myExportButton").addEventListener("click",downloadCsv);
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
+    document.getElementById("memberOrderClaimsMoreButton").addEventListener("click", () => loadMemberOrderClaims());
     document.getElementById("memberReviewsMoreButton").addEventListener("click", () => loadMemberReviews());
     document.getElementById("memberReviewsList").addEventListener("click", async event => {
         const button = event.target.closest("[data-delete-review-id]");
@@ -536,6 +582,7 @@
     });
     render();
     loadMemberOrders();
+    loadMemberOrderClaims();
     loadMemberReviews();
     loadMemberProfile();
 })();

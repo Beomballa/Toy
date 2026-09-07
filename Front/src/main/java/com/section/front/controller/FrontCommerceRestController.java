@@ -9,6 +9,7 @@ import com.section.front.commerce.dto.FrontOrderCreateResponse;
 import com.section.front.commerce.dto.FrontOrderDetailResponse;
 import com.section.front.commerce.dto.FrontOrderLookupRequest;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
+import com.section.front.commerce.dto.FrontMemberOrderClaimListResponse;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.front.commerce.dto.FrontOrderReorderResponse;
 import com.section.front.commerce.service.FrontCommerceService;
@@ -127,6 +128,14 @@ public class FrontCommerceRestController {
     @PostMapping("/member/orders/{orderNumber}/claims")
     public void requestOrderClaim(@PathVariable String orderNumber, @Valid @RequestBody FrontOrderClaimRequest request, HttpServletRequest httpRequest) {
         commerceService.requestOrderClaim(memberNo(httpRequest), orderNumber, request);
+    }
+
+    @GetMapping("/member/order-claims")
+    public FrontMemberOrderClaimListResponse getMemberOrderClaims(
+            @RequestParam(defaultValue = "0") int page,
+            HttpServletRequest request
+    ) {
+        return commerceService.getMemberOrderClaims(memberNo(request), page);
     }
 
     @PostMapping("/member/orders/{orderNumber}/reorder")

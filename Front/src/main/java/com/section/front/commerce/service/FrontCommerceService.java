@@ -3,6 +3,7 @@ package com.section.front.commerce.service;
 import com.section.common.commerce.entity.FrontCart;
 import com.section.common.commerce.entity.FrontOrderClaim;
 import com.section.common.commerce.entity.FrontOrderClaimStatus;
+import com.section.common.commerce.entity.FrontOrderClaimType;
 import com.section.common.commerce.repository.FrontOrderClaimRepository;
 import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.OrderDelivery;
@@ -35,6 +36,8 @@ import com.section.front.commerce.dto.FrontMemberOrderItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderListResponse;
 import com.section.front.commerce.dto.FrontMemberOrderStatusSummary;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
+import com.section.front.commerce.dto.FrontMemberOrderClaimItemResponse;
+import com.section.front.commerce.dto.FrontMemberOrderClaimListResponse;
 import com.section.front.commerce.dto.FrontOrderReorderResponse;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +68,7 @@ public class FrontCommerceService {
     private static final int MAX_POSTAL_CODE_LENGTH = 10;
     private static final int MAX_ADDRESS_LENGTH = 200;
     private static final int MEMBER_ORDER_PAGE_SIZE = 10;
+    private static final int MEMBER_ORDER_CLAIM_PAGE_SIZE = 10;
     private static final List<String> MEMBER_ORDER_STATUSES = List.of(
             "ORDERED", "PAID", "PREPARING", "SHIPPED", "DELIVERED", "CANCELLED"
     );
@@ -300,6 +304,29 @@ public class FrontCommerceService {
         }
         String reason = request.reason().trim();
         orderClaimRepository.save(FrontOrderClaim.request(order.getId(), memberNo, request.claimType(), reason, LocalDateTime.now()));
+    }
+
+    @Transactional(readOnly = true)
+    public FrontMemberOrderClaimListResponse getMemberOrderClaims(long memberNo, int page) {
+        requireAvailableMember(memberNo);
+        if (page < 0) {
+            throw new IllegalArgumentException("페이지 정보가 올바르지 않습니다.");
+        }
+        Page<FrontOrderClaim> claims = orderClaimRepository.findByMemberNoOrderByCrtDtmDescIdDesc(
+                memberNo, PageRequest.of(page, MEMBER_ORDER_CLAIM_PAGE_SIZE)
+        );
+        Map<Long, String> orderNumbers = claims.isEmpty() ? Map.of() : orderRepository.findAllById(
+                        claims.getContent().stream().map(FrontOrderClaim::getOrderNo).toList()
+                ).stream().collect(Collectors.toMap(Orders::getId, Orders::getOrderNum));
+        List<FrontMemberOrderClaimItemResponse> items = claims.getContent().stream()
+                .map(claim -> new FrontMemberOrderClaimItemResponse(
+                        orderNumbers.getOrDefault(claim.getOrderNo(), "-"),
+                        claim.getClaimType().name(), claimTypeLabel(claim.getClaimType()),
+                        claim.getStatus().name(), claimStatusLabel(claim.getStatus()),
+                        claim.getReason(), formatDateTime(claim.getRequestedAt())
+                ))
+                .toList();
+        return new FrontMemberOrderClaimListResponse(items, claims.getNumber(), claims.hasNext());
     }
 
     @Transactional
@@ -668,6 +695,19 @@ public class FrontCommerceService {
             case "DELIVERED" -> "배송 완료";
             case "CANCELLED" -> "주문 취소";
             default -> "상태 확인";
+        };
+    }
+
+    private String claimTypeLabel(FrontOrderClaimType claimType) {
+        return claimType == FrontOrderClaimType.EXCHANGE ? "교환" : "반품";
+    }
+
+    private String claimStatusLabel(FrontOrderClaimStatus status) {
+        return switch (status) {
+            case REQUESTED -> "접수 완료";
+            case APPROVED -> "처리 진행";
+            case REJECTED -> "처리 불가";
+            case COMPLETED -> "처리 완료";
         };
     }
 

@@ -363,6 +363,36 @@ class FrontCommerceServiceTest {
     }
 
     @Test
+    void returnsOnlyMemberOrderClaimsWithTheirOrderNumbers() {
+        Account account = mock(Account.class);
+        FrontOrderClaim claim = mock(FrontOrderClaim.class);
+        Orders order = mock(Orders.class);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(claim.getOrderNo()).willReturn(42L);
+        given(claim.getClaimType()).willReturn(FrontOrderClaimType.RETURN);
+        given(claim.getStatus()).willReturn(FrontOrderClaimStatus.REQUESTED);
+        given(claim.getReason()).willReturn("상품 상태를 확인하고 싶습니다.");
+        given(claim.getRequestedAt()).willReturn(LocalDateTime.of(2026, 9, 7, 10, 0));
+        given(order.getId()).willReturn(42L);
+        given(order.getOrderNum()).willReturn(ORDER_NUMBER);
+        given(orderClaimRepository.findByMemberNoOrderByCrtDtmDescIdDesc(7L, PageRequest.of(0, 10)))
+                .willReturn(new PageImpl<>(List.of(claim), PageRequest.of(0, 10), 1));
+        given(orderRepository.findAllById(List.of(42L))).willReturn(List.of(order));
+
+        var response = commerceService.getMemberOrderClaims(7L, 0);
+
+        assertThat(response.items()).singleElement().satisfies(item -> {
+            assertThat(item.orderNumber()).isEqualTo(ORDER_NUMBER);
+            assertThat(item.claimTypeLabel()).isEqualTo("반품");
+            assertThat(item.statusLabel()).isEqualTo("접수 완료");
+            assertThat(item.reason()).isEqualTo("상품 상태를 확인하고 싶습니다.");
+        });
+        verify(orderClaimRepository).findByMemberNoOrderByCrtDtmDescIdDesc(7L, PageRequest.of(0, 10));
+        verify(orderRepository).findAllById(List.of(42L));
+    }
+
+    @Test
     void reordersOnlyPurchasableItemsIntoTheCurrentCart() {
         Account account = mock(Account.class);
         Orders order = mock(Orders.class);

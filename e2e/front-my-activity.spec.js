@@ -11,6 +11,11 @@ test.beforeEach(async ({ page }) => {
     contentType: "application/json",
     body: JSON.stringify({ reviews: [], totalCount: 0, hasNext: false })
   }));
+  await page.route("**/api/front/member/order-claims**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({ items: [], hasNext: false })
+  }));
 });
 
 test("MY 활동은 변조된 저장 항목을 제외하고 전체 활동을 안전하게 초기화한다", async ({ page }) => {
@@ -72,6 +77,31 @@ test("MY 활동은 중복 상품과 위험한 이미지·금액 값을 정규화
   await expect(page.locator(".my-card__visual img")).toHaveAttribute("src", "/images/product-placeholder.svg");
   await expect(page.locator(".my-card__price strong")).toHaveText("0원");
   await expect(page.locator("body")).not.toContainText("중복 상품");
+});
+
+test("MY 활동은 교환·반품 요청의 주문 링크와 처리 상태를 안전하게 표시한다", async ({ page }) => {
+  await page.route("**/api/front/member/order-claims**", route => route.fulfill({
+    status: 200,
+    contentType: "application/json",
+    body: JSON.stringify({
+      items: [{
+        orderNumber: "GSCLAIM000000",
+        claimType: "EXCHANGE",
+        claimTypeLabel: "교환",
+        status: "APPROVED",
+        statusLabel: "처리 진행",
+        reason: "사이즈 교환을 원합니다.",
+        requestedAt: "2026.09.07 10:00"
+      }],
+      hasNext: false
+    })
+  }));
+  await page.goto("/front/my");
+
+  await expect(page.locator(".my-claim")).toHaveCount(1);
+  await expect(page.locator(".my-claim")).toContainText("사이즈 교환을 원합니다.");
+  await expect(page.locator(".my-claim em")).toHaveText("처리 진행");
+  await expect(page.locator(".my-claim a")).toHaveAttribute("href", "/front/orders/GSCLAIM000000?member=true");
 });
 
 test("MY 활동은 상품 보드를 먼저 보여주고 선택 작업과 관리 기능을 단계적으로 노출한다", async ({ page }) => {

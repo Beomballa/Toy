@@ -108,6 +108,25 @@ test("MY 활동은 교환·반품 요청의 주문 링크와 처리 상태를 �
   await expect(page.locator(".my-claim__history-list")).toContainText("회수 접수 완료");
 });
 
+test("MY 활동은 접수 완료 교환·반품 요청만 철회하고 목록을 갱신한다", async ({ page }) => {
+  let cancelled = false;
+  await page.route("**/api/front/member/order-claims**", route => {
+    if (route.request().method() === "POST") {
+      cancelled = true;
+      return route.fulfill({ status: 200, json: {} });
+    }
+    return route.fulfill({ json: {
+      items: cancelled ? [{ claimNo: 41, orderNumber: "GSCLAIM000041", claimTypeLabel: "반품", status: "CANCELLED", statusLabel: "철회 완료", reason: "상품 상태 확인", requestedAt: "2026.09.07 10:00" }] : [{ claimNo: 41, orderNumber: "GSCLAIM000041", claimTypeLabel: "반품", status: "REQUESTED", statusLabel: "접수 완료", reason: "상품 상태 확인", requestedAt: "2026.09.07 10:00" }], hasNext: false
+    }});
+  });
+  await page.goto("/front/my");
+  await expect(page.locator(".my-claim__cancel")).toBeVisible();
+  page.once("dialog", dialog => dialog.accept());
+  await page.locator(".my-claim__cancel").click();
+  await expect(page.locator(".my-claim em")).toHaveText("철회 완료");
+  await expect(page.locator(".my-claim__cancel")).toHaveCount(0);
+});
+
 test("MY 활동은 상품 보드를 먼저 보여주고 선택 작업과 관리 기능을 단계적으로 노출한다", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("front-recent-viewed-products", JSON.stringify([

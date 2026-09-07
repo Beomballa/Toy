@@ -3,6 +3,7 @@ package com.section.front.commerce.service;
 import com.section.common.commerce.entity.FrontCart;
 import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.FrontOrderClaim;
+import com.section.common.commerce.entity.FrontOrderClaimHistory;
 import com.section.common.commerce.entity.FrontOrderClaimStatus;
 import com.section.common.commerce.entity.FrontOrderClaimType;
 import com.section.common.commerce.entity.OrderDelivery;
@@ -399,6 +400,30 @@ class FrontCommerceServiceTest {
         });
         verify(orderClaimRepository).findByMemberNoOrderByCrtDtmDescIdDesc(7L, PageRequest.of(0, 10));
         verify(orderRepository).findAllById(List.of(42L));
+    }
+
+    @Test
+    void returnsClaimHistoryOnlyAfterVerifyingClaimOwnership() {
+        Account account = mock(Account.class);
+        FrontOrderClaim claim = mock(FrontOrderClaim.class);
+        FrontOrderClaimHistory history = FrontOrderClaimHistory.create(
+                42L, FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED, "회수 접수 완료"
+        );
+        history.setCrtDtm(LocalDateTime.of(2026, 9, 7, 11, 0));
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(orderClaimRepository.findByIdAndMemberNo(42L, 7L)).willReturn(Optional.of(claim));
+        given(orderClaimHistoryRepository.findByClaimNoOrderByIdAsc(42L)).willReturn(List.of(history));
+
+        var response = commerceService.getMemberOrderClaimHistory(7L, 42L);
+
+        assertThat(response).singleElement().satisfies(item -> {
+            assertThat(item.beforeStatusLabel()).isEqualTo("접수 완료");
+            assertThat(item.afterStatusLabel()).isEqualTo("처리 진행");
+            assertThat(item.memo()).isEqualTo("회수 접수 완료");
+        });
+        verify(orderClaimRepository).findByIdAndMemberNo(42L, 7L);
+        verify(orderClaimHistoryRepository).findByClaimNoOrderByIdAsc(42L);
     }
 
     @Test

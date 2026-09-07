@@ -123,6 +123,10 @@
 .my-claim span, .my-claim a { color: var(--my-muted); font-size: 10px; }
 .my-claim strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .my-claim a { text-decoration: underline; text-underline-offset: 2px; }
+.my-claim__history { justify-self: start; min-height: 28px; padding: 0; border: 0; color: var(--my-muted); background: transparent; font-size: 10px; text-decoration: underline; text-underline-offset: 2px; }
+.my-claim__history-list { display: grid; gap: 5px; margin: 2px 0 0; padding: 9px 10px; border-left: 2px solid var(--my-line); color: var(--my-muted); font-size: 10px; list-style: none; }
+.my-claim__history-list li { display: grid; gap: 2px; }
+.my-claim__history-list strong { color: var(--my-ink); font-size: 10px; }
 .my-claim em { flex: none; min-width: 64px; padding: 7px 9px; border-radius: 999px; color: #4d5d50; background: var(--my-soft); text-align: center; font-size: 10px; font-style: normal; font-weight: 800; white-space: nowrap; }
 .my-claim em[data-status="REJECTED"] { color: #9a3f34; background: #fff1ee; }
 .my-claim em[data-status="COMPLETED"] { color: #4f6076; background: #eef3f8; }

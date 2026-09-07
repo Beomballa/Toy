@@ -204,7 +204,7 @@
             if (!claims.length && memberOrderClaimPage === 0) {
                 target.innerHTML = '<p class="my-claim__empty">접수한 교환·반품 요청이 없습니다.</p>';
             } else {
-                target.insertAdjacentHTML("beforeend", claims.map(claim => `<article class="my-claim"><div><span>${safe(claim.claimTypeLabel)} · ${safe(claim.requestedAt)}</span><strong>${safe(claim.reason)}</strong><a href="/front/orders/${encodeURIComponent(claim.orderNumber)}?member=true">주문 ${safe(claim.orderNumber)} 보기</a></div><em data-status="${safe(claim.status)}">${safe(claim.statusLabel)}</em></article>`).join(""));
+                target.insertAdjacentHTML("beforeend", claims.map(claim => `<article class="my-claim"><div><span>${safe(claim.claimTypeLabel)} · ${safe(claim.requestedAt)}</span><strong>${safe(claim.reason)}</strong><a href="/front/orders/${encodeURIComponent(claim.orderNumber)}?member=true">주문 ${safe(claim.orderNumber)} 보기</a><button type="button" class="my-claim__history" data-claim-history="${Math.max(0, Number(claim.claimNo) || 0)}">처리 이력 보기</button><ol class="my-claim__history-list" hidden></ol></div><em data-status="${safe(claim.status)}">${safe(claim.statusLabel)}</em></article>`).join(""));
             }
             memberOrderClaimPage += 1;
             memberOrderClaimsLoaded = !payload.hasNext;
@@ -417,6 +417,26 @@
     document.getElementById("myCopySummaryButton").addEventListener("click",async()=>{const text=`${labels[state.tab]} ${filtered().length}개 · 평균가 ${document.getElementById("myAveragePrice").textContent}`;try{await navigator.clipboard.writeText(text);toast("쇼핑 활동 요약을 복사했습니다.");}catch(_){toast("요약을 복사하지 못했습니다.");}});
     document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
     document.getElementById("memberOrderClaimsMoreButton").addEventListener("click", () => loadMemberOrderClaims());
+    document.getElementById("memberOrderClaimsList").addEventListener("click", async event => {
+        const button = event.target.closest("[data-claim-history]");
+        if (!button || button.disabled) return;
+        const claimNo = Math.max(0, Number(button.dataset.claimHistory) || 0);
+        const list = button.nextElementSibling;
+        if (!claimNo || !(list instanceof HTMLOListElement)) return;
+        if (!list.hidden) { list.hidden = true; button.textContent = "처리 이력 보기"; return; }
+        if (list.dataset.loaded === "true") { list.hidden = false; button.textContent = "처리 이력 닫기"; return; }
+        button.disabled = true;
+        try {
+            const response = await fetch(`/api/front/member/order-claims/${claimNo}/history`, { headers: { Accept: "application/json" } });
+            if (!response.ok) throw new Error("처리 이력을 불러오지 못했습니다.");
+            const rows = await response.json();
+            list.innerHTML = Array.isArray(rows) && rows.length ? rows.map(row => `<li><strong>${safe(row.afterStatusLabel)}</strong><span>${safe(row.memo || "처리 상태가 변경되었습니다.")} · ${safe(row.changedAt)}</span></li>`).join("") : "<li>처리 이력이 없습니다.</li>";
+            list.dataset.loaded = "true";
+            list.hidden = false;
+            button.textContent = "처리 이력 닫기";
+        } catch (_) { toast("처리 이력을 불러오지 못했습니다."); }
+        finally { button.disabled = false; }
+    });
     document.getElementById("memberReviewsMoreButton").addEventListener("click", () => loadMemberReviews());
     document.getElementById("memberReviewsList").addEventListener("click", async event => {
         const button = event.target.closest("[data-delete-review-id]");

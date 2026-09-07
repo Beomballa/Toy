@@ -40,6 +40,7 @@ import com.section.front.commerce.dto.FrontMemberOrderStatusSummary;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.front.commerce.dto.FrontMemberOrderClaimItemResponse;
 import com.section.front.commerce.dto.FrontMemberOrderClaimListResponse;
+import com.section.front.commerce.dto.FrontMemberOrderClaimHistoryResponse;
 import com.section.front.commerce.dto.FrontOrderReorderResponse;
 import com.section.front.commerce.dto.FrontOrderStatusEventResponse;
 import lombok.RequiredArgsConstructor;
@@ -328,13 +329,26 @@ public class FrontCommerceService {
                 ).stream().collect(Collectors.toMap(Orders::getId, Orders::getOrderNum));
         List<FrontMemberOrderClaimItemResponse> items = claims.getContent().stream()
                 .map(claim -> new FrontMemberOrderClaimItemResponse(
-                        orderNumbers.getOrDefault(claim.getOrderNo(), "-"),
+                        claim.getId(), orderNumbers.getOrDefault(claim.getOrderNo(), "-"),
                         claim.getClaimType().name(), claimTypeLabel(claim.getClaimType()),
                         claim.getStatus().name(), claimStatusLabel(claim.getStatus()),
                         claim.getReason(), formatDateTime(claim.getRequestedAt())
                 ))
                 .toList();
         return new FrontMemberOrderClaimListResponse(items, claims.getNumber(), claims.hasNext());
+    }
+
+    @Transactional(readOnly = true)
+    public List<FrontMemberOrderClaimHistoryResponse> getMemberOrderClaimHistory(long memberNo, long claimNo) {
+        requireAvailableMember(memberNo);
+        orderClaimRepository.findByIdAndMemberNo(claimNo, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "교환·반품 요청을 확인할 수 없습니다."));
+        return orderClaimHistoryRepository.findByClaimNoOrderByIdAsc(claimNo).stream()
+                .map(history -> new FrontMemberOrderClaimHistoryResponse(
+                        claimStatusLabel(history.getBeforeStatus()), claimStatusLabel(history.getAfterStatus()),
+                        history.getMemo() == null ? "" : history.getMemo(), formatDateTime(history.getCrtDtm())
+                ))
+                .toList();
     }
 
     @Transactional
@@ -711,11 +725,16 @@ public class FrontCommerceService {
     }
 
     private String claimStatusLabel(FrontOrderClaimStatus status) {
+        return claimStatusLabel(status == null ? null : status.name());
+    }
+
+    private String claimStatusLabel(String status) {
         return switch (status) {
-            case REQUESTED -> "접수 완료";
-            case APPROVED -> "처리 진행";
-            case REJECTED -> "처리 불가";
-            case COMPLETED -> "처리 완료";
+            case "REQUESTED" -> "접수 완료";
+            case "APPROVED" -> "처리 진행";
+            case "REJECTED" -> "처리 불가";
+            case "COMPLETED" -> "처리 완료";
+            default -> "-";
         };
     }
 

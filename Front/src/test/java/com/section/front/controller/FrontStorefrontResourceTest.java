@@ -73,8 +73,8 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"memberProfileForm\"")
                 .contains("id=\"memberLogoutButton\"")
                 .contains("id=\"memberOrderClaimsList\"")
-                .contains("/js/view/my-activity.js?v=20260907.1")
-                .contains("/css/my-activity.css?v=20260907.1");
+                .contains("/js/view/my-activity.js?v=20260907.2")
+                .contains("/css/my-activity.css?v=20260907.2");
         assertThat(script)
                 .contains("/api/front/auth/password")
                 .contains("submitButton.disabled = true")
@@ -578,8 +578,8 @@ class FrontStorefrontResourceTest {
                 .contains("role=\"tablist\"")
                 .contains("aria-busy=\"true\"")
                 .containsSubsequence("class=\"my-board\"", "class=\"my-orders\"")
-                .contains("/css/my-activity.css?v=20260907.1")
-                .contains("/js/view/my-activity.js?v=20260907.1");
+                .contains("/css/my-activity.css?v=20260907.2")
+                .contains("/js/view/my-activity.js?v=20260907.2");
         assertThat(script)
                 .contains("front-recent-viewed-products")
                 .contains("front-bookmark-products")

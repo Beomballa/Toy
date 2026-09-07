@@ -86,6 +86,7 @@ test("MY 활동은 교환·반품 요청의 주문 링크와 처리 상태를 �
     body: JSON.stringify({
       items: [{
         orderNumber: "GSCLAIM000000",
+        claimNo: 31,
         claimType: "EXCHANGE",
         claimTypeLabel: "교환",
         status: "APPROVED",
@@ -96,12 +97,15 @@ test("MY 활동은 교환·반품 요청의 주문 링크와 처리 상태를 �
       hasNext: false
     })
   }));
+  await page.route("**/api/front/member/order-claims/31/history", route => route.fulfill({ json: [{ afterStatusLabel: "처리 진행", memo: "회수 접수 완료", changedAt: "2026.09.07 11:00" }] }));
   await page.goto("/front/my");
 
   await expect(page.locator(".my-claim")).toHaveCount(1);
   await expect(page.locator(".my-claim")).toContainText("사이즈 교환을 원합니다.");
   await expect(page.locator(".my-claim em")).toHaveText("처리 진행");
   await expect(page.locator(".my-claim a")).toHaveAttribute("href", "/front/orders/GSCLAIM000000?member=true");
+  await page.locator(".my-claim__history").click();
+  await expect(page.locator(".my-claim__history-list")).toContainText("회수 접수 완료");
 });
 
 test("MY 활동은 상품 보드를 먼저 보여주고 선택 작업과 관리 기능을 단계적으로 노출한다", async ({ page }) => {

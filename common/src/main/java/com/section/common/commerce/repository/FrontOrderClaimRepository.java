@@ -18,6 +18,8 @@ public interface FrontOrderClaimRepository extends JpaRepository<FrontOrderClaim
 
     Page<FrontOrderClaim> findByStatusOrderByIdDesc(FrontOrderClaimStatus status, Pageable pageable);
 
+    java.util.Optional<FrontOrderClaim> findByIdAndMemberNo(long claimNo, long memberNo);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select claim from FrontOrderClaim claim where claim.id = :claimNo")
     java.util.Optional<FrontOrderClaim> findByIdForUpdate(@Param("claimNo") long claimNo);

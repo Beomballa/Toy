@@ -12,6 +12,8 @@
     const cancelDialog = document.getElementById("memberOrderCancelDialog");
     const cancelForm = document.getElementById("memberOrderCancelForm");
     const cancelReason = document.getElementById("memberOrderCancelReason");
+    const claimDialog = document.getElementById("memberOrderClaimDialog");
+    const claimForm = document.getElementById("memberOrderClaimForm");
     let currentOrder = null;
     let toastTimer = null;
     let lookupController = null;
@@ -449,6 +451,7 @@
         document.getElementById("memberOrderCancelButton").hidden = !isMemberOrder
             || !["ORDERED", "PAID", "PREPARING"].includes(order.status);
         document.getElementById("memberOrderReorderButton").hidden = !isMemberOrder || !order.items.length;
+        document.getElementById("memberOrderClaimButton").hidden = !isMemberOrder || order.status !== "DELIVERED";
         document.getElementById("orderTotalAmount").textContent = formatPrice(order.totalAmount);
         const totalQuantity = order.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
         document.getElementById("orderItemSummary").textContent = `${order.items.length}개 상품 · 총 ${totalQuantity}개`;
@@ -575,6 +578,19 @@
         cancelReason.focus();
     });
     document.getElementById("memberOrderReorderButton").addEventListener("click", reorderMemberOrder);
+    document.getElementById("memberOrderClaimButton").addEventListener("click", () => claimDialog.showModal());
+    document.getElementById("memberOrderClaimCloseButton").addEventListener("click", () => claimDialog.close());
+    claimForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        const reason = document.getElementById("memberOrderClaimReason").value.trim();
+        if (!reason || !currentOrder) return showToast("신청 사유를 입력해 주세요.");
+        const submit = document.getElementById("memberOrderClaimSubmitButton"); submit.disabled = true;
+        try {
+            const response = await fetch(`/api/front/member/orders/${encodeURIComponent(currentOrder.orderNumber)}/claims`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ claimType: document.getElementById("memberOrderClaimType").value, reason }) });
+            if (!response.ok) throw new Error((await response.json().catch(() => null))?.message || "신청하지 못했습니다.");
+            claimDialog.close(); showToast("교환·반품 신청이 접수되었습니다.");
+        } catch (error) { showToast(error.message); } finally { submit.disabled = false; }
+    });
     document.getElementById("memberOrderCancelCloseButton").addEventListener("click", () => cancelDialog.close());
     cancelForm.addEventListener("submit", (event) => { event.preventDefault(); cancelMemberOrder(); });
     cancelReason.addEventListener("input", () => {

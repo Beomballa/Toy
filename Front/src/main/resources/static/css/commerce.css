@@ -264,7 +264,8 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 .order-cancel-dialog h2 { margin:0; font-size:20px; letter-spacing:-.04em; }
 .order-cancel-dialog form > span { color:var(--muted); font-size:12px; line-height:1.55; }
 .order-cancel-dialog label { display:grid; gap:7px; margin-top:5px; color:#555; font-size:12px; font-weight:700; }
-.order-cancel-dialog textarea { width:100%; min-height:88px; box-sizing:border-box; resize:vertical; padding:10px; border:1px solid #ddd; border-radius:8px; font:inherit; font-size:12px; outline:none; }
+.order-cancel-dialog textarea, .order-cancel-dialog select { width:100%; box-sizing:border-box; padding:10px; border:1px solid #ddd; border-radius:8px; background:#fff; font:inherit; font-size:12px; outline:none; }
+.order-cancel-dialog textarea { min-height:88px; resize:vertical; }
 .order-cancel-dialog textarea:focus { border-color:var(--ink); }
 .order-cancel-dialog form > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:6px; }
 .order-cancel-dialog form > div button { min-height:42px; border:1px solid #ddd; border-radius:8px; background:#fff; font-weight:800; cursor:pointer; }

@@ -7,7 +7,7 @@
     <link rel="stylesheet" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
     <link rel="stylesheet" href="/css/design-tokens.css?v=20260813.1">
     <link rel="stylesheet" href="/css/storefront-shell.css?v=20260831.1">
-    <link rel="stylesheet" href="/css/commerce.css?v=20260902.1">
+    <link rel="stylesheet" href="/css/commerce.css?v=20260907.1">
 </head>
 <body class="order-lookup-body storefront-page" th:attr="data-order-number=${orderNumber}">
 <a class="skip-link" href="#orderLookupMain">본문 바로가기</a>
@@ -35,6 +35,7 @@
                 <strong id="orderResultStatus"></strong>
                 <button type="button" id="memberOrderReorderButton" hidden>장바구니에 다시 담기</button>
                 <button type="button" id="memberOrderCancelButton" class="order-cancel-button" hidden>주문 취소</button>
+                <button type="button" id="memberOrderClaimButton" hidden>교환·반품 신청</button>
                 <details class="order-result__more" id="orderResultMore"><summary aria-label="주문 추가 기능">•••</summary><div><button type="button" id="copyOrderNumberButton">주문번호 복사</button><button type="button" id="orderSupportButton">주문 도움말</button><button type="button" id="printOrderButton">인쇄</button></div></details>
             </div>
         </div>
@@ -62,10 +63,18 @@
         <div><button type="button" id="memberOrderCancelCloseButton">돌아가기</button><button type="submit" id="memberOrderCancelSubmitButton">주문 취소하기</button></div>
     </form>
 </dialog>
+<dialog class="order-cancel-dialog" id="memberOrderClaimDialog" aria-labelledby="memberOrderClaimTitle">
+    <form id="memberOrderClaimForm" method="dialog">
+        <p>Exchange / Return</p><h2 id="memberOrderClaimTitle">교환 또는 반품을 신청할까요?</h2><span>배송 완료 주문만 신청할 수 있으며, 처리 중인 요청이 있으면 추가 신청할 수 없습니다.</span>
+        <label>요청 유형<select id="memberOrderClaimType"><option value="RETURN">반품</option><option value="EXCHANGE">교환</option></select></label>
+        <label>신청 사유<textarea id="memberOrderClaimReason" maxlength="1000" required placeholder="상품 상태와 요청 사유를 입력해 주세요."></textarea></label>
+        <div><button type="button" id="memberOrderClaimCloseButton">돌아가기</button><button type="submit" id="memberOrderClaimSubmitButton">신청하기</button></div>
+    </form>
+</dialog>
 <div class="commerce-toast" id="commerceToast" role="status" aria-live="polite" hidden></div>
 <footer th:replace="~{fragments/storefront-shell :: footer}"></footer>
 <script src="/js/view/storefront-state.js?v=20260805.2"></script>
 <script src="/js/view/storefront-shell.js?v=20260802.1"></script>
-<script src="/js/view/order-lookup.js?v=20260815.1"></script>
+<script src="/js/view/order-lookup.js?v=20260907.1"></script>
 </body>
 </html>

@@ -12,6 +12,7 @@ import com.section.common.base.exception.BusinessException;
 import com.section.front.commerce.dto.FrontMemberOrderCancelRequest;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
+import com.section.common.commerce.repository.FrontOrderClaimRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
@@ -55,6 +56,7 @@ class FrontCommerceServiceTest {
     private final OrderDeliveryRepository orderDeliveryRepository = mock(OrderDeliveryRepository.class);
     private final OrderStatusHistoryRepository orderStatusHistoryRepository = mock(OrderStatusHistoryRepository.class);
     private final AccountRepository accountRepository = mock(AccountRepository.class);
+    private final FrontOrderClaimRepository orderClaimRepository = mock(FrontOrderClaimRepository.class);
 
     private FrontCommerceService commerceService;
 
@@ -69,7 +71,8 @@ class FrontCommerceServiceTest {
                 orderItemRepository,
                 orderDeliveryRepository,
                 orderStatusHistoryRepository,
-                accountRepository
+                accountRepository,
+                orderClaimRepository
         );
     }
 

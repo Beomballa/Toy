@@ -298,7 +298,11 @@ public class FrontCommerceService {
     @Transactional
     public void requestOrderClaim(long memberNo, String orderNumber, FrontOrderClaimRequest request) {
         requireAvailableMember(memberNo);
-        Orders order = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+        Orders requestedOrder = orderRepository.findByOrderNumAndMemberNo(orderNumber, memberNo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
+        // 같은 주문의 동시 신청은 주문 잠금 안에서 기존 처리 건을 확인해 중복 접수를 막는다.
+        Orders order = orderRepository.findByIdForUpdate(requestedOrder.getId())
+                .filter(candidate -> Long.valueOf(memberNo).equals(candidate.getMemberNo()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "주문 정보를 확인할 수 없습니다."));
         if (!"DELIVERED".equals(order.getStatus())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "배송 완료 주문만 교환 또는 반품을 신청할 수 있습니다.");

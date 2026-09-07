@@ -327,8 +327,10 @@ class FrontCommerceServiceTest {
         given(account.isAvailableCustomer()).willReturn(true);
         given(accountRepository.findById(7L)).willReturn(Optional.of(account));
         given(order.getId()).willReturn(42L);
+        given(order.getMemberNo()).willReturn(7L);
         given(order.getStatus()).willReturn("DELIVERED");
         given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdForUpdate(42L)).willReturn(Optional.of(order));
         given(orderClaimRepository.existsByOrderNoAndStatusIn(
                 42L, List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED)
         )).willReturn(false);
@@ -349,6 +351,7 @@ class FrontCommerceServiceTest {
         assertThat(claim.getMemberNo()).isEqualTo(7L);
         assertThat(claim.getClaimType()).isEqualTo(FrontOrderClaimType.EXCHANGE);
         assertThat(claim.getReason()).isEqualTo("사이즈를 변경하고 싶습니다.");
+        verify(orderRepository).findByIdForUpdate(42L);
         verify(orderClaimHistoryRepository).save(any());
     }
 
@@ -359,8 +362,10 @@ class FrontCommerceServiceTest {
         given(account.isAvailableCustomer()).willReturn(true);
         given(accountRepository.findById(7L)).willReturn(Optional.of(account));
         given(order.getId()).willReturn(42L);
+        given(order.getMemberNo()).willReturn(7L);
         given(order.getStatus()).willReturn("DELIVERED");
         given(orderRepository.findByOrderNumAndMemberNo(ORDER_NUMBER, 7L)).willReturn(Optional.of(order));
+        given(orderRepository.findByIdForUpdate(42L)).willReturn(Optional.of(order));
         given(orderClaimRepository.existsByOrderNoAndStatusIn(
                 42L, List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED)
         )).willReturn(true);

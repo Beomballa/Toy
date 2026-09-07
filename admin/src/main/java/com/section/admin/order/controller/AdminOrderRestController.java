@@ -10,6 +10,7 @@ import com.section.admin.order.req.AdminOrderClaimStatusUpdateRequest;
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.admin.order.res.OrderListResponse;
+import com.section.admin.order.res.AdminOrderClaimListResponse;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.admin.order.service.AdminOrderClaimService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
@@ -117,5 +118,13 @@ public class AdminOrderRestController {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderClaimService.updateStatus(req.claimNo(), req.status(), req.normalizedMemo());
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/claims")
+    public ResponseEntity<AdminOrderClaimListResponse> getOrderClaims(
+            @RequestParam(defaultValue = "ALL") String status,
+            @RequestParam(defaultValue = "0") int page
+    ) {
+        return ResponseEntity.ok(adminOrderClaimService.getClaims(status, page));
     }
 }

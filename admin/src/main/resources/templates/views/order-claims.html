@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교환·반품 관리 | NOREN Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/product.css">
+    <link rel="stylesheet" href="/css/common.css">
+</head>
+<body>
+<nav th:replace="~{fragments/layout :: sidebar}"></nav>
+<main class="main-content admin-page-shell admin-list-page">
+    <div class="page-header"><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="/admin">Home</a></li><li class="breadcrumb-item"><a href="/admin/orders">Sales</a></li><li class="breadcrumb-item active">Claims</li></ol></nav><div class="page-title-wrapper"><h1 class="page-title">교환·반품 관리</h1><a class="btn btn-outline-secondary" href="/admin/orders">주문 관리</a></div></div>
+    <section class="card admin-panel-card admin-filter-panel"><div class="card-body"><div class="admin-search-layout"><div class="admin-search-section"><div class="admin-search-section__title">요청 상태</div><div class="admin-search-section__desc">접수부터 완료까지 요청을 단계별로 처리합니다.</div><div class="admin-filter-grid admin-search-grid"><div class="admin-filter-field admin-filter-field--span-2"><label class="admin-filter-label" for="claimStatus">처리 상태</label><select class="form-select" id="claimStatus"><option value="ALL">전체 요청</option><option value="REQUESTED">접수 완료</option><option value="APPROVED">처리 진행</option><option value="REJECTED">처리 불가</option><option value="COMPLETED">처리 완료</option></select></div></div></div><div class="task-filter-actions"><div class="task-filter-actions__hint" id="claimResultMeta" aria-live="polite">요청을 불러오는 중입니다.</div><div class="admin-filter-actions"><button class="btn btn-primary" type="button" id="claimFilterButton"><i class="fas fa-filter me-2"></i>필터 적용</button><button class="btn btn-outline-secondary" type="button" id="claimResetButton">초기화</button></div></div></div></div></section>
+    <section class="card admin-panel-card admin-table-card"><div class="card-header bg-white py-3"><div class="admin-list-toolbar"><div class="admin-list-toolbar__title"><span class="card-title h6 mb-0">교환·반품 요청</span><span class="card-subtitle text-muted ms-2" id="claimTotalCount">전체 0건</span></div><div class="admin-list-toolbar__meta">상태 변경 시 처리 메모가 이력에 기록됩니다.</div></div></div><div class="card-body p-0"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead class="table-light"><tr><th class="ps-4">요청</th><th>주문번호</th><th>회원</th><th>사유</th><th>신청일시</th><th>상태</th><th class="text-end pe-4">처리</th></tr></thead><tbody id="claimTableBody"><tr><td colspan="7" class="py-5 text-center text-muted">요청을 불러오는 중입니다.</td></tr></tbody></table></div></div><div class="card-footer bg-white py-3"><nav aria-label="교환 반품 페이지"><ul class="pagination pagination-sm justify-content-end mb-0" id="claimPagination"></ul></nav></div></section>
+</main>
+<div class="modal fade" id="claimActionModal" tabindex="-1" aria-labelledby="claimActionTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><form class="modal-content" id="claimActionForm"><div class="modal-header"><h2 class="modal-title fs-5" id="claimActionTitle">요청 처리</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button></div><div class="modal-body"><p class="small text-muted mb-3" id="claimActionDescription"></p><label class="form-label" for="claimActionMemo">처리 메모</label><textarea class="form-control" id="claimActionMemo" maxlength="1000" rows="4" required placeholder="회원에게 안내할 처리 내용을 입력하세요."></textarea></div><div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">취소</button><button type="submit" class="btn btn-primary" id="claimActionSubmitButton">처리 저장</button></div></form></div></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/view/order-claims.js?v=20260907.1"></script>
+</body>
+</html>

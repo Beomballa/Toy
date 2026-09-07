@@ -151,6 +151,14 @@ mysql -h127.0.0.1 -uroot -p new_toy < db/front_content_view_event.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/front_content_reaction.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/front_auth.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/front_member_product_activity.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_member_delivery_address.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_product_review.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_product_review_status.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_product_review_report.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_product_review_status_history.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_product_review_report_status.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_password_reset_token.sql
+mysql -h127.0.0.1 -uroot -p new_toy < db/front_order_claim.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/document_daily_stats.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/admin_operation_task_content_source.sql
 mysql -h127.0.0.1 -uroot -p new_toy < db/admin_system_setting_history.sql

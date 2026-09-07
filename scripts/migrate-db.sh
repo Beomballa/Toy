@@ -141,6 +141,15 @@ for migration in "${MIGRATIONS[@]}"; do
   "
 done
 
-validate_tables "${BASELINE_TABLES[@]}" request_rate_limit_bucket front_member_product_activity front_product_review
+validate_tables "${BASELINE_TABLES[@]}" \
+  request_rate_limit_bucket \
+  front_member_product_activity \
+  front_member_delivery_address \
+  front_product_review \
+  front_product_review_report \
+  front_product_review_status_history \
+  front_password_reset_token \
+  front_order_claim \
+  front_order_claim_history
 
 echo "Database schema is up to date."

@@ -6,6 +6,7 @@ import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
+import com.section.admin.order.service.AdminOrderClaimService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
@@ -40,6 +41,9 @@ class AdminOrderRestControllerTest {
     private AdminOrderService adminOrderService;
 
     @Mock
+    private AdminOrderClaimService adminOrderClaimService;
+
+    @Mock
     private AdminOperationPolicyService adminOperationPolicyService;
 
     private MockMvc mockMvc;
@@ -47,7 +51,7 @@ class AdminOrderRestControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOrderRestController(adminOrderService, adminOperationPolicyService))
+        mockMvc = MockMvcBuilders.standaloneSetup(new AdminOrderRestController(adminOrderService, adminOrderClaimService, adminOperationPolicyService))
                 .setCustomArgumentResolvers(new PageableHandlerMethodArgumentResolver())
                 .setControllerAdvice(new AdminGlobalExceptionHandler())
                 .build();

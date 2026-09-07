@@ -17,6 +17,7 @@ import com.section.front.commerce.dto.FrontOrderClaimRequest;
 import com.section.common.commerce.repository.FrontCartItemRepository;
 import com.section.common.commerce.repository.FrontCartRepository;
 import com.section.common.commerce.repository.FrontOrderClaimRepository;
+import com.section.common.commerce.repository.FrontOrderClaimHistoryRepository;
 import com.section.common.commerce.repository.OrderDeliveryRepository;
 import com.section.common.commerce.repository.OrderItemRepository;
 import com.section.common.commerce.repository.OrderRepository;
@@ -62,6 +63,7 @@ class FrontCommerceServiceTest {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository = mock(OrderStatusHistoryRepository.class);
     private final AccountRepository accountRepository = mock(AccountRepository.class);
     private final FrontOrderClaimRepository orderClaimRepository = mock(FrontOrderClaimRepository.class);
+    private final FrontOrderClaimHistoryRepository orderClaimHistoryRepository = mock(FrontOrderClaimHistoryRepository.class);
 
     private FrontCommerceService commerceService;
 
@@ -77,7 +79,8 @@ class FrontCommerceServiceTest {
                 orderDeliveryRepository,
                 orderStatusHistoryRepository,
                 accountRepository,
-                orderClaimRepository
+                orderClaimRepository,
+                orderClaimHistoryRepository
         );
     }
 
@@ -328,6 +331,11 @@ class FrontCommerceServiceTest {
         given(orderClaimRepository.existsByOrderNoAndStatusIn(
                 42L, List.of(FrontOrderClaimStatus.REQUESTED, FrontOrderClaimStatus.APPROVED)
         )).willReturn(false);
+        given(orderClaimRepository.save(any(FrontOrderClaim.class))).willAnswer(invocation -> {
+            FrontOrderClaim claim = invocation.getArgument(0);
+            ReflectionTestUtils.setField(claim, "id", 101L);
+            return claim;
+        });
 
         commerceService.requestOrderClaim(
                 7L, ORDER_NUMBER, new FrontOrderClaimRequest(FrontOrderClaimType.EXCHANGE, "  사이즈를 변경하고 싶습니다.  ")
@@ -340,6 +348,7 @@ class FrontCommerceServiceTest {
         assertThat(claim.getMemberNo()).isEqualTo(7L);
         assertThat(claim.getClaimType()).isEqualTo(FrontOrderClaimType.EXCHANGE);
         assertThat(claim.getReason()).isEqualTo("사이즈를 변경하고 싶습니다.");
+        verify(orderClaimHistoryRepository).save(any());
     }
 
     @Test

@@ -21,4 +21,9 @@ public class FrontOrderClaim extends BaseEntity {
         FrontOrderClaim claim = new FrontOrderClaim(); claim.orderNo=orderNo; claim.memberNo=memberNo; claim.claimType=type; claim.status=FrontOrderClaimStatus.REQUESTED; claim.reason=reason; claim.requestedAt=now; return claim;
     }
     public boolean isOpen() { return status == FrontOrderClaimStatus.REQUESTED || status == FrontOrderClaimStatus.APPROVED; }
+
+    public void changeStatus(FrontOrderClaimStatus nextStatus, LocalDateTime now) {
+        this.status = nextStatus;
+        this.resolvedAt = nextStatus == FrontOrderClaimStatus.REJECTED || nextStatus == FrontOrderClaimStatus.COMPLETED ? now : null;
+    }
 }

@@ -6,10 +6,12 @@ import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.admin.order.req.OrderMemoSaveRequest;
 import com.section.admin.order.req.OrderNoRequest;
 import com.section.admin.order.req.OrderStatusUpdateRequest;
+import com.section.admin.order.req.AdminOrderClaimStatusUpdateRequest;
 import com.section.admin.order.res.OrderDetailResponse;
 import com.section.admin.order.res.OrderHistoryListResponse;
 import com.section.admin.order.res.OrderListResponse;
 import com.section.admin.order.service.AdminOrderService;
+import com.section.admin.order.service.AdminOrderClaimService;
 import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.commerce.dto.OrderListReqDto;
 import jakarta.validation.Valid;
@@ -27,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 @RequestMapping("/api/admin/orders")
 public class AdminOrderRestController {
     private final AdminOrderService adminOrderService;
+    private final AdminOrderClaimService adminOrderClaimService;
     private final AdminOperationPolicyService adminOperationPolicyService;
 
     @GetMapping("/list")
@@ -106,6 +109,13 @@ public class AdminOrderRestController {
     public ResponseEntity<Void> saveAdminMemo(@Valid @RequestBody OrderMemoSaveRequest req) {
         adminOperationPolicyService.assertAdminWriteAllowed();
         adminOrderService.saveAdminMemo(req.orderNo(), req.normalizedAdminMemo());
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/claims/status")
+    public ResponseEntity<Void> updateOrderClaimStatus(@Valid @RequestBody AdminOrderClaimStatusUpdateRequest req) {
+        adminOperationPolicyService.assertAdminWriteAllowed();
+        adminOrderClaimService.updateStatus(req.claimNo(), req.status(), req.normalizedMemo());
         return ResponseEntity.ok().build();
     }
 }

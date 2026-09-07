@@ -4,9 +4,17 @@ import com.section.common.commerce.entity.FrontOrderClaimStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.Collection;
 public interface FrontOrderClaimRepository extends JpaRepository<FrontOrderClaim, Long> {
     boolean existsByOrderNoAndStatusIn(long orderNo, Collection<FrontOrderClaimStatus> statuses);
 
     Page<FrontOrderClaim> findByMemberNoOrderByCrtDtmDescIdDesc(long memberNo, Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select claim from FrontOrderClaim claim where claim.id = :claimNo")
+    java.util.Optional<FrontOrderClaim> findByIdForUpdate(@Param("claimNo") long claimNo);
 }

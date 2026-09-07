@@ -2,9 +2,11 @@ package com.section.front.commerce.service;
 
 import com.section.common.commerce.entity.FrontCart;
 import com.section.common.commerce.entity.FrontOrderClaim;
+import com.section.common.commerce.entity.FrontOrderClaimHistory;
 import com.section.common.commerce.entity.FrontOrderClaimStatus;
 import com.section.common.commerce.entity.FrontOrderClaimType;
 import com.section.common.commerce.repository.FrontOrderClaimRepository;
+import com.section.common.commerce.repository.FrontOrderClaimHistoryRepository;
 import com.section.common.commerce.entity.FrontCartItem;
 import com.section.common.commerce.entity.OrderDelivery;
 import com.section.common.commerce.entity.OrderItem;
@@ -83,6 +85,7 @@ public class FrontCommerceService {
     private final OrderStatusHistoryRepository orderStatusHistoryRepository;
     private final AccountRepository accountRepository;
     private final FrontOrderClaimRepository orderClaimRepository;
+    private final FrontOrderClaimHistoryRepository orderClaimHistoryRepository;
 
     @Transactional(readOnly = true)
     public FrontCartResponse getCart(String cartToken) {
@@ -303,7 +306,12 @@ public class FrontCommerceService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "처리 중인 교환 또는 반품 요청이 있습니다.");
         }
         String reason = request.reason().trim();
-        orderClaimRepository.save(FrontOrderClaim.request(order.getId(), memberNo, request.claimType(), reason, LocalDateTime.now()));
+        FrontOrderClaim claim = orderClaimRepository.save(
+                FrontOrderClaim.request(order.getId(), memberNo, request.claimType(), reason, LocalDateTime.now())
+        );
+        orderClaimHistoryRepository.save(FrontOrderClaimHistory.create(
+                claim.getId(), null, FrontOrderClaimStatus.REQUESTED, "회원 신청"
+        ));
     }
 
     @Transactional(readOnly = true)

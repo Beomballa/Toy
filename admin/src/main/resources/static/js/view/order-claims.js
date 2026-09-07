@@ -13,7 +13,7 @@
     function readUrl() {
         const params = new URLSearchParams(location.search);
         state.page = Math.max(0, Number.parseInt(params.get("page"), 10) || 0);
-        state.status = ["ALL", "REQUESTED", "APPROVED", "REJECTED", "COMPLETED"].includes(params.get("status")) ? params.get("status") : "ALL";
+        state.status = ["ALL", "REQUESTED", "APPROVED", "REJECTED", "COMPLETED", "CANCELLED"].includes(params.get("status")) ? params.get("status") : "ALL";
         document.getElementById("claimStatus").value = state.status;
     }
     function actionButtons(claim) {

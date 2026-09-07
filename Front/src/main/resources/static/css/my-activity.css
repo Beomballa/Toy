@@ -131,6 +131,7 @@
 .my-claim em { flex: none; min-width: 64px; padding: 7px 9px; border-radius: 999px; color: #4d5d50; background: var(--my-soft); text-align: center; font-size: 10px; font-style: normal; font-weight: 800; white-space: nowrap; }
 .my-claim em[data-status="REJECTED"] { color: #9a3f34; background: #fff1ee; }
 .my-claim em[data-status="COMPLETED"] { color: #4f6076; background: #eef3f8; }
+.my-claim em[data-status="CANCELLED"] { color: #68707a; background: #f1f3f5; }
 .my-claim__empty { margin: 0; padding: 24px 0 6px; color: var(--my-muted); font-size: 12px; }
 .my-claims__more { width: 100%; min-height: 36px; margin-top: 16px; border: 1px solid var(--my-line); border-radius: 7px; background: #fff; font-size: 11px; }
 .my-reviews__head > b { color: var(--my-muted); font-size: 11px; }

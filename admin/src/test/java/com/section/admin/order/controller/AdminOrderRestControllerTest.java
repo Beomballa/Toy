@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.section.admin.common.controller.AdminGlobalExceptionHandler;
 import com.section.admin.order.req.OrderHistoryListRequest;
 import com.section.admin.order.res.OrderHistoryListResponse;
+import com.section.admin.order.res.AdminOrderClaimListResponse;
 import com.section.common.commerce.dto.OrderListReqDto;
 import com.section.admin.order.service.AdminOrderService;
 import com.section.admin.order.service.AdminOrderClaimService;
@@ -11,6 +12,7 @@ import com.section.admin.settings.service.AdminOperationPolicyService;
 import com.section.common.base.entity.type.OrderStatus;
 import com.section.common.base.exception.BusinessException;
 import com.section.common.base.exception.ErrorCode;
+import com.section.common.commerce.entity.FrontOrderClaimStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -225,6 +227,31 @@ class AdminOrderRestControllerTest {
                 .andExpect(jsonPath("$.resultMeta.resultLabel").value("검색 결과 1건"))
                 .andExpect(jsonPath("$.resultMeta.filterCount").value(4))
                 .andExpect(jsonPath("$.resultMeta.querySignature").value("1-1 · 주문=3 · 작업=DELIVERY_START · 작업자번호=1 · 작업자=관리자 · 정렬=오래된순"));
+    }
+
+    @Test
+    @DisplayName("교환 반품 상태 변경은 운영 쓰기 정책을 확인한 뒤 처리한다")
+    void updateClaimStatusChecksWritePolicyAndDelegates() throws Exception {
+        mockMvc.perform(patch("/api/admin/orders/claims/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"claimNo\":31,\"status\":\"APPROVED\",\"memo\":\"회수 접수 완료\"}"))
+                .andExpect(status().isOk());
+
+        verify(adminOperationPolicyService).assertAdminWriteAllowed();
+        verify(adminOrderClaimService).updateStatus(31L, FrontOrderClaimStatus.APPROVED, "회수 접수 완료");
+    }
+
+    @Test
+    @DisplayName("교환 반품 목록은 상태와 페이지 조건을 서비스에 전달한다")
+    void getClaimsDelegatesStatusAndPage() throws Exception {
+        when(adminOrderClaimService.getClaims("REQUESTED", 2))
+                .thenReturn(new AdminOrderClaimListResponse(java.util.List.of(), 2, 3, 40, false));
+
+        mockMvc.perform(get("/api/admin/orders/claims").param("status", "REQUESTED").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(2));
+
+        verify(adminOrderClaimService).getClaims("REQUESTED", 2);
     }
 
     private record StatusPayload(Long orderNo, String status, String reason) {

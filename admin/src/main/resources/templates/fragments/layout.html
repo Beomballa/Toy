@@ -35,7 +35,7 @@
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('banners') ? 'active' : ''}" href="/admin/banners">
             <i class="fas fa-image"></i> 배너 관리
         </a>
-        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') ? 'active' : ''}" href="/admin/orders">
+        <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders') && !currentUri.contains('orders/claims') ? 'active' : ''}" href="/admin/orders">
             <i class="fas fa-shopping-cart"></i> 주문 관리
         </a>
         <a class="nav-link" th:classappend="${currentUri != null && currentUri.contains('orders/claims') ? 'active' : ''}" href="/admin/orders/claims">

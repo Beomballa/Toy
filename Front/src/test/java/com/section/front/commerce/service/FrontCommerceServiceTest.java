@@ -427,6 +427,21 @@ class FrontCommerceServiceTest {
     }
 
     @Test
+    void cancelsOnlyRequestedMemberOrderClaimAndWritesHistory() {
+        Account account = mock(Account.class);
+        FrontOrderClaim claim = FrontOrderClaim.request(42L, 7L, FrontOrderClaimType.RETURN, "상품 상태 확인", LocalDateTime.now());
+        ReflectionTestUtils.setField(claim, "id", 42L);
+        given(account.isAvailableCustomer()).willReturn(true);
+        given(accountRepository.findById(7L)).willReturn(Optional.of(account));
+        given(orderClaimRepository.findByIdAndMemberNo(42L, 7L)).willReturn(Optional.of(claim));
+
+        commerceService.cancelMemberOrderClaim(7L, 42L);
+
+        assertThat(claim.getStatus()).isEqualTo(FrontOrderClaimStatus.CANCELLED);
+        verify(orderClaimHistoryRepository).save(any());
+    }
+
+    @Test
     void reordersOnlyPurchasableItemsIntoTheCurrentCart() {
         Account account = mock(Account.class);
         Orders order = mock(Orders.class);

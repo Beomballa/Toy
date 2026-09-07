@@ -204,7 +204,7 @@
             if (!claims.length && memberOrderClaimPage === 0) {
                 target.innerHTML = '<p class="my-claim__empty">접수한 교환·반품 요청이 없습니다.</p>';
             } else {
-                target.insertAdjacentHTML("beforeend", claims.map(claim => `<article class="my-claim"><div><span>${safe(claim.claimTypeLabel)} · ${safe(claim.requestedAt)}</span><strong>${safe(claim.reason)}</strong><a href="/front/orders/${encodeURIComponent(claim.orderNumber)}?member=true">주문 ${safe(claim.orderNumber)} 보기</a><button type="button" class="my-claim__history" data-claim-history="${Math.max(0, Number(claim.claimNo) || 0)}">처리 이력 보기</button><ol class="my-claim__history-list" hidden></ol></div><em data-status="${safe(claim.status)}">${safe(claim.statusLabel)}</em></article>`).join(""));
+                target.insertAdjacentHTML("beforeend", claims.map(claim => `<article class="my-claim"><div><span>${safe(claim.claimTypeLabel)} · ${safe(claim.requestedAt)}</span><strong>${safe(claim.reason)}</strong><a href="/front/orders/${encodeURIComponent(claim.orderNumber)}?member=true">주문 ${safe(claim.orderNumber)} 보기</a><button type="button" class="my-claim__history" data-claim-history="${Math.max(0, Number(claim.claimNo) || 0)}">처리 이력 보기</button>${claim.status === "REQUESTED" ? `<button type="button" class="my-claim__cancel" data-claim-cancel="${Math.max(0, Number(claim.claimNo) || 0)}">요청 철회</button>` : ""}<ol class="my-claim__history-list" hidden></ol></div><em data-status="${safe(claim.status)}">${safe(claim.statusLabel)}</em></article>`).join(""));
             }
             memberOrderClaimPage += 1;
             memberOrderClaimsLoaded = !payload.hasNext;
@@ -418,10 +418,23 @@
     document.getElementById("memberOrdersMoreButton").addEventListener("click", () => loadMemberOrders());
     document.getElementById("memberOrderClaimsMoreButton").addEventListener("click", () => loadMemberOrderClaims());
     document.getElementById("memberOrderClaimsList").addEventListener("click", async event => {
+        const cancelButton = event.target.closest("[data-claim-cancel]");
+        if (cancelButton) {
+            const claimNo = Math.max(0, Number(cancelButton.dataset.claimCancel) || 0);
+            if (!claimNo || !confirm("교환·반품 요청을 철회할까요?")) return;
+            cancelButton.disabled = true;
+            try {
+                const response = await fetch(`/api/front/member/order-claims/${claimNo}/cancel`, { method: "POST" });
+                if (!response.ok) throw new Error("요청을 철회하지 못했습니다.");
+                await loadMemberOrderClaims(true);
+                toast("교환·반품 요청을 철회했습니다.");
+            } catch (_) { toast("요청을 철회하지 못했습니다."); cancelButton.disabled = false; }
+            return;
+        }
         const button = event.target.closest("[data-claim-history]");
         if (!button || button.disabled) return;
         const claimNo = Math.max(0, Number(button.dataset.claimHistory) || 0);
-        const list = button.nextElementSibling;
+        const list = button.parentElement?.querySelector(".my-claim__history-list");
         if (!claimNo || !(list instanceof HTMLOListElement)) return;
         if (!list.hidden) { list.hidden = true; button.textContent = "처리 이력 보기"; return; }
         if (list.dataset.loaded === "true") { list.hidden = false; button.textContent = "처리 이력 닫기"; return; }

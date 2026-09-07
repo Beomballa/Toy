@@ -85,6 +85,7 @@ public class AdminOrderClaimService {
             case APPROVED -> "처리 진행";
             case REJECTED -> "처리 불가";
             case COMPLETED -> "처리 완료";
+            case CANCELLED -> "철회 완료";
         };
     }
 }

@@ -148,6 +148,11 @@ public class FrontCommerceRestController {
         return commerceService.getMemberOrderClaimHistory(memberNo(request), claimNo);
     }
 
+    @PostMapping("/member/order-claims/{claimNo}/cancel")
+    public void cancelMemberOrderClaim(@PathVariable long claimNo, HttpServletRequest request) {
+        commerceService.cancelMemberOrderClaim(memberNo(request), claimNo);
+    }
+
     @PostMapping("/member/orders/{orderNumber}/reorder")
     public FrontOrderReorderResponse reorderMemberOrder(
             @PathVariable String orderNumber,

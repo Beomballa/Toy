@@ -24,6 +24,6 @@ public class FrontOrderClaim extends BaseEntity {
 
     public void changeStatus(FrontOrderClaimStatus nextStatus, LocalDateTime now) {
         this.status = nextStatus;
-        this.resolvedAt = nextStatus == FrontOrderClaimStatus.REJECTED || nextStatus == FrontOrderClaimStatus.COMPLETED ? now : null;
+        this.resolvedAt = nextStatus == FrontOrderClaimStatus.REJECTED || nextStatus == FrontOrderClaimStatus.COMPLETED || nextStatus == FrontOrderClaimStatus.CANCELLED ? now : null;
     }
 }

@@ -363,11 +363,10 @@
         if (!elements.detailMetaRow) {
             return;
         }
-        product = markupSafeObject(product);
         elements.detailMetaRow.innerHTML = `
-            <span class="product-drawer__pill ${stockClassName(product.stock)}">${product.stockStatus || stockLabel(product.stock)}</span>
-            <span class="product-drawer__pill is-stable-stock">${product.brand}</span>
-            <span class="product-drawer__pill is-stable-stock">${product.category}</span>
+            <span class="product-drawer__pill ${stockClassName(product.stock)}">${escapeMarkup(product.stockStatus || stockLabel(product.stock))}</span>
+            <span class="product-drawer__pill is-stable-stock">${escapeMarkup(product.brand)}</span>
+            <span class="product-drawer__pill is-stable-stock">${escapeMarkup(product.category)}</span>
             ${product.featured ? `<span class="product-drawer__pill">Featured${product.featuredRank ? ` #${product.featuredRank}` : ""}</span>` : ""}
         `;
         if (elements.detailVisualBrand) {
@@ -2646,7 +2645,7 @@
             }
             document.title = `${product.name} | NOREN`;
             if (elements.detailTitle) {
-                elements.detailTitle.textContent = product.headline || product.name;
+                elements.detailTitle.textContent = product.name;
             }
             if (elements.detailDescription) {
                 elements.detailDescription.textContent = product.description || "상품 설명이 아직 등록되지 않았습니다.";

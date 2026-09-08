@@ -287,7 +287,7 @@ class FrontStorefrontResourceTest {
         assertThat(html)
                 .contains("/css/storefront.css?v=20260726.1")
                 .contains("/css/design-tokens.css?v=20260813.1")
-                .contains("/css/storefront-home.css?v=20260901.1")
+                .contains("/css/storefront-home.css?v=20260908.1")
                 .contains("/images/brand/noren-wordmark.png")
                 .contains("aria-label=\"NOREN 홈\"")
                 .contains("class=\"storefront-home\"")
@@ -416,7 +416,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailReviewSort\"")
                 .contains("id=\"detailReviewDistribution\"")
                 .contains("id=\"detailReviewContentCount\"")
-                .contains("/js/view/detail.js?v=20260820.2");
+                .contains("/js/view/detail.js?v=20260908.1");
         assertThat(pageCss)
                 .contains(".detail-body .detail-hero")
                 .contains("grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr)")
@@ -946,7 +946,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"collectionFilterSummary\"")
                 .contains("id=\"collectionGrid\"")
                 .contains("id=\"collectionPreviousButton\"")
-                .contains("/css/product-collection.css?v=20260902.1")
+                .contains("/css/product-collection.css?v=20260908.1")
                 .contains("id=\"collectionQuickView\"")
                 .contains("id=\"collectionPageSelect\"")
                 .contains("id=\"collectionFirstButton\"")

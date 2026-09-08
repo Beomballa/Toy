@@ -1,5 +1,18 @@
 import { expect, test } from "@playwright/test";
 
+test("배너 제목은 한글 단어를 보존하고 컨테이너 폭에 맞춘다", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".hero h1")).toBeVisible();
+  for (const width of [1280, 900, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const title = page.locator(".hero h1");
+    await expect(title).toHaveCSS("word-break", "keep-all");
+    const bounds = await title.boundingBox();
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
+  }
+});
+
 test("신규 드롭과 저재고 상품 레일 레이아웃을 유지한다", async ({ page }, testInfo) => {
   await page.goto("/");
   const signalStrip = page.locator("#signalStrip");

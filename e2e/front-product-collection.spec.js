@@ -1,5 +1,23 @@
 import { expect, test } from "@playwright/test";
 
+test("컬렉션 검색 제어는 데스크톱에서 한 줄이며 좁은 화면에서 넘치지 않는다", async ({ page }) => {
+  await page.goto("/front/collections/recommended");
+  for (const width of [1280, 900, 768, 640, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    const controls = await page.locator(".collection-toolbar input, .collection-toolbar select, .collection-toolbar > button").evaluateAll(nodes => nodes.map(node => {
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x, right: rect.right, bottom: rect.bottom, width: rect.width };
+    }));
+    expect(controls).toHaveLength(5);
+    for (const rect of controls) {
+      expect(rect.width).toBeGreaterThan(0);
+      expect(rect.x).toBeGreaterThanOrEqual(0);
+      expect(rect.right).toBeLessThanOrEqual(width);
+    }
+    if (width === 1280) expect(Math.max(...controls.map(r => r.bottom)) - Math.min(...controls.map(r => r.bottom))).toBeLessThan(2);
+  }
+});
+
 const product = (id, name) => ({
   id,
   name,

@@ -33,6 +33,20 @@ const productDetail = (id = 12) => ({
   }]
 });
 
+test("상품명과 이미지 주소의 특수문자는 텍스트와 속성에서 그대로 보존한다", async ({ page }) => {
+  const name = "에어포스 '07 <Limited> & White";
+  await page.route("**/api/front/products/12", route => route.fulfill({ json: {
+    ...productDetail(), name, brand: "A & B", model: "'07 & M",
+    thumbnailUrl: "/images/product-placeholder.svg?size=400&color=white"
+  } }));
+  await page.goto("/front/products/12");
+  await expect(page.locator("#detailTitle")).toHaveText(name);
+  await expect(page.locator("#detailBreadcrumbProduct")).toHaveText(name);
+  await expect(page.locator("#detailMetaRow")).toContainText("A & B");
+  await expect(page.locator("#detailProductVisual img")).toHaveAttribute("src", "/images/product-placeholder.svg?size=400&color=white");
+  await expect(page.locator("#detailBreadcrumbProduct limited")).toHaveCount(0);
+});
+
 test("상품 상세는 요청 ID가 다른 응답을 거부하고 재시도 후 안전하게 표시한다", async ({ page }) => {
   let attempts = 0;
   await page.route("**/api/front/products/12", async (route) => {
@@ -42,7 +56,7 @@ test("상품 상세는 요청 ID가 다른 응답을 거부하고 재시도 후 
   await page.goto("/front/products/12");
   await expect(page.locator("#detailTitle")).toHaveText("상품 상세를 불러오지 못했습니다.");
   await page.locator("#detailRetryButton").click();
-  await expect(page.locator("#detailTitle")).toHaveText("오늘의 셀렉션 012");
+  await expect(page.locator("#detailTitle")).toHaveText("반스 올드스쿨 블랙");
   await expect(page.locator("#detailProductVisual img")).toHaveAttribute("src", "/images/product-placeholder.svg");
 });
 
@@ -89,7 +103,7 @@ test("상품 상세는 선택한 옵션을 다시 눌러도 선택과 구매 수
 test("상품 상세 핵심 영역은 화면 폭 안에서 정렬된다", async ({ page }) => {
   await page.route("**/api/front/products/12", async (route) => route.fulfill({ json: productDetail() }));
   await page.goto("/front/products/12");
-  await expect(page.locator("#detailTitle")).toHaveText("오늘의 셀렉션 012");
+  await expect(page.locator("#detailTitle")).toHaveText("반스 올드스쿨 블랙");
 
     const layout = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;
@@ -161,7 +175,7 @@ test("상품 상세 경로와 Signal은 긴 데이터에서도 반환 제어를 
   } }));
 
   await page.goto("/front/products/12");
-  await expect(page.locator("#detailTitle")).toHaveText("긴 설명을 가진 오늘의 셀렉션 상품");
+  await expect(page.locator("#detailTitle")).toHaveText("아주 긴 상품명에서도 상품 목록으로 돌아가는 버튼을 화면 밖으로 밀어내지 않아야 합니다");
 
   const layout = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;

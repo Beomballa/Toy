@@ -27,16 +27,31 @@
         document.getElementById("claimResultMeta").textContent = claims.length ? `${data.page + 1}페이지 요청을 표시합니다.` : "조건에 맞는 요청이 없습니다.";
         document.getElementById("claimTableBody").innerHTML = claims.length ? claims.map(claim => `<tr><td class="ps-4"><strong>${escapeHtml(claim.claimTypeLabel)}</strong><br><small class="text-muted">#${claim.claimNo}</small></td><td><a href="/admin/orders/get?no=${claim.orderNo}" class="text-decoration-none">${escapeHtml(claim.orderNumber)}</a></td><td>#${claim.memberNo}</td><td class="text-break" style="min-width:220px">${escapeHtml(claim.reason)}</td><td class="text-nowrap">${escapeHtml(claim.requestedAt)}</td><td><span class="badge text-bg-light border">${escapeHtml(claim.statusLabel)}</span></td><td class="text-end pe-4 text-nowrap">${actionButtons(claim)}</td></tr>`).join("") : '<tr><td colspan="7" class="py-5 text-center text-muted">조건에 맞는 요청이 없습니다.</td></tr>';
         const pages = Math.max(0, Number(data.totalPages) || 0);
-        document.getElementById("claimPagination").innerHTML = pages <= 1 ? "" : Array.from({ length: Math.min(pages, 7) }, (_, index) => `<li class="page-item ${index === data.page ? "active" : ""}"><button class="page-link" data-claim-page="${index}">${index + 1}</button></li>`).join("");
+        const current = data.page;
+        const start = Math.max(0, Math.min(current - 2, pages - 5));
+        const pageButton = (page, label, disabled = false) => `<li class="page-item ${disabled ? "disabled" : ""} ${page === current && label === String(page + 1) ? "active" : ""}"><button type="button" class="page-link" data-claim-page="${page}" ${disabled ? "disabled" : ""} ${page === current && label === String(page + 1) ? 'aria-current="page"' : ""}>${label}</button></li>`;
+        document.getElementById("claimPagination").innerHTML = pages <= 1 ? "" :
+            pageButton(0, "처음", current === 0) + pageButton(current - 1, "이전", current === 0) +
+            Array.from({ length: Math.min(pages, 5) }, (_, index) => pageButton(start + index, String(start + index + 1))).join("") +
+            pageButton(current + 1, "다음", current >= pages - 1) + pageButton(pages - 1, "마지막", current >= pages - 1);
     }
     async function load() {
         const requestId = ++state.requestId;
+        document.getElementById("claimPagination").innerHTML = "";
         document.getElementById("claimTableBody").innerHTML = '<tr><td colspan="7" class="py-5 text-center text-muted">요청을 불러오는 중입니다.</td></tr>';
         try {
             const response = await fetch(`/api/admin/orders/claims?status=${encodeURIComponent(state.status)}&page=${state.page}`, { headers: { Accept: "application/json" } });
             if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, "요청을 불러오지 못했습니다."));
             const data = await response.json();
-            if (requestId === state.requestId) render(data);
+            if (requestId !== state.requestId) return;
+            if (!Number.isSafeInteger(data.page) || data.page < 0 || !Number.isSafeInteger(data.totalPages) || data.totalPages < 0) throw new Error("페이지 정보가 올바르지 않습니다.");
+            const lastPage = Math.max(0, data.totalPages - 1);
+            if (state.page > lastPage) {
+                state.page = lastPage;
+                syncUrl();
+                return load();
+            }
+            render(data);
         } catch (error) {
             if (requestId === state.requestId) document.getElementById("claimTableBody").innerHTML = `<tr><td colspan="7" class="py-5 text-center text-danger">${escapeHtml(error.message || "요청을 불러오지 못했습니다.")}</td></tr>`;
         }

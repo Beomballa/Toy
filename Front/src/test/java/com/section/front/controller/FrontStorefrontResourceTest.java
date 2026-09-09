@@ -1495,7 +1495,11 @@ class FrontStorefrontResourceTest {
                 .contains("<footer class=\"site-footer\" aria-label=\"서비스 정보\">")
                 .contains("class=\"site-footer__support\"")
                 .contains("class=\"site-footer__policy\"")
+                .contains("href=\"/front/support?faq=order-demo\"")
+                .contains("href=\"/front/support?faq=browser-storage\"")
                 .contains("실제 거래를 제공하지 않습니다");
+        assertThat(html.substring(html.indexOf("<footer"), html.indexOf("</footer>")))
+                .doesNotContain("href=\"#catalog\"");
         assertThat(css)
                 .contains(".section-heading h2")
                 .contains("font-size: 18px")

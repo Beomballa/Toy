@@ -1,5 +1,21 @@
 import { expect, test } from "@playwright/test";
 
+test("홈 하단 안내는 실제 도움말로 이동하고 화면 안에 배치된다", async ({ page }) => {
+  await page.goto("/");
+  const footer = page.locator('.site-footer');
+  await footer.scrollIntoViewIfNeeded();
+  await expect(footer.locator('a[href="#catalog"]')).toHaveCount(0);
+  for (const link of await footer.locator('a').all()) {
+    const bounds = await link.boundingBox();
+    expect(bounds.width).toBeGreaterThan(0);
+    expect(bounds.x).toBeGreaterThanOrEqual(0);
+    expect(bounds.x + bounds.width).toBeLessThanOrEqual(page.viewportSize().width);
+  }
+  await footer.getByRole('link', { name: '서비스 제공 범위' }).click();
+  await expect(page).toHaveURL(/faq=order-demo/);
+  await expect(page.getByText('현재 NOREN은 상품 탐색과 주문 흐름을 검증하는 데모 서비스입니다.', { exact: false })).toBeVisible();
+});
+
 test("배너 제목은 한글 단어를 보존하고 컨테이너 폭에 맞춘다", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".hero h1")).toBeVisible();

@@ -245,6 +245,22 @@ class FrontProductCatalogServiceTest {
     }
 
     @Test
+    @DisplayName("재고 없음과 임계값 경계는 품절, 품절 임박, 재고 안정으로 구분한다")
+    void stockStatusDistinguishesSoldOutAndThresholdBoundary() {
+        int[] stocks = {0, 1, 9, 10};
+        String[] expected = {"품절", "품절 임박", "품절 임박", "재고 안정"};
+        for (int i = 0; i < stocks.length; i++) {
+            when(productRepository.getFrontCatalogProducts(any(FrontCatalogQuery.class), any(Pageable.class)))
+                    .thenReturn(pageOf(List.of(row(401L, 1L, 11L, "NOREN", "스니커즈", "재고 경계 상품", "상품", "NR-1", 10000, stocks[i], LocalDate.now(), "설명", "daily", false, null))));
+            var products = frontProductCatalogService.getCatalog(
+                    new FrontCatalogQuery(null, null, null, "ALL", "LATEST", 10, false, "ALL"),
+                    PageRequest.of(0, 12)
+            ).products();
+            assertEquals(expected[i], products.getFirst().stockStatus());
+        }
+    }
+
+    @Test
     @DisplayName("프론트 카탈로그 서비스는 상품 번호로 단건 상세와 연관 상품을 찾는다")
     void findProductDetailIncludesRelatedProducts() {
         FrontCatalogProductRow target = row(101L, 1L, 11L, "New Balance", "러닝화", "990v6 Grey Day", "Grey precision", "M990GL6", 289000, 18, LocalDate.now().minusDays(2), "설명", "Grey precision", true, 1);

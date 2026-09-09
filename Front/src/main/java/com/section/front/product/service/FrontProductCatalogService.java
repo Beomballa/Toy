@@ -313,6 +313,7 @@ public class FrontProductCatalogService {
 
     private String toStockStatus(Integer totalStock, int threshold) {
         int safeStock = totalStock == null ? 0 : totalStock;
+        if (safeStock <= 0) return "품절";
         return safeStock < threshold ? "품절 임박" : "재고 안정";
     }
 

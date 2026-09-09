@@ -4,6 +4,7 @@
     const modalElement = document.getElementById("claimActionModal");
     const actionModal = new bootstrap.Modal(modalElement);
     const statusLabels = { APPROVED: "승인", REJECTED: "반려", COMPLETED: "완료" };
+    const isPositiveId = value => Number.isSafeInteger(value) && value > 0;
     const escapeHtml = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 
     function syncUrl() {
@@ -44,7 +45,8 @@
             if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, "요청을 불러오지 못했습니다."));
             const data = await response.json();
             if (requestId !== state.requestId) return;
-            if (!Number.isSafeInteger(data.page) || data.page < 0 || !Number.isSafeInteger(data.totalPages) || data.totalPages < 0) throw new Error("페이지 정보가 올바르지 않습니다.");
+            if (!data || !Number.isSafeInteger(data.page) || data.page !== state.page || !Number.isSafeInteger(data.totalPages) || data.totalPages < 0 || !Number.isSafeInteger(data.totalElements) || data.totalElements < 0) throw new Error("페이지 정보가 올바르지 않습니다.");
+            if (!Array.isArray(data.claims) || data.claims.some(claim => !claim || !isPositiveId(claim.claimNo) || !isPositiveId(claim.orderNo) || !isPositiveId(claim.memberNo))) throw new Error("요청 목록 정보가 올바르지 않습니다.");
             const lastPage = Math.max(0, data.totalPages - 1);
             if (state.page > lastPage) {
                 state.page = lastPage;
@@ -53,7 +55,11 @@
             }
             render(data);
         } catch (error) {
-            if (requestId === state.requestId) document.getElementById("claimTableBody").innerHTML = `<tr><td colspan="7" class="py-5 text-center text-danger">${escapeHtml(error.message || "요청을 불러오지 못했습니다.")}</td></tr>`;
+            if (requestId === state.requestId) {
+                document.getElementById("claimTotalCount").textContent = "-";
+                document.getElementById("claimResultMeta").textContent = "조회하지 못했습니다. 다시 조회해 주세요.";
+                document.getElementById("claimTableBody").innerHTML = `<tr><td colspan="7" class="py-5 text-center text-danger">${escapeHtml(error.message || "요청을 불러오지 못했습니다.")}</td></tr>`;
+            }
         }
     }
     document.getElementById("claimFilterButton").addEventListener("click", () => { state.page = 0; state.status = document.getElementById("claimStatus").value; syncUrl(); load(); });

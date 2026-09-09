@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync(require('node:path').join(__dirname, '../../main/resources/static/js/view/order-claims.js'), 'utf8');
 
-async function renderPage(page, totalPages, patchResponse) {
+async function renderPage(page, totalPages, patchResponse, responseOverrides = {}) {
     const nodes = new Map();
     const requests = [];
     const document = { getElementById(id) {
@@ -21,7 +21,7 @@ async function renderPage(page, totalPages, patchResponse) {
             if (options?.method === 'PATCH') return patchResponse(url, options);
             requests.push(url);
             const requested = Number(new URL(url, 'http://localhost').searchParams.get('page'));
-            return { ok: true, json: async () => ({ claims: [], page: requested, totalPages, totalElements: totalPages * 20 }) };
+            return { ok: true, json: async () => ({ claims: [], page: requested, totalPages, totalElements: totalPages * 20, ...responseOverrides }) };
         }
     });
     await new Promise(resolve => setImmediate(resolve));
@@ -87,4 +87,36 @@ test('a removed final page reloads the last existing page', async () => {
     assert.equal(requests.length, 2);
     assert.match(requests[1], /page=2$/);
     assert.match(html, /aria-current="page">3/);
+});
+
+test('invalid claim identifiers cannot become links or action attributes', async () => {
+    for (const field of ['claimNo', 'orderNo', 'memberNo']) {
+        const claim = { claimNo: 1, orderNo: 2, memberNo: 3, status: 'REQUESTED', [field]: '\"><img src=x onerror=alert(1)>' };
+        const { nodes, html } = await renderPage(0, 1, undefined, { claims: [claim] });
+        assert.match(nodes.get('claimTableBody').innerHTML, /요청 목록 정보가 올바르지 않습니다/);
+        assert.doesNotMatch(nodes.get('claimTableBody').innerHTML, /<img|data-claim-action|href=/);
+        assert.equal(nodes.get('claimTotalCount').textContent, '-');
+        assert.equal(html, '');
+    }
+});
+
+test('valid claim renders actions while escaping customer text', async () => {
+    const { nodes } = await renderPage(0, 1, undefined, { claims: [{
+        claimNo: 42, orderNo: 23, memberNo: 7, status: 'REQUESTED',
+        reason: '<img src=x onerror=alert(1)>', orderNumber: 'GS&23'
+    }] });
+    const html = nodes.get('claimTableBody').innerHTML;
+    assert.match(html, /href="\/admin\/orders\/get\?no=23"/);
+    assert.match(html, /data-claim-no="42"/);
+    assert.match(html, /&lt;img src=x onerror=alert\(1\)&gt;/);
+    assert.match(html, /GS&amp;23/);
+    assert.doesNotMatch(html, /<img/);
+});
+
+test('mismatched page and invalid count are rejected instead of showing stale metadata', async () => {
+    for (const response of [{ page: 3 }, { totalElements: -1 }, { claims: null }]) {
+        const { nodes } = await renderPage(0, 4, undefined, response);
+        assert.match(nodes.get('claimResultMeta').textContent, /조회하지 못했습니다/);
+        assert.equal(nodes.get('claimTotalCount').textContent, '-');
+    }
 });

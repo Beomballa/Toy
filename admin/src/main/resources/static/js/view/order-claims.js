@@ -1,6 +1,6 @@
 (() => {
     "use strict";
-    const state = { page: 0, status: "ALL", requestId: 0, action: null };
+    const state = { page: 0, status: "ALL", requestId: 0, action: null, submitting: false };
     const modalElement = document.getElementById("claimActionModal");
     const actionModal = new bootstrap.Modal(modalElement);
     const statusLabels = { APPROVED: "승인", REJECTED: "반려", COMPLETED: "완료" };
@@ -59,7 +59,38 @@
     document.getElementById("claimFilterButton").addEventListener("click", () => { state.page = 0; state.status = document.getElementById("claimStatus").value; syncUrl(); load(); });
     document.getElementById("claimResetButton").addEventListener("click", () => { state.page = 0; state.status = "ALL"; document.getElementById("claimStatus").value = state.status; syncUrl(); load(); });
     document.getElementById("claimPagination").addEventListener("click", event => { const button = event.target.closest("[data-claim-page]"); if (!button) return; state.page = Number(button.dataset.claimPage); syncUrl(); load(); });
-    document.getElementById("claimTableBody").addEventListener("click", event => { const button = event.target.closest("[data-claim-action]"); if (!button) return; state.action = { claimNo: Number(button.dataset.claimNo), status: button.dataset.claimAction }; document.getElementById("claimActionTitle").textContent = `요청 ${statusLabels[state.action.status]} 처리`; document.getElementById("claimActionDescription").textContent = `처리 결과가 회원의 교환·반품 이력에 반영됩니다.`; document.getElementById("claimActionMemo").value = ""; actionModal.show(); });
-    document.getElementById("claimActionForm").addEventListener("submit", async event => { event.preventDefault(); const memo = document.getElementById("claimActionMemo").value.trim(); const submit = document.getElementById("claimActionSubmitButton"); if (!state.action || !memo) return; submit.disabled = true; try { const response = await fetch("/api/admin/orders/claims/status", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ claimNo: state.action.claimNo, status: state.action.status, memo }) }); if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, "요청을 처리하지 못했습니다.")); actionModal.hide(); load(); } catch (error) { await CommonJS.alert(error.message || "요청을 처리하지 못했습니다.", "오류", "error"); } finally { submit.disabled = false; } });
+    document.getElementById("claimTableBody").addEventListener("click", event => { const button = event.target.closest("[data-claim-action]"); if (!button || state.submitting) return; state.action = { claimNo: Number(button.dataset.claimNo), status: button.dataset.claimAction }; document.getElementById("claimActionTitle").textContent = `요청 ${statusLabels[state.action.status]} 처리`; document.getElementById("claimActionDescription").textContent = `처리 결과가 회원의 교환·반품 이력에 반영됩니다.`; document.getElementById("claimActionMemo").value = ""; actionModal.show(); });
+    modalElement.addEventListener("hide.bs.modal", event => {
+        if (state.submitting) event.preventDefault();
+    });
+    modalElement.addEventListener("hidden.bs.modal", () => { state.action = null; });
+    document.getElementById("claimActionForm").addEventListener("submit", async event => {
+        event.preventDefault();
+        const memo = document.getElementById("claimActionMemo").value.trim();
+        if (state.submitting || !state.action || !memo) return;
+        const action = { ...state.action };
+        const submit = document.getElementById("claimActionSubmitButton");
+        state.submitting = true;
+        submit.disabled = true;
+        let completed = false;
+        try {
+            const response = await fetch("/api/admin/orders/claims/status", {
+                method: "PATCH", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ claimNo: action.claimNo, status: action.status, memo })
+            });
+            if (!response.ok) throw new Error(await CommonJS.extractErrorMessage(response, "요청을 처리하지 못했습니다."));
+            completed = true;
+            state.action = null;
+        } catch (error) {
+            await CommonJS.alert(error.message || "요청을 처리하지 못했습니다.", "오류", "error");
+        } finally {
+            state.submitting = false;
+            submit.disabled = false;
+        }
+        if (completed) {
+            actionModal.hide();
+            load();
+        }
+    });
     readUrl(); load();
 })();

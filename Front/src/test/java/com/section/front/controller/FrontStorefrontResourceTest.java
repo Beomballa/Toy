@@ -193,6 +193,7 @@ class FrontStorefrontResourceTest {
                 .contains("data-store-shell-menu-button")
                 .contains("data-store-shell-search-form")
                 .contains("data-store-shell-count=\"bookmark\"")
+                .contains("href=\"/front/my?tab=wishlist\">관심")
                 .contains("data-store-shell-count=\"compare\"")
                 .contains("th:fragment=\"footer\"");
         assertThat(script)

@@ -18,6 +18,20 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
+test("관심 상품 진입은 화면 크기에 맞는 메뉴에서 관심 탭으로 이동한다", async ({ page, isMobile }) => {
+  await page.goto("/front/my?tab=recent");
+  const savedLink = page.locator('.store-shell__utility a').filter({ hasText: /^관심/ });
+  await expect(savedLink).toHaveAttribute("href", "/front/my?tab=wishlist");
+  if (isMobile) {
+    await expect(savedLink).toBeHidden();
+    await page.locator('[data-tab="wishlist"]').click();
+  } else {
+    await savedLink.click();
+  }
+  await expect(page).toHaveURL(/\/front\/my\?tab=wishlist$/);
+  await expect(page.locator('[data-tab="wishlist"]')).toHaveAttribute("aria-selected", "true");
+});
+
 test("MY 활동은 변조된 저장 항목을 제외하고 전체 활동을 안전하게 초기화한다", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("front-recent-viewed-products", JSON.stringify([

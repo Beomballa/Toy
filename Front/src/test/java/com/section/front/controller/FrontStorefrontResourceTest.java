@@ -309,7 +309,7 @@ class FrontStorefrontResourceTest {
                 .contains("aria-modal=\"true\"")
                 .contains("aria-labelledby=\"drawerTitle\"")
                 .contains("/js/view/storefront-state.js?v=20260805.2")
-                .contains("/js/view/app.js?v=20260813.1");
+                .contains("/js/view/app.js?v=20260909.1");
         assertThat(script)
                 .contains("window.StorefrontState?.keys.bookmark")
                 .contains("window.StorefrontState.write(\"bookmark\"")
@@ -417,7 +417,7 @@ class FrontStorefrontResourceTest {
                 .contains("id=\"detailReviewSort\"")
                 .contains("id=\"detailReviewDistribution\"")
                 .contains("id=\"detailReviewContentCount\"")
-                .contains("/js/view/detail.js?v=20260908.1");
+                .contains("/js/view/detail.js?v=20260909.1");
         assertThat(pageCss)
                 .contains(".detail-body .detail-hero")
                 .contains("grid-template-columns: minmax(0, 1.04fr) minmax(420px, .96fr)")

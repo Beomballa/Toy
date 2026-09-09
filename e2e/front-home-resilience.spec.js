@@ -28,6 +28,20 @@ const collectionPayload = () => ({
 
 const detailPayload = (id = 101) => ({ ...homeProduct({ id }), relatedProducts: [] });
 
+test("홈 카탈로그는 재고 0개 상품의 오래된 상태 문구를 품절로 표시한다", async ({ page }) => {
+  const payload = catalogPayload();
+  payload.products[0].stock = 0;
+  payload.products[0].options[0].stock = 0;
+  payload.products[0].stockStatus = "품절 임박";
+  payload.metrics.totalStock = 0;
+  payload.metrics.lowStockCount = 1;
+  await page.route("**/api/front/catalog/bootstrap?**", route => route.fulfill({ json: payload }));
+  await page.goto("/front");
+  const card = page.locator('#catalogGrid [data-catalog-product-id="101"]');
+  await expect(card.locator('.catalog-card__meta').last()).toContainText("품절 ·");
+  await expect(card).not.toContainText("품절 임박");
+});
+
 test("홈 콘텐츠는 게시판 유형이 잘못된 응답을 거부하고 재시도한다", async ({ page }) => {
   let attempts = 0;
   await page.route("**/api/front/content/highlights?limit=4", async (route) => {

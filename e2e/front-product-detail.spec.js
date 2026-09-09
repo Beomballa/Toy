@@ -33,6 +33,17 @@ const productDetail = (id = 12) => ({
   }]
 });
 
+test("재고 없는 상세와 연관 상품은 오래된 상태 문구 대신 품절을 표시한다", async ({ page }) => {
+  const product = productDetail();
+  await page.route("**/api/front/products/12", route => route.fulfill({ json: {
+    ...product, stock: 0, stockStatus: "품절 임박", options: [],
+    relatedProducts: product.relatedProducts.map(item => ({ ...item, stock: 0, stockStatus: "" }))
+  } }));
+  await page.goto("/front/products/12");
+  await expect(page.locator("#detailMetaRow .product-drawer__pill").first()).toHaveText("품절");
+  await expect(page.locator("#detailRelatedGrid .is-low-stock")).toHaveText("품절");
+});
+
 test("상품명과 이미지 주소의 특수문자는 텍스트와 속성에서 그대로 보존한다", async ({ page }) => {
   const name = "에어포스 '07 <Limited> & White";
   await page.route("**/api/front/products/12", route => route.fulfill({ json: {

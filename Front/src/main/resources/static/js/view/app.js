@@ -2362,6 +2362,7 @@
 
     function stockPressureLabel(stock) {
         const quantity = Number(stock || 0);
+        if (quantity <= 0) return "품절";
         if (quantity <= 5) {
             return "즉시 확인";
         }
@@ -2938,7 +2939,7 @@
             mood: homeText(value.mood, 100),
             featured: value.featured === true,
             featuredRank: Number.isSafeInteger(value.featuredRank) && value.featuredRank > 0 ? value.featuredRank : null,
-            stockStatus: homeText(value.stockStatus, 40) || stockLabel(stock),
+            stockStatus: stock === 0 ? "품절" : homeText(value.stockStatus, 40) || stockLabel(stock),
             priceLabel: formatPrice(price),
             options,
             thumbnailUrl: homeImage(value.thumbnailUrl)
@@ -6131,7 +6132,7 @@
                 model: homeText(item.model, 100),
                 price,
                 stock,
-                stockStatus: homeText(item.stockStatus, 40) || stockLabel(stock),
+                stockStatus: stock === 0 ? "품절" : homeText(item.stockStatus, 40) || stockLabel(stock),
                 priceLabel: formatPrice(price),
                 thumbnailUrl: homeImage(item.thumbnailUrl)
             };
@@ -6239,6 +6240,7 @@
     }
 
     function stockLabel(stock) {
+        if (Number(stock || 0) <= 0) return "품절";
         return stock < lowStockThresholdValue() ? "품절 임박" : "재고 안정";
     }
 

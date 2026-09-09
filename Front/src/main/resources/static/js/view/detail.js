@@ -243,6 +243,7 @@
     }
 
     function stockLabel(stock) {
+        if (Number(stock || 0) <= 0) return "품절";
         return Number(stock || 0) < lowStockThreshold() ? "품절 임박" : "재고 안정";
     }
 
@@ -2740,7 +2741,7 @@
                 model: detailText(item.model, 100),
                 price,
                 stock,
-                stockStatus: detailText(item.stockStatus, 40) || stockLabel(stock),
+                stockStatus: stock === 0 ? "품절" : detailText(item.stockStatus, 40) || stockLabel(stock),
                 priceLabel: formatPrice(price),
                 thumbnailUrl: detailImage(item.thumbnailUrl)
             };
@@ -2771,7 +2772,7 @@
             mood: detailText(value.mood, 100),
             featured: value.featured === true,
             featuredRank: Number.isSafeInteger(value.featuredRank) && value.featuredRank > 0 ? value.featuredRank : null,
-            stockStatus: detailText(value.stockStatus, 40) || stockLabel(stock),
+            stockStatus: stock === 0 ? "품절" : detailText(value.stockStatus, 40) || stockLabel(stock),
             priceLabel: formatPrice(price),
             options,
             relatedProducts: normalizeRelatedProducts(value.relatedProducts, id),
